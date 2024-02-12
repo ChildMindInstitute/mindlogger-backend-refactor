@@ -9,6 +9,7 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
 
+from apps.applets.domain.applet_full import AppletFull
 from apps.file.enums import FileScopeEnum
 from apps.file.services import LogFileService
 from apps.shared.test import BaseTest
@@ -54,7 +55,6 @@ class TestAnswerActivityItems(BaseTest):
     upload_url = "file/{applet_id}/upload"
     download_url = "file/{applet_id}/download"
     existance_url = "/file/{applet_id}/upload/check"
-    applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b8"
     file_id = "1693560380000/c60859c4-6f5f-4390-a572-da85fcd59709"
     upload_media_url = "file/upload-url"
     answer_upload_url = "file/{applet_id}/upload-url"
@@ -62,14 +62,14 @@ class TestAnswerActivityItems(BaseTest):
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.upload")
     async def test_arbitrary_upload_to_s3_aws(
-        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient
+        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient, applet_one: AppletFull
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AWS, session)
 
         content = io.BytesIO(b"File content")
         response = await client.post(
-            self.upload_url.format(applet_id=self.applet_id),
+            self.upload_url.format(applet_id=applet_one.id),
             query={"file_id": self.file_id},
             files={"file": content},
         )
@@ -81,13 +81,13 @@ class TestAnswerActivityItems(BaseTest):
         return_value=(iter(("a", "b")), "txt"),
     )
     async def test_arbitrary_download_from_s3_aws(
-        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient
+        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient, applet_one: AppletFull
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AWS, session)
 
         response = await client.post(
-            self.download_url.format(applet_id=self.applet_id),
+            self.download_url.format(applet_id=applet_one.id),
             data={"key": "key"},
         )
         assert http.HTTPStatus.OK == response.status_code
@@ -95,13 +95,13 @@ class TestAnswerActivityItems(BaseTest):
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.ArbitraryGCPCdnClient.upload")
     async def test_arbitrary_upload_to_s3_gcp(
-        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient
+        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient, applet_one: AppletFull
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.GCP, session)
         content = io.BytesIO(b"File content")
         response = await client.post(
-            self.upload_url.format(applet_id=self.applet_id),
+            self.upload_url.format(applet_id=applet_one.id),
             query={"file_id": self.file_id},
             files={"file": content},
         )
@@ -113,13 +113,13 @@ class TestAnswerActivityItems(BaseTest):
         return_value=(iter(("a", "b")), "txt"),
     )
     async def test_arbitrary_download_from_s3_gcp(
-        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient
+        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient, applet_one: AppletFull
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.GCP, session)
 
         response = await client.post(
-            self.download_url.format(applet_id=self.applet_id),
+            self.download_url.format(applet_id=applet_one.id),
             data={"key": "key"},
         )
         assert http.HTTPStatus.OK == response.status_code
@@ -133,12 +133,13 @@ class TestAnswerActivityItems(BaseTest):
         mock_upload: mock.MagicMock,
         session: AsyncSession,
         client: TestClient,
+        applet_one: AppletFull,
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AZURE, session)
         content = io.BytesIO(b"File content")
         response = await client.post(
-            self.upload_url.format(applet_id=self.applet_id),
+            self.upload_url.format(applet_id=applet_one.id),
             query={"file_id": self.file_id},
             files={"file": content},
         )
@@ -147,11 +148,11 @@ class TestAnswerActivityItems(BaseTest):
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.CDNClient.check_existence")
     async def test_default_storage_check_existence(
-        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient
+        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient, applet_one: AppletFull
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.post(
-            self.existance_url.format(applet_id=self.applet_id),
+            self.existance_url.format(applet_id=applet_one.id),
             data={"files": [self.file_id]},
         )
         assert http.HTTPStatus.OK == response.status_code
@@ -159,12 +160,12 @@ class TestAnswerActivityItems(BaseTest):
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.check_existence")
     async def test_arbitary_s3_aws_check_existence(
-        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient
+        self, mock_client: mock.MagicMock, session: AsyncSession, client: TestClient, applet_one: AppletFull
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AWS, session)
         response = await client.post(
-            self.existance_url.format(applet_id=self.applet_id),
+            self.existance_url.format(applet_id=applet_one.id),
             data={"files": [self.file_id]},
         )
         assert http.HTTPStatus.OK == response.status_code
@@ -185,25 +186,27 @@ class TestAnswerActivityItems(BaseTest):
         assert result["url"] == settings.cdn.url.format(key=result["fields"]["key"])
 
     async def test_generate_presigned_url_for_post_answer__user_does_not_have_access_to_the_applet(
-        self, client: TestClient, session: AsyncSession, user: User
+        self, client: TestClient, user: User, applet_one: AppletFull
     ):
         await client.login(self.login_url, user.email_encrypted, "Test1234!")
-        resp = await client.post(self.answer_upload_url.format(applet_id=self.applet_id), data={"file_id": "test.txt"})
+        resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": "test.txt"})
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == AnswerViewAccessDenied.message
 
     @pytest.mark.usefixtures("mock_presigned_post")
-    async def test_generate_presigned_url_for_answers(self, client: TestClient, tom: User, mocker: MockerFixture):
+    async def test_generate_presigned_url_for_answers(
+        self, client: TestClient, tom: User, mocker: MockerFixture, applet_one: AppletFull
+    ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         file_id = "test.txt"
-        expected_key = CDNClient.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{self.applet_id}", file_id)
+        expected_key = CDNClient.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", file_id)
         bucket_name = "bucket"
         settings.cdn.bucket = bucket_name
         settings.cdn.bucket_answer = bucket_name
         mocker.patch("apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info", return_value=None)
-        resp = await client.post(self.answer_upload_url.format(applet_id=self.applet_id), data={"file_id": file_id})
+        resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": file_id})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["fields"]["key"] == expected_key
         url = CDNClient(
@@ -212,9 +215,7 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["result"]["url"] == url
 
     @pytest.mark.usefixtures("mock_presigned_post")
-    async def test_generate_presigned_log_url(
-        self, client: TestClient, device_tom: str, tom: User, mocker: MockerFixture
-    ):
+    async def test_generate_presigned_log_url(self, client: TestClient, device_tom: str, tom: User):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         file_name = "test.txt"
         resp = await client.post(self.log_upload_url.format(device_id=device_tom), data={"file_id": file_name})

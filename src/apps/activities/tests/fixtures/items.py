@@ -118,3 +118,16 @@ def text_item_create(text_config: TextConfig, base_item_data: BaseItemData) -> A
         response_type=ResponseType.TEXT,
         config=text_config,
     )
+
+
+@pytest.fixture(scope="session")
+def item_create(
+    item_config: SingleSelectionConfig,
+    item_response_values: SingleSelectionValues,
+) -> ActivityItemCreate:
+    return ActivityItemCreate(
+        response_type=ResponseType.SINGLESELECT,
+        response_values=item_response_values,
+        config=item_config,
+        **BaseItemData(question={"en": "question"}).dict(),
+    )

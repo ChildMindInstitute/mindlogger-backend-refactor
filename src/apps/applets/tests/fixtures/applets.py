@@ -1,12 +1,25 @@
 import uuid
 
 import pytest
+from pytest import Config
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.activities.crud.activity import ActivitiesCRUD
+from apps.activities.crud.activity_history import ActivityHistoriesCRUD
+from apps.activities.crud.activity_item import ActivityItemsCRUD
+from apps.activities.crud.activity_item_history import ActivityItemHistoriesCRUD
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.response_type_config import ResponseType
+from apps.applets.crud.applets import AppletsCRUD
+from apps.applets.crud.applets_history import AppletHistoriesCRUD
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.base import Encryption
+from apps.applets.service.applet import AppletService
 from apps.applets.tests import constants
+from apps.themes.domain import Theme
+from apps.themes.service import ThemeService
+from apps.users.domain import User
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 
 
 @pytest.fixture(scope="session")
@@ -18,6 +31,11 @@ def encryption() -> Encryption:
         # Account id is not used co can be random uuid
         account_id=str(uuid.uuid4()),
     )
+
+
+@pytest.fixture(scope="session")
+def report_server_public_key() -> str:
+    return constants.REPORT_SERVER_PUBLIC_KEY
 
 
 @pytest.fixture
@@ -42,7 +60,6 @@ def activity_flanker_data():
                     "or press the right button if the arrow is "
                     "pointing to the right ‘>’.\n These arrows "
                     "will appear in the center of a line of "
-                    "other items. Sometimes, these other items "
                     "will be arrows pointing in the same "
                     "direction, e.g.. ‘> > > > >’, or in the "
                     "opposite direction, e.g. ‘< < > < <’.\n "
@@ -194,12 +211,12 @@ def activity_flanker_data():
     )
 
 
-@pytest.fixture
-def applet_minimal_data(encryption: Encryption, activity_create: ActivityCreate) -> AppletCreate:
+@pytest.fixture(scope="session")
+def applet_minimal_data(encryption: Encryption, activity_create_session: ActivityCreate) -> AppletCreate:
     return AppletCreate(
-        display_name="minimal required data to create applet",
+        display_name="Minimal Data",
         encryption=encryption,
-        activities=[activity_create],
+        activities=[activity_create_session],
         activity_flows=[],
         link=None,
         require_login=False,
@@ -210,3 +227,129 @@ def applet_minimal_data(encryption: Encryption, activity_create: ActivityCreate)
         stream_ip_address=None,
         stream_port=None,
     )
+
+
+@pytest.fixture(scope="session")
+async def default_theme(global_session: AsyncSession):
+    theme = await ThemeService(global_session, uuid.uuid4()).get_default()
+    return theme
+
+
+@pytest.fixture(autouse=True, scope="session")
+async def applet_one(
+    global_session: AsyncSession,
+    tom: User,
+    applet_minimal_data: AppletCreate,
+    default_theme: Theme,
+    pytestconfig: Config,
+):
+    applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
+    crud = AppletsCRUD(global_session)
+    srv = AppletService(global_session, tom.id)
+    applet_db = await crud._get("id", applet_id)
+    if applet_db:
+        applet = await srv.get_full_applet(applet_id)
+    else:
+        applet_data = applet_minimal_data.copy(deep=True)
+        applet_data.display_name = "Applet 1"
+        applet = await srv.create(applet_data, applet_id=applet_id)
+        await global_session.commit()
+    yield applet
+    await UserAppletAccessCRUD(global_session)._delete()
+    await ActivityItemHistoriesCRUD(global_session)._delete()
+    await ActivityHistoriesCRUD(global_session)._delete()
+    await ActivityItemsCRUD(global_session)._delete()
+    await ActivitiesCRUD(global_session)._delete()
+    await AppletHistoriesCRUD(global_session)._delete()
+    await AppletsCRUD(global_session)._delete(id=applet.id)
+    await global_session.commit()
+
+
+@pytest.fixture(autouse=True, scope="session")
+async def applet_two(
+    global_session: AsyncSession,
+    tom: User,
+    applet_minimal_data: AppletCreate,
+    default_theme: Theme,
+    pytestconfig: Config,
+):
+    applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b2")
+    crud = AppletsCRUD(global_session)
+    srv = AppletService(global_session, tom.id)
+    applet_db = await crud._get("id", applet_id)
+    if applet_db:
+        applet = await srv.get_full_applet(applet_id)
+    else:
+        applet_data = applet_minimal_data.copy(deep=True)
+        applet_data.display_name = "Applet 2"
+        applet = await srv.create(applet_data, applet_id=applet_id)
+        await global_session.commit()
+    yield applet
+    await UserAppletAccessCRUD(global_session)._delete()
+    await ActivityItemHistoriesCRUD(global_session)._delete()
+    await ActivityHistoriesCRUD(global_session)._delete()
+    await ActivityItemsCRUD(global_session)._delete()
+    await ActivitiesCRUD(global_session)._delete()
+    await AppletHistoriesCRUD(global_session)._delete()
+    await AppletsCRUD(global_session)._delete(id=applet.id)
+    await global_session.commit()
+
+
+@pytest.fixture(autouse=True, scope="session")
+async def applet_three(
+    global_session: AsyncSession,
+    lucy: User,
+    applet_minimal_data: AppletCreate,
+    default_theme: Theme,
+    pytestconfig: Config,
+):
+    applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b3")
+    crud = AppletsCRUD(global_session)
+    srv = AppletService(global_session, lucy.id)
+    applet_db = await crud._get("id", applet_id)
+    if applet_db:
+        applet = await srv.get_full_applet(applet_id)
+    else:
+        applet_data = applet_minimal_data.copy(deep=True)
+        applet_data.display_name = "Applet 3"
+        applet = await srv.create(applet_data, applet_id=applet_id)
+        await global_session.commit()
+    yield applet
+    await UserAppletAccessCRUD(global_session)._delete()
+    await ActivityItemHistoriesCRUD(global_session)._delete()
+    await ActivityHistoriesCRUD(global_session)._delete()
+    await ActivityItemsCRUD(global_session)._delete()
+    await ActivitiesCRUD(global_session)._delete()
+    await AppletHistoriesCRUD(global_session)._delete()
+    await AppletsCRUD(global_session)._delete(id=applet.id)
+    await global_session.commit()
+
+
+@pytest.fixture(autouse=True, scope="session")
+async def applet_four(
+    global_session: AsyncSession,
+    bob: User,
+    applet_minimal_data: AppletCreate,
+    default_theme: Theme,
+    pytestconfig: Config,
+):
+    applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b4")
+    crud = AppletsCRUD(global_session)
+    srv = AppletService(global_session, bob.id)
+    applet_db = await crud._get("id", applet_id)
+    if applet_db:
+        applet = await srv.get_full_applet(applet_id)
+    else:
+        applet_data = applet_minimal_data.copy(deep=True)
+        applet_data.display_name = "Applet 4"
+        applet = await srv.create(applet_data, applet_id=applet_id)
+        await global_session.commit()
+    yield applet
+    await UserAppletAccessCRUD(global_session)._delete()
+    await ActivityItemHistoriesCRUD(global_session)._delete()
+    await ActivityHistoriesCRUD(global_session)._delete()
+    await ActivityItemsCRUD(global_session)._delete()
+    await ActivitiesCRUD(global_session)._delete()
+    await AppletHistoriesCRUD(global_session)._delete()
+    await AppletsCRUD(global_session)._delete(id=applet.id)
+    await global_session.commit()

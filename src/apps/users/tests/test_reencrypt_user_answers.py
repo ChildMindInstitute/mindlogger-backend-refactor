@@ -38,10 +38,10 @@ def client_meta() -> ClientMeta:
 
 
 @pytest.fixture
-def job_model(tom: User) -> Job:
+def job_model(user: User) -> Job:
     return Job(
         name="reencrypt_answers",
-        creator_id=tom.id,
+        creator_id=user.id,
         status=JobStatus.in_progress,
         id=uuid.uuid4(),
         created_at=datetime.datetime.utcnow(),
@@ -50,21 +50,28 @@ def job_model(tom: User) -> Job:
 
 
 @pytest.fixture
-async def applet(session: AsyncSession, tom: User, applet_minimal_data: AppletCreate) -> AppletFull:
-    srv = AppletService(session, tom.id)
-    await ThemeService(session, tom.id).get_or_create_default()
+def applet_data(applet_minimal_data: AppletCreate):
+    data = applet_minimal_data.copy(deep=True)
+    data.display_name = "reencrypt answers"
+    return AppletCreate(**data.dict())
+
+
+@pytest.fixture
+async def applet(session: AsyncSession, user: User, applet_minimal_data: AppletCreate) -> AppletFull:
+    srv = AppletService(session, user.id)
+    await ThemeService(session, user.id).get_or_create_default()
     applet = await srv.create(applet_minimal_data)
     return applet
 
 
 @pytest.fixture
 def answer_item_create(
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     applet: AppletFull,
     single_select_item_create: ActivityItemCreate,
 ) -> ItemAnswerCreate:
-    private_key = generate_dh_user_private_key(tom.id, tom_create.email, tom_create.password)
+    private_key = generate_dh_user_private_key(user.id, user_create.email, user_create.password)
     public_key = generate_dh_public_key(private_key, test_constants.TEST_PRIME, test_constants.TEST_BASE)
     aes_key = generate_dh_aes_key(private_key, test_constants.TEST_PUBLIC_KEY, test_constants.TEST_PRIME)
     encryptor = AnswerEncryptor(bytes(aes_key))
@@ -91,7 +98,7 @@ def answer_item_create(
 @pytest.fixture
 async def answer(
     session: AsyncSession,
-    tom: User,
+    user: User,
     applet: AppletFull,
     answer_item_create: ItemAnswerCreate,
     client_meta: ClientMeta,
@@ -105,7 +112,7 @@ async def answer(
         created_at=datetime.datetime.utcnow(),
         client=client_meta,
     )
-    srv = AnswerService(session, tom.id)
+    srv = AnswerService(session, user.id)
     answer = await srv.create_answer(answer_create)
     return answer
 
@@ -113,7 +120,7 @@ async def answer(
 @pytest.fixture
 async def answer_second(
     session: AsyncSession,
-    tom: User,
+    user: User,
     applet: AppletFull,
     answer_item_create: ItemAnswerCreate,
     client_meta: ClientMeta,
@@ -127,7 +134,7 @@ async def answer_second(
         created_at=datetime.datetime.utcnow(),
         client=client_meta,
     )
-    srv = AnswerService(session, tom.id)
+    srv = AnswerService(session, user.id)
     answer = await srv.create_answer(answer_create)
     return answer
 
@@ -136,7 +143,7 @@ async def answer_second(
 async def answer_arbitrary(
     session: AsyncSession,
     arbitrary_session: AsyncSession,
-    tom: User,
+    user: User,
     applet: AppletFull,
     answer_item_create: ItemAnswerCreate,
     client_meta: ClientMeta,
@@ -150,14 +157,14 @@ async def answer_arbitrary(
         created_at=datetime.datetime.utcnow(),
         client=client_meta,
     )
-    srv = AnswerService(session, tom.id, arbitrary_session=arbitrary_session)
+    srv = AnswerService(session, user.id, arbitrary_session=arbitrary_session)
     answer = await srv.create_answer(answer_create)
     return answer
 
 
 async def test_reencrypt_answers_no_applets_job_started_with_status_in_progress(
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     mocker: MockerFixture,
     job_model: Job,
 ):
@@ -166,15 +173,15 @@ async def test_reencrypt_answers_no_applets_job_started_with_status_in_progress(
     # job does not exist in db, so mock update
     mocker.patch("apps.job.crud.JobCRUD.update")
     spy = mocker.spy(JobService, "change_status")
-    task = await reencrypt_answers.kiq(tom.id, tom.email_encrypted, tom_create.password, "new-pass", retries=0)
+    task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=0)
     await task.wait_result()
     # ANY - self
     spy.assert_awaited_once_with(ANY, job_model.id, JobStatus.success)
 
 
 async def test_reencrypt_answers_no_applets_job_started_with_another_status(
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     mocker: MockerFixture,
     job_model: Job,
 ):
@@ -182,15 +189,15 @@ async def test_reencrypt_answers_no_applets_job_started_with_another_status(
     mocker.patch("apps.job.service.JobService.get_or_create_owned", return_value=job_model)
     mocker.patch("apps.job.crud.JobCRUD.update")
     spy = mocker.spy(JobService, "change_status")
-    task = await reencrypt_answers.kiq(tom.id, tom.email_encrypted, tom_create.password, "new-pass", retries=0)
+    task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=0)
     await task.wait_result()
     spy.assert_any_await(ANY, job_model.id, JobStatus.in_progress)
     spy.assert_awaited_with(ANY, job_model.id, JobStatus.success)
 
 
 async def test_reencrypt_answers_no_answers(
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     mocker: MockerFixture,
     job_model: Job,
     applet: AppletFull,
@@ -199,33 +206,33 @@ async def test_reencrypt_answers_no_answers(
     mocker.patch("apps.job.service.JobService.get_or_create_owned", return_value=job_model)
     mocker.patch("apps.job.crud.JobCRUD.update")
     spy = mocker.spy(JobService, "change_status")
-    task = await reencrypt_answers.kiq(tom.id, tom.email_encrypted, tom_create.password, "new-pass", retries=0)
+    task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=0)
     await task.wait_result()
     spy.assert_awaited_once_with(ANY, job_model.id, JobStatus.success)
 
 
 async def test_reencrypt_answers_not_valid_public_key_answer_not_reencrypted(
     session: AsyncSession,
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     mocker: MockerFixture,
     job_model: Job,
-    applet_minimal_data: AppletCreate,
+    applet_data: AppletCreate,
     applet: AppletFull,
     answer: AnswerSchema,
 ):
     # TODO: capture logs
-    applet_minimal_data.encryption.public_key = "not valid public key"
+    applet_data.encryption.public_key = "not valid public key"
     answer_id = answer.id
     act_id_version = f"{applet.activities[0].id}_{applet.version}"
     answer_before = (await AnswerItemsCRUD(session).get_by_answer_and_activity(answer_id, [act_id_version]))[0].answer
-    applet_update_data = AppletUpdate(**applet_minimal_data.dict(exclude_unset=True))
-    await AppletService(session, tom.id).update(applet.id, applet_update_data)
+    applet_update_data = AppletUpdate(**applet_data.dict(exclude_unset=True))
+    await AppletService(session, user.id).update(applet.id, applet_update_data)
     job_model.status = JobStatus.in_progress
     mocker.patch("apps.job.service.JobService.get_or_create_owned", return_value=job_model)
     mocker.patch("apps.job.crud.JobCRUD.update")
     spy = mocker.spy(JobService, "change_status")
-    task = await reencrypt_answers.kiq(tom.id, tom.email_encrypted, tom_create.password, "new-pass", retries=0)
+    task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=0)
     await task.wait_result()
     spy.assert_awaited_once_with(ANY, job_model.id, JobStatus.success)
     answer_after = (await AnswerItemsCRUD(session).get_by_answer_and_activity(answer_id, [act_id_version]))[0].answer
@@ -234,8 +241,8 @@ async def test_reencrypt_answers_not_valid_public_key_answer_not_reencrypted(
 
 async def test_reencrypt_answers_success(
     session: AsyncSession,
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     mocker: MockerFixture,
     job_model: Job,
     applet: AppletFull,
@@ -252,7 +259,7 @@ async def test_reencrypt_answers_success(
     mocker.patch("apps.job.service.JobService.get_or_create_owned", return_value=job_model)
     mocker.patch("apps.job.crud.JobCRUD.update")
     spy = mocker.spy(JobService, "change_status")
-    task = await reencrypt_answers.kiq(tom.id, tom.email_encrypted, tom_create.password, "new-pass", retries=0)
+    task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=0)
     await task.wait_result()
     spy.assert_awaited_once_with(ANY, job_model.id, JobStatus.success)
     answers_after = list(
@@ -266,15 +273,15 @@ async def test_reencrypt_answers_success(
 
 async def test_reencrypt_answers_exception_during_reencrypt_no_retries(
     session: AsyncSession,
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     mocker: MockerFixture,
     job_model: Job,
     applet: AppletFull,
     answer: AnswerSchema,
 ):
     answer_id = answer.id
-    user_id = tom.id
+    user_id = user.id
     act_id_version = f"{applet.activities[0].id}_{applet.version}"
     answer_before = (await AnswerItemsCRUD(session).get_by_answer_and_activity(answer_id, [act_id_version]))[0].answer
     job_model.status = JobStatus.in_progress
@@ -282,7 +289,7 @@ async def test_reencrypt_answers_exception_during_reencrypt_no_retries(
     mocker.patch("apps.job.crud.JobCRUD.update")
     mocker.patch("apps.answers.service.AnswerService.reencrypt_user_answers", side_effect=Exception("ERROR"))
     spy = mocker.spy(JobService, "change_status")
-    task = await reencrypt_answers.kiq(tom.id, tom.email_encrypted, tom_create.password, "new-pass", retries=0)
+    task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=0)
     await task.wait_result()
     err_msg = f"Reencryption {user_id}: cannot process applet " f"{applet.id}, skip"
     spy.assert_awaited_once_with(ANY, job_model.id, JobStatus.error, dict(errors=[err_msg, "ERROR"]))
@@ -292,8 +299,8 @@ async def test_reencrypt_answers_exception_during_reencrypt_no_retries(
 
 async def test_reencrypt_answers_exception_during_reencrypt_with_retries(
     session: AsyncSession,
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     mocker: MockerFixture,
     job_model: Job,
     applet: AppletFull,
@@ -307,7 +314,7 @@ async def test_reencrypt_answers_exception_during_reencrypt_with_retries(
     mocker.patch("apps.job.crud.JobCRUD.update")
     mocker.patch("apps.answers.service.AnswerService.reencrypt_user_answers", side_effect=Exception("ERROR"))
     spy = mocker.spy(JobService, "change_status")
-    task = await reencrypt_answers.kiq(tom.id, tom.email_encrypted, tom_create.password, "new-pass", retries=1)
+    task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=1)
     await task.wait_result()
     spy.assert_any_await(ANY, job_model.id, JobStatus.retry)
     answer_after = (await AnswerItemsCRUD(session).get_by_answer_and_activity(answer_id, [act_id_version]))[0].answer
@@ -317,8 +324,8 @@ async def test_reencrypt_answers_exception_during_reencrypt_with_retries(
 async def test_reencrypt_answers_arbitrary(
     session: AsyncSession,
     arbitrary_session: AsyncSession,
-    tom: User,
-    tom_create: UserCreate,
+    user: User,
+    user_create: UserCreate,
     mocker: MockerFixture,
     job_model: Job,
     applet: AppletFull,
@@ -335,8 +342,8 @@ async def test_reencrypt_answers_arbitrary(
         storage_type=StorageType.AWS,
         storage_region="us-east-1",
     )
-    await WorkspaceService(session, tom.id).create_workspace_from_user(tom)
-    await WorkspaceService(session, tom.id).set_arbitrary_server(w)
+    await WorkspaceService(session, user.id).create_workspace_from_user(user)
+    await WorkspaceService(session, user.id).set_arbitrary_server(w)
     answer_id = answer_arbitrary.id
     act_id_version = f"{applet.activities[0].id}_{applet.version}"
     answer_before = (await AnswerItemsCRUD(arbitrary_session).get_by_answer_and_activity(answer_id, [act_id_version]))[
@@ -346,7 +353,7 @@ async def test_reencrypt_answers_arbitrary(
     mocker.patch("apps.job.service.JobService.get_or_create_owned", return_value=job_model)
     mocker.patch("apps.job.crud.JobCRUD.update")
     spy = mocker.spy(JobService, "change_status")
-    task = await reencrypt_answers.kiq(tom.id, tom.email_encrypted, tom_create.password, "new-pass", retries=0)
+    task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=0)
     await task.wait_result()
     spy.assert_awaited_once_with(ANY, job_model.id, JobStatus.success)
     answer_after = (await AnswerItemsCRUD(arbitrary_session).get_by_answer_and_activity(answer_id, [act_id_version]))[

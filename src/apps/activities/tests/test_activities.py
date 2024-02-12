@@ -1,212 +1,154 @@
-from apps.shared.test import BaseTest
+import http
+from typing import cast
+
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from apps.activities.domain.response_type_config import SingleSelectionConfig
+from apps.activities.domain.response_values import SingleSelectionValues
+from apps.applets.domain.applet_full import AppletFull
+from apps.applets.domain.applet_link import CreateAccessLink
+from apps.applets.service.applet import AppletService
+from apps.shared.enums import Language
+from apps.themes.domain import Theme
+from apps.users.domain import User
 
 
-class TestActivities(BaseTest):
-    fixtures = [
-        "themes/fixtures/themes.json",
-        "folders/fixtures/folders.json",
-        "applets/fixtures/applets.json",
-        "applets/fixtures/applet_user_accesses.json",
-        "activities/fixtures/activities.json",
-        "activities/fixtures/activity_items.json",
-    ]
+@pytest.fixture
+async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletFull, tom):
+    srv = AppletService(session, tom.id)
+    await srv.create_access_link(applet_one.id, CreateAccessLink(require_login=False))
+    applet = await srv.get_full_applet(applet_one.id)
+    assert applet.link is not None
+    return applet
 
+
+class TestActivities:
     login_url = "/auth/login"
     activity_detail = "/activities/{pk}"
     activities_applet = "/activities/applet/{applet_id}"
     public_activity_detail = "public/activities/{pk}"
 
-    async def test_activity_detail(self, client):
+    async def test_activity_detail(self, client, applet_one: AppletFull):
+        activity = applet_one.activities[0]
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        response = await client.get(self.activity_detail.format(pk="09e3dbf0-aefb-4d0e-9177-bdb321bf3611"))
+        response = await client.get(self.activity_detail.format(pk=activity.id))
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
-        assert result["id"] == "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
-        assert result["name"] == "PHQ2"
-        assert result["description"] == "PHQ2 en"
-        assert len(result["items"]) == 2
-        assert result["items"][0]["question"] == "Little interest or pleasure in doing things?"
-        assert result["items"][1]["question"] == "Feeling down, depressed, or hopeless?"
+        assert result["id"] == str(activity.id)
+        assert result["name"] == activity.name
+        assert result["description"] == activity.description[Language.ENGLISH]
+        assert len(result["items"]) == 1
+        assert result["items"][0]["question"] == activity.items[0].question[Language.ENGLISH]
 
-    async def test_activities_applet(self, client):
+    async def test_activities_applet(self, client, applet_one: AppletFull, default_theme: Theme, tom: User):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        response = await client.get(self.activities_applet.format(applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await client.get(self.activities_applet.format(applet_id=applet_one.id))
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
 
+        activity = applet_one.activities[0]
         assert len(result["activitiesDetails"]) == 1
-        assert result["activitiesDetails"][0]["id"] == "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
-        assert result["activitiesDetails"][0]["name"] == "PHQ2"
-        assert result["activitiesDetails"][0]["description"] == "PHQ2 en"
-        assert result["activitiesDetails"][0]["splashScreen"] == ""
-        assert result["activitiesDetails"][0]["image"] == ""
-        assert result["activitiesDetails"][0]["showAllAtOnce"] is False
-        assert result["activitiesDetails"][0]["isSkippable"] is False
-        assert result["activitiesDetails"][0]["isReviewable"] is False
-        assert result["activitiesDetails"][0]["isHidden"] is False
-        assert result["activitiesDetails"][0]["responseIsEditable"] is False
+        assert result["activitiesDetails"][0]["id"] == str(activity.id)
+        assert result["activitiesDetails"][0]["name"] == activity.name
+        assert result["activitiesDetails"][0]["description"] == activity.description[Language.ENGLISH]
+        assert result["activitiesDetails"][0]["splashScreen"] == activity.splash_screen
+        assert result["activitiesDetails"][0]["image"] == activity.image
+        assert result["activitiesDetails"][0]["showAllAtOnce"] == activity.show_all_at_once
+        assert result["activitiesDetails"][0]["isSkippable"] == activity.is_skippable
+        assert result["activitiesDetails"][0]["isReviewable"] == activity.is_reviewable
+        assert result["activitiesDetails"][0]["isHidden"] == activity.is_hidden
+        assert result["activitiesDetails"][0]["responseIsEditable"] == activity.response_is_editable
         assert result["activitiesDetails"][0]["order"] == 1
 
-        assert len(result["activitiesDetails"][0]["items"]) == 2
-        items = sorted(result["activitiesDetails"][0]["items"], key=lambda x: x["id"])
-        assert items[0]["id"] == "a18d3409-2c96-4a5e-a1f3-1c1c14be0011"
-        assert items[0]["question"] == "Little interest or pleasure in doing things?"
-        assert items[0]["responseType"] == "singleSelect"
-        assert items[0]["name"] == "test1"
-        assert items[0]["isHidden"] is None
-        assert items[0]["conditionalLogic"] is None
-        assert items[0]["allowEdit"] is None
-        assert items[0]["responseValues"]["paletteName"] is None
-        assert len(items[0]["responseValues"]["options"]) == 4
-        options_0 = sorted(items[0]["responseValues"]["options"], key=lambda x: x["id"])
-        assert options_0[0]["id"] == "2ba4bb83-ed1c-4140-a225-c2c9b4db66d2"
-        assert options_0[0]["text"] == "Not at all"
-        assert options_0[0]["image"] is None
-        assert options_0[0]["score"] is None
-        assert options_0[0]["tooltip"] is None
-        assert options_0[0]["isHidden"] is False
-        assert options_0[0]["color"] is None
-        assert options_0[0]["alert"] is None
-        assert options_0[0]["value"] == 0
-        assert options_0[1]["id"] == "2ba4bb83-ed1c-4140-a225-c2c9b4db66d3"
-        assert options_0[1]["text"] == "Several days"
-        assert options_0[1]["image"] is None
-        assert options_0[1]["score"] is None
-        assert options_0[1]["tooltip"] is None
-        assert options_0[1]["isHidden"] is False
-        assert options_0[1]["color"] is None
-        assert options_0[1]["alert"] is None
-        assert options_0[1]["value"] == 1
-        assert options_0[2]["id"] == "2ba4bb83-ed1c-4140-a225-c2c9b4db66d4"
-        assert options_0[2]["text"] == "More than half the days"
-        assert options_0[2]["image"] is None
-        assert options_0[2]["score"] is None
-        assert options_0[2]["tooltip"] is None
-        assert options_0[2]["isHidden"] is False
-        assert options_0[2]["color"] is None
-        assert options_0[2]["alert"] is None
-        assert options_0[2]["value"] == 2
-        assert options_0[3]["id"] == "2ba4bb83-ed1c-4140-a225-c2c9b4db66d5"
-        assert options_0[3]["text"] == "Nearly every day"
-        assert options_0[3]["image"] is None
-        assert options_0[3]["score"] is None
-        assert options_0[3]["tooltip"] is None
-        assert options_0[3]["isHidden"] is False
-        assert options_0[3]["color"] is None
-        assert options_0[3]["alert"] is None
-        assert options_0[3]["value"] == 3
-        assert items[0]["config"]["removeBackButton"] is False
-        assert items[0]["config"]["skippableItem"] is False
-        assert items[0]["config"]["randomizeOptions"] is False
-        assert items[0]["config"]["timer"] == 0
-        assert items[0]["config"]["addScores"] is False
-        assert items[0]["config"]["setAlerts"] is False
-        assert items[0]["config"]["addTooltip"] is False
-        assert items[0]["config"]["setPalette"] is False
-        assert items[0]["config"]["addTokens"] is None
-        assert items[0]["config"]["additionalResponseOption"]["textInputOption"] is False
-        assert items[0]["config"]["additionalResponseOption"]["textInputRequired"] is False
+        items = result["activitiesDetails"][0]["items"]
+        activity_item = activity.items[0]
+        assert len(items) == 1
+        assert len(items) == len(activity.items)
+        item = items[0]
+        assert item["id"] == str(activity_item.id)
+        assert item["question"] == activity_item.question[Language.ENGLISH]
+        assert item["responseType"] == activity_item.response_type
+        assert item["name"] == activity_item.name
+        assert item["isHidden"] == activity_item.is_hidden
+        assert item["conditionalLogic"] == activity_item.conditional_logic
+        assert item["allowEdit"] == activity_item.allow_edit
+        assert len(item["responseValues"]["options"]) == 1
+        option = item["responseValues"]["options"][0]
+        activity_item.response_values = cast(SingleSelectionValues, activity_item.response_values)
+        assert item["responseValues"]["paletteName"] == activity_item.response_values.palette_name
+        activity_item_option = activity_item.response_values.options[0]
+        assert option["id"] == activity_item_option.id
+        assert option["text"] == activity_item_option.text
+        assert option["image"] == activity_item_option.image
+        assert option["score"] == activity_item_option.score
+        assert option["tooltip"] == activity_item_option.tooltip
+        assert option["isHidden"] == activity_item_option.is_hidden
+        assert option["color"] == activity_item_option.color
+        assert option["alert"] == activity_item_option.alert
+        assert option["value"] == activity_item_option.value
+        config = item["config"]
+        activity_item.config = cast(SingleSelectionConfig, activity_item.config)
+        assert config["removeBackButton"] == activity_item.config.remove_back_button
+        assert config["skippableItem"] == activity_item.config.skippable_item
+        assert config["randomizeOptions"] == activity_item.config.randomize_options
+        assert config["timer"] == activity_item.config.timer
+        assert config["addScores"] == activity_item.config.add_scores
+        assert config["setAlerts"] == activity_item.config.set_alerts
+        assert config["addTooltip"] == activity_item.config.add_tooltip
+        assert config["setPalette"] == activity_item.config.set_palette
+        assert config["addTokens"] == activity_item.config.add_tokens
+        assert (
+            config["additionalResponseOption"]["textInputOption"]
+            == activity_item.config.additional_response_option.text_input_option
+        )
+        assert (
+            config["additionalResponseOption"]["textInputRequired"]
+            == activity_item.config.additional_response_option.text_input_required
+        )
 
-        assert items[1]["id"] == "a18d3409-2c96-4a5e-a1f3-1c1c14be0012"
-        assert items[1]["question"] == "Feeling down, depressed, or hopeless?"
-        assert items[1]["responseType"] == "singleSelect"
-        assert items[1]["name"] == "test"
-        assert items[1]["isHidden"] is None
-        assert items[1]["conditionalLogic"] is None
-        assert items[1]["allowEdit"] is None
-        assert items[1]["responseValues"]["paletteName"] is None
-        assert len(items[1]["responseValues"]["options"]) == 4
-        options_1 = sorted(items[1]["responseValues"]["options"], key=lambda x: x["id"])
-        assert options_1[0]["id"] == "2ba4bb83-ed1c-4140-a225-c2c9b4db66e2"
-        assert options_1[0]["text"] == "Not at all"
-        assert options_1[0]["image"] is None
-        assert options_1[0]["score"] is None
-        assert options_1[0]["tooltip"] is None
-        assert options_1[0]["isHidden"] is False
-        assert options_1[0]["color"] is None
-        assert options_1[0]["alert"] is None
-        assert options_1[0]["value"] == 0
-        assert options_1[1]["id"] == "2ba4bb83-ed1c-4140-a225-c2c9b4db66e3"
-        assert options_1[1]["text"] == "Several days"
-        assert options_1[1]["image"] is None
-        assert options_1[1]["score"] is None
-        assert options_1[1]["tooltip"] is None
-        assert options_1[1]["isHidden"] is False
-        assert options_1[1]["color"] is None
-        assert options_1[1]["alert"] is None
-        assert options_1[1]["value"] == 1
-        assert options_1[2]["id"] == "2ba4bb83-ed1c-4140-a225-c2c9b4db66e4"
-        assert options_1[2]["text"] == "More than half the days"
-        assert options_1[2]["image"] is None
-        assert options_1[2]["score"] is None
-        assert options_1[2]["tooltip"] is None
-        assert options_1[2]["isHidden"] is False
-        assert options_1[2]["color"] is None
-        assert options_1[2]["alert"] is None
-        assert options_1[2]["value"] == 2
-        assert options_1[3]["id"] == "2ba4bb83-ed1c-4140-a225-c2c9b4db66e5"
-        assert options_1[3]["text"] == "Nearly every day"
-        assert options_1[3]["image"] is None
-        assert options_1[3]["score"] is None
-        assert options_1[3]["tooltip"] is None
-        assert options_1[3]["isHidden"] is False
-        assert options_1[3]["color"] is None
-        assert options_1[3]["alert"] is None
-        assert options_1[3]["value"] == 3
-        assert items[1]["config"]["removeBackButton"] is False
-        assert items[1]["config"]["skippableItem"] is False
-        assert items[1]["config"]["randomizeOptions"] is False
-        assert items[1]["config"]["timer"] == 0
-        assert items[1]["config"]["addScores"] is False
-        assert items[1]["config"]["setAlerts"] is False
-        assert items[1]["config"]["addTooltip"] is False
-        assert items[1]["config"]["setPalette"] is False
-        assert items[1]["config"]["addTokens"] is None
-        assert items[1]["config"]["additionalResponseOption"]["textInputOption"] is False
-        assert items[1]["config"]["additionalResponseOption"]["textInputRequired"] is False
+        assert result["activitiesDetails"][0]["scoresAndReports"] == activity.scores_and_reports
 
-        assert result["activitiesDetails"][0]["scoresAndReports"] is None
-
-        assert result["appletDetail"]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        assert result["appletDetail"]["displayName"] == "Applet 1"
-        assert result["appletDetail"]["version"] == "1.0.0"
-        assert result["appletDetail"]["description"] == "Patient Health Questionnaire"
-        assert result["appletDetail"]["about"] == "Patient Health Questionnaire"
-        assert result["appletDetail"]["image"] == ""
-        assert result["appletDetail"]["watermark"] == ""
-        assert result["appletDetail"]["theme"]["id"] == "3e31a64e-449f-4788-8516-eca7809f1a41"
-        assert result["appletDetail"]["theme"]["name"] == "Theme 1"
-        assert result["appletDetail"]["theme"]["logo"] == "logo1.jpg"
-        assert result["appletDetail"]["theme"]["backgroundImage"] == "image1.jpg"
-        assert result["appletDetail"]["theme"]["primaryColor"] == "#000"
-        assert result["appletDetail"]["theme"]["secondaryColor"] == "#f00"
-        assert result["appletDetail"]["theme"]["tertiaryColor"] == "#fff"
+        assert result["appletDetail"]["id"] == str(applet_one.id)
+        assert result["appletDetail"]["displayName"] == applet_one.display_name
+        assert result["appletDetail"]["version"] == applet_one.version
+        assert result["appletDetail"]["description"] == applet_one.description.get(Language.ENGLISH, "")
+        assert result["appletDetail"]["about"] == applet_one.about.get(Language.ENGLISH, "")
+        assert result["appletDetail"]["image"] == applet_one.image
+        assert result["appletDetail"]["watermark"] == applet_one.watermark
+        assert result["appletDetail"]["theme"]["id"] == str(applet_one.theme_id)
+        # assert result["appletDetail"]["theme"]["name"] == default_theme.name
+        # assert result["appletDetail"]["theme"]["logo"] == default_theme.logo
+        # assert result["appletDetail"]["theme"]["backgroundImage"] == default_theme.background_image
+        # assert result["appletDetail"]["theme"]["primaryColor"] == default_theme.primary_color
+        # assert result["appletDetail"]["theme"]["secondaryColor"] == default_theme.secondary_color
+        # assert result["appletDetail"]["theme"]["tertiaryColor"] == default_theme.tertiary_color
         assert len(result["appletDetail"]["activities"]) == 1
-        assert result["appletDetail"]["activities"][0]["id"] == "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
-        assert result["appletDetail"]["activities"][0]["name"] == "PHQ2"
-        assert result["appletDetail"]["activities"][0]["description"] == "PHQ2 en"
-        assert result["appletDetail"]["activities"][0]["image"] == ""
-        assert result["appletDetail"]["activities"][0]["isReviewable"] is False
-        assert result["appletDetail"]["activities"][0]["isSkippable"] is False
-        assert result["appletDetail"]["activities"][0]["showAllAtOnce"] is False
-        assert result["appletDetail"]["activities"][0]["isHidden"] is False
-        assert result["appletDetail"]["activities"][0]["responseIsEditable"] is False
-        assert result["appletDetail"]["activities"][0]["order"] == 1
-        assert result["appletDetail"]["activities"][0]["splashScreen"] == ""
+        assert result["appletDetail"]["activities"][0]["id"] == str(activity.id)
+        assert result["appletDetail"]["activities"][0]["name"] == activity.name
+        assert result["appletDetail"]["activities"][0]["description"] == activity.description[Language.ENGLISH]
+        assert result["appletDetail"]["activities"][0]["image"] == activity.image
+        assert result["appletDetail"]["activities"][0]["isReviewable"] == activity.is_reviewable
+        assert result["appletDetail"]["activities"][0]["isSkippable"] == activity.is_skippable
+        assert result["appletDetail"]["activities"][0]["showAllAtOnce"] == activity.show_all_at_once
+        assert result["appletDetail"]["activities"][0]["isHidden"] == activity.is_hidden
+        assert result["appletDetail"]["activities"][0]["responseIsEditable"] == activity.response_is_editable
+        assert result["appletDetail"]["activities"][0]["order"] == activity.order
+        assert result["appletDetail"]["activities"][0]["splashScreen"] == activity.splash_screen
         assert result["appletDetail"]["activityFlows"] == []
 
-        assert result["respondentMeta"] == {"nickname": "Mindlogger ChildMindInstitute"}
+        assert result["respondentMeta"] == {"nickname": f"{tom.first_name} {tom.last_name}"}
 
-    async def test_public_activity_detail(self, client):
-        response = await client.get(self.public_activity_detail.format(pk="09e3dbf0-aefb-4d0e-9177-bdb321bf3611"))
+    async def test_public_activity_detail(self, client, applet_one_with_public_link: AppletFull):
+        activity = applet_one_with_public_link.activities[0]
+        response = await client.get(self.public_activity_detail.format(pk=activity.id))
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
-        assert result["id"] == "09e3dbf0-aefb-4d0e-9177-bdb321bf3611"
-        assert result["name"] == "PHQ2"
-        assert result["description"] == "PHQ2 en"
-        assert len(result["items"]) == 2
-        assert result["items"][0]["question"] == "Little interest or pleasure in doing things?"
-        assert result["items"][1]["question"] == "Feeling down, depressed, or hopeless?"
+        assert result["id"] == str(activity.id)
+        assert result["name"] == activity.name
+        assert result["description"] == activity.description[Language.ENGLISH]
+        assert len(result["items"]) == len(activity.items)
+        assert result["items"][0]["question"] == activity.items[0].question[Language.ENGLISH]

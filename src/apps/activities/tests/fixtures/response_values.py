@@ -133,3 +133,22 @@ def multi_select_row_response_values(
     single_select_row_response_values: SingleSelectionRowsValues,
 ) -> MultiSelectionRowsValues:
     return MultiSelectionRowsValues(**single_select_row_response_values.dict())
+
+
+@pytest.fixture(scope="session")
+def item_response_values() -> SingleSelectionValues:
+    return SingleSelectionValues(
+        palette_name=None,
+        options=[
+            _SingleSelectionValue(
+                id=str(uuid.uuid4()),
+                text="text",
+                image=None,
+                score=None,
+                tooltip=None,
+                is_hidden=False,
+                color=None,
+                value=0,
+            )
+        ],
+    )
