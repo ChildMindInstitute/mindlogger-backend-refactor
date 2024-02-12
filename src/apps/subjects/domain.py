@@ -26,8 +26,7 @@ class SubjectRespondent(PublicModel):
     user_id: uuid.UUID
 
 
-class SubjectRespondentCreate(PublicModel):
-    user_id: uuid.UUID
+class SubjectRelationCreate(PublicModel):
     relation: str
 
 
@@ -61,6 +60,6 @@ class SubjectUpdateRequest(PublicModel):
 class SubjectDeleteRequest(PublicModel):
     delete_answers: bool
 
-    
+
 class SubjectReadResponse(SubjectUpdateRequest):
     pass

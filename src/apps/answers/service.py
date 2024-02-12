@@ -88,9 +88,11 @@ from apps.applets.service import AppletHistoryService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
-from apps.shared.exception import EncryptionError
+from apps.shared.exception import EncryptionError, ValidationError
 from apps.shared.query_params import QueryParams
+from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
+from apps.subjects.db.schemas import SubjectSchema
 from apps.users import User, UserSchema, UsersCRUD
 from apps.users.errors import UserNotFound
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
@@ -197,31 +199,80 @@ class AnswerService:
         if not roles:
             raise UserDoesNotHavePermissionError()
 
+    async def _get_answer_relation(
+        self,
+        respondent_subject: SubjectSchema,
+        source_subject: SubjectSchema,
+        target_subject: SubjectSchema,
+    ) -> str | None:
+        if respondent_subject.id == target_subject.id:
+            return None
+
+        is_admin = await AppletAccessCRUD(self.session).has_any_roles_for_applet(
+            respondent_subject.applet_id,
+            respondent_subject.user_id,
+            Role.managers(),
+        )
+        if source_subject.id == target_subject.id:
+            if is_admin:
+                return Relation.self
+
+            raise ValidationError("Subject relation not found")
+
+        relation = await SubjectsCrud(self.session).get_relation(
+            source_subject.id, target_subject.id
+        )
+        if not relation:
+            if is_admin:
+                return Relation.admin
+            raise ValidationError("Subject relation not found")
+
+        return relation
+
     async def _create_answer(self, applet_answer: AppletAnswerCreate):
         assert self.user_id
         pk = self._generate_history_id(applet_answer.version)
         created_at = applet_answer.created_at or datetime.datetime.utcnow()
         subject_crud = SubjectsCrud(self.session)
+
+        respondent_subject = await subject_crud.get_user_subject(
+            user_id=self.user_id, applet_id=applet_answer.applet_id
+        )
+        if not respondent_subject or not respondent_subject.soft_exists():
+            raise ValidationError("Respondent subject not found")
+
         if applet_answer.target_subject_id:
-            target_subject_coro = subject_crud.get_source(
-                user_id=self.user_id,
-                target_id=applet_answer.target_subject_id,
-                applet_id=applet_answer.applet_id,
+            target_subject = await subject_crud.get_by_id(
+                applet_answer.target_subject_id
             )
-            source_subject_coro = subject_crud.get_self_subject(
-                user_id=self.user_id, applet_id=applet_answer.applet_id
-            )
-            target_subject, source_subject = await asyncio.gather(
-                target_subject_coro, source_subject_coro
-            )
+            if (
+                not target_subject
+                or not target_subject.soft_exists()
+                or target_subject.applet_id != applet_answer.applet_id
+            ):
+                raise ValidationError(
+                    f"Subject {applet_answer.target_subject_id} not found"
+                )
         else:
-            target_subject = await subject_crud.get_self_subject(
-                user_id=self.user_id, applet_id=applet_answer.applet_id
+            target_subject = respondent_subject
+
+        if applet_answer.source_subject_id:
+            source_subject = await subject_crud.get_by_id(
+                applet_answer.source_subject_id
             )
-            source_subject = None
-        assert target_subject
-        relation = await subject_crud.get_relation(
-            target_subject.id, self.user_id, applet_answer.applet_id
+            if (
+                not source_subject
+                or not source_subject.soft_exists()
+                or source_subject.applet_id != applet_answer.applet_id
+            ):
+                raise ValidationError(
+                    f"Subject {applet_answer.source_subject_id} not found"
+                )
+        else:
+            source_subject = respondent_subject
+
+        relation = await self._get_answer_relation(
+            respondent_subject, source_subject, target_subject
         )
         answer = await AnswersCRUD(self.answer_session).create(
             AnswerSchema(
@@ -685,7 +736,7 @@ class AnswerService:
             applet_id,
             [Role.OWNER, Role.MANAGER, Role.REVIEWER],
         )
-        user_subject = await SubjectsCrud(self.session).get_self_subject(
+        user_subject = await SubjectsCrud(self.session).get_user_subject(
             self.user_id, applet_id
         )
         assessments_allowed = False

@@ -1,6 +1,7 @@
 import http
 import json
 import uuid
+from copy import copy
 
 import pytest
 from asyncpg import UniqueViolationError
@@ -12,7 +13,7 @@ from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import (
     Subject,
     SubjectCreateRequest,
-    SubjectRespondentCreate,
+    SubjectRelationCreate,
 )
 from apps.subjects.services import SubjectsService
 
@@ -164,9 +165,8 @@ class TestSubjects(BaseTest):
     login_url = "/auth/login"
     subject_list_url = "/subjects"
     subject_detail_url = "/subjects/{subject_id}"
-    subject_respondent_url = "/subjects/{subject_id}/respondents"
-    subject_respondent_details_url = (
-        "/subjects/{subject_id}/respondents/{respondent_id}"
+    subject_relation_url = (
+        "/subjects/{subject_id}/relations/{source_subject_id}"
     )
     answer_url = "/answers"
 
@@ -186,60 +186,73 @@ class TestSubjects(BaseTest):
         assert payload["result"]["userId"] is None
         assert payload["result"]["language"] == "en"
 
-    async def test_add_respondent(self, client, create_shell_body):
-        creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+    async def test_create_relation(self, client, create_shell_body):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.post(
             self.subject_list_url, data=create_shell_body
         )
         subject = response.json()
-        body = SubjectRespondentCreate(
-            user_id=creator_id,
-            subject_id=subject["result"]["id"],
-            applet_id=applet_id,
+
+        source_subject_id = "ee5e2f55-8e32-40af-8ef9-24e332c31d7c"
+        target_subject_id = subject["result"]["id"]
+
+        body = SubjectRelationCreate(
             relation="father",
         )
-        url = self.subject_respondent_url.format(
-            subject_id=subject["result"]["id"]
+        url = self.subject_relation_url.format(
+            subject_id=target_subject_id, source_subject_id=source_subject_id
         )
         res = await client.post(url, body)
         assert res.status_code == http.HTTPStatus.OK
 
     @pytest.mark.parametrize(
-        "subject_id,respondent_id,exp_code",
+        "subject_id,source_subject_id,exp_code",
         (
             (uuid.uuid4(), None, http.HTTPStatus.NOT_FOUND),
             (None, uuid.uuid4(), http.HTTPStatus.NOT_FOUND),
             (None, None, http.HTTPStatus.OK),
         ),
     )
-    async def test_remove_respondent(
-        self, client, create_shell_body, subject_id, respondent_id, exp_code
+    async def test_remove_relation(
+        self,
+        client,
+        create_shell_body,
+        subject_id,
+        source_subject_id,
+        exp_code,
     ):
-        creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.post(
             self.subject_list_url, data=create_shell_body
         )
-        subject = response.json()
-        body = SubjectRespondentCreate(
-            user_id=creator_id,
-            subject_id=subject["result"]["id"],
-            applet_id=applet_id,
+        source_subject = response.json()
+        _source_subject_id = source_subject["result"]["id"]
+
+        payload = copy(create_shell_body)
+        payload.update(
+            {
+                "firstName": "first2",
+                "lastName": "last2",
+                "secretUserId": "secret2",
+            }
+        )
+        response = await client.post(self.subject_list_url, data=payload)
+        target_subject = response.json()
+        _target_subject_id = target_subject["result"]["id"]
+
+        body = SubjectRelationCreate(
             relation="father",
         )
-        url = self.subject_respondent_url.format(
-            subject_id=subject["result"]["id"]
+        url = self.subject_relation_url.format(
+            subject_id=_target_subject_id, source_subject_id=_source_subject_id
         )
-        respondent_res = await client.post(url, body.dict())
-        subject = respondent_res.json()
-        subject_id_ = subject["result"]["id"]
-        respondent_id_ = subject["result"]["subjects"][0]["userId"]
-        url_delete = self.subject_respondent_details_url.format(
-            subject_id=subject_id if subject_id else subject_id_,
-            respondent_id=respondent_id if respondent_id else respondent_id_,
+        await client.post(url, body.dict())
+
+        url_delete = self.subject_relation_url.format(
+            subject_id=subject_id if subject_id else _target_subject_id,
+            source_subject_id=source_subject_id
+            if source_subject_id
+            else _source_subject_id,
         )
         res = await client.delete(url_delete)
         assert res.status_code == exp_code
@@ -329,16 +342,12 @@ class TestSubjects(BaseTest):
 
         assert response.status_code == http.HTTPStatus.CREATED
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
-        res = await client.delete(delete_url, data=dict(
-            deleteAnswers=False
-        ))
+        res = await client.delete(delete_url, data=dict(deleteAnswers=False))
         assert res.status_code == http.HTTPStatus.OK
 
         subject = await SubjectsCrud(session).get_by_id(subject_id)
         assert subject, subject.is_deleted
-        count = await AnswersCRUD(session).count(
-            target_subject_id=subject_id
-        )
+        count = await AnswersCRUD(session).count(target_subject_id=subject_id)
         assert count
 
     async def test_successfully_delete_subject_with_answers(
@@ -356,12 +365,12 @@ class TestSubjects(BaseTest):
         assert res.status_code == http.HTTPStatus.OK
         subject = await SubjectsCrud(session).get_by_id(subject_id)
         assert not subject
-        count = await AnswersCRUD(session).count(
-            target_subject_id=subject_id
-        )
+        count = await AnswersCRUD(session).count(target_subject_id=subject_id)
         assert count == 0
 
-    @pytest.mark.parametrize("email,password,expected", (
+    @pytest.mark.parametrize(
+        "email,password,expected",
+        (
             # Owner
             ("tom@mindlogger.com", "Test1234!", http.HTTPStatus.OK),
             # Manager
@@ -371,29 +380,36 @@ class TestSubjects(BaseTest):
             # Editor
             ("pitbronson@mail.com", "Test1234!", http.HTTPStatus.FORBIDDEN),
             # Reviewer
-            ("billbronson@mail.com", "Test1234!", http.HTTPStatus.FORBIDDEN)
-    ))
+            ("billbronson@mail.com", "Test1234!", http.HTTPStatus.FORBIDDEN),
+        ),
+    )
     async def test_error_try_delete_subject_by_not_owner(
-            self, 
-            session, 
-            client, 
-            answer_create_payload, 
-            mock_kiq_report,
-            email,
-            password,
-            expected
+        self,
+        session,
+        client,
+        answer_create_payload,
+        mock_kiq_report,
+        email,
+        password,
+        expected,
     ):
         subject_id = uuid.UUID("ee5e2f55-8e32-40af-8ef9-24e332c31d7c")
         await client.login(self.login_url, email, password)
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
         res = await client.delete(delete_url, data=dict(deleteAnswers=True))
         assert res.status_code == expected
-        
-    @pytest.mark.parametrize("subject_id,expected_code", (
+
+    @pytest.mark.parametrize(
+        "subject_id,expected_code",
+        (
             ("7484f34a-3acc-4ee6-8a94-fd7299502fa6", http.HTTPStatus.OK),
-            ("ee96b767-4609-4b8b-93c5-e7b15b81c6f7", http.HTTPStatus.FORBIDDEN),
-            (uuid.uuid4(), http.HTTPStatus.NOT_FOUND)
-    ))
+            (
+                "ee96b767-4609-4b8b-93c5-e7b15b81c6f7",
+                http.HTTPStatus.FORBIDDEN,
+            ),
+            (uuid.uuid4(), http.HTTPStatus.NOT_FOUND),
+        ),
+    )
     async def test_get_subject(self, client, subject_id, expected_code):
         await client.login(self.login_url, "reviewer@mail.com", "Test1234!")
         response = await client.get(

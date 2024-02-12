@@ -7,11 +7,11 @@ from apps.shared.domain import (
     Response,
 )
 from apps.subjects.api import (
-    add_respondent,
+    create_relation,
     create_subject,
+    delete_relation,
     delete_subject,
     get_subject,
-    remove_respondent,
     update_subject,
 )
 from apps.subjects.domain import Subject, SubjectFull, SubjectReadResponse
@@ -61,9 +61,8 @@ router.get(
     },
 )(get_subject)
 
-
 router.post(
-    "/{subject_id}/respondents",
+    "/{subject_id}/relations/{source_subject_id}",
     response_model=Response[SubjectFull],
     status_code=status.HTTP_200_OK,
     responses={
@@ -71,11 +70,11 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(add_respondent)
+)(create_relation)
 
 
 router.delete(
-    "/{subject_id}/respondents/{respondent_id}",
+    "/{subject_id}/relations/{source_subject_id}",
     response_model=Response[SubjectFull],
     status_code=status.HTTP_200_OK,
     responses={
@@ -83,4 +82,4 @@ router.delete(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(remove_respondent)
+)(delete_relation)
