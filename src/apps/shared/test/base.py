@@ -15,9 +15,11 @@ class BaseTest:
 
     @pytest.fixture(scope="class", autouse=True)
     async def initialize(self):
-        await self.populate_db()
-        yield
-        await truncate_tables()
+        try:
+            await self.populate_db()
+            yield
+        finally:
+            await truncate_tables()
 
     @pytest.fixture(autouse=True)
     async def clear_mails(self):

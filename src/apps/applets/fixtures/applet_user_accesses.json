@@ -135,22 +135,6 @@
   {
     "table": "user_applet_accesses",
     "fields": {
-      "id": "f0dd4996-e0eb-461f-b2f8-ba873a674767",
-      "created_at": "2023-01-05T15:49:51.752119",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "is_deleted": false,
-      "is_pinned": false,
-      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa6",
-      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "role": "editor",
-      "meta": {}
-    }
-  },
-  {
-    "table": "user_applet_accesses",
-    "fields": {
       "id": "f0dd4996-e0eb-461f-b2f8-ba873a674777",
       "created_at": "2023-01-05T15:49:51.752119",
       "updated_at": "2023-01-05T15:49:51.752113",
@@ -251,26 +235,6 @@
   {
     "table": "user_applet_accesses",
     "fields": {
-      "id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
-      "created_at": "2023-01-05T15:49:51.752112",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "is_deleted": false,
-      "is_pinned": false,
-      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502f00",
-      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "role": "reviewer",
-      "meta": {
-        "subjects": [
-          "7484f34a-3acc-4ee6-8a94-fd7299502fa6"
-        ]
-      }
-    }
-  },
-  {
-    "table": "user_applet_accesses",
-    "fields": {
       "id": "f0dd4996-e0eb-461f-b2f8-ba873a674799",
       "created_at": "2023-01-05T15:49:51.752114",
       "updated_at": "2023-01-05T15:49:51.752113",
@@ -318,35 +282,23 @@
       "meta": {},
       "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA="
     }
-  },{
+  }, {
     "table": "user_applet_accesses",
     "fields": {
-      "id": "4a315044-5aa5-40be-88dd-677c96b3da05",
-      "created_at": "2023-01-05T15:49:51.752113",
+      "id": "d6af0ab2-8b91-42ea-9208-114cab938061",
+      "created_at": "2023-01-05T15:49:51.752114",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
       "is_pinned": false,
-      "user_id": "965f1d93-e64a-4f67-b76b-8427f033a864",
-      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502f00",
       "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
       "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "role": "editor",
-      "meta": {}
-    }
-  },{
-    "table": "user_applet_accesses",
-    "fields": {
-      "id": "9eaf090b-caa7-4b3e-9789-220542753082",
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "is_deleted": false,
-      "is_pinned": false,
-      "user_id": "965f1d93-e64a-4f67-b76b-8427f033a864",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "owner_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "role": "respondent",
-      "meta": {}
+      "role": "reviewer",
+      "meta": {
+        "subjects": ["89ba6774-4f48-4ff1-9d34-0e6efd24f03f"]
+      },
+      "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA="
     }
   }
 ]

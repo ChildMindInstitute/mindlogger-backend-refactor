@@ -12,7 +12,7 @@ from infrastructure.utility import RedisCacheTest
 
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
-        "folders/fixtures/folders.json",
+        # "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
         "applets/fixtures/applet_histories.json",
@@ -158,7 +158,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == 200
 
-    async def test_public_answer_activity_items_create_for_respondent(self, mock_kiq_report, client, tom):
+    async def test_public_answer_activity_items_create_for_respondent(self, mock_kiq_report, client):
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -189,9 +189,7 @@ class TestAnswerActivityItems(BaseTest):
                 height=1080,
             ),
         )
-
         response = await client.post(self.public_answer_url, data=create_data)
-
         assert response.status_code == 201, response.json()
 
     async def test_answer_skippable_activity_items_create_for_respondent(self, mock_kiq_report, client, tom):

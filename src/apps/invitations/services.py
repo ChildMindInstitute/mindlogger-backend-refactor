@@ -351,7 +351,7 @@ class InvitationsService:
             ).reduce_applet_subject_ids(applet_id, subject_ids)
 
             if len(existing_subject_ids) != len(subject_ids):
-                raise ValidationError("Subject does not exist in applet")
+                raise ValidationError("Subject does not exist in applet.")
 
     async def accept(self, key: uuid.UUID) -> None:
         self._user.email_encrypted = cast(str, self._user.email_encrypted)

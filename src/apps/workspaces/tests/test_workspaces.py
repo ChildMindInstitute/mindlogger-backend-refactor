@@ -221,7 +221,7 @@ class TestWorkspaces(BaseTest):
         response = await client.get(self.workspace_applets_url.format(owner_id="00000000-0000-0000-0000-000000000000"))
         assert response.status_code == 404
 
-    async def test_get_workspace_respondents(self, client, tom):
+    async def test_get_workspace_respondents(self, client, tom: UserSchema):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.get(
             self.workspace_respondents_url.format(owner_id=tom.id),
@@ -229,7 +229,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 6
+        assert data["count"] == 5
         assert data["result"][0]["nicknames"]
         assert data["result"][0]["secretIds"]
 
@@ -268,7 +268,7 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 5
+        assert data["count"] == 4
         assert data["result"][0]["nicknames"]
         assert data["result"][0]["secretIds"]
 
@@ -320,7 +320,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 7
+        assert response.json()["count"] == 5
 
         plain_emails = [
             "reviewer@mail.com",
@@ -369,7 +369,7 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 7
+        assert response.json()["count"] == 5
 
         plain_emails = [
             "reviewer@mail.com",

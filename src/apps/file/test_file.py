@@ -30,7 +30,7 @@ class TestAnswerActivityItems(BaseTest):
     file_id = "1693560380000/c60859c4-6f5f-4390-a572-da85fcd59709"
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.upload")
-    async def test_arbitrary_upload_to_s3_aws(self, mock_client: mock.MagicMock, session, client, **kwargs):
+    async def test_arbitrary_upload_to_s3_aws(self, mock_client: mock.MagicMock, session, client,  tom):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         await set_storage_type(StorageType.AWS, session)
 

@@ -20,8 +20,7 @@
     "note": {
       "plain_workspace_name": "Admin"
     }
-  },
-  {
+  },{
     "table": "applets",
     "fields": {
       "id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
@@ -752,6 +751,39 @@
       "updated_at": "2023-01-05T15:49:51.752113",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
       "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa8",
+      "language": "en",
+      "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA=",
+      "secret_user_id": "f0dd4996-e0eb-461f-b2f8-ba873a674788",
+      "email": "mWykF1OYv6Z/KkYLEA8lAbt7GQqBX7Xy57II/r9DqhM=",
+      "first_name": "PWrlro9d6WB767UVp43dNg==",
+      "last_name": "USpl8mH9r0f1/ffBdCO/jw==",
+      "creator_id": "6cde911e-8a57-47c0-b6b2-685b3664f418"
+    }
+  },
+  {
+    "table": "subjects",
+    "fields": {
+      "id": "303d2bc5-5f07-4f7d-b1f9-db3996abf69d",
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
+      "language": "en",
+      "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA=",
+      "secret_user_id": "f0dd4996-e0eb-461f-b2f8-ba873a674788",
+      "email": "mWykF1OYv6Z/KkYLEA8lAbt7GQqBX7Xy57II/r9DqhM=",
+      "first_name": "PWrlro9d6WB767UVp43dNg==",
+      "last_name": "USpl8mH9r0f1/ffBdCO/jw==",
+      "creator_id": "6cde911e-8a57-47c0-b6b2-685b3664f418"
+    }
+  },{
+    "table": "subjects",
+    "fields": {
+      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa0",
+      "created_at": "2023-01-05T15:49:51.752113",
+      "updated_at": "2023-01-05T15:49:51.752113",
+      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b8",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa7",
       "language": "en",
       "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA=",
       "secret_user_id": "f0dd4996-e0eb-461f-b2f8-ba873a674788",

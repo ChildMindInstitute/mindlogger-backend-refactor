@@ -18,3 +18,10 @@ async def user_reviewer_applet_one(user: UserSchema, session: AsyncSession, mock
         return_value={"respondents": ["7484f34a-3acc-4ee6-8a94-fd7299502fa6"]},
     )
     await srv.add_role(user.id, Role.REVIEWER)
+
+
+@pytest.fixture
+async def editor_user_reviewer_applet_one(user: UserSchema, session: AsyncSession, mocker: MockerFixture):
+    applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
+    srv = UserAppletAccessService(session, user.id, applet_id)
+    await srv.add_role(user.id, Role.EDITOR)
