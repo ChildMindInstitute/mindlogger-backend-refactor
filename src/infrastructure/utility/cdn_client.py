@@ -19,8 +19,9 @@ class CDNClient:
         self.env = env
         self.client = self.configure_client(config)
 
-    def generate_key(self, scope, unique, filename):
-        return f"{self.default_container_name}/{scope}/{unique}/{filename}"
+    @classmethod
+    def generate_key(cls, scope, unique, filename):
+        return f"{cls.default_container_name}/{scope}/{unique}/{filename}"
 
     def generate_private_url(self, key):
         return f"s3://{self.config.bucket}/{key}"
@@ -38,6 +39,7 @@ class CDNClient:
             )
         try:
             return boto3.client("s3", region_name=config.region)
+        # TODO: do we need this? If exception is caught self.client will be None
         except KeyError:
             print("CDN configuration is not full")
 
@@ -107,3 +109,7 @@ class CDNClient:
             future = executor.submit(self.client.list_objects, Bucket=self.config.bucket, Prefix=key)
             result = await asyncio.wrap_future(future)
             return result.get("Contents", [])
+
+    def generate_presigned_post(self, key):
+        # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
+        return self.client.generate_presigned_post(self.config.bucket, key, ExpiresIn=self.config.ttl_signed_urls)

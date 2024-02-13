@@ -6,6 +6,9 @@ from apps.file.api.file import (
     answer_upload,
     check_file_uploaded,
     download,
+    generate_presigned_answer_url,
+    generate_presigned_logs_url,
+    generate_presigned_media_url,
     logs_download,
     logs_exist_check,
     logs_upload,
@@ -52,7 +55,6 @@ router.post(
     ),
 )(answer_download)
 
-# router.post("/upload/check")(check_file_uploaded)
 router.post(
     "/{applet_id}/upload/check",
     status_code=status.HTTP_200_OK,
@@ -91,3 +93,6 @@ router.post(
 router.get("/log-file/{user_email}/{device_id}", status_code=status.HTTP_200_OK)(logs_download)
 
 router.post("/log-file/{device_id}/check", status_code=status.HTTP_200_OK)(logs_exist_check)
+router.post("/presigned-media-url", status_code=status.HTTP_200_OK)(generate_presigned_media_url)
+router.post("/{applet_id}/presigned-url", status_code=status.HTTP_200_OK)(generate_presigned_answer_url)
+router.post("/log-file/{device_id}/presigned-url", status_code=status.HTTP_200_OK)(generate_presigned_logs_url)
