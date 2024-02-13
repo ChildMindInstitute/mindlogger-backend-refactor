@@ -27,17 +27,11 @@ from bson.objectid import ObjectId
 
 from apps.girderformindlogger import events
 from apps.girderformindlogger.constants import AccessType, SortDir
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import GirderException, ValidationException
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.collection import Collection
 from apps.girderformindlogger.models.folder import Folder
-from apps.girderformindlogger.utility.progress import (
-    noProgress,
-    setResponseTimeLimit,
-)
+from apps.girderformindlogger.utility.progress import noProgress, setResponseTimeLimit
 
 
 class Assignment(Folder):

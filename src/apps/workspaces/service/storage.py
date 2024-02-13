@@ -15,15 +15,8 @@ class ArbitraryStorage:
         self.region = region
         self.client = None
 
-    def _get_full_path(
-        self, applet_id: uuid.UUID, activity_id: uuid.UUID
-    ) -> str:
-        return (
-            f"{self.workspace_id}/"
-            f"{applet_id}/"
-            f"{activity_id}/"
-            f"{self._get_filename()}"
-        )
+    def _get_full_path(self, applet_id: uuid.UUID, activity_id: uuid.UUID) -> str:
+        return f"{self.workspace_id}/" f"{applet_id}/" f"{activity_id}/" f"{self._get_filename()}"
 
     def _get_filename(self) -> str:
         return "filename"

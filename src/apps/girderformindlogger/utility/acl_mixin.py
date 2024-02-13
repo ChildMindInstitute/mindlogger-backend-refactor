@@ -7,11 +7,7 @@ from bson.py3compat import abc
 
 from ..constants import TEXT_SCORE_SORT_MAX, AccessType
 from ..exceptions import AccessException
-from ..models.model_base import (
-    AccessControlledModel,
-    Model,
-    _permissionClauses,
-)
+from ..models.model_base import AccessControlledModel, Model, _permissionClauses
 from ..utility.model_importer import ModelImporter
 
 

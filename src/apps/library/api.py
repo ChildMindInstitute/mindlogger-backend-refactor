@@ -30,13 +30,9 @@ async def library_share_applet(
     session=Depends(get_session),
 ) -> Response[AppletLibraryFull]:
     async with atomic(session):
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_share_library_access(schema.applet_id)
+        await CheckAccessService(session, user.id).check_applet_share_library_access(schema.applet_id)
 
-        library_item: AppletLibraryFull = await LibraryService(
-            session
-        ).share_applet(schema)
+        library_item: AppletLibraryFull = await LibraryService(session).share_applet(schema)
 
     return Response(result=library_item)
 
@@ -50,21 +46,13 @@ async def library_check_name(
 
 
 async def library_get_all(
-    query_params: QueryParams = Depends(
-        parse_query_params(LibraryQueryParams)
-    ),
+    query_params: QueryParams = Depends(parse_query_params(LibraryQueryParams)),
     session=Depends(get_session),
 ) -> ResponseMulti[PublicLibraryItem]:
-    items: list[PublicLibraryItem] = await LibraryService(
-        session
-    ).get_all_applets(deepcopy(query_params))
-    count = await LibraryService(session).get_applets_count(
-        deepcopy(query_params)
-    )
+    items: list[PublicLibraryItem] = await LibraryService(session).get_all_applets(deepcopy(query_params))
+    count = await LibraryService(session).get_applets_count(deepcopy(query_params))
 
-    items_as_camel: list[PublicLibraryItem] = [
-        model_as_camel_case(item) for item in items
-    ]
+    items_as_camel: list[PublicLibraryItem] = [model_as_camel_case(item) for item in items]
 
     return ResponseMulti(result=items_as_camel, count=count)
 
@@ -74,9 +62,7 @@ async def library_get_by_id(
     session=Depends(get_session),
 ) -> Response[PublicLibraryItem]:
     applet = await LibraryService(session).get_applet_by_id(library_id)
-    return Response(
-        result=model_as_camel_case(PublicLibraryItem(**applet.dict()))
-    )
+    return Response(result=model_as_camel_case(PublicLibraryItem(**applet.dict())))
 
 
 async def library_get_url(
@@ -84,9 +70,7 @@ async def library_get_url(
     session=Depends(get_session),
     user=Depends(get_current_user),
 ) -> Response[AppletLibraryInfo]:
-    await CheckAccessService(session, user.id).check_link_edit_access(
-        applet_id
-    )
+    await CheckAccessService(session, user.id).check_link_edit_access(applet_id)
     info = await LibraryService(session).get_applet_url(applet_id)
 
     return Response(result=info)
@@ -99,9 +83,9 @@ async def library_update(
     user=Depends(get_current_user),
 ) -> Response[AppletLibraryFull]:
     async with atomic(session):
-        library_item: AppletLibraryFull = await LibraryService(
-            session
-        ).update_shared_applet(library_id, schema, user.id)
+        library_item: AppletLibraryFull = await LibraryService(session).update_shared_applet(
+            library_id, schema, user.id
+        )
 
     return Response(result=library_item)
 
@@ -116,9 +100,7 @@ async def cart_get(
     items = await service.filter_cart_items(cart, query_params)
     count = len(cart.cart_items) if cart and cart.cart_items else 0
 
-    items_as_camel: list[PublicLibraryItem] = [
-        model_as_camel_case(item) for item in items
-    ]
+    items_as_camel: list[PublicLibraryItem] = [model_as_camel_case(item) for item in items]
 
     return ResponseMulti(result=items_as_camel, count=count)
 

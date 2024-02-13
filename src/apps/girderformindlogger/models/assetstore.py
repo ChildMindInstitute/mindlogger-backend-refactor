@@ -2,16 +2,10 @@
 import datetime
 
 from apps.girderformindlogger.constants import AssetstoreType, SortDir
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    NoAssetstoreAdapter,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import GirderException, NoAssetstoreAdapter, ValidationException
 from apps.girderformindlogger.models.model_base import Model
 from apps.girderformindlogger.utility import assetstore_utilities
-from apps.girderformindlogger.utility.abstract_assetstore_adapter import (
-    AbstractAssetstoreAdapter,
-)
+from apps.girderformindlogger.utility.abstract_assetstore_adapter import AbstractAssetstoreAdapter
 
 
 class Assetstore(Model):

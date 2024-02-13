@@ -16,11 +16,7 @@ from apps.authentication.domain.token import (
     TokenPayload,
     TokenPurpose,
 )
-from apps.authentication.errors import (
-    AuthenticationError,
-    InvalidCredentials,
-    InvalidRefreshToken,
-)
+from apps.authentication.errors import AuthenticationError, InvalidCredentials, InvalidRefreshToken
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
@@ -40,25 +36,17 @@ async def get_token(
     """Generate the JWT access token."""
     async with atomic(session):
         try:
-            user: User = await AuthenticationService(
-                session
-            ).authenticate_user(user_login_schema)
+            user: User = await AuthenticationService(session).authenticate_user(user_login_schema)
             if user_login_schema.device_id:
-                await UserDeviceService(session, user.id).add_device(
-                    user_login_schema.device_id
-                )
+                await UserDeviceService(session, user.id).add_device(user_login_schema.device_id)
         except UserNotFound:
             raise InvalidCredentials(email=user_login_schema.email)
 
         if user.email_encrypted != user_login_schema.email:
-            user = await UsersCRUD(session).update_encrypted_email(
-                user, user_login_schema.email
-            )
+            user = await UsersCRUD(session).update_encrypted_email(user, user_login_schema.email)
 
     rjti = str(uuid.uuid4())
-    refresh_token = AuthenticationService.create_refresh_token(
-        {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti}
-    )
+    refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
 
     access_token = AuthenticationService.create_access_token(
         {
@@ -102,9 +90,7 @@ async def refresh_access_token(
             raise InvalidRefreshToken() from e
 
         # Check if the token is in the blacklist
-        revoked = await AuthenticationService(session).is_revoked(
-            InternalToken(payload=token_data)
-        )
+        revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data))
         if revoked:
             raise AuthenticationError
 
@@ -115,11 +101,7 @@ async def refresh_access_token(
             }
         )
 
-    return Response(
-        result=Token(
-            access_token=access_token, refresh_token=schema.refresh_token
-        )
-    )
+    return Response(result=Token(access_token=access_token, refresh_token=schema.refresh_token))
 
 
 async def delete_access_token(
@@ -130,14 +112,10 @@ async def delete_access_token(
 ):
     """Add token to the blacklist."""
     async with atomic(session):
-        await AuthenticationService(session).revoke_token(
-            token, TokenPurpose.ACCESS
-        )
+        await AuthenticationService(session).revoke_token(token, TokenPurpose.ACCESS)
     async with atomic(session):
         if schema and schema.device_id:
-            await UserDeviceService(session, user.id).remove_device(
-                schema.device_id
-            )
+            await UserDeviceService(session, user.id).remove_device(schema.device_id)
     return EmptyResponse()
 
 
@@ -148,12 +126,8 @@ async def delete_refresh_token(
 ):
     """Add token to the blacklist."""
     async with atomic(session):
-        await AuthenticationService(session).revoke_token(
-            token, TokenPurpose.REFRESH
-        )
+        await AuthenticationService(session).revoke_token(token, TokenPurpose.REFRESH)
     if schema and schema.device_id:
         async with atomic(session):
-            await UserDeviceService(session, token.payload.sub).remove_device(
-                schema.device_id
-            )
+            await UserDeviceService(session, token.payload.sub).remove_device(schema.device_id)
     return EmptyResponse()

@@ -3,17 +3,8 @@ from datetime import date
 
 from pydantic import NonNegativeInt, validator
 
-from apps.schedule.domain.constants import (
-    AvailabilityType,
-    NotificationTriggerType,
-    PeriodicityType,
-)
-from apps.schedule.domain.schedule import (
-    BaseEvent,
-    BaseNotificationSetting,
-    BasePeriodicity,
-    BaseReminderSetting,
-)
+from apps.schedule.domain.constants import AvailabilityType, NotificationTriggerType, PeriodicityType
+from apps.schedule.domain.schedule import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
 from apps.schedule.errors import HourRangeError, MinuteRangeError
 from apps.shared.domain import PublicModel
 

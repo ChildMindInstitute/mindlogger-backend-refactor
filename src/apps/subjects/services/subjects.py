@@ -90,6 +90,7 @@ class SubjectsService:
             Subject(
                 applet_id=applet_id,
                 creator_id=self.user_id,
+                user_id=anonymous_user.id,
                 first_name=anonymous_user.first_name,
                 last_name=anonymous_user.last_name,
                 secret_user_id=str(uuid.uuid4()),

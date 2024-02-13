@@ -29,9 +29,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
             execution_options=immutabledict({"synchronize_session": False}),
         )
 
-    async def _update_one(
-        self, lookup: str, value: Any, schema: ConcreteSchema
-    ) -> ConcreteSchema:
+    async def _update_one(self, lookup: str, value: Any, schema: ConcreteSchema) -> ConcreteSchema:
         """
         Updates records by lookup and return one record wrapped to schema
         Error cases:
@@ -69,17 +67,12 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
         db_result = await self._execute(query)
         results = db_result.fetchall()
-        return [
-            self.schema_class(**dict(zip(result.keys(), result)))
-            for result in results
-        ]
+        return [self.schema_class(**dict(zip(result.keys(), result))) for result in results]
 
     async def _get(self, key: str, value: Any) -> ConcreteSchema | None:
         """Return only one result by filters"""
 
-        query = select(self.schema_class).where(
-            getattr(self.schema_class, key) == value
-        )
+        query = select(self.schema_class).where(getattr(self.schema_class, key) == value)
         results = await self._execute(query=query)
 
         return results.scalars().one_or_none()
@@ -92,9 +85,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
         return deepcopy(schema)
 
-    async def _create_many(
-        self, schemas: list[ConcreteSchema]
-    ) -> list[ConcreteSchema]:
+    async def _create_many(self, schemas: list[ConcreteSchema]) -> list[ConcreteSchema]:
         """Creates a new instance of the model in the related table"""
         self.session.add_all(schemas)
         await self.session.flush()
@@ -111,11 +102,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
     async def count(self, **filters: Any) -> int:
         query = select(func.count()).select_from(self.schema_class)
         if filters:
-            wheres = [
-                operator.eq(getattr(self.schema_class, k), v)
-                for k, v in filters.items()
-            ]
-
+            wheres = self._build_where_statement(**filters)
             query = query.where(*wheres)
         results = await self._execute(query=query)
 
@@ -123,16 +110,16 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
         if not isinstance(value, int):
             raise Exception(
-                "For some reason count function returned not an integer."
-                f"Value: {value}",
+                "For some reason count function returned not an integer." f"Value: {value}",
             )
 
         return value
 
-    async def _delete(self, key: str, value: Any) -> None:
-        query: Query = delete(self.schema_class).where(
-            getattr(self.schema_class, key) == value
-        )
+    async def _delete(self, **filters: Any) -> None:
+        query: Query = delete(self.schema_class)
+        if filters:
+            wheres = self._build_where_statement(**filters)
+            query = query.where(*wheres)
         await self._execute(query)
 
         return None
@@ -154,3 +141,6 @@ class BaseCRUD(Generic[ConcreteSchema]):
         await self._execute(query)
 
         return None
+
+    def _build_where_statement(self, **filters: Any):
+        return [operator.eq(getattr(self.schema_class, k), v) for k, v in filters.items()]

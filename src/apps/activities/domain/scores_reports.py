@@ -5,10 +5,7 @@ from pydantic import Field, PositiveInt, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
-from apps.activities.domain.custom_validation_subscale import (
-    validate_raw_score_subscale,
-    validate_score_subscale_table,
-)
+from apps.activities.domain.custom_validation_subscale import validate_raw_score_subscale, validate_score_subscale_table
 from apps.activities.errors import (
     DuplicateScoreConditionIdError,
     DuplicateScoreConditionNameError,
@@ -59,9 +56,7 @@ class Score(PublicModel):
             # check if all item names are same as values.id
             item_names = []
             for v in value:
-                item_names += [
-                    condition.item_name for condition in v.conditions
-                ]
+                item_names += [condition.item_name for condition in v.conditions]
             if set(item_names) != {values.get("id")}:
                 raise ScoreConditionItemNameError()
 
@@ -79,9 +74,7 @@ class Score(PublicModel):
 
 class SectionConditionalLogic(PublicModel):
     match: Match = Field(default=Match.ALL)
-    conditions: list[
-        SectionCondition
-    ]  # can be SingleSelection, MultiSelection, Slider, Score, ScoreCondition
+    conditions: list[SectionCondition]  # can be SingleSelection, MultiSelection, Slider, Score, ScoreCondition
 
 
 class Section(PublicModel):
@@ -120,15 +113,9 @@ class ScoresAndReports(PublicModel):
             for score in value:
                 score_condition_names = []
                 if score.conditional_logic:
-                    score_condition_names += [
-                        logic.name for logic in score.conditional_logic
-                    ]
-                    score_condition_ids += [
-                        logic.id for logic in score.conditional_logic
-                    ]
-                if len(score_condition_names) != len(
-                    set(score_condition_names)
-                ):
+                    score_condition_names += [logic.name for logic in score.conditional_logic]
+                    score_condition_ids += [logic.id for logic in score.conditional_logic]
+                if len(score_condition_names) != len(set(score_condition_names)):
                     raise DuplicateScoreConditionNameError()
             if len(score_condition_ids) != len(set(score_condition_ids)):
                 raise DuplicateScoreConditionIdError()
@@ -163,9 +150,7 @@ class SubScaleLookupTable(PublicModel):
     score: str
     raw_score: str
     age: PositiveInt | None = None
-    sex: str | None = Field(
-        default=None, regex="^(M|F)$", description="M or F"
-    )
+    sex: str | None = Field(default=None, regex="^(M|F)$", description="M or F")
     optional_text: str | None = None
 
     @validator("raw_score")
@@ -206,9 +191,7 @@ class TotalScoreTable(PublicModel):
 class SubscaleSetting(PublicModel):
     calculate_total_score: SubscaleCalculationType | None = None
     subscales: list[Subscale] | None = Field(default_factory=list)
-    total_scores_table_data: list[TotalScoreTable] | None = Field(
-        default_factory=list
-    )
+    total_scores_table_data: list[TotalScoreTable] | None = Field(default_factory=list)
 
     @validator("subscales")
     def validate_unique_subscale_names(cls, value):

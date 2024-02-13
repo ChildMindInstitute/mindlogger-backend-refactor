@@ -12,17 +12,11 @@ from dateutil.relativedelta import relativedelta
 
 from apps.girderformindlogger import events
 from apps.girderformindlogger.constants import AccessType
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import GirderException, ValidationException
 
 # from apps.girderformindlogger.external.notification import send_notification
 from apps.girderformindlogger.models.folder import Folder
-from apps.girderformindlogger.models.model_base import (
-    AccessControlledModel,
-    Model,
-)
+from apps.girderformindlogger.models.model_base import AccessControlledModel, Model
 from apps.girderformindlogger.models.profile import Profile
 from apps.girderformindlogger.models.profile import Profile as ProfileModel
 
@@ -30,10 +24,7 @@ from apps.girderformindlogger.models.profile import Profile as ProfileModel
 #     PushNotification as PushNotificationModel,
 # )
 from apps.girderformindlogger.utility.model_importer import ModelImporter
-from apps.girderformindlogger.utility.progress import (
-    noProgress,
-    setResponseTimeLimit,
-)
+from apps.girderformindlogger.utility.progress import noProgress, setResponseTimeLimit
 
 
 class Events(Model):

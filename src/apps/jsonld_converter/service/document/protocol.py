@@ -10,9 +10,7 @@ from apps.jsonld_converter.service.document import (
     ReproActivity,
     StabilityTaskActivity,
 )
-from apps.jsonld_converter.service.document.activity_flow import (
-    ReproActivityFlow,
-)
+from apps.jsonld_converter.service.document.activity_flow import ReproActivityFlow
 from apps.jsonld_converter.service.document.base import (
     CommonFieldsMixin,
     ContainsNestedMixin,
@@ -70,9 +68,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         processed_doc = deepcopy(self.doc_expanded)
         self.ld_version = self._get_ld_version(processed_doc)
         self.ld_schema_version = self._get_ld_schema_version(processed_doc)
-        self.ld_description = self._get_ld_description(
-            processed_doc, drop=True
-        )
+        self.ld_description = self._get_ld_description(processed_doc, drop=True)
         self.ld_about = self._get_ld_about(processed_doc, drop=True)  # TODO
         self.ld_shuffle = self._get_ld_shuffle(processed_doc)
         self.ld_pref_label = self._get_ld_pref_label(processed_doc, drop=True)
@@ -83,22 +79,16 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             processed_doc, "reproschema:streamEnabled", drop=True
         )
 
-        self.report_config = self._get_report_configuration(
-            processed_doc, drop=True
-        )
+        self.report_config = self._get_report_configuration(processed_doc, drop=True)
 
-        properties = self._get_ld_properties_formatted(
-            processed_doc, drop=True
-        )
+        properties = self._get_ld_properties_formatted(processed_doc, drop=True)
         self._to_extra("properties", properties, "fields")
         flow_properties = self._get_ld_properties_formatted(
             processed_doc, key="reproschema:activityFlowProperties", drop=True
         )
         self.properties = {**properties, **flow_properties}
 
-        self.nested_by_order = await self._get_nested_items(
-            processed_doc, drop=True
-        )
+        self.nested_by_order = await self._get_nested_items(processed_doc, drop=True)
         self.flows_by_order = await self._get_nested_items(
             processed_doc,
             attr_container="reproschema:activityFlowOrder",
@@ -126,29 +116,16 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 elif self.ld_retention_type == "indefinitely":
                     self.ld_retention_type = DataRetention.INDEFINITELY
 
-    def _get_report_configuration(
-        self, processed_doc: dict, *, drop=False
-    ) -> dict:
-        report_config = self.attr_processor.get_attr_list(
-            processed_doc, "reproschema:reportConfigs", drop=drop
-        )
+    def _get_report_configuration(self, processed_doc: dict, *, drop=False) -> dict:
+        report_config = self.attr_processor.get_attr_list(processed_doc, "reproschema:reportConfigs", drop=drop)
         cfg = {}
         for obj in report_config or []:
             name = self.attr_processor.get_attr_value(obj, "schema:name")
             if name == "emailRecipients":
-                ld_recipients = self.attr_processor.get_attr_list(
-                    obj, "schema:value"
-                )
-                value = list(
-                    {
-                        recipient.get(LdKeyword.value)
-                        for recipient in ld_recipients or []
-                    }
-                )
+                ld_recipients = self.attr_processor.get_attr_list(obj, "schema:value")
+                value = list({recipient.get(LdKeyword.value) for recipient in ld_recipients or []})
             elif name == "emailBody":  # TODO add translations to extra
-                value = self.attr_processor.get_translation(
-                    obj, "schema:value", self.lang
-                )
+                value = self.attr_processor.get_translation(obj, "schema:value", self.lang)
             else:
                 value = self.attr_processor.get_attr_value(obj, "schema:value")
             cfg[name] = value
@@ -156,14 +133,10 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         return cfg
 
     def _get_ld_watermark(self, doc: dict, drop=False):
-        return self.attr_processor.get_attr_single(
-            doc, "schema:watermark", ld_key=LdKeyword.id, drop=drop
-        )
+        return self.attr_processor.get_attr_single(doc, "schema:watermark", ld_key=LdKeyword.id, drop=drop)
 
     def _get_ld_shuffle(self, doc: dict, drop=False):
-        return self.attr_processor.get_attr_value(
-            doc, "reproschema:shuffle", drop=drop
-        )
+        return self.attr_processor.get_attr_value(doc, "reproschema:shuffle", drop=drop)
 
     def _get_ld_about(self, doc: dict, drop=False):
         about = super()._get_ld_about(doc, drop=drop)
@@ -172,26 +145,16 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
                 doc, "reproschema:landingPageContent", drop=drop
             )
             if landing_page_content:
-                landing_page_type = self.attr_processor.get_attr_value(
-                    doc, "reproschema:landingPageType", drop=drop
-                )
+                landing_page_type = self.attr_processor.get_attr_value(doc, "reproschema:landingPageType", drop=drop)
                 if landing_page_type == "image":
-                    return {
-                        lang: self._wrap_wysiwyg_img(url)
-                        for lang, url in landing_page_content.items()
-                        if url
-                    }
+                    return {lang: self._wrap_wysiwyg_img(url) for lang, url in landing_page_content.items() if url}
                 return landing_page_content
 
         return about
 
-    async def _get_nested_items(
-        self, doc: dict, drop=False, attr_container="reproschema:order"
-    ) -> list:
+    async def _get_nested_items(self, doc: dict, drop=False, attr_container="reproschema:order") -> list:
         nested_items = []
-        if items := self.attr_processor.get_attr_list(
-            doc, attr_container, drop=drop
-        ):
+        if items := self.attr_processor.get_attr_list(doc, attr_container, drop=drop):
             nested = await asyncio.gather(
                 *[self._load_nested_doc(item) for item in items],
                 return_exceptions=True,
@@ -205,9 +168,7 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
         return nested_items
 
     async def _load_nested_doc(self, doc: dict):
-        node = await self.load_supported_document(
-            doc, self.base_url, self.settings
-        )
+        node = await self.load_supported_document(doc, self.base_url, self.settings)
         # override from properties
         if node.ld_id in self.properties:
             for prop, val in self.properties[node.ld_id].items():

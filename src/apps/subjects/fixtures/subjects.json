@@ -23,28 +23,6 @@
   {
     "table": "subjects",
     "fields": {
-      "id": "d552a73e-0dfe-41ee-9602-49d85994b1cb",
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa7",
-      "language": "en",
-      "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA=",
-      "secret_user_id": "7d31e08b-f552-45c2-a0f3-fcac9251685b",
-      "email": "wR8cW30TKhQwbCCddfawUoOe1rXUZYBl4bmgF7NWDu+qbYXlU9Qjcxb+AJugpF9+",
-      "first_name": "xjYl6DpzZ1uq+KofwSTn7w==",
-      "last_name": "YRCR7GN7zM6TsUQOSLMmvw==",
-      "creator_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-    },
-    "note": {
-      "plain_first_name": "first_name",
-      "plain_last_name": "last_name",
-      "plan_email": "mike@gmail.com"
-    }
-  },
-  {
-    "table": "subjects",
-    "fields": {
       "id": "89ba6774-4f48-4ff1-9d34-0e6efd24f03f",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
@@ -110,14 +88,14 @@
   },{
     "table": "subjects",
     "fields": {
-      "id": "7484f34a-3acc-4ee6-8a94-fd7299502fa6",
+      "id": "f07ccfd2-20b0-4fdb-8c9c-73dd90784db8",
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa6",
+      "user_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa7",
       "language": "en",
       "nickname": "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA=",
-      "secret_user_id": "2f04d02e-9f75-4405-a17b-3004a747d079",
+      "secret_user_id": "0bb3032b-8bd4-48f6-8a00-92ca43d658b0",
       "email": "G/fUWdjS0euNqM0EuhcsKQ==",
       "first_name": "G3pm+lDvNouDFrSGQx6myg==",
       "last_name": "qZ9yEVQaDanvs9mB58OQQw==",
@@ -126,7 +104,7 @@
     "note": {
       "plain_first_name": "first_name",
       "plain_last_name": "last_name",
-      "plan_email": "plan_email"
+      "plan_email": "mike@gmail.com"
     }
   }
 ]

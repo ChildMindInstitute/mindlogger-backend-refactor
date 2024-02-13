@@ -1,11 +1,7 @@
 import pytest
 
 from apps.activities.domain.conditional_logic import Match
-from apps.activities.domain.conditions import (
-    ConditionType,
-    EqualCondition,
-    ValuePayload,
-)
+from apps.activities.domain.conditions import ConditionType, EqualCondition, ValuePayload
 from apps.activities.domain.scores_reports import (
     CalculationType,
     ReportType,

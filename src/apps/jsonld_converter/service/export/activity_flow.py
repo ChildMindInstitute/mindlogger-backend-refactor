@@ -26,9 +26,7 @@ class ActivityFlowExport(BaseModelExport):
         return await self._post_process(doc, expand)
 
     def _build_ui_prop(self, model: FlowFull) -> dict:
-        order = [
-            f"_:{item.activity_id}" for item in model.items
-        ]  # TODO load activity with ld_id
+        order = [f"_:{item.activity_id}" for item in model.items]  # TODO load activity with ld_id
         return {
             "order": order,
         }

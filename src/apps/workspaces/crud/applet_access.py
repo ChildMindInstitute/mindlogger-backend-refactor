@@ -7,19 +7,14 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.users import UserSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.domain.user_applet_access import (
-    RespondentExportData,
-    SubjectExportData,
-)
+from apps.workspaces.domain.user_applet_access import RespondentExportData, SubjectExportData
 from infrastructure.database import BaseCRUD
 
 
 class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     schema_class = UserAppletAccessSchema
 
-    async def has_role(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role
-    ) -> bool:
+    async def has_role(self, applet_id: uuid.UUID, user_id: uuid.UUID, role: Role) -> bool:
         query: Query = select(UserAppletAccessSchema.id)
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -59,9 +54,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.user_id == user_id)
         query = query.where(
             or_(
-                UserAppletAccessSchema.role.in_(
-                    [Role.OWNER, Role.MANAGER, Role.RESPONDENT]
-                ),
+                UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER, Role.RESPONDENT]),
                 and_(
                     UserAppletAccessSchema.role == Role.REVIEWER,
                     func.json_array_length(
@@ -153,9 +146,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
 
-    async def can_set_retention(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ):
+    async def can_set_retention(self, applet_id: uuid.UUID, user_id: uuid.UUID):
         """
         1. Set retention of an applet
         """
@@ -163,17 +154,13 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)
-        query = query.where(
-            UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER])
-        )
+        query = query.where(UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER]))
         query = query.exists()
 
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
 
-    async def can_invite_anyone(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ):
+    async def can_invite_anyone(self, applet_id: uuid.UUID, user_id: uuid.UUID):
         """
         Organizer [Manager, Coordinator, Editor, Reviewer]
         1. invite new organizer to lower role
@@ -190,9 +177,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(select(query))
         return db_result.scalars().first()
 
-    async def can_set_schedule_and_notifications(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ):
+    async def can_set_schedule_and_notifications(self, applet_id: uuid.UUID, user_id: uuid.UUID):
         """
         1. set schedule and notifications to respondents
         """
@@ -211,9 +196,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         1. view assigned users data
         2. export assigned users data
         """
-        query: Query = select(
-            UserAppletAccessSchema.role, UserAppletAccessSchema.meta
-        )
+        query: Query = select(UserAppletAccessSchema.role, UserAppletAccessSchema.meta)
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.user_id == user_id)

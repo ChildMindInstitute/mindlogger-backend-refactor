@@ -7,12 +7,7 @@ from apps.activities.errors import (
     InvalidScoreLengthError,
     MinValueError,
 )
-from apps.shared.domain import (
-    PublicModel,
-    validate_color,
-    validate_image,
-    validate_uuid,
-)
+from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
 
 
 class TextValues(PublicModel):
@@ -112,10 +107,7 @@ class SliderValueAlert(PublicModel):
 
     @root_validator()
     def validate_min_max_values(cls, values):
-        if (
-            values.get("min_value") is not None
-            and values.get("max_value") is not None
-        ):
+        if values.get("min_value") is not None and values.get("max_value") is not None:
             if values.get("min_value") >= values.get("max_value"):
                 raise MinValueError()
         return values
@@ -148,10 +140,7 @@ class SliderValues(PublicModel):
         # length of scores must be equal to max_value - min_value + 1
         scores = values.get("scores", [])
         if scores:
-            if (
-                len(scores)
-                != values.get("max_value") - values.get("min_value") + 1
-            ):
+            if len(scores) != values.get("max_value") - values.get("min_value") + 1:
                 raise InvalidScoreLengthError()
         return values
 
@@ -315,10 +304,7 @@ def validate_options_value(options):
         if option.value is None:
             option.value = (
                 max(
-                    [
-                        option.value if option.value is not None else -1
-                        for option in options
-                    ],
+                    [option.value if option.value is not None else -1 for option in options],
                     default=-1,
                 )
                 + 1

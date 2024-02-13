@@ -11,15 +11,8 @@ from apps.applets.db.schemas import AppletSchema
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.schedule.domain.schedule.filters import EventQueryParams
-from apps.schedule.domain.schedule.public import (
-    PublicEvent,
-    PublicEventByUser,
-    PublicEventCount,
-)
-from apps.schedule.domain.schedule.requests import (
-    EventRequest,
-    EventUpdateRequest,
-)
+from apps.schedule.domain.schedule.public import PublicEvent, PublicEventByUser, PublicEventCount
+from apps.schedule.domain.schedule.requests import EventRequest, EventUpdateRequest
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.link import convert_link_key
@@ -45,22 +38,24 @@ async def schedule_create(
     applet_service = AppletService(session, user.id)
     async with atomic(session):
         await applet_service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_schedule_create_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
         schedule = await service.create_schedule(schema, applet_id)
 
     try:
-        await applet_service.send_notification_to_applet_respondents(
-            applet_id,
-            "Your schedule has been changed, click to update.",
-            "Your schedule has been changed, click to update.",
-            FirebaseNotificationType.SCHEDULE_UPDATED,
-            respondent_ids=[schedule.respondent_id]
-            if schedule.respondent_id
-            else None,
-        )
+        respondent_ids = None
+        if schedule.respondent_id:
+            respondent_ids = [schedule.respondent_id]
+        else:
+            respondent_ids = await service.get_default_respondents(applet_id)
+        if respondent_ids:
+            await applet_service.send_notification_to_applet_respondents(
+                applet_id,
+                "Your schedule has been changed, click to update.",
+                "Your schedule has been changed, click to update.",
+                FirebaseNotificationType.SCHEDULE_UPDATED,
+                respondent_ids=respondent_ids,
+            )
     except FirebaseError as e:
         # mute error
         logger.exception(e)
@@ -77,9 +72,7 @@ async def schedule_get_by_id(
     """Get a schedule by id."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        schedule = await ScheduleService(session).get_schedule_by_id(
-            applet_id=applet_id, schedule_id=schedule_id
-        )
+        schedule = await ScheduleService(session).get_schedule_by_id(applet_id=applet_id, schedule_id=schedule_id)
     return Response(result=PublicEvent(**schedule.dict()))
 
 
@@ -94,15 +87,9 @@ async def schedule_get_all(
     is not provided, it will return only general events for the applet."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        schedules = await ScheduleService(session).get_all_schedules(
-            applet_id, deepcopy(query_params)
-        )
+        schedules = await ScheduleService(session).get_all_schedules(applet_id, deepcopy(query_params))
 
-    roles: set = set(
-        await UserAppletAccessCRUD(session).get_user_roles_to_applet(
-            user.id, applet_id
-        )
-    )
+    roles: set = set(await UserAppletAccessCRUD(session).get_user_roles_to_applet(user.id, applet_id))
     accessed_roles: set = {
         Role.SUPER_ADMIN.value,
         Role.OWNER.value,
@@ -122,9 +109,7 @@ async def public_schedule_get_all(
     """Get all schedules for an applet."""
     key_guid = convert_link_key(key)
     async with atomic(session):
-        schedules = await ScheduleService(session).get_public_all_schedules(
-            key_guid
-        )
+        schedules = await ScheduleService(session).get_public_all_schedules(key_guid)
 
     return Response(result=schedules)
 
@@ -138,19 +123,20 @@ async def schedule_delete_all(
     applet_service = AppletService(session, user.id)
     async with atomic(session):
         await applet_service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_schedule_create_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
         await service.delete_all_schedules(applet_id)
 
     try:
-        await applet_service.send_notification_to_applet_respondents(
-            applet_id,
-            "Your schedule has been changed, click to update.",
-            "Your schedule has been changed, click to update.",
-            FirebaseNotificationType.SCHEDULE_UPDATED,
-        )
+        respondent_ids = await service.get_default_respondents(applet_id)
+        if respondent_ids:
+            await applet_service.send_notification_to_applet_respondents(
+                applet_id,
+                "Your schedule has been changed, click to update.",
+                "Your schedule has been changed, click to update.",
+                FirebaseNotificationType.SCHEDULE_UPDATED,
+                respondent_ids=respondent_ids,
+            )
     except FirebaseError as e:
         # mute error
         logger.exception(e)
@@ -166,22 +152,25 @@ async def schedule_delete_by_id(
     applet_service = AppletService(session, user.id)
     async with atomic(session):
         await applet_service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_schedule_create_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
-        respondent_id = await service.delete_schedule_by_id(
-            schedule_id, applet_id
-        )
+        respondent_id = await service.delete_schedule_by_id(schedule_id, applet_id)
 
     try:
-        await applet_service.send_notification_to_applet_respondents(
-            applet_id,
-            "Your schedule has been changed, click to update.",
-            "Your schedule has been changed, click to update.",
-            FirebaseNotificationType.SCHEDULE_UPDATED,
-            respondent_ids=[respondent_id] if respondent_id else None,
-        )
+        respondent_ids = None
+        if respondent_id:
+            respondent_ids = [respondent_id]
+        else:
+            respondent_ids = await service.get_default_respondents(applet_id)
+
+        if respondent_ids:
+            await applet_service.send_notification_to_applet_respondents(
+                applet_id,
+                "Your schedule has been changed, click to update.",
+                "Your schedule has been changed, click to update.",
+                FirebaseNotificationType.SCHEDULE_UPDATED,
+                respondent_ids=respondent_ids,
+            )
     except FirebaseError as e:
         # mute error
         logger.exception(e)
@@ -198,24 +187,25 @@ async def schedule_update(
     applet_service = AppletService(session, user.id)
     async with atomic(session):
         await applet_service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_schedule_create_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
-        schedule = await service.update_schedule(
-            applet_id, schedule_id, schema
-        )
+        schedule = await service.update_schedule(applet_id, schedule_id, schema)
 
     try:
-        await applet_service.send_notification_to_applet_respondents(
-            applet_id,
-            "Your schedule has been changed, click to update.",
-            "Your schedule has been changed, click to update.",
-            FirebaseNotificationType.SCHEDULE_UPDATED,
-            respondent_ids=[schedule.respondent_id]
-            if schedule.respondent_id
-            else None,
-        )
+        respondent_ids = None
+        if schedule.respondent_id:
+            respondent_ids = [schedule.respondent_id]
+        else:
+            respondent_ids = await service.get_default_respondents(applet_id)
+
+        if respondent_ids:
+            await applet_service.send_notification_to_applet_respondents(
+                applet_id,
+                "Your schedule has been changed, click to update.",
+                "Your schedule has been changed, click to update.",
+                FirebaseNotificationType.SCHEDULE_UPDATED,
+                respondent_ids=respondent_ids,
+            )
     except FirebaseError as e:
         # mute error
         logger.exception(e)
@@ -231,9 +221,7 @@ async def schedule_count(
     """Get the count of schedules for an applet."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        count: PublicEventCount = await ScheduleService(
-            session
-        ).count_schedules(applet_id)
+        count: PublicEventCount = await ScheduleService(session).count_schedules(applet_id)
     return Response(result=count)
 
 
@@ -247,13 +235,9 @@ async def schedule_delete_by_user(
     applet_service = AppletService(session, user.id)
     async with atomic(session):
         await applet_service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_schedule_create_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
-        await service.delete_by_user_id(
-            applet_id=applet_id, user_id=respondent_id
-        )
+        await service.delete_by_user_id(applet_id=applet_id, user_id=respondent_id)
 
     try:
         await applet_service.send_notification_to_applet_respondents(
@@ -274,12 +258,8 @@ async def schedule_get_all_by_user(
 ) -> ResponseMulti[PublicEventByUser]:
     """Get all schedules for a user."""
     async with atomic(session):
-        schedules = await ScheduleService(session).get_events_by_user(
-            user_id=user.id
-        )
-        count = await ScheduleService(session).count_events_by_user(
-            user_id=user.id
-        )
+        schedules = await ScheduleService(session).get_events_by_user(user_id=user.id)
+        count = await ScheduleService(session).count_events_by_user(user_id=user.id)
     return ResponseMulti(result=schedules, count=count)
 
 
@@ -291,9 +271,7 @@ async def schedule_get_all_by_respondent_user(
     max_date_from_event_delta_days = 15
     min_date_to_event_delta_days = 2
     today: date = date.today()
-    max_start_date: date = today + timedelta(
-        days=max_date_from_event_delta_days
-    )
+    max_start_date: date = today + timedelta(days=max_date_from_event_delta_days)
     min_end_date: date = today - timedelta(days=min_date_to_event_delta_days)
 
     async with atomic(session):
@@ -303,9 +281,7 @@ async def schedule_get_all_by_respondent_user(
             filters={"roles": Role.RESPONDENT, "flat_list": False},
             limit=10000,
         )
-        applets: list[AppletSchema] = await AppletsCRUD(
-            session
-        ).get_applets_by_roles(
+        applets: list[AppletSchema] = await AppletsCRUD(session).get_applets_by_roles(
             user_id=user.id,
             roles=[Role.RESPONDENT],
             query_params=query_params,
@@ -330,9 +306,7 @@ async def schedule_get_by_user(
     """Get all schedules for a respondent per applet id."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        schedules = await ScheduleService(
-            session
-        ).get_events_by_user_and_applet(user_id=user.id, applet_id=applet_id)
+        schedules = await ScheduleService(session).get_events_by_user_and_applet(user_id=user.id, applet_id=applet_id)
     return Response(result=schedules)
 
 
@@ -346,13 +320,9 @@ async def schedule_remove_individual_calendar(
     applet_service = AppletService(session, user.id)
     async with atomic(session):
         await applet_service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_schedule_create_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
-        await service.remove_individual_calendar(
-            applet_id=applet_id, user_id=respondent_id
-        )
+        await service.remove_individual_calendar(applet_id=applet_id, user_id=respondent_id)
     try:
         await applet_service.send_notification_to_applet_respondents(
             applet_id,
@@ -377,9 +347,7 @@ async def schedule_import(
     """Create a new event for an applet."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        schedules = await ScheduleService(session).import_schedule(
-            schemas, applet_id
-        )
+        schedules = await ScheduleService(session).import_schedule(schemas, applet_id)
     return ResponseMulti(
         result=schedules,
         count=len(schedules),
@@ -398,13 +366,9 @@ async def schedule_create_individual(
     applet_service = AppletService(session, user.id)
     async with atomic(session):
         await applet_service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_schedule_create_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
-        schedules = await service.create_schedule_individual(
-            applet_id, respondent_id
-        )
+        schedules = await service.create_schedule_individual(applet_id, respondent_id)
 
     try:
         await applet_service.send_notification_to_applet_respondents(

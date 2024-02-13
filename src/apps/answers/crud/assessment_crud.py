@@ -12,19 +12,13 @@ class AssessmentCRUD(AnswerItemsCRUD):
     async def get_all_assessments_data(
         self,
     ) -> list[tuple[AnswerItemSchema, uuid.UUID, str]]:
-        query: Query = select(
-            AnswerItemSchema, AnswerSchema.applet_id, AnswerSchema.version
-        )
-        query = query.join(
-            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
-        )
+        query: Query = select(AnswerItemSchema, AnswerSchema.applet_id, AnswerSchema.version)
+        query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
         query = query.where(AnswerItemSchema.is_assessment.is_(True))
         result = await self._execute(query)
         return result.all()  # noqa
 
-    async def _get_assessment_by_applet(
-        self, applet_id: uuid.UUID
-    ) -> uuid.UUID | None:
+    async def _get_assessment_by_applet(self, applet_id: uuid.UUID) -> uuid.UUID | None:
         query: Query = select(ActivitySchema.id)
         query = query.where(
             ActivitySchema.applet_id == applet_id,
@@ -52,9 +46,7 @@ class AssessmentCRUD(AnswerItemsCRUD):
             activity_id_version = f"{activity_id}_{version}"
             is_valid = await self._check_activity_version(activity_id_version)
             if not is_valid:
-                print(
-                    f"Assessment version {activity_id_version} does not exist"
-                )
+                print(f"Assessment version {activity_id_version} does not exist")
                 continue
             answer.assessment_activity_id = activity_id_version
             print(f"{answer.id=} {applet_id=} {activity_id_version}")

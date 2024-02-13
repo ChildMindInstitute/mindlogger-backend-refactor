@@ -3,11 +3,7 @@ from typing import Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.file.services import (
-    AzurePresignService,
-    GCPPresignService,
-    S3PresignService,
-)
+from apps.file.services import AzurePresignService, GCPPresignService, S3PresignService
 from apps.workspaces.constants import StorageType
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role

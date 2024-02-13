@@ -43,9 +43,7 @@ async def create_report(
             if arb_uri:
                 arb_session_maker = session_manager.get_session(arb_uri)
                 async with arb_session_maker() as arb_session:
-                    response = await _create_report(
-                        submit_id, answer_id, session, arb_session
-                    )
+                    response = await _create_report(submit_id, answer_id, session, arb_session)
             else:
                 response = await _create_report(submit_id, answer_id, session)
 

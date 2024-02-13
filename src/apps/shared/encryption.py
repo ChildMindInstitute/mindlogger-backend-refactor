@@ -10,13 +10,9 @@ from config import settings
 
 
 def generate_iv(unique_identifier: str, output_length=16) -> bytes:
-    cipher = Cipher(
-        algorithms.AES(settings.secrets.key), modes.CFB(settings.secrets.iv)
-    )
+    cipher = Cipher(algorithms.AES(settings.secrets.key), modes.CFB(settings.secrets.iv))
     encryptor = cipher.encryptor()
-    return (
-        encryptor.update(unique_identifier.encode()) + encryptor.finalize()
-    )[:output_length]
+    return (encryptor.update(unique_identifier.encode()) + encryptor.finalize())[:output_length]
 
 
 def encrypt(
@@ -45,9 +41,7 @@ def get_key() -> bytes:
     return settings.secrets.key
 
 
-def generate_dh_user_private_key(
-    user_id: uuid.UUID, email: str, password: str
-) -> list:
+def generate_dh_user_private_key(user_id: uuid.UUID, email: str, password: str) -> list:
     key1 = hashlib.sha512((password + email).encode()).digest()
     key2 = hashlib.sha512((str(user_id) + email).encode()).digest()
 
@@ -64,9 +58,7 @@ def generate_dh_public_key(private_key: list, prime: list, base: list) -> list:
     return list(key)
 
 
-def generate_dh_aes_key(
-    private_key: list, public_key: list, prime: list
-) -> list:
+def generate_dh_aes_key(private_key: list, public_key: list, prime: list) -> list:
     p = int.from_bytes(bytes(prime), "big")
     a = int.from_bytes(bytes(private_key), "big")
     b = int.from_bytes(bytes(public_key), "big")
@@ -77,9 +69,7 @@ def generate_dh_aes_key(
     return list(key)
 
 
-def encrypt_cbc(
-    key: bytes, data: bytes, iv: bytes | None = None
-) -> tuple[bytes, bytes]:
+def encrypt_cbc(key: bytes, data: bytes, iv: bytes | None = None) -> tuple[bytes, bytes]:
     """
 
     @param key: AES key

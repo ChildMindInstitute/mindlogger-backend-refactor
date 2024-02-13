@@ -28,14 +28,10 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         return instances
 
     async def delete_by_applet_id(self, applet_id: uuid.UUID):
-        query = delete(ActivitySchema).where(
-            ActivitySchema.applet_id == applet_id
-        )
+        query = delete(ActivitySchema).where(ActivitySchema.applet_id == applet_id)
         await self._execute(query)
 
-    async def get_by_applet_id(
-        self, applet_id: uuid.UUID, is_reviewable=None
-    ) -> list[ActivitySchema]:
+    async def get_by_applet_id(self, applet_id: uuid.UUID, is_reviewable=None) -> list[ActivitySchema]:
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)
         if isinstance(is_reviewable, bool):
@@ -44,9 +40,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_mobile_with_items_by_applet_id(
-        self, applet_id: uuid.UUID, is_reviewable=None
-    ) -> list:
+    async def get_mobile_with_items_by_applet_id(self, applet_id: uuid.UUID, is_reviewable=None) -> list:
         query: Query = select(
             ActivitySchema.id,
             ActivitySchema.name,
@@ -76,9 +70,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         return activity
 
     # Get by applet id and activity id
-    async def get_by_applet_id_and_activity_id(
-        self, applet_id: uuid.UUID, activity_id: uuid.UUID
-    ) -> ActivitySchema:
+    async def get_by_applet_id_and_activity_id(self, applet_id: uuid.UUID, activity_id: uuid.UUID) -> ActivitySchema:
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)
         query = query.where(ActivitySchema.id == activity_id)
@@ -86,9 +78,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         result = await self._execute(query)
         return result.scalars().first()
 
-    async def get_ids_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> list[uuid.UUID]:
+    async def get_ids_by_applet_id(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
         query: Query = select(ActivitySchema.id)
         query = query.where(ActivitySchema.applet_id == applet_id)
         result = await self._execute(query)

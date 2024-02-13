@@ -46,8 +46,8 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
     async def update_by_id(self, schema: SubjectSchema) -> SubjectSchema:
         return await self._update_one("id", schema.id, schema)
 
-    async def delete(self, pk: uuid.UUID):
-        return await self._delete("id", pk)
+    async def delete(self, id_: uuid.UUID):
+        return await self._delete(id=id_)
 
     async def is_secret_id_exist(
         self, secret_id: str, applet_id: uuid.UUID, email: str | None

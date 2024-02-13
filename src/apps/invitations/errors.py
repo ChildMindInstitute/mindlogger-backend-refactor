@@ -1,11 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import (
-    AccessDeniedError,
-    FieldError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import AccessDeniedError, FieldError, NotFoundError, ValidationError
 
 
 class InvitationDoesNotExist(NotFoundError):
@@ -29,7 +24,7 @@ class NonUniqueValue(ValidationError):
 
 
 class RespondentDoesNotExist(ValidationError):
-    message = _("Respondent does not exist in applet.")
+    message = _("Subject does not exist in applet.")
 
 
 class RespondentsNotSet(ValidationError):

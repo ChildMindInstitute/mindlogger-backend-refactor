@@ -5,20 +5,9 @@ import os
 
 from bson.objectid import ObjectId
 
-from apps.girderformindlogger.constants import (
-    DEFINED_RELATIONS,
-    PROFILE_FIELDS,
-    AccessType,
-    SortDir,
-)
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ValidationException,
-)
-from apps.girderformindlogger.models.aes_encrypt import (
-    AccessControlledModel,
-    AESEncryption,
-)
+from apps.girderformindlogger.constants import DEFINED_RELATIONS, PROFILE_FIELDS, AccessType, SortDir
+from apps.girderformindlogger.exceptions import AccessException, ValidationException
+from apps.girderformindlogger.models.aes_encrypt import AccessControlledModel, AESEncryption
 from apps.girderformindlogger.models.profile import Profile
 from apps.girderformindlogger.utility.progress import noProgress
 

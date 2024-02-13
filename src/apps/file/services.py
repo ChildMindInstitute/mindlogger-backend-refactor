@@ -32,10 +32,10 @@ def mongoid_to_uuid(id_):
 class S3PresignService:
     key_pattern = r"s3:\/\/[^\/]+\/"
     legacy_file_url_pattern = r"s3:\/\/[a-zA-Z0-9-]+\/[0-9a-fA-F]+\/[0-9a-fA-F]+\/[0-9a-fA-F]+(\/[a-zA-Z0-9.-]*)?"  # noqa
-    regular_file_url_pattern = r"s3:\/\/[a-zA-Z0-9.-]+\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+\/[a-f0-9-]+\/[a-f0-9-]+\/[a-zA-Z0-9-]+"  # noqa
-    check_access_to_regular_url_pattern = (
-        r"\/([0-9a-fA-F-]+)\/([0-9a-fA-F-]+)\/"
+    regular_file_url_pattern = (
+        r"s3:\/\/[a-zA-Z0-9.-]+\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+\/[a-f0-9-]+\/[a-f0-9-]+\/[a-zA-Z0-9-]+"  # noqa
     )
+    check_access_to_regular_url_pattern = r"\/([0-9a-fA-F-]+)\/([0-9a-fA-F-]+)\/"
     check_access_to_legacy_url_pattern = r"\/([0-9a-fA-F]+)\/([0-9a-fA-F]+)\/"
 
     def __init__(
@@ -51,13 +51,9 @@ class S3PresignService:
         self.access = access
 
     async def get_regular_client(self) -> CDNClient:
-        return await select_storage(
-            applet_id=self.applet_id, session=self.session
-        )
+        return await select_storage(applet_id=self.applet_id, session=self.session)
 
-    async def get_legacy_client(
-        self, info: WorkspaceArbitrary | None
-    ) -> CDNClient:
+    async def get_legacy_client(self, info: WorkspaceArbitrary | None) -> CDNClient:
         if not info:
             return await get_legacy_bucket()
         else:
@@ -71,12 +67,8 @@ class S3PresignService:
             if not await self._check_access_to_legacy_url(url):
                 return url
             key = self._get_key(url)
-            wsp_service = workspace.WorkspaceService(
-                self.session, self.user_id
-            )
-            arbitrary_info = await wsp_service.get_arbitrary_info(
-                self.applet_id
-            )
+            wsp_service = workspace.WorkspaceService(self.session, self.user_id)
+            arbitrary_info = await wsp_service.get_arbitrary_info(self.applet_id)
             legacy_cdn_client = await self.get_legacy_client(arbitrary_info)
             return await legacy_cdn_client.generate_presigned_url(key)
         elif self._is_regular_file_url_format(url):
@@ -140,12 +132,12 @@ class S3PresignService:
 class GCPPresignService(S3PresignService):
     key_pattern = r"gs:\/\/[^\/]+\/"
     legacy_file_url_pattern = r"gs:\/\/[a-zA-Z0-9-]+\/[0-9a-fA-F]+\/[0-9a-fA-F]+\/[0-9a-fA-F]+(\/[a-zA-Z0-9.-]*)?"  # noqa
-    regular_file_url_pattern = r"gs:\/\/[a-zA-Z0-9.-]+\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+\/[a-f0-9-]+\/[a-f0-9-]+\/[a-zA-Z0-9-]+"  # noqa
+    regular_file_url_pattern = (
+        r"gs:\/\/[a-zA-Z0-9.-]+\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+\/[a-f0-9-]+\/[a-f0-9-]+\/[a-zA-Z0-9-]+"  # noqa
+    )
 
     async def _presign(self, url: str | None):
-        regular_cdn_client = await select_storage(
-            applet_id=self.applet_id, session=self.session
-        )
+        regular_cdn_client = await select_storage(applet_id=self.applet_id, session=self.session)
 
         if self._is_legacy_file_url_format(url):
             if not await self._check_access_to_legacy_url(url):
@@ -159,15 +151,11 @@ class GCPPresignService(S3PresignService):
 
 
 class AzurePresignService(GCPPresignService):
-    check_access_to_legacy_url_pattern = (
-        r"\/[0-9a-fA-F-]+\/([0-9a-fA-F-]+)\/[0-9a-fA-F-]+\/"
-    )
+    check_access_to_legacy_url_pattern = r"\/[0-9a-fA-F-]+\/([0-9a-fA-F-]+)\/[0-9a-fA-F-]+\/"
     check_access_to_regular_url_pattern = r"\/([0-9a-fA-F-]+)\/([0-9a-fA-F-]+)"
 
     async def __call__(self, url):
-        regular_cdn_client = await select_storage(
-            applet_id=self.applet_id, session=self.session
-        )
+        regular_cdn_client = await select_storage(applet_id=self.applet_id, session=self.session)
         if self._is_legacy_file_url_format(url):
             if not await self._check_access_to_legacy_url(url):
                 return url
@@ -181,9 +169,7 @@ class AzurePresignService(GCPPresignService):
         return await regular_cdn_client.generate_presigned_url(key)
 
     def _get_legacy_key(self, url):
-        pattern = (
-            r"\/([0-9a-fA-F-]+\/[0-9a-fA-F-]+\/[0-9a-fA-F-]+\/[0-9a-zA-Z.-]+)$"
-        )
+        pattern = r"\/([0-9a-fA-F-]+\/[0-9a-fA-F-]+\/[0-9a-fA-F-]+\/[0-9a-zA-Z.-]+)$"
         result = re.search(pattern, url)
         return result.group(1)
 
@@ -193,9 +179,7 @@ class AzurePresignService(GCPPresignService):
         return result.group(1)
 
     def _is_legacy_file_url_format(self, url):
-        return (
-            ".net/mindlogger/" in url and ".net/mindlogger/answer/" not in url
-        )
+        return ".net/mindlogger/" in url and ".net/mindlogger/answer/" not in url
 
     def _is_regular_file_url_format(self, url):
         return ".net/mindlogger/answer/" in url
@@ -233,19 +217,13 @@ class LogFileService:
         return (now_ts - file_ts).days > settings.logs.cycle_days
 
     async def apply_filo_stack(self, files: List[dict]):
-        res = sorted(
-            files, key=lambda item: item["LastModified"], reverse=True
-        )
+        res = sorted(files, key=lambda item: item["LastModified"], reverse=True)
         if res:
             oldest_file = res[0]
             date: datetime.datetime = oldest_file["LastModified"]
             now = datetime.datetime.now(tz=pytz.UTC)
-            file_date = datetime.datetime.fromtimestamp(
-                date.timestamp(), tz=pytz.UTC
-            )
-            is_out_of_cycle = (
-                now - file_date
-            ).days > config.settings.logs.cycle_days
+            file_date = datetime.datetime.fromtimestamp(date.timestamp(), tz=pytz.UTC)
+            is_out_of_cycle = (now - file_date).days > config.settings.logs.cycle_days
             if is_out_of_cycle:
                 await self.cdn.delete_object(oldest_file["Key"])
         return res
@@ -258,14 +236,10 @@ class LogFileService:
         await self.cdn.upload(obj_id, file.file)
         return res
 
-    async def log_list(
-        self, device_id: str, start: datetime.datetime, end: datetime.datetime
-    ):
+    async def log_list(self, device_id: str, start: datetime.datetime, end: datetime.datetime):
         def filter_by_interval(file_info: dict) -> bool:
             date_t = file_info["LastModified"]
-            date_tz = datetime.datetime.fromtimestamp(
-                date_t.timestamp(), tz=pytz.UTC
-            )
+            date_tz = datetime.datetime.fromtimestamp(date_t.timestamp(), tz=pytz.UTC)
             return start < date_tz < end
 
         key = self.device_key_prefix(device_id)
@@ -274,9 +248,7 @@ class LogFileService:
         files = list(filter(filter_by_interval, files))
         return files
 
-    async def check_exist(
-        self, device_id: str, file_names: List[str]
-    ) -> list[LogFileExistenceResponse]:
+    async def check_exist(self, device_id: str, file_names: List[str]) -> list[LogFileExistenceResponse]:
         key = self.device_key_prefix(device_id)
         file_objects = await self.cdn.list_object(key)
         result: list[LogFileExistenceResponse] = []
@@ -303,17 +275,13 @@ class LogFileService:
             )
         return result
 
-    async def backend_log(
-        self, method_name: str, details: dict, success: bool
-    ):
+    async def backend_log(self, method_name: str, details: dict, success: bool):
         logger.log(
             self.BE_LOG_LEVEL if success else WARNING,
             f"{self.BE_LOG_PREFIX} - {method_name}: {details}",
         )
 
-    async def backend_log_upload(
-        self, file_id: str, success: bool, details: str | None
-    ):
+    async def backend_log_upload(self, file_id: str, success: bool, details: str | None):
         row = {
             "userId": str(self.user_id),
             "fileId": str(file_id),

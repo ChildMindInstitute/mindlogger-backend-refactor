@@ -21,12 +21,7 @@ from six.moves import range, urllib
 # from . import docs
 from apps.girderformindlogger import auditLogger, events, logger, logprint
 from apps.girderformindlogger.constants import ServerMode, SortDir, TokenScope
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    GirderException,
-    RestException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import AccessException, GirderException, RestException, ValidationException
 from apps.girderformindlogger.external.mongodb_proxy import MongoProxy
 from apps.girderformindlogger.models.account_profile import AccountProfile
 from apps.girderformindlogger.models.setting import Setting
@@ -34,12 +29,7 @@ from apps.girderformindlogger.models.shield import Shield
 from apps.girderformindlogger.models.token import Token
 from apps.girderformindlogger.models.user import User
 from apps.girderformindlogger.settings import SettingKey
-from apps.girderformindlogger.utility import (
-    JsonEncoder,
-    config,
-    optionalArgumentDecorator,
-    toBool,
-)
+from apps.girderformindlogger.utility import JsonEncoder, config, optionalArgumentDecorator, toBool
 from apps.girderformindlogger.utility._cache import requestCache
 from apps.girderformindlogger.utility.model_importer import ModelImporter
 

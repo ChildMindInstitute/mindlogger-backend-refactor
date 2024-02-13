@@ -15,9 +15,7 @@ class _BaseActivityFlowSchema:
     report_included_item_name = Column(Text(), nullable=True)
     order = Column(REAL())
     is_hidden = Column(Boolean(), default=False)
-    extra_fields = Column(
-        JSONB(), default=dict, server_default=text("'{}'::jsonb")
-    )
+    extra_fields = Column(JSONB(), default=dict, server_default=text("'{}'::jsonb"))
 
 
 class ActivityFlowSchema(_BaseActivityFlowSchema, Base):
@@ -31,6 +29,4 @@ class ActivityFlowHistoriesSchema(_BaseActivityFlowSchema, Base):
 
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
-    applet_id = Column(
-        ForeignKey("applet_histories.id_version", ondelete="RESTRICT")
-    )
+    applet_id = Column(ForeignKey("applet_histories.id_version", ondelete="RESTRICT"))

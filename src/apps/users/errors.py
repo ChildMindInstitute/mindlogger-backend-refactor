@@ -15,11 +15,6 @@ class EmailAddressError(ValidationError):
     message = _("That email is not associated with a MindLogger account.")
 
 
-class EmailAddressNotValid(ValidationError):
-    message_is_template: bool = True
-    message = _("Email address: {email} is not valid.")
-
-
 class PasswordRecoveryKeyNotFound(NotFoundError):
     message = _("Password recovery key not found.")
 

@@ -13,20 +13,14 @@ from infrastructure.database.crud import BaseCRUD
 
 class _ActivityAnswerFilter(Filtering):
     respondent_id = FilterField(AnswerSchema.respondent_id)
-    from_datetime = FilterField(
-        AnswerItemSchema.start_datetime, Comparisons.GREAT_OR_EQUAL
-    )
-    to_datetime = FilterField(
-        AnswerItemSchema.end_datetime, Comparisons.LESS_OR_EQUAL
-    )
-    identifiers = FilterField(
-        AnswerItemSchema.identifier, method_name="filter_by_identifiers"
-    )
+    from_datetime = FilterField(AnswerItemSchema.start_datetime, Comparisons.GREAT_OR_EQUAL)
+    to_datetime = FilterField(AnswerItemSchema.end_datetime, Comparisons.LESS_OR_EQUAL)
+    identifiers = FilterField(AnswerItemSchema.identifier, method_name="filter_by_identifiers")
     versions = FilterField(AnswerSchema.version, Comparisons.IN)
 
     target_subject_id = FilterField(AnswerSchema.target_subject_id)
 
-    def prepare_versions(self, value: str):
+    def prepare_versions(self, value: str) -> list[str]:
         return value.split(",")
 
     def filter_by_identifiers(self, field, values: list | str):
@@ -44,7 +38,7 @@ class _ActivityAnswerFilter(Filtering):
 class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
     schema_class = AnswerItemSchema
 
-    async def create(self, schema: AnswerItemSchema):
+    async def create(self, schema: AnswerItemSchema) -> AnswerItemSchema:
         schema = await self._create(schema)
         return schema
 
@@ -52,17 +46,11 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         schema = await self._update_one("id", schema.id, schema)
         return schema
 
-    async def delete_by_applet_user(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None
-    ):
+    async def delete_by_applet_user(self, applet_id: uuid.UUID, user_id: uuid.UUID | None = None):
         answer_id_query: Query = select(AnswerSchema.id)
-        answer_id_query = answer_id_query.where(
-            AnswerSchema.applet_id == applet_id
-        )
+        answer_id_query = answer_id_query.where(AnswerSchema.applet_id == applet_id)
         if user_id:
-            answer_id_query = answer_id_query.where(
-                AnswerSchema.respondent_id == user_id
-            )
+            answer_id_query = answer_id_query.where(AnswerSchema.respondent_id == user_id)
 
         query: Query = delete(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id.in_(answer_id_query))
@@ -72,28 +60,21 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         self, answer_id: uuid.UUID, activity_history_ids: List[str]
     ) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
-        query = query.join(
-            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
-        )
+        query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
-        query = query.where(
-            AnswerSchema.activity_history_id.in_(activity_history_ids)
-        )
+        query = query.where(AnswerSchema.activity_history_id.in_(activity_history_ids))
+        query = query.order_by(AnswerItemSchema.created_at)
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_answer_ids(
-        self, answer_ids: list[uuid.UUID]
-    ) -> list[AnswerItemSchema]:
+    async def get_answer_ids(self, answer_ids: list[uuid.UUID]) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id.in_(answer_ids))
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_respondent_submits_by_answer_ids(
-        self, answer_ids: list[uuid.UUID]
-    ) -> list[AnswerItemSchema]:
+    async def get_respondent_submits_by_answer_ids(self, answer_ids: list[uuid.UUID]) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
         query = query.order_by(AnswerItemSchema.created_at.asc())
         query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
@@ -101,9 +82,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_assessment(
-        self, answer_id: uuid.UUID, user_id: uuid.UUID
-    ) -> AnswerItemSchema | None:
+    async def get_assessment(self, answer_id: uuid.UUID, user_id: uuid.UUID) -> AnswerItemSchema | None:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.respondent_id == user_id)
@@ -111,9 +90,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().first()
 
-    async def get_reviews_by_answer_id(
-        self, answer_id: uuid.UUID, activity_items: list
-    ) -> list[AnswerItemSchema]:
+    async def get_reviews_by_answer_id(self, answer_id: uuid.UUID, activity_items: list) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.is_assessment.is_(True))
@@ -121,9 +98,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()  # noqa
 
-    async def get_respondent_answer(
-        self, answer_id: uuid.UUID
-    ) -> AnswerItemSchema | None:
+    async def get_respondent_answer(self, answer_id: uuid.UUID) -> AnswerItemSchema | None:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.is_assessment == False)  # noqa
@@ -183,15 +158,11 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.order_by(AnswerSchema.created_at.asc())
 
         if filters.filters:
-            query = query.where(
-                *_ActivityAnswerFilter().get_clauses(**filters.filters)
-            )
+            query = query.where(*_ActivityAnswerFilter().get_clauses(**filters.filters))
         db_result = await self._execute(query)
         return db_result.all()
 
-    async def get_assessment_activity_id(
-        self, answer_id: uuid.UUID
-    ) -> list[tuple[uuid.UUID, str]] | None:
+    async def get_assessment_activity_id(self, answer_id: uuid.UUID) -> list[tuple[uuid.UUID, str]] | None:
         query: Query = select(
             AnswerItemSchema.respondent_id,
             AnswerItemSchema.assessment_activity_id,

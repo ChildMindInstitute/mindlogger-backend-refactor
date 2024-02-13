@@ -2,13 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Type
 
 from apps.activities.domain.conditional_logic import ConditionalLogic, Match
-from apps.activities.domain.conditions import (
-    Condition,
-    ConditionType,
-    MinMaxPayload,
-    OptionPayload,
-    ValuePayload,
-)
+from apps.activities.domain.conditions import Condition, ConditionType, MinMaxPayload, OptionPayload, ValuePayload
 
 __all__ = ["export_conditional_logic"]
 
@@ -31,9 +25,7 @@ def export_condition(condition: Condition):
 
 def export_conditional_logic(logic: ConditionalLogic) -> str:
     operator = "||" if logic.match == Match.ANY else "&&"
-    expressions = [
-        export_condition(condition) for condition in logic.conditions
-    ]
+    expressions = [export_condition(condition) for condition in logic.conditions]
 
     return f" {operator} ".join(expressions)
 
@@ -74,9 +66,7 @@ class ExpressionSimple(BaseExpression):
         operator = self.simple_operator_map.get(type_)  # type: ignore[call-overload] # noqa: E501
         if isinstance(payload, OptionPayload):
             try:
-                val: int | str = int(
-                    payload.option_value
-                )  # TODO actualize on PR merge
+                val: int | str = int(payload.option_value)  # TODO actualize on PR merge
             except ValueError:
                 val = f'"{payload.option_value}"'  # TODO actualize on PR merge
         elif isinstance(payload, ValuePayload):
@@ -102,9 +92,7 @@ class ExpressionIncludes(BaseExpression):
         payload = self.condition.payload
         assert isinstance(payload, OptionPayload)
         try:
-            val: int | str = int(
-                payload.option_value
-            )  # TODO actualize on PR merge
+            val: int | str = int(payload.option_value)  # TODO actualize on PR merge
         except ValueError:
             val = f'"{payload.option_value}"'  # TODO actualize on PR merge
 

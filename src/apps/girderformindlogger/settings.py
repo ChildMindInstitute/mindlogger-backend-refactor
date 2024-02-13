@@ -189,9 +189,7 @@ class SettingValidator(object):
     @setting_utilities.validator(SettingKey.CONTACT_EMAIL_ADDRESS)
     def _validateContactEmailAddress(doc):
         # This is typically used within an RFC 6068 "mailto:" scheme, so no display name is allowed
-        from apps.girderformindlogger.utility.mail_utils import (
-            validateEmailAddress,
-        )
+        from apps.girderformindlogger.utility.mail_utils import validateEmailAddress
 
         if not validateEmailAddress(doc["value"]):
             raise ValidationException(

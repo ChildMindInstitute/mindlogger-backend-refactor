@@ -10,19 +10,17 @@ from apps.job.domain import JobCreate
 
 
 @pytest.fixture
-def job_create(user_tom) -> JobCreate:
+def job_create(tom) -> JobCreate:
     return JobCreate(
         name="test",
-        creator_id=user_tom.id,
+        creator_id=tom.id,
         status=JobStatus.in_progress,
         details=None,
     )
 
 
 @pytest.fixture()
-async def job(
-    session: AsyncSession, job_create: JobCreate
-) -> AsyncGenerator[JobSchema, Any]:
+async def job(session: AsyncSession, job_create: JobCreate) -> AsyncGenerator[JobSchema, Any]:
     job = await JobCRUD(session).create(job_create)
     yield JobSchema(**job.dict())
 

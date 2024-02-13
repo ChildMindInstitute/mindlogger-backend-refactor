@@ -5,10 +5,7 @@ from typing import Callable, Optional
 
 from pyld import ContextResolver, jsonld
 
-from apps.jsonld_converter.errors import (
-    JsonLDLoaderError,
-    JsonLDProcessingError,
-)
+from apps.jsonld_converter.errors import JsonLDLoaderError, JsonLDProcessingError
 
 
 class LdKeyword(str, enum.Enum):
@@ -42,9 +39,7 @@ class ContextResolverAwareMixin:
         try:
             return await asyncio.to_thread(jsonld.expand, doc, options)
         except Exception as e:
-            raise JsonLDProcessingError(
-                "Document compacting error", doc
-            ) from e
+            raise JsonLDProcessingError("Document compacting error", doc) from e
 
     async def _compact(
         self,
@@ -58,9 +53,7 @@ class ContextResolverAwareMixin:
             documentLoader=self.document_loader,
         )
         try:
-            return await asyncio.to_thread(
-                jsonld.compact, doc, context, options
-            )
+            return await asyncio.to_thread(jsonld.compact, doc, context, options)
         except Exception as e:
             raise JsonLDProcessingError("Document expanding error", doc) from e
 

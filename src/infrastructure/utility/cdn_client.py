@@ -77,11 +77,7 @@ class CDNClient:
         else:
             self.client.download_fileobj(self.config.bucket, key, file)
         file.seek(0)
-        media_type = (
-            mimetypes.guess_type(key)[0]
-            if mimetypes.guess_type(key)[0]
-            else "application/octet-stream"
-        )
+        media_type = mimetypes.guess_type(key)[0] if mimetypes.guess_type(key)[0] else "application/octet-stream"
         return file, media_type
 
     def _generate_presigned_url(self, key):
@@ -103,15 +99,11 @@ class CDNClient:
 
     async def delete_object(self, key: str | None):
         with ThreadPoolExecutor() as executor:
-            future = executor.submit(
-                self.client.delete_object, Bucket=self.config.bucket, Key=key
-            )
+            future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
             await asyncio.wrap_future(future)
 
     async def list_object(self, key: str):
         with ThreadPoolExecutor() as executor:
-            future = executor.submit(
-                self.client.list_objects, Bucket=self.config.bucket, Prefix=key
-            )
+            future = executor.submit(self.client.list_objects, Bucket=self.config.bucket, Prefix=key)
             result = await asyncio.wrap_future(future)
             return result.get("Contents", [])

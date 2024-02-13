@@ -7,12 +7,7 @@ from jose import JWTError, jwt
 from pydantic import EmailStr, ValidationError
 
 from apps.authentication.domain.login import UserLoginRequest
-from apps.authentication.domain.token import (
-    InternalToken,
-    JWTClaim,
-    TokenPayload,
-    TokenPurpose,
-)
+from apps.authentication.domain.token import InternalToken, JWTClaim, TokenPayload, TokenPurpose
 from apps.authentication.errors import AuthenticationError
 from apps.authentication.services import AuthenticationService
 from apps.users.cruds.user import UsersCRUD
@@ -21,14 +16,10 @@ from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 
-oauth2_oauth = OAuth2PasswordBearer(
-    tokenUrl="/auth/openapi", scheme_name="Bearer"
-)
+oauth2_oauth = OAuth2PasswordBearer(tokenUrl="/auth/openapi", scheme_name="Bearer")
 
 
-async def get_current_user_for_ws(
-    websocket: WebSocket, session=Depends(get_session)
-):
+async def get_current_user_for_ws(websocket: WebSocket, session=Depends(get_session)):
     authorization = websocket.headers.get("sec-websocket-protocol")
     try:
         if not authorization:
@@ -58,9 +49,7 @@ async def get_current_user_for_ws(
             raise AuthenticationError
 
         # Check if the token is in the blacklist
-        revoked = await AuthenticationService(session).is_revoked(
-            InternalToken(payload=token_data, raw_token=token)
-        )
+        revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data, raw_token=token))
         if revoked:
             raise AuthenticationError
 
@@ -85,10 +74,7 @@ def get_current_token(type_: TokenPurpose = TokenPurpose.ACCESS):
 
             token_payload = TokenPayload(**payload)
 
-            if (
-                datetime.utcfromtimestamp(token_payload.exp)
-                < datetime.utcnow()
-            ):
+            if datetime.utcfromtimestamp(token_payload.exp) < datetime.utcnow():
                 raise AuthenticationError
         except (JWTError, ValidationError):
             raise AuthenticationError
@@ -119,18 +105,12 @@ async def openapi_auth(
     session=Depends(get_session),
 ):
     async with atomic(session):
-        user_login_schema = UserLoginRequest(
-            email=EmailStr(form_data.username), password=form_data.password
-        )
-        user: User = await AuthenticationService(session).authenticate_user(
-            user_login_schema
-        )
+        user_login_schema = UserLoginRequest(email=EmailStr(form_data.username), password=form_data.password)
+        user: User = await AuthenticationService(session).authenticate_user(user_login_schema)
         if not user:
             raise AuthenticationError
 
-        access_token = AuthenticationService.create_access_token(
-            {JWTClaim.sub: str(user.id)}
-        )
+        access_token = AuthenticationService.create_access_token({JWTClaim.sub: str(user.id)})
 
     return {
         "access_token": access_token,

@@ -43,9 +43,7 @@ class UserAccessService:
         Workspaces in which the user is the owner or invited user
         """
 
-        accesses = await UserAppletAccessCRUD(
-            self.session
-        ).get_by_user_id_for_managers(self._user_id)
+        accesses = await UserAppletAccessCRUD(self.session).get_by_user_id_for_managers(self._user_id)
 
         user_ids = [access.owner_id for access in accesses]
         user_ids.append(self._user_id)
@@ -85,18 +83,14 @@ class UserAccessService:
             roles=manager_roles,
         )
         # remove manager access
-        await UserAppletAccessCRUD(
-            self.session
-        ).remove_access_by_user_and_applet_to_role(
+        await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(
             schema.user_id, schema.applet_ids, manager_roles
         )
 
     async def remove_respondent_access(self, schema: RemoveRespondentAccess):
         """Remove respondent access from a specific user."""
         # check if user is owner of all applets
-        await self._validate_ownership(
-            schema.applet_ids, [Role.OWNER, Role.MANAGER, Role.COORDINATOR]
-        )
+        await self._validate_ownership(schema.applet_ids, [Role.OWNER, Role.MANAGER, Role.COORDINATOR])
 
         # check if schema.user_id is respondent of all applets
         await self._validate_access(
@@ -106,9 +100,7 @@ class UserAccessService:
         )
 
         # remove respondent access
-        await UserAppletAccessCRUD(
-            self.session
-        ).remove_access_by_user_and_applet_to_role(
+        await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(
             schema.user_id, schema.applet_ids, [Role.RESPONDENT]
         )
 
@@ -120,12 +112,8 @@ class UserAccessService:
                     schema.user_id,
                 )
 
-    async def _validate_ownership(
-        self, applet_ids: list[uuid.UUID], roles: list[Role]
-    ):
-        accesses = await UserAppletAccessCRUD(
-            self.session
-        ).get_user_applet_accesses_by_roles(
+    async def _validate_ownership(self, applet_ids: list[uuid.UUID], roles: list[Role]):
+        accesses = await UserAppletAccessCRUD(self.session).get_user_applet_accesses_by_roles(
             self._user_id,
             applet_ids,
             roles,
@@ -142,18 +130,14 @@ class UserAccessService:
         roles: list[Role],
         invitor_id: uuid.UUID | None = None,
     ):
-        accesses = await UserAppletAccessCRUD(
-            self.session
-        ).get_user_applet_accesses_by_roles(
+        accesses = await UserAppletAccessCRUD(self.session).get_user_applet_accesses_by_roles(
             user_id, removing_applets, roles, invitor_id
         )
         applet_ids = [access.applet_id for access in accesses]
 
         no_access_applet = set(removing_applets) - set(applet_ids)
         if no_access_applet:
-            raise AppletAccessDenied(
-                message=f"User is not related to applets {no_access_applet}"
-            )
+            raise AppletAccessDenied(message=f"User is not related to applets {no_access_applet}")
 
     @staticmethod
     def _get_by_language(values: dict, language: str):
@@ -169,33 +153,23 @@ class UserAccessService:
                 return val
             return ""
 
-    async def check_access(
-        self, owner_id: uuid.UUID, roles: list[Role] | None = None
-    ):
+    async def check_access(self, owner_id: uuid.UUID, roles: list[Role] | None = None):
         # TODO: remove
         if owner_id == self._user_id:
             return
 
-        has_access = await UserAppletAccessCRUD(
-            self.session
-        ).check_access_by_user_and_owner(self._user_id, owner_id, roles)
+        has_access = await UserAppletAccessCRUD(self.session).check_access_by_user_and_owner(
+            self._user_id, owner_id, roles
+        )
         if not has_access:
             raise WorkspaceDoesNotExistError
 
-    async def pin(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole
-    ):
+    async def pin(self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole):
         await self._validate_pin(owner_id, user_id, pin_role)
-        await UserAppletAccessCRUD(self.session).pin(
-            self._user_id, owner_id, user_id, pin_role
-        )
+        await UserAppletAccessCRUD(self.session).pin(self._user_id, owner_id, user_id, pin_role)
 
-    async def _validate_pin(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole
-    ):
-        can_pin = await UserAppletAccessCRUD(
-            self.session
-        ).check_access_by_user_and_owner(
+    async def _validate_pin(self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole):
+        can_pin = await UserAppletAccessCRUD(self.session).check_access_by_user_and_owner(
             self._user_id,
             owner_id,
             [Role.MANAGER, Role.COORDINATOR, Role.OWNER],
@@ -209,9 +183,7 @@ class UserAccessService:
         elif pin_role == UserPinRole.manager:
             roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.EDITOR]
 
-        has_user = await UserAppletAccessCRUD(
-            self.session
-        ).check_access_by_user_and_owner(user_id, owner_id, roles)
+        has_user = await UserAppletAccessCRUD(self.session).check_access_by_user_and_owner(user_id, owner_id, roles)
         if not has_user:
             raise UserAppletAccessesDenied
 
@@ -221,34 +193,27 @@ class UserAccessService:
         respondent_id: uuid.UUID,
         query_params: QueryParams,
     ) -> list[PublicRespondentAppletAccess]:
-        accesses = await UserAppletAccessCRUD(
-            self.session
-        ).get_respondent_accesses_by_owner_id(
+        accesses = await UserAppletAccessCRUD(self.session).get_respondent_accesses_by_owner_id(
             owner_id, respondent_id, query_params.page, query_params.limit
         )
 
-        return [
-            PublicRespondentAppletAccess.from_orm(access)
-            for access in accesses
-        ]
+        return [PublicRespondentAppletAccess.from_orm(access) for access in accesses]
 
     async def get_respondent_accesses_by_workspace_count(
         self,
         owner_id: uuid.UUID,
         respondent_id: uuid.UUID,
     ) -> int:
-        count = await UserAppletAccessCRUD(
-            self.session
-        ).get_respondent_accesses_by_owner_id_count(owner_id, respondent_id)
+        count = await UserAppletAccessCRUD(self.session).get_respondent_accesses_by_owner_id_count(
+            owner_id, respondent_id
+        )
 
         return count
 
-    async def get_applets_roles_by_priority(
-        self, applet_ids: list[uuid.UUID]
-    ) -> dict:
-        applet_role_map = await UserAppletAccessCRUD(
-            self.session
-        ).get_applets_roles_by_priority(applet_ids, self._user_id)
+    async def get_applets_roles_by_priority(self, applet_ids: list[uuid.UUID]) -> dict:
+        applet_role_map = await UserAppletAccessCRUD(self.session).get_applets_roles_by_priority(
+            applet_ids, self._user_id
+        )
 
         return applet_role_map
 
@@ -313,17 +278,13 @@ class UserAccessService:
                     )
 
         for schema in schemas:
-            user_access = await UserAppletAccessCRUD(
-                self.session
-            ).get_by_user_applet_accesses(
+            user_access = await UserAppletAccessCRUD(self.session).get_by_user_applet_accesses(
                 schema.user_id, schema.applet_id, schema.role
             )
             if user_access:
                 raise UserAccessAlreadyExists()
             else:
-                await UserAppletAccessCRUD(
-                    self.session
-                ).upsert_user_applet_access(schema)
+                await UserAppletAccessCRUD(self.session).upsert_user_applet_access(schema)
 
     async def get_workspace_applet_roles(
         self,
@@ -331,10 +292,9 @@ class UserAccessService:
         applet_ids: list[uuid.UUID] | None = None,
         is_super_admin=False,
     ) -> dict[uuid.UUID, list[Role]]:
-        applet_roles = await UserAppletAccessCRUD(
-            self.session
-        ).get_workspace_applet_roles(owner_id, self._user_id, applet_ids)
-
+        applet_roles = await UserAppletAccessCRUD(self.session).get_workspace_applet_roles(
+            owner_id, self._user_id, applet_ids
+        )
         if is_super_admin:
             for applet_role in applet_roles:
                 if Role.OWNER in applet_role.roles:
