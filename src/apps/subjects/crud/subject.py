@@ -2,14 +2,12 @@ import uuid
 from datetime import datetime
 
 from asyncpg import UniqueViolationError
-from sqlalchemy import and_, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Query
 
-from apps.subjects.db.schemas import SubjectRespondentSchema, SubjectSchema
+from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
 from apps.subjects.domain import Subject
-from apps.workspaces.db.schemas import UserAppletAccessSchema
-from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["SubjectsCrud"]
@@ -65,72 +63,28 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         res = res.scalars().all()
         return bool(res)
 
-    async def get_source(
-        self, user_id: uuid.UUID, target_id: uuid.UUID, applet_id: uuid.UUID
-    ) -> SubjectSchema | None:
-        """
-        Function to get source subject
-        Parameters
-        ----------
-        user_id: uuid.UUID
-            Source user_id
-        target_id: uuid.UUID
-            Target subject id
-        applet_id: uuid.UUID
-            Applet id
-        """
-        query: Query = select(SubjectSchema)
-        query = query.join(
-            SubjectRespondentSchema,
-            SubjectRespondentSchema.subject_id == SubjectSchema.id,
-        )
-        query = query.join(
-            UserAppletAccessSchema,
-            (
-                UserAppletAccessSchema.id
-                == SubjectRespondentSchema.respondent_access_id
-            ),
-        )
-        query = query.where(
-            SubjectRespondentSchema.subject_id == target_id,
-            UserAppletAccessSchema.applet_id == applet_id,
-            UserAppletAccessSchema.user_id == user_id,
-        )
-        query = query.limit(1)
-        res = await self._execute(query)
-        return res.scalar_one_or_none()
-
-    async def get_self_subject(
+    async def get_user_subject(
         self, user_id: uuid.UUID, applet_id: uuid.UUID
     ) -> SubjectSchema | None:
         query: Query = select(SubjectSchema)
         query = query.where(
             SubjectSchema.user_id == user_id,
             SubjectSchema.applet_id == applet_id,
+            SubjectSchema.soft_exists(),
         )
-        query = query.limit(1)
         res = await self._execute(query)
         return res.scalar_one_or_none()
 
     async def get_relation(
         self,
-        target_id: uuid.UUID,
-        source_user_id: uuid.UUID,
-        applet_id: uuid.UUID,
+        source_subject_id: uuid.UUID,
+        target_subject_id: uuid.UUID,
     ) -> str | None:
-        query: Query = select(SubjectRespondentSchema.relation)
-        query = query.join(
-            UserAppletAccessSchema,
-            and_(
-                UserAppletAccessSchema.id
-                == SubjectRespondentSchema.respondent_access_id,
-                UserAppletAccessSchema.user_id == source_user_id,
-                UserAppletAccessSchema.applet_id == applet_id,
-                UserAppletAccessSchema.role == Role.RESPONDENT,
-            ),
-            isouter=True,
+        query: Query = select(SubjectRelationSchema.relation)
+        query = query.where(
+            SubjectRelationSchema.source_subject_id == source_subject_id,
+            SubjectRelationSchema.target_subject_id == target_subject_id,
         )
-        query = query.where(SubjectRespondentSchema.subject_id == target_id)
         result = await self._execute(query)
         return result.scalar_one_or_none()
 
@@ -192,12 +146,40 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         schema.id = model_id
         return schema
 
-    async def reduce_applet_subject_ids(self, applet_id, subject_ids: list[uuid.UUID] | list[str]) -> list[uuid.UUID]:
+    async def reduce_applet_subject_ids(
+        self, applet_id, subject_ids: list[uuid.UUID] | list[str]
+    ) -> list[uuid.UUID]:
         query = select(SubjectSchema.id).where(
             SubjectSchema.id.in_(subject_ids),
             SubjectSchema.applet_id == applet_id,
-            SubjectSchema.soft_exists()
+            SubjectSchema.soft_exists(),
         )
         res = await self._execute(query)
 
         return res.scalars().all()
+
+    async def delete_relation(
+        self,
+        subject_id: uuid.UUID,
+        source_subject_id: uuid.UUID,
+    ):
+        query: Query = delete(SubjectRelationSchema)
+        query = query.where(
+            SubjectRelationSchema.source_subject_id == source_subject_id,
+            SubjectRelationSchema.target_subject_id == subject_id,
+        )
+        await self._execute(query)
+
+    async def create_relation(
+        self, schema: SubjectRelationSchema
+    ) -> SubjectRelationSchema:
+        return await self._create(schema)
+
+    async def delete_subject_relations(self, subject_id):
+        query = delete(SubjectRelationSchema).where(
+            or_(
+                SubjectRelationSchema.source_subject_id == subject_id,
+                SubjectRelationSchema.target_subject_id == subject_id,
+            )
+        )
+        await self._execute(query)
