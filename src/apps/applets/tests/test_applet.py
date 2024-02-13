@@ -3,6 +3,7 @@ import collections
 import http
 import json
 import uuid
+from copy import deepcopy
 
 from apps.activities import errors as activity_errors
 from apps.mailing.services import TestMail
@@ -41,6 +42,7 @@ class TestApplet(BaseTest):
     history_url = f"{applet_detail_url}/versions/{{version}}"
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
     applet_base_info_url = f"{applet_detail_url}/base_info"
+    access_link_url = f"{applet_detail_url}/access_link"
 
     public_applet_detail_url = "/public/applets/{key}"
     public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
@@ -1732,22 +1734,54 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["name"] == "AppleT 1 (1)"
 
-    async def test_get_applet_activities_info(self, client, tom):
+    async def test_get_applet_activities_info(self, client, tom, applet_minimal_data):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        # create applet with minimal data
+        multi_select = deepcopy(applet_minimal_data.activities[0].items[0])
+        multi_select.name = "test_multiSelect"
+        multi_select.response_type = "multiSelect"
+        multi_select.is_hidden = True
+        applet_minimal_data.activities[0].items.append(multi_select)
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_minimal_data)
 
-        response = await client.get(self.applet_base_info_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        new_applet_id = response.json()["result"]["id"]
+        response = await client.get(self.applet_base_info_url.format(pk=new_applet_id))
         assert response.status_code == 200
-        assert response.json()["result"]["displayName"] == "Applet 1"
+        assert response.json()["result"]["displayName"] == applet_minimal_data.display_name
+        # check if hidden item is not shown
         assert "singleSelect" in response.json()["result"]["activities"][0]["containsResponseTypes"]
+        assert "multiSelect" not in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert isinstance(response.json()["result"]["activities"][0]["itemCount"], int)
+        assert response.json()["result"]["activities"][0]["itemCount"] == 1
 
-    async def test_get_public_applet_activities_info(self, client):
-        response = await client.get(self.public_applet_base_info_url.format(key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"))
+    async def test_get_public_applet_activities_info(self, client, tom, applet_minimal_data):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        # create applet with minimal data
+        multi_select = deepcopy(applet_minimal_data.activities[0].items[0])
+        multi_select.name = "test_multiSelect"
+        multi_select.response_type = "multiSelect"
+        multi_select.is_hidden = True
+        applet_minimal_data.activities[0].items.append(multi_select)
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_minimal_data)
+
+        new_applet_id = response.json()["result"]["id"]
+        print("new applet id", new_applet_id)
+        data = {"require_login": False}
+        response = await client.post(
+            self.access_link_url.format(pk=new_applet_id),
+            data=data,
+        )
+
+        key_link = response.json()["result"]["link"]
+        key = key_link.split("/")[-1]
+        response = await client.get(self.public_applet_base_info_url.format(key=key))
 
         assert response.status_code == 200
-        assert response.json()["result"]["displayName"] == "Applet 1"
+        assert response.json()["result"]["displayName"] == applet_minimal_data.display_name
         assert "singleSelect" in response.json()["result"]["activities"][0]["containsResponseTypes"]
+        assert "multiSelect" not in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert isinstance(response.json()["result"]["activities"][0]["itemCount"], int)
+        assert response.json()["result"]["activities"][0]["itemCount"] == 1
 
     async def test_create_applet_in_another_workspace_not_owner(self, client, applet_minimal_data, tom):
         await client.login(self.login_url, "lucy@gmail.com", "Test123")
