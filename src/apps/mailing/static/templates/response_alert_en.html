@@ -1,31 +1,26 @@
 <html style="max-width: 700px" lang="en">
-<body>
-{% include 'header.html' %}
-<table style="padding: 0">
-    <tr>
-        <td style="padding-bottom: 1%">
-            There is an alert on your dashboard.
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            <a href="{{domain}}">Please login</a>
-        </td>
-    </tr>
-{% include 'blocks/write_us_en.html' %}
-    <tr>
-        <td style="padding-bottom: 1%">
-            Thanks,
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            Team MindLogger
-        </td>
-    </tr>
 
-</table>
-{% include 'footers/footer_contact_us_en.html' %}
+<body>
+    {% include 'header.html' %}
+    <table style="padding: 0">
+        <tr>
+            <td style="padding-bottom: 1%">
+                You have one or more alerts in MindLogger.
+            </td>
+        </tr>
+        <tr>
+            <td style="padding-bottom: 1%">
+                <a href="{{domain}}">Please log in to see them.</a>
+            </td>
+        </tr>
+        {% include 'blocks/write_us_en.html' %}
+        <tr>
+            <td style="padding-bottom: 1%">
+                – The MindLogger Team
+            </td>
+        </tr>
+    </table>
+    {% include 'footers/footer_contact_us_en.html' %}
 </body>
 
 </html>
