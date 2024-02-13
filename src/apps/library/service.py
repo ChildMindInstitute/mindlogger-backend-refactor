@@ -6,7 +6,9 @@ from typing import List
 from pydantic import parse_obj_as
 
 from apps.activities.crud import ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
+from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
+from apps.activity_flows.db.schemas import ActivityFlowItemHistorySchema
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.library.crud import CartCRUD, LibraryCRUD
 from apps.library.db import CartSchema, LibrarySchema
@@ -137,10 +139,16 @@ class LibraryService:
         )
         library_item_activities = []
         activity_id_key_maps = dict()
+        activity_id_versions = [activity.id_version for activity in activities]
+        all_activity_items = await ActivityItemHistoriesCRUD(self.session).get_by_activity_id_versions(
+            activity_id_versions
+        )
+        activity_items_map: dict[str, list[ActivityItemHistorySchema]] = dict()
+        for activity_item in all_activity_items:
+            activity_items_map.setdefault(f"{activity_item.activity_id}", []).append(activity_item)
+
         for activity in activities:
-            activity_items = await ActivityItemHistoriesCRUD(session=self.session).get_by_activity_id_version(
-                activity_id=activity.id_version
-            )
+            activity_items = activity_items_map[activity.id_version]
             activity_id_key_maps[activity.id_version] = uuid.uuid4()
             items = [
                 LibraryItemActivityItem(
@@ -177,10 +185,16 @@ class LibraryService:
         library_item.activities = library_item_activities
 
         flows = await FlowsHistoryCRUD(session=self.session).retrieve_by_applet_version(library_item.applet_id_version)
+        flow_id_versions = [flow.id_version for flow in flows]
+        all_flow_items = await FlowItemHistoriesCRUD(self.session).get_by_flow_ids(flow_id_versions)
+        flow_items_map: dict[str, list[ActivityFlowItemHistorySchema]] = dict()
+        for flow_item in all_flow_items:
+            flow_items_map.setdefault(f"{flow_item.activity_flow_id}", []).append(flow_item)
+
         library_item_flows = []
 
         for flow in flows:
-            flow_items = await FlowItemHistoriesCRUD(session=self.session).get_by_flow_id(flow_id=flow.id_version)
+            flow_items = flow_items_map[flow.id_version]
             library_item_flows.append(
                 LibraryItemFlow(
                     name=flow.name,

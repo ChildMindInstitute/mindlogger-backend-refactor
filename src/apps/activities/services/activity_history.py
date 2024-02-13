@@ -3,7 +3,7 @@ import uuid
 from apps.activities.crud import ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activities.domain import ActivityHistory, ActivityHistoryChange, ActivityHistoryFull
-from apps.activities.domain.activity_full import ActivityFull
+from apps.activities.domain.activity_full import ActivityFull, ActivityItemHistoryFull
 from apps.activities.services.activity_change import ActivityChangeService
 from apps.activities.services.activity_item_history import ActivityItemHistoryService
 
@@ -55,10 +55,16 @@ class ActivityHistoryService:
             [self._applet_id_version, old_applet_id_version]
         )
         activities = [ActivityHistoryFull.from_orm(schema) for schema in activity_schemas]
+        activities_id_versions = [activity.id_version for activity in activities]
+        activity_items = await ActivityItemHistoryService(
+            self.session, self._applet_id, self._version
+        ).get_by_activity_id_versions(activities_id_versions)
+        activity_items_map: dict[str, list[ActivityItemHistoryFull]] = dict()
+        for item in activity_items:
+            activity_items_map.setdefault(f"{item.activity_id}", []).append(item)
+
         for activity in activities:
-            activity.items = await ActivityItemHistoryService(
-                self.session, self._applet_id, self._version
-            ).get_by_activity_id_versions([activity.id_version])
+            activity.items = activity_items_map.get(activity.id_version, [])
         service = ActivityChangeService(prev_version, self._version)
         return service.get_changes(activities)
 

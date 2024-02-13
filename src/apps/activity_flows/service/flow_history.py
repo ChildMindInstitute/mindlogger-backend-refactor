@@ -71,12 +71,19 @@ class FlowHistoryService:
         flow_schemas = await FlowsHistoryCRUD(self.session).retrieve_by_applet_ids(
             [self.applet_id_version, old_id_version]
         )
+        flow_id_versions = [flow.id_version for flow in flow_schemas]
+        flow_items = await FlowItemHistoryService(self.session, self.applet_id, self.version).get_by_flow_id_versions(
+            flow_id_versions
+        )
+
+        flow_items_map: dict[str, list[FlowItemHistoryFull]] = dict()
+        for item in flow_items:
+            flow_items_map.setdefault(f"{item.activity_flow_id}", []).append(item)
+
         flows = []
         for schema in flow_schemas:
             flow = FlowHistoryFull.from_orm(schema)
-            flow.items = await FlowItemHistoryService(
-                self.session, self.applet_id, self.version
-            ).get_by_flow_id_versions([flow.id_version])
+            flow.items = flow_items_map.get(flow.id_version, [])
             flows.append(flow)
         flow_groups = self._group_and_sort_flows_or_items(flows)
         for _, (prev, new) in flow_groups.items():
