@@ -15,7 +15,7 @@ from apps.file.api.file import (
     presign,
     upload,
 )
-from apps.file.domain import AnswerUploadedFile, FileExistenceResponse
+from apps.file.domain import AnswerUploadedFile, FileExistenceResponse, PresignedUrl
 from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, ResponseMulti
 
 router = APIRouter(prefix="/file", tags=["File"])
@@ -93,6 +93,33 @@ router.post(
 router.get("/log-file/{user_email}/{device_id}", status_code=status.HTTP_200_OK)(logs_download)
 
 router.post("/log-file/{device_id}/check", status_code=status.HTTP_200_OK)(logs_exist_check)
-router.post("/presigned-media-url", status_code=status.HTTP_200_OK)(generate_presigned_media_url)
-router.post("/{applet_id}/presigned-url", status_code=status.HTTP_200_OK)(generate_presigned_answer_url)
-router.post("/log-file/{device_id}/presigned-url", status_code=status.HTTP_200_OK)(generate_presigned_logs_url)
+router.post(
+    "/upload-url",
+    status_code=status.HTTP_200_OK,
+    description="""Endpoint to generate presigned post url to upload media files to the remote storage.""",
+    responses={
+        status.HTTP_200_OK: {"model": PresignedUrl},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(generate_presigned_media_url)
+router.post(
+    "/{applet_id}/upload-url",
+    status_code=status.HTTP_200_OK,
+    description="""Endpoint to generate presigned post url to upload answers files to the remote storage.""",
+    responses={
+        status.HTTP_200_OK: {"model": PresignedUrl},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(generate_presigned_answer_url)
+router.post(
+    "/log-file/{device_id}/upload-url",
+    status_code=status.HTTP_200_OK,
+    description="""Endpoint to generate presigned post url to upload log files to the remote storage.""",
+    responses={
+        status.HTTP_200_OK: {"model": PresignedUrl},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(generate_presigned_logs_url)

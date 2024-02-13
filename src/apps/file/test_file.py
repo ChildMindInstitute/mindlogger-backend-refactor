@@ -56,9 +56,9 @@ class TestAnswerActivityItems(BaseTest):
     existance_url = "/file/{applet_id}/upload/check"
     applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b8"
     file_id = "1693560380000/c60859c4-6f5f-4390-a572-da85fcd59709"
-    presigned_media_url = "file/presigned-media-url"
-    answer_presigned_url = "file/{applet_id}/presigned-url"
-    log_presigned_url = "file/log-file/{device_id}/presigned-url"
+    upload_media_url = "file/upload-url"
+    answer_upload_url = "file/{applet_id}/upload-url"
+    log_upload_url = "file/log-file/{device_id}/upload-url"
 
     @mock.patch("infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.upload")
     async def test_arbitrary_upload_to_s3_aws(
@@ -172,13 +172,13 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize("file_name,", ("test1.jpg", "test2.jpg"))
-    async def test_generate_presigned_media_url(self, client: TestClient, file_name: str):
+    async def test_generate_upload_url(self, client: TestClient, file_name: str):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         bucket_name = "testbucket"
         domain_name = "testdomain"
         settings.cdn.bucket = bucket_name
         settings.cdn.domain = domain_name
-        resp = await client.post(self.presigned_media_url, data={"file_name": file_name})
+        resp = await client.post(self.upload_media_url, data={"file_name": file_name})
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert result["fields"]["key"].endswith(file_name)
@@ -188,9 +188,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, session: AsyncSession, user: User
     ):
         await client.login(self.login_url, user.email_encrypted, "Test1234!")
-        resp = await client.post(
-            self.answer_presigned_url.format(applet_id=self.applet_id), data={"file_id": "test.txt"}
-        )
+        resp = await client.post(self.answer_upload_url.format(applet_id=self.applet_id), data={"file_id": "test.txt"})
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
         result = resp.json()["result"]
         assert len(result) == 1
@@ -205,7 +203,7 @@ class TestAnswerActivityItems(BaseTest):
         settings.cdn.bucket = bucket_name
         settings.cdn.bucket_answer = bucket_name
         mocker.patch("apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info", return_value=None)
-        resp = await client.post(self.answer_presigned_url.format(applet_id=self.applet_id), data={"file_id": file_id})
+        resp = await client.post(self.answer_upload_url.format(applet_id=self.applet_id), data={"file_id": file_id})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["fields"]["key"] == expected_key
         url = CDNClient(
@@ -219,7 +217,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         file_name = "test.txt"
-        resp = await client.post(self.log_presigned_url.format(device_id=device_tom), data={"file_id": file_name})
+        resp = await client.post(self.log_upload_url.format(device_id=device_tom), data={"file_id": file_name})
         assert resp.status_code == http.HTTPStatus.OK
         key = resp.json()["result"]["fields"]["key"]
         expected_key = LogFileService(
