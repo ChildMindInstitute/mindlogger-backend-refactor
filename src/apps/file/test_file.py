@@ -175,12 +175,14 @@ class TestAnswerActivityItems(BaseTest):
     async def test_generate_presigned_media_url(self, client: TestClient, file_name: str):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         bucket_name = "testbucket"
+        domain_name = "testdomain"
         settings.cdn.bucket = bucket_name
+        settings.cdn.domain = domain_name
         resp = await client.post(self.presigned_media_url, data={"file_name": file_name})
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
-        assert result["url"] == f"https://{bucket_name}.s3.amazonaws.com/"
         assert result["fields"]["key"].endswith(file_name)
+        assert result["url"] == settings.cdn.url.format(key=result["fields"]["key"])
 
     async def test_generate_presigned_url_for_post_answer__user_does_not_have_access_to_the_applet(
         self, client: TestClient, session: AsyncSession, user: User
@@ -195,20 +197,21 @@ class TestAnswerActivityItems(BaseTest):
         assert result[0]["message"] == AnswerViewAccessDenied.message
 
     @pytest.mark.usefixtures("mock_presigned_post")
-    async def test_generate_presigned_url_for_answers(
-        self,
-        client: TestClient,
-        mocker: MockerFixture,
-        uuid_zero: uuid.UUID,
-        tom: User,
-    ):
+    async def test_generate_presigned_url_for_answers(self, client: TestClient, tom: User, mocker: MockerFixture):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        mocker.patch("uuid.uuid4", return_value=uuid_zero)
         file_id = "test.txt"
         expected_key = CDNClient.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{self.applet_id}", file_id)
+        bucket_name = "bucket"
+        settings.cdn.bucket = bucket_name
+        settings.cdn.bucket_answer = bucket_name
+        mocker.patch("apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info", return_value=None)
         resp = await client.post(self.answer_presigned_url.format(applet_id=self.applet_id), data={"file_id": file_id})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["fields"]["key"] == expected_key
+        url = CDNClient(
+            CdnConfig(region="region", bucket=bucket_name, secret_key="secret_key", access_key="access_key"), "env"
+        ).generate_private_url(expected_key)
+        assert resp.json()["result"]["url"] == url
 
     @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_log_url(
@@ -222,7 +225,7 @@ class TestAnswerActivityItems(BaseTest):
         expected_key = LogFileService(
             tom.id,
             CDNClient(
-                CdnConfig(region="regeion", bucket="bucket", secret_key="secret_key", access_key="access_key"), "env"
+                CdnConfig(region="region", bucket="bucket", secret_key="secret_key", access_key="access_key"), "env"
             ),
         ).key(device_tom, file_name)
         assert key == expected_key

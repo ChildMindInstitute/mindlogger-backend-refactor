@@ -44,6 +44,7 @@ class FileIdRequest(PublicModel):
 
 
 class PresignedUrl(PublicModel):
-    url: HttpUrl
+    upload_url: HttpUrl
+    url: str
     # Use dict because fields can be different depend storage (AWS S3, Minio, GCS)
     fields: dict[str, str]

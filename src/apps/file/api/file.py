@@ -364,7 +364,11 @@ async def generate_presigned_media_url(
 ) -> Response[PresignedUrl]:
     key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
     data = cdn_client.generate_presigned_post(key)
-    return Response(result=PresignedUrl(**data))
+    return Response(
+        result=PresignedUrl(
+            upload_url=data["url"], fields=data["fields"], url=quote(settings.cdn.url.format(key=key), "/:")
+        )
+    )
 
 
 async def generate_presigned_answer_url(
@@ -384,7 +388,9 @@ async def generate_presigned_answer_url(
     cleaned_file_id = body.file_id.strip()
     key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
     data = cdn_client.generate_presigned_post(key)
-    return Response(result=PresignedUrl(**data))
+    return Response(
+        result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
+    )
 
 
 async def generate_presigned_logs_url(
@@ -396,4 +402,6 @@ async def generate_presigned_logs_url(
     service = LogFileService(user.id, cdn_client)
     key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"
     data = cdn_client.generate_presigned_post(key)
-    return Response(result=PresignedUrl(**data))
+    return Response(
+        result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
+    )
