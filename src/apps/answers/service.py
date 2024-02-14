@@ -82,7 +82,6 @@ from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.users import User, UserSchema, UsersCRUD
-from apps.users.errors import UserNotFound
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -837,12 +836,8 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         activity_id: uuid.UUID,
-        respondent_id: uuid.UUID,
+        subject_id: uuid.UUID,
     ) -> ReportServerResponse | None:
-        respondent_exist = await UsersCRUD(self.session).exist_by_id(id_=respondent_id)
-        if not respondent_exist:
-            raise UserNotFound(f"No such respondent with id={respondent_id}.")
-
         await self._is_report_server_configured(applet_id)
 
         act_crud = ActivityHistoriesCRUD(self.session)
@@ -853,7 +848,7 @@ class AnswerService:
             raise activity_error_exception
 
         act_versions = set(map(lambda act_hst: act_hst.id_version, activity_hsts))
-        answer = await AnswersCRUD(self.answer_session).get_latest_answer(applet_id, act_versions, respondent_id)
+        answer = await AnswersCRUD(self.answer_session).get_latest_answer(applet_id, act_versions, subject_id)
         if not answer:
             return None
 
@@ -1207,7 +1202,7 @@ class ReportServerService:
         initial_answer = answers_for_report[0]
 
         applet = await AppletsCRUD(self.session).get_by_id(initial_answer.applet_id)
-        user_info = await self._get_user_info(initial_answer.respondent_id, initial_answer.applet_id)
+        user_info = await self._get_user_info(initial_answer.target_subject_id)
         applet_full = await self._prepare_applet_data(
             initial_answer.applet_id,
             initial_answer.version,
@@ -1276,14 +1271,14 @@ class ReportServerService:
         applet_full.encryption = Encryption(**encryption)
         return applet_full.dict(by_alias=True)
 
-    async def _get_user_info(self, respondent_id: uuid.UUID, applet_id: uuid.UUID):
-        access = await UserAppletAccessCRUD(self.session).get(respondent_id, applet_id, Role.RESPONDENT)
-        assert access
+    async def _get_user_info(self, subject_id: uuid.UUID):
+        subject = await SubjectsCrud(self.session).get_by_id(subject_id)
+        assert subject
         return dict(
-            firstName=access.meta.get("firstName"),
-            lastName=access.meta.get("lastName"),
-            nickname=access.nickname,
-            secretId=access.meta.get("secretUserId"),
+            firstName=subject.first_name,
+            lastName=subject.last_name,
+            nickname=subject.nickname,
+            secretId=subject.secret_user_id,
         )
 
     async def _prepare_responses(self, answers_map: dict[uuid.UUID, AnswerSchema]) -> tuple[list[dict], list[str]]:

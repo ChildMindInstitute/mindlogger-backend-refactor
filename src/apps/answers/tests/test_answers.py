@@ -50,7 +50,7 @@ class TestAnswerActivityItems(BaseTest):
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"  # noqa: E501
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
-    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
+    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"  # noqa: E501
 
     async def test_answer_activity_items_create_for_respondent(self, mock_kiq_report, client, tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
@@ -153,7 +153,7 @@ class TestAnswerActivityItems(BaseTest):
             self.latest_report_url.format(
                 applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-                respondent_id=tom.id,
+                subject_id="ee5e2f55-8e32-40af-8ef9-24e332c31d7c",
             ),
         )
         assert response.status_code == 200
