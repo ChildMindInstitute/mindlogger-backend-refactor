@@ -313,12 +313,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         self,
         applet_id: uuid.UUID,
         activity_id: Collection[str],
-        respond_id: uuid.UUID,
+        subject_id: uuid.UUID,
     ) -> AnswerSchema | None:
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.activity_history_id.in_(activity_id))
-        query = query.where(AnswerItemSchema.respondent_id == respond_id)
+        query = query.where(AnswerSchema.target_subject_id == subject_id)
         query = query.order_by(AnswerSchema.created_at.desc())
         query = query.limit(1)
 
