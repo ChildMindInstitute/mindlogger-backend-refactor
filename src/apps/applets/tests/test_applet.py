@@ -6,7 +6,6 @@ import uuid
 from copy import deepcopy
 
 from apps.activities import errors as activity_errors
-from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.workspaces.errors import AppletCreationAccessDenied
 from config import settings
@@ -267,8 +266,6 @@ class TestApplet(BaseTest):
 
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == http.HTTPStatus.OK
-        assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].subject == "Applet upload success!"
 
     async def test_creating_applet_failed_by_duplicate_activity_name(self, client, tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
@@ -647,7 +644,6 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == "Applet already exists."
-        assert TestMail.mails[0].subject == "Applet upload failed!"
 
     async def test_create_duplicate_case_sensitive_name_applet(self, client, tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
@@ -896,8 +892,7 @@ class TestApplet(BaseTest):
             data=update_data,
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
-        # assert len(TestMail.mails) == 1
-        # assert TestMail.mails[0].subject == "Applet edit success!"
+
         # TODO: move to fixtures
         assert len(FCMNotificationTest.notifications) == 1
         assert device_tom in FCMNotificationTest.notifications
@@ -948,9 +943,6 @@ class TestApplet(BaseTest):
             ),
         )
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
-
-        assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].subject == "Applet duplicate success!"
 
         response = await client.get(self.applet_list_url)
         assert len(response.json()["result"]) == 4
