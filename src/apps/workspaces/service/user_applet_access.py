@@ -15,12 +15,8 @@ from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
-from apps.workspaces.domain.user_applet_access import RespondentInfo, RespondentInfoPublic
-from apps.workspaces.errors import (
-    UserAppletAccessNotFound,
-    UserSecretIdAlreadyExists,
-    UserSecretIdAlreadyExistsInInvitation,
-)
+from apps.workspaces.domain.user_applet_access import RespondentInfoPublic
+from apps.workspaces.errors import UserSecretIdAlreadyExists, UserSecretIdAlreadyExistsInInvitation
 
 
 class UserAppletAccessService:
@@ -211,16 +207,6 @@ class UserAppletAccessService:
     async def get_roles(self) -> list[str]:
         roles = await UserAppletAccessCRUD(self.session).get_user_roles_to_applet(self._user_id, self._applet_id)
         return roles
-
-    async def update_meta(self, respondent_id: uuid.UUID, role: Role, schema: RespondentInfo):
-        crud = UserAppletAccessCRUD(self.session)
-        access = await crud.get(respondent_id, self._applet_id, role)
-        if not access:
-            raise UserAppletAccessNotFound()
-        await self._validate_secret_user_id(access.id, schema.secret_user_id)
-        # change here
-        access.meta["secretUserId"] = schema.secret_user_id
-        await crud.update_meta_by_access_id(access.id, access.meta, nickname=schema.nickname)
 
     async def _validate_secret_user_id(self, exclude_id: uuid.UUID, secret_id: str):
         access = await UserAppletAccessCRUD(self.session).get_by_secret_user_id_for_applet(

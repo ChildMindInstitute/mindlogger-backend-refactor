@@ -49,12 +49,4 @@ def downgrade() -> None:
     op.drop_column("answers", "relation")
     op.drop_column("answers", "source_subject_id")
     op.drop_column("answers", "target_subject_id")
-    op.drop_constraint(op.f("fk_user_pins_pinned_subject_id_subjects"), "user_pins", type_="foreignkey")
-    op.alter_column(
-        "user_pins",
-        "pinned_user_id",
-        existing_type=postgresql.UUID(),
-        nullable=False
-    )
-    op.drop_column("user_pins", "pinned_subject_id")
     # ### end Alembic commands ###

@@ -1122,3 +1122,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         )
         query = query.values(pinned_subject_id=None, pinned_user_id=user_id) # noqa
         await self._execute(query)
+
+    async def get_workspace_pins(self, owner_id: uuid.UUID) -> list[UserPinSchema]:
+        query: Query = select(UserPinSchema)
+        query = query.where(UserPinSchema.owner_id == owner_id)
+        db_res = await self._execute(query)
+        return db_res.scalars().all()

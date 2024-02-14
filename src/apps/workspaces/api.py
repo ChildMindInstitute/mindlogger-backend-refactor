@@ -203,9 +203,6 @@ async def workspace_applet_respondent_update(
         await CheckAccessService(session, user.id).check_applet_detail_access(
             applet_id
         )
-        await UserAppletAccessService(session, user.id, applet_id).update_meta(
-            respondent_id, Role.RESPONDENT, schema
-        )
         subject_srv = SubjectsService(session, user.id)
         subject = await subject_srv.get_by_user_and_applet(respondent_id, applet_id)
         assert subject

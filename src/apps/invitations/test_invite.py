@@ -28,6 +28,8 @@ from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UserSchema
 from apps.users.domain import UserCreate, UserCreateRequest
+from apps.workspaces.domain.constants import UserPinRole
+from apps.workspaces.service.user_access import UserAccessService
 
 
 @pytest.fixture
@@ -865,3 +867,30 @@ class TestInvite(BaseTest):
         assert (count0 + 1) == count1
         subject = subject_crud.get(user.id, applet_id)
         assert subject
+
+    async def test_move_pins_from_subject_to_user(
+            self, client, session, tom: UserSchema, bob: UserSchema, shell_create_data
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        url = self.shell_acc_create_url.format(applet_id=applet_id)
+        response = await client.post(url, shell_create_data)
+        subject = response.json()["result"]
+        url = self.shell_acc_invite_url.format(applet_id=applet_id)
+
+        await UserAccessService(session, tom.id).pin(
+            tom.id, UserPinRole.respondent, subject_id=uuid.UUID(subject["id"])
+        )
+
+        response = await client.post(url, dict(subjectId=subject["id"], email=bob.email_encrypted))
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(TestMail.mails) == 1
+
+        invitation = response.json()["result"]
+        await client.login(self.login_url, bob.email_encrypted, "Test1234!")
+        url_accept = self.accept_url.format(key=invitation["key"])
+        response = await client.post(url_accept)
+        assert response.status_code == http.HTTPStatus.OK
+
+        pins = await UserAppletAccessCRUD(session).get_workspace_pins(tom.id)
+        assert pins[0].pinned_user_id == bob.id
