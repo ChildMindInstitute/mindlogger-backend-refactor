@@ -403,9 +403,18 @@ async def workspace_respondent_pin(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await UserAccessService(session, user.id).pin(
-            owner_id, user_id, UserPinRole.respondent
-        )
+        await UserAccessService(session, user.id).pin(owner_id, UserPinRole.respondent, user_id=user_id)
+
+
+async def workspace_subject_pin(
+    owner_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    async with atomic(session):
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await UserAccessService(session, user.id).pin(owner_id, UserPinRole.respondent, subject_id=subject_id)
 
 
 async def workspace_manager_pin(
@@ -416,9 +425,7 @@ async def workspace_manager_pin(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await UserAccessService(session, user.id).pin(
-            owner_id, user_id, UserPinRole.manager
-        )
+        await UserAccessService(session, user.id).pin(owner_id, UserPinRole.manager, user_id)
 
 
 async def workspace_users_applet_access_list(

@@ -169,6 +169,26 @@ def upgrade() -> None:
         ["id"],
         ondelete="RESTRICT",
     )
+    op.add_column(
+        "user_pins",
+        sa.Column(
+            "pinned_subject_id", postgresql.UUID(as_uuid=True), nullable=True
+        ),
+    )
+    op.alter_column(
+        "user_pins",
+        "pinned_user_id",
+        existing_type=postgresql.UUID(),
+        nullable=True,
+    )
+    op.create_foreign_key(
+        op.f("fk_user_pins_pinned_subject_id_subjects"),
+        "user_pins",
+        "subjects",
+        ["pinned_subject_id"],
+        ["id"],
+        ondelete="CASCADE",
+    )
 
 
     # ### end Alembic commands ###

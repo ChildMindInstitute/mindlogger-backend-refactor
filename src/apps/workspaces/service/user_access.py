@@ -183,15 +183,21 @@ class UserAccessService:
             raise WorkspaceDoesNotExistError
 
     async def pin(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole
+        self,
+        owner_id: uuid.UUID,
+        pin_role: UserPinRole,
+        user_id: uuid.UUID | None = None,
+        subject_id: uuid.UUID | None = None
     ):
-        await self._validate_pin(owner_id, user_id, pin_role)
-        await UserAppletAccessCRUD(self.session).pin(
-            self._user_id, owner_id, user_id, pin_role
-        )
+        await self._validate_pin(owner_id, pin_role, user_id, subject_id)
+        await UserAppletAccessCRUD(self.session).pin(self._user_id, owner_id, pin_role, user_id, subject_id)
 
     async def _validate_pin(
-        self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole
+        self,
+        owner_id: uuid.UUID,
+        pin_role: UserPinRole,
+        user_id: uuid.UUID | None,
+        subject_id: uuid.UUID | None
     ):
         can_pin = await UserAppletAccessCRUD(
             self.session
@@ -209,9 +215,13 @@ class UserAccessService:
         elif pin_role == UserPinRole.manager:
             roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.EDITOR]
 
-        has_user = await UserAppletAccessCRUD(
-            self.session
-        ).check_access_by_user_and_owner(user_id, owner_id, roles)
+        access_crud = UserAppletAccessCRUD(self.session)
+        if user_id:
+            has_user = await access_crud.check_access_by_user_and_owner(user_id, owner_id, roles)
+        elif subject_id:
+            has_user = await access_crud.check_access_by_subject_and_owner(subject_id, owner_id, roles)
+        else:
+            raise UserAppletAccessesDenied
         if not has_user:
             raise UserAppletAccessesDenied
 
@@ -363,3 +373,6 @@ class UserAccessService:
         await self._validate_ownership(
             [applet_id], [Role.OWNER, Role.MANAGER, Role.COORDINATOR]
         )
+
+    async def change_subject_pins_to_user(self, user_id: uuid.UUID, subject_id: uuid.UUID):
+        return await UserAppletAccessCRUD(self.session).change_subject_pins_to_user(user_id, subject_id)
