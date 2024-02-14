@@ -961,7 +961,7 @@ class AnswerService:
 
         return count
 
-    async def fill_last_activity(
+    async def fill_last_activity_workspace_respondent(
         self,
         respondents: list[WorkspaceRespondent],
         applet_id: uuid.UUID | None = None,
@@ -971,6 +971,14 @@ class AnswerService:
         for respondent in respondents:
             respondent.last_seen = result.get(respondent.id)
         return respondents
+
+    async def fill_last_activity_respondent_info(
+        self,
+        respondent_id: uuid.UUID,
+        applet_id: uuid.UUID,
+    ) -> dict[uuid.UUID, datetime.datetime]:
+        result = await AnswersCRUD(self.answer_session).get_last_activity([respondent_id], applet_id)
+        return result
 
 
 class ReportServerService:

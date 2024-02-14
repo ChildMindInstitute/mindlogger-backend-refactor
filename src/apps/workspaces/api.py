@@ -246,7 +246,9 @@ async def workspace_respondents_list(
     await CheckAccessService(session, user.id).check_workspace_respondent_list_access(owner_id)
 
     data, total = await service.get_workspace_respondents(owner_id, None, deepcopy(query_params))
-    respondents = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity(data)
+    respondents = await AnswerService(
+        session=session, arbitrary_session=answer_session
+    ).fill_last_activity_workspace_respondent(data)
     return ResponseMulti(result=respondents, count=total)
 
 
@@ -264,9 +266,9 @@ async def workspace_applet_respondents_list(
     await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
     data, total = await service.get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
-    respondents = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity(
-        data, applet_id
-    )
+    respondents = await AnswerService(
+        session=session, arbitrary_session=answer_session
+    ).fill_last_activity_workspace_respondent(data, applet_id)
     return ResponseMulti(result=respondents, count=total)
 
 
@@ -398,6 +400,12 @@ async def workspace_applet_get_respondent(
     await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
     respondent_info = await UserAppletAccessService(session, user.id, applet_id).get_respondent_info(
-        respondent_id, applet_id, owner_id, answer_session
+        respondent_id, applet_id, owner_id
     )
+    # get last activity time
+    result = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity_respondent_info(
+        respondent_id, applet_id
+    )
+    respondent_info.last_seen = result.get(respondent_id)
+
     return Response(result=respondent_info)
