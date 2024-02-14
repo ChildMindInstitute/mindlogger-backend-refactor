@@ -39,8 +39,14 @@ class SubjectsService:
         models = list(map(lambda s: self.__to_db_model(s), schema))
         return await SubjectsCrud(self.session).create_many(models)
 
-    async def update(self, schema: SubjectSchema) -> SubjectSchema:
-        return await SubjectsCrud(self.session).update(schema)
+    async def update(self, schema: Subject) -> SubjectSchema:
+        return await SubjectsCrud(self.session).update(
+            SubjectSchema(
+                id=schema.id,
+                nickname=schema.nickname,
+                secret_user_id=schema.secret_user_id,
+            )
+        )
 
     async def delete(self, id_: uuid.UUID):
         repository = SubjectsCrud(self.session)

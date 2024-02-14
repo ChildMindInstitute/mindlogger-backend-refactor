@@ -241,7 +241,6 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
 
-    @pytest.mark.skip("Skip until M2-4890 will be done")
     async def test_workspace_applets_respondent_update(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
@@ -519,7 +518,6 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         # TODO: check from database results
 
-    @pytest.mark.skip("Skip until M2-4890 will be done")
     async def test_pin_workspace_respondents(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.get(

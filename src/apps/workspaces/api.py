@@ -18,6 +18,7 @@ from apps.shared.query_params import (
     QueryParams,
     parse_query_params,
 )
+from apps.subjects.services import SubjectsService
 from apps.users.domain import User
 from apps.users.services.user import UserService
 from apps.workspaces.domain.constants import Role, UserPinRole
@@ -235,6 +236,12 @@ async def workspace_applet_respondent_update(
         await UserAppletAccessService(session, user.id, applet_id).update_meta(
             respondent_id, Role.RESPONDENT, schema
         )
+        subject_srv = SubjectsService(session, user.id)
+        subject = await subject_srv.get_by_user_and_applet(respondent_id, applet_id)
+        assert subject
+        subject.nickname = schema.nickname
+        subject.secret_user_id = schema.secret_user_id
+        await SubjectsService(session, user.id).update(subject)
 
 
 async def workspace_remove_manager_access(
