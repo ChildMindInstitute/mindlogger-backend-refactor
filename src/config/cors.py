@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import AnyHttpUrl, BaseModel, validator
 
@@ -7,6 +7,7 @@ __all__ = ["CorsSettings"]
 
 class CorsSettings(BaseModel):
     allow_origins: list[AnyHttpUrl | Literal["*"]] = ["*"]
+    allow_origin_regex: Optional[str] = None
     allow_methods: list[str] = ["*"]
     allow_headers: list[str] = ["*"]
     allow_credentials: bool = True
