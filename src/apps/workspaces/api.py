@@ -391,12 +391,13 @@ async def workspace_applet_get_respondent(
     respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    answer_session=Depends(get_answer_session_by_owner_id),
 ) -> Response[RespondentInfoPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
     respondent_info = await UserAppletAccessService(session, user.id, applet_id).get_respondent_info(
-        respondent_id, applet_id, owner_id
+        respondent_id, applet_id, owner_id, answer_session
     )
     return Response(result=respondent_info)

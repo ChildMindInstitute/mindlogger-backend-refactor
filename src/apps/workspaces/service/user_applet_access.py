@@ -1,7 +1,9 @@
 import uuid
 
 from asyncpg.exceptions import UniqueViolationError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.constants import InvitationStatus
@@ -332,19 +334,27 @@ class UserAppletAccessService:
         respondent_id: uuid.UUID,
         applet_id: uuid.UUID,
         owner_id: uuid.UUID,
+        answer_session: AsyncSession,
     ) -> RespondentInfoPublic:
         crud = UserAppletAccessCRUD(self.session)
         respondent_schema = await crud.get_respondent_by_applet_and_owner(respondent_id, applet_id, owner_id)
         if not respondent_schema:
             raise NotFoundError()
-
+        respondent_info = None
         if respondent_schema.meta:
-            return RespondentInfoPublic(
+            respondent_info = RespondentInfoPublic(
                 nickname=respondent_schema.nickname,
                 secret_user_id=respondent_schema.meta.get("secretUserId"),
             )
         else:
-            return RespondentInfoPublic(nickname=respondent_schema.nickname, secret_user_id=None)
+            respondent_info = RespondentInfoPublic(nickname=respondent_schema.nickname, secret_user_id=None)
+
+        # get last activity time
+        result = await AnswersCRUD(answer_session if answer_session else self.session).get_last_activity(
+            [respondent_id], applet_id
+        )
+        respondent_info.last_seen = result.get(respondent_id)
+        return respondent_info
 
     async def has_role(self, role: str) -> bool:
         manager_roles = set(Role.managers())
