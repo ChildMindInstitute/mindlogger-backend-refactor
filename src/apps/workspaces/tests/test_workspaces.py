@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.shared.query_params import QueryParams
 from apps.shared.test import BaseTest
-from apps.users import UserSchema
+from apps.users import UserSchema, UsersCRUD
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from apps.workspaces.service.workspace import WorkspaceService
+from config import settings
 
 
 @pytest.fixture
@@ -190,7 +192,7 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == 200
 
-    async def test_workspace_applets_respondent_update(self, client):
+    async def test_workspace_applets_respondent_update(self, client, tom, lucy):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         response = await client.post(
@@ -451,7 +453,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         # TODO: check from database results
 
-    async def test_pin_workspace_respondents(self, client):
+    async def test_pin_workspace_respondents(self, client, tom):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         response = await client.get(
             self.workspace_applet_respondents_list.format(

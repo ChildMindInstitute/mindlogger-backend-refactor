@@ -11,11 +11,7 @@ from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.query_params import (
-    BaseQueryParams,
-    QueryParams,
-    parse_query_params,
-)
+from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User
 from apps.users.services.user import UserService
