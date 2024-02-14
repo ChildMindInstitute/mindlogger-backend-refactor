@@ -27,7 +27,7 @@ from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UserSchema
-from apps.users.domain import UserCreate, UserCreateRequest
+from apps.users.domain import User, UserCreate, UserCreateRequest
 from apps.workspaces.domain.constants import UserPinRole
 from apps.workspaces.service.user_access import UserAccessService
 
@@ -869,7 +869,7 @@ class TestInvite(BaseTest):
         assert subject
 
     async def test_move_pins_from_subject_to_user(
-            self, client, session, tom: UserSchema, bob: UserSchema, shell_create_data
+            self, client, session, tom: User, bob: User, shell_create_data
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
