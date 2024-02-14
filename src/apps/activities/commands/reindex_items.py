@@ -10,14 +10,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.domain.activity_full import ActivityFull
-from apps.activities.domain.response_values import (
-    MultiSelectionValues,
-    SingleSelectionValues,
-)
-from apps.activity_flows.domain.flow_update import (
-    ActivityFlowItemUpdate,
-    FlowUpdate,
-)
+from apps.activities.domain.response_values import MultiSelectionValues, SingleSelectionValues
+from apps.activity_flows.domain.flow_update import ActivityFlowItemUpdate, FlowUpdate
 from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service.applet import AppletService
@@ -93,24 +87,18 @@ async def override_indexes(
 async def _reindex_items(activities: list[ActivityFull]) -> list[ActivityFull]:
     for activity in activities:
         for item in activity.items:
-            if isinstance(
-                item.response_values, SingleSelectionValues
-            ) or isinstance(item.response_values, MultiSelectionValues):
+            if isinstance(item.response_values, SingleSelectionValues) or isinstance(
+                item.response_values, MultiSelectionValues
+            ):
                 fix = await is_need_to_override(item.response_values)
                 if fix:
-                    item.response_values = await override_indexes(
-                        item.response_values
-                    )
+                    item.response_values = await override_indexes(item.response_values)
     return activities
 
 
-async def reindex_applet(
-    session: AsyncSession, applet_id: uuid.UUID
-) -> AppletFull:
+async def reindex_applet(session: AsyncSession, applet_id: uuid.UUID) -> AppletFull:
     fake_user_id = uuid.uuid4()
-    applet = await AppletService(session, fake_user_id).get_full_applet(
-        applet_id
-    )
+    applet = await AppletService(session, fake_user_id).get_full_applet(applet_id)
     role = await UserAppletAccessCRUD(session).get_applet_owner(applet_id)
     fixed_activities = await _reindex_items(applet.activities)
     activity_flows = []
@@ -118,16 +106,12 @@ async def reindex_applet(
         items = []
         for flow_item in flow.items:
             activity = next(
-                filter(
-                    lambda a: a.id == flow_item.activity_id, fixed_activities
-                ),
+                filter(lambda a: a.id == flow_item.activity_id, fixed_activities),
                 None,
             )
             if not activity:
                 raise Exception(f"Activity {flow_item.activity_id} not found")
-            item = ActivityFlowItemUpdate(
-                id=flow_item.id, activity_key=activity.key
-            )
+            item = ActivityFlowItemUpdate(id=flow_item.id, activity_key=activity.key)
             items.append(item)
         flow_update = FlowUpdate(
             id=flow.id,
@@ -159,9 +143,7 @@ async def reindex_applet(
         activity_flows=activity_flows,
     )
     async with atomic(session):
-        await AppletService(session, role.owner_id).update(
-            applet.id, update_values
-        )
+        await AppletService(session, role.owner_id).update(applet.id, update_values)
     return applet
 
 

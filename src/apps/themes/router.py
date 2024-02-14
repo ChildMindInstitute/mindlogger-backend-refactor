@@ -7,12 +7,7 @@ from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
     NO_CONTENT_ERROR_RESPONSES,
 )
-from apps.themes.api.themes import (
-    create_theme,
-    delete_theme_by_id,
-    get_themes,
-    update_theme_by_id,
-)
+from apps.themes.api.themes import create_theme, delete_theme_by_id, get_themes, update_theme_by_id
 from apps.themes.domain import PublicTheme
 
 router = APIRouter(prefix="/themes", tags=["Themes"])

@@ -4,22 +4,11 @@ import uuid
 from pydantic import Field, validator
 
 from apps.activities.domain.activity_base import ActivityBase
-from apps.activities.domain.activity_full import (
-    ActivityItemHistoryFull,
-    PublicActivityFull,
-    PublicActivityItemFull,
-)
-from apps.activities.domain.activity_item import (
-    ActivityItemSingleLanguageDetailPublic,
-)
-from apps.activities.domain.activity_item_history import (
-    ActivityItemHistoryChange,
-)
+from apps.activities.domain.activity_full import ActivityItemHistoryFull, PublicActivityFull, PublicActivityItemFull
+from apps.activities.domain.activity_item import ActivityItemSingleLanguageDetailPublic
+from apps.activities.domain.activity_item_history import ActivityItemHistoryChange
 from apps.activities.domain.response_type_config import PerformanceTaskType
-from apps.activities.domain.scores_reports import (
-    ScoresAndReports,
-    SubscaleSetting,
-)
+from apps.activities.domain.scores_reports import ScoresAndReports, SubscaleSetting
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import extract_history_version
 
@@ -76,9 +65,7 @@ class ActivityHistoryExport(PublicActivityFull):
     version: str | None = None
     items: list[PublicActivityItemFull] = Field(default_factory=list)
 
-    _version = validator("version", always=True, allow_reuse=True)(
-        extract_history_version
-    )
+    _version = validator("version", always=True, allow_reuse=True)(extract_history_version)
 
     def translate(self, i18n: I18N) -> "ActivityHistoryTranslatedExport":
         as_dict = self.dict(by_alias=False)
@@ -100,6 +87,4 @@ class ActivityHistoryTranslatedExport(ActivityBase, PublicModel):
     version: str | None = None
     description: str  # type: ignore[assignment]
     created_at: datetime.datetime
-    items: list[ActivityItemSingleLanguageDetailPublic] = Field(
-        default_factory=list
-    )
+    items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)

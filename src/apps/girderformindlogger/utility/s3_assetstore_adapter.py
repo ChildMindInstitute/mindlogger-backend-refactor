@@ -12,10 +12,7 @@ from six.moves import urllib
 
 from apps.girderformindlogger import events, logger
 from apps.girderformindlogger.api.rest import setContentDisposition
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import GirderException, ValidationException
 from apps.girderformindlogger.models.file import File
 from apps.girderformindlogger.models.folder import Folder
 from apps.girderformindlogger.models.item import Item

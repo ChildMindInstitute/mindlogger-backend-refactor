@@ -30,10 +30,7 @@ from apps.shared.domain import InternalModel
 class ActivityItemBaseExport(BaseModelExport):
     @classmethod
     def supports(cls, model: InternalModel) -> bool:
-        return (
-            isinstance(model, ActivityItemFull)
-            and model.response_type == cls._get_supported_response_type()
-        )
+        return isinstance(model, ActivityItemFull) and model.response_type == cls._get_supported_response_type()
 
     @classmethod
     @abstractmethod
@@ -58,9 +55,7 @@ class ActivityItemBaseExport(BaseModelExport):
         }
 
         config = model.config
-        if additional_option := getattr(
-            config, "additional_response_option", None
-        ):
+        if additional_option := getattr(config, "additional_response_option", None):
             doc["isOptionalText"] = additional_option.text_input_option
 
         if timer := getattr(config, "timer", None):
@@ -102,12 +97,8 @@ class ActivityItemBaseExport(BaseModelExport):
         options = {}
         if getattr(config, "remove_back_button", False):
             options["removeBackOption"] = True
-        if additional_option := getattr(
-            config, "additional_response_option", None
-        ):
-            options[
-                "isOptionalTextRequired"
-            ] = additional_option.text_input_required
+        if additional_option := getattr(config, "additional_response_option", None):
+            options["isOptionalTextRequired"] = additional_option.text_input_required
 
         return options
 
@@ -571,9 +562,7 @@ class ActivityItemSingleSelectionRowsExport(ActivityItemBaseExport):
         return item_options
 
 
-class ActivityItemMultiSelectionRowsExport(
-    ActivityItemSingleSelectionRowsExport
-):
+class ActivityItemMultiSelectionRowsExport(ActivityItemSingleSelectionRowsExport):
     @classmethod
     def _get_supported_response_type(cls) -> ResponseType:
         return ResponseType.MULTISELECTROWS

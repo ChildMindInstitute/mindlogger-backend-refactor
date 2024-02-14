@@ -21,22 +21,16 @@ class TransferService:
         self._user = user
         self.session = session
 
-    async def initiate_transfer(
-        self, applet_id: uuid.UUID, transfer_request: InitiateTransfer
-    ):
+    async def initiate_transfer(self, applet_id: uuid.UUID, transfer_request: InitiateTransfer):
         """Initiate a transfer of ownership of an applet."""
         # check if user is owner of applet
         applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
 
-        access = await UserAppletAccessCRUD(self.session).get_applet_owner(
-            applet_id
-        )
+        access = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
         if access.user_id != self._user.id:
             raise PermissionsError()
 
-        to_user = await UsersCRUD(self.session).get_user_or_none_by_email(
-            transfer_request.email
-        )
+        to_user = await UsersCRUD(self.session).get_user_or_none_by_email(transfer_request.email)
 
         if to_user:
             if to_user.id == self._user.id:
@@ -87,19 +81,12 @@ class TransferService:
         await AppletsCRUD(self.session).get_by_id(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
-        if (
-            transfer.email != self._user.email_encrypted
-            or applet_id != transfer.applet_id
-        ):
+        if transfer.email != self._user.email_encrypted or applet_id != transfer.applet_id:
             raise PermissionsError()
 
         # delete previous owner's accesses
-        previous_owner = await UserAppletAccessCRUD(
-            self.session
-        ).get_applet_owner(applet_id=applet_id)
-        await UserAppletAccessCRUD(
-            self.session
-        ).remove_access_by_user_and_applet_to_role(
+        previous_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id=applet_id)
+        await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(
             user_id=previous_owner.user_id,
             applet_ids=[
                 applet_id,
@@ -110,9 +97,7 @@ class TransferService:
         )
 
         await TransferCRUD(self.session).approve_by_key(key, self._user.id)
-        await TransferCRUD(self.session).decline_all_pending_by_applet_id(
-            applet_id=transfer.applet_id
-        )
+        await TransferCRUD(self.session).decline_all_pending_by_applet_id(applet_id=transfer.applet_id)
 
         # add new owner and respondent to applet
         roles_data = dict(
@@ -134,14 +119,10 @@ class TransferService:
                 **roles_data,
             ),
         ]
-        await UserAppletAccessCRUD(
-            self.session
-        ).upsert_user_applet_access_list(roles_to_add)
+        await UserAppletAccessCRUD(self.session).upsert_user_applet_access_list(roles_to_add)
 
         # remove other roles of new owner
-        await UserAppletAccessCRUD(
-            self.session
-        ).remove_access_by_user_and_applet_to_role(
+        await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(
             user_id=self._user.id,
             applet_ids=[
                 applet_id,
@@ -155,9 +136,7 @@ class TransferService:
         )
 
         # change other accesses' owner_id to current owner
-        await UserAppletAccessCRUD(
-            self.session
-        ).change_owner_of_applet_accesses(
+        await UserAppletAccessCRUD(self.session).change_owner_of_applet_accesses(
             new_owner=self._user.id, applet_id=applet_id
         )
 

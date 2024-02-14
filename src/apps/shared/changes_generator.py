@@ -22,9 +22,7 @@ EMPTY_VALUES: tuple = (None, "", 0, dict(), dict(en=""), [])
 
 
 class ChangeTextGenerator:
-    def __init__(
-        self, language="en", dictionary: dict[str, dict] | None = None
-    ):
+    def __init__(self, language="en", dictionary: dict[str, dict] | None = None):
         if dictionary is None:
             dictionary = _DICTIONARY
         self._dictionary = dictionary[language]
@@ -96,9 +94,7 @@ class BaseChangeGenerator:
     def __init__(self):
         self._change_text_generator = ChangeTextGenerator()
 
-    def _populate_bool_changes(
-        self, field_name: str, value: bool, changes: list[str]
-    ) -> None:
+    def _populate_bool_changes(self, field_name: str, value: bool, changes: list[str]) -> None:
         # Invert value for hidden (UI name contains visibility) because on UI
         # it will be visibility
         if "Visibility" in field_name:

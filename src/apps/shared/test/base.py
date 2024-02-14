@@ -15,9 +15,11 @@ class BaseTest:
 
     @pytest.fixture(scope="class", autouse=True)
     async def initialize(self):
-        await self.populate_db()
-        yield
-        await truncate_tables()
+        try:
+            await self.populate_db()
+            yield
+        finally:
+            await truncate_tables()
 
     @pytest.fixture(autouse=True)
     async def clear_mails(self):
@@ -33,9 +35,9 @@ class BaseTest:
         data = json.load(file)
         async with Session() as session:
             for datum in data:
-                columns = ",".join(
-                    map(lambda field: f'"{field}"', datum["fields"].keys())
-                )
+                if datum["table"] == "users":
+                    continue
+                columns = ",".join(map(lambda field: f'"{field}"', datum["fields"].keys()))
                 values = ",".join(map(_str_caster, datum["fields"].values()))
                 query = text(
                     f"""

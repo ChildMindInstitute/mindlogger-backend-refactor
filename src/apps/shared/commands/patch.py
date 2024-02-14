@@ -14,9 +14,7 @@ class PatchRegister:
     ):
         cls.patches = cls.patches or []
         # check if task_id already exist
-        found_patch = next(
-            (p for p in cls.patches if p.task_id == task_id), None
-        )
+        found_patch = next((p for p in cls.patches if p.task_id == task_id), None)
         if found_patch:
             raise ValueError(f"Patch with task_id {task_id} already exist")
         cls.patches.append(
@@ -37,8 +35,6 @@ class PatchRegister:
         if not cls.patches:
             return None
         # find patch by task_id
-        found_patch = next(
-            (p for p in cls.patches if p.task_id == task_id), None
-        )
+        found_patch = next((p for p in cls.patches if p.task_id == task_id), None)
 
         return found_patch

@@ -4,14 +4,9 @@ import uuid
 from fastapi import Depends
 
 from apps.activities.crud import ActivitiesCRUD
-from apps.activities.domain.activity import (
-    ActivitySingleLanguageWithItemsDetailPublic,
-)
+from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic
 from apps.activities.services.activity import ActivityService
-from apps.applets.domain.applet import (
-    AppletActivitiesDetailsPublic,
-    AppletSingleLanguageDetailMobilePublic,
-)
+from apps.applets.domain.applet import AppletActivitiesDetailsPublic, AppletSingleLanguageDetailMobilePublic
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response
@@ -31,16 +26,10 @@ async def activity_retrieve(
 ) -> Response[ActivitySingleLanguageWithItemsDetailPublic]:
     async with atomic(session):
         schema = await ActivitiesCRUD(session).get_by_id(activity_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            schema.applet_id
-        )
-        activity = await ActivityService(
-            session, user.id
-        ).get_single_language_by_id(activity_id, language)
+        await CheckAccessService(session, user.id).check_applet_detail_access(schema.applet_id)
+        activity = await ActivityService(session, user.id).get_single_language_by_id(activity_id, language)
 
-    return Response(
-        result=ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity)
-    )
+    return Response(result=ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity))
 
 
 async def public_activity_retrieve(
@@ -53,9 +42,7 @@ async def public_activity_retrieve(
             session, uuid.UUID("00000000-0000-0000-0000-000000000000")
         ).get_public_single_language_by_id(id_, language)
 
-    return Response(
-        result=ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity)
-    )
+    return Response(result=ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity))
 
 
 async def applet_activities(
@@ -67,25 +54,19 @@ async def applet_activities(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
 
         applet_future = service.get_single_language_by_id(applet_id, language)
-        nickname_future = UserAppletAccessService(
-            session, user.id, applet_id
-        ).get_nickname()
-        activities_future = ActivityService(
-            session, user.id
-        ).get_single_language_with_items_by_applet_id(applet_id, language)
+        nickname_future = UserAppletAccessService(session, user.id, applet_id).get_nickname()
+        activities_future = ActivityService(session, user.id).get_single_language_with_items_by_applet_id(
+            applet_id, language
+        )
         futures = await asyncio.gather(
             applet_future,
             nickname_future,
             activities_future,
         )
-        applet_detail = AppletSingleLanguageDetailMobilePublic.from_orm(
-            futures[0]
-        )
+        applet_detail = AppletSingleLanguageDetailMobilePublic.from_orm(futures[0])
         respondent_meta = {"nickname": futures[1]}
         activities = futures[2]
 

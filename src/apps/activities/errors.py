@@ -1,11 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import (
-    AccessDeniedError,
-    FieldError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import AccessDeniedError, FieldError, NotFoundError, ValidationError
 
 
 class ReusableItemChoiceAlreadyExist(ValidationError):
@@ -59,9 +54,7 @@ class DataMatrixRequiredError(FieldError):
 
 
 class CorrectAnswerRequiredError(FieldError):
-    message = _(
-        "correct_answer must be set if correct_answer_required is True."
-    )
+    message = _("correct_answer must be set if correct_answer_required is True.")
 
 
 class MinValueError(FieldError):
@@ -89,9 +82,7 @@ class AlertFlagMissingSingleMultiRowItemError(FieldError):
 
 
 class AlertFlagMissingSliderItemError(FieldError):
-    message = _(
-        "set_alerts flag is not set for slider(rows) items with alerts."
-    )
+    message = _("set_alerts flag is not set for slider(rows) items with alerts.")
 
 
 class InvalidDataMatrixError(FieldError):
@@ -103,10 +94,7 @@ class InvalidDataMatrixByOptionError(FieldError):
 
 
 class InvalidScoreLengthError(FieldError):
-    message = _(
-        "Scores must have the same length as the "
-        "range of min_value and max_value"
-    )
+    message = _("Scores must have the same length as the " "range of min_value and max_value")
 
 
 class TimerRequiredError(FieldError):
@@ -274,6 +262,4 @@ class DuplicateSubscaleNameError(FieldError):
 
 
 class FlowItemActivityKeyNotFoundError(ValidationError):
-    message = _(
-        "Activity key from activity flow item is not found in activity list."
-    )
+    message = _("Activity key from activity flow item is not found in activity list.")

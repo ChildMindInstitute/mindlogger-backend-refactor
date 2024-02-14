@@ -1,11 +1,5 @@
-from apps.activities.domain.conditions import (
-    MultiSelectConditionType,
-    SingleSelectConditionType,
-)
-from apps.activities.domain.response_type_config import (
-    PerformanceTaskType,
-    ResponseType,
-)
+from apps.activities.domain.conditions import MultiSelectConditionType, SingleSelectConditionType
+from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
 from apps.activities.errors import (
     IncorrectConditionItemError,
@@ -41,9 +35,7 @@ def validate_item_flow(values: dict):
                     raise IncorrectConditionItemError()
                 else:
                     # check if condition item order is less than current item order  # noqa: E501
-                    condition_item_index = item_names.index(
-                        condition.item_name
-                    )
+                    condition_item_index = item_names.index(condition.item_name)
                     if condition_item_index > index:
                         raise IncorrectConditionItemIndexError()
 
@@ -56,19 +48,13 @@ def validate_item_flow(values: dict):
                         raise IncorrectConditionLogicItemTypeError()
 
                     # check if condition option ids are correct
-                    if condition.type in list(
-                        SingleSelectConditionType
-                    ) or condition.type in list(MultiSelectConditionType):
+                    if condition.type in list(SingleSelectConditionType) or condition.type in list(
+                        MultiSelectConditionType
+                    ):
                         option_values = [
-                            str(option.value)
-                            for option in items[
-                                condition_item_index
-                            ].response_values.options
+                            str(option.value) for option in items[condition_item_index].response_values.options
                         ]
-                        if (
-                            str(condition.payload.option_value)
-                            not in option_values
-                        ):
+                        if str(condition.payload.option_value) not in option_values:
                             raise IncorrectConditionOptionError()
     return values
 
@@ -83,12 +69,8 @@ def validate_score_and_sections(values: dict):  # noqa: C901
         if not hasattr(scores_and_reports, "reports"):
             return
 
-        scores = filter(
-            lambda r: r.type == ReportType.score, scores_and_reports.reports
-        )
-        sections = filter(
-            lambda r: r.type == ReportType.section, scores_and_reports.reports
-        )
+        scores = filter(lambda r: r.type == ReportType.score, scores_and_reports.reports)
+        sections = filter(lambda r: r.type == ReportType.section, scores_and_reports.reports)
 
         for report in list(scores):
             score_item_ids.append(report.id)
@@ -126,9 +108,7 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                         if item not in item_names:
                             raise IncorrectScorePrintItemError()
                         else:
-                            if items[
-                                item_names.index(item)
-                            ].response_type not in [
+                            if items[item_names.index(item)].response_type not in [
                                 ResponseType.SINGLESELECT,
                                 ResponseType.MULTISELECT,
                                 ResponseType.SLIDER,
@@ -180,9 +160,7 @@ def validate_subscales(values: dict):
                 ]:
                     if subscale_item_name.name not in item_names:
                         raise IncorrectSubscaleItemError()
-                    subscale_item_index = item_names.index(
-                        subscale_item_name.name
-                    )
+                    subscale_item_index = item_names.index(subscale_item_name.name)
 
                     if items[subscale_item_index].response_type not in [
                         ResponseType.SINGLESELECT,

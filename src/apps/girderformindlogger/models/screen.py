@@ -28,20 +28,14 @@ from bson.objectid import ObjectId
 
 from apps.girderformindlogger import events
 from apps.girderformindlogger.constants import AccessType
-from apps.girderformindlogger.exceptions import (
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import GirderException, ValidationException
 from apps.girderformindlogger.models.activity import Activity as ActivityModel
 from apps.girderformindlogger.models.applet import Applet
 from apps.girderformindlogger.models.assignment import Assignment
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.item import Item
 from apps.girderformindlogger.models.model_base import AccessControlledModel
-from apps.girderformindlogger.utility.progress import (
-    noProgress,
-    setResponseTimeLimit,
-)
+from apps.girderformindlogger.utility.progress import noProgress, setResponseTimeLimit
 
 
 class Screen(Item):

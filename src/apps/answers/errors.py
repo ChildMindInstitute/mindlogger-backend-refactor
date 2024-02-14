@@ -1,10 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import (
-    AccessDeniedError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 
 
 class AnswerNotFoundError(NotFoundError):

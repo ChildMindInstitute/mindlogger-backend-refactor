@@ -14,9 +14,7 @@ class UserWorkspaceSchema(Base):
         unique=True,
         index=True,
     )
-    workspace_name = Column(
-        StringEncryptedType(Unicode, get_key), nullable=False, index=True
-    )
+    workspace_name = Column(StringEncryptedType(Unicode, get_key), nullable=False, index=True)
     is_modified = Column(Boolean(), default=False)
     database_uri = Column(StringEncryptedType(Unicode, get_key))
     storage_type = Column(StringEncryptedType(Unicode, get_key))

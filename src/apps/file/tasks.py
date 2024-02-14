@@ -21,9 +21,7 @@ async def convert_audio_file(filename: str, remove_src: bool = True) -> str:
     logger.info(f"{LOG_PREFIX}In: {fin}")
 
     try:
-        cmd = generate_command(
-            fin, fout, settings.task_audio_file_convert.command
-        )
+        cmd = generate_command(fin, fout, settings.task_audio_file_convert.command)
 
         logger.info(f"{LOG_PREFIX}Run `{cmd}`")
         subprocess.check_output(

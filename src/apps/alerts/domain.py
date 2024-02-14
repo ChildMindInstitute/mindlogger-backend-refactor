@@ -3,12 +3,7 @@ import uuid
 
 from pydantic import validator
 
-from apps.shared.domain import (
-    InternalModel,
-    PublicModel,
-    ResponseMulti,
-    dict_keys_to_camel_case,
-)
+from apps.shared.domain import InternalModel, PublicModel, ResponseMulti, dict_keys_to_camel_case
 
 __all__ = [
     "Alert",

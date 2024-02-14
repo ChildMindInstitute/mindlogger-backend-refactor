@@ -10,11 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.answers.crud.answers import AnswersCRUD
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
-from apps.subjects.domain import (
-    Subject,
-    SubjectCreateRequest,
-    SubjectRelationCreate,
-)
+from apps.subjects.domain import Subject, SubjectCreateRequest, SubjectRelationCreate
 from apps.subjects.services import SubjectsService
 
 
@@ -146,7 +142,6 @@ def answer_create_arbitrary_payload():
 
 class TestSubjects(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
         "applets/fixtures/applet_histories.json",
@@ -378,7 +373,7 @@ class TestSubjects(BaseTest):
             # Coordinator
             ("bob@gmail.com", "Test1234!", http.HTTPStatus.OK),
             # Editor
-            ("pitbronson@mail.com", "Test1234!", http.HTTPStatus.FORBIDDEN),
+            ("pitbronson@mail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
             # Reviewer
             ("billbronson@mail.com", "Test1234!", http.HTTPStatus.FORBIDDEN),
         ),
@@ -402,7 +397,7 @@ class TestSubjects(BaseTest):
     @pytest.mark.parametrize(
         "subject_id,expected_code",
         (
-            ("7484f34a-3acc-4ee6-8a94-fd7299502fa6", http.HTTPStatus.OK),
+            ("89ba6774-4f48-4ff1-9d34-0e6efd24f03f", http.HTTPStatus.OK),
             (
                 "ee96b767-4609-4b8b-93c5-e7b15b81c6f7",
                 http.HTTPStatus.FORBIDDEN,
