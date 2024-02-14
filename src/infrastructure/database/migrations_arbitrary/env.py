@@ -44,9 +44,7 @@ async def get_all_servers(connection):
         rows = rows.fetchall()
         data = []
         for row in rows:
-            url = StringEncryptedType(Unicode, get_key).process_result_value(
-                row[0], dialect=connection.dialect
-            )
+            url = StringEncryptedType(Unicode, get_key).process_result_value(row[0], dialect=connection.dialect)
             data.append((url, row[1]))
 
     except Exception as ex:
@@ -87,9 +85,7 @@ async def migrate_arbitrary():
             )
         )
         async with connectable.connect() as connection:
-            await connection.run_sync(
-                do_run_migrations, arbitrary_meta, config
-            )
+            await connection.run_sync(do_run_migrations, arbitrary_meta, config)
         await connectable.dispose()
 
 
@@ -121,9 +117,7 @@ def do_run_migrations(
     metadata: MetaData = target_metadata,
     alembic_config: Config = config,
 ) -> None:
-    context.configure(
-        connection=connection, target_metadata=metadata, config=alembic_config
-    )
+    context.configure(connection=connection, target_metadata=metadata, config=alembic_config)
 
     with context.begin_transaction():
         context.run_migrations()

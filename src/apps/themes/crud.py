@@ -14,11 +14,7 @@ from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
 from apps.themes.db.schemas import ThemeSchema
 from apps.themes.domain import PublicTheme, Theme
-from apps.themes.errors import (
-    ThemeAlreadyExist,
-    ThemeNotFoundError,
-    ThemesError,
-)
+from apps.themes.errors import ThemeAlreadyExist, ThemeNotFoundError, ThemesError
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["ThemesCRUD"]
@@ -63,9 +59,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
     async def get_by_id(self, pk: uuid.UUID) -> Theme:
         return await self._fetch(key="id", value=pk)
 
-    async def get_users_themes_by_ids(
-        self, user_id: uuid.UUID, ids: list[uuid.UUID]
-    ) -> list[ThemeSchema]:
+    async def get_users_themes_by_ids(self, user_id: uuid.UUID, ids: list[uuid.UUID]) -> list[ThemeSchema]:
         query: Query = select(ThemeSchema)
         query = query.where(ThemeSchema.creator_id == user_id)
         query = query.where(ThemeSchema.id.in_(ids))
@@ -90,17 +84,11 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
     async def list(self, query_params: QueryParams) -> list[PublicTheme]:
         query: Query = select(self.schema_class)
         if query_params.filters:
-            query = query.where(
-                *_ThemeFiltering().get_clauses(**query_params.filters)
-            )
+            query = query.where(*_ThemeFiltering().get_clauses(**query_params.filters))
         if query_params.ordering:
-            query = query.order_by(
-                *_ThemeOrdering().get_clauses(*query_params.ordering)
-            )
+            query = query.order_by(*_ThemeOrdering().get_clauses(*query_params.ordering))
         if query_params.search:
-            query = query.where(
-                _ThemeSearching().get_clauses(query_params.search)
-            )
+            query = query.where(_ThemeSearching().get_clauses(query_params.search))
         query = paging(query, query_params.page, query_params.limit)
 
         result: Result = await self._execute(query)
@@ -129,9 +117,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             raise PermissionsError()
         await self._delete(id=pk)
 
-    async def update(
-        self, pk: uuid.UUID, update_schema: ThemeSchema, creator_id: uuid.UUID
-    ) -> Theme:
+    async def update(self, pk: uuid.UUID, update_schema: ThemeSchema, creator_id: uuid.UUID) -> Theme:
         # Update theme in database
 
         instance: Theme = await self._fetch(key="id", value=pk)
@@ -139,17 +125,13 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         if instance.creator_id != creator_id:
             raise PermissionsError()
         try:
-            instance = await self._update_one(
-                lookup="id", value=pk, schema=update_schema
-            )
+            instance = await self._update_one(lookup="id", value=pk, schema=update_schema)
         except IntegrityError:
             raise ThemeAlreadyExist()
 
         return Theme.from_orm(instance)
 
-    async def get_by_name_and_creator_id(
-        self, name: str, creator_id: uuid.UUID
-    ) -> Theme:
+    async def get_by_name_and_creator_id(self, name: str, creator_id: uuid.UUID) -> Theme:
         query: Query = select(ThemeSchema)
         query = query.where(ThemeSchema.name == name)
         query = query.where(ThemeSchema.creator_id == creator_id)

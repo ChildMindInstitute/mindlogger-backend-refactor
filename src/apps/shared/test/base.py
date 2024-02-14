@@ -33,9 +33,9 @@ class BaseTest:
         data = json.load(file)
         async with Session() as session:
             for datum in data:
-                columns = ",".join(
-                    map(lambda field: f'"{field}"', datum["fields"].keys())
-                )
+                if datum["table"] == "users":
+                    continue
+                columns = ",".join(map(lambda field: f'"{field}"', datum["fields"].keys()))
                 values = ",".join(map(_str_caster, datum["fields"].values()))
                 query = text(
                     f"""

@@ -21,9 +21,7 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
     async def save(self, schema: AppletHistorySchema):
         await self._create(schema)
 
-    async def get_by_id_version(
-        self, id_version: str
-    ) -> AppletHistorySchema | None:
+    async def get_by_id_version(self, id_version: str) -> AppletHistorySchema | None:
         schema = await self._get("id_version", id_version)
         return schema
 
@@ -44,13 +42,10 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         result = await self._execute(query)
         results = result.all()
         return [
-            (history_schema.version, history_schema.created_at, user_schema)
-            for history_schema, user_schema in results
+            (history_schema.version, history_schema.created_at, user_schema) for history_schema, user_schema in results
         ]
 
-    async def retrieve_by_applet_version(
-        self, id_version: str
-    ) -> AppletHistorySchema:
+    async def retrieve_by_applet_version(self, id_version: str) -> AppletHistorySchema:
         query: Query = select(AppletHistorySchema)
         query = query.where(AppletHistorySchema.id_version == id_version)
         result = await self._execute(query)
@@ -76,9 +71,7 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         )
         await self._execute(query)
 
-    async def get_id_versions_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> list[str]:
+    async def get_id_versions_by_applet_id(self, applet_id: uuid.UUID) -> list[str]:
         query: Query = select(AppletHistorySchema.version)
         query = query.where(AppletHistorySchema.id == applet_id)
         query = query.order_by(AppletHistorySchema.created_at.asc())
@@ -93,8 +86,7 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
     ):
         query: Query = update(AppletHistorySchema)
         query = query.where(
-            AppletHistorySchema.id_version
-            == AppletHistorySchema.generate_id_version(applet_id, version)
+            AppletHistorySchema.id_version == AppletHistorySchema.generate_id_version(applet_id, version)
         )
         query = query.values(**schema.dict(by_alias=False))
 

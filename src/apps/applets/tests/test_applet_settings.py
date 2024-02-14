@@ -3,7 +3,6 @@ from apps.shared.test import BaseTest
 
 class TestSettings(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "themes/fixtures/themes.json",
         "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
@@ -29,18 +28,10 @@ class TestSettings(BaseTest):
         )
         assert response.status_code == 200
 
-        response = await client.get(
-            self.applet_url.format(applet_id=applet_id)
-        )
+        response = await client.get(self.applet_url.format(applet_id=applet_id))
         assert response.status_code == 200
-        assert (
-            response.json()["result"]["retentionPeriod"]
-            == retention_data["period"]
-        )
-        assert (
-            response.json()["result"]["retentionType"]
-            == retention_data["retention"]
-        )
+        assert response.json()["result"]["retentionPeriod"] == retention_data["period"]
+        assert response.json()["result"]["retentionType"] == retention_data["retention"]
 
     async def test_applet_set_data_retention_for_indefinite(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
@@ -57,15 +48,10 @@ class TestSettings(BaseTest):
         )
         assert response.status_code == 200
 
-        response = await client.get(
-            self.applet_url.format(applet_id=applet_id)
-        )
+        response = await client.get(self.applet_url.format(applet_id=applet_id))
         assert response.status_code == 200
         assert response.json()["result"]["retentionPeriod"] is None
-        assert (
-            response.json()["result"]["retentionType"]
-            == retention_data["retention"]
-        )
+        assert response.json()["result"]["retentionType"] == retention_data["retention"]
 
     async def test_applet_set_data_retention_for_indefinite_fail(self, client):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")

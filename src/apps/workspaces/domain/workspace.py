@@ -78,9 +78,9 @@ class WorkspaceRespondentDetails(InternalModel):
     def decrypt_nickname(cls, values):
         nickname = values.get("respondent_nickname")
         if nickname:
-            nickname = StringEncryptedType(
-                Unicode, get_key
-            ).process_result_value(nickname, dialect=PGDialect_asyncpg.name)
+            nickname = StringEncryptedType(Unicode, get_key).process_result_value(
+                nickname, dialect=PGDialect_asyncpg.name
+            )
             values["respondent_nickname"] = str(nickname)
 
         return values
@@ -311,10 +311,7 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
             required = ["storage_url", "storage_bucket", "storage_access_key"]
 
         if required and not all((values[itm] is not None) for itm in required):
-            raise ValueError(
-                f"{', '.join(required)} are required "
-                f"for {storage_type} storage"
-            )
+            raise ValueError(f"{', '.join(required)} are required " f"for {storage_type} storage")
 
         return values
 

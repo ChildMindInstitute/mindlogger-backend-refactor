@@ -23,9 +23,7 @@ class TokensBlacklistCache(BaseCacheService[TokenInfo]):
     and token body.
     """
 
-    def build_key(
-        self, email: str, token_purpose: TokenPurpose, raw_token: str
-    ) -> str:
+    def build_key(self, email: str, token_purpose: TokenPurpose, raw_token: str) -> str:
         """Returns a key with the additional namespace for this cache."""
 
         return f"{email}:{token_purpose}:{raw_token}"
@@ -36,9 +34,7 @@ class TokensBlacklistCache(BaseCacheService[TokenInfo]):
         token_purpose: TokenPurpose,
         raw_token: str,
     ) -> CacheEntry[TokenInfo]:
-        cache_record: dict = await self._get(
-            self.build_key(email, token_purpose, raw_token)
-        )
+        cache_record: dict = await self._get(self.build_key(email, token_purpose, raw_token))
 
         return CacheEntry[TokenInfo](**cache_record)
 
@@ -53,9 +49,7 @@ class TokensBlacklistCache(BaseCacheService[TokenInfo]):
 
         results: list[bytes] = await self.redis_client.mget(keys)
 
-        return [
-            CacheEntry[TokenInfo](**json.loads(result)) for result in results
-        ]
+        return [CacheEntry[TokenInfo](**json.loads(result)) for result in results]
 
     # TODO: Clarify how to deal with
     #       removing token / adding token to the blacklist

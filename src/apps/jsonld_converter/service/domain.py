@@ -1,9 +1,6 @@
 from dataclasses import dataclass, field
 
-from apps.activities.domain.scores_reports import (
-    SubscaleCalculationType,
-    TotalScoreTable,
-)
+from apps.activities.domain.scores_reports import SubscaleCalculationType, TotalScoreTable
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.base import Encryption
 
@@ -34,9 +31,7 @@ class ProtocolExportData:
     activity_flows: list[ActivityFlowExportData] = field(default_factory=list)
 
 
-ModelExportData = (
-    ProtocolExportData | ActivityExportData | ActivityItemExportData
-)
+ModelExportData = ProtocolExportData | ActivityExportData | ActivityItemExportData
 
 
 class NotEncryptedApplet(AppletCreate):

@@ -5,20 +5,9 @@ import os
 
 from bson.objectid import ObjectId
 
-from apps.girderformindlogger.constants import (
-    DEFINED_RELATIONS,
-    PROFILE_FIELDS,
-    USER_ROLES,
-    AccessType,
-)
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ValidationException,
-)
-from apps.girderformindlogger.models.aes_encrypt import (
-    AccessControlledModel,
-    AESEncryption,
-)
+from apps.girderformindlogger.constants import DEFINED_RELATIONS, PROFILE_FIELDS, USER_ROLES, AccessType
+from apps.girderformindlogger.exceptions import AccessException, ValidationException
+from apps.girderformindlogger.models.aes_encrypt import AccessControlledModel, AESEncryption
 from apps.girderformindlogger.utility.progress import noProgress
 
 
@@ -224,9 +213,7 @@ class Profile(AESEncryption, dict):
         }
 
     def profileAsUser(self, profile, requester):
-        from apps.girderformindlogger.models.applet import (
-            Applet as AppletModel,
-        )
+        from apps.girderformindlogger.models.applet import Applet as AppletModel
 
         return self.cycleDefinitions(
             profile,
@@ -317,9 +304,7 @@ class Profile(AESEncryption, dict):
     def getProfile(self, id, user):
         from bson.errors import InvalidId
 
-        from apps.girderformindlogger.models.applet import (
-            Applet as AppletModel,
-        )
+        from apps.girderformindlogger.models.applet import Applet as AppletModel
         from apps.girderformindlogger.models.ID_code import IDCode
 
         if not isinstance(id, ObjectId):
@@ -335,12 +320,8 @@ class Profile(AESEncryption, dict):
                 ps = [self.profileAsUser(p, user) for p in ps if p is not None]
                 return ps[0] if len(ps) == 1 and ps[0] is not None else ps
             else:
-                from apps.girderformindlogger.models.invitation import (
-                    Invitation,
-                )
-                from apps.girderformindlogger.utility.jsonld_expander import (
-                    oidIffHex,
-                )
+                from apps.girderformindlogger.models.invitation import Invitation
+                from apps.girderformindlogger.utility.jsonld_expander import oidIffHex
 
                 inv = Invitation().findOne(
                     {"$or": [{"_id": {"$in": oidIffHex(id)}}, {"idCode": id}]}
@@ -353,9 +334,7 @@ class Profile(AESEncryption, dict):
         return self.profileAsUser(self.load(p["_id"], force=True), user)
 
     def getSubjectProfile(self, id, displayName, user):
-        from apps.girderformindlogger.models.applet import (
-            Applet as AppletModel,
-        )
+        from apps.girderformindlogger.models.applet import Applet as AppletModel
         from apps.girderformindlogger.models.ID_code import IDCode
 
         p = None
@@ -893,9 +872,7 @@ class Profile(AESEncryption, dict):
         return userList
 
     def updateOwnerProfile(self, applet, invitationId=None):
-        from apps.girderformindlogger.models.account_profile import (
-            AccountProfile,
-        )
+        from apps.girderformindlogger.models.account_profile import AccountProfile
 
         accountId = applet.get("accountId", None)
         if not accountId:

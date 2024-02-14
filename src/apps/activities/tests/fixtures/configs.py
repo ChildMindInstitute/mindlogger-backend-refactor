@@ -16,9 +16,7 @@ from apps.activities.domain.response_type_config import (
 
 @pytest.fixture
 def additional_response_option() -> AdditionalResponseOption:
-    return AdditionalResponseOption(
-        text_input_option=False, text_input_required=False
-    )
+    return AdditionalResponseOption(text_input_option=False, text_input_required=False)
 
 
 @pytest.fixture

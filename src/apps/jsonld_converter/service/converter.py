@@ -27,15 +27,9 @@ from apps.jsonld_converter.service.document import (
     ReproFieldVideo,
     ReproProtocol,
 )
-from apps.jsonld_converter.service.document.base import (
-    ContainsNestedMixin,
-    LdDocumentBase,
-)
+from apps.jsonld_converter.service.document.base import ContainsNestedMixin, LdDocumentBase
 from apps.jsonld_converter.service.export import AppletExport
-from apps.jsonld_converter.service.export.base import (
-    BaseModelExport,
-    ContainsNestedModelMixin,
-)
+from apps.jsonld_converter.service.export.base import BaseModelExport, ContainsNestedModelMixin
 
 
 class JsonLDModelConverter(ContainsNestedMixin):
@@ -45,7 +39,9 @@ class JsonLDModelConverter(ContainsNestedMixin):
     :example:
         document_loader = requests_document_loader()  # sync loader
         _resolved_context_cache = LRUCache(maxsize=100)
-        context_resolver = ContextResolver(_resolved_context_cache, document_loader)  # noqa
+        context_resolver = ContextResolver(
+            _resolved_context_cache, document_loader
+        )
         settings = {"protocol_password": "password value"}
 
         converter = JsonLDModelConverter(context_resolver, document_loader)
@@ -56,7 +52,9 @@ class JsonLDModelConverter(ContainsNestedMixin):
         document_loader = get_document_loader()
         context_resolver = get_context_resolver(document_loader)
 
-        converter = get_jsonld_model_converter(document_loader, context_resolver)  # noqa
+        converter = get_jsonld_model_converter(
+            document_loader, context_resolver
+        )
         protocol = await converter.convert(doc)
     """
 
@@ -98,9 +96,7 @@ class JsonLDModelConverter(ContainsNestedMixin):
         ]
 
     async def convert(self, input_: str | dict, base_url: str | None = None):
-        obj = await self.load_supported_document(
-            input_, base_url, self.settings
-        )
+        obj = await self.load_supported_document(input_, base_url, self.settings)
 
         return obj.export()
 
@@ -179,18 +175,14 @@ class ModelJsonLDConverter(ContainsNestedModelMixin):
         for activity_data in data.activities:
             activity_doc = json.dumps(activity_data.schema, indent=4)
             new_activity_id = self._generate_new_id(activity_data.id)
-            activity_path = (
-                f"{activity_dir}/{new_activity_id}/{new_activity_id}"
-            )
+            activity_path = f"{activity_dir}/{new_activity_id}/{new_activity_id}"
             activity_replacements = {activity_data.id: new_activity_id}
             protocol_replacements[activity_data.id] = activity_path
 
             for item_data in activity_data.activity_items:
                 item_doc = json.dumps(item_data.schema, indent=4)
                 new_item_id = self._generate_new_id(item_data.id)
-                item_path = (
-                    f"{activity_dir}/{new_activity_id}/items/{new_item_id}"
-                )
+                item_path = f"{activity_dir}/{new_activity_id}/items/{new_item_id}"
                 activity_replacements[item_data.id] = item_path
 
                 item_doc = item_doc.replace(item_data.id, new_item_id)
@@ -207,9 +199,7 @@ class ModelJsonLDConverter(ContainsNestedModelMixin):
 
         res = BytesIO()
 
-        with zipfile.ZipFile(
-            res, "a", zipfile.ZIP_DEFLATED, False
-        ) as zip_file:
+        with zipfile.ZipFile(res, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
             for file_name, data in files:
                 zip_file.writestr(file_name, bytes(data, "UTF-8"))
 

@@ -5,7 +5,6 @@ from apps.shared.test import BaseTest
 
 class TestData(BaseTest):
     fixtures = [
-        "users/fixtures/users.json",
         "folders/fixtures/folders.json",
         "themes/fixtures/themes.json",
     ]

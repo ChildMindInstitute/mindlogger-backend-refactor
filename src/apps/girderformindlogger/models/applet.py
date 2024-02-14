@@ -28,22 +28,13 @@ from bson import json_util
 from bson.objectid import ObjectId
 
 from apps.girderformindlogger.api.rest import getCurrentUser
-from apps.girderformindlogger.constants import (
-    RESPONSE_ITEM_PAGINATION,
-    USER_ROLES,
-    AccessType,
-)
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ValidationException,
-)
+from apps.girderformindlogger.constants import RESPONSE_ITEM_PAGINATION, USER_ROLES, AccessType
+from apps.girderformindlogger.exceptions import AccessException, ValidationException
 from apps.girderformindlogger.i18n import t
 from apps.girderformindlogger.models.account_profile import AccountProfile
 from apps.girderformindlogger.models.activity import Activity as ActivityModel
 from apps.girderformindlogger.models.applet_library import AppletLibrary
-from apps.girderformindlogger.models.collection import (
-    Collection as CollectionModel,
-)
+from apps.girderformindlogger.models.collection import Collection as CollectionModel
 from apps.girderformindlogger.models.events import Events as EventsModel
 from apps.girderformindlogger.models.folder import Folder as FolderModel
 from apps.girderformindlogger.models.group import Group as GroupModel
@@ -678,13 +669,8 @@ class Applet(FolderModel):
     def receiveOwnerShip(self, applet, thisUser, email, invitationId):
         from apps.girderformindlogger.models.group import Group
         from apps.girderformindlogger.models.invitation import Invitation
-        from apps.girderformindlogger.models.response_folder import (
-            ResponseItem,
-        )
-        from apps.girderformindlogger.utility import (
-            jsonld_expander,
-            mail_utils,
-        )
+        from apps.girderformindlogger.models.response_folder import ResponseItem
+        from apps.girderformindlogger.utility import jsonld_expander, mail_utils
 
         if not mail_utils.validateEmailAddress(email):
             raise ValidationException("Invalid email address.", "email")
@@ -1281,9 +1267,7 @@ class Applet(FolderModel):
     def prepareAppletForEdit(self, applet, protocol, user, accountId, thread):
         from apps.girderformindlogger.models.activity import Activity
         from apps.girderformindlogger.models.protocol import Protocol
-        from apps.girderformindlogger.models.response_folder import (
-            ResponseItem,
-        )
+        from apps.girderformindlogger.models.response_folder import ResponseItem
         from apps.girderformindlogger.models.screen import Screen
         from apps.girderformindlogger.utility import jsonld_expander
 
@@ -1456,9 +1440,7 @@ class Applet(FolderModel):
         from pymongo import DESCENDING
 
         from apps.girderformindlogger.models.protocol import Protocol
-        from apps.girderformindlogger.models.response_folder import (
-            ResponseItem,
-        )
+        from apps.girderformindlogger.models.response_folder import ResponseItem
 
         if not any(
             [

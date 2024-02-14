@@ -9,15 +9,8 @@ from passlib.context import CryptContext
 from passlib.totp import TOTP, TokenError
 
 from apps.girderformindlogger import events
-from apps.girderformindlogger.constants import (
-    AccessType,
-    CoreEventHandler,
-    TokenScope,
-)
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ValidationException,
-)
+from apps.girderformindlogger.constants import AccessType, CoreEventHandler, TokenScope
+from apps.girderformindlogger.exceptions import AccessException, ValidationException
 from apps.girderformindlogger.models.model_base import AccessControlledModel
 from apps.girderformindlogger.models.setting import Setting
 from apps.girderformindlogger.models.user import User

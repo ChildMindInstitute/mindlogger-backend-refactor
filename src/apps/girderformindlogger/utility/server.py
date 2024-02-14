@@ -6,15 +6,7 @@ import cherrypy
 import mako
 import six
 
-from apps.girderformindlogger import (
-    __version__,
-    _setupCache,
-    constants,
-    events,
-    logprint,
-    logStdoutStderr,
-    plugin,
-)
+from apps.girderformindlogger import __version__, _setupCache, constants, events, logprint, logStdoutStderr, plugin
 from apps.girderformindlogger.constants import ServerMode
 from apps.girderformindlogger.models.setting import Setting
 from apps.girderformindlogger.settings import SettingKey

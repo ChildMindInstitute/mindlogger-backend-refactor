@@ -13,9 +13,7 @@ class ThemeService:
         self.session = session
 
     async def get_users_by_ids(self, ids: list[uuid.UUID]) -> list[Theme]:
-        themes = await ThemesCRUD(self.session).get_users_themes_by_ids(
-            self.user_id, ids
-        )
+        themes = await ThemesCRUD(self.session).get_users_themes_by_ids(self.user_id, ids)
         return [Theme.from_orm(theme) for theme in themes]
 
     async def get_by_ids(self, ids: list[uuid.UUID]) -> list[Theme]:
@@ -36,9 +34,7 @@ class ThemeService:
 
     async def create(self, theme_request: ThemeRequest) -> PublicTheme:
         # check name and creator_id combination is unique before save
-        if await ThemesCRUD(self.session).get_by_name_and_creator_id(
-            theme_request.name, self.user_id
-        ):
+        if await ThemesCRUD(self.session).get_by_name_and_creator_id(theme_request.name, self.user_id):
             raise ThemeAlreadyExist()
 
         theme: Theme = await ThemesCRUD(self.session).save(
@@ -53,25 +49,17 @@ class ThemeService:
         return PublicTheme.from_orm(theme)
 
     async def get_all(self, query_params: QueryParams) -> list[PublicTheme]:
-        themes: list[PublicTheme] = await ThemesCRUD(self.session).list(
-            query_params
-        )
+        themes: list[PublicTheme] = await ThemesCRUD(self.session).list(query_params)
 
         return themes
 
     async def delete_by_id(self, theme_id: uuid.UUID) -> None:
-        await ThemesCRUD(self.session).delete_by_id(
-            pk=theme_id, creator_id=self.user_id
-        )
+        await ThemesCRUD(self.session).delete_by_id(pk=theme_id, creator_id=self.user_id)
 
-    async def update(
-        self, theme_id: uuid.UUID, theme_request: ThemeRequest
-    ) -> PublicTheme:
+    async def update(self, theme_id: uuid.UUID, theme_request: ThemeRequest) -> PublicTheme:
         theme: Theme = await ThemesCRUD(self.session).update(
             pk=theme_id,
-            update_schema=ThemeSchema(
-                **theme_request.dict(), public=False, allow_rename=False
-            ),
+            update_schema=ThemeSchema(**theme_request.dict(), public=False, allow_rename=False),
             creator_id=self.user_id,
         )
 
@@ -82,3 +70,24 @@ class ThemeService:
 
     async def count(self) -> int:
         return await ThemesCRUD(self.session).count()
+
+    async def get_or_create_default(self) -> Theme:
+        # TODO: remove later when teardown of BaseTest class is fixed (it is used only for tests)
+        theme = await self.get_default()
+        if not theme:
+            inst = await ThemesCRUD(self.session).save(
+                ThemeSchema(
+                    name="Default",
+                    logo=None,
+                    background_image=None,
+                    primary_color="#ffffff",
+                    secondary_color="#ffffff",
+                    tertiary_color="#ffffff",
+                    creator_id=None,
+                    public=True,
+                    allow_rename=False,
+                    is_default=True,
+                )
+            )
+            theme = Theme.from_orm(inst)
+        return theme

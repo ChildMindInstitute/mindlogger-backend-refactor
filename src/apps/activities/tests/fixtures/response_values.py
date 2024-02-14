@@ -51,9 +51,7 @@ def multi_select_reponse_values(
 
 @pytest.fixture
 def slider_value_alert() -> SliderValueAlert:
-    return SliderValueAlert(
-        value=0, min_value=None, max_value=None, alert="alert"
-    )
+    return SliderValueAlert(value=0, min_value=None, max_value=None, alert="alert")
 
 
 @pytest.fixture
@@ -73,9 +71,7 @@ def number_select_response_values() -> NumberSelectionValues:
 
 @pytest.fixture
 def drawing_response_values(remote_image: str) -> DrawingValues:
-    return DrawingValues(
-        drawing_background=remote_image, drawing_example=remote_image
-    )
+    return DrawingValues(drawing_background=remote_image, drawing_example=remote_image)
 
 
 @pytest.fixture
@@ -116,9 +112,7 @@ def single_select_row_data_row(
     signle_select_row_data_option: _SingleSelectionDataOption,
 ) -> _SingleSelectionDataRow:
     row_id = cast(str, single_select_row.id)
-    return _SingleSelectionDataRow(
-        row_id=row_id, options=[signle_select_row_data_option]
-    )
+    return _SingleSelectionDataRow(row_id=row_id, options=[signle_select_row_data_option])
 
 
 @pytest.fixture

@@ -10,9 +10,7 @@ async def get_mindlogger_content_source(
 
     return getattr(
         MindloggerContentSource,
-        request.headers.get(
-            "mindlogger-content-source", MindloggerContentSource.web.name
-        ),
+        request.headers.get("mindlogger-content-source", MindloggerContentSource.web.name),
     )
 
 

@@ -53,23 +53,17 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         schema = await self._create(schema)
         return schema
 
-    async def update(
-        self, lookup: str, value: Any, schema: InvitationSchema
-    ) -> InvitationSchema:
+    async def update(self, lookup: str, value: Any, schema: InvitationSchema) -> InvitationSchema:
         schema = await self._update_one(lookup, value, schema)
         return schema
 
-    async def get_pending_by_invitor_id(
-        self, user_id: uuid.UUID, query_params: QueryParams
-    ) -> list[InvitationDetail]:
+    async def get_pending_by_invitor_id(self, user_id: uuid.UUID, query_params: QueryParams) -> list[InvitationDetail]:
         """Return the list of pending invitations
         for the user who is invitor.
         """
 
         user_applet_ids: Query = select(UserAppletAccessSchema.applet_id)
-        user_applet_ids = user_applet_ids.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
+        user_applet_ids = user_applet_ids.where(UserAppletAccessSchema.user_id == user_id)
         user_applet_ids = user_applet_ids.where(
             UserAppletAccessSchema.role.in_(
                 [
@@ -82,28 +76,16 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         )
 
-        query: Query = select(
-            InvitationSchema, AppletSchema.display_name.label("applet_name")
-        )
+        query: Query = select(InvitationSchema, AppletSchema.display_name.label("applet_name"))
         query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
-        query = query.join(
-            AppletSchema, AppletSchema.id == InvitationSchema.applet_id
-        )
-        query = query.where(
-            InvitationSchema.status == InvitationStatus.PENDING
-        )
+        query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
+        query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
         if query_params.filters:
-            query = query.where(
-                *_InvitationFiltering().get_clauses(**query_params.filters)
-            )
+            query = query.where(*_InvitationFiltering().get_clauses(**query_params.filters))
         if query_params.search:
-            query = query.where(
-                _InvitationSearching().get_clauses(query_params.search)
-            )
+            query = query.where(_InvitationSearching().get_clauses(query_params.search))
         if query_params.ordering:
-            query = query.order_by(
-                *_InvitationOrdering().get_clauses(*query_params.ordering)
-            )
+            query = query.order_by(*_InvitationOrdering().get_clauses(*query_params.ordering))
         query = paging(query, query_params.page, query_params.limit)
 
         db_result = await self._execute(query)
@@ -128,16 +110,12 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
-    async def get_pending_by_invitor_id_count(
-        self, user_id: uuid.UUID, query_params: QueryParams
-    ) -> int:
+    async def get_pending_by_invitor_id_count(self, user_id: uuid.UUID, query_params: QueryParams) -> int:
         """Return the cont of pending invitations
         for the user who is invitor.
         """
         user_applet_ids: Query = select(UserAppletAccessSchema.applet_id)
-        user_applet_ids = user_applet_ids.where(
-            UserAppletAccessSchema.user_id == user_id
-        )
+        user_applet_ids = user_applet_ids.where(UserAppletAccessSchema.user_id == user_id)
         user_applet_ids = user_applet_ids.where(
             UserAppletAccessSchema.role.in_(
                 [
@@ -152,34 +130,22 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
 
         query: Query = select(count(InvitationSchema.id))
         query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
-        query = query.where(
-            InvitationSchema.status == InvitationStatus.PENDING
-        )
+        query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
         if query_params.filters:
-            query = query.where(
-                *_InvitationFiltering().get_clauses(**query_params.filters)
-            )
+            query = query.where(*_InvitationFiltering().get_clauses(**query_params.filters))
         if query_params.search:
-            query = query.where(
-                _InvitationSearching().get_clauses(query_params.search)
-            )
+            query = query.where(_InvitationSearching().get_clauses(query_params.search))
 
         result = await self._execute(query)
 
         return result.scalars().first() or 0
 
-    async def get_by_email_and_key(
-        self, email: str, key: uuid.UUID
-    ) -> InvitationDetailGeneric | None:
+    async def get_by_email_and_key(self, email: str, key: uuid.UUID) -> InvitationDetailGeneric | None:
         """Return the specific invitation
         for the user who was invited.
         """
-        query: Query = select(
-            InvitationSchema, AppletSchema.display_name.label("applet_name")
-        )
-        query = query.join(
-            AppletSchema, AppletSchema.id == InvitationSchema.applet_id
-        )
+        query: Query = select(InvitationSchema, AppletSchema.display_name.label("applet_name"))
+        query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
         query = query.where(InvitationSchema.email == email)
         query = query.where(InvitationSchema.key == key)
         db_result = await self._execute(query)
@@ -218,15 +184,11 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                 **invitation_detail_base.dict(),
             )
 
-    async def get_pending_invitation(
-        self, email: str, applet_id: uuid.UUID
-    ) -> InvitationRespondent:
+    async def get_pending_invitation(self, email: str, applet_id: uuid.UUID) -> InvitationRespondent:
         query: Query = select(InvitationSchema)
         query = query.where(InvitationSchema.email == email)
         query = query.where(InvitationSchema.applet_id == applet_id)
-        query = query.where(
-            InvitationSchema.status == InvitationStatus.PENDING
-        )
+        query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
         db_result: Result = await self._execute(query)
         return db_result.scalar_one_or_none()
 

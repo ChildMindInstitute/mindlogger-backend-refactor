@@ -5,15 +5,8 @@ import re
 import six
 from cherrypy._cpreqbody import Part
 
-from apps.girderformindlogger.api.rest import (
-    setContentDisposition,
-    setResponseHeader,
-)
-from apps.girderformindlogger.exceptions import (
-    FilePathException,
-    GirderException,
-    ValidationException,
-)
+from apps.girderformindlogger.api.rest import setContentDisposition, setResponseHeader
+from apps.girderformindlogger.exceptions import FilePathException, GirderException, ValidationException
 from apps.girderformindlogger.models.setting import Setting
 from apps.girderformindlogger.settings import SettingKey
 from apps.girderformindlogger.utility import RequestBodyStream, progress

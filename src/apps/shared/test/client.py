@@ -76,9 +76,7 @@ class TestClient:
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
-        response = await self.client.get(
-            url, headers=self._get_updated_headers(headers)
-        )
+        response = await self.client.get(url, headers=self._get_updated_headers(headers))
         return response
 
     async def delete(
@@ -98,9 +96,7 @@ class TestClient:
         )
         return response
 
-    async def login(
-        self, url: str, email: str, password: str, device_id: str | None = None
-    ):
+    async def login(self, url: str, email: str, password: str, device_id: str | None = None):
         response = await self.post(
             url,
             data={

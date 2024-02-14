@@ -35,9 +35,7 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()  # noqa
 
-    async def get_count_by_answer_id(
-        self, answer_id: uuid.UUID, activity_id: uuid.UUID
-    ) -> int:
+    async def get_count_by_answer_id(self, answer_id: uuid.UUID, activity_id: uuid.UUID) -> int:
         query: Query = select(count(AnswerNoteSchema.id))
         query = query.where(AnswerNoteSchema.answer_id == answer_id)
         query = query.where(AnswerNoteSchema.activity_id == activity_id)
@@ -50,12 +48,8 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
             raise AnswerNoteNotFoundError()
         return note
 
-    async def update_note_by_id(
-        self, note_id: uuid.UUID, note: str
-    ) -> AnswerNoteSchema:
-        return await self._update_one(
-            "id", note_id, AnswerNoteSchema(note=note)
-        )
+    async def update_note_by_id(self, note_id: uuid.UUID, note: str) -> AnswerNoteSchema:
+        return await self._update_one("id", note_id, AnswerNoteSchema(note=note))
 
     async def delete_note_by_id(self, note_id: uuid.UUID):
         await self._delete(id=note_id)

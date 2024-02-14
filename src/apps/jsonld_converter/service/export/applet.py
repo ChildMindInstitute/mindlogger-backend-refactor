@@ -4,14 +4,8 @@ from typing import Type
 from apps.applets.domain.applet_full import AppletFull
 from apps.jsonld_converter.service.base import LdKeyword
 from apps.jsonld_converter.service.domain import ProtocolExportData
-from apps.jsonld_converter.service.export import (
-    ActivityExport,
-    ActivityFlowExport,
-)
-from apps.jsonld_converter.service.export.base import (
-    BaseModelExport,
-    ContainsNestedModelMixin,
-)
+from apps.jsonld_converter.service.export import ActivityExport, ActivityFlowExport
+from apps.jsonld_converter.service.export.base import BaseModelExport, ContainsNestedModelMixin
 from apps.shared.domain import InternalModel
 
 
@@ -25,9 +19,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
         return [ActivityExport, ActivityFlowExport]
 
     async def export(self, model: AppletFull, expand: bool = False) -> ProtocolExportData:  # type: ignore  # noqa: E501
-        ui, activity_flows = await asyncio.gather(
-            self._build_ui_prop(model), self._build_activity_flows_prop(model)
-        )
+        ui, activity_flows = await asyncio.gather(self._build_ui_prop(model), self._build_activity_flows_prop(model))
         _id = self._build_id(model.display_name)
         doc = {
             LdKeyword.context: self.context,
@@ -51,9 +43,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
             processor = self.get_supported_processor(activity)
             coros.append(processor.export(activity))
 
-        *activities, data = await asyncio.gather(
-            *coros, self._post_process(doc, expand)
-        )
+        *activities, data = await asyncio.gather(*coros, self._post_process(doc, expand))
 
         return ProtocolExportData(id=_id, schema=data, activities=activities)
 
@@ -94,9 +84,7 @@ class AppletExport(BaseModelExport, ContainsNestedModelMixin):
             order_cors = []
             for i, flow in enumerate(model.activity_flows):
                 _id = self._build_id(flow.name)  # TODO ensure unique
-                _var = self._build_id(
-                    flow.name, None
-                )  # TODO load from extra if exists
+                _var = self._build_id(flow.name, None)  # TODO load from extra if exists
 
                 processor = self.get_supported_processor(flow)
                 order_cors.append(processor.export(flow))

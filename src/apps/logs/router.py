@@ -1,16 +1,10 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.logs.api.notification import (
-    notification_log_create,
-    notification_log_retrieve,
-)
+from apps.logs.api.notification import notification_log_create, notification_log_retrieve
 from apps.logs.domain import PublicNotificationLog
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.domain.response import (
-    AUTHENTICATION_ERROR_RESPONSES,
-    DEFAULT_OPENAPI_RESPONSE,
-)
+from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
 
 router = APIRouter(prefix="/logs", tags=["Logs"])
 

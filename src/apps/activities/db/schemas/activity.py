@@ -1,13 +1,4 @@
-from sqlalchemy import (
-    REAL,
-    Boolean,
-    Column,
-    ForeignKey,
-    String,
-    Text,
-    func,
-    text,
-)
+from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -31,9 +22,7 @@ class _BaseActivitySchema:
     scores_and_reports = Column(JSONB())
     subscale_setting = Column(JSONB())
     report_included_item_name = Column(Text(), nullable=True)
-    extra_fields = Column(
-        JSONB(), default=dict, server_default=text("'{}'::jsonb")
-    )
+    extra_fields = Column(JSONB(), default=dict, server_default=text("'{}'::jsonb"))
     performance_task_type = Column(String(255), nullable=True)
 
     @hybrid_property
@@ -42,17 +31,13 @@ class _BaseActivitySchema:
 
     @is_performance_task.expression  # type: ignore[no-redef]
     def is_performance_task(cls) -> bool:
-        return func.coalesce(cls.performance_task_type, "").in_(
-            PerformanceTaskType.get_values()
-        )
+        return func.coalesce(cls.performance_task_type, "").in_(PerformanceTaskType.get_values())
 
 
 class ActivitySchema(Base, _BaseActivitySchema):
     __tablename__ = "activities"
 
-    applet_id = Column(
-        ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
-    )
+    applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False)
 
 
 class ActivityHistorySchema(Base, _BaseActivitySchema):

@@ -9,11 +9,7 @@ from sqlalchemy.orm import Query
 from apps.shared.hashing import hash_sha224
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User, UserChangePassword, UserUpdateRequest
-from apps.users.errors import (
-    UserAlreadyExistError,
-    UserIsDeletedError,
-    UserNotFound,
-)
+from apps.users.errors import UserAlreadyExistError, UserIsDeletedError, UserNotFound
 from infrastructure.database.crud import BaseCRUD
 
 
@@ -47,9 +43,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         return instance
 
-    async def update(
-        self, user: User, update_schema: UserUpdateRequest
-    ) -> User:
+    async def update(self, user: User, update_schema: UserUpdateRequest) -> User:
         instance = await self._update_one(
             lookup="id",
             value=user.id,
@@ -61,9 +55,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         return user
 
-    async def update_by_id(
-        self, pk: uuid.UUID, update_schema: UserSchema
-    ) -> UserSchema:
+    async def update_by_id(self, pk: uuid.UUID, update_schema: UserSchema) -> UserSchema:
         instance = await self._update_one(
             lookup="id",
             value=pk,
@@ -72,9 +64,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         return instance
 
-    async def update_encrypted_email(
-        self, user: User, encrypted_email: str
-    ) -> User:
+    async def update_encrypted_email(self, user: User, encrypted_email: str) -> User:
         instance = await self._update_one(
             lookup="id",
             value=user.id,
@@ -86,14 +76,10 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         return user
 
     async def delete(self, user_id: uuid.UUID) -> UserSchema:
-        instance = await self._update_one(
-            lookup="id", value=user_id, schema=UserSchema(is_deleted=True)
-        )
+        instance = await self._update_one(lookup="id", value=user_id, schema=UserSchema(is_deleted=True))
         return instance
 
-    async def change_password(
-        self, user: User, update_schema: UserChangePassword
-    ) -> User:
+    async def change_password(self, user: User, update_schema: UserChangePassword) -> User:
         instance = await self._update_one(
             lookup="id",
             value=user.id,

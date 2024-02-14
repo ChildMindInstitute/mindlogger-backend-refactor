@@ -1,14 +1,8 @@
 import pytest
 
-from apps.activities.domain.custom_validation_subscale import (
-    validate_raw_score_subscale,
-    validate_score_subscale_table,
-)
+from apps.activities.domain.custom_validation_subscale import validate_raw_score_subscale, validate_score_subscale_table
 from apps.activities.domain.response_type_config import ResponseType
-from apps.activities.errors import (
-    InvalidRawScoreSubscaleError,
-    InvalidScoreSubscaleError,
-)
+from apps.activities.errors import InvalidRawScoreSubscaleError, InvalidScoreSubscaleError
 
 ACTIVITY_ITEM_OPTIONS = [
     ResponseType.SINGLESELECT,

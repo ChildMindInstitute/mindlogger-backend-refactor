@@ -1,14 +1,8 @@
 from bson.objectid import ObjectId
 
-from apps.girderformindlogger.exceptions import (
-    AccessException,
-    ValidationException,
-)
+from apps.girderformindlogger.exceptions import AccessException, ValidationException
 from apps.girderformindlogger.models.folder import Folder as FolderModel
-from apps.girderformindlogger.utility.validate import (
-    isValidHexColor,
-    isValidImageUrl,
-)
+from apps.girderformindlogger.utility.validate import isValidHexColor, isValidImageUrl
 
 
 def findThemeById(themeId=None):

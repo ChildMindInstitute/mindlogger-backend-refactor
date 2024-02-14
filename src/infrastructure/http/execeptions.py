@@ -33,9 +33,7 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     """This function is called if the Exception was raised."""
 
     error_message = "".join(traceback.format_tb(error.__traceback__))
-    response = ErrorResponseMulti(
-        result=[ErrorResponse(message=f"Unhandled error: {error_message}")]
-    )
+    response = ErrorResponseMulti(result=[ErrorResponse(message=f"Unhandled error: {error_message}")])
 
     # NOTE: replace error with warning because application can still work
     # Also it stops sending duplicate of error to the sentry.
@@ -49,9 +47,7 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     )
 
 
-def pydantic_validation_errors_handler(
-    _: Request, error: RequestValidationError
-) -> JSONResponse:
+def pydantic_validation_errors_handler(_: Request, error: RequestValidationError) -> JSONResponse:
     """This function is called if the Pydantic validation error was raised."""
 
     response = ErrorResponseMulti(

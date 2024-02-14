@@ -24,13 +24,8 @@ from apps.jsonld_converter.service.export import (
     ActivityItemTimeRangeExport,
     ActivityItemVideoExport,
 )
-from apps.jsonld_converter.service.export.base import (
-    BaseModelExport,
-    ContainsNestedModelMixin,
-)
-from apps.jsonld_converter.service.export.conditional_logic import (
-    export_conditional_logic,
-)
+from apps.jsonld_converter.service.export.base import BaseModelExport, ContainsNestedModelMixin
+from apps.jsonld_converter.service.export.conditional_logic import export_conditional_logic
 from apps.shared.domain import InternalModel
 
 
@@ -84,9 +79,7 @@ class ActivityExport(BaseModelExport, ContainsNestedModelMixin):
             processor = self.get_supported_processor(item)
             coros.append(processor.export(item))
 
-        *items, data = await asyncio.gather(
-            *coros, self._post_process(doc, expand)
-        )
+        *items, data = await asyncio.gather(*coros, self._post_process(doc, expand))
 
         return ActivityExportData(id=_id, schema=data, activity_items=items)
 

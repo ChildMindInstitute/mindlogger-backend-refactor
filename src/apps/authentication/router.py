@@ -1,12 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.authentication.api.auth import (
-    delete_access_token,
-    delete_refresh_token,
-    get_token,
-    refresh_access_token,
-)
+from apps.authentication.api.auth import delete_access_token, delete_refresh_token, get_token, refresh_access_token
 from apps.authentication.deps import openapi_auth
 from apps.authentication.domain.login import UserLogin
 from apps.authentication.domain.token.public import Token

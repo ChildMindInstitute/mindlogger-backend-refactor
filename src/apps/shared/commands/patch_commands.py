@@ -113,9 +113,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
         async with atomic(session):
             if owner_id:
                 try:
-                    arbitrary = await WorkspaceService(
-                        session, owner_id
-                    ).get_arbitrary_info_by_owner_id(owner_id)
+                    arbitrary = await WorkspaceService(session, owner_id).get_arbitrary_info_by_owner_id(owner_id)
                     if not arbitrary:
                         raise WorkspaceNotFoundError("Workspace not found")
 
@@ -125,9 +123,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
     arbitrary_session_maker = None
     if arbitrary:
-        arbitrary_session_maker = session_manager.get_session(
-            arbitrary.database_uri
-        )
+        arbitrary_session_maker = session_manager.get_session(arbitrary.database_uri)
 
     session_maker = session_manager.get_session()
 
@@ -137,11 +133,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
             async with atomic(session):
                 try:
                     with open(
-                        (
-                            str(Path(__file__).parent.resolve())
-                            + "/patches/"
-                            + patch.file_path
-                        ),
+                        (str(Path(__file__).parent.resolve()) + "/patches/" + patch.file_path),
                         "r",
                     ) as f:
                         sql = f.read()
@@ -157,9 +149,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
         try:
             # run main from the file
             patch_file = importlib.import_module(
-                str(__package__)
-                + ".patches."
-                + patch.file_path.replace(".py", ""),
+                str(__package__) + ".patches." + patch.file_path.replace(".py", ""),
             )
 
             # if manage_session is True, pass sessions to patch_file main
@@ -171,9 +161,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                         if arbitrary_session_maker:
                             async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
                                 async with atomic(arbitrary_session):
-                                    await patch_file.main(
-                                        session, arbitrary_session
-                                    )
+                                    await patch_file.main(session, arbitrary_session)
                         else:
                             await patch_file.main(session)
 

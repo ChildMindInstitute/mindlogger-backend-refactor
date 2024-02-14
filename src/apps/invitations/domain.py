@@ -42,9 +42,7 @@ class _InvitationRequest(PublicModel):
     last_name: str = Field(
         description="This field represents the last name of invited user",
     )
-    language: InvitationLanguage = Field(
-        description="This field represents the language of invitation"
-    )
+    language: InvitationLanguage = Field(description="This field represents the language of invitation")
 
     @root_validator
     def email_validation(cls, values):
@@ -77,8 +75,7 @@ class InvitationReviewerRequest(_InvitationRequest):
     """
 
     respondents: list[uuid.UUID] = Field(
-        description="This field represents the list of users id's "
-        "which invited to the applet as a respondents",
+        description="This field represents the list of users id's " "which invited to the applet as a respondents",
     )
     workspace_prefix: str | None = Field(
         description="This field represents the user workspace prefix. "
@@ -281,24 +278,20 @@ class _InvitationResponse(PublicModel):
         description="This field represents the specific invitation id",
     )
     applet_id: uuid.UUID = Field(
-        description="This field represents the specific applet id "
-        "for invitation",
+        description="This field represents the specific applet id " "for invitation",
     )
     applet_name: str = Field(
-        description="This field represents the specific applet name "
-        "for invitation",
+        description="This field represents the specific applet name " "for invitation",
     )
     key: uuid.UUID = Field(
-        description="This field represents the universally unique "
-        "identifiers for invitation",
+        description="This field represents the universally unique " "identifiers for invitation",
     )
     status: InvitationStatus = Field(
         description="This field represents the status for invitation",
     )
     user_id: uuid.UUID | None = Field(
         None,
-        description="This field respresents registered user or not. "
-        "Used for tests",
+        description="This field respresents registered user or not. " "Used for tests",
     )
 
 
@@ -329,8 +322,7 @@ class InvitationReviewerResponse(_InvitationResponse):
     """
 
     respondents: list[uuid.UUID] = Field(
-        description="This field represents the list of users id's "
-        "which invited to the applet as a respondents",
+        description="This field represents the list of users id's " "which invited to the applet as a respondents",
     )
     role: Role = Role.REVIEWER
 
@@ -356,6 +348,4 @@ class PrivateInvitationResponse(PublicModel):
     status: str
 
 
-InvitationDetailGeneric = (
-    InvitationDetailReviewer | InvitationDetailRespondent | InvitationDetail
-)
+InvitationDetailGeneric = InvitationDetailReviewer | InvitationDetailRespondent | InvitationDetail
