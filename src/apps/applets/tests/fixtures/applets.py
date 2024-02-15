@@ -1,25 +1,41 @@
 import uuid
+from typing import AsyncGenerator
 
 import pytest
 from pytest import Config
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.activities.crud.activity import ActivitiesCRUD
-from apps.activities.crud.activity_history import ActivityHistoriesCRUD
-from apps.activities.crud.activity_item import ActivityItemsCRUD
-from apps.activities.crud.activity_item_history import ActivityItemHistoriesCRUD
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.response_type_config import ResponseType
 from apps.applets.crud.applets import AppletsCRUD
-from apps.applets.crud.applets_history import AppletHistoriesCRUD
 from apps.applets.domain.applet_create_update import AppletCreate
+from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import Encryption
 from apps.applets.service.applet import AppletService
 from apps.applets.tests import constants
-from apps.themes.domain import Theme
+from apps.applets.tests.utils import teardown_applet
 from apps.themes.service import ThemeService
 from apps.users.domain import User
-from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+
+
+async def _get_or_create_applet(
+    global_session: AsyncSession,
+    applet_name: str,
+    applet_id: uuid.UUID,
+    applet_minimal_data: AppletCreate,
+    user_id: uuid.UUID,
+) -> AppletFull:
+    crud = AppletsCRUD(global_session)
+    srv = AppletService(global_session, user_id)
+    applet_db = await crud._get("id", applet_id)
+    if applet_db:
+        applet = await srv.get_full_applet(applet_id)
+    else:
+        applet_data = applet_minimal_data.copy(deep=True)
+        applet_data.display_name = applet_name
+        applet = await srv.create(applet_data, applet_id=applet_id)
+        await global_session.commit()
+    return applet
 
 
 @pytest.fixture(scope="session")
@@ -240,29 +256,14 @@ async def applet_one(
     global_session: AsyncSession,
     tom: User,
     applet_minimal_data: AppletCreate,
-    default_theme: Theme,
     pytestconfig: Config,
-):
+) -> AsyncGenerator[AppletFull, None]:
     applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
-    crud = AppletsCRUD(global_session)
-    srv = AppletService(global_session, tom.id)
-    applet_db = await crud._get("id", applet_id)
-    if applet_db:
-        applet = await srv.get_full_applet(applet_id)
-    else:
-        applet_data = applet_minimal_data.copy(deep=True)
-        applet_data.display_name = "Applet 1"
-        applet = await srv.create(applet_data, applet_id=applet_id)
-        await global_session.commit()
+    applet_name = "Applet 1"
+    applet = await _get_or_create_applet(global_session, applet_name, applet_id, applet_minimal_data, tom.id)
     yield applet
-    await UserAppletAccessCRUD(global_session)._delete()
-    await ActivityItemHistoriesCRUD(global_session)._delete()
-    await ActivityHistoriesCRUD(global_session)._delete()
-    await ActivityItemsCRUD(global_session)._delete()
-    await ActivitiesCRUD(global_session)._delete()
-    await AppletHistoriesCRUD(global_session)._delete()
-    await AppletsCRUD(global_session)._delete(id=applet.id)
-    await global_session.commit()
+    if not pytestconfig.getoption("--keepdb"):
+        await teardown_applet(global_session, applet.id)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -270,29 +271,14 @@ async def applet_two(
     global_session: AsyncSession,
     tom: User,
     applet_minimal_data: AppletCreate,
-    default_theme: Theme,
     pytestconfig: Config,
-):
+) -> AsyncGenerator[AppletFull, None]:
     applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b2")
-    crud = AppletsCRUD(global_session)
-    srv = AppletService(global_session, tom.id)
-    applet_db = await crud._get("id", applet_id)
-    if applet_db:
-        applet = await srv.get_full_applet(applet_id)
-    else:
-        applet_data = applet_minimal_data.copy(deep=True)
-        applet_data.display_name = "Applet 2"
-        applet = await srv.create(applet_data, applet_id=applet_id)
-        await global_session.commit()
+    applet_name = "Applet 2"
+    applet = await _get_or_create_applet(global_session, applet_name, applet_id, applet_minimal_data, tom.id)
     yield applet
-    await UserAppletAccessCRUD(global_session)._delete()
-    await ActivityItemHistoriesCRUD(global_session)._delete()
-    await ActivityHistoriesCRUD(global_session)._delete()
-    await ActivityItemsCRUD(global_session)._delete()
-    await ActivitiesCRUD(global_session)._delete()
-    await AppletHistoriesCRUD(global_session)._delete()
-    await AppletsCRUD(global_session)._delete(id=applet.id)
-    await global_session.commit()
+    if not pytestconfig.getoption("--keepdb"):
+        await teardown_applet(global_session, applet.id)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -300,29 +286,14 @@ async def applet_three(
     global_session: AsyncSession,
     lucy: User,
     applet_minimal_data: AppletCreate,
-    default_theme: Theme,
     pytestconfig: Config,
-):
+) -> AsyncGenerator[AppletFull, None]:
     applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b3")
-    crud = AppletsCRUD(global_session)
-    srv = AppletService(global_session, lucy.id)
-    applet_db = await crud._get("id", applet_id)
-    if applet_db:
-        applet = await srv.get_full_applet(applet_id)
-    else:
-        applet_data = applet_minimal_data.copy(deep=True)
-        applet_data.display_name = "Applet 3"
-        applet = await srv.create(applet_data, applet_id=applet_id)
-        await global_session.commit()
+    applet_name = "Applet 3"
+    applet = await _get_or_create_applet(global_session, applet_name, applet_id, applet_minimal_data, lucy.id)
     yield applet
-    await UserAppletAccessCRUD(global_session)._delete()
-    await ActivityItemHistoriesCRUD(global_session)._delete()
-    await ActivityHistoriesCRUD(global_session)._delete()
-    await ActivityItemsCRUD(global_session)._delete()
-    await ActivitiesCRUD(global_session)._delete()
-    await AppletHistoriesCRUD(global_session)._delete()
-    await AppletsCRUD(global_session)._delete(id=applet.id)
-    await global_session.commit()
+    if not pytestconfig.getoption("--keepdb"):
+        await teardown_applet(global_session, applet.id)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -330,26 +301,11 @@ async def applet_four(
     global_session: AsyncSession,
     bob: User,
     applet_minimal_data: AppletCreate,
-    default_theme: Theme,
     pytestconfig: Config,
-):
+) -> AsyncGenerator[AppletFull, None]:
     applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b4")
-    crud = AppletsCRUD(global_session)
-    srv = AppletService(global_session, bob.id)
-    applet_db = await crud._get("id", applet_id)
-    if applet_db:
-        applet = await srv.get_full_applet(applet_id)
-    else:
-        applet_data = applet_minimal_data.copy(deep=True)
-        applet_data.display_name = "Applet 4"
-        applet = await srv.create(applet_data, applet_id=applet_id)
-        await global_session.commit()
+    applet_name = "Applet 4"
+    applet = await _get_or_create_applet(global_session, applet_name, applet_id, applet_minimal_data, bob.id)
     yield applet
-    await UserAppletAccessCRUD(global_session)._delete()
-    await ActivityItemHistoriesCRUD(global_session)._delete()
-    await ActivityHistoriesCRUD(global_session)._delete()
-    await ActivityItemsCRUD(global_session)._delete()
-    await ActivitiesCRUD(global_session)._delete()
-    await AppletHistoriesCRUD(global_session)._delete()
-    await AppletsCRUD(global_session)._delete(id=applet.id)
-    await global_session.commit()
+    if not pytestconfig.getoption("--keepdb"):
+        await teardown_applet(global_session, applet.id)

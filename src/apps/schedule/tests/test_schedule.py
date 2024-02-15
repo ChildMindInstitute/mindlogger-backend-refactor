@@ -7,17 +7,19 @@ from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service.applet import AppletService
+from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.themes.service import ThemeService
 from apps.users.domain import User
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
-@pytest.fixture
-async def applet_data(applet_minimal_data: AppletCreate):
+@pytest.fixture(scope="class")
+async def applet_data(applet_minimal_data: AppletCreate) -> AppletCreate:
     data = applet_minimal_data.copy(deep=True)
     data.display_name = "schedule"
     data.activity_flows = [
@@ -30,25 +32,30 @@ async def applet_data(applet_minimal_data: AppletCreate):
     return AppletCreate(**data.dict())
 
 
-@pytest.fixture
-async def applet(session: AsyncSession, user: User, applet_data: AppletCreate) -> AsyncGenerator[AppletFull, None]:
-    srv = AppletService(session, user.id)
-    await ThemeService(session, user.id).get_or_create_default()
-    applet = await srv.create(applet_data)
-    await session.commit()
-    yield applet
-
-
-@pytest.fixture
-async def applet_lucy_respondent(
-    session: AsyncSession, applet: AppletFull, user: User, lucy: User
+@pytest.fixture(scope="class")
+async def applet(
+    global_session: AsyncSession, user: User, applet_data: AppletCreate
 ) -> AsyncGenerator[AppletFull, None]:
-    await UserAppletAccessService(session, user.id, applet.id).add_role(lucy.id, Role.RESPONDENT)
-    await session.commit()
+    srv = AppletService(global_session, user.id)
+    await ThemeService(global_session, user.id).get_or_create_default()
+    applet = await srv.create(applet_data)
+    await global_session.commit()
     yield applet
+    await teardown_applet(global_session, applet.id)
 
 
-@pytest.mark.usefixtures("applet_lucy_respondent")
+@pytest.fixture(scope="class")
+async def applet_lucy_respondent(
+    global_session: AsyncSession, applet: AppletFull, user: User, lucy: User
+) -> AsyncGenerator[AppletFull, None]:
+    await UserAppletAccessService(global_session, user.id, applet.id).add_role(lucy.id, Role.RESPONDENT)
+    await global_session.commit()
+    yield applet
+    await UserAppletAccessCRUD(global_session)._delete(applet_id=applet.id)
+    await global_session.commit()
+
+
+@pytest.mark.usefixtures("applet", "applet_lucy_respondent")
 class TestSchedule(BaseTest):
     fixtures = [
         "schedule/fixtures/periodicity.json",
