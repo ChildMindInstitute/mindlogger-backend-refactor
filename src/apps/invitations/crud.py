@@ -168,15 +168,31 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         """Return the specific invitation
         for the user who was invited.
         """
-        query: Query = select(InvitationSchema, AppletSchema.display_name.label("applet_name"))
+        query: Query = select(
+            InvitationSchema,
+            AppletSchema.display_name.label("applet_name"),
+            SubjectSchema.secret_user_id,
+            SubjectSchema.nickname
+        )
         query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
+        query = query.outerjoin(
+            SubjectSchema,
+            and_(
+                InvitationSchema.meta.has_key('subject_id'),
+                SubjectSchema.id == func.cast(
+                    InvitationSchema.meta['subject_id'].astext,
+                    UUID(as_uuid=True)
+                )
+            ),
+        )
         query = query.where(InvitationSchema.email == email)
         query = query.where(InvitationSchema.key == key)
         db_result = await self._execute(query)
         result = db_result.one_or_none()
         if not result:
             return None
-        invitation, applet_name = result
+
+        invitation, applet_name, secret_id, nickname = result
         invitation_detail_base = InvitationDetailBase(
             id=invitation.id,
             email=invitation.email,
@@ -194,7 +210,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         if invitation.role == Role.RESPONDENT:
             return InvitationDetailRespondent(
                 meta=invitation.meta,
-                nickname=invitation.nickname,
+                nickname=nickname,
+                secret_user_id=secret_id,
                 **invitation_detail_base.dict(),
             )
         elif invitation.role == Role.REVIEWER:

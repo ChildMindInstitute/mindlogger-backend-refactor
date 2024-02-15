@@ -196,6 +196,7 @@ class InvitationDetailRespondent(InvitationDetailBase):
 
     meta: RespondentMeta
     nickname: str | None
+    secret_user_id: str
 
 
 class InvitationDetailReviewer(InvitationDetailBase):
