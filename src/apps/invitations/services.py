@@ -433,6 +433,9 @@ class InvitationsService:
     async def get_meta(self, key: uuid.UUID) -> dict | None:
         return await InvitationCRUD(self.session).get_meta(key)
 
+    async def check_email_invited(self, email: str, applet_id: uuid.UUID) -> bool:
+        emails = await InvitationCRUD(self.session).get_invited_emails(applet_id)
+        return bool(emails.count(email))
 
 class PrivateInvitationService:
     def __init__(self, session):

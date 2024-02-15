@@ -894,3 +894,27 @@ class TestInvite(BaseTest):
 
         pins = await UserAppletAccessCRUD(session).get_workspace_pins(tom.id)
         assert pins[0].pinned_user_id == bob.id
+
+    async def test_shell_invite_cant_twice(self, client, session, shell_create_data):
+        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        email = "mm@mail.com"
+        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        url = self.shell_acc_create_url.format(applet_id=applet_id)
+
+        subjects = []
+        for i in range(2):
+            body = {**shell_create_data, "secretUserId": f"{uuid.uuid4()}"}
+            response = await client.post(url, body)
+            subject = response.json()["result"]
+            subjects.append(subject)
+
+        url = self.shell_acc_invite_url.format(applet_id=applet_id)
+        # Invite first subject
+        response = await client.post(url, dict(subjectId=subjects[0]["id"], email=email))
+        assert response.status_code == http.HTTPStatus.OK
+        # Try to invite next subject on same email
+        response = await client.post(url, dict(subjectId=subjects[1]["id"], email=email))
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        message = response.json()["result"][0]["message"]
+        assert message == RespondentInvitationExist.message
+
