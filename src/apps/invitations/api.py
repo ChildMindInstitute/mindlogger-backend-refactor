@@ -259,9 +259,11 @@ async def invitation_subject_send(
 ) -> Response[InvitationRespondentResponse]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
+        is_invited = await InvitationsService(session, user).check_email_invited(schema.email, applet_id)
+        if is_invited:
+            raise RespondentInvitationExist()
+
         invitation_srv = InvitationsService(session, user)
         try:
             invited_user = await UserService(session).get_by_email(

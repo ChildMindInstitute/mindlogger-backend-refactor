@@ -281,3 +281,12 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(InvitationSchema.key == key)
         result_db = await self._execute(query)
         return result_db.scalar_one_or_none()
+
+    async def get_invited_emails(self, applet_id: uuid.UUID) -> list[str]:
+        query: Query = select(InvitationSchema.email)
+        query = query.where(
+            InvitationSchema.applet_id == applet_id,
+            InvitationSchema.status.in_([InvitationStatus.APPROVED, InvitationStatus.PENDING])
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
