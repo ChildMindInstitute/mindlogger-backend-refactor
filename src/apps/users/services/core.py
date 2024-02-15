@@ -72,17 +72,13 @@ class PasswordRecoveryService:
         exp = settings.authentication.password_recover.expiration // 60
 
         # Default to web frontend
-        frontend_base_url = settings.service.urls.frontend.web_base
+        frontend_base = settings.service.urls.frontend.web_base
         if content_source == MindloggerContentSource.admin:
             # Change to admin frontend if the request came from there
-            frontend_base_url = settings.service.urls.frontend.admin_base
-
-        base_url_with_protocol = frontend_base_url
-        if not base_url_with_protocol.startswith("http"):
-            base_url_with_protocol = f"https://{base_url_with_protocol}"
+            frontend_base = settings.service.urls.frontend.admin_base
 
         url = (
-            f"{base_url_with_protocol}"
+            f"https://{frontend_base}"
             f"/{settings.service.urls.frontend.password_recovery_send}"
             f"?key={password_recovery_info.key}"
             f"&email="
