@@ -697,11 +697,12 @@ class TestWorkspaces(BaseTest):
         assert res.status_code == 200
         body = res.json()
         respondent = body.get("result", {})
-        assert len(respondent) == 2
+        assert len(respondent) == 3
         # encrypted "hFywashKw+KlcDPazIy5QHz4AdkTOYkD28Q8+dpeDDA=" nickname
         # is 'Mindlogger ChildMindInstitute'
         assert respondent["nickname"] == "Mindlogger ChildMindInstitute"
         assert respondent["secretUserId"] == ("f0dd4996-e0eb-461f-b2f8-ba873a674782")
+        assert respondent["lastSeen"] is None
 
     async def test_applet_get_respondent_not_found(self, client, tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
