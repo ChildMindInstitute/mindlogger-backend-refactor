@@ -16,7 +16,7 @@ from apps.users.domain import User
 
 
 @pytest.fixture
-async def applet_data(applet_minimal_data: AppletCreate) -> AppletCreate:
+async def applet_data_with_flow(applet_minimal_data: AppletCreate) -> AppletCreate:
     data = applet_minimal_data.copy(deep=True)
     data.display_name = "schedule"
     # By some reasons for test need ActivityFlow
@@ -34,11 +34,12 @@ async def applet_data(applet_minimal_data: AppletCreate) -> AppletCreate:
 
 
 @pytest.fixture
-async def applet(session: AsyncSession, tom: User, applet_data: AppletCreate) -> AsyncGenerator[AppletFull, None]:
+async def applet_with_flow(
+    session: AsyncSession, tom: User, applet_data_with_flow: AppletCreate
+) -> AsyncGenerator[AppletFull, None]:
     srv = AppletService(session, tom.id)
     await ThemeService(session, tom.id).get_or_create_default()
-    applet = await srv.create(applet_data)
-    await session.commit()
+    applet = await srv.create(applet_data_with_flow)
     yield applet
 
 
@@ -47,7 +48,7 @@ class TestAnswerCases:
     login_url = "/auth/login"
     answer_url = "/answers"
 
-    async def test_answer_activity_items_create_for_respondent(self, client: TestClient, applet: AppletFull):
+    async def test_answer_activity_items_create_for_respondent(self, client: TestClient, applet_with_flow: AppletFull):
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
 
         submit_id = str(uuid.uuid4())
@@ -55,10 +56,10 @@ class TestAnswerCases:
 
         create_data = dict(
             submit_id=submit_id,
-            applet_id=applet.id,
-            flow_id=applet.activity_flows[0].id,
-            activity_id=applet.activities[0].id,
-            version=applet.version,
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+            activity_id=applet_with_flow.activities[0].id,
+            version=applet_with_flow.version,
             created_at=1681216969,
             client=dict(
                 appId="mindlogger-mobile",
@@ -76,7 +77,7 @@ class TestAnswerCases:
                 ),
                 events=json.dumps(dict(events=["event1", "event2"])),
                 item_ids=[
-                    applet.activities[0].items[0].id,
+                    applet_with_flow.activities[0].items[0].id,
                 ],
                 identifier="encrypted_identifier",
                 scheduled_time=10,
@@ -90,10 +91,10 @@ class TestAnswerCases:
 
         create_data = dict(
             submit_id=submit_id,
-            applet_id=applet.id,
-            flow_id=applet.activity_flows[0].id,
-            activity_id=applet.activities[1].id,
-            version=applet.version,
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+            activity_id=applet_with_flow.activities[1].id,
+            version=applet_with_flow.version,
             created_at=1681216969,
             client=dict(
                 appId="mindlogger-mobile",
@@ -111,7 +112,7 @@ class TestAnswerCases:
                 ),
                 events=json.dumps(dict(events=["event1", "event2"])),
                 item_ids=[
-                    applet.activities[1].items[0].id,
+                    applet_with_flow.activities[1].items[0].id,
                 ],
                 identifier="encrypted_identifier",
                 scheduled_time=10,

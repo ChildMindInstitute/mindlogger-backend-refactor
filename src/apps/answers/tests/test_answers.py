@@ -1,105 +1,15 @@
 import datetime
 import json
 import uuid
-from typing import AsyncGenerator, cast
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.activities.domain.response_type_config import SingleSelectionConfig
-from apps.activities.domain.response_values import SingleSelectionValues
-from apps.activities.domain.scores_reports import ReportType, ScoresAndReports, Section
 from apps.answers.db.schemas import AnswerSchema
-from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
-from apps.applets.domain.applet_link import CreateAccessLink
-from apps.applets.domain.base import AppletReportConfigurationBase
-from apps.applets.service.applet import AppletService
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
-from apps.themes.service import ThemeService
-from apps.users.domain import User
 from infrastructure.utility import RedisCacheTest
-
-
-@pytest.fixture
-def section() -> Section:
-    return Section(type=ReportType.section, name="testsection")
-
-
-@pytest.fixture
-def scores_and_reports(section: Section) -> ScoresAndReports:
-    return ScoresAndReports(
-        generate_report=True,
-        show_score_summary=True,
-        reports=[section],
-    )
-
-
-@pytest.fixture
-def applet_report_configuration_data(
-    user: User, tom: User, report_server_public_key: str
-) -> AppletReportConfigurationBase:
-    return AppletReportConfigurationBase(
-        report_server_ip="localhost",
-        report_public_key=report_server_public_key,
-        report_recipients=[tom.email_encrypted, user.email_encrypted],
-    )
-
-
-@pytest.fixture
-def applet_data(
-    applet_minimal_data: AppletCreate,
-    applet_report_configuration_data: AppletReportConfigurationBase,
-    scores_and_reports: ScoresAndReports,
-) -> AppletCreate:
-    data = applet_minimal_data.copy(deep=True)
-    data.display_name = "answers"
-    data.activities[0].items[0].response_values = cast(
-        SingleSelectionValues, data.activities[0].items[0].response_values
-    )
-    data.activities[0].items[0].config = cast(SingleSelectionConfig, data.activities[0].items[0].config)
-    data.activities[0].items[0].response_values.options[0].alert = "alert"
-    data.activities[0].items[0].config.set_alerts = True
-    data.activities[0].scores_and_reports = scores_and_reports
-    data.report_server_ip = applet_report_configuration_data.report_server_ip
-    data.report_public_key = applet_report_configuration_data.report_public_key
-    data.report_recipients = applet_report_configuration_data.report_recipients
-    return AppletCreate(**data.dict())
-
-
-@pytest.fixture
-async def applet(session: AsyncSession, tom: User, applet_data: AppletCreate) -> AsyncGenerator[AppletFull, None]:
-    srv = AppletService(session, tom.id)
-    await ThemeService(session, tom.id).get_or_create_default()
-    applet = await srv.create(applet_data)
-    yield applet
-
-
-@pytest.fixture
-async def public_applet(session: AsyncSession, applet: AppletFull, tom: User) -> AppletFull:
-    srv = AppletService(session, tom.id)
-    await srv.create_access_link(applet.id, CreateAccessLink(require_login=False))
-    applet = await srv.get_full_applet(applet.id)
-    assert applet.link is not None
-    return applet
-
-
-@pytest.fixture
-async def applet_with_reviewable_activity(
-    session: AsyncSession, applet_minimal_data: AppletCreate, tom: User
-) -> AppletFull:
-    data = applet_minimal_data.copy(deep=True)
-    data.display_name = "applet with reviewable activity"
-    second_activity = data.activities[0].copy(deep=True)
-    second_activity.name = data.activities[0].name + " review"
-    data.activities.append(second_activity)
-    data.activities[1].is_reviewable = True
-    applet_create = AppletCreate(**data.dict())
-    srv = AppletService(session, tom.id)
-    applet = await srv.create(applet_create)
-    return applet
 
 
 class TestAnswerActivityItems(BaseTest):
@@ -1524,14 +1434,16 @@ class TestAnswerActivityItems(BaseTest):
                 assert not applet_data["activityFlows"]
 
     @pytest.mark.usefixtures("user_reviewer_applet_one")
-    async def test_summary_restricted_for_reviewer_if_external_respondent(self, mock_kiq_report, client, tom, applet):
+    async def test_summary_restricted_for_reviewer_if_external_respondent(
+        self, mock_kiq_report, client, tom, applet_one
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
+            applet_id=str(applet_one.id),
+            version=applet_one.version,
+            activity_id=str(applet_one.activities[0].id),
             answer=dict(
                 user_public_key="user key",
                 answer=json.dumps(
@@ -1540,7 +1452,7 @@ class TestAnswerActivityItems(BaseTest):
                         additional_text=None,
                     )
                 ),
-                item_ids=[str(applet.activities[0].items[0].id)],
+                item_ids=[str(applet_one.activities[0].items[0].id)],
                 identifier="some identifier",
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
@@ -1562,7 +1474,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(
             self.summary_activities_url.format(
-                applet_id=str(applet.id),
+                applet_id=str(applet_one.id),
             )
         )
 
