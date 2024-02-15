@@ -34,9 +34,6 @@ class PasswordRecoveryService:
         schema: PasswordRecoveryRequest,
         content_source: MindloggerContentSource,
     ) -> PublicUser:
-
-        # encrypted_email = encrypt(bytes(schema.email, "utf-8")).hex()
-
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
         if user.email_encrypted != schema.email:
