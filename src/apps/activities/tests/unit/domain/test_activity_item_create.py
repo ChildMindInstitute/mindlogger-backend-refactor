@@ -1,3 +1,4 @@
+import uuid
 from typing import cast
 
 import pytest
@@ -7,9 +8,11 @@ from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.response_type_config import DrawingConfig, ResponseType, TextConfig
 from apps.activities.domain.response_values import (
     DrawingValues,
+    MultiSelectionValues,
     NumberSelectionValues,
     SingleSelectionRowsValues,
     SingleSelectionValues,
+    _MultiSelectionValue,
 )
 from apps.activities.tests.utils import BaseItemData
 from apps.shared.domain.custom_validations import InvalidImageError
@@ -281,3 +284,38 @@ def test_activity_item_create_response_values_not_none_for_non_response_response
     data["response_values"] = single_select_response_values.dict()
     with pytest.raises(errors.IncorrectResponseValueError):
         ActivityItemCreate(**data)
+
+
+def test_multi_select_response_values_multiple_none_options(  # noqa: E501
+    multi_select_reponse_values: MultiSelectionValues,
+):
+    data = multi_select_reponse_values.dict()
+    data["options"].append(
+        _MultiSelectionValue(
+            id=str(uuid.uuid4()),
+            text="text1",
+            image=None,
+            score=None,
+            tooltip=None,
+            is_hidden=False,
+            color=None,
+            value=0,
+            is_none_above=True,
+        )
+    )
+    data["options"].append(
+        _MultiSelectionValue(
+            id=str(uuid.uuid4()),
+            text="text2",
+            image=None,
+            score=None,
+            tooltip=None,
+            is_hidden=False,
+            color=None,
+            value=0,
+            is_none_above=True,
+        )
+    )
+
+    with pytest.raises(errors.MultiSelectNoneOptionError):
+        MultiSelectionValues(**data)

@@ -6,6 +6,7 @@ from apps.activities.errors import (
     InvalidDataMatrixError,
     InvalidScoreLengthError,
     MinValueError,
+    MultiSelectNoneOptionError,
 )
 from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
 
@@ -92,8 +93,21 @@ class SingleSelectionValues(PublicModel):
         return validate_options_value(value)
 
 
-class MultiSelectionValues(SingleSelectionValues, PublicModel):
-    pass
+class _MultiSelectionValue(_SingleSelectionValue):
+    is_none_above: bool = Field(default=False)
+
+
+class MultiSelectionValues(PublicModel):
+    palette_name: str | None
+    options: list[_MultiSelectionValue]
+
+    @validator("options")
+    def validate_options(cls, value):
+        return validate_options_value(value)
+
+    @validator("options")
+    def validate_none_option_flag(cls, value):
+        return validate_none_option_flag(value)
 
 
 class SliderValueAlert(PublicModel):
@@ -309,5 +323,18 @@ def validate_options_value(options):
                 )
                 + 1
             )
+
+    return options
+
+
+def validate_none_option_flag(options):
+    none_option_counter = 0
+
+    for option in options:
+        if option.is_none_above:
+            none_option_counter += 1
+
+    if none_option_counter > 1:
+        raise MultiSelectNoneOptionError()
 
     return options
