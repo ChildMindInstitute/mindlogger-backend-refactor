@@ -1,18 +1,25 @@
 import datetime
+import http
 import json
+import uuid
 
 import pytest
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.db.schemas import AnswerSchema
+from apps.applets.domain import Role
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
+from apps.users import User
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility import RedisCacheTest
 
 
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
-        # "folders/fixtures/folders.json",
         "applets/fixtures/applets.json",
         "applets/fixtures/applet_user_accesses.json",
         "applets/fixtures/applet_histories.json",
@@ -1622,3 +1629,36 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.public_answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
+
+    @pytest.mark.parametrize("role,expected", (
+            (Role.OWNER, http.HTTPStatus.OK),
+            (Role.MANAGER, http.HTTPStatus.OK),
+            (Role.REVIEWER, http.HTTPStatus.OK),
+            (Role.EDITOR, http.HTTPStatus.FORBIDDEN),
+            (Role.COORDINATOR, http.HTTPStatus.FORBIDDEN),
+            (Role.RESPONDENT, http.HTTPStatus.FORBIDDEN)
+    ))
+    async def test_access_to_activity_list(self, client, tom: User, user: User, session: AsyncSession, role, expected):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
+
+        access_service = UserAppletAccessService(session, tom.id, applet_id)
+        await access_service.add_role(user.id, role)
+
+        url = self.summary_activities_url.format(applet_id=f"{applet_id}")
+        if role == Role.REVIEWER:
+            subject = await SubjectsService(session, tom.id).create(
+                Subject(
+                    applet_id=applet_id,
+                    creator_id=tom.id,
+                    first_name="first_name",
+                    last_name="last_name",
+                    secret_user_id=f"{uuid.uuid4()}"
+                )
+            )
+            assert subject.id
+            await access_service.set_subjects_for_review(user.id, applet_id, [subject.id])
+            url = f"{url}?targetSubjectId={subject.id}"
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        response = await client.get(url)
+        assert response.status_code == expected

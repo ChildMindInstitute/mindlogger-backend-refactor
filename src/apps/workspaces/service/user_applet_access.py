@@ -391,3 +391,15 @@ class UserAppletAccessService:
         ).remove_access_by_user_and_applet_to_role(
             user_id, [applet_id], [role]
         )
+
+    async def set_subjects_for_review(
+            self, reviewer_id: uuid.UUID, applet_id: uuid.UUID, subjects: list[uuid.UUID]
+    ) -> bool:
+        crud = UserAppletAccessCRUD(self.session)
+        access = await crud.get(reviewer_id, applet_id, Role.REVIEWER)
+        if access:
+            subject_ids = [str(subject_id) for subject_id in subjects]
+            access.meta = {**access.meta, "subjects": subject_ids}
+            await crud.save(access)
+            return True
+        return False

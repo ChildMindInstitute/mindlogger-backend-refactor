@@ -880,11 +880,6 @@ class AnswerService:
         ).get_activities_which_has_answer(
             activity_ver_ids, filters.respondent_id, filters.target_subject_id
         )
-        answers_act_ids = set(
-            map(
-                lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer
-            )
-        )
         answers_act_ids = set(map(lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer))
 
         results = []

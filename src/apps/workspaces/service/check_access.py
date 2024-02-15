@@ -209,12 +209,10 @@ class CheckAccessService:
         access = await AppletAccessCRUD(self.session).get_priority_access(
             applet_id, self.user_id
         )
-        if not access:
+        if not access or access.role not in Role.reviewers():
             raise AccessDeniedError()
 
         if access.role == Role.REVIEWER:
-            if not subject_id:
-                raise AccessDeniedError()
             allowed_subject_ids = access.meta.get("subjects", [])
             if str(subject_id) not in allowed_subject_ids:
                 raise AccessDeniedError()
