@@ -30,6 +30,7 @@ from apps.workspaces.api import (
     workspace_respondents_list,
     workspace_retrieve,
     workspace_roles_retrieve,
+    workspace_subject_pin,
     workspace_users_applet_access_list,
 )
 from apps.workspaces.domain.constants import Role
@@ -214,6 +215,17 @@ router.post(
     },
     response_class=EmptyResponse,
 )(workspace_respondent_pin)
+
+
+router.post(
+    "/{owner_id}/subjects/{subject_id}/pin",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+    response_class=EmptyResponse,
+)(workspace_subject_pin)
 
 router.post(
     "/{owner_id}/managers/{user_id}/pin",

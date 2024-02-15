@@ -42,6 +42,7 @@ from apps.shared.query_params import QueryParams
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UsersCRUD
 from apps.users.domain import User
+from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 
@@ -368,6 +369,11 @@ class InvitationsService:
         await UserAppletAccessService(self.session, self._user.id, invitation.applet_id).add_role_by_invitation(
             invitation
         )
+        if invitation.role == Role.RESPONDENT and isinstance(invitation.meta, RespondentMeta):
+            if invitation.meta.subject_id:
+                await UserAccessService(self.session, self._user.id).change_subject_pins_to_user(
+                    self._user.id, uuid.UUID(invitation.meta.subject_id)
+                )
 
         await InvitationCRUD(self.session).approve_by_id(invitation.id, self._user.id)
 

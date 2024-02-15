@@ -111,6 +111,7 @@ class UserPinSchema(Base):
     )
 
     user_id = Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    pinned_user_id = Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    pinned_user_id = Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    pinned_subject_id = Column(ForeignKey("subjects.id", ondelete="CASCADE"), nullable=True)
     owner_id = Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role = Column(Enum(UserPinRole, name="user_pin_role"), nullable=False)

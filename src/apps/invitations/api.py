@@ -292,7 +292,7 @@ async def invitation_subject_send(
             applet_id, invitation_schema, subject.id
         )
         subject.email = schema.email
-        await subject_srv.update(subject)
+        await subject_srv.update(Subject.from_orm(subject))
 
     return Response[InvitationRespondentResponse](
         result=InvitationRespondentResponse(**invitation.dict())

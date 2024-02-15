@@ -381,11 +381,17 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             exists()
             .where(
                 UserPinSchema.user_id == user_id,
-                UserPinSchema.pinned_user_id == UserSchema.id,
                 UserPinSchema.owner_id == owner_id,
                 UserPinSchema.role == UserPinRole.respondent,
+                or_(
+                    and_(UserPinSchema.pinned_subject_id.is_(None), UserPinSchema.pinned_user_id == UserSchema.id),
+                    and_(
+                        UserPinSchema.pinned_user_id.is_(None),
+                        UserPinSchema.pinned_subject_id == any_(func.array_agg(SubjectSchema.id))
+                        )
+                    )
             )
-            .correlate(UserSchema)
+            .correlate(UserSchema, SubjectSchema)
         )
 
         assigned_respondents = select(literal_column("val").cast(UUID)).select_from(
@@ -730,19 +736,38 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return db_result.scalars().first() is not None
 
+    async def check_access_by_subject_and_owner(
+            self, subject_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role] | None
+    ):
+        query: Query = select(UserAppletAccessSchema)
+        query = query.join(SubjectSchema, SubjectSchema.applet_id == UserAppletAccessSchema.applet_id)
+        query = query.where(
+            UserAppletAccessSchema.owner_id == owner_id,
+            UserAppletAccessSchema.role.in_(roles),
+            SubjectSchema.id == subject_id,
+        )
+        query = query.limit(1)
+        db_result = await self._execute(query)
+        return db_result.scalars().first() is not None
+
     async def pin(
         self,
         user_id: uuid.UUID,
         owner_id: uuid.UUID,
-        pinned_user_id: uuid.UUID,
         pin_role: UserPinRole,
+        pinned_user_id: uuid.UUID | None,
+        pinned_subject_id: uuid.UUID | None,
     ):
         query = select(UserPinSchema).where(
             UserPinSchema.user_id == user_id,
             UserPinSchema.owner_id == owner_id,
-            UserPinSchema.pinned_user_id == pinned_user_id,
             UserPinSchema.role == pin_role,
         )
+        if pinned_user_id:
+            query = query.where(UserPinSchema.pinned_user_id == pinned_user_id)
+        else:
+            query = query.where(UserPinSchema.pinned_subject_id == pinned_subject_id)
+
         res = await self._execute(query)
         if user_pin := res.scalar():
             await self.session.delete(user_pin)
@@ -751,6 +776,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 user_id=user_id,
                 owner_id=owner_id,
                 pinned_user_id=pinned_user_id,
+                pinned_subject_id=pinned_subject_id,
                 role=pin_role,
             )
             await self._create(user_pin)
@@ -1087,3 +1113,18 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.values(owner_id=new_owner)
         await self._execute(query)
+
+    async def change_subject_pins_to_user(self, user_id: uuid.UUID, subject_id: uuid.UUID):
+        query: Query = update(UserPinSchema)
+        query = query.where(
+            UserPinSchema.role == UserPinRole.respondent,
+            UserPinSchema.pinned_subject_id == subject_id
+        )
+        query = query.values(pinned_subject_id=None, pinned_user_id=user_id) # noqa
+        await self._execute(query)
+
+    async def get_workspace_pins(self, owner_id: uuid.UUID) -> list[UserPinSchema]:
+        query: Query = select(UserPinSchema)
+        query = query.where(UserPinSchema.owner_id == owner_id)
+        db_res = await self._execute(query)
+        return db_res.scalars().all()
