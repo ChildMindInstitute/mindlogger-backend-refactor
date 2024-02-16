@@ -838,15 +838,23 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         individual_event_query = individual_event_query.where(EventSchema.applet_id == UserAppletAccessSchema.applet_id)
 
         query: Query = select(
-            UserAppletAccessSchema.meta,
-            UserAppletAccessSchema.nickname,
+            SubjectSchema.secret_user_id,
+            SubjectSchema.nickname,
             AppletSchema.id,
             AppletSchema.display_name,
             AppletSchema.image,
             exists(individual_event_query),
             AppletSchema.encryption,
         )
+        query = query.select_from(UserAppletAccessSchema)
         query = query.join(AppletSchema, AppletSchema.id == UserAppletAccessSchema.applet_id)
+        query = query.join(
+            SubjectSchema,
+            and_(
+                SubjectSchema.applet_id == UserAppletAccessSchema.applet_id,
+                SubjectSchema.user_id == UserAppletAccessSchema.user_id
+            )
+        )
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         query = query.where(UserAppletAccessSchema.user_id == respondent_id)
@@ -858,7 +866,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         accesses = []
         results = db_result.all()
         for (
-            meta,
+            secret_user_id,
             nickname,
             applet_id,
             display_name,
@@ -871,7 +879,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     applet_id=applet_id,
                     applet_name=display_name,
                     applet_image=image,
-                    secret_user_id=meta.get("secretUserId", ""),
+                    secret_user_id=secret_user_id,
                     nickname=nickname,
                     has_individual_schedule=has_individual,
                     encryption=encryption,

@@ -1,3 +1,4 @@
+import http
 import uuid
 
 import pytest
@@ -5,18 +6,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.shared.query_params import QueryParams
 from apps.shared.test import BaseTest
-from apps.users import UserSchema, UsersCRUD
+from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.workspace import WorkspaceApplet
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 
 
 @pytest.fixture
-async def tom_applets(session: AsyncSession, user_tom: UserSchema):
+async def tom_applets(session: AsyncSession, tom: UserSchema):
     params = QueryParams()
-    return await WorkspaceService(session, user_tom.id).get_workspace_applets(user_tom.id, "en", params)
+    return await WorkspaceService(session, tom.id).get_workspace_applets(tom.id, "en", params)
 
 
 class TestWorkspaces(BaseTest):
@@ -874,3 +876,11 @@ class TestWorkspaces(BaseTest):
         respondent_list = response.json()["result"]
         for resp in respondent_list:
             assert not resp["isPinned"]
+
+    async def test_respondent_access(
+            self, client, tom: User, user: User, session: AsyncSession, tom_applets: list[WorkspaceApplet]
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        url = self.workspace_respondent_applet_accesses.format(owner_id=tom.id, respondent_id=tom.id)
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
