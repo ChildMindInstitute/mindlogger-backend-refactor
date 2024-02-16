@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import Body, Depends, Query
+from fastapi import Body, Depends, Query, Request
 from pydantic import Required
 from starlette import status
 
@@ -26,6 +26,7 @@ from config import settings
 from infrastructure.cache import CacheNotFound, PasswordRecoveryHealthCheckNotValid
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.http.deps import get_mindlogger_content_source
 
 
 async def password_update(
@@ -44,7 +45,8 @@ async def password_update(
             user.hashed_password,
         )
 
-        password_hash: str = AuthenticationService.get_password_hash(schema.password)
+        password_hash: str = AuthenticationService.get_password_hash(
+            schema.password)
         password = UserChangePassword(hashed_password=password_hash)
 
         updated_user: User = await UsersCRUD(session).change_password(user, password)
@@ -60,6 +62,7 @@ async def password_update(
 
 
 async def password_recovery(
+    request: Request,
     schema: PasswordRecoveryRequest = Body(...),
     session=Depends(get_session),
 ) -> EmptyResponse:
@@ -69,7 +72,10 @@ async def password_recovery(
     # Send the password recovery the internal password recovery service
     async with atomic(session):
         try:
-            await PasswordRecoveryService(session).send_password_recovery(schema)
+            content_source = await get_mindlogger_content_source(request)
+            await PasswordRecoveryService(session).send_password_recovery(
+                schema, content_source
+            )
         except UserNotFound:
             pass  # mute error in terms of user enumeration vulnerability
 
