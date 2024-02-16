@@ -119,12 +119,12 @@ class TestActivities:
         assert result["appletDetail"]["image"] == applet_one.image
         assert result["appletDetail"]["watermark"] == applet_one.watermark
         assert result["appletDetail"]["theme"]["id"] == str(applet_one.theme_id)
-        # assert result["appletDetail"]["theme"]["name"] == default_theme.name
-        # assert result["appletDetail"]["theme"]["logo"] == default_theme.logo
-        # assert result["appletDetail"]["theme"]["backgroundImage"] == default_theme.background_image
-        # assert result["appletDetail"]["theme"]["primaryColor"] == default_theme.primary_color
-        # assert result["appletDetail"]["theme"]["secondaryColor"] == default_theme.secondary_color
-        # assert result["appletDetail"]["theme"]["tertiaryColor"] == default_theme.tertiary_color
+        assert result["appletDetail"]["theme"]["name"] == default_theme.name
+        assert result["appletDetail"]["theme"]["logo"] == default_theme.logo
+        assert result["appletDetail"]["theme"]["backgroundImage"] == default_theme.background_image
+        assert result["appletDetail"]["theme"]["primaryColor"] == str(default_theme.primary_color)[:4].lower()
+        assert result["appletDetail"]["theme"]["secondaryColor"] == str(default_theme.secondary_color)[:4].lower()
+        assert result["appletDetail"]["theme"]["tertiaryColor"] == str(default_theme.tertiary_color)[:4].lower()
         assert len(result["appletDetail"]["activities"]) == 1
         assert result["appletDetail"]["activities"][0]["id"] == str(activity.id)
         assert result["appletDetail"]["activities"][0]["name"] == activity.name
