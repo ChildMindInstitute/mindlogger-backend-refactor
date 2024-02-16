@@ -41,6 +41,7 @@ from apps.shared.version import (
     VERSION_DIFFERENCE_ITEM,
     VERSION_DIFFERENCE_MINOR,
 )
+from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
 from apps.themes.service import ThemeService
 from apps.users.services.user import UserService
@@ -628,7 +629,16 @@ class AppletService:
         if not create_request.require_login:
             anonym = await UserService(self.session).create_anonymous_respondent()
             await UserAppletAccessService(self.session, self.user_id, applet_id).add_role_for_anonymous_respondent()
-            await SubjectsService(self.session, self.user_id).create_anonymous_subject(anonym, applet_id)
+            await SubjectsService(self.session, self.user_id).create(
+                Subject(
+                    applet_id=applet_id,
+                    creator_id=self.user_id,
+                    user_id=anonym.id,
+                    first_name=anonym.first_name,
+                    last_name=anonym.last_name,
+                    secret_user_id=settings.anonymous_respondent.secret_user_id,
+                )
+            )
         return AppletLink(link=link, require_login=create_request.require_login)
 
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:
