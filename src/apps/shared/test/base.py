@@ -3,47 +3,49 @@ import os
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.mailing.services import TestMail
 from apps.shared.test.utils import truncate_tables
 from config import settings
+from infrastructure.database.core import session_manager
 
 
 class BaseTest:
     fixtures: list[str] = []
 
     @pytest.fixture(scope="class", autouse=True)
-    async def initialize(self, global_session: AsyncSession):
+    async def initialize(self):
         try:
-            await self.populate_db(global_session)
+            await self.populate_db()
             yield
         finally:
-            await truncate_tables(global_session)
+            await truncate_tables()
 
     @pytest.fixture(autouse=True)
     async def clear_mails(self):
         TestMail.clear_mails()
 
-    async def populate_db(self, global_session: AsyncSession):
+    async def populate_db(self):
         for fixture in self.fixtures:
-            await self.load_data(fixture, global_session)
+            await self.load_data(fixture)
 
-    async def load_data(self, relative_path: str, global_session: AsyncSession):
-        file = open(os.path.join(settings.apps_dir, relative_path), "r")
-        data = json.load(file)
-        for datum in data:
-            if datum["table"] == "users":
-                continue
-            columns = ",".join(map(lambda field: f'"{field}"', datum["fields"].keys()))
-            values = ",".join(map(_str_caster, datum["fields"].values()))
-            query = text(
-                f"""
-            insert into "{datum['table']}"({columns}) values ({values})
-            """
-            )
-            await global_session.execute(query)
-        await global_session.commit()
+    async def load_data(self, relative_path: str):
+        AsyncSession = session_manager.get_session()
+        async with AsyncSession() as session:
+            file = open(os.path.join(settings.apps_dir, relative_path), "r")
+            data = json.load(file)
+            for datum in data:
+                if datum["table"] == "users":
+                    continue
+                columns = ",".join(map(lambda field: f'"{field}"', datum["fields"].keys()))
+                values = ",".join(map(_str_caster, datum["fields"].values()))
+                query = text(
+                    f"""
+                insert into "{datum['table']}"({columns}) values ({values})
+                """
+                )
+                await session.execute(query)
+            await session.commit()
 
 
 def _str_caster(val):
