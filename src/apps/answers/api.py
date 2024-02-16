@@ -134,12 +134,8 @@ async def summary_activity_list(
         target_subject_id = target_subject.id
     else:
         target_subject_id = filters.target_subject_id
-    await CheckAccessService(session, user.id).check_subject_answer_access(
-        applet_id, target_subject_id
-    )
-    activities = await AnswerService(
-        session, user.id, answer_session
-    ).get_summary_activities(applet_id, filters)
+    await CheckAccessService(session, user.id).check_subject_answer_access(applet_id, target_subject_id)
+    activities = await AnswerService(session, user.id, answer_session).get_summary_activities(applet_id, filters)
     return ResponseMulti(
         result=parse_obj_as(list[PublicSummaryActivity], activities),
         count=len(activities),
