@@ -1,24 +1,20 @@
-from typing import AsyncGenerator
-
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
+from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
-from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
-from apps.themes.service import ThemeService
 from apps.users.domain import User
-from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 async def applet_data(applet_minimal_data: AppletCreate) -> AppletCreate:
     data = applet_minimal_data.copy(deep=True)
     data.display_name = "schedule"
@@ -32,27 +28,26 @@ async def applet_data(applet_minimal_data: AppletCreate) -> AppletCreate:
     return AppletCreate(**data.dict())
 
 
-@pytest.fixture(scope="class")
-async def applet(
-    global_session: AsyncSession, user: User, applet_data: AppletCreate
-) -> AsyncGenerator[AppletFull, None]:
-    srv = AppletService(global_session, user.id)
-    await ThemeService(global_session, user.id).get_or_create_default()
+@pytest.fixture
+async def applet(session: AsyncSession, user: User, applet_data: AppletCreate) -> AppletFull:
+    srv = AppletService(session, user.id)
     applet = await srv.create(applet_data)
-    await global_session.commit()
-    yield applet
-    await teardown_applet(global_session, applet.id)
+    return applet
 
 
-@pytest.fixture(scope="class")
-async def applet_lucy_respondent(
-    global_session: AsyncSession, applet: AppletFull, user: User, lucy: User
-) -> AsyncGenerator[AppletFull, None]:
-    await UserAppletAccessService(global_session, user.id, applet.id).add_role(lucy.id, Role.RESPONDENT)
-    await global_session.commit()
-    yield applet
-    await UserAppletAccessCRUD(global_session)._delete(applet_id=applet.id)
-    await global_session.commit()
+@pytest.fixture
+async def applet_lucy_respondent(session: AsyncSession, applet: AppletFull, user: User, lucy: User) -> AppletFull:
+    await UserAppletAccessService(session, user.id, applet.id).add_role(lucy.id, Role.RESPONDENT)
+    return applet
+
+
+@pytest.fixture
+async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletFull, tom) -> AppletFull:
+    srv = AppletService(session, tom.id)
+    await srv.create_access_link(applet_one.id, CreateAccessLink(require_login=False))
+    applet = await srv.get_full_applet(applet_one.id)
+    assert applet.link is not None
+    return applet
 
 
 @pytest.mark.usefixtures("applet", "applet_lucy_respondent")
@@ -267,12 +262,12 @@ class TestSchedule(BaseTest):
         events = response.json()["result"]
         assert len(events) == 1
 
-    # async def test_public_schedule_get_all(self, client: TestClient):
-    #     response = await client.get(self.public_events_url.format(key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"))
+    async def test_public_schedule_get_all(self, client: TestClient, applet_one_with_public_link):
+        response = await client.get(self.public_events_url.format(key=applet_one_with_public_link.link))
 
-    #     assert response.status_code == 200
-    #     events = response.json()["result"]
-    #     assert isinstance(events, dict)
+        assert response.status_code == 200
+        events = response.json()["result"]
+        assert isinstance(events, dict)
 
     async def test_schedule_get_detail(self, client: TestClient, applet: AppletFull, user: User):
         await client.login(self.login_url, "user@example.com", "Test1234!")
