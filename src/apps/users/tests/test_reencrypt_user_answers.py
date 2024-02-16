@@ -22,8 +22,6 @@ from apps.job.constants import JobStatus
 from apps.job.domain import Job
 from apps.job.service import JobService
 from apps.shared.encryption import generate_dh_aes_key, generate_dh_public_key, generate_dh_user_private_key
-from apps.subjects.crud import SubjectsCrud
-from apps.subjects.db.schemas import SubjectSchema
 from apps.themes.service import ThemeService
 from apps.users.domain import User, UserCreate
 from apps.users.tasks import reencrypt_answers
@@ -57,24 +55,6 @@ async def applet(session: AsyncSession, tom: User, applet_minimal_data: AppletCr
     await ThemeService(session, tom.id).get_or_create_default()
     applet = await srv.create(applet_minimal_data)
     return applet
-
-
-@pytest.fixture
-async def _tom_subject(session: AsyncSession, tom: User, applet: AppletFull):
-    subject = await SubjectsCrud(session).create(
-        SubjectSchema(
-            applet_id=applet.id,
-            user_id=tom.id,
-            email=tom.email_encrypted,
-            first_name=tom.first_name,
-            last_name=tom.last_name,
-            nickname=f"{tom.id}",
-            secret_user_id=f"{tom.id}",
-            language="en",
-            creator_id=tom.id
-        )
-    )
-    return subject
 
 
 @pytest.fixture
@@ -115,7 +95,6 @@ async def answer(
     applet: AppletFull,
     answer_item_create: ItemAnswerCreate,
     client_meta: ClientMeta,
-    _tom_subject: SubjectSchema
 ) -> AnswerSchema:
     answer_create = AppletAnswerCreate(
         applet_id=applet.id,
@@ -161,7 +140,6 @@ async def answer_arbitrary(
     applet: AppletFull,
     answer_item_create: ItemAnswerCreate,
     client_meta: ClientMeta,
-    _tom_subject
 ) -> AnswerSchema:
     answer_create = AppletAnswerCreate(
         applet_id=applet.id,

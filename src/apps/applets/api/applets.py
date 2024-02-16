@@ -40,7 +40,6 @@ from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
-from apps.subjects.services import SubjectsService
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
@@ -137,8 +136,6 @@ async def applet_create(
             applet = await AppletService(session, owner_id).create(
                 schema, user.id, manager_role
             )
-            subject_srv = SubjectsService(session, owner_id)
-            await subject_srv.create_applet_managers(applet.id, user.id)
         except Exception:
             await mail_service.send(
                 MessageSchema(

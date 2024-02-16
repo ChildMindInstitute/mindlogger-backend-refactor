@@ -151,6 +151,9 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
     session_maker = session_manager.get_session()
 
+    print(
+        f"[bold green]Execute patch {patch.task_id} ({patch.file_path})[/bold green]"  # noqa: E501
+    )
     if patch.file_path.endswith(".sql"):
         # execute sql file
         async with session_maker() as session:
