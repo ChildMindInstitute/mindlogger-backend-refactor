@@ -11,7 +11,7 @@
 - ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
 - ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
 - ✅ [FastAPI](https://fastapi.tiangolo.com)
-- ✅ [Postgesql](https://www.postgresql.org/docs/14/index.html)
+- ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
 - ✅ [Redis](https://redis.io)
 - ✅ [Docker](https://docs.docker.com/get-docker/)
 - ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
