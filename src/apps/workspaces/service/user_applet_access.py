@@ -8,6 +8,8 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric, RespondentMeta
 from apps.shared.exception import NotFoundError
+from apps.subjects.crud import SubjectsCrud
+from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserNotFound, UsersCRUD
@@ -49,6 +51,20 @@ class UserAppletAccessService:
                 meta=meta,
             )
         )
+        if role == Role.RESPONDENT:
+            user = await UsersCRUD(self.session).get_by_id(user_id)
+            subject = SubjectSchema(
+                applet_id=self._applet_id,
+                creator_id=self._user_id,
+                email=user.email_encrypted,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                secret_user_id=str(uuid.uuid4()),
+                nickname=f"{user.first_name} {user.last_name}",
+                user_id=user_id,
+            )
+            await SubjectsCrud(self.session).create(subject)
+
         return UserAppletAccess.from_orm(access_schema)
 
     async def add_role_for_anonymous_respondent(

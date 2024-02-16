@@ -8,7 +8,6 @@ from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
 from apps.subjects.domain import Subject
 from apps.users import UserSchema
-from apps.users.cruds.user import UsersCRUD
 
 __all__ = ["SubjectsService"]
 
@@ -102,29 +101,6 @@ class SubjectsService:
                 secret_user_id=str(uuid.uuid4()),
             )
         )
-
-    async def create_applet_managers(
-        self, applet_id: uuid.UUID, manager_id: uuid.UUID | None
-    ) -> list[SubjectSchema]:
-        user_ids = [self.user_id]  # owner
-        if manager_id and manager_id != self.user_id:
-            user_ids.append(manager_id)
-        users = await UsersCRUD(self.session).get_by_ids(user_ids)
-        subjects = []
-        for owner_or_manager in users:
-            if owner_or_manager:
-                subjects.append(
-                    Subject(
-                        applet_id=applet_id,
-                        creator_id=self.user_id,
-                        email=owner_or_manager.email_encrypted,
-                        first_name=owner_or_manager.first_name,
-                        last_name=owner_or_manager.last_name,
-                        secret_user_id=str(uuid.uuid4()),
-                        user_id=owner_or_manager.id,
-                    )
-                )
-        return await self.create_many(subjects)
 
     async def exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID):
         return await SubjectsCrud(self.session).exist(subject_id, applet_id)

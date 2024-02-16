@@ -42,21 +42,18 @@ async def main(
                 continue
             processed.add(arb_uri)
             session_maker = session_manager.get_session(arb_uri)
-            try:
-                async with session_maker() as arb_session:
-                    try:
-                        await update_answers(arb_session)
-                        await arb_session.commit()
-                        print(
-                            f"Processing workspace#{i + 1} {workspace.id} "
-                            f"finished"
-                        )
-                    except Exception:
-                        await arb_session.rollback()
-                        print(
-                            f"[bold red]Workspace#{i + 1} {workspace.id} "
-                            f"processing error[/bold red]"
-                        )
-                        raise
-            finally:
-                await session_maker.remove()
+            async with session_maker() as arb_session:
+                try:
+                    await update_answers(arb_session)
+                    await arb_session.commit()
+                    print(
+                        f"Processing workspace#{i + 1} {workspace.id} "
+                        f"finished"
+                    )
+                except Exception:
+                    await arb_session.rollback()
+                    print(
+                        f"[bold red]Workspace#{i + 1} {workspace.id} "
+                        f"processing error[/bold red]"
+                    )
+                    raise
