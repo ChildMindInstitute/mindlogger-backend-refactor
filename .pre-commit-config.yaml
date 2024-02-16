@@ -10,6 +10,13 @@ repos:
         types: [python]
         pass_filenames: false
 
+      - id: ruff-format
+        name: ruff-format
+        entry: ruff format --check .
+        language: system
+        types: [python]
+        pass_filenames: false
+
       - id: isort
         name: isort
         entry: isort --check-only .
