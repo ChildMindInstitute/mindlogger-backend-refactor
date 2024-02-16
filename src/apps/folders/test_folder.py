@@ -1,5 +1,4 @@
 import http
-from typing import AsyncGenerator
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,22 +10,14 @@ from apps.folders import errors
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
-from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
-@pytest.fixture(scope="class")
-async def applet_two_lucy_manager(
-    global_session: AsyncSession, applet_two: AppletFull, tom: User, lucy: User
-) -> AsyncGenerator[AppletFull, None]:
-    await UserAppletAccessService(global_session, tom.id, applet_two.id).add_role(lucy.id, Role.MANAGER)
-    await global_session.commit()
-    yield applet_two
-    await UserAppletAccessCRUD(global_session).remove_access_by_user_and_applet_to_role(
-        lucy.id, [applet_two.id], [Role.MANAGER]
-    )
-    await global_session.commit()
+@pytest.fixture
+async def applet_two_lucy_manager(session: AsyncSession, applet_two: AppletFull, tom: User, lucy: User) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_two.id).add_role(lucy.id, Role.MANAGER)
+    return applet_two
 
 
 @pytest.fixture
