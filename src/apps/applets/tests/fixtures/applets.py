@@ -5,8 +5,9 @@ import pytest
 from pytest import Config
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.activities.domain.activity_create import ActivityCreate
-from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
+from apps.activities.domain.response_type_config import AdditionalResponseOption, ResponseType, SingleSelectionConfig
+from apps.activities.domain.response_values import SingleSelectionValues, _SingleSelectionValue
 from apps.applets.crud.applets import AppletsCRUD
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
@@ -14,6 +15,7 @@ from apps.applets.domain.base import Encryption
 from apps.applets.service.applet import AppletService
 from apps.applets.tests import constants
 from apps.applets.tests.utils import teardown_applet
+from apps.shared.enums import Language
 from apps.themes.service import ThemeService
 from apps.users.domain import User
 
@@ -225,6 +227,60 @@ def activity_flanker_data():
             ),
         ],
     )
+
+
+@pytest.fixture(scope="session")
+def item_response_values() -> SingleSelectionValues:
+    return SingleSelectionValues(
+        palette_name=None,
+        options=[
+            _SingleSelectionValue(
+                id=str(uuid.uuid4()),
+                text="text",
+                image=None,
+                score=None,
+                tooltip=None,
+                is_hidden=False,
+                color=None,
+                value=0,
+            )
+        ],
+    )
+
+
+@pytest.fixture(scope="session")
+def item_config() -> SingleSelectionConfig:
+    return SingleSelectionConfig(
+        randomize_options=False,
+        timer=0,
+        add_scores=False,
+        add_tokens=False,
+        set_alerts=False,
+        add_tooltip=False,
+        set_palette=False,
+        remove_back_button=False,
+        skippable_item=False,
+        additional_response_option=AdditionalResponseOption(text_input_option=False, text_input_required=False),
+    )
+
+
+@pytest.fixture(scope="session")
+def item_create(
+    item_config: SingleSelectionConfig,
+    item_response_values: SingleSelectionValues,
+) -> ActivityItemCreate:
+    return ActivityItemCreate(
+        response_type=ResponseType.SINGLESELECT,
+        response_values=item_response_values,
+        config=item_config,
+        question={"en": "question"},
+        name="item",
+    )
+
+
+@pytest.fixture(scope="session")
+def activity_create_session(item_create: ActivityItemCreate) -> ActivityCreate:
+    return ActivityCreate(name="test", description={Language.ENGLISH: "test"}, items=[item_create], key=uuid.uuid4())
 
 
 @pytest.fixture(scope="session")

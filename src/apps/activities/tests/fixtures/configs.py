@@ -126,19 +126,3 @@ def multi_select_row_config(
     single_select_row_config: SingleSelectionRowsConfig,
 ) -> MultiSelectionRowsConfig:
     return MultiSelectionRowsConfig(**single_select_row_config.dict())
-
-
-@pytest.fixture(scope="session")
-def item_config() -> SingleSelectionConfig:
-    return SingleSelectionConfig(
-        randomize_options=False,
-        timer=0,
-        add_scores=False,
-        add_tokens=False,
-        set_alerts=False,
-        add_tooltip=False,
-        set_palette=False,
-        remove_back_button=False,
-        skippable_item=False,
-        additional_response_option=AdditionalResponseOption(text_input_option=False, text_input_required=False),
-    )
