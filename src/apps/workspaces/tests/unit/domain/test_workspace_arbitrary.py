@@ -76,6 +76,4 @@ def test_arbitrary_workspace_gcp_required_fields(
         WorkspaceArbitraryCreate(**data)
     errors = exc.value.errors()
     len(errors) == 1
-    assert (
-        errors[0]["msg"] == "storage_url, storage_bucket, storage_access_key are required for gcp storage"  # noqa: E501
-    )
+    assert errors[0]["msg"] == "storage_url, storage_bucket, storage_access_key are required for gcp storage"

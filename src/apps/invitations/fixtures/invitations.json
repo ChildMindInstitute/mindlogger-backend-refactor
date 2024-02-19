@@ -6,7 +6,7 @@
       "created_at": "2023-01-05T15:49:51.752113",
       "updated_at": "2023-01-05T15:49:51.752113",
       "is_deleted": false,
-      "email": "4WXFyd3MyWcHtvvtBRPFOg==",
+      "email": "VwkVdPjpEtq4bS35CpEtwg==",
       "first_name": "XhcT8oDZIo3W39RcqotV7g==",
       "last_name": "QvV/LJhUidlRTI58P+C66w==",
       "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
@@ -19,7 +19,7 @@
     "note": {
       "plain_first_name": "first_name",
       "plain_last_name": "last_name",
-      "plan_email": "mike@gmail.com"
+      "plan_email": "lucy@gmail.com"
     }
   },
   {
@@ -43,75 +43,6 @@
       "plain_first_name": "first_name",
       "plain_last_name": "last_name",
       "plan_email": "tom@mindlogger.com"
-    }
-  },
-  {
-    "table": "invitations",
-    "fields": {
-      "id": "2c13586d-2335-4052-9e82-10be3a575f13",
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "is_deleted": false,
-      "email": "4WXFyd3MyWcHtvvtBRPFOg==",
-      "first_name": "XhcT8oDZIo3W39RcqotV7g==",
-      "last_name": "QvV/LJhUidlRTI58P+C66w==",
-      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "role": "editor",
-      "key": "6a3ab8e6-f2fa-49ae-b2db-197136677da0",
-      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "status": "pending",
-      "meta": {}
-    },
-    "note": {
-      "plain_first_name": "first_name",
-      "plain_last_name": "last_name",
-      "plan_email": "mike@gmail.com"
-    }
-  },
-  {
-    "table": "invitations",
-    "fields": {
-      "id": "2c13586d-2335-4052-9e82-10be3a575f14",
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "is_deleted": false,
-      "email": "4WXFyd3MyWcHtvvtBRPFOg==",
-      "first_name": "XhcT8oDZIo3W39RcqotV7g==",
-      "last_name": "QvV/LJhUidlRTI58P+C66w==",
-      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b1",
-      "role": "respondent",
-      "key": "6a3ab8e6-f2fa-49ae-b2db-197136677da1",
-      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "status": "pending",
-      "meta": {}
-    },
-    "note": {
-      "plain_first_name": "first_name",
-      "plain_last_name": "last_name",
-      "plan_email": "mike@gmail.com"
-    }
-  },
-    {
-    "table": "invitations",
-    "fields": {
-      "id": "2c13586d-2335-4052-9e82-10be3a575f20",
-      "created_at": "2023-01-05T15:49:51.752113",
-      "updated_at": "2023-01-05T15:49:51.752113",
-      "is_deleted": false,
-      "email": "4WXFyd3MyWcHtvvtBRPFOg==",
-      "first_name": "XhcT8oDZIo3W39RcqotV7g==",
-      "last_name": "QvV/LJhUidlRTI58P+C66w==",
-      "applet_id": "92917a56-d586-4613-b7aa-991f2c4b15b2",
-      "role": "manager",
-      "key": "6a3ab8e6-f2fa-49ae-b2db-197136677d99",
-      "invitor_id": "7484f34a-3acc-4ee6-8a94-fd7299502fa1",
-      "status": "approved",
-      "meta": {}
-    },
-    "note": {
-      "plain_first_name": "first_name",
-      "plain_last_name": "last_name",
-      "plan_email": "mike@gmail.com"
     }
   }
 ]

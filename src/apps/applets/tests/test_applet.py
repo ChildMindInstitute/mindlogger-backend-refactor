@@ -1,30 +1,21 @@
 import asyncio
 import collections
+import copy
 import http
 import json
 import uuid
 from copy import deepcopy
 
+import pytest
+
 from apps.activities import errors as activity_errors
-from apps.shared.test import BaseTest
-from apps.workspaces.errors import AppletCreationAccessDenied
+from apps.mailing.services import TestMail
+from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
 from config import settings
 from infrastructure.utility import FCMNotificationTest
 
 
-class TestApplet(BaseTest):
-    fixtures = [
-        "themes/fixtures/themes.json",
-        "folders/fixtures/folders.json",
-        "applets/fixtures/applets.json",
-        "applets/fixtures/applet_histories.json",
-        "applets/fixtures/applet_user_accesses.json",
-        "activities/fixtures/activities.json",
-        "activities/fixtures/activity_items.json",
-        "activity_flows/fixtures/activity_flows.json",
-        "activity_flows/fixtures/activity_flow_items.json",
-    ]
-
+class TestApplet:
     login_url = "/auth/login"
     applet_list_url = "applets"
     applet_create_url = "workspaces/{owner_id}/applets"
@@ -47,6 +38,7 @@ class TestApplet(BaseTest):
     public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
 
     async def test_creating_applet(self, client, tom):
+        TestMail.mails = []
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         create_data = {
             "displayName": "7ee3617f-fe7f-49bc-8e0c-da6730a2d1cd",
@@ -741,7 +733,7 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == "Applet already exists."
 
-    async def test_update_applet(self, client, tom, device_tom):
+    async def test_update_applet(self, client, tom, device_tom, applet_one):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         update_data = dict(
             stream_enabled=True,
@@ -880,7 +872,7 @@ class TestApplet(BaseTest):
         update_data["activity_flows"][0]["items"][0]["activity_key"] = wrong_activity_key
 
         response = await client.put(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+            self.applet_detail_url.format(pk=applet_one.id),
             data=update_data,
         )
         assert response.status_code == activity_errors.FlowItemActivityKeyNotFoundError.status_code
@@ -888,7 +880,7 @@ class TestApplet(BaseTest):
 
         update_data["activity_flows"][0]["items"][0]["activity_key"] = activity_key
         response = await client.put(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+            self.applet_detail_url.format(pk=applet_one.id),
             data=update_data,
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
@@ -903,7 +895,7 @@ class TestApplet(BaseTest):
         data = response.json()
         response = await client.put(
             self.activity_report_config_url.format(
-                pk="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                pk=applet_one.id,
                 activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
             ),
             data=dict(report_included_item_name="evening_activity_item3"),
@@ -912,7 +904,7 @@ class TestApplet(BaseTest):
 
         flow_id = data["result"]["activityFlows"][0]["id"]
         response = await client.put(
-            self.flow_report_config_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1", flow_id=flow_id),
+            self.flow_report_config_url.format(pk=applet_one.id, flow_id=flow_id),
             data=dict(
                 report_included_activity_name="Morning activity",
                 report_included_item_name="evening_activity_item3",
@@ -921,17 +913,18 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         # get applet and check stream settings
-        response = await client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
         assert response.status_code == 200
         assert response.json()["result"]["streamEnabled"] is True
         assert response.json()["result"]["streamIpAddress"] == update_data["stream_ip_address"]
         assert response.json()["result"]["streamPort"] == update_data["stream_port"]
 
-    async def test_duplicate_applet(self, client, tom):
+    async def test_duplicate_applet(self, client, tom, applet_one):
+        TestMail.mails = []
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         response = await client.post(
-            self.applet_duplicate_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+            self.applet_duplicate_url.format(pk=applet_one.id),
             data=dict(
                 display_name="New name",
                 encryption=dict(
@@ -945,11 +938,11 @@ class TestApplet(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         response = await client.get(self.applet_list_url)
-        assert len(response.json()["result"]) == 4
+        assert len(response.json()["result"]) == 3
         assert response.json()["result"][0]["displayName"] == "New name"
 
         response = await client.post(
-            self.applet_duplicate_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+            self.applet_duplicate_url.format(pk=applet_one.id),
             data=dict(
                 display_name="New name",
                 encryption=dict(
@@ -962,7 +955,7 @@ class TestApplet(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
-    async def test_set_applet_report_configuration(self, client, tom):
+    async def test_set_applet_report_configuration(self, client, tom, applet_one):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         report_configuration = dict(
@@ -976,13 +969,13 @@ class TestApplet(BaseTest):
 
         response = await client.post(
             self.applet_report_config_url.format(
-                pk="92917a56-d586-4613-b7aa-991f2c4b15b1",
+                pk=applet_one.id,
             ),
             report_configuration,
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
-        response = await client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["reportServerIp"] == report_configuration["report_server_ip"]
         assert response.json()["result"]["reportPublicKey"] == report_configuration["report_public_key"]
@@ -991,32 +984,45 @@ class TestApplet(BaseTest):
         assert response.json()["result"]["reportIncludeCaseId"] == report_configuration["report_include_case_id"]
         assert response.json()["result"]["reportEmailBody"] == report_configuration["report_email_body"]
 
-    async def test_publish_conceal_applet(self, client, tom):
+    async def test_publish_conceal_applet(self, client, tom, applet_one):
         # NOTE: only superadmin can publish an applet
         await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
-        response = await client.post(self.applet_publish_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await client.post(self.applet_publish_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is True
 
         # NOTE: only superadmin can conceal an applet
         await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
-        response = await client.post(self.applet_conceal_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await client.post(self.applet_conceal_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is False
 
-    async def test_set_encryption(self, client):
-        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
+    async def test_set_encryption(self, client, tom, applet_one_no_encryption, encryption):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         response = await client.post(
-            self.applet_set_encryption_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b4"),
+            self.applet_set_encryption_url.format(pk=applet_one_no_encryption.id),
+            data=encryption,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+        assert result["publicKey"] == encryption.public_key
+        assert result["prime"] == encryption.prime
+        assert result["base"] == encryption.base
+        assert result["accountId"] == encryption.account_id
+
+    async def test_set_encryption__encryption_already_set(self, client, tom, applet_one):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(
+            self.applet_set_encryption_url.format(pk=applet_one.id),
             data=dict(
                 public_key=uuid.uuid4().hex,
                 prime=uuid.uuid4().hex,
@@ -1024,33 +1030,25 @@ class TestApplet(BaseTest):
                 account_id=str(uuid.uuid4()),
             ),
         )
-        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.status_code == 403
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AppletEncryptionUpdateDenied.message
 
-        response = await client.post(
-            self.applet_set_encryption_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b4"),
-            data=dict(
-                public_key=uuid.uuid4().hex,
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-            ),
-        )
-        assert response.status_code == 403, response.json()
-
-    async def test_applet_list(self, client, tom):
+    async def test_applet_list(self, client, tom, applet_one, applet_two):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.get(self.applet_list_url)
 
         assert response.status_code == http.HTTPStatus.OK, response.json()
-        assert len(response.json()["result"]) == 3
-        assert response.json()["result"][0]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b5"
-        assert response.json()["result"][1]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b2"
-        assert response.json()["result"][2]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        assert len(response.json()["result"]) == 2
+        exp_ids = {str(applet_one.id), str(applet_two.id)}
+        act_ids = set(i["id"] for i in response.json()["result"])
+        assert exp_ids == act_ids
 
-    async def test_applet_delete(self, client, tom, device_tom):
+    async def test_applet_delete(self, client, tom, device_tom, applet_one):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.delete(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+            self.applet_detail_url.format(pk=applet_one.id),
         )
 
         assert response.status_code == 204, response.json()
@@ -1068,18 +1066,18 @@ class TestApplet(BaseTest):
         assert notification["title"] == "Applet is deleted."
         FCMNotificationTest.notifications = collections.defaultdict(list)
 
-    async def test_applet_delete_by_manager(self, client):
+    async def test_applet_delete_by_manager(self, client, applet_one_lucy_manager):
         await client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await client.delete(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+            self.applet_detail_url.format(pk=applet_one_lucy_manager.id),
         )
 
         assert response.status_code == 204
 
-    async def test_applet_delete_by_coordinator(self, client):
-        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
+    async def test_applet_delete_by_coordinator(self, client, applet_one_lucy_coordinator):
+        await client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await client.delete(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+            self.applet_detail_url.format(pk=applet_one_lucy_coordinator.id),
         )
 
         assert response.status_code == 403
@@ -1105,36 +1103,30 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 401, response.json()
 
-    async def test_applet_list_by_filters(self, client, tom):
+    async def test_applet_list_by_filters(self, client, tom, applet_one):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.get(self.applet_list_url, dict(ordering="id", owner_id=1, limit=1))
 
         assert response.status_code == http.HTTPStatus.OK
         assert len(response.json()["result"]) == 1
-        assert response.json()["result"][0]["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        assert response.json()["result"][0]["id"] == str(applet_one.id)
 
-    async def test_applet_detail(self, client, tom):
+    async def test_applet_detail(self, client, tom, applet_one):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.get(self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"))
+        response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
-        assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        assert result["displayName"] == "Applet 1"
+        assert result["displayName"] == applet_one.display_name
         assert len(result["activities"]) == 1
-        assert len(result["activityFlows"]) == 2
-        assert len(result["activityFlows"][0]["activityIds"]) == 1
-        assert len(result["activityFlows"][1]["activityIds"]) == 1
+        # TODO: Add activity_flows and check
 
-    async def test_public_applet_detail(self, client):
-        response = await client.get(self.public_applet_detail_url.format(key="51857e10-6c05-4fa8-a2c8-725b8c1a0aa6"))
+    async def test_public_applet_detail(self, client, applet_one_with_public_link):
+        response = await client.get(self.public_applet_detail_url.format(key=applet_one_with_public_link.link))
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
-        assert result["id"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        assert result["displayName"] == "Applet 1"
+        assert result["displayName"] == applet_one_with_public_link.display_name
         assert len(result["activities"]) == 1
-        assert len(result["activityFlows"]) == 2
-        assert len(result["activityFlows"][0]["activityIds"]) == 1
-        assert len(result["activityFlows"][1]["activityIds"]) == 1
+        # TODO: Add activity_flows and check
 
     async def test_creating_applet_history(self, client, tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
@@ -1247,154 +1239,60 @@ class TestApplet(BaseTest):
 
         assert response.status_code == 404, response.json()
 
-    async def test_updating_applet_history(self, client, tom):
+    async def test_updating_applet_history(self, client, tom, applet_one, applet_minimal_data):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        update_data = dict(
-            display_name="Applet 1",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-            ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-                    name="Morning activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                            name="morning_activity_item132",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                        dict(
-                            name="morning_activity_item133",
-                            question=dict(
-                                en="How was your breakfast?",
-                                fr="How was your breakfast?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-                dict(
-                    name="Evening activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="evening_activity_item132",
-                            question=dict(
-                                en="How had you spent your time?",
-                                fr="How had you spent your time?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[
-                        dict(
-                            id="7941b770-b649-42fc-832a-870e11bdd402",
-                            activity_key="577dbbda-" "3afc-4962-842b-8d8d11588bfe",
-                        )
-                    ],
-                )
-            ],
-        )
+        # first change patch version
+        update_data_patch = applet_one.dict()
+        update_data_patch["description"] = {"en": "description"}
         response = await client.put(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
-            data=update_data,
+            self.applet_detail_url.format(pk=applet_one.id),
+            data=update_data_patch,
         )
-        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["version"] == "1.1.1"
 
-        applet_id = response.json()["result"]["id"]
+        # second change minor version
+        update_data_minor = copy.deepcopy(update_data_patch)
+        item = applet_minimal_data.activities[0].items[0].copy(deep=True)
+        item.name = item.name + "second"
+        update_data_minor["activities"][0]["items"].append(item.dict())
+        response = await client.put(
+            self.applet_detail_url.format(pk=applet_one.id),
+            data=update_data_minor,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["version"] == "1.2.0"
 
+        # third change major version
+        update_data_major = copy.deepcopy(update_data_minor)
+        activity = applet_minimal_data.activities[0].copy(deep=True)
+        activity.name = activity.name + "second"
+        update_data_major["activities"].append(activity.dict())
+        response = await client.put(
+            self.applet_detail_url.format(pk=applet_one.id),
+            data=update_data_major,
+        )
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["version"] == "2.0.0"
 
-        response = await client.get(self.histories_url.format(pk=applet_id))
-
-        assert response.status_code == http.HTTPStatus.OK, response.json()
+        # check all versions
+        response = await client.get(self.histories_url.format(pk=applet_one.id))
+        assert response.status_code == http.HTTPStatus.OK
         versions = response.json()["result"]
-        assert len(versions) == 3
+        assert len(versions) == 4
         assert versions[0]["version"] == "2.0.0"
-        assert versions[1]["version"] == "1.9.9"
-        assert versions[2]["version"] == "1.0.0"
+        assert versions[1]["version"] == "1.2.0"
+        assert versions[2]["version"] == "1.1.1"
+        assert versions[3]["version"] == "1.1.0"
 
-        response = await client.get(self.history_url.format(pk=applet_id, version="1.9.9"))
-
+        # check history by version
+        response = await client.get(self.history_url.format(pk=applet_one.id, version="2.0.0"))
         assert response.status_code == http.HTTPStatus.OK, response.json()
         applet = response.json()["result"]
-        assert applet["version"] == "1.9.9"
+        assert applet["version"] == "2.0.0"
 
-        response = await client.get(self.history_url.format(pk=applet_id, version="1.0.0"))
-
-        assert response.status_code == http.HTTPStatus.OK, response.json()
-        applet = response.json()["result"]
-        assert applet["version"] == "1.0.0"
-
-        response = await client.get(self.history_url.format(pk=applet_id, version="0.0.0"))
-
+        # Not valid version
+        response = await client.get(self.history_url.format(pk=applet_one.id, version="0.0.0"))
         assert response.status_code == 404, response.json()
 
     async def test_history_changes(self, client, tom):
@@ -1746,35 +1644,17 @@ class TestApplet(BaseTest):
         assert isinstance(response.json()["result"]["activities"][0]["itemCount"], int)
         assert response.json()["result"]["activities"][0]["itemCount"] == 1
 
-    async def test_get_public_applet_activities_info(self, client, tom, applet_minimal_data):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        # create applet with minimal data
-        multi_select = deepcopy(applet_minimal_data.activities[0].items[0])
-        multi_select.name = "test_multiSelect"
-        multi_select.response_type = "multiSelect"
-        multi_select.is_hidden = True
-        applet_minimal_data.activities[0].items.append(multi_select)
-        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_minimal_data)
-
-        new_applet_id = response.json()["result"]["id"]
-        print("new applet id", new_applet_id)
-        data = {"require_login": False}
-        response = await client.post(
-            self.access_link_url.format(pk=new_applet_id),
-            data=data,
-        )
-
-        key_link = response.json()["result"]["link"]
-        key = key_link.split("/")[-1]
-        response = await client.get(self.public_applet_base_info_url.format(key=key))
+    async def test_get_public_applet_activities_info(self, client, applet_one_with_public_link):
+        response = await client.get(self.public_applet_base_info_url.format(key=applet_one_with_public_link.link))
 
         assert response.status_code == 200
-        assert response.json()["result"]["displayName"] == applet_minimal_data.display_name
+        assert response.json()["result"]["displayName"] == applet_one_with_public_link.display_name
         assert "singleSelect" in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert "multiSelect" not in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert isinstance(response.json()["result"]["activities"][0]["itemCount"], int)
         assert response.json()["result"]["activities"][0]["itemCount"] == 1
 
+    @pytest.mark.usefixtures("applet_one_lucy_manager")
     async def test_create_applet_in_another_workspace_not_owner(self, client, applet_minimal_data, tom):
         await client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await client.post(
