@@ -45,8 +45,7 @@ async def password_update(
             user.hashed_password,
         )
 
-        password_hash: str = AuthenticationService.get_password_hash(
-            schema.password)
+        password_hash: str = AuthenticationService.get_password_hash(schema.password)
         password = UserChangePassword(hashed_password=password_hash)
 
         updated_user: User = await UsersCRUD(session).change_password(user, password)
@@ -73,9 +72,7 @@ async def password_recovery(
     async with atomic(session):
         try:
             content_source = await get_mindlogger_content_source(request)
-            await PasswordRecoveryService(session).send_password_recovery(
-                schema, content_source
-            )
+            await PasswordRecoveryService(session).send_password_recovery(schema, content_source)
         except UserNotFound:
             pass  # mute error in terms of user enumeration vulnerability
 
