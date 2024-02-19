@@ -23,6 +23,9 @@ class UserSchema(Base):
     def __repr__(self) -> str:
         return f"UserSchema(id='{self.id}', email='{self.email}')"  # pragma: no cover # noqa: E501
 
+    def get_full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}" if self.last_name else self.first_name
+
 
 class UserDeviceSchema(Base):
     __tablename__ = "user_devices"

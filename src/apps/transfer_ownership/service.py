@@ -35,7 +35,7 @@ class TransferService:
         if to_user:
             if to_user.id == self._user.id:
                 raise TransferEmailError()
-            receiver_name = f"{to_user.first_name} {to_user.last_name}"
+            receiver_name = to_user.first_name
             path = "transfer_ownership_registered_user_en"
             to_user_id = to_user.id
         else:
@@ -62,7 +62,7 @@ class TransferService:
             subject="Transfer ownership of an applet",
             body=service.get_template(
                 path=path,
-                applet_owner=f"{self._user.first_name} {self._user.last_name}",
+                applet_owner=self._user.get_full_name(),
                 receiver_name=receiver_name,
                 applet_name=applet.display_name,
                 applet_id=applet.id,
@@ -115,7 +115,7 @@ class TransferService:
                 meta=dict(
                     secretUserId=str(uuid.uuid4()),
                 ),
-                nickname=f"{self._user.first_name} {self._user.last_name}",
+                nickname=self._user.get_full_name(),
                 **roles_data,
             ),
         ]

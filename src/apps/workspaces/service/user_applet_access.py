@@ -32,14 +32,16 @@ class UserAppletAccessService:
 
         return meta
 
-    async def add_role(self, user_id: uuid.UUID, role: Role) -> UserAppletAccess:
+    async def add_role(self, user_id: uuid.UUID, role: Role, meta: dict | None = None) -> UserAppletAccess:
         access_schema = await UserAppletAccessCRUD(self.session).get_applet_role_by_user_id(
             self._applet_id, user_id, role
         )
         if access_schema:
             return UserAppletAccess.from_orm(access_schema)
 
-        meta = await self._get_default_role_meta(role, user_id)
+        _meta = await self._get_default_role_meta(role, user_id)
+        if meta:
+            _meta.update(meta)
 
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
@@ -48,7 +50,7 @@ class UserAppletAccessService:
                 role=role,
                 owner_id=self._user_id,
                 invitor_id=self._user_id,
-                meta=meta,
+                meta=_meta,
             )
         )
         if role == Role.RESPONDENT:

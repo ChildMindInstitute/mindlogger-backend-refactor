@@ -271,9 +271,7 @@ class ScheduleService:
         # Check if applet exists
         await self._validate_applet(applet_id=applet_id)
 
-        event_schemas: list[EventSchema] = await EventCRUD(
-            self.session
-        ).get_all_by_applet_id_with_filter(applet_id)
+        event_schemas: list[EventSchema] = await EventCRUD(self.session).get_all_by_applet_id_with_filter(applet_id)
         event_ids = [event_schema.id for event_schema in event_schemas]
         periodicity_ids = [event_schema.periodicity_id for event_schema in event_schemas]
         if not event_ids:
@@ -1016,10 +1014,6 @@ class ScheduleService:
             is_activity=True,
         )
 
-    async def get_default_respondents(
-        self, applet_id: uuid.UUID
-    ) -> list[uuid.UUID]:
-        default_respondents = await EventCRUD(
-            self.session
-        ).get_default_schedule_user_ids_by_applet_id(applet_id)
+    async def get_default_respondents(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
+        default_respondents = await EventCRUD(self.session).get_default_schedule_user_ids_by_applet_id(applet_id)
         return default_respondents

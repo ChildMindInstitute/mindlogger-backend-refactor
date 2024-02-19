@@ -203,3 +203,13 @@ async def test_get_user_by_email_or_none(
     user_db = await crud.get_user_or_none_by_email(user_create.email)
     user_db = cast(UserSchema, user_db)
     assert user_db.id == user.id
+
+
+def test_user_get_full_name():
+    user = UserSchema(first_name="John", last_name="Doe")
+    assert user.get_full_name() == "John Doe"
+
+
+def test_user_get_full_name__no_last_name():
+    user = UserSchema(first_name="John")
+    assert user.get_full_name() == "John"

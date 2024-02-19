@@ -96,7 +96,9 @@ class TestClient:
         )
         return response
 
-    async def login(self, url: str, email: str, password: str, device_id: str | None = None):
+    async def login(self, url: str, email: str | None, password: str, device_id: str | None = None):
+        # Just make password option to shut up mypy error when User.email_encrypted passed as arument
+        assert password is not None
         response = await self.post(
             url,
             data={

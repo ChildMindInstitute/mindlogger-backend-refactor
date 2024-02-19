@@ -19,6 +19,7 @@ from apps.users.services import PasswordRecoveryCache
 from config import settings
 from infrastructure.cache import CacheNotFound
 from infrastructure.cache.domain import CacheEntry
+from infrastructure.http.domain import MindloggerContentSource
 
 __all__ = ["PasswordRecoveryService"]
 
@@ -28,7 +29,11 @@ class PasswordRecoveryService:
         self._cache: PasswordRecoveryCache = PasswordRecoveryCache()
         self.session = session
 
-    async def send_password_recovery(self, schema: PasswordRecoveryRequest) -> PublicUser:
+    async def send_password_recovery(
+        self,
+        schema: PasswordRecoveryRequest,
+        content_source: MindloggerContentSource,
+    ) -> PublicUser:
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
         if user.email_encrypted != schema.email:
@@ -66,8 +71,14 @@ class PasswordRecoveryService:
 
         exp = settings.authentication.password_recover.expiration // 60
 
+        # Default to web frontend
+        frontend_base = settings.service.urls.frontend.web_base
+        if content_source == MindloggerContentSource.admin:
+            # Change to admin frontend if the request came from there
+            frontend_base = settings.service.urls.frontend.admin_base
+
         url = (
-            f"https://{settings.service.urls.frontend.web_base}"
+            f"https://{frontend_base}"
             f"/{settings.service.urls.frontend.password_recovery_send}"
             f"?key={password_recovery_info.key}"
             f"&email="

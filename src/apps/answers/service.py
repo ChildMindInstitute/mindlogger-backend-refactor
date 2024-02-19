@@ -18,6 +18,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from apps.activities.crud import ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
+from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist
 from apps.activities.services import ActivityHistoryService
@@ -327,9 +328,17 @@ class AnswerService:
                 activity_map[str(activity.id)] = ReviewActivity(id=activity.id, name=activity.name)
         else:
             answer_map = dict()
+            applet_versions = list(set([f"{applet_id}_{answer.version}" for answer in answers]))
+            all_activities = await ActivityHistoriesCRUD(self.session).retrieve_activities_by_applet_id_versions(
+                applet_versions
+            )
+            all_activities_map: dict[str, list[ActivityHistory]] = dict()
+            for activity_ in all_activities:
+                all_activities_map.setdefault(f"{activity_.applet_id}", []).append(activity_)
+
             for answer in answers:
                 answer_map[answer.id] = answer
-                activities = await ActivityHistoryService(self.session, applet_id, answer.version).activities_list()
+                activities = all_activities_map[f"{applet_id}_{answer.version}"]
                 for activity in activities:
                     activity_map[str(activity.id)] = ReviewActivity(id=activity.id, name=activity.name)
 
@@ -1078,7 +1087,7 @@ class AnswerService:
 
         return count
 
-    async def fill_last_activity(
+    async def fill_last_activity_workspace_respondent(
         self,
         respondents: list[WorkspaceRespondent],
         applet_id: uuid.UUID | None = None,
@@ -1107,6 +1116,14 @@ class AnswerService:
                 last_date = max(dates)
                 respondent.last_seen = last_date
         return respondents
+
+    async def fill_last_activity_respondent_info(
+        self,
+        respondent_id: uuid.UUID,
+        applet_id: uuid.UUID,
+    ) -> dict[uuid.UUID, datetime.datetime]:
+        result = await AnswersCRUD(self.answer_session).get_last_activity([respondent_id], applet_id)
+        return result
 
     async def delete_by_subject(self, subject_id: uuid.UUID):
         await AnswersCRUD(self.answer_session).delete_by_subject(subject_id)
