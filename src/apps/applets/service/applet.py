@@ -1,6 +1,7 @@
 import asyncio
 import re
 import uuid
+from typing import cast
 
 from apps.activities.crud import ActivitiesCRUD, ActivityItemsCRUD
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
@@ -71,8 +72,9 @@ class AppletService:
             raise AppletNotFoundError(key="id", value=str(applet_id))
 
     async def exist_by_ids(self, applet_ids: list[uuid.UUID]):
-        exists = await AppletsCRUD(self.session).exist_by_ids(ids=applet_ids)
-        if not exists:
+        applets = await AppletsCRUD(self.session).get_by_ids(applet_ids)
+        applet_ids_set = set(i.id for i in applets)
+        if len(applet_ids_set) != len(set(applet_ids)):
             raise AppletNotFoundError(key="id", value=str(applet_ids))
 
     async def get(self, applet_id: uuid.UUID):
@@ -493,7 +495,7 @@ class AppletService:
         return applet
 
     async def get_single_language_by_key(self, key: uuid.UUID, language: str) -> AppletSingleLanguageDetail:
-        schema = await AppletsCRUD(self.session).get_by_key(key)
+        schema = await AppletsCRUD(self.session).get_by_link(key)
         if not schema:
             raise AppletNotFoundError(key="key", value=str(key))
         theme = None
@@ -731,7 +733,9 @@ class AppletService:
         return await self._get_info_by_id(schema, language)
 
     async def get_info_by_key(self, key: uuid.UUID, language: str) -> AppletActivitiesBaseInfo:
-        schema = await AppletsCRUD(self.session).get_by_key(key)
+        schema = await AppletsCRUD(self.session).get_by_link(key)
+        # NOTE: applet existing has already been checked on API level. Think about reducing number of queries.
+        schema = cast(AppletSchema, schema)
         return await self._get_info_by_id(schema, language)
 
     async def _get_info_by_id(self, schema: AppletSchema, language: str) -> AppletActivitiesBaseInfo:
@@ -761,7 +765,7 @@ class PublicAppletService:
         self.session = session
 
     async def get_by_link(self, link: uuid.UUID, is_private=False) -> Applet | None:
-        schema = await AppletsCRUD(self.session).get_by_link(link, is_private)
+        schema = await AppletsCRUD(self.session).get_by_link(link, require_login=is_private)
         if not schema:
             return None
         return Applet.from_orm(schema)
