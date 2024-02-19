@@ -7,7 +7,6 @@ from apps.shared.exception import NotFoundError
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
 from apps.subjects.domain import Subject
-from apps.users import UserSchema
 
 __all__ = ["SubjectsService"]
 
@@ -87,20 +86,6 @@ class SubjectsService:
     ):
         repository = SubjectsCrud(self.session)
         await repository.delete_relation(subject_id, source_subject_id)
-
-    async def create_anonymous_subject(
-        self, anonymous_user: UserSchema, applet_id: uuid.UUID
-    ) -> Subject:
-        return await self.create(
-            Subject(
-                applet_id=applet_id,
-                creator_id=self.user_id,
-                user_id=anonymous_user.id,
-                first_name=anonymous_user.first_name,
-                last_name=anonymous_user.last_name,
-                secret_user_id=str(uuid.uuid4()),
-            )
-        )
 
     async def exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID):
         return await SubjectsCrud(self.session).exist(subject_id, applet_id)
