@@ -7,22 +7,9 @@ from apps.activities import errors as activity_errors
 from apps.activities.domain.response_type_config import ResponseType, SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.applets.domain.applet_create_update import AppletUpdate
-from apps.shared.test import BaseTest
 
 
-class TestActivityItems(BaseTest):
-    fixtures = [
-        "themes/fixtures/themes.json",
-        "folders/fixtures/folders.json",
-        "applets/fixtures/applets.json",
-        "applets/fixtures/applet_histories.json",
-        "applets/fixtures/applet_user_accesses.json",
-        "activities/fixtures/activities.json",
-        "activities/fixtures/activity_items.json",
-        "activity_flows/fixtures/activity_flows.json",
-        "activity_flows/fixtures/activity_flow_items.json",
-    ]
-
+class TestActivityItems:
     login_url = "/auth/login"
     applet_list_url = "applets"
     applet_create_url = "workspaces/{owner_id}/applets"
@@ -2351,13 +2338,15 @@ class TestActivityItems(BaseTest):
         )
         assert resp.status_code == 201
 
-    async def test_update_applet_duplicated_activity_item_name_is_not_allowed(self, client, applet_minimal_data, tom):
+    async def test_update_applet_duplicated_activity_item_name_is_not_allowed(
+        self, client, applet_minimal_data, tom, applet_one
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         data = AppletUpdate(**applet_minimal_data.dict(exclude_unset=True)).dict()
         item = copy.deepcopy(data["activities"][0]["items"][0])
         data["activities"][0]["items"].append(item)
         resp = await client.put(
-            self.applet_detail_url.format(pk="92917a56-d586-4613-b7aa-991f2c4b15b1"),
+            self.applet_detail_url.format(pk=applet_one.id),
             data=data,
         )
         assert resp.status_code == 422

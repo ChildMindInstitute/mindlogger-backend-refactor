@@ -105,10 +105,11 @@ class ActivityItemService:
         schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(activity_ids)
         items_map: dict[uuid.UUID, list[ResponseType]] = dict()
         for schema in schemas:
-            items_map.setdefault(schema.activity_id, list())
-            items_map[schema.activity_id].append(
-                schema.response_type,
-            )
+            if not schema.is_hidden:
+                items_map.setdefault(schema.activity_id, list())
+                items_map[schema.activity_id].append(
+                    schema.response_type,
+                )
         return items_map
 
     async def get_items_by_activity_ids(self, activity_ids: list[uuid.UUID]) -> list[ActivityItemFull]:

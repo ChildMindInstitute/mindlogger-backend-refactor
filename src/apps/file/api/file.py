@@ -21,8 +21,11 @@ from apps.file.domain import (
     FileCheckRequest,
     FileDownloadRequest,
     FileExistenceResponse,
+    FileIdRequest,
+    FileNameRequest,
     FilePresignRequest,
     LogFileExistenceResponse,
+    PresignedUrl,
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
@@ -167,7 +170,7 @@ async def answer_upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> Response[AnswerUploadedFile]:
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
         applet_id,
@@ -220,7 +223,7 @@ async def answer_download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> StreamingResponse:
     cdn_client = await select_storage(applet_id, session)
     if request.key.startswith(LogFileService.LOG_KEY):
         LogFileService.raise_for_access(user.email)
@@ -284,7 +287,7 @@ async def presign(
     request: FilePresignRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> ResponseMulti[str | None]:
     service = await get_presign_service(applet_id, user.id, session)
     links = await service.presign(request.private_urls)
     return ResponseMulti[str | None](result=links, count=len(links))  # noqa
@@ -296,7 +299,7 @@ async def logs_upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
-):
+) -> Response[AnswerUploadedFile]:
     service = LogFileService(user.id, cdn_client)
     try:
         key = service.key(device_id=device_id, file_name=file.filename)
@@ -317,7 +320,7 @@ async def logs_download(
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
     session: AsyncSession = Depends(get_session),
-):
+) -> ResponseMulti[str]:
     user_service = UserService(session)
     log_user = await user_service.get_by_email(user_email)
     service = LogFileService(log_user.id, cdn_client)
@@ -342,7 +345,7 @@ async def logs_exist_check(
     files: FileCheckRequest,
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
-):
+) -> ResponseMulti[LogFileExistenceResponse]:
     service = LogFileService(user.id, cdn_client)
     try:
         result = await service.check_exist(device_id, files.files)
@@ -352,3 +355,53 @@ async def logs_exist_check(
     except Exception as ex:
         await service.backend_log_check([], False, str(ex))
         raise ex
+
+
+async def generate_presigned_media_url(
+    body: FileNameRequest = Body(...),
+    user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_media_bucket),
+) -> Response[PresignedUrl]:
+    key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
+    data = cdn_client.generate_presigned_post(key)
+    return Response(
+        result=PresignedUrl(
+            upload_url=data["url"], fields=data["fields"], url=quote(settings.cdn.url.format(key=key), "/:")
+        )
+    )
+
+
+async def generate_presigned_answer_url(
+    applet_id: uuid.UUID,
+    body: FileIdRequest = Body(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Response[PresignedUrl]:
+    if not await UserAppletAccessCRUD(session).get_by_roles(
+        user.id,
+        applet_id,
+        [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
+    ):
+        raise AnswerViewAccessDenied()
+    cdn_client = await select_storage(applet_id, session)
+    unique = f"{user.id}/{applet_id}"
+    cleaned_file_id = body.file_id.strip()
+    key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
+    data = cdn_client.generate_presigned_post(key)
+    return Response(
+        result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
+    )
+
+
+async def generate_presigned_logs_url(
+    device_id: str,
+    body: FileIdRequest = Body(...),
+    user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_log_bucket),
+) -> Response[PresignedUrl]:
+    service = LogFileService(user.id, cdn_client)
+    key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"
+    data = cdn_client.generate_presigned_post(key)
+    return Response(
+        result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
+    )

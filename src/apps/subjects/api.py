@@ -33,9 +33,7 @@ async def create_subject(
     schema: SubjectCreateRequest = Body(...),
     session: AsyncSession = Depends(get_session),
 ) -> Response[Subject]:
-    await CheckAccessService(session, user.id).check_applet_invite_access(
-        schema.applet_id
-    )
+    await CheckAccessService(session, user.id).check_applet_invite_access(schema.applet_id)
     async with atomic(session):
         subject_sch = Subject(
             applet_id=schema.applet_id,
@@ -68,9 +66,7 @@ async def create_relation(
     if source_subject.applet_id != target_subject.applet_id:
         raise ValidationError("applet_id doesn't match")
 
-    await CheckAccessService(session, user.id).check_applet_invite_access(
-        target_subject.applet_id
-    )
+    await CheckAccessService(session, user.id).check_applet_invite_access(target_subject.applet_id)
     async with atomic(session):
         await service.create_relation(
             subject_id,
@@ -93,9 +89,7 @@ async def delete_relation(
     subject = await service.get(source_subject_id)
     if not subject:
         raise NotFoundError()
-    await CheckAccessService(session, user.id).check_applet_invite_access(
-        subject.applet_id
-    )
+    await CheckAccessService(session, user.id).check_applet_invite_access(subject.applet_id)
     async with atomic(session):
         await service.delete_relation(subject_id, source_subject_id)
         return EmptyResponse()
@@ -111,12 +105,8 @@ async def update_subject(
     subject = await subject_srv.get(subject_id)
     if not subject:
         raise NotFoundError()
-    await CheckAccessService(session, user.id).check_subject_edit_access(
-        subject.applet_id
-    )
-    exist = await subject_srv.check_secret_id(
-        subject_id, schema.secret_user_id, subject.applet_id
-    )
+    await CheckAccessService(session, user.id).check_subject_edit_access(subject.applet_id)
+    exist = await subject_srv.check_secret_id(subject_id, schema.secret_user_id, subject.applet_id)
     if exist:
         raise NonUniqueValue()
     async with atomic(session):
@@ -131,23 +121,17 @@ async def delete_subject(
     params: SubjectDeleteRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    arbitrary_session: AsyncSession | None = Depends(
-        get_answer_session_by_subject
-    ),
+    arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
 ):
     subject_srv = SubjectsService(session, user.id)
     subject = await subject_srv.get(subject_id)
     if not subject:
         raise NotFoundError()
     # Check that user has right on applet
-    await UserAccessService(session, user.id).validate_subject_delete_access(
-        subject.applet_id
-    )
+    await UserAccessService(session, user.id).validate_subject_delete_access(subject.applet_id)
     async with atomic(session):
         # Remove respondent role for user
-        await UserAppletAccessService(
-            session, user.id, subject.applet_id
-        ).remove_access_by_user_and_applet_to_role(
+        await UserAppletAccessService(session, user.id, subject.applet_id).remove_access_by_user_and_applet_to_role(
             subject.user_id, subject.applet_id, Role.RESPONDENT
         )
 
@@ -173,11 +157,5 @@ async def get_subject(
     subject = await SubjectsService(session, user.id).get(subject_id)
     if not subject:
         raise NotFoundError()
-    await CheckAccessService(session, user.id).check_subject_subject_access(
-        subject.applet_id, subject_id
-    )
-    return Response(
-        result=SubjectReadResponse(
-            secret_user_id=subject.secret_user_id, nickname=subject.nickname
-        )
-    )
+    await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
+    return Response(result=SubjectReadResponse(secret_user_id=subject.secret_user_id, nickname=subject.nickname))

@@ -92,9 +92,7 @@ class UserAppletAccessSchema(Base):
             else_=text("'[]'::jsonb"),
         )
         return func.array(
-            select(func.jsonb_array_elements_text(_subjects_jsonb))
-            .correlate(UserAppletAccessSchema)
-            .scalar_subquery()
+            select(func.jsonb_array_elements_text(_subjects_jsonb)).correlate(UserAppletAccessSchema).scalar_subquery()
         ).cast(ARRAY(UUID))
 
 

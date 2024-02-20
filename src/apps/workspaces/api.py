@@ -200,9 +200,7 @@ async def workspace_applet_respondent_update(
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         subject_srv = SubjectsService(session, user.id)
         subject = await subject_srv.get_by_user_and_applet(respondent_id, applet_id)
         assert subject
@@ -254,7 +252,9 @@ async def workspace_respondents_list(
     await CheckAccessService(session, user.id).check_workspace_respondent_list_access(owner_id)
 
     data, total = await service.get_workspace_respondents(owner_id, None, deepcopy(query_params))
-    respondents = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity(data)
+    respondents = await AnswerService(
+        session=session, arbitrary_session=answer_session
+    ).fill_last_activity_workspace_respondent(data)
     return ResponseMulti(result=respondents, count=total)
 
 
@@ -272,9 +272,9 @@ async def workspace_applet_respondents_list(
     await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
     data, total = await service.get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
-    respondents = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity(
-        data, applet_id
-    )
+    respondents = await AnswerService(
+        session=session, arbitrary_session=answer_session
+    ).fill_last_activity_workspace_respondent(data, applet_id)
     return ResponseMulti(result=respondents, count=total)
 
 
@@ -410,6 +410,7 @@ async def workspace_applet_get_respondent(
     respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    answer_session=Depends(get_answer_session_by_owner_id),
 ) -> Response[RespondentInfoPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
@@ -418,4 +419,10 @@ async def workspace_applet_get_respondent(
     respondent_info = await UserAppletAccessService(session, user.id, applet_id).get_respondent_info(
         respondent_id, applet_id, owner_id
     )
+    # get last activity time
+    result = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity_respondent_info(
+        respondent_id, applet_id
+    )
+    respondent_info.last_seen = result.get(respondent_id)
+
     return Response(result=respondent_info)

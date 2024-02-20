@@ -1,9 +1,7 @@
 import uuid
 
-from apps.shared.test import BaseTest
 
-
-class TestReusableItem(BaseTest):
+class TestReusableItem:
     login_url = "/auth/login"
     create_url = "activities/item_choices"
     update_url = "activities/item_choices"

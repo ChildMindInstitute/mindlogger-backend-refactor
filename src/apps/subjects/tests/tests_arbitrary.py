@@ -57,65 +57,38 @@ class TestSubjects(BaseTest):
     subject_list_url = "/subjects"
     subject_detail_url = "/subjects/{subject_id}"
     subject_respondent_url = "/subjects/{subject_id}/respondents"
-    subject_respondent_details_url = (
-        "/subjects/{subject_id}/respondents/{respondent_id}"
-    )
+    subject_respondent_details_url = "/subjects/{subject_id}/respondents/{respondent_id}"
     answer_url = "/answers"
 
     async def test_successfully_delete_subject_without_answers_arbitrary(
-        self,
-        session,
-        arbitrary_session,
-        arbitrary_client,
-        answer_create_payload
+        self, session, arbitrary_session, arbitrary_client, answer_create_payload
     ):
         subject_id = uuid.UUID("a7feb119-dccb-46b1-bd46-60e5af694de4")
-        await arbitrary_client.login(
-            self.login_url, "ivan@mindlogger.com", "Test1234!"
-        )
-        response = await arbitrary_client.post(
-            self.answer_url, data=answer_create_payload
-        )
+        await arbitrary_client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        response = await arbitrary_client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
-        res = await arbitrary_client.delete(delete_url, data=dict(
-            deleteAnswers=False
-        ))
+        res = await arbitrary_client.delete(delete_url, data=dict(deleteAnswers=False))
         assert res.status_code == http.HTTPStatus.OK
 
         subject = await SubjectsCrud(session).get_by_id(subject_id)
         assert subject, subject.is_deleted
-        count = await AnswersCRUD(arbitrary_session).count(
-            target_subject_id=subject_id
-        )
+        count = await AnswersCRUD(arbitrary_session).count(target_subject_id=subject_id)
         assert count
 
     async def test_successfully_delete_subject_with_answers_arbitrary(
-        self,
-        session,
-        arbitrary_session,
-        arbitrary_client,
-        answer_create_payload,
-        mock_kiq_report
+        self, session, arbitrary_session, arbitrary_client, answer_create_payload, mock_kiq_report
     ):
         subject_id = uuid.UUID("a7feb119-dccb-46b1-bd46-60e5af694de4")
-        await arbitrary_client.login(
-            self.login_url, "ivan@mindlogger.com", "Test1234!"
-        )
-        response = await arbitrary_client.post(
-            self.answer_url, data=answer_create_payload
-        )
+        await arbitrary_client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        response = await arbitrary_client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
-        res = await arbitrary_client.delete(delete_url, data=dict(
-            deleteAnswers=True
-        ))
+        res = await arbitrary_client.delete(delete_url, data=dict(deleteAnswers=True))
         assert res.status_code == http.HTTPStatus.OK
         subject = await SubjectsCrud(session).get_by_id(subject_id)
         assert not subject
-        count = await AnswersCRUD(arbitrary_session).count(
-                target_subject_id=subject_id
-        )
+        count = await AnswersCRUD(arbitrary_session).count(target_subject_id=subject_id)
         assert count == 0

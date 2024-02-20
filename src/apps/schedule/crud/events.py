@@ -754,9 +754,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         events = result.scalars().all()
         return events
 
-    async def get_default_schedule_user_ids_by_applet_id(
-        self, applet_id: uuid.UUID
-    ) -> list[uuid.UUID]:
+    async def get_default_schedule_user_ids_by_applet_id(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
         """Return user ids for default schedule."""
         individual_schedule_users = (
             select(UserEventsSchema.user_id)
@@ -768,9 +766,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
         query = query.where(UserAppletAccessSchema.is_deleted == False)  # noqa: E712
-        query = query.where(
-            UserAppletAccessSchema.user_id.not_in(individual_schedule_users)
-        )
+        query = query.where(UserAppletAccessSchema.user_id.not_in(individual_schedule_users))
         result = await self._execute(query)
         result = result.scalars().all()
         return result

@@ -81,7 +81,6 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         query = query.where(AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False))
         query = query.order_by(AlertSchema.created_at.desc())
         query = paging(query, page, limit)
-
         db_result = await self._execute(query)
         return db_result.all()
 

@@ -263,3 +263,7 @@ class DuplicateSubscaleNameError(FieldError):
 
 class FlowItemActivityKeyNotFoundError(ValidationError):
     message = _("Activity key from activity flow item is not found in activity list.")
+
+
+class MultiSelectNoneOptionError(ValidationError):
+    message = _("No more than 1 none option is not allowed for multiselect.")

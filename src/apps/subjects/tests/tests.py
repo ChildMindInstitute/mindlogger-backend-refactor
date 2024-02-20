@@ -8,16 +8,21 @@ from asyncpg import UniqueViolationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.crud.answers import AnswersCRUD
+from apps.applets.domain.applet_full import AppletFull
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import Subject, SubjectCreateRequest, SubjectRelationCreate
 from apps.subjects.services import SubjectsService
+from apps.users import User
+from apps.users.domain import UserCreate
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 @pytest.fixture
-def create_shell_body():
+def create_shell_body(applet_one):
     return SubjectCreateRequest(
-        applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
+        applet_id=str(applet_one.id),
         language="en",
         first_name="fn",
         last_name="ln",
@@ -56,12 +61,12 @@ def subject_updated_schema(subject_schema):
 
 
 @pytest.fixture
-def answer_create_payload():
+def answer_create_payload(applet_one: AppletFull):
     return dict(
-        submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
-        applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-        activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-        version="1.0.0",
+        submit_id=str(uuid.uuid4()),
+        applet_id=str(applet_one.id),
+        activity_id=str(applet_one.activities[0].id),
+        version=applet_one.version,
         created_at=1690188731636,
         answer=dict(
             user_public_key="user key",
@@ -73,8 +78,7 @@ def answer_create_payload():
             ),
             events=json.dumps(dict(events=["event1", "event2"])),
             item_ids=[
-                "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                "a18d3409-2c96-4a5e-a1f3-1c1c14be0014",
+                str(applet_one.activities[0].items[0].id),
             ],
             identifier="encrypted_identifier",
             scheduled_time=1690188679657,
@@ -86,7 +90,7 @@ def answer_create_payload():
         ),
         alerts=[
             dict(
-                activity_item_id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                activity_item_id=str(applet_one.activities[0].items[0].id),
                 message="hello world",
             )
         ],
@@ -140,38 +144,75 @@ def answer_create_arbitrary_payload():
     )
 
 
+@pytest.fixture(params=range(4))
+async def update_subject_params(request, tom_applet_one_subject):
+    params = (
+        (
+            # Duplicated secret id
+            dict(secretUserId=tom_applet_one_subject.secret_user_id),
+            http.HTTPStatus.BAD_REQUEST,
+        ),
+        (dict(secretUserId=str(uuid.uuid4())), http.HTTPStatus.OK),
+        (
+            dict(secretUserId=str(uuid.uuid4()), nickname="bob"),
+            http.HTTPStatus.OK,
+        ),
+        (dict(nickname="bob"), http.HTTPStatus.UNPROCESSABLE_ENTITY),
+    )
+    body, expected_status = params[request.param]
+    return body, expected_status
+
+
+@pytest.fixture
+async def applet_one_lucy_manager(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.MANAGER)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_bob_coordinator(session: AsyncSession, applet_one: AppletFull, tom, bob) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(bob.id, Role.COORDINATOR)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_pit_editor(session: AsyncSession, applet_one: AppletFull, tom, pit) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(pit.id, Role.EDITOR)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_pit_reviewer(session: AsyncSession, applet_one: AppletFull, tom, pit) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(pit.id, Role.REVIEWER)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_lucy_reviewer_with_subject(
+    session: AsyncSession, applet_one: AppletFull, tom_applet_one_subject, tom, lucy
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(
+        lucy.id, Role.REVIEWER, {"subjects": [str(tom_applet_one_subject.id)]}
+    )
+    return applet_one
+
+
 class TestSubjects(BaseTest):
     fixtures = [
-        "applets/fixtures/applets.json",
-        "applets/fixtures/applet_user_accesses.json",
-        "applets/fixtures/applet_histories.json",
-        "activities/fixtures/activities.json",
-        "activities/fixtures/activity_items.json",
-        "activity_flows/fixtures/activity_flows.json",
-        "activity_flows/fixtures/activity_flow_items.json",
-        "activities/fixtures/activity_histories.json",
-        "activities/fixtures/activity_item_histories.json",
-        "activity_flows/fixtures/activity_flow_histories.json",
-        "activity_flows/fixtures/activity_flow_item_histories.json",
         "workspaces/fixtures/workspaces.json",
-        "subjects/fixtures/subjects.json",
     ]
 
     login_url = "/auth/login"
     subject_list_url = "/subjects"
     subject_detail_url = "/subjects/{subject_id}"
-    subject_relation_url = (
-        "/subjects/{subject_id}/relations/{source_subject_id}"
-    )
+    subject_relation_url = "/subjects/{subject_id}/relations/{source_subject_id}"
     answer_url = "/answers"
 
-    async def test_create_subject(self, client, create_shell_body):
-        creator_id = "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
-        applet_id = "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        response = await client.post(
-            self.subject_list_url, data=create_shell_body
-        )
+    async def test_create_subject(self, client, tom: User, applet_one: AppletFull, create_shell_body):
+        creator_id = str(tom.id)
+        applet_id = str(applet_one.id)
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(self.subject_list_url, data=create_shell_body)
         assert response.status_code == 201
         payload = response.json()
         assert payload
@@ -181,22 +222,19 @@ class TestSubjects(BaseTest):
         assert payload["result"]["userId"] is None
         assert payload["result"]["language"] == "en"
 
-    async def test_create_relation(self, client, create_shell_body):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        response = await client.post(
-            self.subject_list_url, data=create_shell_body
-        )
+    async def test_create_relation(self, client, tom: User, create_shell_body, tom_applet_one_subject):
+        subject_id = tom_applet_one_subject.id
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(self.subject_list_url, data=create_shell_body)
         subject = response.json()
 
-        source_subject_id = "ee5e2f55-8e32-40af-8ef9-24e332c31d7c"
+        source_subject_id = str(subject_id)
         target_subject_id = subject["result"]["id"]
 
         body = SubjectRelationCreate(
             relation="father",
         )
-        url = self.subject_relation_url.format(
-            subject_id=target_subject_id, source_subject_id=source_subject_id
-        )
+        url = self.subject_relation_url.format(subject_id=target_subject_id, source_subject_id=source_subject_id)
         res = await client.post(url, body)
         assert res.status_code == http.HTTPStatus.OK
 
@@ -211,15 +249,14 @@ class TestSubjects(BaseTest):
     async def test_remove_relation(
         self,
         client,
+        tom: User,
         create_shell_body,
         subject_id,
         source_subject_id,
         exp_code,
     ):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        response = await client.post(
-            self.subject_list_url, data=create_shell_body
-        )
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(self.subject_list_url, data=create_shell_body)
         source_subject = response.json()
         _source_subject_id = source_subject["result"]["id"]
 
@@ -238,43 +275,20 @@ class TestSubjects(BaseTest):
         body = SubjectRelationCreate(
             relation="father",
         )
-        url = self.subject_relation_url.format(
-            subject_id=_target_subject_id, source_subject_id=_source_subject_id
-        )
+        url = self.subject_relation_url.format(subject_id=_target_subject_id, source_subject_id=_source_subject_id)
         await client.post(url, body.dict())
 
         url_delete = self.subject_relation_url.format(
             subject_id=subject_id if subject_id else _target_subject_id,
-            source_subject_id=source_subject_id
-            if source_subject_id
-            else _source_subject_id,
+            source_subject_id=source_subject_id if source_subject_id else _source_subject_id,
         )
         res = await client.delete(url_delete)
         assert res.status_code == exp_code
 
-    @pytest.mark.parametrize(
-        "body,exp_status",
-        (
-            (
-                # Duplicated secret id
-                dict(secretUserId="f0dd4996-e0eb-461f-b2f8-ba873a674788"),
-                http.HTTPStatus.BAD_REQUEST,
-            ),
-            (dict(secretUserId=str(uuid.uuid4())), http.HTTPStatus.OK),
-            (
-                dict(secretUserId=str(uuid.uuid4()), nickname="bob"),
-                http.HTTPStatus.OK,
-            ),
-            (dict(nickname="bob"), http.HTTPStatus.UNPROCESSABLE_ENTITY),
-        ),
-    )
-    async def test_update_subject(
-        self, client, session, create_shell_body, body, exp_status
-    ):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        response = await client.post(
-            self.subject_list_url, data=create_shell_body
-        )
+    async def test_update_subject(self, client, session, tom: User, create_shell_body, update_subject_params):
+        body, exp_status = update_subject_params
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(self.subject_list_url, data=create_shell_body)
         subject = response.json()["result"]
         url = self.subject_detail_url.format(subject_id=subject["id"])
         response = await client.put(url, body)
@@ -292,9 +306,7 @@ class TestSubjects(BaseTest):
         assert subject.secret_user_id == exp_secret_id
         assert subject.nickname == exp_nickname
 
-    async def test_upsert_for_soft_deleted(
-        self, session: AsyncSession, subject_schema, subject_updated_schema
-    ):
+    async def test_upsert_for_soft_deleted(self, session: AsyncSession, subject_schema, subject_updated_schema):
         service = SubjectsService(session, subject_schema.user_id)
         original_subject = await service.create(subject_schema)
         assert original_subject.id
@@ -327,13 +339,11 @@ class TestSubjects(BaseTest):
             assert actual == expected
 
     async def test_successfully_delete_subject_without_answers(
-        self, session, client, answer_create_payload, mock_kiq_report
+        self, session, client, tom: User, tom_applet_one_subject, answer_create_payload, mock_kiq_report
     ):
-        subject_id = uuid.UUID("ee5e2f55-8e32-40af-8ef9-24e332c31d7c")
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        response = await client.post(
-            self.answer_url, data=answer_create_payload
-        )
+        subject_id = tom_applet_one_subject.id
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
@@ -341,18 +351,17 @@ class TestSubjects(BaseTest):
         assert res.status_code == http.HTTPStatus.OK
 
         subject = await SubjectsCrud(session).get_by_id(subject_id)
-        assert subject, subject.is_deleted
+        assert subject
+        assert subject.soft_exists(False)
         count = await AnswersCRUD(session).count(target_subject_id=subject_id)
         assert count
 
     async def test_successfully_delete_subject_with_answers(
-        self, session, client, answer_create_payload, mock_kiq_report
+        self, session, client, tom: User, tom_applet_one_subject, answer_create_payload, mock_kiq_report
     ):
-        subject_id = uuid.UUID("ee5e2f55-8e32-40af-8ef9-24e332c31d7c")
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        response = await client.post(
-            self.answer_url, data=answer_create_payload
-        )
+        subject_id = tom_applet_one_subject.id
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
@@ -372,44 +381,66 @@ class TestSubjects(BaseTest):
             ("lucy@gmail.com", "Test123", http.HTTPStatus.OK),
             # Coordinator
             ("bob@gmail.com", "Test1234!", http.HTTPStatus.OK),
-            # Editor
+            # Editor, reviewer
             ("pitbronson@mail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
-            # Reviewer
-            ("billbronson@mail.com", "Test1234!", http.HTTPStatus.FORBIDDEN),
         ),
     )
     async def test_error_try_delete_subject_by_not_owner(
         self,
         session,
         client,
-        answer_create_payload,
-        mock_kiq_report,
+        tom_applet_one_subject,
+        applet_one_lucy_manager,
+        applet_one_bob_coordinator,
+        applet_one_pit_editor,
+        applet_one_pit_reviewer,
         email,
         password,
         expected,
     ):
-        subject_id = uuid.UUID("ee5e2f55-8e32-40af-8ef9-24e332c31d7c")
+        subject_id = tom_applet_one_subject.id
         await client.login(self.login_url, email, password)
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
         res = await client.delete(delete_url, data=dict(deleteAnswers=True))
         assert res.status_code == expected
 
-    @pytest.mark.parametrize(
-        "subject_id,expected_code",
-        (
-            ("89ba6774-4f48-4ff1-9d34-0e6efd24f03f", http.HTTPStatus.OK),
-            (
-                "ee96b767-4609-4b8b-93c5-e7b15b81c6f7",
-                http.HTTPStatus.FORBIDDEN,
-            ),
-            (uuid.uuid4(), http.HTTPStatus.NOT_FOUND),
-        ),
-    )
-    async def test_get_subject(self, client, subject_id, expected_code):
-        await client.login(self.login_url, "reviewer@mail.com", "Test1234!")
-        response = await client.get(
-            self.subject_detail_url.format(subject_id=subject_id)
-        )
-        assert response.status_code == expected_code
+    async def test_get_subject(self, client, tom: User, tom_applet_one_subject, lucy, lucy_create):
+        subject_id = tom_applet_one_subject.id
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()
+        assert data
+
+        # not found
+        response = await client.get(self.subject_detail_url.format(subject_id=uuid.uuid4()))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+        # forbidden
+        await client.login(self.login_url, lucy.email_encrypted, lucy_create.password)
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_get_reviewer_subject(
+        self,
+        client,
+        tom_applet_one_subject,
+        pit_create: UserCreate,
+        pit,
+        applet_one_pit_reviewer,
+        lucy_create,
+        lucy,
+        applet_one_lucy_reviewer_with_subject,
+    ):
+        subject_id = tom_applet_one_subject.id
+        # forbidden for reviewer without subject assigned
+        await client.login(self.login_url, pit.email_encrypted, pit_create.password)
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+        # allowed for reviewer with subject assigned
+        await client.login(self.login_url, lucy.email_encrypted, lucy_create.password)
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
+        assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data

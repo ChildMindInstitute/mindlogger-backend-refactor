@@ -18,6 +18,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from apps.activities.crud import ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
+from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist
 from apps.activities.services import ActivityHistoryService
@@ -182,9 +183,7 @@ class AnswerService:
 
             raise ValidationError("Subject relation not found")
 
-        relation = await SubjectsCrud(self.session).get_relation(
-            source_subject.id, target_subject.id
-        )
+        relation = await SubjectsCrud(self.session).get_relation(source_subject.id, target_subject.id)
         if not relation:
             if is_admin:
                 return Relation.admin
@@ -205,38 +204,28 @@ class AnswerService:
             raise ValidationError("Respondent subject not found")
 
         if applet_answer.target_subject_id:
-            target_subject = await subject_crud.get_by_id(
-                applet_answer.target_subject_id
-            )
+            target_subject = await subject_crud.get_by_id(applet_answer.target_subject_id)
             if (
                 not target_subject
                 or not target_subject.soft_exists()
                 or target_subject.applet_id != applet_answer.applet_id
             ):
-                raise ValidationError(
-                    f"Subject {applet_answer.target_subject_id} not found"
-                )
+                raise ValidationError(f"Subject {applet_answer.target_subject_id} not found")
         else:
             target_subject = respondent_subject
 
         if applet_answer.source_subject_id:
-            source_subject = await subject_crud.get_by_id(
-                applet_answer.source_subject_id
-            )
+            source_subject = await subject_crud.get_by_id(applet_answer.source_subject_id)
             if (
                 not source_subject
                 or not source_subject.soft_exists()
                 or source_subject.applet_id != applet_answer.applet_id
             ):
-                raise ValidationError(
-                    f"Subject {applet_answer.source_subject_id} not found"
-                )
+                raise ValidationError(f"Subject {applet_answer.source_subject_id} not found")
         else:
             source_subject = respondent_subject
 
-        relation = await self._get_answer_relation(
-            respondent_subject, source_subject, target_subject
-        )
+        relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
         answer = await AnswersCRUD(self.answer_session).create(
             AnswerSchema(
                 submit_id=applet_answer.submit_id,
@@ -248,13 +237,9 @@ class AnswerService:
                 activity_history_id=pk(applet_answer.activity_id),
                 respondent_id=self.user_id,
                 client=applet_answer.client.dict(),
-                is_flow_completed=bool(applet_answer.is_flow_completed)
-                if applet_answer.flow_id
-                else None,
+                is_flow_completed=bool(applet_answer.is_flow_completed) if applet_answer.flow_id else None,
                 target_subject_id=target_subject.id,
-                source_subject_id=source_subject.id
-                if source_subject
-                else None,
+                source_subject_id=source_subject.id if source_subject else None,
                 relation=relation,
             )
         )
@@ -313,12 +298,10 @@ class AnswerService:
         applet_id: uuid.UUID,
         filters: AppletActivityFilter,
     ) -> list[ReviewActivity]:
-        await self._validate_applet_activity_access(
-            applet_id, filters.target_subject_id
+        await self._validate_applet_activity_access(applet_id, filters.target_subject_id)
+        answers = await AnswersCRUD(self.answer_session).get_respondents_answered_activities_by_applet_id(
+            applet_id, filters
         )
-        answers = await AnswersCRUD(
-            self.answer_session
-        ).get_respondents_answered_activities_by_applet_id(applet_id, filters)
         activity_map: dict[str, ReviewActivity] = dict()
         if not answers:
             applet = await AppletsCRUD(self.session).get_by_id(applet_id)
@@ -327,9 +310,17 @@ class AnswerService:
                 activity_map[str(activity.id)] = ReviewActivity(id=activity.id, name=activity.name)
         else:
             answer_map = dict()
+            applet_versions = list(set([f"{applet_id}_{answer.version}" for answer in answers]))
+            all_activities = await ActivityHistoriesCRUD(self.session).retrieve_activities_by_applet_id_versions(
+                applet_versions
+            )
+            all_activities_map: dict[str, list[ActivityHistory]] = dict()
+            for activity_ in all_activities:
+                all_activities_map.setdefault(f"{activity_.applet_id}", []).append(activity_)
+
             for answer in answers:
                 answer_map[answer.id] = answer
-                activities = await ActivityHistoryService(self.session, applet_id, answer.version).activities_list()
+                activities = all_activities_map[f"{applet_id}_{answer.version}"]
                 for activity in activities:
                     activity_map[str(activity.id)] = ReviewActivity(id=activity.id, name=activity.name)
 
@@ -351,16 +342,10 @@ class AnswerService:
     async def get_applet_submit_dates(
         self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
     ) -> list[datetime.date]:
-        await self._validate_applet_activity_access(
-            applet_id, filters.respondent_id
-        )
-        return await AnswersCRUD(
-            self.answer_session
-        ).get_respondents_submit_dates(applet_id, filters)
+        await self._validate_applet_activity_access(applet_id, filters.respondent_id)
+        return await AnswersCRUD(self.answer_session).get_respondents_submit_dates(applet_id, filters)
 
-    async def _validate_applet_activity_access(
-        self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
-    ):
+    async def _validate_applet_activity_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
         assert self.user_id, "User id is required"
         await AppletsCRUD(self.session).get_by_id(applet_id)
         role = await AppletAccessCRUD(self.session).get_applets_priority_role(applet_id, self.user_id)
@@ -629,9 +614,7 @@ class AnswerService:
             applet_id,
             [Role.OWNER, Role.MANAGER, Role.REVIEWER],
         )
-        user_subject = await SubjectsCrud(self.session).get_user_subject(
-            self.user_id, applet_id
-        )
+        user_subject = await SubjectsCrud(self.session).get_user_subject(self.user_id, applet_id)
         assessments_allowed = False
         allowed_respondents = None
         allowed_subjects = None
@@ -639,10 +622,7 @@ class AnswerService:
             allowed_respondents = [self.user_id]
             allowed_subjects = [user_subject.id] if user_subject else []
         elif access.role == Role.REVIEWER:
-            if (
-                isinstance(access.reviewer_subjects, list)
-                and len(access.reviewer_subjects) > 0
-            ):
+            if isinstance(access.reviewer_subjects, list) and len(access.reviewer_subjects) > 0:
                 allowed_subjects = access.reviewer_subjects  # noqa: E501
             else:
                 allowed_respondents = [self.user_id]
@@ -658,9 +638,7 @@ class AnswerService:
                 filters["respondent_ids"] = allowed_respondents
         if allowed_subjects:
             if _subjects := filters.get("target_subject_ids"):
-                filters["target_subject_ids"] = list(
-                    set(allowed_subjects).intersection(_subjects)
-                )
+                filters["target_subject_ids"] = list(set(allowed_subjects).intersection(_subjects))
             else:
                 filters["target_subject_ids"] = allowed_subjects
 
@@ -697,15 +675,9 @@ class AnswerService:
             if answer.activity_history_id:
                 activity_hist_ids.add(answer.activity_history_id)
 
-        flows_coro = FlowsHistoryCRUD(self.session).get_by_id_versions(
-            list(flow_hist_ids)
-        )
-        user_map_coro = AppletAccessCRUD(
-            self.session
-        ).get_respondent_export_data(applet_id, list(respondent_ids))
-        subject_map_coro = AppletAccessCRUD(
-            self.session
-        ).get_subject_export_data(applet_id, list(subject_ids))
+        flows_coro = FlowsHistoryCRUD(self.session).get_by_id_versions(list(flow_hist_ids))
+        user_map_coro = AppletAccessCRUD(self.session).get_respondent_export_data(applet_id, list(respondent_ids))
+        subject_map_coro = AppletAccessCRUD(self.session).get_subject_export_data(applet_id, list(subject_ids))
 
         coros_result = await asyncio.gather(
             flows_coro,
@@ -766,9 +738,7 @@ class AnswerService:
         await act_hst_crud.exist_by_activity_id_or_raise(activity_id)
         act_hst_list = await act_hst_crud.get_activities(activity_id, None)
         ids = set(map(lambda a: a.id_version, act_hst_list))
-        identifiers = await AnswersCRUD(
-            self.answer_session
-        ).get_identifiers_by_activity_id(ids, filters)
+        identifiers = await AnswersCRUD(self.answer_session).get_identifiers_by_activity_id(ids, filters)
         results = []
         for identifier, key, migrated_data in identifiers:
             if migrated_data and migrated_data.get("is_identifier_encrypted") is False:
@@ -875,9 +845,7 @@ class AnswerService:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
-        activity_ids_with_answer = await AnswersCRUD(
-            self.answer_session
-        ).get_activities_which_has_answer(
+        activity_ids_with_answer = await AnswersCRUD(self.answer_session).get_activities_which_has_answer(
             activity_ver_ids, filters.respondent_id, filters.target_subject_id
         )
         answers_act_ids = set(map(lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer))
@@ -906,9 +874,7 @@ class AnswerService:
         if len(raw_alerts) == 0:
             return
         cache = RedisCache()
-        persons = await UserAppletAccessCRUD(
-            self.session
-        ).get_responsible_persons(applet_id, subject_id)
+        persons = await UserAppletAccessCRUD(self.session).get_responsible_persons(applet_id, subject_id)
         alert_schemas = []
 
         for person in persons:
@@ -1078,7 +1044,7 @@ class AnswerService:
 
         return count
 
-    async def fill_last_activity(
+    async def fill_last_activity_workspace_respondent(
         self,
         respondents: list[WorkspaceRespondent],
         applet_id: uuid.UUID | None = None,
@@ -1087,13 +1053,9 @@ class AnswerService:
         for respondent_item in respondents:
             if not respondent_item.details:
                 continue
-            subjects_ids = list(
-                map(lambda x: x.subject_id, respondent_item.details)
-            )
+            subjects_ids = list(map(lambda x: x.subject_id, respondent_item.details))
             subjects_ids += subjects_ids
-        result = await AnswersCRUD(self.answer_session).get_last_activity(
-            subjects_ids, applet_id
-        )
+        result = await AnswersCRUD(self.answer_session).get_last_activity(subjects_ids, applet_id)
         for respondent in respondents:
             respondent_subject_ids = map(
                 lambda x: x.subject_id,
@@ -1107,6 +1069,14 @@ class AnswerService:
                 last_date = max(dates)
                 respondent.last_seen = last_date
         return respondents
+
+    async def fill_last_activity_respondent_info(
+        self,
+        respondent_id: uuid.UUID,
+        applet_id: uuid.UUID,
+    ) -> dict[uuid.UUID, datetime.datetime]:
+        result = await AnswersCRUD(self.answer_session).get_last_activity([respondent_id], applet_id)
+        return result
 
     async def delete_by_subject(self, subject_id: uuid.UUID):
         await AnswersCRUD(self.answer_session).delete_by_subject(subject_id)

@@ -81,9 +81,7 @@ class SubjectsService:
             )
         )
 
-    async def delete_relation(
-        self, subject_id: uuid.UUID, source_subject_id: uuid.UUID
-    ):
+    async def delete_relation(self, subject_id: uuid.UUID, source_subject_id: uuid.UUID):
         repository = SubjectsCrud(self.session)
         await repository.delete_relation(subject_id, source_subject_id)
 
@@ -95,23 +93,15 @@ class SubjectsService:
         if not is_exist:
             raise NotFoundError()
 
-    async def check_secret_id(
-        self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID
-    ) -> bool:
-        return await SubjectsCrud(self.session).check_secret_id(
-            subject_id, secret_id, applet_id
-        )
+    async def check_secret_id(self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID) -> bool:
+        return await SubjectsCrud(self.session).check_secret_id(subject_id, secret_id, applet_id)
 
     async def upsert(self, subject: Subject) -> Subject:
         schema = await SubjectsCrud(self.session).upsert(subject)
         return Subject.from_orm(schema)
 
-    async def get_by_user_and_applet(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID
-    ) -> Subject | None:
-        model = await SubjectsCrud(self.session).get_by_user_and_applet(
-            user_id, applet_id
-        )
+    async def get_by_user_and_applet(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> Subject | None:
+        model = await SubjectsCrud(self.session).get_by_user_and_applet(user_id, applet_id)
         return Subject.from_orm(model) if model else None
 
     async def delete_hard(self, id_: uuid.UUID):

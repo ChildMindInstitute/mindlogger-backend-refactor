@@ -277,8 +277,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserAppletAccessSchema,
                 and_(
                     UserAppletAccessSchema.user_id == SubjectSchema.user_id,
-                    UserAppletAccessSchema.applet_id
-                    == SubjectSchema.applet_id,
+                    UserAppletAccessSchema.applet_id == SubjectSchema.applet_id,
                     UserAppletAccessSchema.role == Role.RESPONDENT,
                 ),
             )
@@ -290,9 +289,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return {row.id: SubjectExportData.from_orm(row) for row in data}
 
-    async def get_priority_access(
-        self, applet_id: uuid.UUID, user_id: uuid.UUID
-    ) -> UserAppletAccessSchema:
+    async def get_priority_access(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.user_id == user_id)

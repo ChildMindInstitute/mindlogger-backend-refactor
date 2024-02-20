@@ -80,6 +80,9 @@ class User(InternalModel):
     hashed_password: str
     email_encrypted: str | None
 
+    def get_full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}" if self.last_name else self.first_name
+
 
 class PublicUser(PublicModel):
     """Public user data model."""
@@ -97,6 +100,9 @@ class PublicUser(PublicModel):
             last_name=user.last_name,
             id=user.id,
         )
+
+    def get_full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}" if self.last_name else self.first_name
 
 
 class ChangePasswordRequest(InternalModel):

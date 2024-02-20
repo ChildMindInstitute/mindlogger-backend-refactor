@@ -308,9 +308,7 @@ class WorkspaceService:
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
     ) -> Tuple[list[WorkspaceRespondent], int]:
-        users, total = await UserAppletAccessCRUD(
-            self.session
-        ).get_workspace_respondents(
+        users, total = await UserAppletAccessCRUD(self.session).get_workspace_respondents(
             self._user_id, owner_id, applet_id, query_params
         )
         return users, total

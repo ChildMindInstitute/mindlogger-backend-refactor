@@ -80,9 +80,7 @@ class InvitationsService:
         schema: InvitationRespondentRequest,
         subject_id: uuid.UUID | None,
     ) -> InvitationDetailForRespondent:
-        await self._is_validated_role_for_invitation(
-            applet_id, Role.RESPONDENT
-        )
+        await self._is_validated_role_for_invitation(applet_id, Role.RESPONDENT)
 
         # Get invited user if he exists. User will be linked with invitaion
         # by user_id in this case
@@ -169,7 +167,7 @@ class InvitationsService:
             "last_name": schema.last_name,
             "user_id": invited_user_id,
             "nickname": None,
-            "meta": meta.dict()
+            "meta": meta.dict(),
         }
 
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -315,17 +313,10 @@ class InvitationsService:
             # Does not have access to send invitation
             raise DoesNotHaveAccess(message="You do not have access to send invitation.")
 
-    async def _is_secret_user_id_unique(
-        self, applet_id: uuid.UUID, secret_user_id: str, email: str | None
-    ):
-
+    async def _is_secret_user_id_unique(self, applet_id: uuid.UUID, secret_user_id: str, email: str | None):
         workers = [
-            UserAppletAccessCRUD(
-                self.session
-            ).get_by_secret_user_id_for_applet(applet_id, secret_user_id),
-            SubjectsCrud(self.session).is_secret_id_exist(
-                secret_user_id, applet_id, email
-            ),
+            UserAppletAccessCRUD(self.session).get_by_secret_user_id_for_applet(applet_id, secret_user_id),
+            SubjectsCrud(self.session).is_secret_id_exist(secret_user_id, applet_id, email),
         ]
 
         if email:
@@ -347,9 +338,7 @@ class InvitationsService:
         subject_ids: list[uuid.UUID],
     ):
         if subject_ids:
-            existing_subject_ids = await SubjectsCrud(
-                self.session
-            ).reduce_applet_subject_ids(applet_id, subject_ids)
+            existing_subject_ids = await SubjectsCrud(self.session).reduce_applet_subject_ids(applet_id, subject_ids)
 
             if len(existing_subject_ids) != len(subject_ids):
                 raise ValidationError("Subject does not exist in applet.")
@@ -423,9 +412,7 @@ class InvitationsService:
         alias: str,
     ):
         try:
-            await self._is_secret_user_id_unique(
-                applet_id, secret_user_id, email
-            )
+            await self._is_secret_user_id_unique(applet_id, secret_user_id, email)
         except NonUniqueValue as e:
             wrapper = ErrorWrapper(ValueError(e), ("body", alias))
             raise RequestValidationError([wrapper]) from e
@@ -436,6 +423,7 @@ class InvitationsService:
     async def check_email_invited(self, email: str, applet_id: uuid.UUID) -> bool:
         emails = await InvitationCRUD(self.session).get_invited_emails(applet_id)
         return bool(emails.count(email))
+
 
 class PrivateInvitationService:
     def __init__(self, session):
@@ -455,11 +443,9 @@ class PrivateInvitationService:
         )
 
     async def accept_invitation(self, user: User, link: uuid.UUID):
-        applet = await PublicAppletService(self.session).get_by_link(
-            link, True
-        )
+        applet = await PublicAppletService(self.session).get_by_link(link, True)
         if not applet:
             raise InvitationDoesNotExist()
-        await UserAppletAccessService(
-            self.session, user.id, applet.id
-        ).add_role_by_private_invitation(Role.RESPONDENT, user)
+        await UserAppletAccessService(self.session, user.id, applet.id).add_role_by_private_invitation(
+            Role.RESPONDENT, user
+        )

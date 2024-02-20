@@ -9,21 +9,13 @@ __all__ = ["SubjectSchema", "SubjectRelationSchema"]
 
 class SubjectSchema(Base):
     __tablename__ = "subjects"
-    applet_id = Column(
-        ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False
-    )
-    creator_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
-    )
-    user_id = Column(
-        ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
-    )
+    applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False)
+    creator_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
     email = Column(StringEncryptedType(Unicode, get_key), default=None)
     first_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
     last_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
-    nickname = Column(
-        StringEncryptedType(Unicode, get_key), default=None, nullable=True
-    )
+    nickname = Column(StringEncryptedType(Unicode, get_key), default=None, nullable=True)
     secret_user_id = Column(String, nullable=False)
     language = Column(String(length=5))
     __table_args__ = (

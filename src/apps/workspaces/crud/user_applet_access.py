@@ -387,9 +387,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     and_(UserPinSchema.pinned_subject_id.is_(None), UserPinSchema.pinned_user_id == UserSchema.id),
                     and_(
                         UserPinSchema.pinned_user_id.is_(None),
-                        UserPinSchema.pinned_subject_id == any_(func.array_agg(SubjectSchema.id))
-                        )
-                    )
+                        UserPinSchema.pinned_subject_id == any_(func.array_agg(SubjectSchema.id)),
+                    ),
+                ),
             )
             .correlate(UserSchema, SubjectSchema)
         )
@@ -442,19 +442,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             # fmt: off
             UserSchema.id,
             UserSchema.email_encrypted.label("email"),
-            case(
-                (
-                    UserSchema.id.isnot(None),
-                    UserSchema.is_anonymous_respondent
-                ),
-                else_=false()
-            ).label("is_anonymous_respondent"),
-            invite_status.label('status'),
-            is_pinned.label('is_pinned'),
-            func.array_remove(
-                func.array_agg(
-                    func.distinct(field_nickname)
-                ), None)
+            case((UserSchema.id.isnot(None), UserSchema.is_anonymous_respondent), else_=false()).label(
+                "is_anonymous_respondent"
+            ),
+            invite_status.label("status"),
+            is_pinned.label("is_pinned"),
+            func.array_remove(func.array_agg(func.distinct(field_nickname)), None)
             .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
             .label("nicknames"),
             func.array_agg(
@@ -465,27 +458,31 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             ).label("secret_ids"),
             func.array_agg(
                 func.json_build_object(
-                    text("'applet_id'"), AppletSchema.id,
+                    text("'applet_id'"),
+                    AppletSchema.id,
                     text("'applet_display_name'"),
                     AppletSchema.display_name,  # noqa: E501
-                    text("'applet_image'"), AppletSchema.image,
-                    text("'access_id'"), UserAppletAccessSchema.id,
-                    text("'respondent_nickname'"), field_nickname,
-                    text("'respondent_secret_id'"), field_secret_user_id,
-                    text("'has_individual_schedule'"), schedule_exists,
-                    text("'encryption'"), AppletSchema.encryption,
-                    text("'subject_id'"), SubjectSchema.id,
+                    text("'applet_image'"),
+                    AppletSchema.image,
+                    text("'access_id'"),
+                    UserAppletAccessSchema.id,
+                    text("'respondent_nickname'"),
+                    field_nickname,
+                    text("'respondent_secret_id'"),
+                    field_secret_user_id,
+                    text("'has_individual_schedule'"),
+                    schedule_exists,
+                    text("'encryption'"),
+                    AppletSchema.encryption,
+                    text("'subject_id'"),
+                    SubjectSchema.id,
                 )
             ).label("details"),
         )
         query = query.select_from(SubjectSchema)
-        query = query.join(
-            UserSchema, UserSchema.id == SubjectSchema.user_id, isouter=True
-        )
+        query = query.join(UserSchema, UserSchema.id == SubjectSchema.user_id, isouter=True)
 
-        query = query.join(
-            AppletSchema, AppletSchema.id == SubjectSchema.applet_id
-        )
+        query = query.join(AppletSchema, AppletSchema.id == SubjectSchema.applet_id)
         query = query.join(
             UserAppletAccessSchema,
             and_(
@@ -505,9 +502,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             isouter=True,
         )
         query = query.where(
-            has_access,
-            SubjectSchema.applet_id == applet_id if applet_id else True,
-            SubjectSchema.soft_exists()
+            has_access, SubjectSchema.applet_id == applet_id if applet_id else True, SubjectSchema.soft_exists()
         )
 
         query = query.group_by(
@@ -583,11 +578,16 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                             AppletSchema.id,
                             text("'applet_display_name'"),
                             AppletSchema.display_name,  # noqa: E501
-                            text("'applet_image'"), AppletSchema.image,
-                            text("'access_id'"), UserAppletAccessSchema.id,
-                            text("'role'"), UserAppletAccessSchema.role,
-                            text("'encryption'"), AppletSchema.encryption,
-                            text("'reviewer_subjects'"), UserAppletAccessSchema.reviewer_subjects,  # noqa: E501
+                            text("'applet_image'"),
+                            AppletSchema.image,
+                            text("'access_id'"),
+                            UserAppletAccessSchema.id,
+                            text("'role'"),
+                            UserAppletAccessSchema.role,
+                            text("'encryption'"),
+                            AppletSchema.encryption,
+                            text("'reviewer_subjects'"),
+                            UserAppletAccessSchema.reviewer_subjects,  # noqa: E501
                         ),
                         AppletSchema.id,
                     )
@@ -737,7 +737,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return db_result.scalars().first() is not None
 
     async def check_access_by_subject_and_owner(
-            self, subject_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role] | None
+        self, subject_id: uuid.UUID, owner_id: uuid.UUID, roles: list[Role] | None
     ):
         query: Query = select(UserAppletAccessSchema)
         query = query.join(SubjectSchema, SubjectSchema.applet_id == UserAppletAccessSchema.applet_id)
@@ -852,8 +852,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             SubjectSchema,
             and_(
                 SubjectSchema.applet_id == UserAppletAccessSchema.applet_id,
-                SubjectSchema.user_id == UserAppletAccessSchema.user_id
-            )
+                SubjectSchema.user_id == UserAppletAccessSchema.user_id,
+            ),
         )
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.role == Role.RESPONDENT)
@@ -1028,9 +1028,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return parse_obj_as(list[AppletRoles], data)
 
-    async def get_responsible_persons(
-        self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
-    ) -> list[UserSchema]:
+    async def get_responsible_persons(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None) -> list[UserSchema]:
         query: Query = select(UserSchema)
         query = query.where(UserAppletAccessSchema.soft_exists())
         query = query.where(UserAppletAccessSchema.applet_id == applet_id)
@@ -1045,9 +1043,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserAppletAccessSchema.role == Role.MANAGER,
                     and_(
                         UserAppletAccessSchema.role == Role.REVIEWER,
-                        UserAppletAccessSchema.meta.contains(
-                            dict(subjects=[str(subject_id)])
-                        ),
+                        UserAppletAccessSchema.meta.contains(dict(subjects=[str(subject_id)])),
                     ),
                 )
             )
@@ -1079,10 +1075,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         applet_id: uuid.UUID,
         owner_id: uuid.UUID,
     ) -> tuple[str, str] | None:
-        query: Query = select(
-            SubjectSchema.nickname,
-            SubjectSchema.secret_user_id
-        )
+        query: Query = select(SubjectSchema.nickname, SubjectSchema.secret_user_id)
         query = query.select_from(UserAppletAccessSchema)
         query = query.where(
             UserAppletAccessSchema.owner_id == owner_id,
@@ -1091,10 +1084,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema.role == Role.RESPONDENT,
             UserAppletAccessSchema.soft_exists(),
         )
-        query = query.join(
-            SubjectSchema,
-                SubjectSchema.user_id == UserAppletAccessSchema.user_id
-        )
+        query = query.join(SubjectSchema, SubjectSchema.user_id == UserAppletAccessSchema.user_id)
         db_result = await self._execute(query)
         db_result = db_result.all()  # noqa
         return db_result[0] if db_result else None
@@ -1124,11 +1114,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
     async def change_subject_pins_to_user(self, user_id: uuid.UUID, subject_id: uuid.UUID):
         query: Query = update(UserPinSchema)
-        query = query.where(
-            UserPinSchema.role == UserPinRole.respondent,
-            UserPinSchema.pinned_subject_id == subject_id
-        )
-        query = query.values(pinned_subject_id=None, pinned_user_id=user_id) # noqa
+        query = query.where(UserPinSchema.role == UserPinRole.respondent, UserPinSchema.pinned_subject_id == subject_id)
+        query = query.values(pinned_subject_id=None, pinned_user_id=user_id)  # noqa
         await self._execute(query)
 
     async def get_workspace_pins(self, owner_id: uuid.UUID) -> list[UserPinSchema]:
