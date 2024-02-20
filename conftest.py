@@ -183,15 +183,12 @@ def arbitrary_client(
     """
     app.dependency_overrides[get_session] = lambda: session
     app.dependency_overrides[get_answer_session] = lambda: arbitrary_session
-    app.dependency_overrides[get_answer_session_by_subject] = (
-        lambda: arbitrary_session
-    )
+    app.dependency_overrides[get_answer_session_by_subject] = lambda: arbitrary_session
     taskiq_fastapi.populate_dependency_context(broker, app)
     client = TestClient(app)
     yield client
     app.dependency_overrides.pop(get_answer_session_by_subject)
     app.dependency_overrides.pop(get_answer_session)
-
 
 
 def pytest_collection_modifyitems(items) -> None:
