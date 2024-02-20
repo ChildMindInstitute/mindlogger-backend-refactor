@@ -40,7 +40,31 @@ PatchRegister.register(
     description="Add missing job_status to the job_status enum",
     manage_session=False,
 )
-
+PatchRegister.register(
+    file_path="m2_4608_create_subjects.sql",
+    task_id="M2-4608",
+    description="[Subject] Create subject record for each respondent",
+)
+PatchRegister.register(
+    file_path="m2_4611_add_answer_subjects.py",
+    task_id="M2-4611",
+    description="[Subject] Add subject ids for answers in internal and arbitrary DBs",
+)
+PatchRegister.register(
+    file_path="m2_4613_create_invitation_subjects.py",
+    task_id="M2-4613",
+    description="[Subject] Create subjects for pending invitations",
+)
+PatchRegister.register(
+    file_path="m2_5018_migrate_reviewer_respondents_list.py",
+    task_id="M2-5018",
+    description="[Subject] Replace reviewer respondent list with subject list",
+)
+PatchRegister.register(
+    file_path="m2_5116_add_alert_subjects.sql",
+    task_id="M2-5116",
+    description="[Subject] Populate alerts with subject ids",
+)
 
 app = typer.Typer()
 
@@ -76,7 +100,7 @@ def wrap_error_msg(msg):
     return f"[bold red]Error: \n{msg}[/bold red]"
 
 
-@app.command(short_help="Show list of registered patches.")
+@app.command("list", short_help="Show list of registered patches.")
 @coro
 async def show():
     data = PatchRegister.get_all()
@@ -127,6 +151,9 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
     session_maker = session_manager.get_session()
 
+    print(
+        f"[bold green]Execute patch {patch.task_id} ({patch.file_path})[/bold green]"  # noqa: E501
+    )
     if patch.file_path.endswith(".sql"):
         # execute sql file
         async with session_maker() as session:

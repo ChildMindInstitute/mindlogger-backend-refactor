@@ -13,6 +13,7 @@ async def truncate_tables():
                 "user_devices",
                 "applets",
                 "user_applet_accesses",
+                "subjects",
                 "applet_histories",
                 "activities",
                 "activity_items",

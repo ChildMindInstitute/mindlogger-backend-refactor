@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerSchema
+from apps.subjects.db.schemas import SubjectSchema
 from infrastructure.utility import RedisCacheTest
 
 
@@ -49,7 +50,7 @@ class TestAnswerActivityItems:
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"  # noqa: E501
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
-    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
+    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"  # noqa: E501
 
     arbitrary_url = "postgresql+asyncpg://postgres:postgres@localhost:5432" "/test_arbitrary"
 
@@ -107,12 +108,21 @@ class TestAnswerActivityItems:
         RedisCacheTest._storage = {}
 
     async def test_get_latest_summary(
-        self, mock_report_server_response, mock_kiq_report, arbitrary_session, arbitrary_client, tom, applet
+        self,
+        mock_report_server_response,
+        mock_kiq_report,
+        arbitrary_session,
+        arbitrary_client,
+        tom,
+        applet,
+        tom_applet_subject: SubjectSchema,
     ):
+        submit_id = str(uuid.uuid4())
+        subject_id = tom_applet_subject.id
         await arbitrary_client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         create_data = dict(
-            submit_id="270d86e0-2158-4d18-befd-86b3ce0122a0",
+            submit_id=submit_id,
             applet_id=str(applet.id),
             activity_id=str(applet.activities[0].id),
             version=applet.version,
@@ -142,21 +152,22 @@ class TestAnswerActivityItems:
 
         response = await arbitrary_client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()
-        await assert_answer_exist_on_arbitrary("270d86e0-2158-4d18-befd-86b3ce0122a0", arbitrary_session)
+        await assert_answer_exist_on_arbitrary(submit_id, arbitrary_session)
         response = await arbitrary_client.post(
             self.latest_report_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
-                respondent_id="7484f34a-3acc-4ee6-8a94-fd7299502fa7",
+                subject_id=str(subject_id),
             ),
         )
+
         assert response.status_code == 200
 
         response = await arbitrary_client.post(
             self.latest_report_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
-                respondent_id="6cde911e-8a57-47c0-b6b2-000000000000",
+                subject_id=str(uuid.uuid4()),
             ),
         )
         assert response.status_code == 404
@@ -845,7 +856,8 @@ class TestAnswerActivityItems:
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime", "legacyProfileId", "migratedDate", "client",
+            "endDatetime", "legacyProfileId", "migratedDate",
+            "relation", "sourceSubjectId", "targetSubjectId","client"
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
@@ -1168,7 +1180,8 @@ class TestAnswerActivityItems:
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime", "legacyProfileId", "migratedDate", "client",
+            "endDatetime", "legacyProfileId", "migratedDate",
+            "relation", "sourceSubjectId", "targetSubjectId", "client"
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on

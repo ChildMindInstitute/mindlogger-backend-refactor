@@ -97,6 +97,8 @@ class AppletAnswerCreate(InternalModel):
     created_at: datetime.datetime | None
     alerts: list[AnswerAlert] = Field(default_factory=list)
     client: ClientMeta
+    target_subject_id: uuid.UUID | None
+    source_subject_id: uuid.UUID | None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
@@ -268,6 +270,9 @@ class UserAnswerDataBase(BaseModel):
     submit_id: uuid.UUID
     version: str
     respondent_id: uuid.UUID | str | None = None
+    target_subject_id: uuid.UUID | str | None = None
+    source_subject_id: uuid.UUID | str | None = None
+    relation: str | None = None
     respondent_secret_id: str | None = None
     legacy_profile_id: str | None = None
     user_public_key: str | None
@@ -430,6 +435,7 @@ class ArbitraryPreprocessor(PublicModel):
 
 class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
+    target_subject_id: uuid.UUID | None = None
 
 
 class AnswerItemDataEncrypted(InternalModel):

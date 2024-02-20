@@ -19,11 +19,13 @@ from apps.answers.domain import (
     AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
+    IdentifiersQueryParams,
     RespondentAnswerData,
     UserAnswerItemData,
     Version,
 )
 from apps.answers.errors import AnswerNotFoundError
+from apps.answers.filters import AppletActivityFilter, AppletSubmitDateFilter
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
@@ -36,6 +38,7 @@ class _AnswersExportFilter(Filtering):
     def filter_respondent_ids(self, field, value):
         return and_(field.in_(value), AnswerItemSchema.is_assessment.isnot(True))
 
+    target_subject_ids = FilterField(AnswerSchema.target_subject_id, Comparisons.IN)
     activity_history_ids = FilterField(AnswerSchema.activity_history_id, Comparisons.IN)
     from_date = FilterField(AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL)
     to_date = FilterField(AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL)
@@ -53,34 +56,30 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return schemas
 
     async def get_respondents_answered_activities_by_applet_id(
-        self,
-        respondent_id: uuid.UUID,
-        applet_id: uuid.UUID,
-        created_date: datetime.date,
+        self, applet_id: uuid.UUID, filters: AppletActivityFilter
     ) -> list[AnswerSchema]:
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(AnswerSchema.respondent_id == respondent_id)
-        query = query.where(func.date(AnswerSchema.created_at) == created_date)
+        query = query.where(func.date(AnswerSchema.created_at) == filters.created_date)
+        if filters.target_subject_id:
+            query = query.where(AnswerSchema.target_subject_id == filters.target_subject_id)
         query = query.order_by(AnswerSchema.created_at.asc())
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
     async def get_respondents_submit_dates(
-        self,
-        respondent_id: uuid.UUID,
-        applet_id: uuid.UUID,
-        from_date: datetime.date,
-        to_date: datetime.date,
+        self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
     ) -> list[datetime.date]:
         query: Query = select(func.date(AnswerSchema.created_at))
-        query = query.where(AnswerSchema.respondent_id == respondent_id)
-        query = query.where(func.date(AnswerSchema.created_at) >= from_date)
-        query = query.where(func.date(AnswerSchema.created_at) <= to_date)
+        query = query.where(func.date(AnswerSchema.created_at) >= filters.from_date)
+        query = query.where(func.date(AnswerSchema.created_at) <= filters.to_date)
         query = query.where(AnswerSchema.applet_id == applet_id)
+        if filters.respondent_id:
+            query = query.where(AnswerSchema.respondent_id == filters.respondent_id)
+        if filters.target_subject_id:
+            query = query.where(AnswerSchema.target_subject_id == filters.target_subject_id)
         query = query.order_by(AnswerSchema.created_at.asc())
-
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
@@ -113,6 +112,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         if respondent_id:
             query = query.where(AnswerSchema.respondent_id == respondent_id)
         await self._execute(query)
+
+    @classmethod
+    def _exclude_assessment_val(cls, col):
+        return case(
+            (AnswerItemSchema.is_assessment.is_(True), null()),
+            else_=col,
+        )
 
     async def get_applet_answers(
         self,
@@ -158,6 +164,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.migrated_data,
                 AnswerItemSchema.user_public_key,
                 AnswerItemSchema.respondent_id,
+                self._exclude_assessment_val(AnswerSchema.target_subject_id).label("target_subject_id"),
+                self._exclude_assessment_val(AnswerSchema.source_subject_id).label("source_subject_id"),
+                self._exclude_assessment_val(AnswerSchema.relation).label("relation"),
                 AnswerItemSchema.answer,
                 AnswerItemSchema.events,
                 AnswerItemSchema.item_ids,
@@ -229,7 +238,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_identifiers_by_activity_id(
         self,
         activity_hist_ids: Collection[str],
-        respondent_id: uuid.UUID | None,
+        filters: IdentifiersQueryParams,
     ) -> list[tuple[str, str, dict]]:
         query: Query = select(
             AnswerItemSchema.identifier,
@@ -241,13 +250,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             AnswerItemSchema.identifier.isnot(None),
             AnswerSchema.activity_history_id.in_(activity_hist_ids),
         )
-        if respondent_id:
-            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        if filters.target_subject_id:
+            query = query.where(AnswerSchema.target_subject_id == filters.target_subject_id)
+        if filters.respondent_id:
+            query = query.where(AnswerSchema.respondent_id == filters.respondent_id)
 
         query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
         db_result = await self._execute(query)
 
-        return db_result.all()
+        return db_result.all()  # noqa
 
     async def get_versions_by_activity_id(self, activity_id: uuid.UUID) -> list[Version]:
         query: Query = select(
@@ -272,12 +283,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         self,
         applet_id: uuid.UUID,
         activity_id: Collection[str],
-        respond_id: uuid.UUID,
+        subject_id: uuid.UUID,
     ) -> AnswerSchema | None:
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.activity_history_id.in_(activity_id))
-        query = query.where(AnswerItemSchema.respondent_id == respond_id)
+        query = query.where(AnswerSchema.target_subject_id == subject_id)
         query = query.order_by(AnswerSchema.created_at.desc())
         query = query.limit(1)
 
@@ -307,15 +318,20 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return db_result.scalars().all()
 
     async def get_activities_which_has_answer(
-        self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
+        self,
+        activity_hist_ids: list[str],
+        respondent_id: uuid.UUID | None,
+        subject_id: uuid.UUID | None,
     ) -> list[str]:
         activity_ids = set(map(lambda id_version: id_version.split("_")[0], activity_hist_ids))
         query: Query = select(AnswerSchema.activity_history_id)
         query = query.where(or_(*(AnswerSchema.activity_history_id.like(f"{item}_%") for item in activity_ids)))
         if respondent_id:
-            query.where(AnswerSchema.respondent_id == respondent_id)
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        if subject_id:
+            query = query.where(AnswerSchema.target_subject_id == subject_id)
         query = query.distinct(AnswerSchema.activity_history_id)
-        query.order_by(AnswerSchema.activity_history_id)
+        query = query.order_by(AnswerSchema.activity_history_id)
         db_result = await self._execute(query)
         results = []
         for activity_id in db_result.all():
@@ -535,14 +551,23 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return flow_history_schema.is_single_report
 
     async def get_last_activity(
-        self, respondent_ids: list[uuid.UUID], applet_id: uuid.UUID | None
+        self, subject_ids: list[uuid.UUID], applet_id: uuid.UUID | None
     ) -> dict[uuid.UUID, datetime.datetime]:
         query: Query = (
-            select(AnswerSchema.respondent_id, func.max(AnswerSchema.created_at))
-            .group_by(AnswerSchema.respondent_id)
-            .where(AnswerSchema.respondent_id.in_(respondent_ids))
+            select(
+                AnswerSchema.target_subject_id,
+                func.max(AnswerSchema.created_at),
+            )
+            .group_by(AnswerSchema.target_subject_id)
+            .where(AnswerSchema.target_subject_id.in_(subject_ids))
         )
         if applet_id:
             query = query.where(AnswerSchema.applet_id == applet_id)
         result = await self._execute(query)
         return {t[0]: t[1] for t in result.all()}
+
+    async def delete_by_subject(self, subject_id: uuid.UUID):
+        query: Query = delete(AnswerSchema).where(
+            or_(AnswerSchema.target_subject_id == subject_id, AnswerSchema.source_subject_id == subject_id)
+        )
+        await self._execute(query)

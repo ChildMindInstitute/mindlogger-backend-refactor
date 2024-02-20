@@ -1,11 +1,14 @@
 import uuid
+from gettext import gettext as _
 
 import config
 from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import UserAppletAccessCRUD
-from apps.invitations.errors import RespondentDoesNotExist, RespondentsNotSet
-from apps.shared.exception import AccessDeniedError
+from apps.invitations.domain import ReviewerMeta
+from apps.invitations.errors import RespondentsNotSet
+from apps.shared.exception import AccessDeniedError, ValidationError
 from apps.shared.query_params import QueryParams
+from apps.subjects.crud import SubjectsCrud
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role, UserPinRole
@@ -161,11 +164,19 @@ class UserAccessService:
         if not has_access:
             raise WorkspaceDoesNotExistError
 
-    async def pin(self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole):
-        await self._validate_pin(owner_id, user_id, pin_role)
-        await UserAppletAccessCRUD(self.session).pin(self._user_id, owner_id, user_id, pin_role)
+    async def pin(
+        self,
+        owner_id: uuid.UUID,
+        pin_role: UserPinRole,
+        user_id: uuid.UUID | None = None,
+        subject_id: uuid.UUID | None = None,
+    ):
+        await self._validate_pin(owner_id, pin_role, user_id, subject_id)
+        await UserAppletAccessCRUD(self.session).pin(self._user_id, owner_id, pin_role, user_id, subject_id)
 
-    async def _validate_pin(self, owner_id: uuid.UUID, user_id: uuid.UUID, pin_role: UserPinRole):
+    async def _validate_pin(
+        self, owner_id: uuid.UUID, pin_role: UserPinRole, user_id: uuid.UUID | None, subject_id: uuid.UUID | None
+    ):
         can_pin = await UserAppletAccessCRUD(self.session).check_access_by_user_and_owner(
             self._user_id,
             owner_id,
@@ -180,7 +191,13 @@ class UserAccessService:
         elif pin_role == UserPinRole.manager:
             roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.EDITOR]
 
-        has_user = await UserAppletAccessCRUD(self.session).check_access_by_user_and_owner(user_id, owner_id, roles)
+        access_crud = UserAppletAccessCRUD(self.session)
+        if user_id:
+            has_user = await access_crud.check_access_by_user_and_owner(user_id, owner_id, roles)
+        elif subject_id:
+            has_user = await access_crud.check_access_by_subject_and_owner(subject_id, owner_id, roles)
+        else:
+            raise UserAppletAccessesDenied
         if not has_user:
             raise UserAppletAccessesDenied
 
@@ -248,18 +265,16 @@ class UserAccessService:
                 for role in access.roles:
                     meta = {}
                     if role == Role.REVIEWER:
-                        if access.respondents:
-                            exist_respondents = await UserAppletAccessCRUD(self.session).get_user_id_applet_and_role(
-                                applet_id=access.applet_id,
-                                role=Role.RESPONDENT,
+                        if subject_ids := access.subjects:
+                            subject_ids = list(set(subject_ids))
+                            existing_subject_ids = await SubjectsCrud(self.session).reduce_applet_subject_ids(
+                                access.applet_id, subject_ids
                             )
-                            for respondent in access.respondents:
-                                if respondent not in exist_respondents:
-                                    raise RespondentDoesNotExist()
-                            respondents = [str(respondent_id) for respondent_id in access.respondents]
-                            meta.update(
-                                respondents=respondents,
-                            )
+
+                            if len(existing_subject_ids) != len(subject_ids):
+                                raise ValidationError(_("Subject does not exist in applet"))
+
+                            meta = ReviewerMeta(subjects=list(map(str, subject_ids))).dict()
                         else:
                             raise RespondentsNotSet()
                     schemas.append(
@@ -311,3 +326,9 @@ class UserAccessService:
 
     async def get_management_applets(self, applet_ids: list[uuid.UUID]) -> list[uuid.UUID]:
         return await UserAppletAccessCRUD(self.session).get_management_applets(self._user_id, applet_ids)
+
+    async def validate_subject_delete_access(self, applet_id: uuid.UUID):
+        await self._validate_ownership([applet_id], [Role.OWNER, Role.MANAGER, Role.COORDINATOR])
+
+    async def change_subject_pins_to_user(self, user_id: uuid.UUID, subject_id: uuid.UUID):
+        return await UserAppletAccessCRUD(self.session).change_subject_pins_to_user(user_id, subject_id)

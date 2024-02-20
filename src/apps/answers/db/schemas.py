@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Text, Time, Unicode
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, String, Text, Time, Unicode
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils import StringEncryptedType
 
@@ -19,6 +19,9 @@ class AnswerSchema(Base):
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     is_flow_completed = Column(Boolean(), nullable=True)
     migrated_data = Column(JSONB())
+    target_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    source_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    relation = Column(String(length=20), nullable=True)
 
 
 class AnswerNoteSchema(Base):

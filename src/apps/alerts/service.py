@@ -32,6 +32,7 @@ class AlertService:
                     image=applet_history.image,
                     workspace=workspace.workspace_name,
                     respondent_id=alert.respondent_id,
+                    subject_id=alert.subject_id,
                 )
             )
         return alerts

@@ -1,15 +1,33 @@
 import datetime
+import http
 import json
 import uuid
 
 import pytest
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.db.schemas import AnswerSchema
+from apps.applets.domain import Role
 from apps.applets.domain.applet_full import AppletFull
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
+from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
+from apps.users import User
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility import RedisCacheTest
+
+
+@pytest.fixture(params=["none", "respondent", "subject"])
+async def identifiers_query(request, tom_applet_subject: SubjectSchema):
+    params_map = {
+        "none": {},
+        "respondent": {"respondentId": str(tom_applet_subject.user_id)},
+        "subject": {"targetSubjectId": str(tom_applet_subject.id)},
+    }
+    return params_map[request.param]
 
 
 class TestAnswerActivityItems(BaseTest):
@@ -39,7 +57,7 @@ class TestAnswerActivityItems(BaseTest):
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"  # noqa: E501
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
-    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
+    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"  # noqa: E501
 
     async def test_answer_activity_items_create_for_respondent(self, mock_kiq_report, client, tom, applet: AppletFull):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
@@ -96,7 +114,10 @@ class TestAnswerActivityItems(BaseTest):
         # TODO: move to the fixtures with yield
         RedisCacheTest._storage = {}
 
-    async def test_get_latest_summary(self, mock_report_server_response, mock_kiq_report, client, tom, applet):
+    async def test_get_latest_summary(
+        self, mock_report_server_response, mock_kiq_report, client, tom, applet, tom_applet_subject: SubjectSchema
+    ):
+        subject_id = tom_applet_subject.id
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         create_data = dict(
@@ -135,7 +156,7 @@ class TestAnswerActivityItems(BaseTest):
             self.latest_report_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
-                respondent_id=tom.id,
+                subject_id=str(subject_id),
             ),
         )
         assert response.status_code == 200
@@ -170,9 +191,7 @@ class TestAnswerActivityItems(BaseTest):
                 height=1080,
             ),
         )
-
         response = await client.post(self.public_answer_url, data=create_data)
-
         assert response.status_code == 201, response.json()
 
     async def test_answer_skippable_activity_items_create_for_respondent(self, mock_kiq_report, client, tom, applet):
@@ -1033,7 +1052,8 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime", "legacyProfileId", "migratedDate", "client",
+            "endDatetime", "legacyProfileId", "migratedDate",
+            "relation", "sourceSubjectId", "targetSubjectId", "client"
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
@@ -1055,7 +1075,7 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()["result"]
         assert not data["answers"]
 
-    async def test_get_identifiers(self, mock_kiq_report, client, tom, applet):
+    async def test_get_identifiers(self, mock_kiq_report, client, tom, applet, identifiers_query):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         response = await client.get(
@@ -1103,7 +1123,8 @@ class TestAnswerActivityItems(BaseTest):
             self.identifiers_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
-            )
+            ),
+            query=identifiers_query,
         )
 
         assert response.status_code == 200
@@ -1126,13 +1147,22 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["version"] == applet.version
         assert response.json()["result"][0]["createdAt"]
 
-    async def test_get_summary_activities(self, mock_kiq_report, client, tom, applet):
+    @pytest.mark.parametrize(
+        ("query"),
+        (
+            {},
+            {"respondentId": "7484f34a-3acc-4ee6-8a94-fd7299502fa1"},
+            {"targetSubjectId": "ee5e2f55-8e32-40af-8ef9-24e332c31d7c"},
+        ),
+    )
+    async def test_get_summary_activities(self, mock_kiq_report, client, tom, applet, query):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         response = await client.get(
             self.summary_activities_url.format(
                 applet_id=str(applet.id),
-            )
+            ),
+            query=query,
         )
 
         assert response.status_code == 200
@@ -1514,3 +1544,41 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.public_answer_url, data=create_data)
 
         assert response.status_code == 201
+
+    @pytest.mark.parametrize(
+        "role,expected",
+        (
+            (Role.OWNER, http.HTTPStatus.OK),
+            (Role.MANAGER, http.HTTPStatus.OK),
+            (Role.REVIEWER, http.HTTPStatus.OK),
+            (Role.EDITOR, http.HTTPStatus.FORBIDDEN),
+            (Role.COORDINATOR, http.HTTPStatus.FORBIDDEN),
+            (Role.RESPONDENT, http.HTTPStatus.FORBIDDEN),
+        ),
+    )
+    async def test_access_to_activity_list(
+        self, client, tom: User, user: User, session: AsyncSession, applet, role, expected
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        applet_id = applet.id
+
+        access_service = UserAppletAccessService(session, tom.id, applet_id)
+        await access_service.add_role(user.id, role)
+
+        url = self.summary_activities_url.format(applet_id=f"{applet_id}")
+        if role == Role.REVIEWER:
+            subject = await SubjectsService(session, tom.id).create(
+                Subject(
+                    applet_id=applet_id,
+                    creator_id=tom.id,
+                    first_name="first_name",
+                    last_name="last_name",
+                    secret_user_id=f"{uuid.uuid4()}",
+                )
+            )
+            assert subject.id
+            await access_service.set_subjects_for_review(user.id, applet_id, [subject.id])
+            url = f"{url}?targetSubjectId={subject.id}"
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        response = await client.get(url)
+        assert response.status_code == expected
