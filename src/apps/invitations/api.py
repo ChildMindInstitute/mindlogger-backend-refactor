@@ -118,9 +118,7 @@ async def invitation_respondent_send(
             nickname=invitation_schema.nickname,
         )
         subject = await subject_srv.create(subject_sch)
-        invitation = await invitation_srv.send_respondent_invitation(
-            applet_id, invitation_schema, subject.id
-        )
+        invitation = await invitation_srv.send_respondent_invitation(applet_id, invitation_schema, subject.id)
 
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))
 
@@ -227,9 +225,7 @@ async def create_shell_account(
     """
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
         service = SubjectsService(session, user.id)
         await InvitationsService(session, user).raise_for_secret_id(
             applet_id,
@@ -266,12 +262,8 @@ async def invitation_subject_send(
 
         invitation_srv = InvitationsService(session, user)
         try:
-            invited_user = await UserService(session).get_by_email(
-                schema.email
-            )
-            is_role_exist = await UserAppletAccessService(
-                session, invited_user.id, applet_id
-            ).has_role(Role.RESPONDENT)
+            invited_user = await UserService(session).get_by_email(schema.email)
+            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(Role.RESPONDENT)
             if is_role_exist:
                 raise RespondentInvitationExist()
         except UserNotFound:
@@ -290,12 +282,8 @@ async def invitation_subject_send(
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
         )
-        invitation = await invitation_srv.send_respondent_invitation(
-            applet_id, invitation_schema, subject.id
-        )
+        invitation = await invitation_srv.send_respondent_invitation(applet_id, invitation_schema, subject.id)
         subject.email = schema.email
         await subject_srv.update(Subject.from_orm(subject))
 
-    return Response[InvitationRespondentResponse](
-        result=InvitationRespondentResponse(**invitation.dict())
-    )
+    return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))

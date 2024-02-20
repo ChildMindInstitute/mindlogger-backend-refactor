@@ -101,12 +101,8 @@ async def review_activity_list(
 ) -> ResponseMulti[PublicReviewActivity]:
     filters = AppletActivityFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(
-        applet_id, **filters.dict()
-    )
-    activities = await AnswerService(
-        session, user.id, answer_session
-    ).get_review_activities(applet_id, filters)
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    activities = await AnswerService(session, user.id, answer_session).get_review_activities(applet_id, filters)
 
     return ResponseMulti(
         result=[PublicReviewActivity.from_orm(activity) for activity in activities],
@@ -124,10 +120,8 @@ async def summary_activity_list(
     filters = SummaryActivityFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
     if filters.respondent_id and not filters.target_subject_id:
-        target_subject = await (
-            SubjectsService(session, user.id).get_by_user_and_applet(
-                filters.respondent_id, applet_id
-            )
+        target_subject = await SubjectsService(session, user.id).get_by_user_and_applet(
+            filters.respondent_id, applet_id
         )
         if not target_subject:
             raise NotFoundError()
@@ -152,12 +146,10 @@ async def applet_activity_answers_list(
 ) -> ResponseMulti[AppletActivityAnswerPublic]:
     filters = AppletActivityAnswerFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(
-        applet_id, **filters.dict()
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    answers = await AnswerService(session, user.id, answer_session).get_activity_answers(
+        applet_id, activity_id, filters
     )
-    answers = await AnswerService(
-        session, user.id, answer_session
-    ).get_activity_answers(applet_id, activity_id, filters)
     return ResponseMulti(
         result=parse_obj_as(list[AppletActivityAnswerPublic], answers),
         count=len(answers),
@@ -200,12 +192,8 @@ async def applet_submit_date_list(
 ) -> Response[PublicAnswerDates]:
     filters = AppletSubmitDateFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(
-        applet_id, **filters.dict()
-    )
-    dates = await AnswerService(
-        session, user.id, answer_session
-    ).get_applet_submit_dates(
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    dates = await AnswerService(session, user.id, answer_session).get_applet_submit_dates(
         applet_id, AppletSubmitDateFilter(**query_params.filters)
     )
     return Response(result=PublicAnswerDates(dates=list(sorted(set(dates)))))
@@ -268,12 +256,8 @@ async def applet_activity_identifiers_retrieve(
 ) -> ResponseMulti[IdentifierPublic]:
     filters = IdentifiersQueryParams(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(
-        applet_id, **filters.dict()
-    )
-    identifiers = await AnswerService(
-        session, user.id, answer_session
-    ).get_activity_identifiers(activity_id, filters)
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(activity_id, filters)
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
 

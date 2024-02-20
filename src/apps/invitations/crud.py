@@ -82,27 +82,20 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationSchema,
             AppletSchema.display_name.label("applet_name"),
             SubjectSchema.secret_user_id.label("user_secret_id"),
-            SubjectSchema.nickname.label("nickname")
+            SubjectSchema.nickname.label("nickname"),
         )
         query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
-        query = query.join(
-            AppletSchema, AppletSchema.id == InvitationSchema.applet_id
-        )
+        query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
 
         query = query.outerjoin(
             SubjectSchema,
             and_(
-                InvitationSchema.meta.has_key('subject_id'),
-                SubjectSchema.id == func.cast(
-                    InvitationSchema.meta['subject_id'].astext,
-                    UUID(as_uuid=True)
-                )
+                InvitationSchema.meta.has_key("subject_id"),
+                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
             ),
         )
 
-        query = query.where(
-            InvitationSchema.status == InvitationStatus.PENDING
-        )
+        query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
         if query_params.filters:
             query = query.where(*_InvitationFiltering().get_clauses(**query_params.filters))
         if query_params.search:
@@ -129,7 +122,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     last_name=invitation.last_name,
                     created_at=invitation.created_at,
                     nickname=nickname,
-                    secret_user_id=secret_id
+                    secret_user_id=secret_id,
                 )
             )
         return results
@@ -172,17 +165,14 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationSchema,
             AppletSchema.display_name.label("applet_name"),
             SubjectSchema.secret_user_id,
-            SubjectSchema.nickname
+            SubjectSchema.nickname,
         )
         query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
         query = query.outerjoin(
             SubjectSchema,
             and_(
-                InvitationSchema.meta.has_key('subject_id'),
-                SubjectSchema.id == func.cast(
-                    InvitationSchema.meta['subject_id'].astext,
-                    UUID(as_uuid=True)
-                )
+                InvitationSchema.meta.has_key("subject_id"),
+                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
             ),
         )
         query = query.where(InvitationSchema.email == email)
@@ -303,7 +293,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query: Query = select(InvitationSchema.email)
         query = query.where(
             InvitationSchema.applet_id == applet_id,
-            InvitationSchema.status.in_([InvitationStatus.APPROVED, InvitationStatus.PENDING])
+            InvitationSchema.status.in_([InvitationStatus.APPROVED, InvitationStatus.PENDING]),
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()

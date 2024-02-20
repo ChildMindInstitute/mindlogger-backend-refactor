@@ -25,7 +25,7 @@ async def identifiers_query(request, tom_applet_subject: SubjectSchema):
     params_map = {
         "none": {},
         "respondent": {"respondentId": str(tom_applet_subject.user_id)},
-        "subject": {"targetSubjectId": str(tom_applet_subject.id)}
+        "subject": {"targetSubjectId": str(tom_applet_subject.id)},
     }
     return params_map[request.param]
 
@@ -114,7 +114,9 @@ class TestAnswerActivityItems(BaseTest):
         # TODO: move to the fixtures with yield
         RedisCacheTest._storage = {}
 
-    async def test_get_latest_summary(self, mock_report_server_response, mock_kiq_report, client, tom, applet, tom_applet_subject: SubjectSchema):
+    async def test_get_latest_summary(
+        self, mock_report_server_response, mock_kiq_report, client, tom, applet, tom_applet_subject: SubjectSchema
+    ):
         subject_id = tom_applet_subject.id
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
@@ -1543,15 +1545,20 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201
 
-    @pytest.mark.parametrize("role,expected", (
+    @pytest.mark.parametrize(
+        "role,expected",
+        (
             (Role.OWNER, http.HTTPStatus.OK),
             (Role.MANAGER, http.HTTPStatus.OK),
             (Role.REVIEWER, http.HTTPStatus.OK),
             (Role.EDITOR, http.HTTPStatus.FORBIDDEN),
             (Role.COORDINATOR, http.HTTPStatus.FORBIDDEN),
-            (Role.RESPONDENT, http.HTTPStatus.FORBIDDEN)
-    ))
-    async def test_access_to_activity_list(self, client, tom: User, user: User, session: AsyncSession, applet, role, expected):
+            (Role.RESPONDENT, http.HTTPStatus.FORBIDDEN),
+        ),
+    )
+    async def test_access_to_activity_list(
+        self, client, tom: User, user: User, session: AsyncSession, applet, role, expected
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         applet_id = applet.id
 
@@ -1566,7 +1573,7 @@ class TestAnswerActivityItems(BaseTest):
                     creator_id=tom.id,
                     first_name="first_name",
                     last_name="last_name",
-                    secret_user_id=f"{uuid.uuid4()}"
+                    secret_user_id=f"{uuid.uuid4()}",
                 )
             )
             assert subject.id

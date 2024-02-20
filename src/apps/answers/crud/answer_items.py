@@ -122,15 +122,9 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
             isouter=True,
         )
         query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(
-            AnswerSchema.activity_history_id.in_(activity_ver_ids)
-        )
+        query = query.where(AnswerSchema.activity_history_id.in_(activity_ver_ids))
         query = query.order_by(AnswerSchema.created_at.asc())
-        query = query.where(
-            *_ActivityAnswerFilter().get_clauses(
-                **filters.dict(exclude_unset=True)
-            )
-        )
+        query = query.where(*_ActivityAnswerFilter().get_clauses(**filters.dict(exclude_unset=True)))
         db_result = await self._execute(query)
         return db_result.all()  # noqa
 

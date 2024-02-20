@@ -196,19 +196,13 @@ class CheckAccessService:
             raise AnswerCheckAccessDenied()
 
     async def check_subject_edit_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).can_invite_anyone(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_invite_anyone(applet_id, self.user_id)
 
         if not has_access:
             raise AccessDeniedError()
 
-    async def check_subject_answer_access(
-        self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
-    ):
-        access = await AppletAccessCRUD(self.session).get_priority_access(
-            applet_id, self.user_id
-        )
+    async def check_subject_answer_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
+        access = await AppletAccessCRUD(self.session).get_priority_access(applet_id, self.user_id)
         if not access or access.role not in Role.reviewers():
             raise AccessDeniedError()
 
@@ -224,18 +218,12 @@ class CheckAccessService:
         **kwargs,
     ):
         if target_subject_id:
-            await self.check_subject_answer_access(
-                applet_id, target_subject_id
-            )
+            await self.check_subject_answer_access(applet_id, target_subject_id)
         else:
             await self.check_answer_review_access(applet_id)
 
-    async def check_subject_subject_access(
-        self, applet_id: uuid.UUID, subject_id: uuid.UUID | None
-    ):
-        access = await AppletAccessCRUD(self.session).get_priority_access(
-            applet_id, self.user_id
-        )
+    async def check_subject_subject_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
+        access = await AppletAccessCRUD(self.session).get_priority_access(applet_id, self.user_id)
         if not access:
             raise AccessDeniedError()
 

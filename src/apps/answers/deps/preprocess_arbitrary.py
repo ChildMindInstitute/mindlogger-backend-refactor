@@ -10,12 +10,7 @@ from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database.core import session_manager
 from infrastructure.database.deps import get_session
 
-__all__ = [
-    "get_arbitrary_info",
-    "preprocess_arbitrary_url",
-    "get_answer_session",
-    "get_answer_session_by_subject"
-]
+__all__ = ["get_arbitrary_info", "preprocess_arbitrary_url", "get_answer_session", "get_answer_session_by_subject"]
 
 
 async def get_arbitrary_info(applet_id: uuid.UUID | None, session: AsyncSession) -> str | None:
@@ -72,10 +67,7 @@ async def get_answer_session_by_owner_id(
         yield None
 
 
-async def get_answer_session_by_subject(
-    subject_id: uuid.UUID,
-    session: AsyncSession = Depends(get_session)
-):
+async def get_answer_session_by_subject(subject_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
     subject = await SubjectsService(session, uuid.uuid4()).get(subject_id)
     if not subject:
         yield None

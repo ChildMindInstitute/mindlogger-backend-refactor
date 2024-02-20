@@ -108,7 +108,14 @@ class TestAnswerActivityItems:
         RedisCacheTest._storage = {}
 
     async def test_get_latest_summary(
-        self, mock_report_server_response, mock_kiq_report, arbitrary_session, arbitrary_client, tom, applet, tom_applet_subject: SubjectSchema
+        self,
+        mock_report_server_response,
+        mock_kiq_report,
+        arbitrary_session,
+        arbitrary_client,
+        tom,
+        applet,
+        tom_applet_subject: SubjectSchema,
     ):
         submit_id = str(uuid.uuid4())
         subject_id = tom_applet_subject.id

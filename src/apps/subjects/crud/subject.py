@@ -19,9 +19,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
     async def create(self, schema: SubjectSchema) -> SubjectSchema:
         return await self._create(schema)
 
-    async def create_many(
-        self, schema: list[SubjectSchema]
-    ) -> list[SubjectSchema]:
+    async def create_many(self, schema: list[SubjectSchema]) -> list[SubjectSchema]:
         return await self._create_many(schema)
 
     async def update(self, schema: SubjectSchema) -> SubjectSchema:
@@ -49,9 +47,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
     async def delete(self, id_: uuid.UUID):
         return await self._delete(id=id_)
 
-    async def is_secret_id_exist(
-        self, secret_id: str, applet_id: uuid.UUID, email: str | None
-    ) -> bool:
+    async def is_secret_id_exist(self, secret_id: str, applet_id: uuid.UUID, email: str | None) -> bool:
         query: Query = select(SubjectSchema.id)
         query = query.where(
             SubjectSchema.secret_user_id == secret_id,
@@ -63,9 +59,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         res = res.scalars().all()
         return bool(res)
 
-    async def get_user_subject(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID
-    ) -> SubjectSchema | None:
+    async def get_user_subject(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> SubjectSchema | None:
         query: Query = select(SubjectSchema)
         query = query.where(
             SubjectSchema.user_id == user_id,
@@ -98,13 +92,9 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         return bool(res.scalar_one_or_none())
 
     async def delete_by_id(self, id_: uuid.UUID):
-        await self._update_one(
-            lookup="id", value=id_, schema=SubjectSchema(is_deleted=True)
-        )
+        await self._update_one(lookup="id", value=id_, schema=SubjectSchema(is_deleted=True))
 
-    async def get(
-        self, user_id: uuid.UUID, applet_id: uuid.UUID
-    ) -> SubjectSchema | None:
+    async def get(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> SubjectSchema | None:
         query: Query = select(SubjectSchema)
         query = query.where(
             SubjectSchema.user_id == user_id,
@@ -113,9 +103,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         result = await self._execute(query)
         return result.scalar_one_or_none()
 
-    async def check_secret_id(
-        self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID
-    ) -> bool:
+    async def check_secret_id(self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID) -> bool:
         query: Query = select(SubjectSchema.id)
         query = query.where(
             SubjectSchema.secret_user_id == secret_id,
@@ -146,9 +134,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         schema.id = model_id
         return schema
 
-    async def reduce_applet_subject_ids(
-        self, applet_id, subject_ids: list[uuid.UUID] | list[str]
-    ) -> list[uuid.UUID]:
+    async def reduce_applet_subject_ids(self, applet_id, subject_ids: list[uuid.UUID] | list[str]) -> list[uuid.UUID]:
         query = select(SubjectSchema.id).where(
             SubjectSchema.id.in_(subject_ids),
             SubjectSchema.applet_id == applet_id,
@@ -170,9 +156,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         )
         await self._execute(query)
 
-    async def create_relation(
-        self, schema: SubjectRelationSchema
-    ) -> SubjectRelationSchema:
+    async def create_relation(self, schema: SubjectRelationSchema) -> SubjectRelationSchema:
         return await self._create(schema)
 
     async def delete_subject_relations(self, subject_id):

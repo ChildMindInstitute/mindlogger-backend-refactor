@@ -340,7 +340,9 @@ class TestWorkspaces(BaseTest):
                 access_ids = {detail["accessId"] for detail in result[0]["details"]}
                 assert access_id in access_ids
 
-    async def test_get_workspace_applet_respondents(self, client, tom, applet_one, applet_one_lucy_respondent, uuid_zero):
+    async def test_get_workspace_applet_respondents(
+        self, client, tom, applet_one, applet_one_lucy_respondent, uuid_zero
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.get(
             self.workspace_applet_respondents_list.format(
@@ -483,7 +485,9 @@ class TestWorkspaces(BaseTest):
                 assert result[0]["lastName"] == tom.last_name
                 assert result[0]["email"] == tom.email_encrypted
 
-    async def test_set_workspace_manager_accesses(self, client, tom, lucy, applet_one, applet_two, tom_applet_one_subject):
+    async def test_set_workspace_manager_accesses(
+        self, client, tom, lucy, applet_one, applet_two, tom_applet_one_subject
+    ):
         subject_id = tom_applet_one_subject.id
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.post(
@@ -852,7 +856,8 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        response = await client.post(self.workspace_subject_pin.format(
+        response = await client.post(
+            self.workspace_subject_pin.format(
                 owner_id="7484f34a-3acc-4ee6-8a94-fd7299502fa1",
                 subject_id=uuid.uuid4(),
             ),
@@ -933,7 +938,7 @@ class TestWorkspaces(BaseTest):
             assert not resp["isPinned"]
 
     async def test_respondent_access(
-            self, client, tom: User, user: User, session: AsyncSession, tom_applets: list[WorkspaceApplet]
+        self, client, tom: User, user: User, session: AsyncSession, tom_applets: list[WorkspaceApplet]
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         url = self.workspace_respondent_applet_accesses.format(owner_id=tom.id, respondent_id=tom.id)

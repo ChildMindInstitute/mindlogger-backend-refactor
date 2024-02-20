@@ -120,6 +120,7 @@ class ReviewerMeta(InternalModel):
     """This model is used for internal needs
     for representation reviewer meta information.
     """
+
     class Config:
         extra = Extra.ignore
 
@@ -325,9 +326,7 @@ class InvitationReviewerResponse(_InvitationResponse):
     for reviewer role.
     """
 
-    subjects: list[uuid.UUID] = Field(
-        description="This field represents the list of subject id's"
-    )
+    subjects: list[uuid.UUID] = Field(description="This field represents the list of subject id's")
     role: Role = Role.REVIEWER
 
 
@@ -352,9 +351,7 @@ class PrivateInvitationResponse(PublicModel):
     status: str
 
 
-InvitationDetailGeneric = (
-    InvitationDetailReviewer | InvitationDetailRespondent | InvitationDetail
-)
+InvitationDetailGeneric = InvitationDetailReviewer | InvitationDetailRespondent | InvitationDetail
 
 
 class ShellAccountCreateRequest(PublicModel):

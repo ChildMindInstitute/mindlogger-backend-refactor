@@ -200,9 +200,7 @@ async def workspace_applet_respondent_update(
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         subject_srv = SubjectsService(session, user.id)
         subject = await subject_srv.get_by_user_and_applet(respondent_id, applet_id)
         assert subject

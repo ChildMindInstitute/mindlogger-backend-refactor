@@ -140,12 +140,8 @@ def invitation_respondent_data(
 
 
 @pytest.fixture
-def invitation_reviewer_data(
-    invitation_base_data, subject_ids
-) -> InvitationReviewerRequest:
-    return InvitationReviewerRequest(
-        **invitation_base_data, subjects=subject_ids
-    )
+def invitation_reviewer_data(invitation_base_data, subject_ids) -> InvitationReviewerRequest:
+    return InvitationReviewerRequest(**invitation_base_data, subjects=subject_ids)
 
 
 @pytest.fixture
@@ -839,9 +835,7 @@ class TestInvite(BaseTest):
         subject = response.json()["result"]
 
         url = self.shell_acc_invite_url.format(applet_id=applet_id)
-        response = await client.post(
-            url, dict(subjectId=subject["id"], email=email)
-        )
+        response = await client.post(url, dict(subjectId=subject["id"], email=email))
         assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 1
         subject_model = await SubjectsCrud(session).get_by_id(subject["id"])
@@ -912,11 +906,7 @@ class TestInvite(BaseTest):
         applet_id = applet_one_with_link.id
         await client.login(self.login_url, user.email_encrypted, "Test1234!")
         count0 = await subject_crud.count(applet_id=applet_id)
-        response = await client.post(
-            self.accept_private_url.format(
-                key=str(applet_one_with_link.link)
-            )
-        )
+        response = await client.post(self.accept_private_url.format(key=str(applet_one_with_link.link)))
         assert response.status_code == http.HTTPStatus.OK
         count1 = await subject_crud.count(applet_id=applet_id)
         assert (count0 + 1) == count1
@@ -924,7 +914,7 @@ class TestInvite(BaseTest):
         assert subject
 
     async def test_move_pins_from_subject_to_user(
-            self, client, session, tom: User, bob: User, shell_create_data, applet_one: AppletFull
+        self, client, session, tom: User, bob: User, shell_create_data, applet_one: AppletFull
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         applet_id = str(applet_one.id)

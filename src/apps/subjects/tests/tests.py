@@ -188,8 +188,12 @@ async def applet_one_pit_reviewer(session: AsyncSession, applet_one: AppletFull,
 
 
 @pytest.fixture
-async def applet_one_lucy_reviewer_with_subject(session: AsyncSession, applet_one: AppletFull, tom_applet_one_subject, tom, lucy) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.REVIEWER, {"subjects": [str(tom_applet_one_subject.id)]})
+async def applet_one_lucy_reviewer_with_subject(
+    session: AsyncSession, applet_one: AppletFull, tom_applet_one_subject, tom, lucy
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(
+        lucy.id, Role.REVIEWER, {"subjects": [str(tom_applet_one_subject.id)]}
+    )
     return applet_one
 
 
@@ -201,18 +205,14 @@ class TestSubjects(BaseTest):
     login_url = "/auth/login"
     subject_list_url = "/subjects"
     subject_detail_url = "/subjects/{subject_id}"
-    subject_relation_url = (
-        "/subjects/{subject_id}/relations/{source_subject_id}"
-    )
+    subject_relation_url = "/subjects/{subject_id}/relations/{source_subject_id}"
     answer_url = "/answers"
 
     async def test_create_subject(self, client, tom: User, applet_one: AppletFull, create_shell_body):
         creator_id = str(tom.id)
         applet_id = str(applet_one.id)
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.post(
-            self.subject_list_url, data=create_shell_body
-        )
+        response = await client.post(self.subject_list_url, data=create_shell_body)
         assert response.status_code == 201
         payload = response.json()
         assert payload
@@ -225,9 +225,7 @@ class TestSubjects(BaseTest):
     async def test_create_relation(self, client, tom: User, create_shell_body, tom_applet_one_subject):
         subject_id = tom_applet_one_subject.id
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.post(
-            self.subject_list_url, data=create_shell_body
-        )
+        response = await client.post(self.subject_list_url, data=create_shell_body)
         subject = response.json()
 
         source_subject_id = str(subject_id)
@@ -236,9 +234,7 @@ class TestSubjects(BaseTest):
         body = SubjectRelationCreate(
             relation="father",
         )
-        url = self.subject_relation_url.format(
-            subject_id=target_subject_id, source_subject_id=source_subject_id
-        )
+        url = self.subject_relation_url.format(subject_id=target_subject_id, source_subject_id=source_subject_id)
         res = await client.post(url, body)
         assert res.status_code == http.HTTPStatus.OK
 
@@ -260,9 +256,7 @@ class TestSubjects(BaseTest):
         exp_code,
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.post(
-            self.subject_list_url, data=create_shell_body
-        )
+        response = await client.post(self.subject_list_url, data=create_shell_body)
         source_subject = response.json()
         _source_subject_id = source_subject["result"]["id"]
 
@@ -281,28 +275,20 @@ class TestSubjects(BaseTest):
         body = SubjectRelationCreate(
             relation="father",
         )
-        url = self.subject_relation_url.format(
-            subject_id=_target_subject_id, source_subject_id=_source_subject_id
-        )
+        url = self.subject_relation_url.format(subject_id=_target_subject_id, source_subject_id=_source_subject_id)
         await client.post(url, body.dict())
 
         url_delete = self.subject_relation_url.format(
             subject_id=subject_id if subject_id else _target_subject_id,
-            source_subject_id=source_subject_id
-            if source_subject_id
-            else _source_subject_id,
+            source_subject_id=source_subject_id if source_subject_id else _source_subject_id,
         )
         res = await client.delete(url_delete)
         assert res.status_code == exp_code
 
-    async def test_update_subject(
-        self, client, session, tom: User, create_shell_body, update_subject_params
-    ):
+    async def test_update_subject(self, client, session, tom: User, create_shell_body, update_subject_params):
         body, exp_status = update_subject_params
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.post(
-            self.subject_list_url, data=create_shell_body
-        )
+        response = await client.post(self.subject_list_url, data=create_shell_body)
         subject = response.json()["result"]
         url = self.subject_detail_url.format(subject_id=subject["id"])
         response = await client.put(url, body)
@@ -320,9 +306,7 @@ class TestSubjects(BaseTest):
         assert subject.secret_user_id == exp_secret_id
         assert subject.nickname == exp_nickname
 
-    async def test_upsert_for_soft_deleted(
-        self, session: AsyncSession, subject_schema, subject_updated_schema
-    ):
+    async def test_upsert_for_soft_deleted(self, session: AsyncSession, subject_schema, subject_updated_schema):
         service = SubjectsService(session, subject_schema.user_id)
         original_subject = await service.create(subject_schema)
         assert original_subject.id
@@ -359,9 +343,7 @@ class TestSubjects(BaseTest):
     ):
         subject_id = tom_applet_one_subject.id
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.post(
-            self.answer_url, data=answer_create_payload
-        )
+        response = await client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
@@ -379,9 +361,7 @@ class TestSubjects(BaseTest):
     ):
         subject_id = tom_applet_one_subject.id
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.post(
-            self.answer_url, data=answer_create_payload
-        )
+        response = await client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
@@ -427,40 +407,40 @@ class TestSubjects(BaseTest):
     async def test_get_subject(self, client, tom: User, tom_applet_one_subject, lucy, lucy_create):
         subject_id = tom_applet_one_subject.id
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.get(
-            self.subject_detail_url.format(subject_id=subject_id)
-        )
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data
 
         # not found
-        response = await client.get(
-            self.subject_detail_url.format(subject_id=uuid.uuid4())
-        )
+        response = await client.get(self.subject_detail_url.format(subject_id=uuid.uuid4()))
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
         # forbidden
         await client.login(self.login_url, lucy.email_encrypted, lucy_create.password)
-        response = await client.get(
-            self.subject_detail_url.format(subject_id=subject_id)
-        )
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
-    async def test_get_reviewer_subject(self, client, tom_applet_one_subject, pit_create: UserCreate, pit, applet_one_pit_reviewer, lucy_create, lucy, applet_one_lucy_reviewer_with_subject):
+    async def test_get_reviewer_subject(
+        self,
+        client,
+        tom_applet_one_subject,
+        pit_create: UserCreate,
+        pit,
+        applet_one_pit_reviewer,
+        lucy_create,
+        lucy,
+        applet_one_lucy_reviewer_with_subject,
+    ):
         subject_id = tom_applet_one_subject.id
         # forbidden for reviewer without subject assigned
         await client.login(self.login_url, pit.email_encrypted, pit_create.password)
-        response = await client.get(
-            self.subject_detail_url.format(subject_id=subject_id)
-        )
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
         # allowed for reviewer with subject assigned
         await client.login(self.login_url, lucy.email_encrypted, lucy_create.password)
-        response = await client.get(
-            self.subject_detail_url.format(subject_id=subject_id)
-        )
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data
