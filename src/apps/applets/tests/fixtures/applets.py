@@ -11,7 +11,7 @@ from apps.activities.domain.response_values import SingleSelectionValues, _Singl
 from apps.applets.crud.applets import AppletsCRUD
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
-from apps.applets.domain.base import Encryption
+from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
 from apps.applets.service.applet import AppletService
 from apps.applets.tests import constants
 from apps.applets.tests.utils import teardown_applet
@@ -54,6 +54,17 @@ def encryption() -> Encryption:
 @pytest.fixture(scope="session")
 def report_server_public_key() -> str:
     return constants.REPORT_SERVER_PUBLIC_KEY
+
+
+@pytest.fixture
+def applet_report_configuration_data(
+    user: User, tom: User, report_server_public_key: str
+) -> AppletReportConfigurationBase:
+    return AppletReportConfigurationBase(
+        report_server_ip="localhost",
+        report_public_key=report_server_public_key,
+        report_recipients=[tom.email_encrypted, user.email_encrypted],
+    )
 
 
 @pytest.fixture

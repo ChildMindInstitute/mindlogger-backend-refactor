@@ -7,9 +7,11 @@ import uuid
 from copy import deepcopy
 
 import pytest
+from firebase_admin.exceptions import NotFoundError as FireBaseNotFoundError
 
 from apps.activities import errors as activity_errors
 from apps.mailing.services import TestMail
+from apps.shared.exception import NotFoundError
 from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
 from config import settings
 from infrastructure.utility import FCMNotificationTest
@@ -1688,3 +1690,73 @@ class TestApplet:
         result = response.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == AppletCreationAccessDenied.message
+
+    async def test_update_applet__firebase_error_muted(self, client, tom, applet_minimal_data, mocker, applet_one):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message="device id not found"),
+        )
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=applet_minimal_data)
+        assert resp.status_code == http.HTTPStatus.OK
+
+    async def test_update_report_config_for_activity__activity_from_another_applet(
+        self, client, tom, applet_one, applet_two, applet_report_configuration_data
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        resp = await client.put(
+            self.activity_report_config_url.format(pk=applet_one.id, activity_id=applet_two.activities[0].id),
+            data=applet_report_configuration_data,
+        )
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == NotFoundError.message
+
+    async def test_update_report_config_for_activity__activity_does_not_exists(
+        self, client, tom, applet_one, applet_report_configuration_data, uuid_zero
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        resp = await client.put(
+            self.activity_report_config_url.format(pk=applet_one.id, activity_id=uuid_zero),
+            data=applet_report_configuration_data,
+        )
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == NotFoundError.message
+
+    async def test_update_report_config_for_activity_flow__activity_from_another_applet(
+        self, client, tom, applet_one_with_flow, applet_two, applet_report_configuration_data
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        resp = await client.put(
+            self.flow_report_config_url.format(pk=applet_two.id, flow_id=applet_one_with_flow.activity_flows[0].id),
+            data=applet_report_configuration_data,
+        )
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == NotFoundError.message
+
+    async def test_update_report_config_for_activity_flow__activity_does_not_exists(
+        self, client, tom, applet_one, applet_report_configuration_data, uuid_zero
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        resp = await client.put(
+            self.flow_report_config_url.format(pk=applet_one.id, flow_id=uuid_zero),
+            data=applet_report_configuration_data,
+        )
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == NotFoundError.message
+
+    async def test_delete_applet__firebase_error_muted(self, client, tom, mocker, applet_one):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message="device id not found"),
+        )
+        resp = await client.delete(self.applet_detail_url.format(pk=applet_one.id))
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
