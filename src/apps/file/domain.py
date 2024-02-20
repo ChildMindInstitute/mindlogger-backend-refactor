@@ -21,7 +21,6 @@ class FileCheckRequest(PublicModel):
 
 
 class FileExistenceResponse(PublicModel):
-    key: str
     uploaded: bool
     url: str | None = None
     file_id: str | None = None
@@ -33,6 +32,7 @@ class FilePresignRequest(PublicModel):
 
 class LogFileExistenceResponse(FileExistenceResponse):
     file_size: int | None  # file size in bytes
+    key: str
 
 
 class FileNameRequest(PublicModel):
