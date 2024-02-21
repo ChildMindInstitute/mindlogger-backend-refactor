@@ -18,6 +18,7 @@ from apps.applets.tests import constants
 from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
 from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import Subject
 from apps.themes.service import ThemeService
 from apps.users.domain import User
 
@@ -325,13 +326,13 @@ async def applet_one(
 
 
 @pytest.fixture
-async def tom_applet_one_subject(session: AsyncSession, tom: User, applet_one: AppletFull) -> SubjectSchema:
+async def tom_applet_one_subject(session: AsyncSession, tom: User, applet_one: AppletFull) -> Subject:
     applet_id = applet_one.id
     user_id = tom.id
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return model
+    return Subject.from_orm(model)
 
 
 @pytest.fixture(autouse=True, scope="session")

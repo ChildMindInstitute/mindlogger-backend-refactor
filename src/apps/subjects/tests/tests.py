@@ -404,13 +404,17 @@ class TestSubjects(BaseTest):
         res = await client.delete(delete_url, data=dict(deleteAnswers=True))
         assert res.status_code == expected
 
-    async def test_get_subject(self, client, tom: User, tom_applet_one_subject, lucy, lucy_create):
+    async def test_get_subject(self, client, tom: User, tom_applet_one_subject: Subject, lucy, lucy_create):
         subject_id = tom_applet_one_subject.id
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data
+        res = data["result"]
+        assert set(res.keys()) == {"secretUserId", "nickname", "lastSeen"}
+        assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
+        assert res["nickname"] == tom_applet_one_subject.nickname
 
         # not found
         response = await client.get(self.subject_detail_url.format(subject_id=uuid.uuid4()))

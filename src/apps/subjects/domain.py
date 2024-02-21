@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from pydantic import EmailStr
@@ -62,4 +63,4 @@ class SubjectDeleteRequest(PublicModel):
 
 
 class SubjectReadResponse(SubjectUpdateRequest):
-    pass
+    last_seen: datetime.datetime | None

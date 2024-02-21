@@ -420,8 +420,9 @@ async def workspace_applet_get_respondent(
         respondent_id, applet_id, owner_id
     )
     # get last activity time
-    result = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity_respondent_info(
-        respondent_id, applet_id
+    result = await AnswerService(session=session, arbitrary_session=answer_session).get_last_answer_dates(
+        [respondent_id],
+        applet_id,  # TODO fix respondent->subject usage
     )
     respondent_info.last_seen = result.get(respondent_id)
 

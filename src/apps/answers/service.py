@@ -1055,7 +1055,7 @@ class AnswerService:
                 continue
             subjects_ids = list(map(lambda x: x.subject_id, respondent_item.details))
             subjects_ids += subjects_ids
-        result = await AnswersCRUD(self.answer_session).get_last_activity(subjects_ids, applet_id)
+        result = await self.get_last_answer_dates(subjects_ids, applet_id)
         for respondent in respondents:
             respondent_subject_ids = map(
                 lambda x: x.subject_id,
@@ -1070,12 +1070,12 @@ class AnswerService:
                 respondent.last_seen = last_date
         return respondents
 
-    async def fill_last_activity_respondent_info(
+    async def get_last_answer_dates(
         self,
-        respondent_id: uuid.UUID,
-        applet_id: uuid.UUID,
+        subject_ids: list[uuid.UUID],
+        applet_id: uuid.UUID | None = None,
     ) -> dict[uuid.UUID, datetime.datetime]:
-        result = await AnswersCRUD(self.answer_session).get_last_activity([respondent_id], applet_id)
+        result = await AnswersCRUD(self.answer_session).get_last_answer_dates(subject_ids, applet_id)
         return result
 
     async def delete_by_subject(self, subject_id: uuid.UUID):
