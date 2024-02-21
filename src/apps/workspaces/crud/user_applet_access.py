@@ -356,6 +356,26 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.values(is_deleted=True)
         await self._execute(query)
 
+    async def get_invited_subject_ids(self, owner_id: uuid.UUID) -> list[uuid.UUID]:
+        query: Query = select(SubjectSchema.id)
+        query = query.select_from(UserAppletAccessSchema)
+        query = query.outerjoin(InvitationSchema, InvitationSchema.applet_id == UserAppletAccessSchema.applet_id)
+        query = query.where(
+            UserAppletAccessSchema.owner_id == owner_id,
+            UserAppletAccessSchema.role == Role.RESPONDENT,
+            InvitationSchema.status == InvitationStatus.PENDING,
+        )
+        query = query.outerjoin(
+            SubjectSchema,
+            and_(
+                InvitationSchema.meta.has_key("subject_id"),
+                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
+            ),
+        )
+        db_res = await self._execute(query)
+        res = db_res.scalars().all()
+        return res
+
     async def get_workspace_respondents(
         self,
         user_id: uuid.UUID,
@@ -365,7 +385,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     ) -> Tuple[list[WorkspaceRespondent], int]:
         field_nickname = SubjectSchema.nickname
         field_secret_user_id = SubjectSchema.secret_user_id
-
+        invited_subjects = await self.get_invited_subject_ids(owner_id)
         schedule_exists = (
             select(UserEventsSchema)
             .join(EventSchema, EventSchema.id == UserEventsSchema.event_id)
@@ -426,17 +446,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         invite_status = select(
             case(
                 (UserSchema.id.isnot(None), SubjectStatus.INVITED),
-                (
-                    (InvitationSchema.status == InvitationStatus.APPROVED),
-                    SubjectStatus.INVITED,
-                ),
-                (
-                    (InvitationSchema.status == InvitationStatus.PENDING),
-                    SubjectStatus.PENDING,
-                ),
-                else_=SubjectStatus.NOT_INVITED,
+                (func.array_agg(SubjectSchema.id).op("@>")(invited_subjects), SubjectStatus.PENDING),
+                else_=SubjectStatus.INVITED,
             )
-        ).correlate(UserSchema, InvitationSchema)
+        ).correlate(UserSchema, SubjectSchema)
 
         query: Query = select(
             # fmt: off
@@ -493,14 +506,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             isouter=True,
         )
 
-        query = query.join(
-            InvitationSchema,
-            and_(
-                InvitationSchema.email == SubjectSchema.email,
-                InvitationSchema.applet_id == SubjectSchema.applet_id,
-            ),
-            isouter=True,
-        )
         query = query.where(
             has_access,
             UserAppletAccessSchema.owner_id == owner_id,
@@ -511,7 +516,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.group_by(
             UserSchema.id,
             func.coalesce(UserSchema.id, func.gen_random_uuid()),
-            InvitationSchema.status,
         )
 
         if query_params.filters:

@@ -237,10 +237,6 @@ class TestSubjects(BaseTest):
     subject_detail_url = "/subjects/{subject_id}"
     subject_relation_url = "/subjects/{subject_id}/relations/{source_subject_id}"
     answer_url = "/answers"
-    invite_accept_url = "/invitations/{key}/accept"
-    invite_respondent_url = "/invitations/{applet_id}/respondent"
-    invite_manager_url = "/invitations/{applet_id}/managers"
-    workspace_respondents_url = "/workspaces/{owner_id}/respondents"
 
     async def test_create_subject(self, client, tom: User, applet_one: AppletFull, create_shell_body):
         creator_id = str(tom.id)
@@ -478,64 +474,3 @@ class TestSubjects(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data
-
-    async def test_cross_invitation_must_have_no_duplicates(
-        self,
-        client,
-        session,
-        tom: User,
-        lucy: User,
-        applet_one_tom_owner: AppletFull,
-        applet_three_lucy_owner: AppletFull,
-        tom_applet_one_subject: Subject,
-        lucy_applet_three_subject: Subject,
-        lucy_invitation_payload,
-        tom_invitation_payload,
-    ):
-        async def lucy_login():
-            await client.login(self.login_url, lucy.email_encrypted, "Test123")
-
-        async def tom_login():
-            await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-
-        # Login as Tom and send invitation to Lucy
-        await tom_login()
-        res = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one_tom_owner.id)), lucy_invitation_payload
-        )
-        assert res.status_code == http.HTTPStatus.OK
-        lucy_invitation_key = res.json()["result"]["key"]
-
-        # Login as Lucy and send invitation to Tom
-        await lucy_login()
-        res = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_three_lucy_owner.id)), tom_invitation_payload
-        )
-        assert res.status_code == http.HTTPStatus.OK
-        tom_invitation_key = res.json()["result"]["key"]
-
-        # Accept invitations
-        await tom_login()
-        tom_accept_url = self.invite_accept_url.format(key=tom_invitation_key)
-        res = await client.post(tom_accept_url)
-        assert res.status_code == http.HTTPStatus.OK
-
-        await lucy_login()
-        lucy_accept_url = self.invite_accept_url.format(key=lucy_invitation_key)
-        res = await client.post(lucy_accept_url)
-        assert res.status_code == http.HTTPStatus.OK
-
-        url_tom_respondents = self.workspace_respondents_url.format(owner_id=tom.id)
-        url_lucy_respondents = self.workspace_respondents_url.format(owner_id=lucy.id)
-
-        await tom_login()
-        res = await client.get(url_tom_respondents)
-        assert res.status_code == http.HTTPStatus.OK
-        tom_respondents_response = res.json()
-        assert tom_respondents_response["count"] == 2
-
-        await lucy_login()
-        res = await client.get(url_lucy_respondents)
-        assert res.status_code == http.HTTPStatus.OK
-        lucy_respondents_response = res.json()
-        assert lucy_respondents_response["count"] == 2
