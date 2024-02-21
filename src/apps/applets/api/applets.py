@@ -38,10 +38,10 @@ from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
+from apps.subjects.services import SubjectsService
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
-from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_language
@@ -95,11 +95,11 @@ async def applet_retrieve(
         await service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         applet_future = service.get_single_language_by_id(applet_id, language)
-        nickname_future = UserAppletAccessService(session, user.id, applet_id).get_nickname()
-        futures = await asyncio.gather(applet_future, nickname_future)
+        subject_future = SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
+        applet, subject = await asyncio.gather(applet_future, subject_future)
     return AppletRetrieveResponse(
-        result=AppletSingleLanguageDetailPublic.from_orm(futures[0]),
-        respondent_meta={"nickname": futures[1]},
+        result=AppletSingleLanguageDetailPublic.from_orm(applet),
+        respondent_meta={"nickname": subject.nickname if subject else None},
     )
 
 

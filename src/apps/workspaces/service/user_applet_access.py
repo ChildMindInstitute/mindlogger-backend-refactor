@@ -350,9 +350,6 @@ class UserAppletAccessService:
 
         return UserAppletAccess.from_orm(schema)
 
-    async def get_nickname(self) -> str | None:
-        return await UserAppletAccessCRUD(self.session).get_user_nickname(self._applet_id, self._user_id)
-
     async def get_respondent_info(
         self,
         respondent_id: uuid.UUID,

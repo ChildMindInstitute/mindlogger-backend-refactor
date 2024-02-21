@@ -10,9 +10,9 @@ from apps.applets.domain.applet import AppletActivitiesDetailsPublic, AppletSing
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response
+from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.workspaces.service.check_access import CheckAccessService
-from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_language
@@ -57,18 +57,17 @@ async def applet_activities(
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
 
         applet_future = service.get_single_language_by_id(applet_id, language)
-        nickname_future = UserAppletAccessService(session, user.id, applet_id).get_nickname()
+        subject_future = SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
         activities_future = ActivityService(session, user.id).get_single_language_with_items_by_applet_id(
             applet_id, language
         )
-        futures = await asyncio.gather(
+        applet, subject, activities = await asyncio.gather(
             applet_future,
-            nickname_future,
+            subject_future,
             activities_future,
         )
-        applet_detail = AppletSingleLanguageDetailMobilePublic.from_orm(futures[0])
-        respondent_meta = {"nickname": futures[1]}
-        activities = futures[2]
+        applet_detail = AppletSingleLanguageDetailMobilePublic.from_orm(applet)
+        respondent_meta = {"nickname": subject.nickname if subject else None}
 
     result = AppletActivitiesDetailsPublic(
         activities_details=activities,
