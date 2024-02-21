@@ -139,13 +139,7 @@ class TestActivities:
         assert result["appletDetail"]["activities"][0]["splashScreen"] == activity.splash_screen
         assert result["appletDetail"]["activityFlows"] == []
 
-        # assert result["respondentMeta"] == {"nickname": f"{tom.first_name} {tom.last_name}"}
-
-    @pytest.mark.skip("M2-5337")
-    async def test_activity_applet_respondent_meta(self):
-        # this is just a placeholder for fixing and uncommenting the test above ^^:
-        # assert result["respondentMeta"] == {"nickname": f"{tom.first_name} {tom.last_name}"}
-        pass
+        assert result["respondentMeta"] == {"nickname": f"{tom.first_name} {tom.last_name}"}
 
     async def test_public_activity_detail(self, client, applet_one_with_public_link: AppletFull):
         activity = applet_one_with_public_link.activities[0]
