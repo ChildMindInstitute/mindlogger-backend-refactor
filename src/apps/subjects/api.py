@@ -153,9 +153,18 @@ async def get_subject(
     subject_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
 ) -> Response[SubjectReadResponse]:
     subject = await SubjectsService(session, user.id).get(subject_id)
     if not subject:
         raise NotFoundError()
     await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
-    return Response(result=SubjectReadResponse(secret_user_id=subject.secret_user_id, nickname=subject.nickname))
+    answer_dates = await AnswerService(
+        user_id=user.id, session=session, arbitrary_session=arbitrary_session
+    ).get_last_answer_dates([subject.id], subject.applet_id)
+
+    return Response(
+        result=SubjectReadResponse(
+            secret_user_id=subject.secret_user_id, nickname=subject.nickname, last_seen=answer_dates.get(subject.id)
+        )
+    )

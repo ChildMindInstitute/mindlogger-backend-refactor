@@ -550,7 +550,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             return False
         return flow_history_schema.is_single_report
 
-    async def get_last_activity(
+    async def get_last_answer_dates(
         self, subject_ids: list[uuid.UUID], applet_id: uuid.UUID | None
     ) -> dict[uuid.UUID, datetime.datetime]:
         query: Query = (
