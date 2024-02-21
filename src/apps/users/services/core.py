@@ -77,9 +77,13 @@ class PasswordRecoveryService:
             # Change to admin frontend if the request came from there
             frontend_base = settings.service.urls.frontend.admin_base
 
+        password_recovery_page = settings.service.urls.frontend.web_password_recovery_send
+        if content_source == MindloggerContentSource.admin:
+            password_recovery_page = settings.service.urls.frontend.admin_password_recovery_send
+
         url = (
             f"https://{frontend_base}"
-            f"/{settings.service.urls.frontend.password_recovery_send}"
+            f"/{password_recovery_page}"
             f"?key={password_recovery_info.key}"
             f"&email="
             f"{urllib.parse.quote(user.email_encrypted)}"
