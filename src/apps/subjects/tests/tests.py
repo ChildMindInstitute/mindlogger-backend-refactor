@@ -212,11 +212,7 @@ async def applet_one_tom_owner(session: AsyncSession, applet_one: AppletFull, to
 @pytest.fixture
 async def tom_invitation_payload(tom: User) -> dict:
     return dict(
-        email=tom.email_encrypted,
-        first_name=tom.first_name,
-        last_name=tom.last_name,
-        language="en",
-        role=Role.MANAGER
+        email=tom.email_encrypted, first_name=tom.first_name, last_name=tom.last_name, language="en", role=Role.MANAGER
     )
 
 
@@ -227,7 +223,7 @@ async def lucy_invitation_payload(lucy: User) -> dict:
         first_name=lucy.first_name,
         last_name=lucy.last_name,
         language="en",
-        role=Role.MANAGER
+        role=Role.MANAGER,
     )
 
 
@@ -494,7 +490,7 @@ class TestSubjects(BaseTest):
         tom_applet_one_subject: Subject,
         lucy_applet_three_subject: Subject,
         lucy_invitation_payload,
-        tom_invitation_payload
+        tom_invitation_payload,
     ):
         async def lucy_login():
             await client.login(self.login_url, lucy.email_encrypted, "Test123")
@@ -505,8 +501,7 @@ class TestSubjects(BaseTest):
         # Login as Tom and send invitation to Lucy
         await tom_login()
         res = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one_tom_owner.id)),
-            lucy_invitation_payload
+            self.invite_manager_url.format(applet_id=str(applet_one_tom_owner.id)), lucy_invitation_payload
         )
         assert res.status_code == http.HTTPStatus.OK
         lucy_invitation_key = res.json()["result"]["key"]
@@ -514,8 +509,7 @@ class TestSubjects(BaseTest):
         # Login as Lucy and send invitation to Tom
         await lucy_login()
         res = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_three_lucy_owner.id)),
-            tom_invitation_payload
+            self.invite_manager_url.format(applet_id=str(applet_three_lucy_owner.id)), tom_invitation_payload
         )
         assert res.status_code == http.HTTPStatus.OK
         tom_invitation_key = res.json()["result"]["key"]
