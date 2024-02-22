@@ -79,14 +79,14 @@ async def applet_one_user_respondent(session: AsyncSession, applet_one: AppletFu
 
 
 @pytest.fixture
-async def applet_three_tom_manager(session: AsyncSession, applet_three: AppletFull, tom, user) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_three.id).add_role(tom.id, Role.MANAGER)
+async def applet_three_tom_respondent(session: AsyncSession, applet_three: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, lucy.id, applet_three.id).add_role(tom.id, Role.RESPONDENT)
     return applet_three
 
 
 @pytest.fixture
-async def applet_three_tom_respondent(session: AsyncSession, applet_three: AppletFull, tom, user) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_three.id).add_role(tom.id, Role.RESPONDENT)
+async def applet_three_user_respondent(session: AsyncSession, applet_three: AppletFull, lucy, user) -> AppletFull:
+    await UserAppletAccessService(session, lucy.id, applet_three.id).add_role(user.id, Role.RESPONDENT)
     return applet_three
 
 
@@ -966,13 +966,16 @@ class TestWorkspaces(BaseTest):
         applet_one: AppletFull,
         applet_three: AppletFull,
         applet_one_lucy_respondent,
-        applet_one_lucy_manager,
         applet_one_user_respondent,
-        applet_three_tom_manager,
         applet_three_tom_respondent,
+        applet_three_user_respondent,
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         result = await client.get(self.workspace_respondents_url.format(owner_id=tom.id))
         assert result.status_code == http.HTTPStatus.OK
-        applet_one_respondent = result.json()
-        assert applet_one_respondent["count"] == 3
+        assert result.json()["count"] == 3
+
+        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        result = await client.get(self.workspace_respondents_url.format(owner_id=lucy.id))
+        assert result.status_code == http.HTTPStatus.OK
+        assert result.json()["count"] == 3
