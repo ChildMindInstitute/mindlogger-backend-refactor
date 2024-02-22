@@ -79,6 +79,18 @@ async def applet_one_user_respondent(session: AsyncSession, applet_one: AppletFu
 
 
 @pytest.fixture
+async def applet_three_tom_respondent(session: AsyncSession, applet_three: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, lucy.id, applet_three.id).add_role(tom.id, Role.RESPONDENT)
+    return applet_three
+
+
+@pytest.fixture
+async def applet_three_user_respondent(session: AsyncSession, applet_three: AppletFull, lucy, user) -> AppletFull:
+    await UserAppletAccessService(session, lucy.id, applet_three.id).add_role(user.id, Role.RESPONDENT)
+    return applet_three
+
+
+@pytest.fixture
 async def applet_one_lucy_roles(
     applet_one_lucy_respondent: AppletFull, applet_one_lucy_coordinator: AppletFull, applet_one_lucy_editor: AppletFull
 ) -> list[AppletFull]:
@@ -944,3 +956,26 @@ class TestWorkspaces(BaseTest):
         url = self.workspace_respondent_applet_accesses.format(owner_id=tom.id, respondent_id=tom.id)
         response = await client.get(url)
         assert response.status_code == http.HTTPStatus.OK
+
+    async def test_workspace_respondent_list_for_cross_invited_users(
+        self,
+        client,
+        session,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_three: AppletFull,
+        applet_one_lucy_respondent,
+        applet_one_user_respondent,
+        applet_three_tom_respondent,
+        applet_three_user_respondent,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        result = await client.get(self.workspace_respondents_url.format(owner_id=tom.id))
+        assert result.status_code == http.HTTPStatus.OK
+        assert result.json()["count"] == 3
+
+        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        result = await client.get(self.workspace_respondents_url.format(owner_id=lucy.id))
+        assert result.status_code == http.HTTPStatus.OK
+        assert result.json()["count"] == 3

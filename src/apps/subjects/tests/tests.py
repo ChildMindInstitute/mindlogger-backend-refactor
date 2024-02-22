@@ -197,6 +197,24 @@ async def applet_one_lucy_reviewer_with_subject(
     return applet_one
 
 
+@pytest.fixture
+async def tom_invitation_payload(tom: User) -> dict:
+    return dict(
+        email=tom.email_encrypted, first_name=tom.first_name, last_name=tom.last_name, language="en", role=Role.MANAGER
+    )
+
+
+@pytest.fixture
+async def lucy_invitation_payload(lucy: User) -> dict:
+    return dict(
+        email=lucy.email_encrypted,
+        first_name=lucy.first_name,
+        last_name=lucy.last_name,
+        language="en",
+        role=Role.MANAGER,
+    )
+
+
 class TestSubjects(BaseTest):
     fixtures = [
         "workspaces/fixtures/workspaces.json",
