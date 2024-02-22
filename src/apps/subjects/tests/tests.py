@@ -198,18 +198,6 @@ async def applet_one_lucy_reviewer_with_subject(
 
 
 @pytest.fixture
-async def applet_three_lucy_owner(session: AsyncSession, applet_three: AppletFull, lucy) -> AppletFull:
-    await UserAppletAccessService(session, lucy.id, applet_three.id).add_role(lucy.id, Role.OWNER)
-    return applet_three
-
-
-@pytest.fixture
-async def applet_one_tom_owner(session: AsyncSession, applet_one: AppletFull, tom) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(tom.id, Role.OWNER)
-    return applet_one
-
-
-@pytest.fixture
 async def tom_invitation_payload(tom: User) -> dict:
     return dict(
         email=tom.email_encrypted, first_name=tom.first_name, last_name=tom.last_name, language="en", role=Role.MANAGER
