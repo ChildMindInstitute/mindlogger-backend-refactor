@@ -4,7 +4,6 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
@@ -716,22 +715,6 @@ class TestWorkspaces(BaseTest):
 
         response = await client.delete(self.remove_respondent_access, data=data)
         assert response.status_code == 200
-
-    async def test_workspace_editor_remove_respondent_access_error(self, client, session, mike, lucy, applet_one):
-        applet_id = str(applet_one.id)
-        roles_to_delete = [Role.OWNER, Role.COORDINATOR, Role.MANAGER, Role.SUPER_ADMIN, Role.REVIEWER]
-        await UserAppletAccessCRUD(session).delete_user_roles(uuid.UUID(applet_id), mike.id, roles_to_delete)
-        # editor can remove respondent access
-        await client.login(self.login_url, mike.email_encrypted, "Test1234")
-
-        data = {
-            "user_id": lucy.id,
-            "applet_ids": [applet_id],
-            "delete_responses": True,
-        }
-
-        response = await client.delete(self.remove_respondent_access, data=data)
-        assert response.status_code == 403
 
     async def test_folder_applets(self, client, tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")

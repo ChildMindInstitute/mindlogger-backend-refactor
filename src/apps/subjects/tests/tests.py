@@ -15,6 +15,7 @@ from apps.subjects.domain import Subject, SubjectCreateRequest, SubjectRelationC
 from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.domain import UserCreate
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
@@ -186,6 +187,11 @@ async def applet_one_pit_reviewer(session: AsyncSession, applet_one: AppletFull,
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(pit.id, Role.REVIEWER)
     return applet_one
 
+
+@pytest.fixture
+async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
+    return applet_one
 
 @pytest.fixture
 async def applet_one_lucy_reviewer_with_subject(
@@ -466,3 +472,25 @@ class TestSubjects(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data
+
+    async def test_editor_remove_respondent_access_error(
+            self, client, session, tom, mike, lucy, applet_one: AppletFull, applet_one_lucy_respondent
+    ):
+        roles_to_delete = [Role.OWNER, Role.COORDINATOR, Role.MANAGER, Role.SUPER_ADMIN, Role.REVIEWER]
+        await UserAppletAccessCRUD(session).delete_user_roles(applet_one.id, mike.id, roles_to_delete)
+        await client.login(self.login_url, mike.email_encrypted, "Test1234")
+        subject = await SubjectsService(session, tom.id).get_by_user_and_applet(lucy.id, applet_one.id)
+        assert subject
+        delete_url = self.subject_detail_url.format(subject_id=subject.id)
+        response = await client.delete(delete_url, data=dict(deleteAnswers=False))
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_workspace_coordinator_remove_respondent_access(
+        self, client, session, lucy, applet_one, user, applet_one_bob_coordinator, applet_one_lucy_respondent, bob, tom
+    ):
+        await client.login(self.login_url, bob.email_encrypted, "Test1234!")
+        subject = await SubjectsService(session, tom.id).get_by_user_and_applet(lucy.id, applet_one.id)
+        assert subject
+        delete_url = self.subject_detail_url.format(subject_id=subject.id)
+        response = await client.delete(delete_url, data=dict(deleteAnswers=False))
+        assert response.status_code == http.HTTPStatus.OK
