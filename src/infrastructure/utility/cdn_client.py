@@ -57,17 +57,17 @@ class CDNClient:
             future = executor.submit(self._upload, path, body)
         await asyncio.wrap_future(future)
 
-    def _check_existence(self, key: str):
+    def _check_existence(self, bucket: str, key: str):
         try:
-            return self.client.head_object(Bucket=self.config.bucket, Key=key)
+            return self.client.head_object(Bucket=bucket, Key=key)
         except ClientError:
             raise NotFoundError
 
-    async def check_existence(self, key: str):
+    async def check_existence(self, bucket: str, key: str):
         if self.env == "testing":
             return
         with ThreadPoolExecutor() as executor:
-            future = executor.submit(self._check_existence, key)
+            future = executor.submit(self._check_existence, bucket, key)
             return await asyncio.wrap_future(future)
 
     def download(self, key):
@@ -110,6 +110,6 @@ class CDNClient:
             result = await asyncio.wrap_future(future)
             return result.get("Contents", [])
 
-    def generate_presigned_post(self, key):
+    def generate_presigned_post(self, bucket, key):
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
-        return self.client.generate_presigned_post(self.config.bucket, key, ExpiresIn=self.config.ttl_signed_urls)
+        return self.client.generate_presigned_post(bucket, key, ExpiresIn=self.config.ttl_signed_urls)
