@@ -284,7 +284,7 @@ async def check_file_uploaded(
         raise AnswerViewAccessDenied()
 
     workspace_srv = workspace.WorkspaceService(session, user.id)
-    arb_info = await workspace_srv.get_arbitrary_info(applet_id)
+    arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
     cdn_client = await select_storage(applet_id, session)
     results: list[FileExistenceResponse] = []
 
@@ -419,7 +419,7 @@ async def generate_presigned_answer_url(
         raise AnswerViewAccessDenied()
     # TODO: Refactor this part when file storage is covered by tests. Get arbitrary info only once.
     workspace_srv = workspace.WorkspaceService(session, user.id)
-    arb_info = await workspace_srv.get_arbitrary_info(applet_id)
+    arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
     cdn_client = await select_storage(applet_id, session)
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = body.file_id.strip()

@@ -211,7 +211,9 @@ class TestAnswerActivityItems(BaseTest):
         bucket_name = "bucket"
         settings.cdn.bucket = bucket_name
         settings.cdn.bucket_answer = bucket_name
-        mocker.patch("apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info", return_value=None)
+        mocker.patch(
+            "apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info_if_use_arbitrary", return_value=None
+        )
         resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": file_id})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["fields"]["key"] == expected_key
@@ -263,7 +265,9 @@ class TestAnswerActivityItems(BaseTest):
 
         settings.cdn.bucket_operations = "bucket_operations"
         settings.cdn.bucket_answer = "bucket_answer"
-        mocker.patch("apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info", return_value=None)
+        mocker.patch(
+            "apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info_if_use_arbitrary", return_value=None
+        )
 
         resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": file_name})
         assert resp.status_code == http.HTTPStatus.OK
@@ -304,7 +308,9 @@ class TestAnswerActivityItems(BaseTest):
         settings.cdn.bucket_operations = "bucket_operations"
         settings.cdn.bucket_answer = "bucket_answer"
         mock_check_existance = mocker.patch("infrastructure.utility.cdn_client.CDNClient.check_existence")
-        mocker.patch("apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info", return_value=None)
+        mocker.patch(
+            "apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info_if_use_arbitrary", return_value=None
+        )
         resp = await client.post(
             self.existance_url.format(applet_id=applet_one.id),
             data={"files": [file_name]},
