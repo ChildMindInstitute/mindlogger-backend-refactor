@@ -193,6 +193,7 @@ async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFu
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
     return applet_one
 
+
 @pytest.fixture
 async def applet_one_lucy_reviewer_with_subject(
     session: AsyncSession, applet_one: AppletFull, tom_applet_one_subject, tom, lucy
@@ -474,7 +475,7 @@ class TestSubjects(BaseTest):
         assert data
 
     async def test_editor_remove_respondent_access_error(
-            self, client, session, tom, mike, lucy, applet_one: AppletFull, applet_one_lucy_respondent
+        self, client, session, tom, mike, lucy, applet_one: AppletFull, applet_one_lucy_respondent
     ):
         roles_to_delete = [Role.OWNER, Role.COORDINATOR, Role.MANAGER, Role.SUPER_ADMIN, Role.REVIEWER]
         await UserAppletAccessCRUD(session).delete_user_roles(applet_one.id, mike.id, roles_to_delete)

@@ -313,7 +313,6 @@ class TestWorkspaces(BaseTest):
         response = await client.get(self.workspace_applets_url.format(owner_id="00000000-0000-0000-0000-000000000000"))
         assert response.status_code == 404
 
-    @pytest.mark.skip("M2-5261")
     async def test_get_workspace_respondents(self, client, tom, applet_one_lucy_respondent):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.get(
@@ -686,35 +685,6 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200
         assert response.json()["count"] == managers_count - 1
-
-    async def test_workspace_remove_respondent_access(self, client, tom, lucy, applet_one, applet_one_lucy_respondent):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        data = {
-            "user_id": lucy.id,
-            "applet_ids": [
-                str(applet_one.id),
-            ],
-            "delete_responses": True,
-        }
-
-        response = await client.delete(self.remove_respondent_access, data=data)
-        assert response.status_code == 200
-
-    @pytest.mark.usefixtures("applet_one_lucy_coordinator", "applet_one_user_respondent")
-    async def test_workspace_coordinator_remove_respondent_access(self, client, lucy, applet_one, user):
-        # coordinator can remove respondent access
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
-
-        data = {
-            "user_id": user.id,
-            "applet_ids": [
-                str(applet_one.id),
-            ],
-            "delete_responses": True,
-        }
-
-        response = await client.delete(self.remove_respondent_access, data=data)
-        assert response.status_code == 200
 
     async def test_folder_applets(self, client, tom):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")

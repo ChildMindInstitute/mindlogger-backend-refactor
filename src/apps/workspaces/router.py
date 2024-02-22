@@ -6,7 +6,6 @@ from starlette import status
 from apps.applets.api import applet_create
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.domain.applets import public_detail
-from apps.applets.router import router as applet_router
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
 from apps.shared.response import EmptyResponse
