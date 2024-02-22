@@ -386,6 +386,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         field_nickname = SubjectSchema.nickname
         field_secret_user_id = SubjectSchema.secret_user_id
         invited_subjects = await self.get_invited_subject_ids(owner_id)
+
+        workspace_applets_subquery = (
+            select(UserAppletAccessSchema.applet_id).where(UserAppletAccessSchema.owner_id == owner_id).subquery()
+        )
+
         schedule_exists = (
             select(UserEventsSchema)
             .join(EventSchema, EventSchema.id == UserEventsSchema.event_id)
@@ -508,7 +513,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         query = query.where(
             has_access,
-            UserAppletAccessSchema.owner_id == owner_id,
+            SubjectSchema.applet_id.in_(workspace_applets_subquery),
             SubjectSchema.applet_id == applet_id if applet_id else True,
             SubjectSchema.soft_exists(),
         )
