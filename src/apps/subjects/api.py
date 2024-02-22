@@ -7,6 +7,7 @@ from apps.answers.deps.preprocess_arbitrary import get_answer_session_by_subject
 from apps.answers.service import AnswerService
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
+from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response
 from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.response import EmptyResponse
@@ -20,6 +21,7 @@ from apps.subjects.domain import (
 )
 from apps.subjects.services import SubjectsService
 from apps.users import User
+from apps.users.services.user import UserService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_access import UserAccessService
@@ -147,6 +149,11 @@ async def delete_subject(
         else:
             # Delete subject (soft)
             await SubjectsService(session, user.id).delete(subject.id)
+
+        if subject.user_id:
+            ex_resp = await UserService(session).get(subject.user_id)
+            if ex_resp:
+                await InvitationsService(session, ex_resp).delete_for_respondents([subject.applet_id])
 
 
 async def get_subject(
