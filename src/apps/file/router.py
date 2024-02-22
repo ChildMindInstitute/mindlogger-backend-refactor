@@ -6,13 +6,16 @@ from apps.file.api.file import (
     answer_upload,
     check_file_uploaded,
     download,
+    generate_presigned_answer_url,
+    generate_presigned_logs_url,
+    generate_presigned_media_url,
     logs_download,
     logs_exist_check,
     logs_upload,
     presign,
     upload,
 )
-from apps.file.domain import AnswerUploadedFile, FileExistenceResponse
+from apps.file.domain import AnswerUploadedFile, FileExistenceResponse, PresignedUrl
 from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, ResponseMulti
 
 router = APIRouter(prefix="/file", tags=["File"])
@@ -52,7 +55,6 @@ router.post(
     ),
 )(answer_download)
 
-# router.post("/upload/check")(check_file_uploaded)
 router.post(
     "/{applet_id}/upload/check",
     status_code=status.HTTP_200_OK,
@@ -91,3 +93,33 @@ router.post(
 router.get("/log-file/{user_email}/{device_id}", status_code=status.HTTP_200_OK)(logs_download)
 
 router.post("/log-file/{device_id}/check", status_code=status.HTTP_200_OK)(logs_exist_check)
+router.post(
+    "/upload-url",
+    status_code=status.HTTP_200_OK,
+    description="""Endpoint to generate presigned post url to upload media files to the remote storage.""",
+    responses={
+        status.HTTP_200_OK: {"model": PresignedUrl},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(generate_presigned_media_url)
+router.post(
+    "/{applet_id}/upload-url",
+    status_code=status.HTTP_200_OK,
+    description="""Endpoint to generate presigned post url to upload answers files to the remote storage.""",
+    responses={
+        status.HTTP_200_OK: {"model": PresignedUrl},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(generate_presigned_answer_url)
+router.post(
+    "/log-file/{device_id}/upload-url",
+    status_code=status.HTTP_200_OK,
+    description="""Endpoint to generate presigned post url to upload log files to the remote storage.""",
+    responses={
+        status.HTTP_200_OK: {"model": PresignedUrl},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(generate_presigned_logs_url)

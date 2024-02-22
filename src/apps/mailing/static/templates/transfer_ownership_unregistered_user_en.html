@@ -1,37 +1,34 @@
 <html style="max-width: 700px" lang="en">
+
 <body>
-{% include 'header.html' %}
-<table style="padding: 0">
-    <tr>
-        <td style="padding-bottom: 1%">
-            Hello {{receiver_name}}!
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            {{applet_owner}} sent you an invitation to transfer ownership of
-            "{{applet_name}}" applet on MindLogger.
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            Please visit <a href="{{ link }}/{{applet_id}}?key={{ key }}&action=accept&lang={{ language }}">here</a>
-            to create a new account and accept it.
-        </td>
-    </tr>
-{% include 'blocks/write_us_en.html' %}
-    <tr>
-        <td style="padding-bottom: 1%">
-            Thanks,
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            The MindLogger team
-        </td>
-    </tr>
-</table>
-{% include 'footers/footer_contact_us_en.html' %}
+    {% include 'header.html' %}
+    <table style="padding: 0">
+        <tr>
+            <td style="padding-bottom: 1%">
+                Hello {{receiver_name}}!
+            </td>
+        </tr>
+        <tr>
+            <td style="padding-bottom: 1%">
+                {{applet_owner}} is inviting you to take over ownership of "{{applet_name}}" on MindLogger, a next-generation data collection and information delivery platform that streamlines the management of children’s mental health and
+                learning challenges.
+            </td>
+        </tr>
+        <tr>
+            <td style="padding-bottom: 1%">
+                <a href="{{link}}/{{applet_id}}?key={{key}}&action=accept&lang={{language}}"
+                    style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 100px; display: inline-block; font-weight: 400; text-align: center; vertical-align: middle; text-decoration: none; color: #ffffff; background-color: #00639A; border-color: #00639A;">Create
+                    account and accept invitation</a>
+            </td>
+        </tr>
+        {% include 'blocks/write_us_en.html' %}
+        <tr>
+            <td style="padding-bottom: 1%">
+                – The MindLogger Team
+            </td>
+        </tr>
+    </table>
+    {% include 'footers/footer_contact_us_en.html' %}
 </body>
 
 </html>

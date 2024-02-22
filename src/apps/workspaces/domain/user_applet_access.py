@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from pydantic import Field
@@ -137,3 +138,4 @@ class RespondentExportData(InternalModel):
 class RespondentInfoPublic(PublicModel):
     nickname: str | None
     secret_user_id: str
+    last_seen: datetime.datetime | None

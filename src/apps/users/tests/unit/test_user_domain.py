@@ -90,3 +90,27 @@ def test_create_user_model_with_extra_fields__extra_field_ignored(
     base_data["confirm_password"] = "confirm_passsword"
     user = domain.UserCreateRequest(**base_data)
     assert not hasattr(user, "confirm_password")
+
+
+def test_user_get_full_name(base_data: BaseData):
+    user = domain.User(
+        email=base_data["email"],
+        first_name="John",
+        last_name="Doe",
+        id=uuid.uuid4(),
+        is_super_admin=False,
+        hashed_password=base_data["password"],
+    )
+    assert user.get_full_name() == "John Doe"
+
+
+def test_user_get_full_name__no_last_name(base_data: BaseData):
+    user = domain.User(
+        email=base_data["email"],
+        first_name="John",
+        last_name="",
+        id=uuid.uuid4(),
+        is_super_admin=False,
+        hashed_password=base_data["password"],
+    )
+    assert user.get_full_name() == "John"
