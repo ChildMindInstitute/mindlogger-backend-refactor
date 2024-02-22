@@ -13,6 +13,8 @@ from apps.applets.service.applet import AppletService
 from apps.shared.enums import Language
 from apps.shared.query_params import QueryParams
 from apps.shared.test import BaseTest
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.domain.workspace import WorkspaceApplet
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
@@ -95,6 +97,20 @@ async def applet_one_lucy_roles(
     applet_one_lucy_respondent: AppletFull, applet_one_lucy_coordinator: AppletFull, applet_one_lucy_editor: AppletFull
 ) -> list[AppletFull]:
     return [applet_one_lucy_respondent, applet_one_lucy_coordinator, applet_one_lucy_editor]
+
+
+@pytest.fixture
+async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
+    return await SubjectsService(session, tom.id).create(
+        Subject(
+            applet_id=applet_one.id,
+            creator_id=tom.id,
+            first_name="Shell",
+            last_name="Account",
+            nickname="shell-account-0",
+            secret_user_id=f"{uuid.uuid4()}",
+        )
+    )
 
 
 @pytest.fixture
@@ -979,3 +995,31 @@ class TestWorkspaces(BaseTest):
         result = await client.get(self.workspace_respondents_url.format(owner_id=lucy.id))
         assert result.status_code == http.HTTPStatus.OK
         assert result.json()["count"] == 3
+
+    async def test_workspace_respondent_list_with_subjects(
+        self,
+        client,
+        session,
+        tom: User,
+        lucy: User,
+        user: User,
+        applet_one: AppletFull,
+        applet_three: AppletFull,
+        applet_one_lucy_respondent,
+        applet_one_user_respondent,
+        applet_three_tom_respondent,
+        applet_three_user_respondent,
+        applet_one_shell_account: Subject,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        result = await client.get(self.workspace_respondents_url.format(owner_id=tom.id))
+        assert result.status_code == http.HTTPStatus.OK
+        assert result.json()["count"] == 4
+        respondents = result.json()["result"]
+
+        full_accounts_actual = list(filter(None.__ne__, map(lambda r: r["id"], respondents)))
+        for full_account_expected in [lucy.id, user.id, tom.id]:
+            assert str(full_account_expected) in full_accounts_actual
+
+        shell_accounts_actual = map(lambda r: r["details"][0]["subjectId"], filter(lambda r: not r["id"], respondents))
+        assert str(applet_one_shell_account.id) == next(shell_accounts_actual)
