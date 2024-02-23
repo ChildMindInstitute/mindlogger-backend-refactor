@@ -11,6 +11,7 @@ from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.exception import NotFoundError
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User
@@ -202,7 +203,8 @@ async def workspace_applet_respondent_update(
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         subject_srv = SubjectsService(session, user.id)
         subject = await subject_srv.get_by_user_and_applet(respondent_id, applet_id)
-        assert subject
+        if not subject:
+            raise NotFoundError()
         subject.nickname = schema.nickname
         subject.secret_user_id = schema.secret_user_id
         await SubjectsService(session, user.id).update(subject)

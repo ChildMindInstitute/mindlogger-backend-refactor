@@ -976,3 +976,23 @@ class TestWorkspaces(BaseTest):
 
         shell_accounts_actual = map(lambda r: r["details"][0]["subjectId"], filter(lambda r: not r["id"], respondents))
         assert str(applet_one_shell_account.id) == next(shell_accounts_actual)
+
+    async def test_workspace_respondent_update_with_non_existing_respondent_id(
+        self,
+        client,
+        session,
+        tom: User,
+        applet_one: AppletFull,
+    ):
+        respondent_id = uuid.uuid4()
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(
+            self.applet_respondent_url.format(
+                owner_id=tom.id, applet_id=str(applet_one.id), respondent_id=respondent_id
+            ),
+            dict(
+                nickname="New respondent",
+                secret_user_id="f0dd4996-e0eb-461f-b2f8-ba873a674710",
+            ),
+        )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
