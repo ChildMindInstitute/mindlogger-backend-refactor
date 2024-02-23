@@ -1,111 +1,38 @@
-# ChildMindInstitute
+# ChildMindInstitute - Mindlogger Backend API
 
-# Mindlogger
+This repository is used as a backend for the service MindLogger
 
-## <span style="color:#9DB7FF">About</span>
+## 1. Getting Started / Installation
 
-👉 This repository is used as a backend for the service MindLogger [HERE](https://github.com/ChildMindInstitute/mindlogger-backend-refactor).
+### 1.1 Create `.env` file for future needs
 
-🔌 **Web application is powered by:**
-
-- ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
-- ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
-- ✅ [FastAPI](https://fastapi.tiangolo.com)
-- ✅ [Postgesql](https://www.postgresql.org/docs/14/index.html)
-- ✅ [Redis](https://redis.io)
-- ✅ [Docker](https://docs.docker.com/get-docker/)
-- ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
-- ✅ [SQLAlchemy](https://www.sqlalchemy.org/)
-
-And
-
-- ✅ [The 12-Factor App](https://12factor.net)
-
-<br/>
-
-🔌 **Code quality tools:**
-
-- ✅ [ruff](https://github.com/astral-sh/ruff)
-- ✅ [isort](https://github.com/PyCQA/isort)
-- ✅ [mypy](https://github.com/python/mypy)
-- ✅ [pytest](https://github.com/pytest-dev/pytest)
-
-<br/>
-
-## ✋ <span style="color:#9DB7FF">Mandatory steps</span>
-
-### 1. Clone the project 🌐
-
-```bash
-git clone git@github.com:ChildMindInstitute/mindlogger-backend-refactor.git
-```
-
-### 2. Setup environment variables ⚙️
-
-👉 Project is configured via environment variables. You have to export them into your session from which you are running the application locally of via Docker.
-
-👉 All default variables configured for making easy to run application via Docker in a few clicks
-
-> 💡 All of them you can find in `.env.default`
-
-#### 2.1 Description 📜
-
-| Key                                       | Default value      | Description                                                                                                                            |
-| ----------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| DATABASE\_\_HOST                          | postgres           | Database Host                                                                                                                          |
-| DATABASE\_\_USER                          | postgres           | User name for Postgresql Database user                                                                                                 |
-| DATABASE\_\_PASSWORD                      | postgres           | Password for Postgresql Database user                                                                                                  |
-| DATABASE\_\_DB                            | mindlogger_backend | Database name                                                                                                                          |
-| CORS\_\_ALLOW_ORIGINS                     | `*`                | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000` |
-| CORS\_\_ALLOW_CREDENTIALS                 | true               | Set the `Access-Control-Allow-Credentials` header                                                                                      |
-| CORS\_\_ALLOW_METHODS                     | `*`                | Set the `Access-Control-Allow-Methods` header                                                                                          |
-| CORS\_\_ALLOW_HEADERS                     | `*`                | Set the `Access-Control-Allow-Headers` header                                                                                          |
-| AUTHENTICATION**ACCESS_TOKEN**SECRET_KEY  | secret1            | Access token's salt                                                                                                                    |
-| AUTHENTICATION**REFRESH_TOKEN**SECRET_KEY | secret2            | Refresh token salt                                                                                                                     |
-| AUTHENTICATION\_\_ALGORITHM               | HS256              | The JWT's algorithm                                                                                                                    |
-| AUTHENTICATION**ACCESS_TOKEN**EXPIRATION  | 30                 | Time in minutes after which the access token will stop working                                                                         |
-| AUTHENTICATION**REFRESH_TOKEN**EXPIRATION | 30                 | Time in minutes after which the refresh token will stop working                                                                        |
-| ADMIN_DOMAIN                              | -                  | Admin panel domain                                                                                                                     |
-
-##### ✋ Mandatory:
-
-> You can see that some environment variables have double underscore (`__`) instead of `_`.
->
-> As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
-
-#### 2.2 Create `.env` file for future needs
-
-It is hightly recommended to create `.env` file as far as it is needed for setting up the project with Local and Docker approaches.
+It is highly recommended to create an `.env` file as far as it is needed for setting up the project with Local and Docker approaches.
 
 ```bash
 cp .env.default .env
 ```
 
-#### 2.3 Generate secret keys, update .env with values
+### 1.2 Generate secret keys, update .env with values
 
 ```bash
 openssl rand -hex 32
 ```
 
-<br/>
+### 1.3 Setup Redis
 
-## 👨‍🦯 <span style="color:#9DB7FF">Local development</span>
-
-### 1. Decide how would you run storages 🤔
-
-#### 1.1 Setup locally
+#### 1.3.1 Locally
 
 ✅ [🐧 Linux](https://redis.io/docs/getting-started/installation/install-redis-on-linux/)
 
 ✅ [ MacOs](https://redis.io/docs/getting-started/installation/install-redis-on-mac-os/)
 
-#### 1.2 Install via Docker 🐳
+#### 1.3.2 Install via Docker
 
 ```bash
 docker-compose up -d redis
 ```
 
-### 2. Install all project dependencies 🧱
+### 1.4. Install all project dependencies
 
 Pipenv used as a default dependencies manager
 
@@ -143,35 +70,15 @@ set -o allexport; source .env; set +o allexport
 
 <br/>
 
-### 3. Provide code quality ✨
+## 2. Usage
 
-#### 3.1 Using pre-commit hooks 🔬
-
-It is a good practice to use Git hooks to provide better commits.
-
-For increased security during development, install `git-secrets` to scan code for aws keys.
-
-Please use this link for that: https://github.com/awslabs/git-secrets#installing-git-secrets
-
-`.pre-commit-config.yaml` is placed in the root of the repository.
-
-👉 Once you have installed `git-secrets` and `pre-commit` simply run the following command.
-
-```bash
-make aws-scan
-```
-
-👉 Then all your staged cahnges will be checked via git hooks on every `git commit`
-
-#### 3.2 Using Makefile 🤖
-
-### 4. Running the application ▶️
+### 2.1 Running locally
 
 > 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
 
 In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
 
-For doing this we must have `src/` folder specified in a **PATH**.
+To do this we must have `src/` folder specified in a **PATH**.
 
 P.S. You don't need to do this additional step if you run application via Docker container 🤫
 
@@ -179,9 +86,117 @@ P.S. You don't need to do this additional step if you run application via Docker
 uvicorn src.main:app --proxy-headers --port {PORT} --reload
 ```
 
+### 2.2 Running via docker
+
+```bash
+docker-compose up
+```
+
+Additional `docker-compose up` flags that might be useful for development
+
+```bash
+-d  # Run docker containers as deamons (in background)
+--no-recreate  # If containers already exist, don't recreate them
+```
+
+#### 2.2.1 Stop the application 🛑
+
+```bash
+docker-compose down
+```
+
+Additional `docker-compose down` flags that might be useful for development
+
+```bash
+-v  # Remove with all volumes
+```
+### 2.3 Running using Makefile
+
+You can use the `Makefile` to work with project (run the application / code quality tools / tests ...)
+
+For local usage:
+
+```bash
+# Run the application
+make run
+
+# Check the code quality
+make cq
+
+# Check tests passing
+make test
+
+# Check everything in one hop
+make check
+```
+### 2.4 Docker development
+
+#### 2.4.1. Build application images
+
+```bash
+docker-compose build
+```
+
+✅ Make sure that you completed `.env` file. It is using by default in `docker-compose.yaml` file for buildnig.
+
+✅ Check building with `docker images` command. You should see the record with `fastapi_service`.
+
+💡 If you would like to debug the application insode Docker comtainer make sure that you use `COMPOSE_FILE=docker-compose.dev.yaml` in `.env`. It has opened stdin and tty.
+
+
+## 3 Build With
+
+- ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
+- ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
+- ✅ [FastAPI](https://fastapi.tiangolo.com)
+- ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
+- ✅ [Redis](https://redis.io)
+- ✅ [Docker](https://docs.docker.com/get-docker/)
+- ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
+- ✅ [SQLAlchemy](https://www.sqlalchemy.org/)
+
+And
+
+- ✅ [The 12-Factor App](https://12factor.net)
+
 <br/>
 
-### 5. Running Tests ▶️
+**Code quality tools:**
+
+- ✅ [ruff](https://github.com/astral-sh/ruff)
+- ✅ [isort](https://github.com/PyCQA/isort)
+- ✅ [mypy](https://github.com/python/mypy)
+- ✅ [pytest](https://github.com/pytest-dev/pytest)
+
+<br/>
+
+## 4. Environment Variables
+
+| Key                                       | Default value      | Description                                                                                                                            |
+| ----------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| DATABASE\_\_HOST                          | postgres           | Database Host                                                                                                                          |
+| DATABASE\_\_USER                          | postgres           | User name for Postgresql Database user                                                                                                 |
+| DATABASE\_\_PASSWORD                      | postgres           | Password for Postgresql Database user                                                                                                  |
+| DATABASE\_\_DB                            | mindlogger_backend | Database name                                                                                                                          |
+| CORS\_\_ALLOW_ORIGINS                     | `*`                | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000` |
+| CORS__ALLOW_ORIGINS_REGEX                 | -       | Regex pattern of allowed origins. |
+| CORS\_\_ALLOW_CREDENTIALS                 | true               | Set the `Access-Control-Allow-Credentials` header                                                                                      |
+| CORS\_\_ALLOW_METHODS                     | `*`                | Set the `Access-Control-Allow-Methods` header                                                                                          |
+| CORS\_\_ALLOW_HEADERS                     | `*`                | Set the `Access-Control-Allow-Headers` header                                                                                          |
+| AUTHENTICATION**ACCESS_TOKEN**SECRET_KEY  | secret1            | Access token's salt                                                                                                                    |
+| AUTHENTICATION**REFRESH_TOKEN**SECRET_KEY | secret2            | Refresh token salt                                                                                                                     |
+| AUTHENTICATION\_\_ALGORITHM               | HS256              | The JWT's algorithm                                                                                                                    |
+| AUTHENTICATION**ACCESS_TOKEN**EXPIRATION  | 30                 | Time in minutes after which the access token will stop working                                                                         |
+| AUTHENTICATION**REFRESH_TOKEN**EXPIRATION | 30                 | Time in minutes after which the refresh token will stop working                                                                        |
+| ADMIN_DOMAIN                              | -                  | Admin panel domain                                                                                                                     |
+| RABBITMQ__USE_SSL | True                  |  Rabbitmq ssl setting, turn false to local development
+##### ✋ Mandatory:
+
+> You can see that some environment variables have double underscore (`__`) instead of `_`.
+>
+> As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
+
+## 5. Testing
 
 The `pytest` framework is using in order to write unit tests.
 Currently postgresql is used as a database for tests with running configurations that are defined in `pyproject.toml`
@@ -200,7 +215,7 @@ DATABASE__DB=test
 127.0.0.1       postgres
 ```
 
-#### Adjust your database for using with tests
+### 5.1. Adjust your database for using with tests
 
 ⚠️️ Remember that you have to do this only once before the first test.
 
@@ -225,7 +240,7 @@ psql# create user test;
 psql# alter user test with password 'test';
 ```
 
-#### Test coverage
+### 5.2. Test coverage
 
 To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:
 
@@ -234,66 +249,9 @@ coverage run --concurrency=thread,gevent -m pytest
 coverage report -m
 ```
 
-<br/>
-<br/>
-
-## 🐳 <span style="color:#9DB7FF">Docker development</span>
-
-### 1. Build application images 🔨
-
-```bash
-docker-compose build
-```
-
-✅ Make sure that you completed `.env` file. It is using by default in `docker-compose.yaml` file for buildnig.
-
-✅ Check building with `docker images` command. You should see the record with `fastapi_service`.
-
-💡 If you would like to debug the application insode Docker comtainer make sure that you use `COMPOSE_FILE=docker-compose.dev.yaml` in `.env`. It has opened stdin and tty.
-
-### 2. Running the application ▶️
-
-```bash
-docker-compose up
-```
-
-Additional `docker-compose up` flags that might be useful for development
-
-```bash
--d  # Run docker containers as deamons (in background)
---no-recreate  # If containers already exist, don't recreate them
-```
-
-#### Stop the application 🛑
-
-```bash
-docker-compose down
-```
-
-Additional `docker-compose down` flags that might be useful for development
-
-```bash
--v  # Remove with all volumes
-```
-
-#### Run only tests 🛑
+### 5.3. Running test via docker
 
 (This is how tests are running on CI)
-
-```bash
-make dtest
-```
-
-### 3. Provide code quality ✨
-
-✋ Only in case you want to setup the Git hooks inside your Docker container and burn down in hell you may skip this step. 👹 🔥
-
-👉 <u>For the rest of audience it is recommended:</u>
-
-1. Don't install pre-commit hooks
-2. Use Makefile to run all commands in Docker container
-
-Usage:
 
 ```bash
 # Check the code quality
@@ -306,57 +264,41 @@ make dtest
 make dcheck
 ```
 
-## 💼 <span style="color:#9DB7FF">Additional</span>
+## 6. Scripts
 
-### Makefile
+### 6.1 Using pre-commit hooks
 
-You can use the `Makefile` to work with project (run the application / code quality tools / tests ...)
+It is a good practice to use Git hooks to provide better commits.
 
-For local usage:
+For increased security during development, install `git-secrets` to scan code for aws keys.
 
-```bash
-# Run the application
-make run
+Please use this link for that: https://github.com/awslabs/git-secrets#installing-git-secrets
 
-# Check the code quality
-# make cq
+`.pre-commit-config.yaml` is placed in the root of the repository.
 
-# Check tests passing
-make test
-
-# Check everything in one hop
-make check
-
-...
-```
-
-💡 If you want run web-app locally you can use the next command
-
-Run web-app locally (don't forget to activate the environment)
+👉 Once you have installed `git-secrets` and `pre-commit` simply run the following command.
 
 ```bash
-make run
+make aws-scan
 ```
 
-### CORS policy
+👉 Then all your staged cahnges will be checked via git hooks on every `git commit`
 
-By default CORS policy accepts all connections
+### 6.2 Alembic (migration)
 
-## <span style="color:#9DB7FF">Alembic (migration)</span>
-
-### 1. Add a new migrations file 🔨
+#### 6.2.1 Add a new migrations file 🔨
 
 ```bash
 alembic revision --autogenerate -m "Add a new field"
 ```
 
-### 2. Upgrade to the latest migration 🔨
+#### 6.2.2. Upgrade to the latest migration 🔨
 
 ```bash
 alembic upgrade head
 ```
 
-### 3. Downgrade to the specific one 🔨
+#### 6.2.3. Downgrade to the specific one 🔨
 
 ```bash
 alembic downgrade 0e43c346b90d
@@ -364,13 +306,13 @@ alembic downgrade 0e43c346b90d
 
 ✅ This hash is taken from the generated file in the migrations folder
 
-### 3. Downgrade to the specific one 🔨
+#### 6.2.3. Downgrade to the specific one 🔨
 
 ```bash
 alembic downgrade 0e43c346b90d
 ```
 
-### 4. Removing the migration 🔨
+#### 6.2.4. Removing the migration 🔨
 
 💡 Do not forget that alembic saves the migration version into the database.
 
@@ -378,13 +320,13 @@ alembic downgrade 0e43c346b90d
 delete from alembic_version;
 ```
 
-### 5. Upgrade arbitrary servers
+#### 6.2.5. Upgrade arbitrary servers
 
 ```bash
 alembic -c alembic_arbitrary.ini upgrade head
 ```
 
-### 6. Database relation structure
+#### 6.2.6. Database relation structure
 
 ```mermaid
 
@@ -637,11 +579,11 @@ Flow_histories }o--|| Applet_histories: ""
 
 ```
 
-## <span style="color:#9DB7FF"> Arbitrary setup </span>
+## 7. Arbitrary setup
 
 You can connect arbitrary file storage and database by filling special fields in table `user_workspaces`.
 
-### 1. PostgreSQL
+### 7.1. PostgreSQL
 
 Add your database connection string into `database_uri`
 In next format:
@@ -650,11 +592,14 @@ In next format:
 postgresql+asyncpg://<username>:<password>@<hostname>:port/database
 ```
 
-### 2. AWS S3 and GCP S3
+### 7.2. AWS S3 and GCP S3
 
 For AWS S3 bucket next fields are required:
 `storage_region`,`storage_bucket`, `storage_access_key`,`storage_secret_key`.
 
-### 3. Azure Blob
+### 7.3. Azure Blob
 
 In case of Azure blob, specify your connection string into field `storage_secret_key`
+
+
+## 8. License
