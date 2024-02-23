@@ -407,7 +407,7 @@ class TestSubjects(BaseTest):
             # Coordinator
             ("bob@gmail.com", "Test1234!", http.HTTPStatus.OK),
             # Editor, reviewer
-            ("pitbronson@mail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
+            ("pit@gmail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
         ),
     )
     async def test_error_try_delete_subject_by_not_owner(
@@ -506,10 +506,10 @@ class TestSubjects(BaseTest):
             # Coordinator
             ("bob@gmail.com", "Test1234!", http.HTTPStatus.OK),
             # Editor
-            ("pitbronson@mail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
+            ("pit@gmail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
         ),
     )
-    async def test_error_try_get_subject_by_not_manager(
+    async def test_error_try_get_subject_by_not_inviter(
         self,
         session,
         client,
