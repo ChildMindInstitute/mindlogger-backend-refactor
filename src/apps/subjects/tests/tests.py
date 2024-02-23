@@ -495,3 +495,33 @@ class TestSubjects(BaseTest):
         delete_url = self.subject_detail_url.format(subject_id=subject.id)
         response = await client.delete(delete_url, data=dict(deleteAnswers=False))
         assert response.status_code == http.HTTPStatus.OK
+
+    @pytest.mark.parametrize(
+        "email,password,expected",
+        (
+            # Owner
+            ("tom@mindlogger.com", "Test1234!", http.HTTPStatus.OK),
+            # Manager
+            ("lucy@gmail.com", "Test123", http.HTTPStatus.OK),
+            # Coordinator
+            ("bob@gmail.com", "Test1234!", http.HTTPStatus.OK),
+            # Editor
+            ("pitbronson@mail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
+        ),
+    )
+    async def test_error_try_get_subject_by_not_manager(
+        self,
+        session,
+        client,
+        tom_applet_one_subject,
+        applet_one_lucy_manager,
+        applet_one_bob_coordinator,
+        applet_one_pit_editor,
+        email,
+        password,
+        expected,
+    ):
+        subject_id = tom_applet_one_subject.id
+        await client.login(self.login_url, email, password)
+        res = await client.get(self.subject_detail_url.format(subject_id=subject_id))
+        assert res.status_code == expected
