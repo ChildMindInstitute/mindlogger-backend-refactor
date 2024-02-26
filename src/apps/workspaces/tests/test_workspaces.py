@@ -148,6 +148,7 @@ async def tom_answer_applet_one(session, tom: User, applet_one: AppletFull):
     )
     return await AnswerService(session, tom.id).create_answer(activity_answer)
 
+
 @pytest.fixture
 async def applet_one_shell_has_pending_invitation(session, tom: User, user: User, applet_one: AppletFull):
     subject = await SubjectsService(session, tom.id).create(
@@ -169,6 +170,7 @@ async def applet_one_shell_has_pending_invitation(session, tom: User, user: User
     )
     await InvitationsService(session, tom).send_respondent_invitation(applet_one.id, schema, subject.id)
     return subject
+
 
 class TestWorkspaces(BaseTest):
     fixtures = [

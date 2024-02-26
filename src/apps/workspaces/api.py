@@ -405,14 +405,13 @@ async def workspace_applet_get_respondent(
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
-    respondent_info, subject_id = await UserAppletAccessService(session, user.id, applet_id).get_respondent_info(
+    respondent_info = await UserAppletAccessService(session, user.id, applet_id).get_respondent_info(
         respondent_id, applet_id, owner_id
     )
     # get last activity time
     result = await AnswerService(session=session, arbitrary_session=answer_session).get_last_answer_dates(
-        [subject_id],
+        [respondent_info.subject_id],
         applet_id,  # TODO fix respondent->subject usage
     )
-    respondent_info.last_seen = result.get(subject_id)
-
+    respondent_info.last_seen = result.get(respondent_info.subject_id)
     return Response(result=respondent_info)
