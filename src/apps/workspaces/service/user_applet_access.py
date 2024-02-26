@@ -355,16 +355,12 @@ class UserAppletAccessService:
         respondent_id: uuid.UUID,
         applet_id: uuid.UUID,
         owner_id: uuid.UUID,
-    ) -> RespondentInfoPublic:
+    ) -> tuple[RespondentInfoPublic, uuid.UUID]:
         crud = UserAppletAccessCRUD(self.session)
         respondent_info = await crud.get_respondent_by_applet_and_owner(respondent_id, applet_id, owner_id)
         if not respondent_info:
             raise NotFoundError()
-
-        return RespondentInfoPublic(
-            nickname=respondent_info[0],
-            secret_user_id=respondent_info[1],
-        )
+        return RespondentInfoPublic(nickname=respondent_info[0], secret_user_id=respondent_info[1]), respondent_info[2]
 
     async def has_role(self, role: str) -> bool:
         manager_roles = set(Role.managers())

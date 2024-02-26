@@ -1075,8 +1075,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         respondent_id: uuid.UUID,
         applet_id: uuid.UUID,
         owner_id: uuid.UUID,
-    ) -> tuple[str, str] | None:
-        query: Query = select(SubjectSchema.nickname, SubjectSchema.secret_user_id)
+    ) -> tuple[str, str, uuid.UUID] | None:
+        query: Query = select(SubjectSchema.nickname, SubjectSchema.secret_user_id, SubjectSchema.id)
         query = query.select_from(UserAppletAccessSchema)
         query = query.where(
             UserAppletAccessSchema.owner_id == owner_id,
