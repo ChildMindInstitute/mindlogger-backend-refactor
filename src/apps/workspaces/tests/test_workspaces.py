@@ -1025,7 +1025,7 @@ class TestWorkspaces(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_user_last_activity_workspace_retrieve(
+    async def test_user_last_activity_workspace_respondent_retrieve(
         self, client, tom: User, applet_one: AppletFull, tom_answer_applet_one
     ):
         url = self.workspace_get_applet_respondent.format(
