@@ -198,4 +198,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                 f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501
             )
         except Exception as e:
-            print(wrap_error_msg(e))
+            msg = str(e)
+            if isinstance(e, asyncio.TimeoutError):
+                msg = "Timeout Error"
+            print(wrap_error_msg(msg))
