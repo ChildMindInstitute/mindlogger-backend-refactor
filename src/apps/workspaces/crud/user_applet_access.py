@@ -54,6 +54,8 @@ __all__ = ["UserAppletAccessCRUD"]
 class _AppletUsersFilter(Filtering):
     role = FilterField(UserAppletAccessSchema.role)
     shell = FilterField(UserSchema.id, method_name="null")
+    user_id = FilterField(UserSchema.id)
+    respondent_secret_id = FilterField(SubjectSchema.secret_user_id)
 
 
 class _WorkspaceRespondentOrdering(Ordering):
