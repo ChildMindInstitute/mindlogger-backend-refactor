@@ -9,9 +9,12 @@ from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
+from apps.invitations.domain import InvitationRespondentRequest
+from apps.invitations.services import InvitationsService
 from apps.shared.enums import Language
 from apps.shared.query_params import QueryParams
 from apps.shared.test import BaseTest
+from apps.subjects.constants import SubjectStatus
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
@@ -116,6 +119,29 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
 async def tom_applets(session: AsyncSession, tom: UserSchema):
     params = QueryParams()
     return await WorkspaceService(session, tom.id).get_workspace_applets(tom.id, "en", params)
+
+
+@pytest.fixture
+async def applet_one_shell_has_pending_invitation(session, tom: User, user: User, applet_one: AppletFull):
+    subject = await SubjectsService(session, tom.id).create(
+        Subject(
+            applet_id=applet_one.id,
+            creator_id=tom.id,
+            first_name="Invited",
+            last_name="Shell",
+            nickname="shell-account-invited",
+            secret_user_id=f"{uuid.uuid4()}",
+        )
+    )
+    schema = InvitationRespondentRequest(
+        email=user.email_encrypted,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language="en",
+        secret_user_id=f"{uuid.uuid4()}",
+    )
+    await InvitationsService(session, tom).send_respondent_invitation(applet_one.id, schema, subject.id)
+    return subject
 
 
 class TestWorkspaces(BaseTest):
@@ -996,3 +1022,32 @@ class TestWorkspaces(BaseTest):
             ),
         )
         assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+    async def test_workspace_respondent_status(
+        self,
+        client,
+        tom: User,
+        user: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_one_lucy_respondent,  # invited
+        applet_one_shell_account,  # not invited,
+        applet_one_shell_has_pending_invitation,  # pending
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        result = await client.get(self.workspace_respondents_url.format(owner_id=tom.id))
+        assert result.status_code == http.HTTPStatus.OK
+        payload = result.json()["result"]
+        assert payload
+        lucy_respondent = next(filter(lambda x: x["id"] == str(lucy.id), payload))
+        tom_respondent = next(filter(lambda x: x["id"] == str(tom.id), payload))
+        shell_account_not_invited = next(
+            filter(lambda x: x["details"][0]["subjectId"] == str(applet_one_shell_account.id), payload)
+        )
+        shell_account_pending = next(
+            filter(lambda x: x["details"][0]["subjectId"] == str(applet_one_shell_has_pending_invitation.id), payload)
+        )
+        assert lucy_respondent["status"] == SubjectStatus.INVITED
+        assert tom_respondent["status"] == SubjectStatus.INVITED
+        assert shell_account_pending["status"] == SubjectStatus.PENDING
+        assert shell_account_not_invited["status"] == SubjectStatus.NOT_INVITED
