@@ -440,6 +440,35 @@ class TestWorkspaces(BaseTest):
         assert data["count"] == 0
         assert not data["result"]
 
+    async def test_get_workspace_applet_respondents_filters(
+        self,
+        client,
+        tom,
+        applet_one,
+        tom_applet_one_subject: Subject,
+        lucy: User,
+        applet_one_lucy_respondent,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+
+        url = self.workspace_applet_respondents_list.format(
+            owner_id=tom.id,
+            applet_id=str(applet_one.id),
+        )
+
+        response = await client.get(url, {"userId": str(lucy.id)})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 1
+        assert data["result"][0]["id"] == str(lucy.id)
+
+        response = await client.get(url, {"respondentSecretId": str(tom_applet_one_subject.secret_user_id)})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 1
+        assert data["result"][0]["id"] == str(tom.id)
+        assert data["result"][0]["secretIds"][0] == str(tom_applet_one_subject.secret_user_id)
+
     async def test_get_workspace_respondent_accesses(self, client, tom, lucy, applet_one_lucy_respondent):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.get(
