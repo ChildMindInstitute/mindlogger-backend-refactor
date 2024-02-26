@@ -1039,6 +1039,7 @@ class TestWorkspaces(BaseTest):
         assert result.status_code == http.HTTPStatus.OK
         payload = result.json()["result"]
         assert payload
+        assert result.json()["count"] == 4
         lucy_respondent = next(filter(lambda x: x["id"] == str(lucy.id), payload))
         tom_respondent = next(filter(lambda x: x["id"] == str(tom.id), payload))
         shell_account_not_invited = next(

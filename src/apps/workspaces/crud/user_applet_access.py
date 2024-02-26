@@ -357,21 +357,24 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         await self._execute(query)
 
     async def get_invited_subject_ids(self, owner_id: uuid.UUID) -> list[uuid.UUID]:
-        query: Query = select(SubjectSchema.id)
-        query = query.select_from(UserAppletAccessSchema)
-        query = query.outerjoin(InvitationSchema, InvitationSchema.applet_id == UserAppletAccessSchema.applet_id)
-        query = query.where(
-            UserAppletAccessSchema.owner_id == owner_id,
-            UserAppletAccessSchema.role == Role.RESPONDENT,
-            InvitationSchema.status == InvitationStatus.PENDING,
-            SubjectSchema.id.isnot(None),
+        owner_applets_subquery = (
+            select(UserAppletAccessSchema.applet_id)
+            .distinct()
+            .where(UserAppletAccessSchema.owner_id == owner_id)
+            .subquery()
         )
-        query = query.outerjoin(
+
+        query: Query = select(SubjectSchema.id)
+        query = query.select_from(InvitationSchema)
+        query = query.join(
             SubjectSchema,
             and_(
                 InvitationSchema.meta.has_key("subject_id"),
                 SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
             ),
+        )
+        query = query.where(
+            InvitationSchema.status == InvitationStatus.PENDING, InvitationSchema.applet_id.in_(owner_applets_subquery)
         )
         db_res = await self._execute(query)
         res = db_res.scalars().all()
