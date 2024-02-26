@@ -82,7 +82,7 @@ class TestPassword:
         assert password_recovery_request.email in keys[0]
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients[0] == password_recovery_request.email
-        assert TestMail.mails[0].subject == "MindLogger"
+        assert TestMail.mails[0].subject == "Password reset"
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -115,7 +115,7 @@ class TestPassword:
         assert password_recovery_request.email in keys[0]
         assert len(TestMail.mails) == 3
         assert TestMail.mails[0].recipients[0] == password_recovery_request.email
-        assert TestMail.mails[0].subject == "MindLogger Admin"
+        assert TestMail.mails[0].subject == "Password reset"
 
         response = await client.post(
             url=self.password_recovery_url,
