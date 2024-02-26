@@ -364,6 +364,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema.owner_id == owner_id,
             UserAppletAccessSchema.role == Role.RESPONDENT,
             InvitationSchema.status == InvitationStatus.PENDING,
+            SubjectSchema.id.isnot(None),
         )
         query = query.outerjoin(
             SubjectSchema,
@@ -448,14 +449,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema, UserSchema)
         )
 
-        invite_status = select(
-            case(
-                (UserSchema.id.isnot(None), SubjectStatus.INVITED),
-                (func.array_agg(SubjectSchema.id).op("@>")(invited_subjects), SubjectStatus.PENDING),
-                else_=SubjectStatus.INVITED,
-            )
-        ).correlate(UserSchema, SubjectSchema)
-
         query: Query = select(
             # fmt: off
             UserSchema.id,
@@ -463,7 +456,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             case((UserSchema.id.isnot(None), UserSchema.is_anonymous_respondent), else_=false()).label(
                 "is_anonymous_respondent"
             ),
-            invite_status.label("status"),
+            case(
+                (UserSchema.id.isnot(None), SubjectStatus.INVITED),
+                (
+                    and_(len(invited_subjects) > 0, func.array_agg(SubjectSchema.id).op("@>")(invited_subjects)),
+                    SubjectStatus.PENDING,
+                ),
+                else_=SubjectStatus.NOT_INVITED,
+            ).label("status"),
             is_pinned.label("is_pinned"),
             func.array_remove(func.array_agg(func.distinct(field_nickname)), None)
             .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
