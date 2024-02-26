@@ -1,86 +1,28 @@
 <html style="max-width: 700px" lang="en">
+
 <body>
-{% include 'header.html' %}
-<table style="padding: 0">
-    <tr>
-        <td style="padding-bottom: 1%">
-            {{ first_name }} {{ last_name }}!
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            Bienvenue dans "{{ applet_name }}"!
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            Vous avez été invité à devenir {{ role }} de "{{ applet_name
-            }}", dans l'application MindLogger (voir ci-dessous).
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            Pour accepter cette invitation, cliquez ci-dessous et votre
-            navigateur Internet s'ouvrira sur la page d'invitation
-            de "{{ applet_name }}":
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%; text-align: center;">
-            <a
-                    href="{{ link }}/{{ key }}?lang={{ language }}"
-                    style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 0.3rem; display: inline-block; font-weight: 400; vertical-align: middle; text-decoration: none; color: #000000; background-color: rgb(88, 217, 65); border-color: rgb(88, 217, 65);"
-            >
-                Aller à la page d'invitation "{{ applet_name }}".
-            </a>
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            Après avoir accepté l'invitation, vous pourrez accéder à
-            "{{ applet_name }}" dans l'application gratuite MindLogger sur votre
-            appareil mobile, en suivant trois étapes simples (voir
-            <a
-                    href="https://help.mindlogger.org"
-            >
-                le guide de l'utilisateur
-            </a>pour plus de détails):
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            <ol>
-                <li>
-                    Installez l'application MindLogger sur votre appareil
-                    mobile, si elle n'est pas déjà installée.
-                </li>
-                <li>
-                    Ouvrez l'application MindLogger sur votre appareil mobile et
-                    connectez-vous.
-                </li>
-                <li>
-                    Appuyez sur "{{ applet_name }}" sur l'écran d'accueil de
-                    MindLogger et c'est tout ! Si "{{ applet_name }}"
-                    n'apparaît pas, rafraîchissez l'écran en faisant glisser
-                    votre doigt vers le bas à partir du haut et une roue
-                    devrait apparaître pendant le chargement
-                    de "{{ applet_name }}".
-                </li>
-            </ol>
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            Merci d'avoir accepté l'invitation à utiliser "{{ applet_name }}"!
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            -L'équipe MindLogger
-        </td>
-    </tr>
-</table>
-{% include 'footers/footer_info_fr.html' %}
+    {% include 'header.html' %}
+    <table style="padding: 0">
+        <tr>
+            <td style="padding-bottom: 1%">
+                Salut {{first_name}},
+            </td>
+        </tr>
+        <tr>
+            <td style="padding-bottom: 1%">
+                Vous avez été invité à devenir {{role}} de <b>"{{applet_name}}"</b>, dans l'application MindLogger (voir ci-dessous).
+            </td>
+        </tr>
+        <tr>
+            <td style="padding-top: 2%; padding-bottom: 1%;">
+                <a href="{{link}}/{{key}}?lang={{language}}"
+                    style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 100px; display: inline-block; font-weight: 400; text-align: center; vertical-align: middle; text-decoration: none; color: #ffffff; background-color: #00639A; border-color: #00639A;">Créez
+                    votre compte et commencez</a>
+            </td>
+        </tr>
+        {% include 'blocks/team_info_fr.html' %}
+    </table>
+    {% include 'footers/footer_info_fr.html' %}
 </body>
 
 </html>
