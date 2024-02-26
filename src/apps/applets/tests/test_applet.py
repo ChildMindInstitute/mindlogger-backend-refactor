@@ -1,17 +1,31 @@
-import asyncio
-import collections
 import copy
 import http
 import json
 import uuid
-from copy import deepcopy
 
 import pytest
 from firebase_admin.exceptions import NotFoundError as FireBaseNotFoundError
+from pytest_mock import MockerFixture
 
-from apps.activities import errors as activity_errors
-from apps.mailing.services import TestMail
+from apps.activities.domain.activity_create import ActivityItemCreate
+from apps.activities.domain.activity_update import ActivityItemUpdate
+from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.errors import (
+    AssessmentLimitExceed,
+    DuplicateActivityFlowNameError,
+    DuplicateActivityItemNameNameError,
+    DuplicateActivityNameError,
+    DuplicatedActivitiesError,
+    DuplicatedActivityFlowsError,
+    FlowItemActivityKeyNotFoundError,
+)
+from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
+from apps.applets.domain.applet_full import AppletFull
+from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
+from apps.applets.errors import AppletAlreadyExist
 from apps.shared.exception import NotFoundError
+from apps.shared.test.client import TestClient
+from apps.users.domain import User
 from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
 from config import settings
 from infrastructure.utility import FCMNotificationTest
@@ -39,925 +53,134 @@ class TestApplet:
     public_applet_detail_url = "/public/applets/{key}"
     public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
 
-    async def test_creating_applet(self, client, tom):
-        TestMail.mails = []
+    async def test_create_applet_with_minimal_data(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        create_data = {
-            "displayName": "7ee3617f-fe7f-49bc-8e0c-da6730a2d1cd",
-            "encryption": {
-                "publicKey": "publicKey",
-                "prime": "privateKey",
-                "base": "[2]",
-                "accountId": str(tom.id),
-            },
-            "description": {"en": "Central granddaughter unfortunate"},
-            "about": {"en": "channels indexing noisily"},
-            "activities": [
-                {
-                    "items": [
-                        {
-                            "name": "AT_single_select",
-                            "question": {"en": "How do you feel today?"},
-                            "config": {
-                                "removeBackButton": True,
-                                "skippableItem": True,
-                                "randomizeOptions": True,
-                                "addScores": True,
-                                "setAlerts": True,
-                                "addTooltip": True,
-                                "setPalette": True,
-                                "additionalResponseOption": {
-                                    "textInputOption": True,
-                                    "textInputRequired": True,
-                                },
-                            },
-                            "responseValues": {
-                                "options": [
-                                    {
-                                        "text": "very bad",
-                                        "isHidden": False,
-                                        "score": 1,
-                                        "image": "image.jpg",
-                                        "tooltip": "backing",
-                                        "color": "#123",
-                                        "value": 0,
-                                    },
-                                    {
-                                        "text": "bad",
-                                        "isHidden": False,
-                                        "score": 20,
-                                        "image": "image.jpg",
-                                        "tooltip": "Generic",
-                                        "color": "#456",
-                                        "value": 1,
-                                    },
-                                    {
-                                        "text": "normally",
-                                        "isHidden": False,
-                                        "score": 30,
-                                        "image": "image.jpg",
-                                        "tooltip": "Gasoline",
-                                        "color": "#789",
-                                        "value": 2,
-                                    },
-                                    {
-                                        "text": "perfect",
-                                        "isHidden": False,
-                                        "score": 100,
-                                        "image": "image.jpg",
-                                        "tooltip": "payment",
-                                        "color": "#234",
-                                        "value": 3,
-                                    },
-                                ]
-                            },
-                            "responseType": "singleSelect",
-                        },
-                        {
-                            "name": "AT_multi_select",
-                            "question": {"en": "How do you feel today?"},
-                            "config": {
-                                "removeBackButton": True,
-                                "skippableItem": True,
-                                "randomizeOptions": True,
-                                "addScores": True,
-                                "setAlerts": True,
-                                "addTooltip": True,
-                                "setPalette": True,
-                                "additionalResponseOption": {
-                                    "textInputOption": True,
-                                    "textInputRequired": True,
-                                },
-                            },
-                            "responseValues": {
-                                "options": [
-                                    {
-                                        "text": "very bad",
-                                        "isHidden": False,
-                                        "score": 30,
-                                        "image": "image.jpg",
-                                        "tooltip": "Music",
-                                        "color": "#567",
-                                        "value": 0,
-                                    },
-                                    {
-                                        "text": "bad",
-                                        "isHidden": False,
-                                        "score": 1,
-                                        "image": "image.jpg",
-                                        "tooltip": "East",
-                                        "color": "#876",
-                                        "value": 1,
-                                    },
-                                    {
-                                        "text": "normally",
-                                        "isHidden": False,
-                                        "score": 20,
-                                        "image": "image.jpg",
-                                        "tooltip": "Sodium",
-                                        "color": "#923",
-                                        "value": 2,
-                                    },
-                                    {
-                                        "text": "perfect",
-                                        "isHidden": False,
-                                        "score": 100,
-                                        "image": "image.jpg",
-                                        "tooltip": "Electronics",
-                                        "color": "#567",
-                                        "value": 3,
-                                    },
-                                ]
-                            },
-                            "responseType": "multiSelect",
-                        },
-                        {
-                            "name": "AT_slider",
-                            "question": {"en": "How do you feel today?"},
-                            "responseType": "slider",
-                            "config": {
-                                "removeBackButton": True,
-                                "skippableItem": True,
-                                "addScores": True,
-                                "setAlerts": True,
-                                "showTickMarks": True,
-                                "showTickLabels": True,
-                                "continuousSlider": True,
-                                "additionalResponseOption": {
-                                    "textInputOption": True,
-                                    "textInputRequired": True,
-                                },
-                            },
-                            "responseValues": {
-                                "minLabel": "very bad",
-                                "maxLabel": "extremely good",
-                                "minValue": 0,
-                                "maxValue": 10,
-                                "minImage": "image.jpg",
-                                "maxImage": "image.jpg",
-                                "scores": [
-                                    0,
-                                    10,
-                                    20,
-                                    30,
-                                    40,
-                                    50,
-                                    60,
-                                    70,
-                                    80,
-                                    90,
-                                    100,
-                                ],
-                            },
-                        },
-                        {
-                            "name": "AT_text",
-                            "question": {"en": "How do you feel today?"},
-                            "config": {
-                                "removeBackButton": True,
-                                "skippableItem": True,
-                                "maxResponseLength": 50,
-                                "correctAnswerRequired": True,
-                                "correctAnswer": "perfect",
-                                "numericalResponseRequired": True,
-                                "responseDataIdentifier": True,
-                                "responseRequired": True,
-                                "isIdentifier": True,
-                            },
-                            "responseValues": None,
-                            "responseType": "text",
-                        },
-                    ],
-                    "name": "white",
-                    "key": "19a78ace-5fe5-4a98-8c66-454f973f7f9a",
-                    "isHidden": False,
-                    "description": {"en": "Recumbent hacking Steel"},
-                    "showAllAtOnce": True,
-                    "isSkippable": True,
-                    "responseIsEditable": True,
-                    "isReviewable": True,
-                    "image": "image.jpg",
-                    "splashScreen": "image.jpg",
-                    "reportIncludedItemName": "AT_single_select",
-                }
-            ],
-            "activityFlows": [
-                {
-                    "name": "Metal",
-                    "description": {"en": "East Coupe Northeast"},
-                    "items": [{"activityKey": "19a78ace-5fe5-4a98-8c66-454f973f7f9a"}],
-                    "reportIncludedActivityName": "white",
-                    "reportIncludedItemName": "AT_single_select",
-                    "isHidden": False,
-                }
-            ],
-        }
         response = await client.post(
             self.applet_create_url.format(owner_id=tom.id),
-            data=create_data,
+            data=applet_minimal_data,
         )
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
+        result = response.json()["result"]
+        # TODO: check response?
+        assert result
 
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == http.HTTPStatus.OK
 
-    async def test_creating_applet_failed_by_duplicate_activity_name(self, client, tom):
+    async def test_creating_applet_failed_by_duplicate_activity_name(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        create_data = dict(
-            display_name="User daily behave",
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    name="AAA",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="morning_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            is_hidden=True,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                        dict(
-                            name="morning_activity_item_2",
-                            question=dict(
-                                en="How had you woke?",
-                                fr="How had you woke?",
-                            ),
-                            response_type="slider",
-                            response_values=dict(
-                                min_label="Not at all",
-                                max_label="Very much",
-                                min_value=1,
-                                max_value=5,
-                                min_image=None,
-                                max_image=None,
-                                scores=None,
-                            ),
-                            config=dict(
-                                add_scores=False,
-                                set_alerts=False,
-                                show_tick_marks=False,
-                                show_tick_labels=False,
-                                continuous_slider=False,
-                                timer=None,
-                                remove_back_button=False,
-                                skippable_item=True,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                    ],
-                ),
-                dict(
-                    name="AAA",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="evening_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="singleSelect",
-                            response_values=dict(
-                                paletteName="default",
-                                options=[
-                                    dict(
-                                        id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
-                                        text="Very well",
-                                        image=None,
-                                        score=None,
-                                        tooltip=None,
-                                        is_hidden=False,
-                                        color=None,
-                                    ),
-                                    dict(
-                                        id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
-                                        text="Well",
-                                        image=None,
-                                        score=None,
-                                        tooltip=None,
-                                        is_hidden=False,
-                                        color=None,
-                                    ),
-                                ],
-                            ),
-                            config=dict(
-                                remove_back_button=False,
-                                skippable_item=True,
-                                randomize_options=False,
-                                timer=None,
-                                add_scores=False,
-                                set_alerts=False,
-                                add_tooltip=False,
-                                set_palette=False,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                        dict(
-                            name="evening_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="multiSelect",
-                            response_values=dict(
-                                paletteName=None,
-                                options=[
-                                    dict(
-                                        id="41dfea7e-4496-42b3-ab24-3dd7cce71312",
-                                        text="Very well",
-                                        image=None,
-                                        score=None,
-                                        tooltip=None,
-                                        is_hidden=False,
-                                        color=None,
-                                    ),
-                                    dict(
-                                        id="41dfea7e-4496-42b3-ab24-3dd7cce71313",
-                                        text="Well",
-                                        image=None,
-                                        score=None,
-                                        tooltip=None,
-                                        is_hidden=False,
-                                        color=None,
-                                    ),
-                                ],
-                            ),
-                            config=dict(
-                                remove_back_button=False,
-                                skippable_item=True,
-                                randomize_options=False,
-                                timer=None,
-                                add_scores=False,
-                                set_alerts=False,
-                                add_tooltip=False,
-                                set_palette=False,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                        dict(
-                            name="evening_activity_item33",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="photo",
-                            response_values=None,
-                            config=dict(
-                                remove_back_button=False,
-                                skippable_item=True,
-                                timer=None,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-        )
-        response = await client.post(
-            self.applet_create_url.format(owner_id=tom.id),
-            data=create_data,
-        )
+        data = applet_minimal_data.copy(deep=True)
+        data.activities.append(data.activities[0])
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == DuplicateActivityNameError.message
 
-    async def test_creating_applet_failed_by_duplicate_activity_item_name(self, client, tom):
+    async def test_creating_applet_failed_by_duplicate_activity_item_name(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        create_data = dict(
-            display_name="User daily behave",
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    name="AAA",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="aaa",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            is_hidden=True,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                        dict(
-                            name="aaa",
-                            question=dict(
-                                en="How had you woke?",
-                                fr="How had you woke?",
-                            ),
-                            response_type="slider",
-                            response_values=dict(
-                                min_label="Not at all",
-                                max_label="Very much",
-                                min_value=1,
-                                max_value=5,
-                                min_image=None,
-                                max_image=None,
-                                scores=None,
-                            ),
-                            config=dict(
-                                add_scores=False,
-                                set_alerts=False,
-                                show_tick_marks=False,
-                                show_tick_labels=False,
-                                continuous_slider=False,
-                                timer=None,
-                                remove_back_button=False,
-                                skippable_item=True,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                    ],
-                )
-            ],
-        )
-        response = await client.post(
-            self.applet_create_url.format(owner_id=tom.id),
-            data=create_data,
-        )
+        data = applet_minimal_data.copy(deep=True)
+        data.activities[0].items.append(data.activities[0].items[0])
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == DuplicateActivityItemNameNameError.message
 
-    async def test_create_duplicate_name_applet(self, client, tom):
+    @pytest.mark.parametrize("applet_name", ("duplicate name", "DUPLICATE NAME", "duPlicate Name"))
+    async def test_create_duplicate_name_applet(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate, applet_name: str
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        create_data = dict(
-            display_name="Applet 1",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-            ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    name="Morning activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="evening_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-                dict(
-                    name="Evening activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="evening_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
-                )
-            ],
-        )
-        response = await client.post(
-            self.applet_create_url.format(owner_id=tom.id),
-            data=create_data,
-        )
+        data = applet_minimal_data.copy(deep=True)
+        data.display_name = applet_name
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
-        assert response.json()["result"][0]["message"] == "Applet already exists."
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert response.json()["result"][0]["message"] == AppletAlreadyExist.message
 
-    async def test_create_duplicate_case_sensitive_name_applet(self, client, tom):
+    async def test_update_applet(
+        self, client: TestClient, tom: User, device_tom: str, applet_one: AppletFull, fcm_client: FCMNotificationTest
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        create_data = dict(
-            display_name="AppleT 1",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-            ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    name="Morning activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="evening_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-                dict(
-                    name="Evening activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="evening_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
-                )
-            ],
-        )
-        response = await client.post(
-            self.applet_create_url.format(owner_id=tom.id),
-            data=create_data,
-        )
-        assert response.status_code == http.HTTPStatus.BAD_REQUEST
-        assert response.json()["result"][0]["message"] == "Applet already exists."
+        update_data = AppletUpdate(**applet_one.dict())
 
-    async def test_update_applet(self, client, tom, device_tom, applet_one):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        update_data = dict(
-            stream_enabled=True,
-            stream_ip_address="127.0.0.1",
-            stream_port=8881,
-            display_name="Applet 1",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-            ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-                    name="Morning activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            id="a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
-                            name="evening_activity_item",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                        dict(
-                            name="evening_activity_item2",
-                            question=dict(
-                                en="How was your breakfast?",
-                                fr="How was your breakfast?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                        dict(
-                            id="a18d3409-2c96-4a5e-a1f3-1c1c14be0012",
-                            name="activity_item_time_range",
-                            question={"en": "What is your name?"},
-                            response_type="timeRange",
-                            response_values=None,
-                            config=dict(
-                                additional_response_option={
-                                    "text_input_option": False,
-                                    "text_input_required": False,
-                                },
-                                remove_back_button=False,
-                                skippable_item=False,
-                                timer=1,
-                            ),
-                        ),
-                    ],
-                ),
-                dict(
-                    name="Evening activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            question=dict(
-                                en="How had you spent your time?",
-                                fr="How had you spent your time?",
-                            ),
-                            name="evening_activity_item3",
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[
-                        dict(
-                            id="7941b770-b649-42fc-832a-870e11bdd402",
-                            activity_key="577dbbda-" "3afc-4962-842b-8d8d11588bfe",
-                        )
-                    ],
-                )
-            ],
-        )
-        activity_key = update_data["activity_flows"][0]["items"][0]["activity_key"]
-        wrong_activity_key = uuid.uuid4()
-        update_data["activity_flows"][0]["items"][0]["activity_key"] = wrong_activity_key
-
-        response = await client.put(
-            self.applet_detail_url.format(pk=applet_one.id),
-            data=update_data,
-        )
-        assert response.status_code == activity_errors.FlowItemActivityKeyNotFoundError.status_code
-        assert response.json()["result"][0]["message"] == activity_errors.FlowItemActivityKeyNotFoundError.message
-
-        update_data["activity_flows"][0]["items"][0]["activity_key"] = activity_key
         response = await client.put(
             self.applet_detail_url.format(pk=applet_one.id),
             data=update_data,
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
-        # TODO: move to fixtures
-        assert len(FCMNotificationTest.notifications) == 1
-        assert device_tom in FCMNotificationTest.notifications
-        notification = json.loads(FCMNotificationTest.notifications[device_tom][0])
+        assert device_tom in fcm_client.notifications
+        assert len(fcm_client.notifications[device_tom]) == 1
+        notification = json.loads(fcm_client.notifications[device_tom][0])
         assert notification["title"] == "Applet is updated."
-        FCMNotificationTest.notifications = collections.defaultdict(list)
 
-        data = response.json()
-        response = await client.put(
-            self.activity_report_config_url.format(
-                pk=applet_one.id,
-                activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-            ),
-            data=dict(report_included_item_name="evening_activity_item3"),
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        flow_id = data["result"]["activityFlows"][0]["id"]
-        response = await client.put(
-            self.flow_report_config_url.format(pk=applet_one.id, flow_id=flow_id),
-            data=dict(
-                report_included_activity_name="Morning activity",
-                report_included_item_name="evening_activity_item3",
-            ),
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        # get applet and check stream settings
-        response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
-        assert response.status_code == 200
-        assert response.json()["result"]["streamEnabled"] is True
-        assert response.json()["result"]["streamIpAddress"] == update_data["stream_ip_address"]
-        assert response.json()["result"]["streamPort"] == update_data["stream_port"]
-
-    async def test_duplicate_applet(self, client, tom, applet_one):
-        TestMail.mails = []
+    async def test_update_applet__add_stream_settings(self, client: TestClient, applet_one: AppletFull, tom: User):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        update_data = AppletUpdate(**applet_one.dict())
+        update_data.stream_enabled = True
+        update_data.stream_ip_address = "127.0.0.1"  # type: ignore[assignment]
+        update_data.stream_port = 8001
+        response = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=update_data)
+        assert response.status_code == http.HTTPStatus.OK
+        response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["streamEnabled"]
+        assert response.json()["result"]["streamIpAddress"] == str(update_data.stream_ip_address)
+        assert response.json()["result"]["streamPort"] == update_data.stream_port
 
-        response = await client.post(
-            self.applet_duplicate_url.format(pk=applet_one.id),
-            data=dict(
-                display_name="New name",
-                encryption=dict(
-                    public_key=uuid.uuid4().hex,
-                    account_id=str(uuid.uuid4()),
-                    prime=uuid.uuid4().hex,
-                    base=uuid.uuid4().hex,
-                ),
-            ),
+    async def test_update_applet_duplicate_name_activity(
+        self, client: TestClient, tom: User, device_tom: str, applet_one: AppletFull
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        update_data = AppletUpdate(**applet_one.dict())
+        update_data.activities.append(update_data.activities[0])
+
+        response = await client.put(
+            self.applet_detail_url.format(pk=applet_one.id),
+            data=update_data,
         )
-        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == DuplicateActivityNameError.message
 
-        response = await client.get(self.applet_list_url)
-        assert len(response.json()["result"]) == 3
-        assert response.json()["result"][0]["displayName"] == "New name"
-
+    async def test_duplicate_applet(
+        self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        new_name = "New Name"
         response = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
-            data=dict(
-                display_name="New name",
-                encryption=dict(
-                    public_key=uuid.uuid4().hex,
-                    account_id=str(uuid.uuid4()),
-                    prime=uuid.uuid4().hex,
-                    base=uuid.uuid4().hex,
-                ),
-            ),
+            data=dict(display_name=new_name, encryption=encryption.dict()),
+        )
+        assert response.status_code == http.HTTPStatus.CREATED
+        assert response.json()["result"]["displayName"] == new_name
+
+    async def test_duplicate_applet_name_already_exists(
+        self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.post(
+            self.applet_duplicate_url.format(pk=applet_one.id),
+            data=dict(display_name=applet_one.display_name, encryption=encryption.dict()),
         )
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AppletAlreadyExist.message
 
-    async def test_set_applet_report_configuration(self, client, tom, applet_one):
+    async def test_set_applet_report_configuration(self, client: TestClient, tom: User, applet_one: AppletFull):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
         report_configuration = dict(
@@ -986,7 +209,7 @@ class TestApplet:
         assert response.json()["result"]["reportIncludeCaseId"] == report_configuration["report_include_case_id"]
         assert response.json()["result"]["reportEmailBody"] == report_configuration["report_email_body"]
 
-    async def test_publish_conceal_applet(self, client, tom, applet_one):
+    async def test_publish_conceal_applet(self, client: TestClient, tom: User, applet_one: AppletFull):
         # NOTE: only superadmin can publish an applet
         await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
         response = await client.post(self.applet_publish_url.format(pk=applet_one.id))
@@ -1007,9 +230,12 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is False
 
-    async def test_set_encryption(self, client, tom, applet_one_no_encryption, encryption):
+    async def test_set_encryption(
+        self, client: TestClient, tom: User, applet_one_no_encryption: AppletFull, encryption: Encryption
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
+        assert applet_one_no_encryption.encryption is None
         response = await client.post(
             self.applet_set_encryption_url.format(pk=applet_one_no_encryption.id),
             data=encryption,
@@ -1021,23 +247,17 @@ class TestApplet:
         assert result["base"] == encryption.base
         assert result["accountId"] == encryption.account_id
 
-    async def test_set_encryption__encryption_already_set(self, client, tom, applet_one):
+    async def test_set_encryption__encryption_already_set(
+        self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.post(
-            self.applet_set_encryption_url.format(pk=applet_one.id),
-            data=dict(
-                public_key=uuid.uuid4().hex,
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-            ),
-        )
-        assert response.status_code == 403
+        response = await client.post(self.applet_set_encryption_url.format(pk=applet_one.id), data=encryption)
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
         result = response.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == AppletEncryptionUpdateDenied.message
 
-    async def test_applet_list(self, client, tom, applet_one, applet_two):
+    async def test_applet_list(self, client: TestClient, tom: User, applet_one: AppletFull, applet_two: AppletFull):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.get(self.applet_list_url)
 
@@ -1047,201 +267,97 @@ class TestApplet:
         act_ids = set(i["id"] for i in response.json()["result"])
         assert exp_ids == act_ids
 
-    async def test_applet_delete(self, client, tom, device_tom, applet_one):
+    async def test_applet_delete(
+        self, client: TestClient, tom: User, applet_one: AppletFull, device_tom: str, fcm_client: FCMNotificationTest
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.delete(
             self.applet_detail_url.format(pk=applet_one.id),
         )
 
-        assert response.status_code == 204, response.json()
-
-        response = await client.delete(
-            self.applet_detail_url.format(pk="00000000-0000-0000-0000-000000000000"),
-        )
-
-        assert response.status_code == 404, response.json()
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
 
         # TODO: move to the fixtures
-        assert len(FCMNotificationTest.notifications) == 1
-        assert device_tom in FCMNotificationTest.notifications
-        notification = json.loads(FCMNotificationTest.notifications[device_tom][0])
+        assert device_tom in fcm_client.notifications
+        assert len(fcm_client.notifications[device_tom]) == 1
+        notification = json.loads(fcm_client.notifications[device_tom][0])
         assert notification["title"] == "Applet is deleted."
-        FCMNotificationTest.notifications = collections.defaultdict(list)
 
-    async def test_applet_delete_by_manager(self, client, applet_one_lucy_manager):
+    async def test_applet_delete__applet_does_not_exists(self, client: TestClient, tom: User, uuid_zero: uuid.UUID):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.delete(
+            self.applet_detail_url.format(pk=uuid_zero),
+        )
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+    async def test_applet_delete_by_manager(self, client: TestClient, applet_one_lucy_manager: AppletFull):
         await client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await client.delete(
             self.applet_detail_url.format(pk=applet_one_lucy_manager.id),
         )
 
-        assert response.status_code == 204
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
 
-    async def test_applet_delete_by_coordinator(self, client, applet_one_lucy_coordinator):
+    async def test_applet_delete_by_coordinator(self, client: TestClient, applet_one_lucy_coordinator: AppletFull):
         await client.login(self.login_url, "lucy@gmail.com", "Test123")
         response = await client.delete(
             self.applet_detail_url.format(pk=applet_one_lucy_coordinator.id),
         )
 
-        assert response.status_code == 403
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
 
-    async def test_applet_list_with_invalid_token(self, client, tom):
-        from config import settings
-
-        current_access_token_expiration = settings.authentication.access_token.expiration
-
-        settings.authentication.access_token.expiration = 0.05
+    async def test_applet_list_with_limit(self, client: TestClient, tom: User, applet_one: AppletFull):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        await asyncio.sleep(4)
-        response = await client.get(self.applet_list_url)
-
-        settings.authentication.access_token.expiration = current_access_token_expiration
-        assert response.status_code == 401, response.json()
-
-    async def test_applet_list_with_expired_token(self, client):
-        response = await client.get(
-            self.applet_list_url,
-            headers=dict(Authorization="Bearer invalid_token"),
-        )
-
-        assert response.status_code == 401, response.json()
-
-    async def test_applet_list_by_filters(self, client, tom, applet_one):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.get(self.applet_list_url, dict(ordering="id", owner_id=1, limit=1))
+        response = await client.get(self.applet_list_url, dict(ordering="id", limit=1))
 
         assert response.status_code == http.HTTPStatus.OK
         assert len(response.json()["result"]) == 1
         assert response.json()["result"][0]["id"] == str(applet_one.id)
 
-    async def test_applet_detail(self, client, tom, applet_one):
+    async def test_applet_detail(self, client: TestClient, tom: User, applet_one_with_flow: AppletFull):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
+        response = await client.get(self.applet_detail_url.format(pk=applet_one_with_flow.id))
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
-        assert result["displayName"] == applet_one.display_name
+        assert result["displayName"] == applet_one_with_flow.display_name
         assert len(result["activities"]) == 1
-        # TODO: Add activity_flows and check
+        assert len(result["activityFlows"]) == 1
 
-    async def test_public_applet_detail(self, client, applet_one_with_public_link):
+    async def test_public_applet_detail(self, client: TestClient, applet_one_with_public_link: AppletFull):
         response = await client.get(self.public_applet_detail_url.format(key=applet_one_with_public_link.link))
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
         assert result["displayName"] == applet_one_with_public_link.display_name
         assert len(result["activities"]) == 1
-        # TODO: Add activity_flows and check
 
-    async def test_creating_applet_history(self, client, tom):
+    async def test_create_applet__initial_version_is_created_in_applet_history(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        create_data = dict(
-            display_name="User daily behave",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-            ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    name="Morning activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="morning_activity_item1",
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-                dict(
-                    name="Evening activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            name="evening_activity_item1",
-                            question=dict(
-                                en="How had you spent your time?",
-                                fr="How had you spent your time?",
-                            ),
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
-                )
-            ],
-        )
         response = await client.post(
             self.applet_create_url.format(owner_id=tom.id),
-            data=create_data,
+            data=applet_minimal_data,
         )
-        assert response.status_code == http.HTTPStatus.CREATED, response.json()
-
+        assert response.status_code == http.HTTPStatus.CREATED
         version = response.json()["result"]["version"]
         applet_id = response.json()["result"]["id"]
 
         response = await client.get(self.histories_url.format(pk=applet_id))
 
-        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.status_code == http.HTTPStatus.OK
         versions = response.json()["result"]
         assert len(versions) == 1
         assert versions[0]["version"] == version
 
-    async def test_versions_for_not_existed_applet(self, client, tom):
+    async def test_get_versions_for_not_existed_applet(self, client: TestClient, tom: User, uuid_zero: uuid.UUID):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        response = await client.get(self.histories_url.format(pk=uuid.uuid4()))
+        response = await client.get(self.histories_url.format(pk=uuid_zero))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-        assert response.status_code == 404, response.json()
-
-    async def test_updating_applet_history(self, client, tom, applet_one, applet_minimal_data):
+    async def test_update_applet__applet_history_is_updated(
+        self, client: TestClient, tom: User, applet_one: AppletFull, applet_minimal_data: AppletCreate
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         # first change patch version
         update_data_patch = applet_one.dict()
@@ -1293,367 +409,99 @@ class TestApplet:
         applet = response.json()["result"]
         assert applet["version"] == "2.0.0"
 
-        # Not valid version
-        response = await client.get(self.history_url.format(pk=applet_one.id, version="0.0.0"))
-        assert response.status_code == 404, response.json()
-
-    async def test_history_changes(self, client, tom):
+    async def test_get_history_version__applet_version_does_not_exist(
+        self, client: TestClient, tom: User, applet_one: AppletFull
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        create_data = dict(
-            display_name="User daily behave",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-            ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    name="Morning activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            name="morning_activity_item132",
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-                dict(
-                    name="Evening activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            question=dict(
-                                en="How had you spent your time?",
-                                fr="How had you spent your time?",
-                            ),
-                            name="evening_activity_item132",
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
-                )
-            ],
-        )
-        response = await client.post(
-            self.applet_create_url.format(owner_id=tom.id),
-            data=create_data,
-        )
+        response = await client.get(self.history_url.format(pk=applet_one.id, version="0.0.0"))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-        update_data = dict(
-            display_name="User daily behave updated",
-            encryption=dict(
-                public_key=uuid.uuid4().hex,
-                account_id=str(uuid.uuid4()),
-                prime=uuid.uuid4().hex,
-                base=uuid.uuid4().hex,
-            ),
-            description=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            about=dict(
-                en="Understand users behave",
-                fr="Comprendre le comportement des utilisateurs",
-            ),
-            activities=[
-                dict(
-                    id="09e3dbf0-aefb-4d0e-9177-bdb321bf3615",
-                    name="Morning activity new",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
-                    description=dict(
-                        en="Understand morning feelings.",
-                        fr="Understand morning feelings.",
-                    ),
-                    items=[
-                        dict(
-                            question=dict(
-                                en="How had you slept?",
-                                fr="How had you slept?",
-                            ),
-                            name="morning_activity_item132",
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                        dict(
-                            question=dict(
-                                en="How was your breakfast?",
-                                fr="How was your breakfast?",
-                            ),
-                            name="morning_activity_item133",
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                        dict(
-                            name="morning_activity_item_2",
-                            question=dict(
-                                en="How had you woke?",
-                                fr="How had you woke?",
-                            ),
-                            response_type="slider",
-                            response_values=dict(
-                                min_label="Not at all",
-                                max_label="Very much",
-                                min_value=1,
-                                max_value=5,
-                                min_image=None,
-                                max_image=None,
-                                scores=[0, 1, 2, 3, 4],
-                            ),
-                            config=dict(
-                                add_scores=True,
-                                set_alerts=False,
-                                show_tick_marks=False,
-                                show_tick_labels=False,
-                                continuous_slider=False,
-                                timer=None,
-                                remove_back_button=False,
-                                skippable_item=True,
-                                additional_response_option=dict(
-                                    text_input_option=False,
-                                    text_input_required=False,
-                                ),
-                            ),
-                        ),
-                    ],
-                    scores_and_reports=dict(
-                        generateReport=True,
-                        showScoreSummary=True,
-                        reports=[
-                            dict(
-                                name="morning_activity_item_2",
-                                type="score",
-                                id="morning_activity_item_2",
-                                calculationType="sum",
-                                minScore=0,
-                                maxScore=3,
-                                itemsScore=["morning_activity_item_2"],
-                                message="Hello",
-                                itemsPrint=["morning_activity_item_2"],
-                                conditionalLogic=[
-                                    dict(
-                                        name="morning_activity_item_2",
-                                        id="morning_activity_item_2",
-                                        flagScore=True,
-                                        message="Hello2",
-                                        match="any",
-                                        conditions=[
-                                            dict(
-                                                item_name=("morning_activity_item_2"),
-                                                type="GREATER_THAN",
-                                                payload=dict(
-                                                    value=1,
-                                                ),
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                            ),
-                            dict(
-                                name="morning_activity_item_2",
-                                type="section",
-                                messages="Hello from the other side",
-                                itemsPrint=[
-                                    "morning_activity_item_2",
-                                ],
-                                conditionalLogic=dict(
-                                    match="all",
-                                    conditions=[
-                                        dict(
-                                            item_name=("morning_activity_item_2"),
-                                            type="GREATER_THAN",
-                                            payload=dict(
-                                                value=1,
-                                            ),
-                                        ),
-                                        dict(
-                                            item_name=("morning_activity_item_2"),
-                                            type="EQUAL_TO_OPTION",
-                                            payload=dict(
-                                                option_value="1",  # noqa E501
-                                            ),
-                                        ),
-                                    ],
-                                ),
-                            ),
-                        ],
-                    ),
-                ),
-                dict(
-                    name="Evening activity",
-                    key="577dbbda-3afc-4962-842b-8d8d11588bff",
-                    description=dict(
-                        en="Understand evening feelings.",
-                        fr="Understand evening feelings.",
-                    ),
-                    items=[
-                        dict(
-                            question=dict(
-                                en="How had you spent your time?",
-                                fr="How had you spent your time?",
-                            ),
-                            name="evening_activity_item132",
-                            response_type="text",
-                            response_values=None,
-                            config=dict(
-                                max_response_length=200,
-                                correct_answer_required=False,
-                                correct_answer=None,
-                                numerical_response_required=False,
-                                response_data_identifier=False,
-                                response_required=False,
-                                remove_back_button=False,
-                                skippable_item=True,
-                            ),
-                        ),
-                    ],
-                ),
-            ],
-            activity_flows=[
-                dict(
-                    name="Morning questionnaire",
-                    description=dict(
-                        en="Understand how was the morning",
-                        fr="Understand how was the morning",
-                    ),
-                    items=[
-                        dict(
-                            activity_key="577dbbda-" "3afc-4962-842b-8d8d11588bfe",
-                        )
-                    ],
-                )
-            ],
-        )
-        response = await client.put(
-            self.applet_detail_url.format(pk=response.json()["result"]["id"]),
-            data=update_data,
-        )
-
-        assert response.status_code == http.HTTPStatus.OK, response.json()
+    async def test_get_history_changes__applet_display_name_is_updated(
+        self, client: TestClient, tom: User, applet_one: AppletFull
+    ):
+        # NOTE: Only simple test is tested here. All other history changes are tested in unit tests
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        update_data = AppletUpdate(**applet_one.dict())
+        new_display_name = "new display name"
+        update_data.display_name = new_display_name
+        response = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=update_data)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["displayName"] == new_display_name
 
         version = response.json()["result"]["version"]
         applet_id = response.json()["result"]["id"]
 
         response = await client.get(self.history_changes_url.format(pk=applet_id, version=version))
         assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["displayName"] == "Applet User daily behave updated updated"
-        assert len(response.json()["result"]["activities"]) == 4
+        assert response.json()["result"]["displayName"] == f"Applet {new_display_name} updated"
 
-    async def test_get_applet_unique_name(self, client, tom):
+    async def test_get_applet_unique_name__name_already_used(
+        self, client: TestClient, tom: User, applet_one: AppletFull
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
-        response = await client.post(self.applet_unique_name_url, data=dict(name="Applet 1"))
+        response = await client.post(self.applet_unique_name_url, data=dict(name=applet_one.display_name))
 
         assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["name"] == "Applet 1 (1)"
+        assert response.json()["result"]["name"] == f"{applet_one.display_name} (1)"
 
-    async def test_get_applet_unique_name_case_insensitive(self, client, tom):
+    async def test_get_applet_unique_name__name_already_used_case_insensitive(
+        self, client: TestClient, tom: User, applet_one: AppletFull
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
-        response = await client.post(self.applet_unique_name_url, data=dict(name="AppleT 1"))
+        name = applet_one.display_name.upper()
+        response = await client.post(self.applet_unique_name_url, data=dict(name=name))
 
         assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["name"] == "AppleT 1 (1)"
+        assert response.json()["result"]["name"] == f"{name} (1)"
 
-    async def test_get_applet_activities_info(self, client, tom, applet_minimal_data):
+    async def test_get_applet_activities_info(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_minimal_data: AppletCreate,
+        multi_select_item_create: ActivityItemCreate,
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         # create applet with minimal data
-        multi_select = deepcopy(applet_minimal_data.activities[0].items[0])
-        multi_select.name = "test_multiSelect"
-        multi_select.response_type = "multiSelect"
-        multi_select.is_hidden = True
-        applet_minimal_data.activities[0].items.append(multi_select)
-        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_minimal_data)
+        data = applet_minimal_data.copy(deep=True)
+        multi_select_item_create.is_hidden = True
+        data.activities[0].items.append(multi_select_item_create)
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+        assert len(response.json()["result"]["activities"][0]["items"]) == 2
 
         new_applet_id = response.json()["result"]["id"]
         response = await client.get(self.applet_base_info_url.format(pk=new_applet_id))
-        assert response.status_code == 200
-        assert response.json()["result"]["displayName"] == applet_minimal_data.display_name
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["displayName"] == data.display_name
         # check if hidden item is not shown
-        assert "singleSelect" in response.json()["result"]["activities"][0]["containsResponseTypes"]
-        assert "multiSelect" not in response.json()["result"]["activities"][0]["containsResponseTypes"]
-        assert isinstance(response.json()["result"]["activities"][0]["itemCount"], int)
+        assert ResponseType.SINGLESELECT in response.json()["result"]["activities"][0]["containsResponseTypes"]
+        assert ResponseType.MULTISELECT not in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert response.json()["result"]["activities"][0]["itemCount"] == 1
 
-    async def test_get_public_applet_activities_info(self, client, applet_one_with_public_link):
-        response = await client.get(self.public_applet_base_info_url.format(key=applet_one_with_public_link.link))
+    async def test_get_public_applet_activities_info(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one_with_public_link: AppletFull,
+        multi_select_item_create: ActivityItemCreate,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        update_data = AppletUpdate(**applet_one_with_public_link.dict())
+        multi_select_item_create.is_hidden = True
+        update_data.activities[0].items.append(ActivityItemUpdate(**multi_select_item_create.dict()))
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one_with_public_link.id), data=update_data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["activities"][0]["items"][1]["isHidden"]
+        assert resp.json()["result"]["activities"][0]["items"][1]["responseType"] == ResponseType.MULTISELECT
 
-        assert response.status_code == 200
+        response = await client.get(self.public_applet_base_info_url.format(key=applet_one_with_public_link.link))
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["displayName"] == applet_one_with_public_link.display_name
-        assert "singleSelect" in response.json()["result"]["activities"][0]["containsResponseTypes"]
-        assert "multiSelect" not in response.json()["result"]["activities"][0]["containsResponseTypes"]
-        assert isinstance(response.json()["result"]["activities"][0]["itemCount"], int)
+        assert ResponseType.SINGLESELECT in response.json()["result"]["activities"][0]["containsResponseTypes"]
+        assert ResponseType.MULTISELECT not in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert response.json()["result"]["activities"][0]["itemCount"] == 1
 
     @pytest.mark.usefixtures("applet_one_lucy_manager")
@@ -1701,7 +549,7 @@ class TestApplet:
         assert resp.status_code == http.HTTPStatus.OK
 
     async def test_update_report_config_for_activity__activity_from_another_applet(
-        self, client, tom, applet_one, applet_two, applet_report_configuration_data
+        self, client: TestClient, tom: User, applet_one: AppletFull, applet_two, applet_report_configuration_data
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         resp = await client.put(
@@ -1714,7 +562,12 @@ class TestApplet:
         assert result[0]["message"] == NotFoundError.message
 
     async def test_update_report_config_for_activity__activity_does_not_exists(
-        self, client, tom, applet_one, applet_report_configuration_data, uuid_zero
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        applet_report_configuration_data: AppletReportConfigurationBase,
+        uuid_zero: uuid.UUID,
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         resp = await client.put(
@@ -1727,7 +580,12 @@ class TestApplet:
         assert result[0]["message"] == NotFoundError.message
 
     async def test_update_report_config_for_activity_flow__activity_from_another_applet(
-        self, client, tom, applet_one_with_flow, applet_two, applet_report_configuration_data
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one_with_flow: AppletFull,
+        applet_two: AppletFull,
+        applet_report_configuration_data: AppletReportConfigurationBase,
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         resp = await client.put(
@@ -1740,7 +598,12 @@ class TestApplet:
         assert result[0]["message"] == NotFoundError.message
 
     async def test_update_report_config_for_activity_flow__activity_does_not_exists(
-        self, client, tom, applet_one, applet_report_configuration_data, uuid_zero
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        applet_report_configuration_data: AppletReportConfigurationBase,
+        uuid_zero: uuid.UUID,
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         resp = await client.put(
@@ -1752,7 +615,9 @@ class TestApplet:
         assert len(result) == 1
         assert result[0]["message"] == NotFoundError.message
 
-    async def test_delete_applet__firebase_error_muted(self, client, tom, mocker, applet_one):
+    async def test_delete_applet__firebase_error_muted(
+        self, client: TestClient, tom: User, mocker: MockerFixture, applet_one: AppletFull
+    ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
@@ -1760,3 +625,159 @@ class TestApplet:
         )
         resp = await client.delete(self.applet_detail_url.format(pk=applet_one.id))
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
+
+    async def test_create_applet__duplicate_flow_name(
+        self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        data = applet_create_with_flow.copy(deep=True)
+        data.activity_flows.append(data.activity_flows[0])
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == DuplicateActivityFlowNameError.message
+
+    async def test_create_applet__only_one_reviewable_activity_allowed(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        data = applet_minimal_data.copy(deep=True)
+        data.activities[0].is_reviewable = True
+        second_activity = data.activities[0].copy(deep=True)
+        second_activity.name = data.activities[0].name + "second"
+        data.activities.append(second_activity)
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AssessmentLimitExceed.message
+
+    async def test_update_applet__only_one_reviewable_activity_allowed(
+        self, client: TestClient, tom: User, applet_one: AppletFull, applet_one_update_data: AppletUpdate
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        data = applet_one_update_data.copy(deep=True)
+        data.activities[0].is_reviewable = True
+        second_activity = data.activities[0].copy(deep=True)
+        second_activity.name += "second"
+        second_activity.id = None
+        second_activity.items[0].id = None
+        data.activities.append(second_activity)
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=data)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AssessmentLimitExceed.message
+
+    async def test_update_applet__duplicated_activity(
+        self, client: TestClient, tom: User, applet_one_update_data: AppletUpdate, applet_one: AppletFull
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        data = applet_one_update_data.copy(deep=True)
+        second_activity = data.activities[0].copy(deep=True)
+        second_activity.name += "second"
+        request_data = data.dict()
+        request_data["activities"].append(second_activity.dict())
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == DuplicatedActivitiesError.message
+
+    async def test_update_applet__duplicate_flow_name(
+        self, client: TestClient, tom: User, applet_one_with_flow_update_data: AppletUpdate, applet_one: AppletFull
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        data = applet_one_with_flow_update_data.copy(deep=True)
+        request_data = data.dict()
+        request_data["activity_flows"].append(data.activity_flows[0].dict())
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == DuplicateActivityFlowNameError.message
+
+    async def test_update_applet__duplicate_flow_id(
+        self, client: TestClient, tom: User, applet_one_with_flow_update_data: AppletUpdate, applet_one: AppletFull
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        data = applet_one_with_flow_update_data.copy(deep=True)
+        flow = data.activity_flows[0].copy(deep=True)
+        flow.name += "second"
+        request_data = data.dict()
+        request_data["activity_flows"].append(flow.dict())
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == DuplicatedActivityFlowsError.message
+
+    async def test_update_applet__flow_key_is_not_valid(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one_with_flow_update_data: AppletUpdate,
+        applet_one: AppletFull,
+        uuid_zero: uuid.UUID,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        data = applet_one_with_flow_update_data.copy(deep=True)
+        request_data = data.dict()
+        request_data["activity_flows"][0]["items"][0]["activity_key"] = uuid_zero
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
+        assert resp.status_code == http.HTTPStatus.BAD_REQUEST
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == FlowItemActivityKeyNotFoundError.message
+
+    async def test_create_applet_with_flow(self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_create_with_flow)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        result = resp.json()["result"]
+        assert len(result["activityFlows"]) == 1
+        exp_flow = applet_create_with_flow.activity_flows[0]
+        assert result["activityFlows"][0]["name"] == exp_flow.name
+        assert result["activityFlows"][0]["description"] == exp_flow.description
+        assert len(result["activityFlows"][0]["items"]) == 1
+        assert result["activityFlows"][0]["items"][0]["activityId"] == result["activities"][0]["id"]
+
+    async def test_update_applet_activity_report_config(self, client: TestClient, tom: User, applet_one: AppletFull):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        assert applet_one.activities[0].report_included_item_name is None
+        item_name = applet_one.activities[0].items[0].name
+        resp = await client.put(
+            self.activity_report_config_url.format(
+                pk=applet_one.id,
+                activity_id=applet_one.activities[0].id,
+            ),
+            data=dict(report_included_item_name=item_name),
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        resp = await client.get(self.applet_detail_url.format(pk=applet_one.id))
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["activities"][0]["reportIncludedItemName"] == item_name
+
+    async def test_update_applet_activity_flow_report_config(
+        self, client: TestClient, tom: User, applet_one_with_flow: AppletFull
+    ):
+        assert applet_one_with_flow.activity_flows[0].report_included_activity_name is None
+        assert applet_one_with_flow.activity_flows[0].report_included_item_name is None
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        activity_name = applet_one_with_flow.activities[0].name
+        item_name = applet_one_with_flow.activities[0].items[0].name
+        resp = await client.put(
+            self.flow_report_config_url.format(
+                pk=applet_one_with_flow.id, flow_id=applet_one_with_flow.activity_flows[0].id
+            ),
+            data=dict(
+                report_included_activity_name=activity_name,
+                report_included_item_name=item_name,
+            ),
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        resp = await client.get(self.applet_detail_url.format(pk=applet_one_with_flow.id))
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["activityFlows"][0]["reportIncludedActivityName"] == activity_name
+        assert resp.json()["result"]["activityFlows"][0]["reportIncludedItemName"] == item_name

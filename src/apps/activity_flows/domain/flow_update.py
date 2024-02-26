@@ -4,21 +4,21 @@ from gettext import gettext as _
 from pydantic import root_validator
 
 from apps.activity_flows.domain.base import FlowBase
-from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain import PublicModel
 
 
-class ActivityFlowItemUpdate(InternalModel):
+class ActivityFlowItemUpdate(PublicModel):
     id: uuid.UUID | None
     activity_key: uuid.UUID
 
 
-class PreparedFlowItemUpdate(InternalModel):
+class PreparedFlowItemUpdate(PublicModel):
     id: uuid.UUID | None
     activity_flow_id: uuid.UUID
     activity_id: uuid.UUID
 
 
-class FlowUpdate(FlowBase, InternalModel):
+class FlowUpdate(FlowBase, PublicModel):
     id: uuid.UUID | None
     items: list[ActivityFlowItemUpdate]
 

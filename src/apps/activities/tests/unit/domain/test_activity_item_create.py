@@ -5,13 +5,23 @@ import pytest
 
 from apps.activities import errors
 from apps.activities.domain.activity_create import ActivityItemCreate
-from apps.activities.domain.response_type_config import DrawingConfig, ResponseType, TextConfig
+from apps.activities.domain.response_type_config import (
+    DateConfig,
+    DrawingConfig,
+    ResponseType,
+    SingleSelectionConfig,
+    SliderConfig,
+    SliderRowsConfig,
+    TextConfig,
+)
 from apps.activities.domain.response_values import (
     DrawingValues,
     MultiSelectionValues,
     NumberSelectionValues,
     SingleSelectionRowsValues,
     SingleSelectionValues,
+    SliderRowsValues,
+    SliderValues,
     _MultiSelectionValue,
 )
 from apps.activities.tests.utils import BaseItemData
@@ -171,18 +181,18 @@ def test_single_select_row_response_values_not_valid_data_matrix_len_options_doe
 
 
 def test_number_selection_response_values_min_value_greater_than_max_value(
-    number_select_response_values,
+    number_selection_response_values,
 ):
-    data = number_select_response_values.dict()
+    data = number_selection_response_values.dict()
     data["min_value"], data["max_value"] = data["max_value"], data["min_value"]
     with pytest.raises(errors.MinValueError):
         NumberSelectionValues(**data)
 
 
 def test_number_selection_response_values_min_value_is_equal_max_value(
-    number_select_response_values,
+    number_selection_response_values,
 ):
-    data = number_select_response_values.dict()
+    data = number_selection_response_values.dict()
     data["min_value"], data["max_value"] = 0, 0
     with pytest.raises(errors.MinValueError):
         NumberSelectionValues(**data)
@@ -287,9 +297,9 @@ def test_activity_item_create_response_values_not_none_for_non_response_response
 
 
 def test_multi_select_response_values_multiple_none_options(  # noqa: E501
-    multi_select_reponse_values: MultiSelectionValues,
+    multi_select_response_values: MultiSelectionValues,
 ):
-    data = multi_select_reponse_values.dict()
+    data = multi_select_response_values.dict()
     data["options"].append(
         _MultiSelectionValue(
             id=str(uuid.uuid4()),
@@ -319,3 +329,206 @@ def test_multi_select_response_values_multiple_none_options(  # noqa: E501
 
     with pytest.raises(errors.MultiSelectNoneOptionError):
         MultiSelectionValues(**data)
+
+
+def test_create_item__item_name_with_not_valid_character(base_item_data: BaseItemData, date_config: DateConfig):
+    name = "%_percent_not_allowed"
+    with pytest.raises(errors.IncorrectNameCharactersError):
+        ActivityItemCreate(
+            question=base_item_data.question,
+            name=name,
+            config=date_config,
+            response_type=ResponseType.DATE,
+            response_values=None,
+        )
+
+
+@pytest.mark.parametrize("field_to_delete", ("add_scores", "set_alerts"))
+def test_create_item__not_valid_config_missing_add_scores_and_set_alerts(
+    single_select_item_create, field_to_delete
+) -> None:
+    data = single_select_item_create.dict()
+    del data["config"][field_to_delete]
+    with pytest.raises(errors.IncorrectConfigError) as exc:
+        ActivityItemCreate(**data)
+    assert exc.value.message.format(type=SingleSelectionConfig)
+
+
+@pytest.mark.parametrize("response_type", (None, "NotValid"))
+def test_create_item__not_valid_response_type(single_select_item_create, response_type) -> None:
+    data = single_select_item_create.dict()
+    data["response_type"] = response_type
+    with pytest.raises(errors.IncorrectResponseValueError) as exc:
+        ActivityItemCreate(**data)
+    assert exc.value.message.format(type=ResponseType)
+
+
+@pytest.mark.parametrize("value", (None, {}))
+def test_create_single_select_item__not_valid_response_values(single_select_item_create, value):
+    data = single_select_item_create.dict()
+    data["response_values"] = value
+    with pytest.raises(errors.IncorrectResponseValueError) as exc:
+        ActivityItemCreate(**data)
+    assert exc.value.message.format(type=SingleSelectionValues)
+
+
+def test_create_item__reponse_type_absent(single_select_item_create) -> None:
+    data = single_select_item_create.dict()
+    del data["response_type"]
+    with pytest.raises(ValueError):
+        ActivityItemCreate(**data)
+
+
+@pytest.mark.parametrize("fixture_name", ("single_select_item_create", "multi_select_item_create"))
+def test_create_single_multi_select_item__add_scores_is_true_without_scores(request, fixture_name):
+    fixture = request.getfixturevalue(fixture_name)
+    data = fixture.dict()
+    data["config"]["add_scores"] = True
+    with pytest.raises(errors.ScoreRequiredForResponseValueError):
+        ActivityItemCreate(**data)
+
+
+def test_create_slider_item__add_scores_is_true_without_scores(slider_item_create):
+    data = slider_item_create.dict()
+    data["config"]["add_scores"] = True
+    with pytest.raises(errors.NullScoreError):
+        ActivityItemCreate(**data)
+
+
+def test_create_slider_item__add_scores__scores_not_for_all_values(slider_item_create):
+    data = slider_item_create.dict()
+    min_val = slider_item_create.response_values.min_value
+    max_val = slider_item_create.response_values.max_value
+    scores = [i for i in range(max_val - min_val)]
+    data["config"]["add_scores"] = True
+    data["response_values"]["scores"] = scores
+    with pytest.raises(errors.InvalidScoreLengthError):
+        ActivityItemCreate(**data)
+
+
+def test_create_slider_rows_item__add_scores_is_true__no_scores(slider_rows_item_create):
+    data = slider_rows_item_create.dict()
+    data["config"]["add_scores"] = True
+    data["response_values"]["rows"][0]["scores"] = None
+    with pytest.raises(errors.NullScoreError):
+        ActivityItemCreate(**data)
+
+
+def test_create_slider_rows_item__add_scores__scores_not_for_all_values(slider_rows_item_create):
+    data = slider_rows_item_create.dict()
+    min_val = slider_rows_item_create.response_values.rows[0].min_value
+    max_val = slider_rows_item_create.response_values.rows[0].max_value
+    scores = [i for i in range(max_val - min_val)]
+    data["config"]["add_scores"] = True
+    data["response_values"]["rows"][0]["scores"] = scores
+    with pytest.raises(errors.InvalidScoreLengthError):
+        ActivityItemCreate(**data)
+
+
+@pytest.mark.parametrize(
+    "fixture_name,field",
+    (
+        ("single_select_row_item_create", "set_alerts"),
+        ("single_select_row_item_create", "add_scores"),
+        ("multi_select_row_item_create", "set_alerts"),
+        ("multi_select_row_item_create", "add_scores"),
+    ),
+)
+def test_create_single_multi_select_row_item_no_datamatrix(request, fixture_name, field):
+    fixture = request.getfixturevalue(fixture_name)
+    data = fixture.dict()
+    data["config"][field] = True
+    data["response_values"]["data_matrix"] = None
+    with pytest.raises(errors.DataMatrixRequiredError):
+        ActivityItemCreate(**data)
+
+
+def test_create_slider_rows_item_with_scores(slider_rows_item_create: ActivityItemCreate):
+    slider_rows_item_create.response_values = cast(SliderRowsValues, slider_rows_item_create.response_values)
+    slider_rows_item_create.config = cast(SliderRowsConfig, slider_rows_item_create.config)
+    min_val = slider_rows_item_create.response_values.rows[0].min_value
+    max_val = slider_rows_item_create.response_values.rows[0].max_value
+    slider_rows_item_create.response_values.rows[0].scores = [i for i in range(max_val - min_val + 1)]
+    slider_rows_item_create.config.add_scores = True
+    item = ActivityItemCreate(**slider_rows_item_create.dict())
+    item.config = cast(SliderRowsConfig, item.config)
+    item.response_values = cast(SliderRowsValues, item.response_values)
+    assert item.config.add_scores
+    assert item.response_values.rows[0].scores == slider_rows_item_create.response_values.rows[0].scores
+
+
+@pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
+def test_create_single_multi_select_row_item_add_alerts(request, fixture_name):
+    fixture = request.getfixturevalue(fixture_name)
+    data = fixture.dict()
+    data["config"]["set_alerts"] = True
+    item = ActivityItemCreate(**data)
+    assert item.config.set_alerts
+
+
+def test_slider_item_with_alert(
+    base_item_data: BaseItemData, slider_value_alert, slider_response_values, slider_config
+):
+    slider_config.set_alerts = True
+    slider_response_values.alerts = [slider_value_alert]
+    item = ActivityItemCreate(
+        **base_item_data.dict(),
+        config=slider_config,
+        response_values=slider_response_values,
+        response_type=ResponseType.SLIDER,
+    )
+    item.config = cast(SliderConfig, item.config)
+    item.response_values = cast(SliderValues, item.response_values)
+    assert item.config.set_alerts
+    assert isinstance(item.response_values.alerts, list)
+    assert len(item.response_values.alerts) == 1
+    assert item.response_values.alerts[0] == slider_value_alert
+
+
+def test_slider_item__continuous_slider_with_alert(
+    base_item_data: BaseItemData, slider_value_alert, slider_response_values, slider_config
+):
+    slider_config.set_alerts = True
+    slider_config.continuous_slider = True
+    slider_value_alert.min_value = slider_response_values.min_value
+    slider_value_alert.max_value = slider_response_values.max_value
+    slider_response_values.alerts = [slider_value_alert]
+    item = ActivityItemCreate(
+        **base_item_data.dict(),
+        config=slider_config,
+        response_values=slider_response_values,
+        response_type=ResponseType.SLIDER,
+    )
+    item.config = cast(SliderConfig, item.config)
+    item.response_values = cast(SliderValues, item.response_values)
+    assert item.config.set_alerts
+    assert isinstance(item.response_values.alerts, list)
+    assert len(item.response_values.alerts) == 1
+    assert item.response_values.alerts[0] == slider_value_alert
+
+
+def test_slider_rows_item_with_alert(
+    base_item_data: BaseItemData, slider_rows_response_values, slider_rows_config, slider_value_alert
+):
+    slider_rows_config.set_alerts = True
+    slider_rows_response_values.rows[0].alerts = [slider_value_alert]
+    item = ActivityItemCreate(
+        **base_item_data.dict(),
+        config=slider_rows_config,
+        response_values=slider_rows_response_values,
+        response_type=ResponseType.SLIDERROWS,
+    )
+    item.config = cast(SliderRowsConfig, item.config)
+    item.response_values = cast(SliderRowsValues, item.response_values)
+    assert item.config.set_alerts
+    assert isinstance(item.response_values.rows[0].alerts, list)
+    assert item.response_values.rows[0].alerts[0] == slider_value_alert
+
+
+@pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
+def test_single_multi_select_item_withou_datamatrix(request, fixture_name: str):
+    fixture = request.getfixturevalue(fixture_name)
+    data = fixture.dict()
+    data["response_values"].pop("data_matrix", None)
+    item = ActivityItemCreate(**data)
+    assert item.response_values.data_matrix is None  # type: ignore[union-attr]

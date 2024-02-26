@@ -22,6 +22,7 @@ from config import settings
 from infrastructure.app import create_app
 from infrastructure.database.core import build_engine
 from infrastructure.database.deps import get_session
+from infrastructure.utility import FCMNotificationTest
 
 pytest_plugins = [
     "apps.activities.tests.fixtures.configs",
@@ -197,9 +198,14 @@ def pytest_collection_modifyitems(items) -> None:
 
 
 @pytest.fixture
-def remote_image() -> str:
+def local_image_name() -> str:
+    return "test.jpg"
+
+
+@pytest.fixture
+def remote_image(local_image_name: str) -> str:
     # TODO: add support for localimages for tests
-    return "https://www.w3schools.com/css/img_5terre_wide.jpg"
+    return f"http://localhost/{local_image_name}"
 
 
 @pytest.fixture
@@ -268,3 +274,10 @@ def mock_get_session(
         new=get_session,
     )
     return mock
+
+
+@pytest.fixture
+def fcm_client() -> FCMNotificationTest:
+    client = FCMNotificationTest()
+    client.notifications.clear()
+    return client

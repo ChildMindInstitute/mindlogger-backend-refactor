@@ -1,10 +1,11 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.domain.flow_update import ActivityFlowItemUpdate, FlowUpdate
 from apps.applets.crud.applets import AppletsCRUD
 from apps.applets.db.schemas import AppletSchema
-from apps.applets.domain.applet_create_update import AppletUpdate
+from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
@@ -15,11 +16,14 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 @pytest.fixture
-async def applet_one_no_encryption(session: AsyncSession, applet_one: AppletFull) -> AppletFull:
+async def applet_one_no_encryption(session: AsyncSession, tom: User, applet_one: AppletFull) -> AppletFull:
     crud = AppletsCRUD(session)
     instance = await crud.update_by_id(applet_one.id, AppletSchema(encryption=None))
     assert instance.encryption is None
-    return applet_one
+    srv = AppletService(session, tom.id)
+    applet = await srv.get_full_applet(applet_one.id)
+    assert applet.encryption is None
+    return applet
 
 
 @pytest.fixture
@@ -58,7 +62,7 @@ async def applet_one_with_link(session: AsyncSession, applet_one: AppletFull, to
 async def applet_one_with_flow(
     session: AsyncSession, applet_one: AppletFull, applet_minimal_data: AppletFull, tom: User
 ):
-    data = AppletUpdate(**applet_minimal_data.dict(exclude_unset=True))
+    data = AppletUpdate(**applet_minimal_data.dict())
     flow = FlowUpdate(
         name="flow",
         items=[ActivityFlowItemUpdate(id=None, activity_key=data.activities[0].key)],
@@ -70,3 +74,27 @@ async def applet_one_with_flow(
     await srv.update(applet_one.id, data)
     applet = await srv.get_full_applet(applet_one.id)
     return applet
+
+
+@pytest.fixture
+def applet_one_update_data(applet_one: AppletFull) -> AppletUpdate:
+    return AppletUpdate(**applet_one.dict())
+
+
+@pytest.fixture
+def applet_create_with_flow(applet_minimal_data: AppletCreate) -> AppletCreate:
+    data = applet_minimal_data.copy(deep=True)
+    flow = FlowCreate(
+        name="flow",
+        items=[FlowItemCreate(activity_key=data.activities[0].key)],
+        description={Language.ENGLISH: "description"},
+    )
+    data.activity_flows = [flow]
+    return data
+
+
+@pytest.fixture
+def applet_one_with_flow_update_data(applet_one_with_flow: AppletFull) -> AppletUpdate:
+    dct = applet_one_with_flow.dict()
+    dct["activity_flows"][0]["items"][0]["activity_key"] = applet_one_with_flow.activities[0].key
+    return AppletUpdate(**dct)

@@ -1,21 +1,19 @@
 import json
 import urllib.parse
 from io import BytesIO
-from typing import Any, Mapping, Type, TypeVar
+from typing import Any, Mapping
 
 from httpx import AsyncClient, Response
 from pydantic import BaseModel
 
-T = TypeVar("T", bound=BaseModel)
-
 
 class TestClient:
-    def __init__(self, app):
+    def __init__(self, app) -> None:
         self.client = AsyncClient(app=app, base_url="http://test.com")
-        self.headers = {}
+        self.headers: dict[str, Any] = {}
 
     @staticmethod
-    def _prepare_url(url, query):
+    def _prepare_url(url, query) -> str:
         return f"{url}?{urllib.parse.urlencode(query)}"
 
     def _get_updated_headers(self, headers: dict | None = None) -> dict:
@@ -25,7 +23,7 @@ class TestClient:
         return headers_
 
     @staticmethod
-    def _get_body(data: dict[str, Any] | Type[T] | None = None):
+    def _get_body(data: dict[str, Any] | BaseModel | None = None) -> str | None:
         if data:
             if isinstance(data, BaseModel):
                 request_data = data.dict()
@@ -37,7 +35,7 @@ class TestClient:
     async def post(
         self,
         url: str,
-        data: dict[str, Any] | Type[T] | None = None,
+        data: dict[str, Any] | BaseModel | None = None,
         query: dict | None = None,
         headers: dict | None = None,
         files: Mapping[str, BytesIO] | None = None,
@@ -55,7 +53,7 @@ class TestClient:
     async def put(
         self,
         url: str,
-        data: dict | None = None,
+        data: dict | BaseModel | None = None,
         query: dict | None = None,
         headers: dict | None = None,
     ) -> Response:
@@ -96,7 +94,7 @@ class TestClient:
         )
         return response
 
-    async def login(self, url: str, email: str | None, password: str, device_id: str | None = None):
+    async def login(self, url: str, email: str | None, password: str, device_id: str | None = None) -> Response:
         # Just make password option to shut up mypy error when User.email_encrypted passed as arument
         assert password is not None
         response = await self.post(
@@ -113,5 +111,5 @@ class TestClient:
         self.headers["Authorization"] = f"{token_type} {access_token}"
         return response
 
-    async def logout(self):
+    async def logout(self) -> None:
         self.headers = {}
