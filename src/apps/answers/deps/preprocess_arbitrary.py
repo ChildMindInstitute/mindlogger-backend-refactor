@@ -73,7 +73,7 @@ async def get_answer_session_by_subject(subject_id: uuid.UUID, session: AsyncSes
         yield None
     service = WorkspaceService(session, uuid.uuid4())
     assert subject
-    server_info = await service.get_arbitrary_info(subject.applet_id)
+    server_info = await service.get_arbitrary_info_if_use_arbitrary(subject.applet_id)
     if server_info and server_info.use_arbitrary:
         url = server_info.database_uri
         if not url:
