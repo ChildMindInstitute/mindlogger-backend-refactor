@@ -1,11 +1,15 @@
 import datetime
 import uuid
 
+from pydantic import EmailStr
+
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.constants import TransferOwnershipStatus
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
@@ -13,6 +17,7 @@ from apps.transfer_ownership.errors import TransferEmailError
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
 
 
@@ -119,7 +124,27 @@ class TransferService:
                 **roles_data,
             ),
         ]
+        subject_service = SubjectsService(self.session, self._user.id)
         await UserAppletAccessCRUD(self.session).upsert_user_applet_access_list(roles_to_add)
+        subject = await subject_service.get_by_user_and_applet(self._user.id, transfer.applet_id)
+        if subject:
+            subject.last_name = self._user.last_name
+            subject.first_name = self._user.first_name
+            subject.email = EmailStr(self._user.email_encrypted)
+            subject.is_deleted = False
+            await subject_service.update(subject)
+        else:
+            subject = Subject(
+                applet_id=transfer.applet_id,
+                email=self._user.email_encrypted,
+                creator_id=self._user.id,
+                user_id=self._user.id,
+                first_name=self._user.first_name,
+                last_name=self._user.last_name,
+                secret_user_id=f"{uuid.uuid4()}",
+                nickname=UserAppletAccessService.build_manager_nickname(self._user),
+            )
+            await subject_service.create(subject)
 
         # remove other roles of new owner
         await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(

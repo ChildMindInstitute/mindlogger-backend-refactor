@@ -27,12 +27,17 @@ class UserAppletAccessService:
         self._applet_id = applet_id
         self.session = session
 
+    @classmethod
+    def build_manager_nickname(cls, manager: User) -> str:
+        return f"{manager.first_name} {manager.last_name}"
+
     async def _get_default_role_meta(self, role: Role, user_id: uuid.UUID) -> dict:
         meta: dict = {}
-
         return meta
 
-    async def add_role(self, user_id: uuid.UUID, role: Role, meta: dict | None = None) -> UserAppletAccess:
+    async def add_role(
+        self, user_id: uuid.UUID, role: Role, meta: dict | None = None, nickname: str | None = None
+    ) -> UserAppletAccess:
         access_schema = await UserAppletAccessCRUD(self.session).get_applet_role_by_user_id(
             self._applet_id, user_id, role
         )
@@ -55,6 +60,13 @@ class UserAppletAccessService:
         )
         if role == Role.RESPONDENT:
             user = await UsersCRUD(self.session).get_by_id(user_id)
+            access_schema_manager = await UserAppletAccessCRUD(self.session).get_applets_roles_by_priority(
+                [self._applet_id], user_id
+            )
+            if access_schema_manager:
+                nickname = UserAppletAccessService.build_manager_nickname(user)
+            else:
+                nickname = None
             subject = SubjectSchema(
                 applet_id=self._applet_id,
                 creator_id=self._user_id,
@@ -62,8 +74,8 @@ class UserAppletAccessService:
                 first_name=user.first_name,
                 last_name=user.last_name,
                 secret_user_id=str(uuid.uuid4()),
-                nickname=f"{user.first_name} {user.last_name}",
                 user_id=user_id,
+                nickname=nickname,
             )
             await SubjectsCrud(self.session).create(subject)
 
@@ -143,7 +155,6 @@ class UserAppletAccessService:
                 user = await UsersCRUD(self.session).get_by_id(self._user_id)
 
                 secret_id = str(uuid.uuid4())
-                nickname = f"{user.first_name} {user.last_name}"
 
                 schema = UserAppletAccessSchema(
                     user_id=self._user_id,
@@ -165,7 +176,7 @@ class UserAppletAccessService:
                         first_name=invitation.first_name,
                         last_name=invitation.last_name,
                         secret_user_id=secret_id,
-                        nickname=nickname,
+                        nickname=self.build_manager_nickname(user),
                     )
                 )
         else:
