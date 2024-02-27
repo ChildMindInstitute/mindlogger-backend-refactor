@@ -240,18 +240,18 @@ class WorkspaceService:
             owner_id, self._user_id, applet_ids
         )
 
-    async def get_arbitrary_info(self, applet_id: uuid.UUID) -> WorkspaceArbitrary | None:
+    async def get_arbitrary_info_if_use_arbitrary(self, applet_id: uuid.UUID) -> WorkspaceArbitrary | None:
         schema = await UserWorkspaceCRUD(self.session).get_by_applet_id(applet_id)
-        if not schema:
+        if not schema or not schema.use_arbitrary:
             return None
         try:
             return WorkspaceArbitrary.from_orm(schema) if schema else None
         except ValidationError:
             return None
 
-    async def get_arbitrary_info_by_owner_id(self, owner_id: uuid.UUID) -> WorkspaceArbitrary | None:
+    async def get_arbitrary_info_by_owner_id_if_use_arbitrary(self, owner_id: uuid.UUID) -> WorkspaceArbitrary | None:
         schema = await UserWorkspaceCRUD(self.session).get_by_user_id(owner_id)
-        if not schema:
+        if not schema or not schema.use_arbitrary:
             return None
         try:
             return WorkspaceArbitrary.from_orm(schema) if schema else None

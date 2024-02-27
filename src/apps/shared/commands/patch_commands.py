@@ -137,7 +137,9 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
         async with atomic(session):
             if owner_id:
                 try:
-                    arbitrary = await WorkspaceService(session, owner_id).get_arbitrary_info_by_owner_id(owner_id)
+                    arbitrary = await WorkspaceService(
+                        session, owner_id
+                    ).get_arbitrary_info_by_owner_id_if_use_arbitrary(owner_id)
                     if not arbitrary:
                         raise WorkspaceNotFoundError("Workspace not found")
 

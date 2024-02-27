@@ -22,12 +22,18 @@ from config import settings
 from infrastructure.utility.cdn_client import CDNClient
 from infrastructure.utility.cdn_config import CdnConfig
 
+# This id is getting from JSON fixtures for answers
+WORKSPACE_ARBITRARY_ID = uuid.UUID("8b83d791-0d27-42c5-8b1d-e0c8d7faf808")
+ARBITRARY_BUCKET_NAME = "arbitrary_bucket"
+
 
 async def set_storage_type(storage_type: str, session: AsyncSession):
-    workspace_id = uuid.UUID("8b83d791-0d27-42c5-8b1d-e0c8d7faf808")
     query: Query = update(UserWorkspaceSchema)
-    query = query.where(UserWorkspaceSchema.id == workspace_id)
-    query = query.values(storage_type=storage_type)
+    query = query.where(UserWorkspaceSchema.id == WORKSPACE_ARBITRARY_ID)
+    if storage_type == StorageType.AWS:
+        query = query.values(storage_type=storage_type, storage_bucket=ARBITRARY_BUCKET_NAME)
+    else:
+        query = query.values(storage_type=storage_type)
     await session.execute(query)
 
 
@@ -205,7 +211,9 @@ class TestAnswerActivityItems(BaseTest):
         bucket_name = "bucket"
         settings.cdn.bucket = bucket_name
         settings.cdn.bucket_answer = bucket_name
-        mocker.patch("apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info", return_value=None)
+        mocker.patch(
+            "apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info_if_use_arbitrary", return_value=None
+        )
         resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": file_id})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["fields"]["key"] == expected_key
@@ -228,3 +236,116 @@ class TestAnswerActivityItems(BaseTest):
             ),
         ).key(device_tom, file_name)
         assert key == expected_key
+
+    @pytest.mark.usefixtures("mock_presigned_post")
+    @pytest.mark.parametrize("file_name", ("test.webm", "test.WEBM"))
+    async def test_generate_presigned_media_for_webm_file__conveted_in_url__upload_url_has_operations_bucket(
+        self, client: TestClient, file_name
+    ) -> None:
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+
+        settings.cdn.bucket_operations = "bucket_operations"
+        settings.cdn.bucket = "bucket_media"
+
+        resp = await client.post(self.upload_media_url, data={"file_name": file_name})
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        exp_converted_file_name = file_name + ".mp3"
+        assert result["fields"]["key"].endswith(file_name)
+        assert result["url"].endswith(exp_converted_file_name)
+        assert result["fields"]["key"].startswith(settings.cdn.bucket)
+        assert settings.cdn.bucket_operations in result["uploadUrl"]
+
+    @pytest.mark.usefixtures("mock_presigned_post")
+    @pytest.mark.parametrize("file_name", ("answer.heic", "answer.HEIC"))
+    async def test_generate_presigned_for_answer_for_heic_format_not_arbitrary(
+        self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, file_name: str
+    ) -> None:
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+
+        settings.cdn.bucket_operations = "bucket_operations"
+        settings.cdn.bucket_answer = "bucket_answer"
+        mocker.patch(
+            "apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info_if_use_arbitrary", return_value=None
+        )
+
+        resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": file_name})
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        exp_converted_file_name = file_name + ".jpg"
+        assert result["fields"]["key"].endswith(file_name)
+        assert result["fields"]["key"].startswith(settings.cdn.bucket_answer)
+        assert result["url"].endswith(exp_converted_file_name)
+        assert settings.cdn.bucket_answer in result["url"]
+        assert settings.cdn.bucket_operations in result["uploadUrl"]
+
+    @pytest.mark.usefixtures("mock_presigned_post")
+    async def test_generate_presigned_for_answer_for_heic_format_arbitrary_workspace(
+        self, client: TestClient, applet_one: AppletFull, session: AsyncSession
+    ) -> None:
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+
+        file_name = "answer.heic"
+        settings.cdn.bucket_operations = "bucket_operations"
+        await set_storage_type(StorageType.AWS, session)
+        resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": file_name})
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        exp_converted_file_name = file_name + ".jpg"
+        assert result["fields"]["key"].endswith(file_name)
+        assert result["fields"]["key"].startswith(f"arbitrary-{WORKSPACE_ARBITRARY_ID}")
+        assert result["url"].endswith(exp_converted_file_name)
+        assert ARBITRARY_BUCKET_NAME in result["url"]
+        assert settings.cdn.bucket_operations in result["uploadUrl"]
+
+    @pytest.mark.usefixtures("mock_presigned_post")
+    async def test_answer_existance_for_heic_format_not_arbitrary(
+        self, client: TestClient, tom: User, applet_one: AppletFull, mocker: MockerFixture
+    ) -> None:
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+
+        file_name = "answer.heic"
+        settings.cdn.bucket_operations = "bucket_operations"
+        settings.cdn.bucket_answer = "bucket_answer"
+        mock_check_existance = mocker.patch("infrastructure.utility.cdn_client.CDNClient.check_existence")
+        mocker.patch(
+            "apps.workspaces.service.workspace.WorkspaceService.get_arbitrary_info_if_use_arbitrary", return_value=None
+        )
+        resp = await client.post(
+            self.existance_url.format(applet_id=applet_one.id),
+            data={"files": [file_name]},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        exp_converted_file_name = file_name + ".jpg"
+        check_key = CDNClient.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", file_name)
+        exp_check_key = f"{settings.cdn.bucket_answer}/{check_key}"
+
+        mock_check_existance.assert_awaited_once_with(settings.cdn.bucket_operations, exp_check_key)
+        assert result[0]["url"].endswith(exp_converted_file_name)
+        assert settings.cdn.bucket_answer in result[0]["url"]
+
+    @pytest.mark.usefixtures("mock_presigned_post")
+    async def test_answer_existance_for_heic_format_for_arbitrary(
+        self, client: TestClient, tom: User, applet_one: AppletFull, session: AsyncSession, mocker: MockerFixture
+    ) -> None:
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+
+        file_name = "answer.heic"
+        settings.cdn.bucket_operations = "bucket_operations"
+        settings.cdn.bucket_answer = "bucket_answer"
+        mock_check_existance = mocker.patch("infrastructure.utility.cdn_arbitrary.ArbitraryS3CdnClient.check_existence")
+        await set_storage_type(StorageType.AWS, session)
+        resp = await client.post(
+            self.existance_url.format(applet_id=applet_one.id),
+            data={"files": [file_name]},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        exp_converted_file_name = file_name + ".jpg"
+        check_key = CDNClient.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", file_name)
+        exp_check_key = f"arbitrary-{WORKSPACE_ARBITRARY_ID}/{check_key}"
+
+        mock_check_existance.assert_awaited_once_with(settings.cdn.bucket_operations, exp_check_key)
+        assert result[0]["url"].endswith(exp_converted_file_name)
+        assert ARBITRARY_BUCKET_NAME in result[0]["url"]

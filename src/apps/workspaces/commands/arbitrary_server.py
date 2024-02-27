@@ -146,7 +146,7 @@ async def show(
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         if owner_id:
-            data = await WorkspaceService(session, owner_id).get_arbitrary_info_by_owner_id(owner_id)
+            data = await WorkspaceService(session, owner_id).get_arbitrary_info_by_owner_id_if_use_arbitrary(owner_id)
             if not data:
                 print("[bold green]" "Arbitrary server not configured" "[/bold green]")
                 return
