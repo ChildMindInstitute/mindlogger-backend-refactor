@@ -1,11 +1,10 @@
-import asyncio
 import uuid
 from typing import cast
 
 from fastapi.exceptions import RequestValidationError
 from pydantic.error_wrappers import ErrorWrapper
 
-from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
+from apps.applets.crud import AppletsCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import ManagersRole, Role
 from apps.applets.service import UserAppletAccessService
@@ -314,23 +313,19 @@ class InvitationsService:
             raise DoesNotHaveAccess(message="You do not have access to send invitation.")
 
     async def _is_secret_user_id_unique(self, applet_id: uuid.UUID, secret_user_id: str, email: str | None):
-        workers = [
-            UserAppletAccessCRUD(self.session).get_by_secret_user_id_for_applet(applet_id, secret_user_id),
-            SubjectsCrud(self.session).is_secret_id_exist(secret_user_id, applet_id, email),
-        ]
+        subject_crud = SubjectsCrud(self.session)
+        subject = await subject_crud.get_by_secret_id(secret_user_id, applet_id)
 
-        if email:
-            workers += [
-                InvitationCRUD(self.session).get_for_respondent(
-                    applet_id,
-                    secret_user_id,
-                    InvitationStatus.PENDING,
-                    invited_email=email,
-                )
-            ]
-        results = await asyncio.gather(*workers)
-        if any(results):
-            raise NonUniqueValue()
+        if not subject:
+            # Subject sith same secret id does not exist in applet
+            return
+        elif subject and email and subject.email and subject.email == email:
+            # Subject found, but if the subject has a pending invite, system should be able to update it.
+            pending_subjects = subject_crud.get_pending_subjects(secret_user_id, applet_id, subject.id)
+            if pending_subjects:
+                return
+
+        raise NonUniqueValue()
 
     async def _verify_applet_subjects(
         self,
