@@ -607,7 +607,7 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["userId"] == exp_user_id
 
     async def test_resend_invitation_with_updates_for_respondent_with_pending_invitation(
-        self, session, client, invitation_respondent_data, tom, applet_one
+        self, session, client, invitation_respondent_data, tom: User, applet_one: AppletFull
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.post(
@@ -626,14 +626,15 @@ class TestInvite(BaseTest):
             invitation_respondent_data,
         )
         assert response.status_code == http.HTTPStatus.OK
-        invitation_key = response.json()["result"]["key"]
         # Because we don't return anything after accepting/declining
         # invitation, check in database that user_id has already been updated
-        inv = await InvitationCRUD(session).get_by_email_and_key(
-            invitation_respondent_data.email, uuid.UUID(invitation_key)
+
+        subject = await SubjectsService(session, tom.id).get_pending_subject_if_exist(
+            invitation_respondent_data.secret_user_id, applet_one.id
         )
-        assert inv.first_name == invitation_respondent_data.first_name
-        assert inv.last_name == invitation_respondent_data.last_name
+        assert subject
+        assert subject.first_name == invitation_respondent_data.first_name
+        assert subject.last_name == invitation_respondent_data.last_name
 
     async def test_resend_invitation_for_respondent_with_pending_invitation_only_last_key_valid(
         self, client, invitation_respondent_data, tom, applet_one
