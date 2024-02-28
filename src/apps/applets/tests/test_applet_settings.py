@@ -1,5 +1,6 @@
 import http
 
+from apps.activities.errors import PeriodIsRequiredError
 from apps.applets.domain.applet_full import AppletFull
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
@@ -64,3 +65,4 @@ class TestSettings(BaseTest):
             data=retention_data,
         )
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.json()["result"][0]["message"] == PeriodIsRequiredError.message
