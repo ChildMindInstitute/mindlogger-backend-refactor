@@ -1,10 +1,16 @@
 import json
 import urllib.parse
+import uuid
 from io import BytesIO
 from typing import Any, Mapping
 
 from httpx import AsyncClient, Response
 from pydantic import BaseModel
+
+from apps.authentication.domain.token import JWTClaim
+from apps.authentication.services import AuthenticationService
+from apps.users.domain import User
+from config import settings
 
 
 class TestClient:
@@ -96,22 +102,18 @@ class TestClient:
         )
         return response
 
-    async def login(self, url: str, email: str | None, password: str, device_id: str | None = None) -> Response:
-        # Just make password option to shut up mypy error when User.email_encrypted passed as arument
-        assert password is not None
-        response = await self.post(
-            url,
-            data={
-                "email": email,
-                "password": password,
-                "device_id": device_id,
-            },
+    def login(self, user: User | uuid.UUID):
+        if isinstance(user, User):
+            sub = user.id
+        else:
+            sub = user
+        access_token = AuthenticationService.create_access_token(
+            {
+                JWTClaim.sub: str(sub),
+                JWTClaim.rjti: str(uuid.uuid4()),
+            }
         )
-        assert response.status_code == 200, response.json()
-        access_token = response.json()["result"]["token"]["accessToken"]
-        token_type = response.json()["result"]["token"]["tokenType"]
-        self.headers["Authorization"] = f"{token_type} {access_token}"
-        return response
+        self.headers["Authorization"] = f"{settings.authentication.token_type} {access_token}"
 
-    async def logout(self) -> None:
+    def logout(self) -> None:
         self.headers = {}

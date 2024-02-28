@@ -48,8 +48,10 @@ class TestAnswerCases:
     login_url = "/auth/login"
     answer_url = "/answers"
 
-    async def test_answer_activity_items_create_for_respondent(self, client: TestClient, applet_with_flow: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_answer_activity_items_create_for_respondent(
+        self, client: TestClient, applet_with_flow: AppletFull, tom: User
+    ):
+        client.login(tom)
 
         submit_id = str(uuid.uuid4())
         answer_value_id = str(uuid.uuid4())

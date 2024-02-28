@@ -20,7 +20,7 @@ class TestAppletMoveToFolder(BaseTest):
     folders_applet_url = "applets/folders/{id}"
 
     async def test_move_to_folder(self, session: AsyncSession, client: TestClient, tom: User, applet_one: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = dict(
             applet_id=str(applet_one.id),
             folder_id="ecf66358-a717-41a7-8027-807374307731",
@@ -37,7 +37,7 @@ class TestAppletMoveToFolder(BaseTest):
         assert str(folders_ids[0]) == "ecf66358-a717-41a7-8027-807374307731"
 
     async def test_invalid_applet_move_to_folder(self, client: TestClient, tom: User, uuid_zero: uuid.UUID):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = dict(
             applet_id=str(uuid_zero),
             folder_id="ecf66358-a717-41a7-8027-807374307731",
@@ -47,7 +47,7 @@ class TestAppletMoveToFolder(BaseTest):
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_move_to_not_accessible_folder(self, client: TestClient, tom: User, applet_one: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = dict(
             applet_id=str(applet_one.id),
             folder_id="ecf66358-a717-41a7-8027-807374307733",
@@ -58,7 +58,7 @@ class TestAppletMoveToFolder(BaseTest):
         assert response.json()["result"][0]["message"] == "Access denied to folder."
 
     async def test_move_not_accessible_applet_to_folder(self, client: TestClient, user: User, applet_one: AppletFull):
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         data = dict(
             applet_id=str(applet_one.id),
             folder_id="ecf66358-a717-41a7-8027-807374307732",
@@ -71,7 +71,7 @@ class TestAppletMoveToFolder(BaseTest):
     async def test_remove_from_folder(
         self, session: AsyncSession, client: TestClient, tom: User, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = dict(applet_id=str(applet_one.id), folder_id=None)
 
         response = await client.post(self.set_folder_url, data)
@@ -83,7 +83,7 @@ class TestAppletMoveToFolder(BaseTest):
     async def test_move_to_folder__folder_does_not_exists(
         self, client: TestClient, tom: User, applet_one: AppletFull, uuid_zero: uuid.UUID
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = dict(
             applet_id=str(applet_one.id),
             folder_id=str(uuid_zero),
@@ -96,7 +96,7 @@ class TestAppletMoveToFolder(BaseTest):
     async def test_move_to_folder_applet_already_moved(
         self, session: AsyncSession, client: TestClient, tom: User, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = dict(
             applet_id=str(applet_one.id),
             folder_id="ecf66358-a717-41a7-8027-807374307731",

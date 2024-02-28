@@ -29,9 +29,9 @@ class TestActivities:
     activities_applet = "/activities/applet/{applet_id}"
     public_activity_detail = "public/activities/{pk}"
 
-    async def test_activity_detail(self, client, applet_one: AppletFull):
+    async def test_activity_detail(self, client, applet_one: AppletFull, tom: User):
         activity = applet_one.activities[0]
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         response = await client.get(self.activity_detail.format(pk=activity.id))
 
         assert response.status_code == http.HTTPStatus.OK
@@ -43,7 +43,7 @@ class TestActivities:
         assert result["items"][0]["question"] == activity.items[0].question[Language.ENGLISH]
 
     async def test_activities_applet(self, client, applet_one: AppletFull, default_theme: Theme, tom: User):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         response = await client.get(self.activities_applet.format(applet_id=applet_one.id))
 
         assert response.status_code == http.HTTPStatus.OK

@@ -165,9 +165,9 @@ class TestSchedule:
     public_events_url = "public/applets/{key}/events"
 
     async def test_schedule_create_with_equal_start_end_time(
-        self, client: TestClient, applet: AppletFull, event_daily_data: EventRequest
+        self, client: TestClient, applet: AppletFull, event_daily_data: EventRequest, user: User
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.dict()
         data["start_time"] = data["end_time"]
         response = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
@@ -177,10 +177,9 @@ class TestSchedule:
         assert result[0]["message"] == StartEndTimeEqualError.message
 
     async def test_schedule_create_with_activity(
-        self, client: TestClient, applet: AppletFull, event_daily_data: EventRequest
+        self, client: TestClient, applet: AppletFull, event_daily_data: EventRequest, user: User
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-
+        client.login(user)
         response = await client.post(
             self.schedule_url.format(applet_id=applet.id),
             data=event_daily_data,
@@ -203,9 +202,14 @@ class TestSchedule:
         assert event["notification"] is None
 
     async def test_schedule_create_individual_event(
-        self, client: TestClient, applet_lucy_respondent: AppletFull, lucy: User, event_daily_data: EventRequest
+        self,
+        client: TestClient,
+        applet_lucy_respondent: AppletFull,
+        lucy: User,
+        event_daily_data: EventRequest,
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.copy(deep=True)
         data.respondent_id = lucy.id
 
@@ -221,10 +225,12 @@ class TestSchedule:
     async def test_schedule_create_with_flow(
         self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
+        client.login(user)
         data = event_daily_data.dict()
         data["flow_id"] = str(applet.activity_flows[0].id)
         data["activity_id"] = None
+
         response = await client.post(
             self.schedule_url.format(applet_id=applet.id),
             data=data,
@@ -235,9 +241,8 @@ class TestSchedule:
         assert event["flowId"] == data["flow_id"]
         assert event["activityId"] is None
 
-    async def test_schedule_get_all__only_default_events(self, client: TestClient, applet: AppletFull):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-
+    async def test_schedule_get_all__only_default_events(self, client: TestClient, applet: AppletFull, user: User):
+        client.login(user)
         response = await client.get(self.schedule_url.format(applet_id=applet.id))
         number_default_events = _get_number_default_events(applet)
         assert response.status_code == http.HTTPStatus.OK
@@ -259,12 +264,13 @@ class TestSchedule:
         self,
         client: TestClient,
         applet: AppletFull,
+        user: User,
         event_daily_data: EventRequest,
         event_for: str,
         field_name: str,
         field_name_to_replace: str,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.dict()
         data[field_name] = getattr(applet, event_for)[0].id
         data[field_name_to_replace] = None
@@ -299,10 +305,11 @@ class TestSchedule:
         user_fixture_name: str,
         num_individual_events: int,
         request: FixtureRequest,
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-        user = request.getfixturevalue(user_fixture_name)
-        response = await client.get(self.schedule_url.format(applet_id=applet.id) + f"?respondentId={user.id}")
+        client.login(user)
+        respondent = request.getfixturevalue(user_fixture_name)
+        response = await client.get(self.schedule_url.format(applet_id=applet.id) + f"?respondentId={respondent.id}")
         assert response.status_code == http.HTTPStatus.OK
         events = response.json()["result"]
         assert len(events) == num_individual_events
@@ -319,8 +326,10 @@ class TestSchedule:
         # TODO: check response
         assert isinstance(events, list)
 
-    async def test_schedule_get_detail(self, client: TestClient, applet: AppletFull, daily_event: PublicEvent):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+    async def test_schedule_get_detail(
+        self, client: TestClient, applet: AppletFull, daily_event: PublicEvent, user: User
+    ):
+        client.login(user)
 
         response = await client.get(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
         assert response.status_code == http.HTTPStatus.OK
@@ -341,8 +350,8 @@ class TestSchedule:
         assert event["notification"] is None
 
     @pytest.mark.usefixtures("daily_event")
-    async def test_schedule_delete_all(self, client: TestClient, applet: AppletFull):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+    async def test_schedule_delete_all(self, client: TestClient, applet: AppletFull, user: User):
+        client.login(user)
         response = await client.delete(self.schedule_url.format(applet_id=applet.id))
         assert response.status_code == http.HTTPStatus.NO_CONTENT
         # Check that only default events exist
@@ -352,17 +361,14 @@ class TestSchedule:
             assert event["periodicity"]["type"] == constants.PeriodicityType.ALWAYS
 
     async def test_schedule_delete_specific_event(
-        self, client: TestClient, applet: AppletFull, daily_event: PublicEvent
+        self, client: TestClient, applet: AppletFull, daily_event: PublicEvent, user: User
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-
+        client.login(user)
         response = await client.delete(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
         assert response.status_code == http.HTTPStatus.NO_CONTENT
         # Check that only default events exist
-        response = await client.get(self.schedule_url.format(applet_id=applet.id))
-        assert response.status_code == http.HTTPStatus.OK
-        for event in response.json()["result"]:
-            assert event["periodicity"]["type"] == constants.PeriodicityType.ALWAYS
+        response = await client.get(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_schedule_update_with_equal_start_end_time(
         self,
@@ -370,13 +376,13 @@ class TestSchedule:
         applet: AppletFull,
         daily_event: PublicEvent,
         event_daily_data_update: EventUpdateRequest,
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data_update.dict()
         data["start_time"] = data["end_time"]
         response = await client.put(
-            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id),
-            data=data,
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id), data=data
         )
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         result = response.json()["result"]
@@ -392,8 +398,9 @@ class TestSchedule:
         fcm_client: FCMNotificationTest,
         device_lucy: str,
         device_user: str,
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data_update.copy(deep=True)
         data.start_time = datetime.time(0, 0)
         data.end_time = datetime.time(23, 0)
@@ -412,7 +419,7 @@ class TestSchedule:
         assert device_user in fcm_client.notifications
 
     async def test_count(self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         response = await client.get(self.count_url.format(applet_id=applet.id))
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
@@ -446,8 +453,7 @@ class TestSchedule:
     async def test_delete_user_events_in_individual_schedule__event_not_found(
         self, client: TestClient, applet: AppletFull, user: User
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-
+        client.login(user)
         response = await client.delete(
             self.delete_user_url.format(
                 applet_id=applet.id,
@@ -459,7 +465,7 @@ class TestSchedule:
     async def test_delete_user_events_in_individual_schedule(
         self, client: TestClient, applet: AppletFull, user: User, lucy: User, daily_event_individual_lucy: PublicEvent
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         response = await client.get(
             self.schedule_detail_url.format(
                 applet_id=applet.id,
@@ -474,16 +480,16 @@ class TestSchedule:
         )
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_schedules_get_user_all(self, client: TestClient, applet: AppletFull):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+    async def test_schedules_get_user_all(self, client: TestClient, user: User, applet: AppletFull):
+        client.login(user)
         response = await client.get(self.schedule_user_url)
         num_events = _get_number_default_events(applet)
         assert response.status_code == http.HTTPStatus.OK
         # Default events
         assert response.json()["count"] == num_events
 
-    async def test_respondent_schedules_get_user_two_weeks(self, client: TestClient, applet: AppletFull):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+    async def test_respondent_schedules_get_user_two_weeks(self, client: TestClient, applet: AppletFull, user: User):
+        client.login(user)
 
         response = await client.get(self.erspondent_schedules_user_two_weeks_url)
 
@@ -501,16 +507,16 @@ class TestSchedule:
             "notificationSettings",
         }
 
-    async def test_schedule_get_user_by_applet(self, client: TestClient, applet: AppletFull):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+    async def test_schedule_get_user_by_applet(self, client: TestClient, applet: AppletFull, user: User):
+        client.login(user)
 
         response = await client.get(self.schedule_detail_user_url.format(applet_id=applet.id))
         assert response.status_code == http.HTTPStatus.OK
 
     async def test_schedule_create_individual(
-        self, client: TestClient, applet: AppletFull, lucy: User, applet_default_events: list[PublicEvent]
+        self, client: TestClient, applet: AppletFull, lucy: User, user: User, applet_default_events: list[PublicEvent]
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         response = await client.post(
             self.schedule_create_individual.format(
                 applet_id=applet.id,
@@ -531,14 +537,14 @@ class TestSchedule:
     async def test_remove_individual_calendar__events_for_user_not_found(
         self, client: TestClient, applet: AppletFull, user: User
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         response = await client.delete(self.remove_ind_url.format(applet_id=applet.id, respondent_id=str(user.id)))
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_remove_individual_calendar(
         self, client: TestClient, applet: AppletFull, user: User, applet_default_events: list[PublicEvent]
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         response = await client.post(self.schedule_create_individual.format(applet_id=applet.id, respondent_id=user.id))
         assert response.status_code == http.HTTPStatus.CREATED
         ids = [i["id"] for i in response.json()["result"]]
@@ -551,9 +557,9 @@ class TestSchedule:
             assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_schedule_import(
-        self, client: TestClient, applet: AppletFull, lucy: User, event_daily_data: EventRequest
+        self, client: TestClient, applet: AppletFull, lucy: User, event_daily_data: EventRequest, user: User
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         # Just create 3 events for import
         time_pairs_list = [("08:00:00", "09:00:00"), ("12:00:00", "13:00:00"), ("18:00:00", "19:00:00")]
         import_data = []
@@ -586,7 +592,7 @@ class TestSchedule:
         caplog: LogCaptureFixture,
     ):
         caplog.set_level(logging.ERROR)
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         error_message = "device id not found"
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
@@ -598,7 +604,7 @@ class TestSchedule:
         assert caplog.messages[0] == error_message
 
     async def test_get_all_schedules_no_permissions(self, client: TestClient, applet: AppletFull, lucy: User):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
         resp = await client.get(self.schedule_url.format(applet_id=applet.id))
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
         result = resp.json()["result"]
@@ -614,7 +620,7 @@ class TestSchedule:
         caplog: LogCaptureFixture,
     ):
         caplog.set_level(logging.ERROR)
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         error_message = "device id not found"
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
@@ -635,7 +641,7 @@ class TestSchedule:
         daily_event: PublicEvent,
     ):
         caplog.set_level(logging.ERROR)
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         error_message = "device id not found"
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
@@ -657,7 +663,7 @@ class TestSchedule:
         event_daily_data_update: EventUpdateRequest,
     ):
         caplog.set_level(logging.ERROR)
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         error_message = "device id not found"
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
@@ -681,7 +687,7 @@ class TestSchedule:
         daily_event_individual_lucy: PublicEvent,
     ):
         caplog.set_level(logging.ERROR)
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         error_message = "device id not found"
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
@@ -707,7 +713,7 @@ class TestSchedule:
         daily_event_individual_lucy: PublicEvent,
     ):
         caplog.set_level(logging.ERROR)
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         error_message = "device id not found"
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
@@ -733,7 +739,7 @@ class TestSchedule:
         event_daily_data: EventRequest,
     ):
         caplog.set_level(logging.ERROR)
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         error_message = "device id not found"
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
@@ -758,7 +764,7 @@ class TestSchedule:
         fcm_client: FCMNotificationTest,
         device_lucy: str,
     ):
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         data = event_daily_data_update.copy(deep=True)
         data.start_time = datetime.time(0, 0)
         data.end_time = datetime.time(20, 0)
@@ -780,7 +786,7 @@ class TestSchedule:
         fcm_client: FCMNotificationTest,
         device_lucy: str,
     ):
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         resp = await client.delete(
             self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event_individual_lucy.id)
         )

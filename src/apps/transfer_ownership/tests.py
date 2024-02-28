@@ -59,8 +59,8 @@ class TestTransfer(BaseTest):
     workspace_applet_managers_list = "/workspaces/{owner_id}/applets/{applet_id}/managers"
     applet_encryption_url = f"{applet_details_url}/encryption"
 
-    async def test_initiate_transfer(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_initiate_transfer(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
         data = {"email": "lucy@gmail.com"}
 
         response = await client.post(
@@ -73,8 +73,8 @@ class TestTransfer(BaseTest):
         assert TestMail.mails[0].recipients == [data["email"]]
         assert TestMail.mails[0].subject == "Transfer ownership of an applet"
 
-    async def test_initiate_transfer_fail(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_initiate_transfer_fail(self, client: TestClient, tom: User):
+        client.login(tom)
         data = {"email": "aloevdamirkhon@gmail.com"}
 
         response = await client.post(
@@ -84,9 +84,10 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_decline_transfer(self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull):
-        resp = await client.login(self.login_url, "lucy@gmail.com", "Test123")
-        lucy_id = resp.json()["result"]["user"]["id"]
+    async def test_decline_transfer(
+        self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, lucy: User
+    ):
+        client.login(lucy)
         mock = mocker.patch("apps.transfer_ownership.crud.TransferCRUD.decline_by_key")
         key = "6a3ab8e6-f2fa-49ae-b2db-197136677da7"
         response = await client.delete(
@@ -97,10 +98,10 @@ class TestTransfer(BaseTest):
         )
 
         assert response.status_code == http.HTTPStatus.NO_CONTENT
-        mock.assert_awaited_once_with(uuid.UUID(key), uuid.UUID(lucy_id))
+        mock.assert_awaited_once_with(uuid.UUID(key), lucy.id)
 
-    async def test_decline_wrong_transfer(self, client: TestClient):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_decline_wrong_transfer(self, client: TestClient, lucy: User):
+        client.login(lucy)
         response = await client.delete(
             self.response_url.format(
                 applet_id="00000000-0000-0000-0000-000000000000",
@@ -110,8 +111,8 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_re_decline_transfer(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_re_decline_transfer(self, client: TestClient, applet_one: AppletFull, lucy: User):
+        client.login(lucy)
         response = await client.delete(
             self.response_url.format(
                 applet_id=applet_one.id,
@@ -130,9 +131,8 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_accept_transfer(self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull):
-        resp = await client.login(self.login_url, "lucy@gmail.com", "Test123")
-        lucy_id = resp.json()["result"]["user"]["id"]
+    async def test_accept_transfer(self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, lucy: User):
+        client.login(lucy)
         mock = mocker.patch("apps.transfer_ownership.crud.TransferCRUD.approve_by_key")
         key = "6a3ab8e6-f2fa-49ae-b2db-197136677da7"
         response = await client.post(
@@ -143,10 +143,10 @@ class TestTransfer(BaseTest):
         )
 
         assert response.status_code == http.HTTPStatus.OK
-        mock.assert_awaited_once_with(uuid.UUID(key), uuid.UUID(lucy_id))
+        mock.assert_awaited_once_with(uuid.UUID(key), lucy.id)
 
-    async def test_accept_wrong_transfer(self, client: TestClient):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_accept_wrong_transfer(self, client: TestClient, lucy: User):
+        client.login(lucy)
         response = await client.post(
             self.response_url.format(
                 applet_id="00000000-0000-0000-0000-000000000000",
@@ -156,8 +156,8 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_re_accept_transfer(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_re_accept_transfer(self, client: TestClient, applet_one: AppletFull, lucy: User):
+        client.login(lucy)
         response = await client.post(
             self.response_url.format(
                 applet_id=applet_one.id,
@@ -177,7 +177,7 @@ class TestTransfer(BaseTest):
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_accept_transfer_report_settings_are_kept(
-        self, client: TestClient, applet_one_with_report_conf: AppletFull
+        self, client: TestClient, applet_one_with_report_conf: AppletFull, tom: User, lucy
     ):
         report_settings_keys = (
             "reportServerIp",
@@ -187,7 +187,7 @@ class TestTransfer(BaseTest):
             "reportIncludeUserId",
             "reportIncludeCaseId",
         )
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         resp = await client.get(self.applet_details_url.format(applet_id=applet_one_with_report_conf.id))
         assert resp.status_code == http.HTTPStatus.OK
         resp_data = resp.json()["result"]
@@ -195,7 +195,7 @@ class TestTransfer(BaseTest):
         for key in report_settings_keys:
             assert resp_data[key]
 
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        client.login(lucy)
         response = await client.post(
             self.response_url.format(
                 applet_id=applet_one_with_report_conf.id,
@@ -213,9 +213,9 @@ class TestTransfer(BaseTest):
 
     @pytest.mark.usefixtures("user")
     async def test_reinvite_manager_after_transfer(
-        self, client: TestClient, user: User, mike: User, applet_one: AppletFull
+        self, client: TestClient, user: User, mike: User, applet_one: AppletFull, tom: User
     ):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         request_data = dict(
             email=user.email_encrypted,
             first_name=user.first_name,
@@ -233,14 +233,14 @@ class TestTransfer(BaseTest):
         assert TestMail.mails[0].recipients == [request_data["email"]]
 
         # accept manager invite
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         key = response.json()["result"]["key"]
         response = await client.post(self.invite_accept_url.format(key=key))
         assert response.status_code == http.HTTPStatus.OK
 
         # transfer ownership to mike@gmail.com
         # initiate transfer
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         data = {"email": mike.email_encrypted}
 
         response = await client.post(
@@ -255,13 +255,13 @@ class TestTransfer(BaseTest):
         assert TestMail.mails[0].subject == "Transfer ownership of an applet"
         body = TestMail.mails[0].body
         regex = (
-            r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"  # noqa: E501
+            r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"
         )
         key = re.findall(regex, body)
         key = key[0][4:-14]
 
         # accept transfer
-        await client.login(self.login_url, mike.email_encrypted, "Test1234")
+        client.login(mike)
         response = await client.post(
             self.response_url.format(
                 applet_id=applet_one.id,
@@ -308,10 +308,9 @@ class TestTransfer(BaseTest):
 
     # TODO: move these tests to the unit tests for service and crud
     async def test_init_transfer__user_to_does_not_exist(
-        self, client: TestClient, session: AsyncSession, applet_one: AppletFull
+        self, client: TestClient, session: AsyncSession, applet_one: AppletFull, tom: User
     ):
-        resp = await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        from_user_id = resp.json()["result"]["user"]["id"]
+        client.login(tom)
         data = {"email": "userdoesnotexist@example.com"}
         applet_id = applet_one.id
         response = await client.post(
@@ -321,20 +320,19 @@ class TestTransfer(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         body = TestMail.mails[0].body
         regex = (
-            r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"  # noqa: E501
+            r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"
         )
         key = str(re.findall(regex, body)[0][4:-14])
         crud = TransferCRUD(session)
         transfer = await crud.get_by_key(uuid.UUID(key))
         assert transfer.to_user_id is None
-        assert transfer.from_user_id == uuid.UUID(from_user_id)
+        assert transfer.from_user_id == tom.id
 
     # TODO: move these tests to the unit tests for service and crud
     async def test_init_transfer__user_to_exists(
-        self, client: TestClient, session: AsyncSession, lucy: User, applet_one: AppletFull
+        self, client: TestClient, session: AsyncSession, lucy: User, applet_one: AppletFull, tom: User
     ):
-        resp = await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
-        from_user_id = resp.json()["result"]["user"]["id"]
+        client.login(tom)
         data = {"email": "lucy@gmail.com"}
         applet_id = applet_one.id
         response = await client.post(
@@ -344,16 +342,16 @@ class TestTransfer(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         body = TestMail.mails[0].body
         regex = (
-            r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"  # noqa: E501
+            r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"
         )
         key = str(re.findall(regex, body)[0][4:-14])
         crud = TransferCRUD(session)
         transfer = await crud.get_by_key(uuid.UUID(key))
         assert transfer.to_user_id == lucy.id
-        assert transfer.from_user_id == uuid.UUID(from_user_id)
+        assert transfer.from_user_id == tom.id
 
-    async def test_init_transfer_owner_invite_themself(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_init_transfer_owner_invite_themself(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
         data = {"email": "tom@mindlogger.com"}
         applet_id = applet_one.id
         resp = await client.post(
