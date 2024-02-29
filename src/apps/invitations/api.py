@@ -107,17 +107,23 @@ async def invitation_respondent_send(
             invitation_schema.secret_user_id,
             InvitationRespondentRequest.__fields__["secret_user_id"].alias,
         )
-        subject_sch = Subject(
-            applet_id=applet_id,
-            creator_id=user.id,
-            language=invitation_schema.language,
-            email=invitation_schema.email,
-            first_name=invitation_schema.first_name,
-            last_name=invitation_schema.last_name,
-            secret_user_id=invitation_schema.secret_user_id,
-            nickname=invitation_schema.nickname,
-        )
-        subject = await subject_srv.create(subject_sch)
+        subject = await subject_srv.get_pending_subject_if_exist(invitation_schema.secret_user_id, applet_id)
+        if not subject:
+            subject_sch = Subject(
+                applet_id=applet_id,
+                creator_id=user.id,
+                language=invitation_schema.language,
+                email=invitation_schema.email,
+                first_name=invitation_schema.first_name,
+                last_name=invitation_schema.last_name,
+                secret_user_id=invitation_schema.secret_user_id,
+                nickname=invitation_schema.nickname,
+            )
+            subject = await subject_srv.create(subject_sch)
+        else:
+            subject.first_name = invitation_schema.first_name
+            subject.last_name = invitation_schema.last_name
+            await subject_srv.update(subject)
         invitation = await invitation_srv.send_respondent_invitation(applet_id, invitation_schema, subject.id)
 
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))

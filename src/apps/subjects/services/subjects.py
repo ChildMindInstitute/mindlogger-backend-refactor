@@ -106,7 +106,10 @@ class SubjectsService:
 
     async def delete_hard(self, id_: uuid.UUID):
         await AlertCRUD(self.session).delete_by_subject(id_)
-
         repository = SubjectsCrud(self.session)
         await repository.delete_subject_relations(id_)
         await repository.delete(id_)
+
+    async def get_pending_subject_if_exist(self, secret_id: str, applet_id: uuid.UUID) -> Subject | None:
+        models = await SubjectsCrud(self.session).get_pending_subjects(secret_id, applet_id)
+        return models[0] if models else None
