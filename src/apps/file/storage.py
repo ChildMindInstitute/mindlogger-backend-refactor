@@ -15,7 +15,7 @@ async def select_storage(
     session: AsyncSession,
 ):
     service = workspace.WorkspaceService(session, uuid.uuid4())
-    info = await service.get_arbitrary_info(applet_id)
+    info = await service.get_arbitrary_info_if_use_arbitrary(applet_id)
     if not info:
         config_cdn = CdnConfig(
             endpoint_url=settings.cdn.endpoint_url,

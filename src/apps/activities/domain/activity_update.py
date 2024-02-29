@@ -14,7 +14,7 @@ from apps.activities.errors import DuplicateActivityItemNameNameError
 from apps.shared.domain import InternalModel, PublicModel
 
 
-class ActivityItemUpdate(BaseActivityItem, InternalModel):
+class ActivityItemUpdate(BaseActivityItem, PublicModel):
     id: uuid.UUID | None
 
 
@@ -23,7 +23,7 @@ class PreparedActivityItemUpdate(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
 
 
-class ActivityUpdate(ActivityBase, InternalModel):
+class ActivityUpdate(ActivityBase, PublicModel):
     id: uuid.UUID | None
     key: uuid.UUID
     items: list[ActivityItemUpdate]

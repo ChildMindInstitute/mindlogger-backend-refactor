@@ -110,8 +110,9 @@ class AppletService:
         create_data: AppletCreate,
         manager_id: uuid.UUID | None = None,
         manager_role: Role | None = None,
+        applet_id: uuid.UUID | None = None,
     ) -> AppletFull:
-        applet = await self._create(create_data, manager_id or self.user_id)
+        applet = await self._create(create_data, manager_id or self.user_id, applet_id=applet_id)
 
         await self._create_applet_accesses(applet.id, manager_id, manager_role)
 
@@ -129,8 +130,11 @@ class AppletService:
 
         return applet
 
-    async def _create(self, create_data: AppletCreate, creator_id: uuid.UUID) -> AppletFull:
-        applet_id = uuid.uuid4()
+    async def _create(
+        self, create_data: AppletCreate, creator_id: uuid.UUID, applet_id: uuid.UUID | None = None
+    ) -> AppletFull:
+        if applet_id is None:
+            applet_id = uuid.uuid4()
         await self._validate_applet_name(create_data.display_name)
         if not create_data.theme_id:
             theme = await ThemeService(self.session, self.user_id).get_default()

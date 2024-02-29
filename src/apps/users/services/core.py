@@ -19,6 +19,7 @@ from apps.users.services import PasswordRecoveryCache
 from config import settings
 from infrastructure.cache import CacheNotFound
 from infrastructure.cache.domain import CacheEntry
+from infrastructure.http.domain import MindloggerContentSource
 
 __all__ = ["PasswordRecoveryService"]
 
@@ -28,7 +29,11 @@ class PasswordRecoveryService:
         self._cache: PasswordRecoveryCache = PasswordRecoveryCache()
         self.session = session
 
-    async def send_password_recovery(self, schema: PasswordRecoveryRequest) -> PublicUser:
+    async def send_password_recovery(
+        self,
+        schema: PasswordRecoveryRequest,
+        content_source: MindloggerContentSource,
+    ) -> PublicUser:
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
         if user.email_encrypted != schema.email:
@@ -66,9 +71,20 @@ class PasswordRecoveryService:
 
         exp = settings.authentication.password_recover.expiration // 60
 
+        # Default to web frontend
+        frontend_base = settings.service.urls.frontend.web_base
+        password_recovery_page = settings.service.urls.frontend.web_password_recovery_send
+        subject = "MindLogger"
+
+        if content_source == MindloggerContentSource.admin:
+            # Change to admin frontend if the request came from there
+            frontend_base = settings.service.urls.frontend.admin_base
+            password_recovery_page = settings.service.urls.frontend.admin_password_recovery_send
+            subject = "MindLogger Admin"
+
         url = (
-            f"https://{settings.service.urls.frontend.web_base}"
-            f"/{settings.service.urls.frontend.password_recovery_send}"
+            f"https://{frontend_base}"
+            f"/{password_recovery_page}"
             f"?key={password_recovery_info.key}"
             f"&email="
             f"{urllib.parse.quote(user.email_encrypted)}"
@@ -76,7 +92,7 @@ class PasswordRecoveryService:
 
         message = MessageSchema(
             recipients=[user.email_encrypted],
-            subject="Girder for MindLogger (development instance): " "Temporary access",
+            subject=subject,
             body=service.get_template(
                 path="reset_password_en",
                 email=user.email_encrypted,
