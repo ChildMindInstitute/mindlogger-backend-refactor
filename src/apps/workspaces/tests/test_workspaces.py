@@ -1061,6 +1061,7 @@ class TestWorkspaces(BaseTest):
         applet_one: AppletFull,
         applet_one_lucy_respondent,  # invited
         applet_one_shell_account,  # not invited,
+        applet_one_user_respondent,  # another one respondent
         applet_one_shell_has_pending_invitation,  # pending
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
@@ -1068,7 +1069,7 @@ class TestWorkspaces(BaseTest):
         assert result.status_code == http.HTTPStatus.OK
         payload = result.json()["result"]
         assert payload
-        assert result.json()["count"] == 4
+        assert result.json()["count"] == 5
         lucy_respondent = next(filter(lambda x: x["id"] == str(lucy.id), payload))
         tom_respondent = next(filter(lambda x: x["id"] == str(tom.id), payload))
         shell_account_not_invited = next(

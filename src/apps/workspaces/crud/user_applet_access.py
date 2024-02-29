@@ -358,6 +358,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.values(is_deleted=True)
         await self._execute(query)
 
+    @staticmethod
+    def workspace_applets_subquery(owner_id: uuid.UUID, applet_id: uuid.UUID | None) -> Query:
+        query: Query = select(UserAppletAccessSchema.applet_id)
+        query = query.where(UserAppletAccessSchema.owner_id == owner_id)
+        if applet_id:
+            query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        return query.subquery()
+
     async def get_workspace_respondents(
         self,
         user_id: uuid.UUID,
@@ -367,15 +375,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     ) -> Tuple[list[WorkspaceRespondent], int]:
         field_nickname = SubjectSchema.nickname
         field_secret_user_id = SubjectSchema.secret_user_id
-        workspace_applets_subquery = (
-            select(UserAppletAccessSchema.applet_id).where(UserAppletAccessSchema.owner_id == owner_id).subquery()
-        )
-        owner_applets_subquery = (
-            select(UserAppletAccessSchema.applet_id)
-            .distinct()
-            .where(UserAppletAccessSchema.owner_id == owner_id)
-            .subquery()
-        )
+        workspace_applets_sq = self.workspace_applets_subquery(owner_id, applet_id)
 
         schedule_exists = (
             select(UserEventsSchema)
@@ -448,7 +448,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                         select(InvitationSchema.id)
                         .where(
                             InvitationSchema.status == InvitationStatus.PENDING,
-                            InvitationSchema.applet_id.in_(owner_applets_subquery),
+                            InvitationSchema.applet_id.in_(workspace_applets_sq),
                             InvitationSchema.meta.has_key("subject_id"),
                             func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True))
                             == any_(func.array_agg(SubjectSchema.id)),
@@ -509,7 +509,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         query = query.where(
             has_access,
-            SubjectSchema.applet_id.in_(workspace_applets_subquery),
+            SubjectSchema.applet_id.in_(workspace_applets_sq),
             SubjectSchema.applet_id == applet_id if applet_id else True,
             SubjectSchema.soft_exists(),
         )
