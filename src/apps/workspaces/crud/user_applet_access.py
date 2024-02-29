@@ -358,30 +358,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.values(is_deleted=True)
         await self._execute(query)
 
-    async def get_invited_subject_ids(self, owner_id: uuid.UUID) -> list[uuid.UUID]:
-        owner_applets_subquery = (
-            select(UserAppletAccessSchema.applet_id)
-            .distinct()
-            .where(UserAppletAccessSchema.owner_id == owner_id)
-            .subquery()
-        )
-
-        query: Query = select(SubjectSchema.id)
-        query = query.select_from(InvitationSchema)
-        query = query.join(
-            SubjectSchema,
-            and_(
-                InvitationSchema.meta.has_key("subject_id"),
-                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
-            ),
-        )
-        query = query.where(
-            InvitationSchema.status == InvitationStatus.PENDING, InvitationSchema.applet_id.in_(owner_applets_subquery)
-        )
-        db_res = await self._execute(query)
-        res = db_res.scalars().all()
-        return res
-
     async def get_workspace_respondents(
         self,
         user_id: uuid.UUID,
@@ -391,10 +367,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
     ) -> Tuple[list[WorkspaceRespondent], int]:
         field_nickname = SubjectSchema.nickname
         field_secret_user_id = SubjectSchema.secret_user_id
-        invited_subjects = await self.get_invited_subject_ids(owner_id)
-
         workspace_applets_subquery = (
             select(UserAppletAccessSchema.applet_id).where(UserAppletAccessSchema.owner_id == owner_id).subquery()
+        )
+        owner_applets_subquery = (
+            select(UserAppletAccessSchema.applet_id)
+            .distinct()
+            .where(UserAppletAccessSchema.owner_id == owner_id)
+            .subquery()
         )
 
         schedule_exists = (
@@ -464,11 +444,22 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             case(
                 (UserSchema.id.isnot(None), SubjectStatus.INVITED),
                 (
-                    and_(len(invited_subjects) > 0, func.array_agg(SubjectSchema.id).op("@>")(invited_subjects)),
+                    (
+                        select(InvitationSchema.id)
+                        .where(
+                            InvitationSchema.status == InvitationStatus.PENDING,
+                            InvitationSchema.applet_id.in_(owner_applets_subquery),
+                            InvitationSchema.meta.has_key("subject_id"),
+                            func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True))
+                            == any_(func.array_agg(SubjectSchema.id)),
+                        )
+                        .exists()
+                    ),
                     SubjectStatus.PENDING,
                 ),
                 else_=SubjectStatus.NOT_INVITED,
             ).label("status"),
+            func.array_agg(SubjectSchema.id).label("subjects"),
             is_pinned.label("is_pinned"),
             func.array_remove(func.array_agg(func.distinct(field_nickname)), None)
             .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
@@ -527,6 +518,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserSchema.id,
             func.coalesce(UserSchema.id, func.gen_random_uuid()),
         )
+
+        await self._execute(query)
 
         if query_params.filters:
             query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))

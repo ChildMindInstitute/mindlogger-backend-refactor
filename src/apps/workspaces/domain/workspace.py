@@ -98,6 +98,7 @@ class WorkspaceRespondent(InternalModel):
     user_id: uuid.UUID | None
     status: str
     email: str | None
+    subjects: list[uuid.UUID]
 
 
 class AppletRole(InternalModel):
@@ -177,6 +178,7 @@ class PublicWorkspaceRespondent(PublicModel):
     details: list[PublicWorkspaceRespondentDetails] | None = None
     status: str
     email: str | None
+    subjects: list[uuid.UUID]
 
 
 class PublicWorkspaceManager(PublicModel):
