@@ -996,3 +996,6 @@ class TestInvite(BaseTest):
             invitation_respondent_data.dict(),
         )
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        payload = response.json()
+        assert payload
+        assert payload["result"][0]["message"] == NonUniqueValue().error
