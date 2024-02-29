@@ -32,7 +32,7 @@ async def decrypt(encrypted_data: str):
     print(decrypted)
 
 
-# Hardcode is bad, but for now it is ok
+# TODO: include subject reencryption
 TABLE_NAME_COLUMN_NAME_MAP = {
     "users": ["email_encrypted", "first_name", "last_name"],
     "user_applet_accesses": ["nickname"],
