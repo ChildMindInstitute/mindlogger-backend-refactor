@@ -18,6 +18,8 @@ from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
 from apps.themes.service import ThemeService
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 async def _get_or_create_applet(
@@ -207,3 +209,40 @@ async def applet_four(
     yield applet
     if not pytestconfig.getoption("--keepdb"):
         await teardown_applet(global_session, applet.id)
+
+
+@pytest.fixture
+async def applet_one_lucy_manager(session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.MANAGER)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_lucy_respondent(
+    session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_with_all_performance_tasks(
+    applet_minimal_data: AppletCreate,
+    session: AsyncSession,
+    tom: User,
+    activity_ab_trails_ipad_create: ActivityCreate,
+    activity_ab_trails_mobile_create: ActivityCreate,
+    activity_flanker_create: ActivityCreate,
+    actvitiy_cst_gyroscope_create: ActivityCreate,
+    actvitiy_cst_touch_create: ActivityCreate,
+) -> AppletFull:
+    data = applet_minimal_data.copy(deep=True)
+    data.activities = [
+        activity_ab_trails_ipad_create,
+        activity_ab_trails_mobile_create,
+        activity_flanker_create,
+        actvitiy_cst_gyroscope_create,
+        actvitiy_cst_touch_create,
+    ]
+    applet = await AppletService(session, tom.id).create(data)
+    return applet

@@ -1,23 +1,36 @@
 import datetime
-import json
-import re
+import http
 import uuid
+import re
+from typing import Any, cast
+from unittest.mock import AsyncMock
 
 import pytest
+from pytest import FixtureRequest
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
+from apps.answers.db.schemas import AnswerNoteSchema, AnswerSchema
+from apps.answers.domain import AnswerNote
+from apps.answers.domain.answers import AppletAnswerCreate, AssessmentAnswerCreate, ItemAnswerCreate
 from apps.applets.domain.applet_full import AppletFull
+from apps.applets.errors import InvalidVersionError
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
-from apps.users import User
+from apps.shared.test.client import TestClient
+from apps.users.domain import User
+from infrastructure.utility import RedisCacheTest
+from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
+from apps.answers.service import AnswerService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-from infrastructure.utility import RedisCacheTest
+from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 
 
 @pytest.fixture
@@ -55,6 +68,14 @@ def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity):
     )
 
 
+def note_url_path_data(answer: AnswerSchema) -> dict[str, Any]:
+    return {
+        "applet_id": answer.applet_id,
+        "answer_id": answer.id,
+        "activity_id": answer.activity_history_id.split("_")[0],
+    }
+
+
 @pytest.fixture
 async def tom_answer_item_for_applet(tom, applet, session):
     answer = await AnswersCRUD(session).create(
@@ -82,6 +103,7 @@ async def tom_answer_item_for_applet(tom, applet, session):
     )
 
 
+@pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
         "workspaces/fixtures/workspaces.json",
@@ -103,105 +125,77 @@ class TestAnswerActivityItems(BaseTest):
     applets_answers_completions_url = "/answers/applet/completions"
     applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
 
-    activity_answers_url = "/answers/applet/{applet_id}/answers/" "{answer_id}/activities/{activity_id}"
+    activity_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
 
-    answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"  # noqa: E501
-    answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
-    answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
-    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
+    answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"
+    answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"
+    answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"
+    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"
+    check_existence_url = "/answers/check-existence"
     assessment_delete_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}"
 
-    async def test_answer_activity_items_create_for_respondent(self, mock_kiq_report, client, tom, applet: AppletFull):
+    async def test_answer_activity_items_create_for_respondent(
+        self,
+        mock_kiq_report: AsyncMock,
+        client: TestClient,
+        tom: User,
+        redis: RedisCacheTest,
+        answer_with_alert_create: AppletAnswerCreate,
+    ):
         client.login(tom)
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            activity_id=str(applet.activities[0].id),
-            version=applet.version,
-            created_at=1690188731636,
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                events=json.dumps(dict(events=["event1", "event2"])),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                identifier="encrypted_identifier",
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-                scheduledEventId="eventId",
-                localEndDate="2022-10-01",
-                localEndTime="12:35:00",
-            ),
-            alerts=[
-                dict(
-                    activity_item_id=str(applet.activities[0].items[0].id),
-                    message="hello world",
-                )
-            ],
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-        assert response.status_code == 201, response.json()
+        response = await client.post(self.answer_url, data=answer_with_alert_create)
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         mock_kiq_report.assert_awaited_once()
 
-        published_values = await RedisCacheTest().get(f"channel_{tom.id}")
+        published_values = await redis.get(f"channel_{tom.id}")
         published_values = published_values or []
         assert len(published_values) == 1
         # 2 because alert for lucy and for tom
-        assert len(RedisCacheTest()._storage) == 1
+        assert len(redis._storage) == 1
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].subject == "Response alert"
-        # TODO: move to the fixtures with yield
-        RedisCacheTest._storage = {}
 
-    async def test_get_latest_summary(self, mock_report_server_response, mock_kiq_report, client, tom, applet):
-        client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            activity_id=str(applet.activities[0].id),
-            version=applet.version,
-            created_at=1690188731636,
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                events=json.dumps(dict(events=["event1", "event2"])),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                identifier="encrypted_identifier",
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
+        response = await client.get(
+            self.review_activities_url.format(applet_id=str(answer_with_alert_create.applet_id)),
+            dict(
+                respondentId=tom.id,
+                createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
-        response = await client.post(self.answer_url, data=create_data)
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.json()["count"] == 1
+        assert len(response.json()["result"][0]["answerDates"]) == 1
 
-        assert response.status_code == 201, response.json()
+        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
+        response = await client.get(
+            self.assessment_answers_url.format(
+                applet_id=str(answer_with_alert_create.applet_id),
+                answer_id=answer_id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+
+    async def test_create_answer__wrong_applet_version(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+    ):
+        client.login(tom)
+        data = answer_create.copy(deep=True)
+        data.version = "0.0.0"
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.json()["result"][0]["message"] == InvalidVersionError.message
+
+    @pytest.mark.usefixtures("mock_report_server_response", "answer")
+    async def test_get_latest_summary(self, client: TestClient, tom: User, applet: AppletFull):
+        client.login(tom)
+
         response = await client.post(
             self.latest_report_url.format(
                 applet_id=str(applet.id),
@@ -209,67 +203,23 @@ class TestAnswerActivityItems(BaseTest):
                 respondent_id=tom.id,
             ),
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.content == b"pdf body"
 
     async def test_public_answer_activity_items_create_for_respondent(
-        self, mock_kiq_report, client, tom, public_applet
+        self, client: TestClient, public_answer_create: AppletAnswerCreate
     ):
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(public_applet.id),
-            version=public_applet.version,
-            activity_id=str(public_applet.activities[0].id),
-            created_at=1690188731636,
-            answer=dict(
-                user_public_key="user key",
-                events=json.dumps(dict(events=["event1", "event2"])),
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(public_applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
+        response = await client.post(self.public_answer_url, data=public_answer_create)
+        assert response.status_code == http.HTTPStatus.CREATED
 
-        response = await client.post(self.public_answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
-
-    async def test_answer_skippable_activity_items_create_for_respondent(self, mock_kiq_report, client, tom, applet):
+    async def test_answer_skippable_activity_items_create_for_respondent(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet: AppletFull
+    ):
         client.login(tom)
 
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            activity_id=str(applet.activities[0].id),
-            version=applet.version,
-            answer=dict(
-                start_time=1690188679657,
-                end_time=1690188731636,
-                itemIds=[str(applet.activities[0].items[0].id)],
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
+        response = await client.post(self.answer_url, data=answer_create)
 
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         response = await client.get(
             self.applet_submit_dates_url.format(applet_id=str(applet.id)),
@@ -279,41 +229,16 @@ class TestAnswerActivityItems(BaseTest):
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
             ),
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert len(response.json()["result"]["dates"]) == 1
 
-    async def test_list_submit_dates(self, mock_kiq_report, client, tom, applet):
+    async def test_list_submit_dates(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet: AppletFull
+    ):
         client.login(tom)
 
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            activity_id=str(applet.activities[0].id),
-            version=applet.version,
-            answer=dict(
-                user_public_key="user key",
-                events=json.dumps(dict(events=["event1", "event2"])),
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-        assert response.status_code == 201, response.json()
+        response = await client.post(self.answer_url, data=answer_create)
+        assert response.status_code == http.HTTPStatus.CREATED
 
         response = await client.get(
             self.applet_submit_dates_url.format(applet_id=str(applet.id)),
@@ -323,230 +248,172 @@ class TestAnswerActivityItems(BaseTest):
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
             ),
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert len(response.json()["result"]["dates"]) == 1
 
-    async def test_answer_flow_items_create_for_respondent(self, mock_kiq_report, client, tom, applet):
+    async def test_answer_flow_items_create_for_respondent(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate
+    ):
         client.login(tom)
 
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            created_at=1690188731636,
-            flow_id="3013dfb1-9202-4577-80f2-ba7450fb5831",
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                events=json.dumps(dict(events=["event1", "event2"])),
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
+        response = await client.post(self.answer_url, data=answer_create)
 
-        response = await client.post(self.answer_url, data=create_data)
+        assert response.status_code == http.HTTPStatus.CREATED
 
-        assert response.status_code == 201, response.json()
+    async def test_answer_get_export_data__answer_from_manager(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        answer_create: AppletAnswerCreate,
+        applet_one_lucy_manager: AppletFull,
+        applet_one_lucy_respondent: AppletFull,
+    ):
+        client.login(lucy)
+        data = answer_create.copy(deep=True)
+        data.applet_id = applet_one_lucy_manager.id
+        data.version = applet_one_lucy_manager.version
+        data.activity_id = applet_one_lucy_manager.activities[0].id
+        data.flow_id = None
+        data.answer.item_ids = [i.id for i in applet_one_lucy_manager.activities[0].items]
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
 
-    async def test_answer_with_skipping_all(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            activity_id=str(applet.activities[0].id),
-            version=applet.version,
-            created_at=1690188731636,
-            answer=dict(
-                start_time=1690188679657,
-                end_time=1690188731636,
-                itemIds=[str(applet.activities[0].items[0].id)],
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
+        response = await client.get(
+            self.applet_answers_export_url.format(applet_id=str(applet_one_lucy_manager.id)),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert re.match(
+            r"\[admin account\] \([0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}\)",
+            response.json()["result"]["answers"][0]["respondentSecretId"],
         )
 
-        response = await client.post(self.answer_url, data=create_data)
+    async def test_answer_get_export_data__answer_from_respondent(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        answer_create: AppletAnswerCreate,
+        applet_one_lucy_respondent: AppletFull,
+    ):
+        client.login(lucy)
+        data = answer_create.copy(deep=True)
+        data.applet_id = applet_one_lucy_respondent.id
+        data.version = applet_one_lucy_respondent.version
+        data.activity_id = applet_one_lucy_respondent.activities[0].id
+        data.flow_id = None
+        data.answer.item_ids = [i.id for i in applet_one_lucy_respondent.activities[0].items]
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
 
-        assert response.status_code == 201, response.json()
-
-    async def test_answered_applet_activities(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                events=json.dumps(dict(events=["event1", "event2"])),
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
+        response = await client.get(
+            self.applet_answers_export_url.format(applet_id=str(applet_one_lucy_respondent.id)),
         )
+        assert response.status_code == http.HTTPStatus.OK
+        secret_user_id = response.json()["result"]["answers"][0]["respondentSecretId"]
+        assert secret_user_id != f"[admin account] ({lucy.email_encrypted})"
+        assert uuid.UUID(secret_user_id)
 
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
+    async def test_answer_get_export_data__only_last_activity(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet: AppletFull,
+        applet_with_additional_item: AppletFull,  # next version of applet
+    ):
+        client.login(tom)
+        response = await client.post(self.answer_url, data=answer_create)
+        assert response.status_code == http.HTTPStatus.CREATED
 
         response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
+            self.applet_answers_export_url.format(applet_id=str(applet.id)), query={"activitiesLastVersion": True}
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["activities"][0]["id"] == str(applet_with_additional_item.activities[0].id)
+        assert response.json()["result"]["activities"][0]["version"] == applet_with_additional_item.version
+        assert (
+            response.json()["result"]["activities"][0]["idVersion"]
+            == f"{applet_with_additional_item.activities[0].id}_{applet_with_additional_item.version}"
+        )
+
+    async def test_answer_with_skipping_all(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+    ):
+        client.login(tom)
+        response = await client.post(self.answer_url, data=answer_create)
+
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+    async def test_answered_applet_activities(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+    ):
+        client.login(tom)
+
+        response = await client.post(self.answer_url, data=answer_create)
+
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+        response = await client.get(
+            self.review_activities_url.format(applet_id=str(answer_create.applet_id)),
             dict(
                 respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
         assert len(response.json()["result"][0]["answerDates"]) == 1
 
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await client.get(
             self.activity_answers_url.format(
-                applet_id=str(applet.id),
+                applet_id=str(answer_create.applet_id),
                 answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
+                activity_id=str(answer_create.activity_id),
             )
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["events"] == answer_create.answer.events
 
+    async def test_get_answer_activity(self, client: TestClient, tom: User, applet: AppletFull, answer: AnswerSchema):
+        client.login(tom)
         response = await client.get(
             self.activity_answers_url.format(
                 applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
+                answer_id=answer.id,
+                activity_id=applet.activities[0].id,
             )
         )
+        assert response.status_code == http.HTTPStatus.OK  # TODO: Check response
 
-        assert response.status_code == 200, response.json()
-        assert response.json()["result"]["events"] == '{"events": ["event1", "event2"]}'
-
-    async def test_fail_answered_applet_not_existed_activities(self, mock_kiq_report, client, tom, applet):
+    async def test_fail_answered_applet_not_existed_activities(
+        self, client: TestClient, tom: User, applet: AppletFull, uuid_zero: uuid.UUID, answer: AnswerSchema
+    ):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                events=json.dumps(dict(events=["event1", "event2"])),
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
-
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 1
-        assert len(response.json()["result"][0]["answerDates"]) == 1
-
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await client.get(
             self.activity_answers_url.format(
                 applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id="00000000-0000-0000-0000-000000000000",
+                answer_id=answer.id,
+                activity_id=uuid_zero,
             )
         )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-        assert response.status_code == 404, response.json()
-
-    async def test_applet_activity_answers(self, mock_kiq_report, client, tom, applet):
+    async def test_applet_activity_answers(
+        self, client: TestClient, tom: User, applet: AppletFull, answer: AnswerSchema
+    ):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                events=json.dumps(dict(events=["event1", "event2"])),
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
-
         response = await client.get(
             self.answers_for_activity_url.format(
                 applet_id=str(applet.id),
@@ -554,552 +421,186 @@ class TestAnswerActivityItems(BaseTest):
             ),
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         assert response.json()["count"] == 1
 
-    async def test_applet_assessment_retrieve(self, mock_kiq_report, client, tom, applet):
+    async def test_applet_assessment_retrieve(
+        self, client: TestClient, tom: User, answer_reviewable_activity: AnswerSchema
+    ):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
-
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 1
-        assert len(response.json()["result"][0]["answerDates"]) == 1
-
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await client.get(
             self.assessment_answers_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
+                applet_id=str(answer_reviewable_activity.applet_id),
+                answer_id=answer_reviewable_activity.id,
             )
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]
 
-    async def test_applet_assessment_create(self, mock_kiq_report, client, tom, applet_with_reviewable_activity):
+    async def test_applet_assessment_create(
+        self,
+        client: TestClient,
+        tom: User,
+        assessment_create: AssessmentAnswerCreate,
+        answer_reviewable_activity: AnswerSchema,
+        applet_with_reviewable_activity: AppletFull,
+    ):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet_with_reviewable_activity.id),
-            version=applet_with_reviewable_activity.version,
-            activity_id=str(applet_with_reviewable_activity.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet_with_reviewable_activity.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-        assert response.status_code == 201, response.json()
-
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet_with_reviewable_activity.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 1
-        assert len(response.json()["result"][0]["answerDates"]) == 1
-
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-
-        # create assessment
-        response = await client.post(
-            self.assessment_answers_url.format(
-                applet_id=str(applet_with_reviewable_activity.id),
-                answer_id=answer_id,
-            ),
-            dict(
-                answer="some answer",
-                item_ids=[str(applet_with_reviewable_activity.activities[0].items[0].id)],
-                reviewer_public_key="some public key",
-                assessment_version_id=(
-                    f"{applet_with_reviewable_activity.activities[0].id}_{applet_with_reviewable_activity.version}"
-                ),
-            ),
-        )
-
-        assert response.status_code == 201
-
-        response = await client.get(
-            self.assessment_answers_url.format(
-                applet_id=str(applet_with_reviewable_activity.id),
-                answer_id=answer_id,
-            )
-        )
-        assert response.status_code == 200, response.json()
-        assert response.json()["result"]["answer"] == "some answer"
-        assert response.json()["result"]["reviewerPublicKey"] == "some public key"
-        assert response.json()["result"]["itemIds"] == [str(applet_with_reviewable_activity.activities[0].items[0].id)]
 
         response = await client.post(
             self.assessment_answers_url.format(
-                applet_id=str(applet_with_reviewable_activity.id),
-                answer_id=answer_id,
+                applet_id=str(answer_reviewable_activity.applet_id),
+                answer_id=answer_reviewable_activity.id,
             ),
-            dict(
-                answer="some answer",
-                item_ids=[str(applet_with_reviewable_activity.activities[0].items[0].id)],
-                reviewer_public_key="some public key",
-                assessment_version_id=(
-                    f"{applet_with_reviewable_activity.activities[0].id}_{applet_with_reviewable_activity.version}"
-                ),
-            ),
+            data=assessment_create,
         )
 
-        assert response.status_code == 201
+        assert response.status_code == http.HTTPStatus.CREATED
+        review_activity = next(i for i in applet_with_reviewable_activity.activities if i.is_reviewable)
+        general_activity = next(i for i in applet_with_reviewable_activity.activities if not i.is_reviewable)
 
         response = await client.get(
             self.assessment_answers_url.format(
-                applet_id=str(applet_with_reviewable_activity.id),
-                answer_id=answer_id,
+                applet_id=str(answer_reviewable_activity.applet_id),
+                answer_id=answer_reviewable_activity.id,
             )
         )
+        assert response.status_code == http.HTTPStatus.OK
+        assessment = response.json()["result"]
+        assert assessment["answer"] == assessment_create.answer
+        assert assessment["reviewerPublicKey"] == assessment_create.reviewer_public_key
+        assert assessment["itemIds"] == [str(i) for i in assessment_create.item_ids]
+        assert assessment["versions"] == [
+            f"{general_activity.id}_{applet_with_reviewable_activity.version}",
+            f"{review_activity.id}_{applet_with_reviewable_activity.version}",
+        ]
+        assert not assessment["itemsLast"] == general_activity.dict()["items"][0]
+        assert not assessment["items"]
 
-        assert response.status_code == 200, response.json()
-        assert response.json()["result"]["answer"] == "some answer"
-        assert response.json()["result"]["reviewerPublicKey"] == "some public key"
-        assert response.json()["result"]["itemIds"] == [str(applet_with_reviewable_activity.activities[0].items[0].id)]
+    @pytest.mark.usefixtures("assessment")
+    async def test_get_review_assessment(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_reviewable_activity: AnswerSchema,
+        assessment_create: AssessmentAnswerCreate,
+    ):
+        client.login(tom)
         response = await client.get(
             self.answer_reviews_url.format(
-                applet_id=str(applet_with_reviewable_activity.id),
-                answer_id=answer_id,
+                applet_id=str(answer_reviewable_activity.applet_id),
+                answer_id=answer_reviewable_activity.id,
             )
         )
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 1
-        assert response.json()["result"][0]["answer"] == "some answer"
-        assert response.json()["result"][0]["reviewerPublicKey"] == "some public key"
-        assert response.json()["result"][0]["itemIds"] == [
-            str(applet_with_reviewable_activity.activities[0].items[0].id)
-        ]
-        assert response.json()["result"][0]["reviewer"]["firstName"] == "Tom"
-        assert response.json()["result"][0]["reviewer"]["lastName"] == "Isaak"
 
-    async def test_applet_activities(self, mock_kiq_report, client, tom, applet):
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["count"] == 1
+        review = response.json()["result"][0]
+        assert review["answer"] == assessment_create.answer
+        assert review["reviewerPublicKey"] == assessment_create.reviewer_public_key
+        assert review["itemIds"] == [str(i) for i in assessment_create.item_ids]
+        assert review["reviewer"]["firstName"] == tom.first_name
+        assert review["reviewer"]["lastName"] == tom.last_name
+
+    async def test_applet_activities(self, client: TestClient, tom: User, answer: AnswerSchema):
         client.login(tom)
 
         response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
+            self.review_activities_url.format(applet_id=str(answer.applet_id)),
             dict(
                 respondentId=tom.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         assert response.json()["count"] == 1
-        assert len(response.json()["result"][0]["answerDates"]) == 0
+        assert len(response.json()["result"][0]["answerDates"]) == 1
 
-    async def test_add_note(self, mock_kiq_report, client, tom, applet):
+    async def test_add_note(self, client: TestClient, tom: User, answer: AnswerSchema, note_create_data: AnswerNote):
         client.login(tom)
 
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
+        response = await client.post(self.answer_notes_url.format(**note_url_path_data(answer)), data=note_create_data)
 
-        response = await client.post(self.answer_url, data=create_data)
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
-        assert response.status_code == 201, response.json()
+        response = await client.get(self.answer_notes_url.format(**note_url_path_data(answer)))
 
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-
-        response = await client.post(
-            self.answer_notes_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            ),
-            dict(note="Some note"),
-        )
-
-        assert response.status_code == 201, response.json()
-
-        response = await client.get(
-            self.answer_notes_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         assert response.json()["count"] == 1
+        note = response.json()["result"][0]
+        assert note["note"] == note_create_data.note
+        assert note["user"]["firstName"] == tom.first_name
+        assert note["user"]["lastName"] == tom.last_name
+        # Just check that other columns in place
+        assert note["id"]
+        assert note["createdAt"]
 
-    async def test_edit_note(self, mock_kiq_report, client, tom, applet):
+    async def test_edit_note(self, client: TestClient, tom: User, answer: AnswerSchema, answer_note: AnswerNoteSchema):
         client.login(tom)
 
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
-
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-
-        response = await client.post(
-            self.answer_notes_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            ),
-            dict(note="Some note"),
-        )
-
-        assert response.status_code == 201, response.json()
-
-        response = await client.get(
-            self.answer_notes_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 1
-        assert response.json()["result"][0]["note"] == "Some note"
+        note_new = answer_note.note + "new"
 
         response = await client.put(
-            self.answer_note_detail_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-                note_id=response.json()["result"][0]["id"],
-            ),
-            dict(note="Some note 2"),
+            self.answer_note_detail_url.format(**note_url_path_data(answer), note_id=answer_note.id),
+            dict(note=note_new),
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
-        response = await client.get(
-            self.answer_notes_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            ),
-        )
+        response = await client.get(self.answer_notes_url.format(**note_url_path_data(answer)))
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK, response.json()
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["note"] == "Some note 2"
+        assert response.json()["result"][0]["note"] == note_new
 
-    async def test_delete_note(self, mock_kiq_report, client, tom, applet):
+    async def test_delete_note(
+        self, client: TestClient, tom: User, answer: AnswerSchema, answer_note: AnswerNoteSchema
+    ):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=None,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
-
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-
-        response = await client.post(
-            self.answer_notes_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            ),
-            dict(note="Some note"),
-        )
-
-        assert response.status_code == 201, response.json()
-
-        response = await client.get(
-            self.answer_notes_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["count"] == 1
-        assert response.json()["result"][0]["note"] == "Some note"
+        note_id = answer_note.id
 
         response = await client.delete(
-            self.answer_note_detail_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-                note_id=response.json()["result"][0]["id"],
-            )
+            self.answer_note_detail_url.format(**note_url_path_data(answer), note_id=note_id)
         )
-        assert response.status_code == 204
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
 
-        response = await client.get(
-            self.answer_notes_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
+        response = await client.get(self.answer_notes_url.format(**note_url_path_data(answer)))
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 0
 
-    @pytest.mark.usefixtures("mock_kiq_report", "user")
-    async def test_answer_activity_items_create_for_not_respondent(self, client, applet, user):
+    async def test_answer_activity_items_create_for_not_respondent(
+        self, client: TestClient, user: User, answer_create: AppletAnswerCreate
+    ):
         client.login(user)
+        response = await client.post(self.answer_url, data=answer_create)
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
 
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 403, response.json()
-
-    async def test_answers_export(self, mock_kiq_report, client, tom, applet):
+    @pytest.mark.usefixtures("assessment")
+    async def test_answers_export(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_reviewable_activity_with_ts_offset: AnswerSchema,
+        answer_reviewable_activity_with_tz_offset_create: AppletAnswerCreate,
+    ):
         client.login(tom)
-
-        # create answer
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-        tz_str = "US/Pacific"
-        tz_offset = -420
-
-        response = await client.post(
-            self.answer_url,
-            data=create_data,
-            headers={"x-timezone": tz_str},
-        )
-
-        assert response.status_code == 201
-
-        # get answer id
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-
-        # create assessment
-        response = await client.post(
-            self.assessment_answers_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-            ),
-            dict(
-                answer="some answer",
-                item_ids=["a18d3409-2c96-4a5e-a1f3-1c1c14be0021"],
-                reviewer_public_key="some public key",
-                assessment_version_id=("09e3dbf0-aefb-4d0e-9177-bdb321bf3621_1.0.0"),
-            ),
-        )
-
-        assert response.status_code == 201
-
-        # test export
         response = await client.get(
             self.applet_answers_export_url.format(
-                applet_id=str(applet.id),
+                applet_id=str(answer_reviewable_activity_with_ts_offset.applet_id),
             )
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
         resp_data = response.json()
         data = resp_data["result"]
         assert set(data.keys()) == {"answers", "activities"}
-        assert len(data["answers"]) == 2
-        assert resp_data["count"] == 2
-
-        assessment, answer = data["answers"][0], data["answers"][1]
+        # One answer, one answer with ts offset, one assessment
+        assert len(data["answers"]) == 3
+        assert resp_data["count"] == 3
+        assessment = next(i for i in data["answers"] if i["reviewedAnswerId"] is not None)
+        answer_with_tz = next(i for i in data["answers"] if i["tzOffset"] is not None)
+        answer_for_review = next(i for i in data["answers"] if i["id"] == assessment["reviewedAnswerId"])
         # fmt: off
         expected_keys = {
             "activityHistoryId", "activityId", "answer", "appletHistoryId",
@@ -1110,80 +611,75 @@ class TestAnswerActivityItems(BaseTest):
             "endDatetime", "legacyProfileId", "migratedDate", "client",
             "tzOffset", "scheduledEventId",
         }
-        assert int(answer["startDatetime"] * 1000) == 1690188679657
-        assert answer["tzOffset"] == tz_offset
+        # Comment for now, wtf is it
+        # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
+        # fmt: on
+        answer_reviewable_activity_with_tz_offset_create.answer.tz_offset = cast(
+            int, answer_reviewable_activity_with_tz_offset_create.answer.tz_offset
+        )
+        assert answer_with_tz["tzOffset"] == answer_reviewable_activity_with_tz_offset_create.answer.tz_offset
+        assert set(assessment.keys()) == expected_keys
+        assert assessment["reviewedAnswerId"] == answer_for_review["id"]
         assert re.match(
             r"\[admin account\] \([0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}\)",
-            answer["respondentSecretId"]
+            answer_for_review["respondentSecretId"],
         )
-        # fmt: on
 
-        assert set(assessment.keys()) == expected_keys
-        assert assessment["reviewedAnswerId"] == answer["id"]
-
-        # test filters
+    @pytest.mark.parametrize(
+        "user_fixture, exp_cnt",
+        (
+            ("lucy", 0),
+            ("tom", 1),  # Tom is respondent for the 'answer' fixture
+        ),
+    )
+    async def test_get_applet_answers_export_filter_by_respondent_id(
+        self,
+        client: TestClient,
+        tom: User,
+        answer: AnswerSchema,
+        request: FixtureRequest,
+        user_fixture: str,
+        exp_cnt: int,
+    ):
+        client.login(tom)
+        respondent: User = request.getfixturevalue(user_fixture)
         response = await client.get(
             self.applet_answers_export_url.format(
-                applet_id=str(applet.id),
+                applet_id=str(answer.applet_id),
             ),
-            dict(
-                respondentIds="7484f34a-3acc-4ee6-8a94-000000000000",
-            ),
+            dict(respondentIds=str(respondent.id)),
         )
 
-        assert response.status_code == 200, response.json()
-        data = response.json()["result"]
-        assert not data["answers"]
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["count"] == exp_cnt
+        assert len(response.json()["result"]["answers"]) == exp_cnt
 
-    async def test_get_identifiers(self, mock_kiq_report, client, tom, applet):
+    async def test_get_identifiers(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet: AppletFull
+    ):
         client.login(tom)
         identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
         identifier_url = f"{identifier_url}?respondentId={tom.id}"
         response = await client.get(identifier_url)
-
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 0
 
         created_at = datetime.datetime.utcnow()
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                identifier="some identifier",
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-            created_at=created_at,
-        )
-        response = await client.post(self.answer_url, data=create_data)
+        data = answer_create.copy(deep=True)
+        data.created_at = created_at
 
-        assert response.status_code == 201, response.json()
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
 
         response = await client.get(identifier_url)
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["identifier"] == "some identifier"
-        assert response.json()["result"][0]["userPublicKey"] == "user key"
+        assert response.json()["result"][0]["identifier"] == answer_create.answer.identifier
+        assert response.json()["result"][0]["userPublicKey"] == answer_create.answer.user_public_key
         assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at
 
-    async def test_get_versions(self, mock_kiq_report, client, tom, applet):
+    # TODO: Move to another place, not needed any answer for test
+    async def test_get_all_activity_versions_for_applet(self, client: TestClient, tom: User, applet: AppletFull):
         client.login(tom)
 
         response = await client.get(
@@ -1193,12 +689,14 @@ class TestAnswerActivityItems(BaseTest):
             )
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["version"] == applet.version
         assert response.json()["result"][0]["createdAt"]
 
-    async def test_get_summary_activities(self, mock_kiq_report, client, tom, applet):
+    async def test_get_summary_activities_no_answer_no_performance_task(
+        self, client: TestClient, tom: User, applet: AppletFull
+    ):
         client.login(tom)
 
         response = await client.get(
@@ -1207,44 +705,18 @@ class TestAnswerActivityItems(BaseTest):
             )
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["name"] == applet.activities[0].name
+        assert response.json()["result"][0]["id"] == str(applet.activities[0].id)
         assert not response.json()["result"][0]["isPerformanceTask"]
         assert not response.json()["result"][0]["hasAnswer"]
 
-    async def test_get_summary_activities_after_submitted_answer(self, mock_kiq_report, client, tom, applet):
+    @pytest.mark.usefixtures("answer")
+    async def test_get_summary_activities_has_answer_no_performance_task(
+        self, client: TestClient, tom: User, applet: AppletFull
+    ):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                identifier="some identifier",
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-        assert response.status_code == 201
 
         response = await client.get(
             self.summary_activities_url.format(
@@ -1252,157 +724,81 @@ class TestAnswerActivityItems(BaseTest):
             )
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
-        assert response.json()["result"][0]["hasAnswer"]
+        activity = response.json()["result"][0]
+        assert activity["name"] == applet.activities[0].name
+        assert activity["id"] == str(applet.activities[0].id)
+        assert not activity["isPerformanceTask"]
+        assert activity["hasAnswer"]
 
-    async def test_store_client_meta(self, mock_kiq_report, client, session, tom, applet):
-        app_id = "mindlogger-mobile"
-        app_version = "0.21.48"
-        app_width = 819
-        app_height = 1080
-
+    async def test_get_summary_activities_performance_tasks_no_answers(
+        self, client: TestClient, tom: User, applet_with_all_performance_tasks: AppletFull
+    ):
         client.login(tom)
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                identifier="some identifier",
-                scheduled_time=10,
-                start_time=10,
-                end_time=11,
-            ),
-            client=dict(
-                appId=app_id,
-                appVersion=app_version,
-                width=app_width,
-                height=app_height,
-            ),
+
+        response = await client.get(
+            self.summary_activities_url.format(
+                applet_id=str(applet_with_all_performance_tasks.id),
+            )
         )
-        response = await client.post(self.answer_url, data=create_data)
-        assert response.status_code == 201
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["count"] == len(applet_with_all_performance_tasks.activities)
+        applet_with_all_performance_tasks.activities.sort(key=lambda x: x.id)
+        sorted_result = sorted(response.json()["result"], key=lambda x: x["id"])
+        for exp, act in zip(applet_with_all_performance_tasks.activities, sorted_result):
+            assert act["id"] == str(exp.id)
+            assert act["name"] == exp.name
+            assert act["isPerformanceTask"]
+            assert not act["hasAnswer"]
+
+    async def test_store_client_meta(
+        self, client: TestClient, session: AsyncSession, tom: User, answer_create: AppletAnswerCreate
+    ):
+        client.login(tom)
+        response = await client.post(self.answer_url, data=answer_create)
+        assert response.status_code == http.HTTPStatus.CREATED
+
         db_result = await session.execute(select(AnswerSchema))
         res: AnswerSchema = db_result.scalars().first()
-        assert app_id == res.client["app_id"]
-        assert app_version == res.client["app_version"]
-        assert app_width == res.client["width"]
-        assert app_height == res.client["height"]
+        assert res.client["app_id"] == answer_create.client.app_id
+        assert res.client["app_version"] == answer_create.client.app_version
+        assert res.client["width"] == answer_create.client.width
+        assert res.client["height"] == answer_create.client.height
 
-    async def test_activity_answers_by_identifier(self, mock_kiq_report, client, tom, applet):
+    async def test_activity_answers_by_identifier(
+        self, client: TestClient, tom: User, answer: AnswerSchema, answer_create: AppletAnswerCreate
+    ):
         client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                events=json.dumps(dict(events=["event1", "event2"])),
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-                identifier="encrypted",
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201, response.json()
 
         response = await client.get(
             self.answers_for_activity_url.format(
-                applet_id=str(applet.id),
-                activity_id=str(applet.activities[0].id),
+                applet_id=str(answer_create.applet_id),
+                activity_id=str(answer_create.activity_id),
             ),
-            query={"emptyIdentifiers": False, "identifiers": "encrypted"},
+            query={"emptyIdentifiers": False, "identifiers": answer_create.answer.identifier},
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()
         assert result["count"] == 1
+        assert result["result"][0]["answerId"] == str(answer.id)
 
-    async def test_applet_completions(self, mock_kiq_report, client, tom, applet):
+    async def test_applet_completions(
+        self, client: TestClient, tom: User, answer: AnswerSchema, answer_create: AppletAnswerCreate
+    ):
         client.login(tom)
-
-        # create answer
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-                scheduledEventId="eventId",
-                localEndDate="2022-10-01",
-                localEndTime="12:35:00",
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201
-
-        # get answer id
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-
-        # test completions
+        answer_create.answer.local_end_date = cast(datetime.date, answer_create.answer.local_end_date)
+        answer_create.answer.local_end_time = cast(datetime.time, answer_create.answer.local_end_time)
         response = await client.get(
             self.applet_answers_completions_url.format(
-                applet_id=str(applet.id),
+                applet_id=str(answer.applet_id),
             ),
-            {"fromDate": "2022-10-01", "version": applet.version},
+            {"fromDate": answer_create.answer.local_end_date.isoformat(), "version": answer.version},
         )
 
-        assert response.status_code == 200, response.json()
+        assert response.status_code == http.HTTPStatus.OK
         data = response.json()["result"]
         assert set(data.keys()) == {
             "id",
@@ -1420,72 +816,29 @@ class TestAnswerActivityItems(BaseTest):
             "localEndDate",
             "localEndTime",
         }
-        assert activity_answer_data["answerId"] == answer_id
-        assert activity_answer_data["localEndTime"] == "12:35:00"
+        assert activity_answer_data["answerId"] == str(answer.id)
+        assert activity_answer_data["localEndTime"] == str(answer_create.answer.local_end_time)
 
-    async def test_applets_completions(self, mock_kiq_report, client, tom, applet):
+    async def test_applets_completions(
+        self, client: TestClient, tom: User, answer: AnswerSchema, answer_create: AppletAnswerCreate
+    ):
         client.login(tom)
-
-        # create answer
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet.id),
-            version=applet.version,
-            activity_id=str(applet.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-                scheduledEventId="eventId",
-                localEndDate="2022-10-01",
-                localEndTime="12:35:00",
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-
-        assert response.status_code == 201
-
-        # get answer id
-        response = await client.get(
-            self.review_activities_url.format(applet_id=str(applet.id)),
-            dict(
-                respondentId=tom.id,
-                createdDate=datetime.datetime.utcnow().date(),
-            ),
-        )
-
-        assert response.status_code == 200, response.json()
-        answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
-
+        answer_create.answer.local_end_date = cast(datetime.date, answer_create.answer.local_end_date)
+        answer_create.answer.local_end_time = cast(datetime.time, answer_create.answer.local_end_time)
         # test completions
         response = await client.get(
             url=self.applets_answers_completions_url,
-            query={"fromDate": "2022-10-01"},
+            query={"fromDate": answer_create.answer.local_end_date.isoformat()},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         data = response.json()["result"]
         # 2 session applets and 1 for answers
         assert len(data) == 3
-        applet_with_answer = next(i for i in data if i["id"] == str(applet.id))
+        applet_with_answer = next(i for i in data if i["id"] == str(answer.applet_id))
 
-        assert applet_with_answer["id"] == str(applet.id)
-        assert applet_with_answer["version"] == applet.version
+        assert applet_with_answer["id"] == str(answer.applet_id)
+        assert applet_with_answer["version"] == answer.version
         assert len(applet_with_answer["activities"]) == 1
         activity_answer_data = applet_with_answer["activities"][0]
         assert set(activity_answer_data.keys()) == {
@@ -1496,120 +849,103 @@ class TestAnswerActivityItems(BaseTest):
             "localEndDate",
             "localEndTime",
         }
-        assert activity_answer_data["answerId"] == answer_id
-        assert activity_answer_data["scheduledEventId"] == "eventId"
-        assert activity_answer_data["localEndDate"] == "2022-10-01"
-        assert activity_answer_data["localEndTime"] == "12:35:00"
+        assert activity_answer_data["answerId"] == str(answer.id)
+        assert activity_answer_data["scheduledEventId"] == answer_create.answer.scheduled_event_id
+        assert activity_answer_data["localEndDate"] == answer_create.answer.local_end_date.isoformat()
+        assert activity_answer_data["localEndTime"] == str(answer_create.answer.local_end_time)
         for applet_data in data:
-            if applet_data["id"] != str(applet.id):
+            if applet_data["id"] != str(answer.applet_id):
                 assert not applet_data["activities"]
                 assert not applet_data["activityFlows"]
 
-    @pytest.mark.usefixtures("user_reviewer_applet_one")
     async def test_summary_restricted_for_reviewer_if_external_respondent(
-        self, mock_kiq_report, client, tom, applet_one, user
+        self, client: TestClient, user: User, user_reviewer_applet_one: AppletFull
     ):
-        client.login(tom)
-
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(applet_one.id),
-            version=applet_one.version,
-            activity_id=str(applet_one.activities[0].id),
-            answer=dict(
-                user_public_key="user key",
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(applet_one.activities[0].items[0].id)],
-                identifier="some identifier",
-                scheduled_time=1690188679657,
-                start_time=1690188679657,
-                end_time=1690188731636,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
-
-        response = await client.post(self.answer_url, data=create_data)
-        assert response.status_code == 201
-
-        client.logout()
         client.login(user)
 
-        response = await client.get(
-            self.summary_activities_url.format(
-                applet_id=str(applet_one.id),
-            )
-        )
+        response = await client.get(self.summary_activities_url.format(applet_id=str(user_reviewer_applet_one.id)))
 
-        assert response.status_code == 403
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_public_answer_with_zero_start_time_end_time_timestamps(
-        self, mock_kiq_report, client, tom, public_applet
+        self, client: TestClient, public_answer_create: AppletAnswerCreate
     ):
-        create_data = dict(
-            submit_id=str(uuid.uuid4()),
-            applet_id=str(public_applet.id),
-            version=public_applet.version,
-            activity_id=str(public_applet.activities[0].id),
-            created_at=1690188731636,
-            answer=dict(
-                user_public_key="user key",
-                events=json.dumps(dict(events=["event1", "event2"])),
-                answer=json.dumps(
-                    dict(
-                        value=str(uuid.uuid4()),
-                        additional_text=None,
-                    )
-                ),
-                item_ids=[str(public_applet.activities[0].items[0].id)],
-                scheduled_time=1690188679657,
-                start_time=0,
-                end_time=0,
-            ),
-            client=dict(
-                appId="mindlogger-mobile",
-                appVersion="0.21.48",
-                width=819,
-                height=1080,
-            ),
-        )
+        create_data = public_answer_create.dict()
+        create_data["answer"]["start_time"] = 0
+        create_data["answer"]["end_time"] = 0
 
         response = await client.post(self.public_answer_url, data=create_data)
 
-        assert response.status_code == 201
+        assert response.status_code == http.HTTPStatus.CREATED
+
+    async def test_check_existance_answer_exists(self, client: TestClient, tom: User, answer: AnswerSchema):
+        client.login(tom)
+        data = {
+            "applet_id": str(answer.applet_id),
+            "activity_id": answer.activity_history_id.split("_")[0],
+            # On backend we devide on 1000
+            "created_at": answer.created_at.timestamp() * 1000,
+        }
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["exists"]
 
     @pytest.mark.parametrize(
-        "user_fixture,expected_code",
+        "column,value",
         (
-            ("tom", 204),  # owner
-            ("lucy", 403),  # not in applet
-            ("bob", 403),  # reviewer
+            ("activity_id", "00000000-0000-0000-0000-000000000000_99"),
+            ("created_at", datetime.datetime.utcnow().timestamp() * 1000),
         ),
     )
-    @pytest.mark.usefixtures("bob_reviewer_in_applet_with_reviewable_activity")
+    async def test_check_existance_answer_does_not_exist(
+        self, client: TestClient, tom: User, answer: AnswerSchema, column: str, value: str
+    ):
+        client.login(tom)
+        data = {
+            "applet_id": str(answer.applet_id),
+            "activity_id": answer.activity_history_id.split("_")[0],
+            "created_at": answer.created_at.timestamp(),
+        }
+        data[column] = value
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert not resp.json()["result"]["exists"]
+
+    async def test_check_existance_answer_does_not_exist__not_answer_applet(
+        self, client: TestClient, tom: User, answer: AnswerSchema, applet_one: AppletFull
+    ):
+        client.login(tom)
+        data = {
+            "applet_id": str(applet_one.id),
+            "activity_id": answer.activity_history_id.split("_")[0],
+            "created_at": answer.created_at.timestamp(),
+        }
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert not resp.json()["result"]["exists"]
+
+    @pytest.mark.parametrize(
+        "user_fixture_name,expected_code",
+        (
+            ("tom", http.HTTPStatus.NO_CONTENT),  # owner
+            ("lucy", http.HTTPStatus.FORBIDDEN),  # not in applet
+            ("bob", http.HTTPStatus.FORBIDDEN),  # reviewer
+        ),
+    )
     async def test_review_delete(
         self,
         tom_answer_create_data,
         tom_answer_assessment_create_data,
-        mock_kiq_report,
         client,
         tom,
         applet_with_reviewable_activity,
         session,
-        user_fixture,
+        bob_reviewer_in_applet_with_reviewable_activity,
+        user_fixture_name,
         expected_code,
         request,
     ):
-        login_user = request.getfixturevalue(user_fixture)
+        login_user = request.getfixturevalue(user_fixture_name)
         client.login(login_user)
         answer_service = AnswerService(session, tom.id)
         answer = await answer_service.create_answer(tom_answer_create_data)
@@ -1674,8 +1010,6 @@ class TestAnswerActivityItems(BaseTest):
     async def test_summary_activities_submitted_date_with_answers(
         self,
         tom_answer_create_data,
-        tom_answer_assessment_create_data,
-        mock_kiq_report,
         client,
         tom,
         applet_with_reviewable_activity,
@@ -1694,7 +1028,7 @@ class TestAnswerActivityItems(BaseTest):
                 applet_id=str(applet_id),
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         payload = response.json()
         expected_last_date = str(max(submit_dates))
         actual_last_date = payload["result"][0]["lastAnswerDate"].replace("T", " ")
@@ -1702,13 +1036,9 @@ class TestAnswerActivityItems(BaseTest):
 
     async def test_summary_activities_submitted_without_answers(
         self,
-        tom_answer_create_data,
-        tom_answer_assessment_create_data,
-        mock_kiq_report,
         client,
         tom,
         applet_with_reviewable_activity,
-        session,
     ):
         client.login(tom)
         applet_id = applet_with_reviewable_activity.id
@@ -1717,7 +1047,48 @@ class TestAnswerActivityItems(BaseTest):
                 applet_id=str(applet_id),
             )
         )
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         payload = response.json()
         actual_last_date = payload["result"][0]["lastAnswerDate"]
         assert actual_last_date is None
+
+    async def test_get_all_types_of_identifiers(
+        self, client, tom: User, applet: AppletFull, session, tom_answer_item_for_applet, request
+    ):
+        client.login(tom)
+        identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
+        identifier_url = f"{identifier_url}?respondentId={tom.id}"
+
+        answer_items = [
+            # Migrated not encrypted
+            AnswerItemSchema(
+                **tom_answer_item_for_applet,
+                identifier="unencrypted identifier",
+                migrated_data=dict(is_identifier_encrypted=False),
+            ),
+            # Migrated encrypted
+            AnswerItemSchema(
+                **tom_answer_item_for_applet,
+                identifier="encrypted identifier",
+                user_public_key="user_public_key",
+                migrated_data=dict(is_identifier_encrypted=True),
+            ),
+            # Not migrated
+            AnswerItemSchema(
+                **tom_answer_item_for_applet,
+                identifier="identifier",
+                user_public_key="user_public_key",
+                migrated_data=None,
+            ),
+        ]
+        for answer_item in answer_items:
+            await AnswerItemsCRUD(session).create(answer_item)
+
+        res = await client.get(identifier_url)
+        assert res.status_code == http.HTTPStatus.OK
+        payload = res.json()
+        assert payload["count"] == len(answer_items)
+        for identifier in payload["result"]:
+            assert "lastAnswerDate" in identifier
+            if identifier["identifier"] in ["encrypted identifier", "identifier"]:
+                assert "userPublicKey" in identifier

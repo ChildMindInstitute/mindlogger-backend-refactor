@@ -394,7 +394,7 @@ async def applet_answers_export(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
     i18n: I18N = Depends(get_i18n),
-):
+) -> PublicAnswerExportResponse:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
     data: AnswerExport = await AnswerService(session, user.id, answer_session).get_export_data(
@@ -422,7 +422,7 @@ async def applet_completed_entities(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
-):
+) -> Response[AppletCompletedEntities]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_create_access(applet_id)
     data = await AnswerService(session, user.id, answer_session).get_completed_answers_data(

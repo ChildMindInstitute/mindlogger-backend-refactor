@@ -27,12 +27,6 @@ async def applet_one_no_encryption(session: AsyncSession, tom: User, applet_one:
 
 
 @pytest.fixture
-async def applet_one_lucy_manager(session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.MANAGER)
-    return applet_one
-
-
-@pytest.fixture
 async def applet_one_lucy_coordinator(
     session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User
 ) -> AppletFull:

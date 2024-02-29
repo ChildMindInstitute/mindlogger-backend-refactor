@@ -23,7 +23,7 @@ from config import settings
 from infrastructure.app import create_app
 from infrastructure.database.core import build_engine
 from infrastructure.database.deps import get_session
-from infrastructure.utility import FCMNotificationTest
+from infrastructure.utility import FCMNotificationTest, RedisCacheTest
 
 pytest_plugins = [
     "apps.activities.tests.fixtures.configs",
@@ -286,3 +286,10 @@ def fcm_client() -> FCMNotificationTest:
     client = FCMNotificationTest()
     client.notifications.clear()
     return client
+
+
+@pytest.fixture
+def redis() -> RedisCacheTest:
+    redis = RedisCacheTest()
+    redis._storage.clear()
+    return redis
