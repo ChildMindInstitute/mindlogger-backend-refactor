@@ -412,7 +412,7 @@ class TestValidateSubscales:
     ):
         items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
-        subscale_item.name = "test subscale name"
+        subscale_item.name = subscale.name
         subscale_item.type = SubscaleItemType.SUBSCALE
         subscale.items = [subscale_item]
         subscale_setting.subscales = [subscale]

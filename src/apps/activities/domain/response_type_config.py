@@ -324,20 +324,6 @@ class ABTrailsConfig(PublicModel):
         return value
 
 
-class NoneResponseType(str, Enum):
-    TEXT = "text"
-    MESSAGE = "message"
-    TIMERANGE = "timeRange"
-    GEOLOCATION = "geolocation"
-    PHOTO = "photo"
-    VIDEO = "video"
-    DATE = "date"
-    TIME = "time"
-    FLANKER = "flanker"
-    STABILITYTRACKER = "stabilityTracker"
-    ABTRAILS = "ABTrails"
-
-
 class ResponseType(str, Enum):
     TEXT = "text"
     SINGLESELECT = "singleSelect"
@@ -360,6 +346,22 @@ class ResponseType(str, Enum):
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
     ABTRAILS = "ABTrails"
+
+    @classmethod
+    def get_non_response_types(cls):
+        return (
+            cls.TEXT,
+            cls.MESSAGE,
+            cls.TIMERANGE,
+            cls.GEOLOCATION,
+            cls.PHOTO,
+            cls.VIDEO,
+            cls.DATE,
+            cls.TIME,
+            cls.FLANKER,
+            cls.STABILITYTRACKER,
+            cls.ABTRAILS,
+        )
 
 
 class PerformanceTaskType(str, Enum):
