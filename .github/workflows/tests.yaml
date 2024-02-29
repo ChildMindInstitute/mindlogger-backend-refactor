@@ -11,5 +11,6 @@ jobs:
       - name: "Running tests"
         run: |
           cp .env.default .env
+          echo -e "\nRABBITMQ__USE_SSL=False" >> .env
           docker compose up -d
           make dtest
