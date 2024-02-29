@@ -88,13 +88,13 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_subjects")),
     )
     op.create_index(
-        "unique_subject_user_applet",
+        "ix_subjects_user_id",
         "subjects",
         ["user_id", "applet_id"],
         unique=True,
     )
     op.create_index(
-        "unique_applet_secret_user",
+        "ix_subjects_applet_id",
         "subjects",
         ["applet_id", "secret_user_id"],
         unique=True,
@@ -219,8 +219,8 @@ def downgrade() -> None:
     )
     op.drop_table("subject_relations")
 
-    op.drop_index("unique_subject_user_applet", table_name="subjects")
-    op.drop_index("unique_applet_secret_user", table_name="subjects")
+    op.drop_index("ix_subjects_user_id", table_name="subjects")
+    op.drop_index("ix_subjects_applet_id", table_name="subjects")
     op.drop_constraint(op.f("fk_user_pins_pinned_subject_id_subjects"), "user_pins", type_="foreignkey")
     op.alter_column(
         "user_pins",
