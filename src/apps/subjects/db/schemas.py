@@ -25,7 +25,7 @@ class SubjectSchema(Base):
             "applet_id",
             unique=True,
         ),
-        Index("unique_secret_user_applet", "secret_user_id", "applet_id", unique=True),
+        Index("unique_secret_user_applet", "applet_id", "secret_user_id", unique=True),
     )
 
 
