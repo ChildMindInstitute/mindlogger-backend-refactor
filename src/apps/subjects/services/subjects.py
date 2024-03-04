@@ -38,13 +38,10 @@ class SubjectsService:
         return await SubjectsCrud(self.session).create_many(models)
 
     async def update(self, schema: Subject) -> SubjectSchema:
-        return await SubjectsCrud(self.session).update(
-            SubjectSchema(
-                id=schema.id,
-                nickname=schema.nickname,
-                secret_user_id=schema.secret_user_id,
-            )
-        )
+        subject = SubjectSchema(id=schema.id, nickname=schema.nickname, secret_user_id=schema.secret_user_id)
+        if schema.is_deleted is not None:
+            subject.is_deleted = schema.is_deleted
+        return await SubjectsCrud(self.session).update(subject)
 
     async def delete(self, id_: uuid.UUID):
         repository = SubjectsCrud(self.session)
