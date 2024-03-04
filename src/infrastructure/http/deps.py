@@ -8,10 +8,14 @@ async def get_mindlogger_content_source(
 ) -> MindloggerContentSource:
     """Fetch the Mindlogger-Content-Source HTTP header."""
 
-    return getattr(
-        MindloggerContentSource,
-        request.headers.get("mindlogger-content-source", MindloggerContentSource.web.name),
-    )
+    # Try catch for invalid header value
+    try:
+        return getattr(
+            MindloggerContentSource,
+            request.headers.get("mindlogger-content-source", MindloggerContentSource.web.name),
+        )
+    except AttributeError:
+        return MindloggerContentSource.web
 
 
 def get_language(request: Request) -> str:
