@@ -8,7 +8,6 @@ async def get_mindlogger_content_source(
 ) -> MindloggerContentSource:
     """Fetch the Mindlogger-Content-Source HTTP header."""
 
-    # Try catch for invalid header value
     try:
         return getattr(
             MindloggerContentSource,
