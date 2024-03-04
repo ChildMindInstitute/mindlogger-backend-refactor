@@ -27,10 +27,6 @@ class UserAppletAccessService:
         self._applet_id = applet_id
         self.session = session
 
-    @classmethod
-    def build_manager_nickname(cls, manager: User) -> str:
-        return f"{manager.first_name} {manager.last_name}"
-
     async def _get_default_role_meta(self, role: Role, user_id: uuid.UUID) -> dict:
         meta: dict = {}
         return meta
@@ -64,7 +60,7 @@ class UserAppletAccessService:
                 [self._applet_id], user_id
             )
             if access_schema_manager:
-                nickname = UserAppletAccessService.build_manager_nickname(user)
+                nickname = user.get_full_name()
             else:
                 nickname = None
             subject = SubjectSchema(
@@ -176,7 +172,7 @@ class UserAppletAccessService:
                         first_name=invitation.first_name,
                         last_name=invitation.last_name,
                         secret_user_id=secret_id,
-                        nickname=self.build_manager_nickname(user),
+                        nickname=user.get_full_name(),
                     )
                 )
         else:

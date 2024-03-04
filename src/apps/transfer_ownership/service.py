@@ -17,7 +17,6 @@ from apps.transfer_ownership.errors import TransferEmailError
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
-from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from config import settings
 
 
@@ -142,7 +141,7 @@ class TransferService:
                 first_name=self._user.first_name,
                 last_name=self._user.last_name,
                 secret_user_id=f"{uuid.uuid4()}",
-                nickname=UserAppletAccessService.build_manager_nickname(self._user),
+                nickname=self._user.get_full_name(),
             )
             await subject_service.create(subject)
 
