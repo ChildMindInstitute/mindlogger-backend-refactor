@@ -519,8 +519,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             func.coalesce(UserSchema.id, func.gen_random_uuid()),
         )
 
-        await self._execute(query)
-
         if query_params.filters:
             query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
         if query_params.search:
