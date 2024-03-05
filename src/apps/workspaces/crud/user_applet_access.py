@@ -437,7 +437,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query: Query = select(
             # fmt: off
             UserSchema.id,
-            UserSchema.email_encrypted.label("email"),
+            case(
+                (UserSchema.id.is_(None), func.array_agg(SubjectSchema.email)[1]), else_=UserSchema.email_encrypted
+            ).label("email"),
             case((UserSchema.id.isnot(None), UserSchema.is_anonymous_respondent), else_=false()).label(
                 "is_anonymous_respondent"
             ),

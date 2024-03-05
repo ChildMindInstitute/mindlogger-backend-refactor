@@ -111,6 +111,7 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
             last_name="Account",
             nickname="shell-account-0",
             secret_user_id=f"{uuid.uuid4()}",
+            email="shell@mail.com",
         )
     )
 
@@ -1082,3 +1083,22 @@ class TestWorkspaces(BaseTest):
         assert tom_respondent["status"] == SubjectStatus.INVITED
         assert shell_account_pending["status"] == SubjectStatus.PENDING
         assert shell_account_not_invited["status"] == SubjectStatus.NOT_INVITED
+
+    async def test_workspace_respondent_emails(
+        self,
+        client,
+        tom: User,
+        user: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_one_lucy_respondent,
+        applet_one_shell_account,
+        applet_one_user_respondent,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        result = await client.get(self.workspace_respondents_url.format(owner_id=tom.id))
+        assert result.status_code == http.HTTPStatus.OK
+        payload = result.json()["result"]
+        assert payload
+        for respondent in payload:
+            assert bool(respondent.get("email"))
