@@ -373,14 +373,19 @@ async def export_flow_schedule(run_date: datetime.datetime = typer.Argument(None
         result.append(outrow)
 
     cdn_client = await get_operations_bucket()
-    filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME
-    key = cdn_client.generate_key(PATH_PREFIX, str(APPLET_ID), filename)
+    unique_prefix = f"{APPLET_ID}/flow_events"
+
+    prev_filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
+    prev_key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, prev_filename)
+
+    filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date)
+    key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, filename)
 
     path = settings.uploads_dir / filename
 
     with open(path, "wb") as f:
         try:
-            cdn_client.download(key, f)
+            cdn_client.download(prev_key, f)
         except ObjectNotFoundError:
             pass
         f.seek(0, io.SEEK_END)
