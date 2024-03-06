@@ -4,6 +4,7 @@ import codecs
 import csv
 import datetime
 import io
+import os
 import tracemalloc
 import uuid
 from functools import wraps
@@ -29,7 +30,7 @@ from apps.workspaces.domain.constants import Role
 from config import settings
 from infrastructure.database import session_manager
 from infrastructure.dependency.cdn import get_operations_bucket
-from infrastructure.utility import CDNClient
+from infrastructure.utility import CDNClient, ObjectNotFoundError
 
 app = typer.Typer()
 
@@ -105,17 +106,18 @@ def ensure_configured():
         exit(1)
 
 
-def create_csv(data: list[dict], columns: list | None = None) -> BinaryIO | None:
+def create_csv(data: list[dict], columns: list | None = None, append_to: BinaryIO | None = None) -> BinaryIO | None:
     if data:
         if not columns:
             columns = list(data[0].keys())
 
-        fin = io.BytesIO()
+        fin = append_to if append_to else io.BytesIO()
         StreamWriter = codecs.getwriter("utf-8")
         f_wrapper = StreamWriter(fin)
 
         writer = csv.DictWriter(f_wrapper, fieldnames=columns)
-        writer.writeheader()
+        if not fin.tell():
+            writer.writeheader()
         writer.writerows(data)
         fin.seek(0)
 
@@ -168,8 +170,8 @@ async def _export_flows():
         data = res.all()
 
     cdn_client = await get_operations_bucket()
-    path = cdn_client.generate_key(PATH_PREFIX, str(APPLET_ID), PATH_FLOW_FILE_NAME)
-    await save_csv(path, parse_obj_as(list[dict], data), cdn_client)
+    key = cdn_client.generate_key(PATH_PREFIX, str(APPLET_ID), PATH_FLOW_FILE_NAME)
+    await save_csv(key, parse_obj_as(list[dict], data), cdn_client)
 
 
 @app.command(
@@ -339,8 +341,11 @@ def filter_events(raw_events_rows: list[RawRow], schedule_date: datetime.date) -
 
 @app.command(short_help="Export daily user flow schedule events to csv")
 @coro
-async def generate_user_flow_schedule(run_date: datetime.datetime = typer.Argument(None, help="run date")):
+async def export_flow_schedule(run_date: datetime.datetime = typer.Argument(None, help="run date")):
     ensure_configured()
+    print("Flow schedule export start")
+    tracemalloc.start()
+
     scheduled_date = run_date.date() if run_date else datetime.date.today() - datetime.timedelta(days=1)
     session_maker = session_manager.get_session()
     async with session_maker() as session:
@@ -363,8 +368,26 @@ async def generate_user_flow_schedule(run_date: datetime.datetime = typer.Argume
             event_id=row.event_id,
         ).dict()
         result.append(outrow)
+
     cdn_client = await get_operations_bucket()
-    path = cdn_client.generate_key(
-        PATH_PREFIX, str(APPLET_ID), PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date)
-    )
-    await save_csv(path, result, cdn_client)
+    filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME
+    key = cdn_client.generate_key(PATH_PREFIX, str(APPLET_ID), filename)
+
+    path = settings.uploads_dir / filename
+
+    with open(path, "wb") as f:
+        try:
+            cdn_client.download(key, f)
+        except ObjectNotFoundError:
+            pass
+        f.seek(0, io.SEEK_END)
+        create_csv(result, append_to=f)
+    with open(path, "rb") as f:
+        await cdn_client.upload(key, f)
+
+    os.remove(path)
+
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    print("Flow schedule export finished")
+    print("Peak memory usage:", peak)
