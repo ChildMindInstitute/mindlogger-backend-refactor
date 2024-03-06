@@ -339,9 +339,9 @@ def filter_events(raw_events_rows: list[RawRow], schedule_date: datetime.date) -
 
 @app.command(short_help="Export daily user flow schedule events to csv")
 @coro
-async def generate_user_flow_schedule(run_date: datetime.datetime = typer.Argument(..., help="run date")):
+async def generate_user_flow_schedule(run_date: datetime.datetime = typer.Argument(None, help="run date")):
     ensure_configured()
-    scheduled_date = run_date.date() - datetime.timedelta(days=1)
+    scheduled_date = run_date.date() if run_date else datetime.date.today() - datetime.timedelta(days=1)
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         raw_data = await get_user_flow_events(session, scheduled_date)
@@ -364,5 +364,7 @@ async def generate_user_flow_schedule(run_date: datetime.datetime = typer.Argume
         ).dict()
         result.append(outrow)
     cdn_client = await get_operations_bucket()
-    path = cdn_client.generate_key(PATH_PREFIX, str(APPLET_ID), PATH_USER_FLOW_SCHEDULE_FILE_NAME)
+    path = cdn_client.generate_key(
+        PATH_PREFIX, str(APPLET_ID), PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date)
+    )
     await save_csv(path, result, cdn_client)
