@@ -165,7 +165,7 @@ class TestEventsPeriodicityWeekdays:
         (
             (datetime.date(2024, 1, 1), 0),
             (datetime.date(2024, 3, 8), 1),
-            # Cross day event, so Saturday is encluded
+            # Cross day event, so Saturday is included
             (datetime.date(2024, 3, 9), 1),
             (datetime.date(2024, 3, 10), 0),
             (datetime.date(2024, 3, 11), 0),
@@ -178,6 +178,16 @@ class TestEventsPeriodicityWeekdays:
         raw_rows = [raw_row_weekdays]
         filtered = filter_events(raw_rows, date)
         assert len(filtered) == exp_len
+
+    def test_filter_events__cross_day__friday_is_end_date(self, raw_row_weekdays: RawRow):
+        raw_row_weekdays.schedule_start_time = datetime.time(10, 0)
+        raw_row_weekdays.schedule_end_time = datetime.time(5, 0)
+        raw_row_weekdays.end_date = datetime.date(2024, 3, 8)
+        date = raw_row_weekdays.end_date + datetime.timedelta(days=1)
+        assert raw_row_weekdays.is_crossday_event
+        raw_rows = [raw_row_weekdays]
+        filtered = filter_events(raw_rows, date)
+        assert len(filtered) == 1
 
 
 class TestEventsPeriodicityWeekly:

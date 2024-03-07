@@ -330,7 +330,11 @@ def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) 
                 if schedule_date >= schedule_start_date and schedule_date <= row.end_date:
                     filtered.append(row)
             case PeriodicityType.WEEKDAYS:
-                last_weekday = FRIDAY_WEEKDAY if not row.is_crossday_event else SATURDAY_WEEKDAY
+                last_weekday = FRIDAY_WEEKDAY
+                if row.is_crossday_event:
+                    last_weekday = SATURDAY_WEEKDAY
+                    if row.end_date.weekday() == FRIDAY_WEEKDAY:
+                        row.end_date += datetime.timedelta(days=1)
                 if (
                     schedule_date.weekday() <= last_weekday
                     and schedule_date >= row.start_date
