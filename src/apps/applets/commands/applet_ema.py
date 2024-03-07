@@ -8,7 +8,7 @@ import os
 import tracemalloc
 import uuid
 from functools import wraps
-from typing import BinaryIO, cast
+from typing import BinaryIO, TypeVar, cast
 
 import typer
 from pydantic import parse_obj_as
@@ -18,6 +18,7 @@ from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.db.schemas import ActivityHistorySchema as ActivityHistory
+from apps.activities.db.schemas import ActivitySchema
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema as FlowHistory
 from apps.activity_flows.db.schemas import ActivityFlowItemHistorySchema as FlowItemHistory
 from apps.activity_flows.db.schemas import ActivityFlowSchema
@@ -25,7 +26,13 @@ from apps.applets.db.schemas import AppletSchema
 from apps.job.constants import JobStatus
 from apps.job.errors import JobStatusError
 from apps.job.service import JobService
-from apps.schedule.db.schemas import EventSchema, FlowEventsSchema, PeriodicitySchema, UserEventsSchema
+from apps.schedule.db.schemas import (
+    ActivityEventsSchema,
+    EventSchema,
+    FlowEventsSchema,
+    PeriodicitySchema,
+    UserEventsSchema,
+)
 from apps.schedule.domain.constants import PeriodicityType
 from apps.shared.domain.base import PublicModel
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -44,6 +51,7 @@ APPLET_NAME = settings.applet_ema.name
 PATH_PREFIX = settings.applet_ema.export_path_prefix
 PATH_FLOW_FILE_NAME = settings.applet_ema.export_flow_file_name
 PATH_USER_FLOW_SCHEDULE_FILE_NAME = settings.applet_ema.export_user_flow_schedule_file_name
+PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME = settings.applet_ema.export_user_activity_schedule_file_name
 
 
 # Not ISO
@@ -55,7 +63,7 @@ SUNDAY_WEEKDAY = 6
 OUTPUT_TIME_FORMAT = "%H:%M"
 
 
-class OutputRow(PublicModel):
+class FlowEventOutputRow(PublicModel):
     applet_id: uuid.UUID
     date_prior_day: datetime.date
     user_id: uuid.UUID
@@ -69,12 +77,24 @@ class OutputRow(PublicModel):
     event_id: uuid.UUID
 
 
+class ActivityEventOutputRow(PublicModel):
+    applet_id: uuid.UUID
+    date_prior_day: datetime.date
+    user_id: uuid.UUID
+    activity_id: uuid.UUID
+    activity_name: str
+    applet_version: str
+    scheduled_date: datetime.date
+    schedule_start_time: str
+    schedule_end_time: str
+    # TODO: remove after debug
+    event_id: uuid.UUID
+
+
 class RawRow(PublicModel):
     applet_id: uuid.UUID
     date: datetime.date
     user_id: uuid.UUID
-    flow_id: uuid.UUID
-    flow_name: str
     applet_version: str
     schedule_start_time: datetime.time
     schedule_end_time: datetime.time
@@ -87,6 +107,19 @@ class RawRow(PublicModel):
     @property
     def is_crossday_event(self) -> bool:
         return self.schedule_start_time > self.schedule_end_time
+
+
+TRawRow = TypeVar("TRawRow", bound=RawRow)
+
+
+class FlowEventRawRow(RawRow):
+    flow_id: uuid.UUID
+    flow_name: str
+
+
+class ActivityEventRawRow(RawRow):
+    activity_id: uuid.UUID
+    activity_name: str
 
 
 def is_last_day_of_month(date: datetime.date):
@@ -198,7 +231,7 @@ async def export_flows():
 
 
 ##### Daily user flow schedule stuff
-async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.date) -> list[RawRow]:
+async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.date) -> list[FlowEventRawRow]:
     cte = (
         select(
             EventSchema.applet_id,
@@ -268,11 +301,11 @@ async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.d
     )
     db_result = await session.execute(query)
     result = db_result.mappings().all()
-    return parse_obj_as(list[RawRow], result)
+    return parse_obj_as(list[FlowEventRawRow], result)
 
 
-def filter_events(raw_events_rows: list[RawRow], schedule_date: datetime.date) -> list[RawRow]:  # noqa: C901
-    filtered: list[RawRow] = []
+def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) -> list[TRawRow]:  # noqa: C901
+    filtered: list[TRawRow] = []
     for row in raw_events_rows:
         # TODO: patch events with periodicity WEEKDAYS, WEEKLY, some events don't have start_date and end_date
         # (the issue is in migrated data).
@@ -392,7 +425,7 @@ async def export_flow_schedule(
         print(f"Num filtered rows is {len(filtered)}")
         result = []
         for row in filtered:
-            outrow = OutputRow(
+            outrow = FlowEventOutputRow(
                 applet_id=row.applet_id,
                 date_prior_day=scheduled_date,
                 user_id=row.user_id,
@@ -441,4 +474,132 @@ async def export_flow_schedule(
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print("Flow schedule export finished")
+    print("Peak memory usage:", peak)
+
+
+##### Daily user activity schedule stuff
+async def get_user_activity_events(session: AsyncSession, scheduled_date: datetime.date) -> list[ActivityEventRawRow]:
+    cte = (
+        select(
+            EventSchema.applet_id,
+            EventSchema.id.label("event_id"),
+            UserEventsSchema.user_id,
+            ActivityEventsSchema.activity_id,
+            PeriodicitySchema.type.label("event_type"),
+            case(
+                (
+                    PeriodicitySchema.type.in_(("WEEKDAYS", "DAILY")),
+                    scheduled_date,
+                ),
+                (PeriodicitySchema.type.in_(("WEEKLY", "MONTHLY")), PeriodicitySchema.start_date),
+                else_=PeriodicitySchema.selected_date,
+            ).label("selected_date"),
+            PeriodicitySchema.start_date,
+            PeriodicitySchema.end_date,
+            EventSchema.start_time,
+            EventSchema.end_time,
+        )
+        .select_from(EventSchema)
+        .join(UserEventsSchema, UserEventsSchema.event_id == EventSchema.id)
+        .join(PeriodicitySchema, PeriodicitySchema.id == EventSchema.periodicity_id)
+        .join(ActivityEventsSchema, ActivityEventsSchema.event_id == EventSchema.id)
+        .where(EventSchema.is_deleted == false(), PeriodicitySchema.type != PeriodicityType.ALWAYS)
+    ).cte("user_activity_events")
+
+    query = (
+        select(
+            AppletSchema.id.label("applet_id"),
+            literal(scheduled_date, Date).label("date"),
+            UserAppletAccessSchema.user_id.label("user_id"),
+            ActivitySchema.id.label("activity_id"),
+            ActivitySchema.name.label("activity_name"),
+            AppletSchema.version.label("applet_version"),
+            cte.c.event_id.label("event_id"),
+            cte.c.event_type.label("event_type"),
+            cte.c.selected_date.label("selected_date"),
+            cte.c.start_date.label("start_date"),
+            cte.c.end_date.label("end_date"),
+            cte.c.start_time.label("schedule_start_time"),
+            cte.c.end_time.label("schedule_end_time"),
+        )
+        .select_from(AppletSchema)
+        .join(
+            UserAppletAccessSchema,
+            and_(
+                UserAppletAccessSchema.applet_id == AppletSchema.id,
+                UserAppletAccessSchema.role == Role.RESPONDENT,
+            ),
+        )
+        .join(ActivitySchema, ActivitySchema.applet_id == AppletSchema.id)
+        .outerjoin(
+            cte,
+            and_(
+                cte.c.applet_id == AppletSchema.id,
+                cte.c.user_id == UserAppletAccessSchema.user_id,
+                cte.c.activity_id == ActivitySchema.id,
+            ),
+        )
+        .where(
+            AppletSchema.id == uuid.UUID(APPLET_ID),
+            cte.c.event_id != null(),
+            ActivitySchema.is_hidden == false(),
+        )
+        .order_by(UserAppletAccessSchema.user_id, ActivitySchema.name)
+    )
+    db_result = await session.execute(query)
+    result = db_result.mappings().all()
+    return parse_obj_as(list[ActivityEventRawRow], result)
+
+
+@app.command(short_help="Export daily user activity schedule events to csv")
+@coro
+async def export_activity_schedule(run_date: datetime.datetime = typer.Argument(None, help="run date")):
+    ensure_configured()
+    print("Activity schedule export start")
+    tracemalloc.start()
+
+    scheduled_date = run_date.date() if run_date else datetime.date.today() - datetime.timedelta(days=1)
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        raw_data = await get_user_activity_events(session, scheduled_date)
+    print(f"Num raw rows is {len(raw_data)}")
+    filtered = filter_events(raw_data, scheduled_date)
+    print(f"Num filtered rows is {len(filtered)}")
+    result = []
+    for row in filtered:
+        outrow = ActivityEventOutputRow(
+            applet_id=row.applet_id,
+            date_prior_day=scheduled_date,
+            user_id=row.user_id,
+            activity_id=row.activity_id,
+            activity_name=row.activity_name,
+            applet_version=row.applet_version,
+            scheduled_date=scheduled_date,
+            schedule_start_time=row.schedule_start_time.strftime(OUTPUT_TIME_FORMAT),
+            schedule_end_time=row.schedule_end_time.strftime(OUTPUT_TIME_FORMAT),
+            event_id=row.event_id,
+        ).dict()
+        result.append(outrow)
+
+    cdn_client = await get_operations_bucket()
+    filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME
+    key = cdn_client.generate_key(PATH_PREFIX, str(APPLET_ID), filename)
+
+    path = settings.uploads_dir / filename
+
+    with open(path, "wb") as f:
+        try:
+            cdn_client.download(key, f)
+        except ObjectNotFoundError:
+            pass
+        f.seek(0, io.SEEK_END)
+        create_csv(result, append_to=f)
+    with open(path, "rb") as f:
+        await cdn_client.upload(key, f)
+
+    os.remove(path)
+
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    print("Activity schedule export finished")
     print("Peak memory usage:", peak)
