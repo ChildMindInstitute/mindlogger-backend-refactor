@@ -7,3 +7,4 @@ class AppletEMASettings(BaseModel):
     export_path_prefix: str = "export-ema"
     export_flow_file_name: str = "flow-items.csv"
     export_user_flow_schedule_file_name: str = "{date}-flow-schedule.csv"
+    export_user_activity_schedule_file_name: str = "{date}-activity-schedule.csv"
