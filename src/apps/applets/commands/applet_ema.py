@@ -67,6 +67,7 @@ class FlowEventOutputRow(PublicModel):
     applet_id: uuid.UUID
     date_prior_day: datetime.date
     user_id: uuid.UUID
+    secret_user_id: str | uuid.UUID
     flow_id: uuid.UUID
     flow_name: str
     applet_version: str
@@ -81,6 +82,7 @@ class ActivityEventOutputRow(PublicModel):
     applet_id: uuid.UUID
     date_prior_day: datetime.date
     user_id: uuid.UUID
+    secret_user_id: str | uuid.UUID
     activity_id: uuid.UUID
     activity_name: str
     applet_version: str
@@ -95,6 +97,7 @@ class RawRow(PublicModel):
     applet_id: uuid.UUID
     date: datetime.date
     user_id: uuid.UUID
+    secret_user_id: str | uuid.UUID
     applet_version: str
     schedule_start_time: datetime.time
     schedule_end_time: datetime.time
@@ -264,6 +267,7 @@ async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.d
             AppletSchema.id.label("applet_id"),
             literal(scheduled_date, Date).label("date"),
             UserAppletAccessSchema.user_id.label("user_id"),
+            UserAppletAccessSchema.respondent_secret_id.label("secret_user_id"),  # type: ignore[attr-defined] # noqa: E501
             ActivityFlowSchema.id.label("flow_id"),
             ActivityFlowSchema.name.label("flow_name"),
             AppletSchema.version.label("applet_version"),
@@ -429,6 +433,7 @@ async def export_flow_schedule(
                 applet_id=row.applet_id,
                 date_prior_day=scheduled_date,
                 user_id=row.user_id,
+                secret_user_id=row.secret_user_id,
                 flow_id=row.flow_id,
                 flow_name=row.flow_name,
                 applet_version=row.applet_version,
@@ -511,6 +516,7 @@ async def get_user_activity_events(session: AsyncSession, scheduled_date: dateti
             AppletSchema.id.label("applet_id"),
             literal(scheduled_date, Date).label("date"),
             UserAppletAccessSchema.user_id.label("user_id"),
+            UserAppletAccessSchema.respondent_secret_id.label("secret_user_id"),  # type: ignore[attr-defined] # noqa: E501
             ActivitySchema.id.label("activity_id"),
             ActivitySchema.name.label("activity_name"),
             AppletSchema.version.label("applet_version"),
@@ -571,6 +577,7 @@ async def export_activity_schedule(run_date: datetime.datetime = typer.Argument(
             applet_id=row.applet_id,
             date_prior_day=scheduled_date,
             user_id=row.user_id,
+            secret_user_id=row.secret_user_id,
             activity_id=row.activity_id,
             activity_name=row.activity_name,
             applet_version=row.applet_version,
