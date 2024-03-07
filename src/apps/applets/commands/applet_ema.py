@@ -445,7 +445,7 @@ async def export_flow_schedule(
             result.append(outrow)
 
         cdn_client = await get_operations_bucket()
-        unique_prefix = f"{APPLET_ID}/flow_schedule"
+        unique_prefix = f"{APPLET_ID}/flow-schedule"
 
         prev_filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
         prev_key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, prev_filename)
@@ -463,6 +463,7 @@ async def export_flow_schedule(
             f.seek(0, io.SEEK_END)
             create_csv(result, append_to=f)
         with open(path, "rb") as f:
+            print(f"Upload file to the {key}")
             await cdn_client.upload(key, f)
 
         os.remove(path)
@@ -559,52 +560,96 @@ async def get_user_activity_events(session: AsyncSession, scheduled_date: dateti
 
 @app.command(short_help="Export daily user activity schedule events to csv")
 @coro
-async def export_activity_schedule(run_date: datetime.datetime = typer.Argument(None, help="run date")):
+async def export_activity_schedule(
+    run_date: datetime.datetime = typer.Argument(None, help="run date"),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Force run even if job executed before",
+    ),
+):
     ensure_configured()
+    scheduled_date = run_date.date() if run_date else datetime.date.today() - datetime.timedelta(days=1)
+
+    job_name = f"export_activity_schedule_{scheduled_date}"
+
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        owner_role = await UserAppletAccessCRUD(session).get_applet_owner(uuid.UUID(APPLET_ID))
+        owner_id = owner_role.user_id
+
+        job_service = JobService(session, owner_id)
+        async with atomic(session):
+            try:
+                job = await job_service.get_or_create_owned(
+                    job_name, JobStatus.in_progress, accept_statuses=[JobStatus.error]
+                )
+            except JobStatusError as e:
+                # prevent task execution if it's in progress or executed previously
+                job = e.job
+                if job.status == JobStatus.in_progress or not force:
+                    raise
+            if job.status != JobStatus.in_progress:
+                await job_service.change_status(job.id, JobStatus.in_progress)
     print("Activity schedule export start")
     tracemalloc.start()
 
-    scheduled_date = run_date.date() if run_date else datetime.date.today() - datetime.timedelta(days=1)
-    session_maker = session_manager.get_session()
-    async with session_maker() as session:
-        raw_data = await get_user_activity_events(session, scheduled_date)
-    print(f"Num raw rows is {len(raw_data)}")
-    filtered = filter_events(raw_data, scheduled_date)
-    print(f"Num filtered rows is {len(filtered)}")
-    result = []
-    for row in filtered:
-        outrow = ActivityEventOutputRow(
-            applet_id=row.applet_id,
-            date_prior_day=scheduled_date,
-            user_id=row.user_id,
-            secret_user_id=row.secret_user_id,
-            activity_id=row.activity_id,
-            activity_name=row.activity_name,
-            applet_version=row.applet_version,
-            scheduled_date=scheduled_date,
-            schedule_start_time=row.schedule_start_time.strftime(OUTPUT_TIME_FORMAT),
-            schedule_end_time=row.schedule_end_time.strftime(OUTPUT_TIME_FORMAT),
-            event_id=row.event_id,
-        ).dict()
-        result.append(outrow)
+    try:
+        session_maker = session_manager.get_session()
+        async with session_maker() as session:
+            raw_data = await get_user_activity_events(session, scheduled_date)
+        print(f"Num raw rows is {len(raw_data)}")
+        filtered = filter_events(raw_data, scheduled_date)
+        print(f"Num filtered rows is {len(filtered)}")
+        result = []
+        for row in filtered:
+            outrow = ActivityEventOutputRow(
+                applet_id=row.applet_id,
+                date_prior_day=scheduled_date,
+                user_id=row.user_id,
+                secret_user_id=row.secret_user_id,
+                activity_id=row.activity_id,
+                activity_name=row.activity_name,
+                applet_version=row.applet_version,
+                scheduled_date=scheduled_date,
+                schedule_start_time=row.schedule_start_time.strftime(OUTPUT_TIME_FORMAT),
+                schedule_end_time=row.schedule_end_time.strftime(OUTPUT_TIME_FORMAT),
+                event_id=row.event_id,
+            ).dict()
+            result.append(outrow)
 
-    cdn_client = await get_operations_bucket()
-    filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME
-    key = cdn_client.generate_key(PATH_PREFIX, str(APPLET_ID), filename)
+        cdn_client = await get_operations_bucket()
+        unique_prefix = f"{APPLET_ID}/activity-schedule"
 
-    path = settings.uploads_dir / filename
+        prev_filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
+        prev_key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, prev_filename)
 
-    with open(path, "wb") as f:
-        try:
-            cdn_client.download(key, f)
-        except ObjectNotFoundError:
-            pass
-        f.seek(0, io.SEEK_END)
-        create_csv(result, append_to=f)
-    with open(path, "rb") as f:
-        await cdn_client.upload(key, f)
+        filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME.format(date=scheduled_date)
+        key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, filename)
 
-    os.remove(path)
+        path = settings.uploads_dir / filename
+
+        with open(path, "wb") as f:
+            try:
+                cdn_client.download(prev_key, f)
+            except ObjectNotFoundError:
+                pass
+            f.seek(0, io.SEEK_END)
+            create_csv(result, append_to=f)
+        with open(path, "rb") as f:
+            print(f"Upload file to the {key}")
+            await cdn_client.upload(key, f)
+
+        os.remove(path)
+        async with session_maker() as session:
+            async with atomic(session):
+                await JobService(session, owner_id).change_status(job.id, JobStatus.success)
+    except Exception as e:
+        async with session_maker() as session:
+            async with atomic(session):
+                await JobService(session, owner_id).change_status(job.id, JobStatus.error, {"error": str(e)})
+        raise
 
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
