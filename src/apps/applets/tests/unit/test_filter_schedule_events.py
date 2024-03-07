@@ -15,6 +15,7 @@ def base_row() -> RawRow:
         applet_id=uuid.uuid4(),
         date=datetime.date.today(),
         user_id=uuid.uuid4(),
+        secret_user_id=uuid.uuid4(),
         applet_version=INITIAL_VERSION,
         schedule_start_time=datetime.time(0, 0),
         schedule_end_time=datetime.time(23, 59),
