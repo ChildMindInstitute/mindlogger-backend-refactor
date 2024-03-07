@@ -395,7 +395,7 @@ async def export_flow_schedule(
     ),
 ):
     ensure_configured()
-    scheduled_date = run_date.date() if run_date else datetime.date.today() - datetime.timedelta(days=1)
+    scheduled_date = run_date.date() if run_date else datetime.date.today()
 
     job_name = f"export_flow_schedule_{scheduled_date}"
 
@@ -570,7 +570,7 @@ async def export_activity_schedule(
     ),
 ):
     ensure_configured()
-    scheduled_date = run_date.date() if run_date else datetime.date.today() - datetime.timedelta(days=1)
+    scheduled_date = run_date.date() if run_date else datetime.date.today()
 
     job_name = f"export_activity_schedule_{scheduled_date}"
 
