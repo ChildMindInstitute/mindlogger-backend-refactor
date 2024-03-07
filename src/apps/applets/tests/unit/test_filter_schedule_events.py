@@ -10,7 +10,7 @@ from apps.shared.version import INITIAL_VERSION
 
 
 @pytest.fixture
-def raw_row_always() -> RawRow:
+def base_row() -> RawRow:
     return RawRow(
         applet_id=uuid.uuid4(),
         date=datetime.date.today(),
@@ -29,8 +29,8 @@ def raw_row_always() -> RawRow:
 
 
 @pytest.fixture
-def raw_row_daily(raw_row_always: RawRow) -> RawRow:
-    raw_row = raw_row_always.copy(deep=True)
+def raw_row_daily(base_row: RawRow) -> RawRow:
+    raw_row = base_row.copy(deep=True)
     raw_row.event_type = PeriodicityType.DAILY
     raw_row.start_date = datetime.date(2024, 3, 4)
     raw_row.end_date = datetime.date(2024, 3, 6)
@@ -38,15 +38,15 @@ def raw_row_daily(raw_row_always: RawRow) -> RawRow:
 
 
 @pytest.fixture
-def raw_row_once(raw_row_always: RawRow) -> RawRow:
-    raw_row = raw_row_always.copy(deep=True)
+def raw_row_once(base_row: RawRow) -> RawRow:
+    raw_row = base_row.copy(deep=True)
     raw_row.event_type = PeriodicityType.ONCE
     return raw_row
 
 
 @pytest.fixture
-def raw_row_weekdays(raw_row_always: RawRow) -> RawRow:
-    raw_row = raw_row_always.copy(deep=True)
+def raw_row_weekdays(base_row: RawRow) -> RawRow:
+    raw_row = base_row.copy(deep=True)
     raw_row.event_type = PeriodicityType.WEEKDAYS
     raw_row.start_date = datetime.date(2024, 3, 4)
     raw_row.end_date = datetime.date(2024, 3, 10)
@@ -54,8 +54,8 @@ def raw_row_weekdays(raw_row_always: RawRow) -> RawRow:
 
 
 @pytest.fixture
-def raw_row_weekly(raw_row_always: RawRow) -> RawRow:
-    raw_row = raw_row_always.copy(deep=True)
+def raw_row_weekly(base_row: RawRow) -> RawRow:
+    raw_row = base_row.copy(deep=True)
     raw_row.event_type = PeriodicityType.WEEKLY
     raw_row.start_date = datetime.date(2024, 3, 4)
     raw_row.end_date = datetime.date(2024, 3, 17)
@@ -63,26 +63,19 @@ def raw_row_weekly(raw_row_always: RawRow) -> RawRow:
 
 
 @pytest.fixture
-def raw_row_monthly(raw_row_always: RawRow) -> RawRow:
-    raw_row = raw_row_always.copy(deep=True)
+def raw_row_monthly(base_row: RawRow) -> RawRow:
+    raw_row = base_row.copy(deep=True)
     raw_row.event_type = PeriodicityType.MONTHLY
     raw_row.start_date = datetime.date(2024, 3, 4)
     raw_row.end_date = datetime.date(2024, 4, 4)
     return raw_row
 
 
-class TestEventsPeriodicityAlways:
-    @pytest.mark.parametrize("date", (datetime.date(2024, 3, 4), datetime.date(2024, 3, 5)))
-    def test_filter_events__events_are_always_in_schedule(self, raw_row_always: RawRow, date: datetime.date):
-        raw_rows = [raw_row_always]
-        filtered = filter_events(raw_rows, date)
-        assert filtered
-
-
 class TestEventsPeriodicityDaily:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 1, 1), 0),
             (datetime.date(2024, 3, 4), 1),
             (datetime.date(2024, 3, 5), 1),
             (datetime.date(2024, 3, 6), 1),
@@ -152,6 +145,7 @@ class TestEventsPeriodicityWeekdays:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 1, 1), 0),
             (datetime.date(2024, 3, 4), 1),
             (datetime.date(2024, 3, 5), 1),
             (datetime.date(2024, 3, 6), 1),
@@ -170,6 +164,7 @@ class TestEventsPeriodicityWeekdays:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 1, 1), 0),
             (datetime.date(2024, 3, 8), 1),
             # Cross day event, so Saturday is encluded
             (datetime.date(2024, 3, 9), 1),
@@ -190,6 +185,7 @@ class TestEventsPeriodicityWeekly:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 1, 1), 0),
             # Only Mondays
             (datetime.date(2024, 3, 4), 1),
             (datetime.date(2024, 3, 11), 1),
@@ -240,6 +236,7 @@ class TestEventsPeriodicityWeekly:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 1, 7), 0),
             # Sundays and Mondays
             (datetime.date(2024, 3, 10), 1),
             (datetime.date(2024, 3, 11), 1),
@@ -266,6 +263,7 @@ class TestEventsPeriodicityMontly:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 2, 4), 0),
             (datetime.date(2024, 3, 4), 1),
             # end_date included
             (datetime.date(2024, 4, 4), 1),
@@ -281,6 +279,7 @@ class TestEventsPeriodicityMontly:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 2, 4), 0),
             (datetime.date(2024, 3, 4), 1),
             (datetime.date(2024, 3, 5), 1),
             # end_date included
@@ -318,6 +317,7 @@ class TestEventsPeriodicityMontly:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 2, 29), 0),
             (datetime.date(2024, 3, 31), 1),
             # end_date included
             (datetime.date(2024, 4, 30), 1),
@@ -337,6 +337,7 @@ class TestEventsPeriodicityMontly:
     @pytest.mark.parametrize(
         "date, exp_len",
         (
+            (datetime.date(2024, 2, 29), 0),
             (datetime.date(2024, 3, 31), 1),
             (datetime.date(2024, 4, 1), 1),
             # end_date included

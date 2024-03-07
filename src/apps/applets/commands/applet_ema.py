@@ -204,7 +204,7 @@ async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.d
             PeriodicitySchema.type.label("event_type"),
             case(
                 (
-                    PeriodicitySchema.type.in_(("ALWAYS", "WEEKDAYS", "DAILY")),
+                    PeriodicitySchema.type.in_(("WEEKDAYS", "DAILY")),
                     scheduled_date,
                 ),
                 (PeriodicitySchema.type.in_(("WEEKLY", "MONTHLY")), PeriodicitySchema.start_date),
@@ -219,7 +219,7 @@ async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.d
         .join(UserEventsSchema, UserEventsSchema.event_id == EventSchema.id)
         .join(PeriodicitySchema, PeriodicitySchema.id == EventSchema.periodicity_id)
         .join(FlowEventsSchema, FlowEventsSchema.event_id == EventSchema.id)
-        .where(EventSchema.is_deleted == false())
+        .where(EventSchema.is_deleted == false(), PeriodicitySchema.type != PeriodicityType.ALWAYS)
     ).cte("user_flow_events")
 
     query = (
@@ -270,14 +270,16 @@ async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.d
 def filter_events(raw_events_rows: list[RawRow], schedule_date: datetime.date) -> list[RawRow]:  # noqa: C901
     filtered: list[RawRow] = []
     for row in raw_events_rows:
+        # TODO: patch events with periodicity WEEKDAYS, WEEKLY, some events don't have start_date and end_date
+        # (the issue is in migrated data).
+        # For current script is ok, because or applet does not have issues with WEEKDAYS, WEEKLY
+        row.end_date = cast(datetime.date, row.end_date)
+        row.start_date = cast(datetime.date, row.start_date)
         match row.event_type:
-            case PeriodicityType.ALWAYS:
-                filtered.append(row)
             case PeriodicityType.DAILY:
-                row.end_date = cast(datetime.date, row.end_date)
                 if row.is_crossday_event:
                     row.end_date += datetime.timedelta(days=1)
-                if schedule_date <= row.end_date:
+                if schedule_date >= row.start_date and schedule_date <= row.end_date:
                     filtered.append(row)
             case PeriodicityType.ONCE:
                 schedule_start_date = row.selected_date
@@ -286,18 +288,15 @@ def filter_events(raw_events_rows: list[RawRow], schedule_date: datetime.date) -
                     row.end_date += datetime.timedelta(days=1)
                 if schedule_date >= schedule_start_date and schedule_date <= row.end_date:
                     filtered.append(row)
-            # TODO: patch events with periodicity WEEKDAYS, WEEKLY, some events don't have start_date and end_date
-            # (the issue is in migrated data).
-            # For current script is ok, because or applet does not have issues with WEEKDAYS, WEEKLY
             case PeriodicityType.WEEKDAYS:
-                row.end_date = cast(datetime.date, row.end_date)
-                row.start_date = cast(datetime.date, row.start_date)
                 last_weekday = FRIDAY_WEEKDAY if not row.is_crossday_event else SATURDAY_WEEKDAY
-                if schedule_date.weekday() <= last_weekday and schedule_date <= row.end_date:
+                if (
+                    schedule_date.weekday() <= last_weekday
+                    and schedule_date >= row.start_date
+                    and schedule_date <= row.end_date
+                ):
                     filtered.append(row)
             case PeriodicityType.WEEKLY:
-                row.end_date = cast(datetime.date, row.end_date)
-                row.start_date = cast(datetime.date, row.start_date)
                 scheduled_weekday = row.start_date.weekday()
                 following_weekday = scheduled_weekday
                 if row.is_crossday_event:
@@ -311,12 +310,12 @@ def filter_events(raw_events_rows: list[RawRow], schedule_date: datetime.date) -
                     if row.start_date.weekday() == row.end_date.weekday():
                         row.end_date += datetime.timedelta(days=1)
                 if (
-                    schedule_date.weekday() == scheduled_weekday or schedule_date.weekday() == following_weekday
-                ) and schedule_date <= row.end_date:
+                    (schedule_date.weekday() == scheduled_weekday or schedule_date.weekday() == following_weekday)
+                    and schedule_date >= row.start_date
+                    and schedule_date <= row.end_date
+                ):
                     filtered.append(row)
             case PeriodicityType.MONTHLY:
-                row.end_date = cast(datetime.date, row.end_date)
-                row.start_date = cast(datetime.date, row.start_date)
                 scheduled_monthday = row.start_date.day
                 following_monthday = scheduled_monthday
                 if row.is_crossday_event:
@@ -331,10 +330,14 @@ def filter_events(raw_events_rows: list[RawRow], schedule_date: datetime.date) -
                     ):
                         row.end_date += datetime.timedelta(days=1)
                 if (
-                    schedule_date.day == scheduled_monthday
-                    or schedule_date.day == following_monthday
-                    or (is_last_day_of_month(schedule_date) and row.start_date)
-                ) and schedule_date <= row.end_date:
+                    (
+                        schedule_date.day == scheduled_monthday
+                        or schedule_date.day == following_monthday
+                        or (is_last_day_of_month(schedule_date) and row.start_date)
+                    )
+                    and schedule_date >= row.start_date
+                    and schedule_date <= row.end_date
+                ):
                     filtered.append(row)
     return filtered
 
