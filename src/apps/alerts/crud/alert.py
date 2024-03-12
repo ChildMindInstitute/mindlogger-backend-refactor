@@ -8,6 +8,7 @@ from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.searching import Searching
+from apps.subjects.db.schemas import SubjectSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema, UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
@@ -39,19 +40,11 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         self, user_id: uuid.UUID, page: int, limit: int
     ) -> list[
         tuple[
-            AlertSchema,
-            AppletHistorySchema,
-            UserAppletAccessSchema,
-            AppletSchema,
-            UserWorkspaceSchema,
+            AlertSchema, AppletHistorySchema, UserAppletAccessSchema, AppletSchema, UserWorkspaceSchema, SubjectSchema
         ]
     ]:
         query: Query = select(
-            AlertSchema,
-            AppletHistorySchema,
-            UserAppletAccessSchema,
-            AppletSchema,
-            UserWorkspaceSchema,
+            AlertSchema, AppletHistorySchema, UserAppletAccessSchema, AppletSchema, UserWorkspaceSchema, SubjectSchema
         )
         query = query.join(
             UserAppletAccessSchema,
@@ -78,6 +71,7 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
             UserWorkspaceSchema.user_id == UserAppletAccessSchema.owner_id,
             isouter=True,
         )
+        query = query.outerjoin(SubjectSchema, SubjectSchema.id == AlertSchema.subject_id)
         query = query.where(AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False))
         query = query.order_by(AlertSchema.created_at.desc())
         query = paging(query, page, limit)
