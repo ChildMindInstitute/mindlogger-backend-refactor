@@ -53,6 +53,7 @@ class TestApplet:
     public_applet_detail_url = "/public/applets/{key}"
     public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
 
+    @pytest.mark.run
     async def test_create_applet_with_minimal_data(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
@@ -68,6 +69,9 @@ class TestApplet:
 
         response = await client.get(self.applet_detail_url.format(pk=response.json()["result"]["id"]))
         assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+        assert result["streamIpAddress"] == str(applet_minimal_data.stream_ip_address)
+        assert result["streamPort"] == applet_minimal_data.stream_port
 
     async def test_creating_applet_failed_by_duplicate_activity_name(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
