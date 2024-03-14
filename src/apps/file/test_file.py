@@ -223,19 +223,29 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["result"]["url"] == url
 
     @pytest.mark.usefixtures("mock_presigned_post")
-    async def test_generate_presigned_log_url(self, client: TestClient, device_tom: str, tom: User):
+    async def test_generate_presigned_log_url__logs_are_uploaded_to_the_answer_bucket(
+        self, client: TestClient, device_tom: str, tom: User, mocker: MockerFixture
+    ):
+        bucket_answer_name = "bucket_answer_test"
+        settings.cdn.bucket_answer = bucket_answer_name
+        config = CdnConfig(
+            endpoint_url=settings.cdn.endpoint_url,
+            access_key=settings.cdn.access_key,
+            secret_key=settings.cdn.secret_key,
+            region=settings.cdn.region,
+            bucket=settings.cdn.bucket_answer,
+            ttl_signed_urls=settings.cdn.ttl_signed_urls,
+        )
+        cdn_client = CDNClient(config, env="env")
+        mocker.patch("infrastructure.dependency.cdn.get_log_bucket", return_value=cdn_client)
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         file_name = "test.txt"
         resp = await client.post(self.log_upload_url.format(device_id=device_tom), data={"file_id": file_name})
         assert resp.status_code == http.HTTPStatus.OK
         key = resp.json()["result"]["fields"]["key"]
-        expected_key = LogFileService(
-            tom.id,
-            CDNClient(
-                CdnConfig(region="region", bucket="bucket", secret_key="secret_key", access_key="access_key"), "env"
-            ),
-        ).key(device_tom, file_name)
+        expected_key = LogFileService(tom.id, cdn_client).key(device_tom, file_name)
         assert key == expected_key
+        assert bucket_answer_name in resp.json()["result"]["uploadUrl"]
 
     @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize("file_name", ("test.webm", "test.WEBM"))
