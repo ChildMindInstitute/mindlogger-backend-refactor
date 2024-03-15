@@ -1,6 +1,4 @@
-import asyncio
 import uuid
-from functools import wraps
 from typing import Optional
 
 import typer
@@ -13,17 +11,10 @@ from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import WorkspaceArbitraryCreate, WorkspaceArbitraryFields
 from apps.workspaces.errors import ArbitraryServerSettingsError, WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def print_data_table(data: WorkspaceArbitraryFields):
