@@ -1,4 +1,3 @@
-import asyncio
 import calendar
 import codecs
 import csv
@@ -7,7 +6,6 @@ import io
 import os
 import tracemalloc
 import uuid
-from functools import wraps
 from typing import BinaryIO, TypeVar, cast
 
 import typer
@@ -39,6 +37,7 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas.user_applet_access import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from config import settings
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 from infrastructure.dependency.cdn import get_operations_bucket
 from infrastructure.utility import CDNClient, ObjectNotFoundError
@@ -130,14 +129,6 @@ def is_last_day_of_month(date: datetime.date):
     if calendar.isleap(date.year):
         mdays[calendar.February] += 1  # type: ignore[attr-defined]
     return date.day == mdays[date.month]
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def ensure_configured():
