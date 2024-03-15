@@ -1081,6 +1081,12 @@ class AnswerService:
     async def delete_by_subject(self, subject_id: uuid.UUID):
         await AnswersCRUD(self.answer_session).delete_by_subject(subject_id)
 
+    async def get_latest_answer_by_activity_id(
+        self, applet_id: uuid.UUID, activity_id: uuid.UUID
+    ) -> AnswerSchema | None:
+        result = await AnswersCRUD(self.answer_session).get_latest_answer_by_activity_id(applet_id, activity_id)
+        return result
+
 
 class ReportServerService:
     def __init__(self, session, arbitrary_session=None):
