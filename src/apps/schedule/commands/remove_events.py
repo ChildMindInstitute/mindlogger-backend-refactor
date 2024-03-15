@@ -1,6 +1,3 @@
-import asyncio
-from functools import wraps
-
 import typer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,17 +5,10 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas.activity import ActivitySchema
 from apps.schedule.service import ScheduleService
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 async def get_assessments(session: AsyncSession) -> list[ActivitySchema]:
