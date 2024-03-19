@@ -1,7 +1,5 @@
-import asyncio
 import importlib
 import uuid
-from functools import wraps
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +12,7 @@ from apps.shared.commands.domain import Patch
 from apps.shared.commands.patch import PatchRegister
 from apps.workspaces.errors import WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 PatchRegister.register(
@@ -43,14 +42,6 @@ PatchRegister.register(
 
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def print_data_table(data: list[Patch]):

@@ -1,22 +1,13 @@
-import asyncio
-from functools import wraps
 from typing import Optional
 
 import typer
 from rich import print
 
 from apps.answers.crud.assessment_crud import AssessmentCRUD
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 @app.command(short_help="Convert current assessments to version agnostic")
