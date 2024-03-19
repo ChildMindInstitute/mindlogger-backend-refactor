@@ -28,7 +28,7 @@ def get_language(request: Request) -> str:
 
 def get_local_tz(required: bool = False):
     def _get_local_tz(request: Request) -> str | None:
-        tz_str = request.headers.get("X-Timezone", None)
+        tz_str = request.headers.get("X-Timezone", None) or None
         if tz_str and not tz.gettz(tz_str):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=_("Wrong X-Timezone header value"))
         if not tz_str and required:
