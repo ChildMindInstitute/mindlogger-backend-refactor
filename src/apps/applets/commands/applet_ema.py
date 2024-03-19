@@ -1,4 +1,3 @@
-import asyncio
 import calendar
 import codecs
 import csv
@@ -7,8 +6,7 @@ import io
 import os
 import tracemalloc
 import uuid
-from functools import wraps
-from typing import BinaryIO, TypeVar, cast
+from typing import BinaryIO, Optional, TypeVar, cast
 
 import typer
 from pydantic import parse_obj_as
@@ -39,6 +37,7 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas.user_applet_access import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from config import settings
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 from infrastructure.dependency.cdn import get_operations_bucket
 from infrastructure.utility import CDNClient, ObjectNotFoundError
@@ -132,18 +131,12 @@ def is_last_day_of_month(date: datetime.date):
     return date.day == mdays[date.month]
 
 
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
-
-
-def ensure_configured():
-    if not APPLET_ID:
+def get_applet_id(applet_id: uuid.UUID | None = None) -> uuid.UUID:
+    _applet_id = str(applet_id) if applet_id else APPLET_ID
+    if not _applet_id:
         print("[bold red]Error: applet export not configured[/bold red]")
         exit(1)
+    return uuid.UUID(_applet_id)
 
 
 def create_csv(data: list[dict], columns: list | None = None, append_to: BinaryIO | None = None) -> BinaryIO | None:
@@ -170,7 +163,7 @@ async def save_csv(path: str, data: list[dict], cdn_client: CDNClient, columns: 
         await cdn_client.upload(path, f)
 
 
-async def _export_flows():
+async def _export_flows(applet_id: uuid.UUID, path_prefix: str):
     """
     select
         split_part(fh.applet_id , '_', 1) applet_id,
@@ -200,7 +193,7 @@ async def _export_flows():
             )
             .join(FlowItemHistory, FlowItemHistory.activity_flow_id == FlowHistory.id_version)
             .join(ActivityHistory, ActivityHistory.id_version == FlowItemHistory.activity_id)
-            .where(FlowHistory.applet_id.like(f"{APPLET_ID}_%"))
+            .where(FlowHistory.applet_id.like(f"{applet_id}_%"))
             .order_by(text("applet_version"), FlowHistory.order, FlowItemHistory.order)
         )
         res = await session.execute(
@@ -210,7 +203,7 @@ async def _export_flows():
         data = res.all()
 
     cdn_client = await get_operations_bucket()
-    key = cdn_client.generate_key(PATH_PREFIX, str(APPLET_ID), PATH_FLOW_FILE_NAME)
+    key = cdn_client.generate_key(path_prefix, str(applet_id), PATH_FLOW_FILE_NAME)
     await save_csv(key, parse_obj_as(list[dict], data), cdn_client)
 
 
@@ -219,14 +212,18 @@ async def _export_flows():
     f' flow data as csv file'
 )
 @coro
-async def export_flows():
+async def export_flows(
+    applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a"),
+    path_prefix: Optional[str] = typer.Option(PATH_PREFIX, "--path-prefix", "-p"),
+):
     """
     Create and upload to s3 csv file with flow data
     """
-    ensure_configured()
-    print("Flow export start")
+    assert path_prefix
+    applet_id = get_applet_id(applet_id)
+    print(f"Flow export start {applet_id}")
     tracemalloc.start()
-    await _export_flows()
+    await _export_flows(applet_id, path_prefix)
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print("Flow export finished")
@@ -234,7 +231,9 @@ async def export_flows():
 
 
 ##### Daily user flow schedule stuff
-async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.date) -> list[FlowEventRawRow]:
+async def get_user_flow_events(
+    session: AsyncSession, scheduled_date: datetime.date, applet_id: uuid.UUID
+) -> list[FlowEventRawRow]:
     cte = (
         select(
             EventSchema.applet_id,
@@ -297,7 +296,7 @@ async def get_user_flow_events(session: AsyncSession, scheduled_date: datetime.d
             ),
         )
         .where(
-            AppletSchema.id == uuid.UUID(APPLET_ID),
+            AppletSchema.id == applet_id,
             cte.c.event_id != null(),
             ActivityFlowSchema.is_hidden == false(),
         )
@@ -391,6 +390,8 @@ def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) 
 @coro
 async def export_flow_schedule(
     run_date: datetime.datetime = typer.Argument(None, help="run date"),
+    applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a"),
+    path_prefix: Optional[str] = typer.Option(PATH_PREFIX, "--path-prefix", "-p"),
     force: bool = typer.Option(
         False,
         "--force",
@@ -398,14 +399,15 @@ async def export_flow_schedule(
         help="Force run even if job executed before",
     ),
 ):
-    ensure_configured()
+    assert path_prefix
+    applet_id = get_applet_id(applet_id)
     scheduled_date = run_date.date() if run_date else datetime.date.today()
 
-    job_name = f"export_flow_schedule_{scheduled_date}"
+    job_name = f"export_flow_schedule_{applet_id}_{scheduled_date}"
 
     session_maker = session_manager.get_session()
     async with session_maker() as session:
-        owner_role = await UserAppletAccessCRUD(session).get_applet_owner(uuid.UUID(APPLET_ID))
+        owner_role = await UserAppletAccessCRUD(session).get_applet_owner(applet_id)
         owner_id = owner_role.user_id
 
         job_service = JobService(session, owner_id)
@@ -422,12 +424,12 @@ async def export_flow_schedule(
             if job.status != JobStatus.in_progress:
                 await job_service.change_status(job.id, JobStatus.in_progress)
 
-    print(f"Flow schedule export start ({scheduled_date})")
+    print(f"Flow schedule export start {applet_id} ({scheduled_date})")
     tracemalloc.start()
 
     try:
         async with session_maker() as session:
-            raw_data = await get_user_flow_events(session, scheduled_date)
+            raw_data = await get_user_flow_events(session, scheduled_date, applet_id)
         print(f"Num raw rows is {len(raw_data)}")
         filtered = filter_events(raw_data, scheduled_date)
         print(f"Num filtered rows is {len(filtered)}")
@@ -449,13 +451,13 @@ async def export_flow_schedule(
             result.append(outrow)
 
         cdn_client = await get_operations_bucket()
-        unique_prefix = f"{APPLET_ID}/flow-schedule"
+        unique_prefix = f"{applet_id}/flow-schedule"
 
         prev_filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
-        prev_key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, prev_filename)
+        prev_key = cdn_client.generate_key(path_prefix, unique_prefix, prev_filename)
 
         filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date)
-        key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, filename)
+        key = cdn_client.generate_key(path_prefix, unique_prefix, filename)
 
         path = settings.uploads_dir / filename
 
@@ -488,7 +490,9 @@ async def export_flow_schedule(
 
 
 ##### Daily user activity schedule stuff
-async def get_user_activity_events(session: AsyncSession, scheduled_date: datetime.date) -> list[ActivityEventRawRow]:
+async def get_user_activity_events(
+    session: AsyncSession, scheduled_date: datetime.date, applet_id: uuid.UUID
+) -> list[ActivityEventRawRow]:
     cte = (
         select(
             EventSchema.applet_id,
@@ -551,7 +555,7 @@ async def get_user_activity_events(session: AsyncSession, scheduled_date: dateti
             ),
         )
         .where(
-            AppletSchema.id == uuid.UUID(APPLET_ID),
+            AppletSchema.id == applet_id,
             cte.c.event_id != null(),
             ActivitySchema.is_hidden == false(),
         )
@@ -566,6 +570,8 @@ async def get_user_activity_events(session: AsyncSession, scheduled_date: dateti
 @coro
 async def export_activity_schedule(
     run_date: datetime.datetime = typer.Argument(None, help="run date"),
+    applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a"),
+    path_prefix: Optional[str] = typer.Option(PATH_PREFIX, "--path-prefix", "-p"),
     force: bool = typer.Option(
         False,
         "--force",
@@ -573,14 +579,15 @@ async def export_activity_schedule(
         help="Force run even if job executed before",
     ),
 ):
-    ensure_configured()
+    assert path_prefix
+    applet_id = get_applet_id(applet_id)
     scheduled_date = run_date.date() if run_date else datetime.date.today()
 
-    job_name = f"export_activity_schedule_{scheduled_date}"
+    job_name = f"export_activity_schedule_{applet_id}_{scheduled_date}"
 
     session_maker = session_manager.get_session()
     async with session_maker() as session:
-        owner_role = await UserAppletAccessCRUD(session).get_applet_owner(uuid.UUID(APPLET_ID))
+        owner_role = await UserAppletAccessCRUD(session).get_applet_owner(applet_id)
         owner_id = owner_role.user_id
 
         job_service = JobService(session, owner_id)
@@ -596,13 +603,13 @@ async def export_activity_schedule(
                     raise
             if job.status != JobStatus.in_progress:
                 await job_service.change_status(job.id, JobStatus.in_progress)
-    print("Activity schedule export start")
+    print(f"Activity schedule export start {applet_id} ({scheduled_date})")
     tracemalloc.start()
 
     try:
         session_maker = session_manager.get_session()
         async with session_maker() as session:
-            raw_data = await get_user_activity_events(session, scheduled_date)
+            raw_data = await get_user_activity_events(session, scheduled_date, applet_id)
         print(f"Num raw rows is {len(raw_data)}")
         filtered = filter_events(raw_data, scheduled_date)
         print(f"Num filtered rows is {len(filtered)}")
@@ -624,13 +631,13 @@ async def export_activity_schedule(
             result.append(outrow)
 
         cdn_client = await get_operations_bucket()
-        unique_prefix = f"{APPLET_ID}/activity-schedule"
+        unique_prefix = f"{applet_id}/activity-schedule"
 
         prev_filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
-        prev_key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, prev_filename)
+        prev_key = cdn_client.generate_key(path_prefix, unique_prefix, prev_filename)
 
         filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME.format(date=scheduled_date)
-        key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, filename)
+        key = cdn_client.generate_key(path_prefix, unique_prefix, filename)
 
         path = settings.uploads_dir / filename
 
