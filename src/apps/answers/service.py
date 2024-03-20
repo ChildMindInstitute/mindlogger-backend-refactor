@@ -263,7 +263,9 @@ class AnswerService:
                     continue
                 answer_item_duplicate.add(key)
                 activity_map[activity_id].answer_dates.append(
-                    AnswerDate(created_at=answer_item.created_at, answer_id=answer.id)
+                    AnswerDate(
+                        created_at=answer_item.created_at, answer_id=answer.id, end_datetime=answer_item.end_datetime
+                    )
                 )
         return list(activity_map.values())
 
