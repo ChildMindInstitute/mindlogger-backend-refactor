@@ -1,21 +1,19 @@
-<html style="max-width: 700px" lang="en">
-
-<body>
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en">
+  <body>
     {% include 'header.html' %}
-    <table style="padding: 0">
-        <tr>
-            <td style="padding-bottom: 1%">
-                You have one or more alerts in MindLogger.
-            </td>
-        </tr>
-        <tr>
-            <td style="padding-bottom: 1%">
-                <a href="{{domain}}">Please log in to see them.</a>
-            </td>
-        </tr>
-        {% include 'blocks/team_info_en.html' %}
+    <table style="padding: 0; font-size: 1.4rem">
+      <tr>
+        <td style="padding-bottom: 16px">
+          You have one or more alerts in MindLogger.
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <a href="{{domain}}">Please log in to see them.</a>
+        </td>
+      </tr>
+      {% include 'blocks/team_info_en.html' %}
     </table>
     {% include 'footers/footer_info_en.html' %}
-</body>
-
+  </body>
 </html>

@@ -74,13 +74,11 @@ class PasswordRecoveryService:
         # Default to web frontend
         frontend_base = settings.service.urls.frontend.web_base
         password_recovery_page = settings.service.urls.frontend.web_password_recovery_send
-        subject = "MindLogger"
 
         if content_source == MindloggerContentSource.admin:
             # Change to admin frontend if the request came from there
             frontend_base = settings.service.urls.frontend.admin_base
             password_recovery_page = settings.service.urls.frontend.admin_password_recovery_send
-            subject = "MindLogger Admin"
 
         url = (
             f"https://{frontend_base}"
@@ -92,7 +90,7 @@ class PasswordRecoveryService:
 
         message = MessageSchema(
             recipients=[user.email_encrypted],
-            subject=subject,
+            subject="Password reset",
             body=service.get_template(
                 path="reset_password_en",
                 email=user.email_encrypted,
