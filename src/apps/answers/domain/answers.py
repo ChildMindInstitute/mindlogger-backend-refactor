@@ -112,6 +112,7 @@ class AssessmentAnswerCreate(InternalModel):
 class AnswerDate(InternalModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    end_datetime: datetime.datetime
 
 
 class ReviewActivity(InternalModel):
@@ -130,6 +131,7 @@ class SummaryActivity(InternalModel):
 class PublicAnswerDate(PublicModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    end_datetime: datetime.datetime
 
 
 class PublicReviewActivity(PublicModel):
