@@ -163,7 +163,7 @@ async def save_csv(path: str, data: list[dict], cdn_client: CDNClient, columns: 
         await cdn_client.upload(path, f)
 
 
-async def _export_flows(applet_id: uuid.UUID):
+async def _export_flows(applet_id: uuid.UUID, path_prefix: str):
     """
     select
         split_part(fh.applet_id , '_', 1) applet_id,
@@ -203,7 +203,7 @@ async def _export_flows(applet_id: uuid.UUID):
         data = res.all()
 
     cdn_client = await get_operations_bucket()
-    key = cdn_client.generate_key(PATH_PREFIX, str(applet_id), PATH_FLOW_FILE_NAME)
+    key = cdn_client.generate_key(path_prefix, str(applet_id), PATH_FLOW_FILE_NAME)
     await save_csv(key, parse_obj_as(list[dict], data), cdn_client)
 
 
@@ -212,14 +212,18 @@ async def _export_flows(applet_id: uuid.UUID):
     f' flow data as csv file'
 )
 @coro
-async def export_flows(applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a")):
+async def export_flows(
+    applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a"),
+    path_prefix: Optional[str] = typer.Option(PATH_PREFIX, "--path-prefix", "-p"),
+):
     """
     Create and upload to s3 csv file with flow data
     """
+    assert path_prefix
     applet_id = get_applet_id(applet_id)
     print(f"Flow export start {applet_id}")
     tracemalloc.start()
-    await _export_flows(applet_id)
+    await _export_flows(applet_id, path_prefix)
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     print("Flow export finished")
@@ -387,6 +391,7 @@ def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) 
 async def export_flow_schedule(
     run_date: datetime.datetime = typer.Argument(None, help="run date"),
     applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a"),
+    path_prefix: Optional[str] = typer.Option(PATH_PREFIX, "--path-prefix", "-p"),
     force: bool = typer.Option(
         False,
         "--force",
@@ -394,6 +399,7 @@ async def export_flow_schedule(
         help="Force run even if job executed before",
     ),
 ):
+    assert path_prefix
     applet_id = get_applet_id(applet_id)
     scheduled_date = run_date.date() if run_date else datetime.date.today()
 
@@ -448,10 +454,10 @@ async def export_flow_schedule(
         unique_prefix = f"{applet_id}/flow-schedule"
 
         prev_filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
-        prev_key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, prev_filename)
+        prev_key = cdn_client.generate_key(path_prefix, unique_prefix, prev_filename)
 
         filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date)
-        key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, filename)
+        key = cdn_client.generate_key(path_prefix, unique_prefix, filename)
 
         path = settings.uploads_dir / filename
 
@@ -565,6 +571,7 @@ async def get_user_activity_events(
 async def export_activity_schedule(
     run_date: datetime.datetime = typer.Argument(None, help="run date"),
     applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a"),
+    path_prefix: Optional[str] = typer.Option(PATH_PREFIX, "--path-prefix", "-p"),
     force: bool = typer.Option(
         False,
         "--force",
@@ -572,6 +579,7 @@ async def export_activity_schedule(
         help="Force run even if job executed before",
     ),
 ):
+    assert path_prefix
     applet_id = get_applet_id(applet_id)
     scheduled_date = run_date.date() if run_date else datetime.date.today()
 
@@ -626,10 +634,10 @@ async def export_activity_schedule(
         unique_prefix = f"{applet_id}/activity-schedule"
 
         prev_filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
-        prev_key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, prev_filename)
+        prev_key = cdn_client.generate_key(path_prefix, unique_prefix, prev_filename)
 
         filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME.format(date=scheduled_date)
-        key = cdn_client.generate_key(PATH_PREFIX, unique_prefix, filename)
+        key = cdn_client.generate_key(path_prefix, unique_prefix, filename)
 
         path = settings.uploads_dir / filename
 
