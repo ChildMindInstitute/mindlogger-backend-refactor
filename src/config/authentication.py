@@ -31,8 +31,8 @@ class PasswordRecoverSettings(BaseSettings):
 
 
 class AuthenticationSettings(BaseSettings):
-    access_token: AccessTokenSettings = AccessTokenSettings()
-    refresh_token: RefreshTokenSettings = RefreshTokenSettings()
+    access_token: AccessTokenSettings
+    refresh_token: RefreshTokenSettings
     algorithm: str = "HS256"
     token_type: str = "Bearer"
     password_recover: PasswordRecoverSettings = PasswordRecoverSettings()
