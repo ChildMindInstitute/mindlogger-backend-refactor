@@ -441,7 +441,7 @@ async def generate_presigned_logs_url(
 ) -> Response[PresignedUrl]:
     service = LogFileService(user.id, cdn_client)
     key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"
-    data = cdn_client.generate_presigned_post(settings.cdn.bucket, key)
+    data = cdn_client.generate_presigned_post(cdn_client.config.bucket, key)
     return Response(
         result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
     )

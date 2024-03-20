@@ -978,8 +978,14 @@ class TestAnswerActivityItems(BaseTest):
                 height=1080,
             ),
         )
+        tz_str = "US/Pacific"
+        tz_offset = -420
 
-        response = await client.post(self.answer_url, data=create_data)
+        response = await client.post(
+            self.answer_url,
+            data=create_data,
+            headers={"x-timezone": tz_str},
+        )
 
         assert response.status_code == 201
 
@@ -1034,8 +1040,10 @@ class TestAnswerActivityItems(BaseTest):
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate", "client",
+            "tzOffset", "scheduledEventId",
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
+        assert answer['tzOffset'] == tz_offset
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys

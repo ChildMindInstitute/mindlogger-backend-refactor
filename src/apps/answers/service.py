@@ -188,6 +188,7 @@ class AnswerService:
             scheduled_event_id=item_answer.scheduled_event_id,
             local_end_date=item_answer.local_end_date,
             local_end_time=item_answer.local_end_time,
+            tz_offset=item_answer.tz_offset,
         )
 
         await AnswerItemsCRUD(self.answer_session).create(item_answer)
