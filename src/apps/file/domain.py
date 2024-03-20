@@ -1,6 +1,13 @@
+import enum
+
 from pydantic import HttpUrl
 
 from apps.shared.domain import PublicModel
+
+
+class WebmTargetExtenstion(str, enum.Enum):
+    MP3 = ".mp3"
+    MP4 = ".mp4"
 
 
 class ContentUploadedFile(PublicModel):
@@ -37,6 +44,7 @@ class LogFileExistenceResponse(FileExistenceResponse):
 
 class FileNameRequest(PublicModel):
     file_name: str
+    target_extension: WebmTargetExtenstion | None = None
 
 
 class FileIdRequest(PublicModel):
