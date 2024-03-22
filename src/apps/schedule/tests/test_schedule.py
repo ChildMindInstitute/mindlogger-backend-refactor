@@ -21,12 +21,30 @@ from apps.schedule.service.schedule import ScheduleService
 from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
+from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from infrastructure.utility import FCMNotificationTest
 
 
 def _get_number_default_events(applet: AppletFull) -> int:
     return len([i for i in applet.activities if not i.is_reviewable]) + len(applet.activity_flows)
+
+
+@pytest.fixture
+async def device_lucy(lucy: User, session: AsyncSession) -> str:
+    device_id = "lucy device"
+    service = UserDeviceService(session, lucy.id)
+    await service.add_device(device_id)
+    return device_id
+
+
+@pytest.fixture
+async def device_user(user: User, session: AsyncSession) -> str:
+    device_id = "user device"
+    service = UserDeviceService(session, user.id)
+    await service.add_device(device_id)
+    return device_id
 
 
 @pytest.fixture
@@ -123,7 +141,7 @@ async def daily_event_individual_lucy(
     return schedule
 
 
-@pytest.mark.usefixtures("applet", "applet_lucy_respondent")
+@pytest.mark.usefixtures("applet", "applet_lucy_respondent", "device_lucy", "device_user")
 class TestSchedule:
     login_url = "/auth/login"
     applet_detail_url = "applets/{applet_id}"
@@ -371,6 +389,9 @@ class TestSchedule:
         applet: AppletFull,
         daily_event: PublicEvent,
         event_daily_data_update: EventUpdateRequest,
+        fcm_client: FCMNotificationTest,
+        device_lucy: str,
+        device_user: str,
     ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
         data = event_daily_data_update.copy(deep=True)
@@ -385,6 +406,10 @@ class TestSchedule:
         event = response.json()["result"]
         assert event["startTime"] == str(data.start_time)
         assert event["endTime"] == str(data.end_time)
+        # lucy (respondent) and user (owner and respondent)
+        assert len(fcm_client.notifications) == 2
+        assert device_lucy in fcm_client.notifications
+        assert device_user in fcm_client.notifications
 
     async def test_count(self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest):
         await client.login(self.login_url, "user@example.com", "Test1234!")
@@ -722,3 +747,45 @@ class TestSchedule:
         assert resp.status_code == http.HTTPStatus.CREATED
         assert caplog.messages
         assert caplog.messages[0] == error_message
+
+    async def test_update_individual_event__notification_sent_to_the_individual_respondent(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        event_daily_data_update: EventUpdateRequest,
+        daily_event_individual_lucy: PublicEvent,
+        fcm_client: FCMNotificationTest,
+        device_lucy: str,
+    ):
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        data = event_daily_data_update.copy(deep=True)
+        data.start_time = datetime.time(0, 0)
+        data.end_time = datetime.time(20, 0)
+        resp = await client.put(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event_individual_lucy.id), data=data
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        assert device_lucy in fcm_client.notifications
+        assert len(fcm_client.notifications) == 1
+        notification = fcm_client.notifications[device_lucy][0]
+        assert "Your schedule has been changed, click to update." in notification
+
+    async def test_delete_by_id_individual_event__notification_sent_to_the_individual_respondent(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        daily_event_individual_lucy: PublicEvent,
+        fcm_client: FCMNotificationTest,
+        device_lucy: str,
+    ):
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        resp = await client.delete(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event_individual_lucy.id)
+        )
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
+        assert device_lucy in fcm_client.notifications
+        assert len(fcm_client.notifications) == 1
+        notification = fcm_client.notifications[device_lucy][0]
+        assert "Your schedule has been changed, click to update." in notification
