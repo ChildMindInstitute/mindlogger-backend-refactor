@@ -1,3 +1,5 @@
+import datetime
+
 from pydantic import BaseSettings, Field, validator
 
 
@@ -17,6 +19,9 @@ class RefreshTokenSettings(BaseSettings):
     secret_key: str = Field("", env="AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY")
     # Set in minutes
     expiration: int = 540
+
+    transition_key: str | None = None
+    transition_expire_date: datetime.date | None = None
 
     @validator("secret_key")
     def check_secret_key(cls, v: str) -> str:
