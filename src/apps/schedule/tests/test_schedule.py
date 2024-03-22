@@ -19,7 +19,6 @@ from apps.schedule.domain.schedule import EventRequest, EventUpdateRequest, Peri
 from apps.schedule.errors import StartEndTimeEqualError
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.enums import Language
-from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -52,7 +51,7 @@ async def applet(session: AsyncSession, user: User, applet_data: AppletCreate) -
 
 
 @pytest.fixture
-async def applet_default_events(session: AsyncSession, applet: AppletFull, user: User) -> list[PublicEvent]:
+async def applet_default_events(session: AsyncSession, applet: AppletFull) -> list[PublicEvent]:
     srv = ScheduleService(session)
     events = await srv.get_all_schedules(applet_id=applet.id)
     return events
@@ -125,17 +124,7 @@ async def daily_event_individual_lucy(
 
 
 @pytest.mark.usefixtures("applet", "applet_lucy_respondent")
-class TestSchedule(BaseTest):
-    fixtures = [
-        "schedule/fixtures/periodicity.json",
-        "schedule/fixtures/events.json",
-        "schedule/fixtures/activity_events.json",
-        "schedule/fixtures/flow_events.json",
-        "schedule/fixtures/user_events.json",
-        "schedule/fixtures/notifications.json",
-        "schedule/fixtures/reminders.json",
-    ]
-
+class TestSchedule:
     login_url = "/auth/login"
     applet_detail_url = "applets/{applet_id}"
 
