@@ -381,7 +381,7 @@ async def applet_answers_export(
     total_answers = data.total_answers
     for answer in data.answers:
         if answer.is_manager:
-            answer.respondent_secret_id = f"[admin account] ({answer.respondent_email})"
+            answer.respondent_secret_id = f"[admin account] ({answer.respondent_secret_id})"
 
     if activities_last_version:
         applet = await AppletService(session, user.id).get(applet_id)
