@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
 
 from apps.applets.domain.applet_full import AppletFull
+from apps.file.domain import WebmTargetExtenstion
 from apps.file.enums import FileScopeEnum
 from apps.file.services import LogFileService
 from apps.shared.test import BaseTest
@@ -223,19 +224,29 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["result"]["url"] == url
 
     @pytest.mark.usefixtures("mock_presigned_post")
-    async def test_generate_presigned_log_url(self, client: TestClient, device_tom: str, tom: User):
+    async def test_generate_presigned_log_url__logs_are_uploaded_to_the_answer_bucket(
+        self, client: TestClient, device_tom: str, tom: User, mocker: MockerFixture
+    ):
+        bucket_answer_name = "bucket_answer_test"
+        settings.cdn.bucket_answer = bucket_answer_name
+        config = CdnConfig(
+            endpoint_url=settings.cdn.endpoint_url,
+            access_key=settings.cdn.access_key,
+            secret_key=settings.cdn.secret_key,
+            region=settings.cdn.region,
+            bucket=settings.cdn.bucket_answer,
+            ttl_signed_urls=settings.cdn.ttl_signed_urls,
+        )
+        cdn_client = CDNClient(config, env="env")
+        mocker.patch("infrastructure.dependency.cdn.get_log_bucket", return_value=cdn_client)
         await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
         file_name = "test.txt"
         resp = await client.post(self.log_upload_url.format(device_id=device_tom), data={"file_id": file_name})
         assert resp.status_code == http.HTTPStatus.OK
         key = resp.json()["result"]["fields"]["key"]
-        expected_key = LogFileService(
-            tom.id,
-            CDNClient(
-                CdnConfig(region="region", bucket="bucket", secret_key="secret_key", access_key="access_key"), "env"
-            ),
-        ).key(device_tom, file_name)
+        expected_key = LogFileService(tom.id, cdn_client).key(device_tom, file_name)
         assert key == expected_key
+        assert bucket_answer_name in resp.json()["result"]["uploadUrl"]
 
     @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize("file_name", ("test.webm", "test.WEBM"))
@@ -349,3 +360,34 @@ class TestAnswerActivityItems(BaseTest):
         mock_check_existance.assert_awaited_once_with(settings.cdn.bucket_operations, exp_check_key)
         assert result[0]["url"].endswith(exp_converted_file_name)
         assert ARBITRARY_BUCKET_NAME in result[0]["url"]
+
+    @pytest.mark.usefixtures("mock_presigned_post")
+    @pytest.mark.parametrize(
+        "file_name,target_extension,exp_file_name",
+        (
+            ("test.webm", WebmTargetExtenstion.MP3, f"test.webm{WebmTargetExtenstion.MP3}"),
+            ("test.webm", WebmTargetExtenstion.MP4, f"test.webm{WebmTargetExtenstion.MP4}"),
+            ("test.webm", None, f"test.webm{WebmTargetExtenstion.MP3}"),
+            ("test.webm", "without extension", f"test.webm{WebmTargetExtenstion.MP3}"),
+        ),
+    )
+    async def test_generate_upload_url__webm_to_mp3_mp4(
+        self, client: TestClient, file_name: str, target_extension: WebmTargetExtenstion, exp_file_name: str
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        data = {"file_name": file_name, "target_extension": target_extension}
+        if target_extension == "without extension":
+            del data["target_extension"]
+        resp = await client.post(self.upload_media_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        assert result["url"].endswith(exp_file_name)
+
+    @pytest.mark.parametrize("not_valid_extesion", ("mp3", "mp2"))
+    async def test_generate_upload_url__webm_to_mp3_mp4_not_valid_extension(
+        self, client: TestClient, not_valid_extesion: str
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        data = {"file_name": "test.webm", "target_extension": not_valid_extesion}
+        resp = await client.post(self.upload_media_url, data=data)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY

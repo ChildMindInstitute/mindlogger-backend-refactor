@@ -6,3 +6,4 @@ class MindloggerContentSource(str, Enum):
 
     web = "web"
     admin = "admin"
+    mobile = "mobile"

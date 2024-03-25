@@ -73,17 +73,35 @@ async def refresh_access_token(
     """Refresh access token."""
     async with atomic(session):
         try:
-            payload = jwt.decode(
-                schema.refresh_token,
-                settings.authentication.refresh_token.secret_key,
-                algorithms=[settings.authentication.algorithm],
-            )
+            regenerate_refresh_token = False
+            try:
+                payload = jwt.decode(
+                    schema.refresh_token,
+                    settings.authentication.refresh_token.secret_key,
+                    algorithms=[settings.authentication.algorithm],
+                )
+            except JWTError:
+                # check transition key
+                transition_key = settings.authentication.refresh_token.transition_key
+                transition_expire_date = settings.authentication.refresh_token.transition_expire_date
+
+                if not (
+                    transition_key and transition_expire_date and transition_expire_date > datetime.utcnow().date()
+                ):
+                    raise
+                payload = jwt.decode(
+                    schema.refresh_token,
+                    transition_key,
+                    algorithms=[settings.authentication.algorithm],
+                )
+                regenerate_refresh_token = True
+
             token_data = TokenPayload(**payload)
 
             if datetime.utcfromtimestamp(token_data.exp) < datetime.utcnow():
                 raise AuthenticationError
 
-            if not (user_id := payload[JWTClaim.sub]):
+            if not (user_id := token_data.sub):
                 raise InvalidRefreshToken()
 
         except (JWTError, ValidationError) as e:
@@ -94,14 +112,25 @@ async def refresh_access_token(
         if revoked:
             raise AuthenticationError
 
+        rjti = token_data.jti
+        refresh_token = schema.refresh_token
+        if regenerate_refresh_token:
+            # blacklist current refresh token
+            await AuthenticationService(session).revoke_token(InternalToken(payload=token_data), TokenPurpose.REFRESH)
+
+            rjti = str(uuid.uuid4())
+            refresh_token = AuthenticationService.create_refresh_token(
+                {JWTClaim.sub: str(user_id), JWTClaim.jti: rjti, JWTClaim.exp: token_data.exp}
+            )
+
         access_token = AuthenticationService.create_access_token(
             {
                 JWTClaim.sub: str(user_id),
-                JWTClaim.rjti: token_data.jti,
+                JWTClaim.rjti: rjti,
             }
         )
 
-    return Response(result=Token(access_token=access_token, refresh_token=schema.refresh_token))
+    return Response(result=Token(access_token=access_token, refresh_token=refresh_token))
 
 
 async def delete_access_token(
