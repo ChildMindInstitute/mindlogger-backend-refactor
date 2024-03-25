@@ -83,3 +83,18 @@ class StartEndTimeEqualError(FieldError):
 
 class UnavailableActivityOrFlowError(FieldError):
     message = _("Activity/flow is unavailable at this time.")
+
+
+class AtTimeFieldRequiredError(FieldError):
+    zero_path = None
+    message = _("at_time is required for this trigger type.")
+
+
+class TimerRequiredError(FieldError):
+    zero_path = None
+    message = _("Timer is required for this timer type.")
+
+
+class FromTimeToTimeRequiredError(FieldError):
+    zero_path = None
+    message = _("from_time and to_time are required for this trigger type.")
