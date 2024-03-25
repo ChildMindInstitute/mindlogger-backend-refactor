@@ -1,5 +1,6 @@
 import datetime
 import json
+import re
 import uuid
 
 import pytest
@@ -1042,8 +1043,12 @@ class TestAnswerActivityItems(BaseTest):
             "endDatetime", "legacyProfileId", "migratedDate", "client",
             "tzOffset", "scheduledEventId",
         }
-        assert int(answer['startDatetime'] * 1000) == 1690188679657
-        assert answer['tzOffset'] == tz_offset
+        assert int(answer["startDatetime"] * 1000) == 1690188679657
+        assert answer["tzOffset"] == tz_offset
+        assert re.match(
+            r"\[admin account\] \([0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}\)",
+            answer["respondentSecretId"]
+        )
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys
