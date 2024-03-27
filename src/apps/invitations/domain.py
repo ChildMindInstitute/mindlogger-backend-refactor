@@ -2,12 +2,12 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import EmailStr, Extra, Field, root_validator
+from pydantic import EmailStr, Extra, Field, root_validator, validator
 
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.domain.custom_validations import lowercase_email
+from apps.shared.domain.custom_validations import lowercase, lowercase_email
 
 
 class Applet(PublicModel):
@@ -355,7 +355,6 @@ InvitationDetailGeneric = InvitationDetailReviewer | InvitationDetailRespondent 
 
 
 class ShellAccountCreateRequest(PublicModel):
-    id: uuid.UUID | None
     language: str
     first_name: str
     last_name: str
@@ -363,19 +362,11 @@ class ShellAccountCreateRequest(PublicModel):
     nickname: str | None
     email: str | None
 
-
-class ShellAccountCreateResponse(PublicModel):
-    id: uuid.UUID | None
-    applet_id: uuid.UUID
-    language: str
-    creator_id: uuid.UUID
-    first_name: str
-    last_name: str
-    secret_user_id: str
-    nickname: str | None
-    email: str | None
+    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
 
 
 class ShallAccountInvitation(PublicModel):
-    email: str
+    email: EmailStr
     subject_id: uuid.UUID
+
+    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)

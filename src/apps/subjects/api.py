@@ -1,10 +1,13 @@
 import uuid
 
 from fastapi import Body, Depends
+from fastapi.exceptions import RequestValidationError
+from pydantic.error_wrappers import ErrorWrapper
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session_by_subject
 from apps.answers.service import AnswerService
+from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
@@ -19,6 +22,7 @@ from apps.subjects.domain import (
     SubjectRelationCreate,
     SubjectUpdateRequest,
 )
+from apps.subjects.errors import SecretIDUniqueViolationError
 from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.services.user import UserService
@@ -31,23 +35,23 @@ from infrastructure.database.deps import get_session
 
 
 async def create_subject(
-    user: User = Depends(get_current_user),
-    schema: SubjectCreateRequest = Body(...),
-    session: AsyncSession = Depends(get_session),
+    user: User,
+    schema: SubjectCreateRequest,
+    session: AsyncSession,
 ) -> Response[Subject]:
-    await CheckAccessService(session, user.id).check_applet_invite_access(schema.applet_id)
     async with atomic(session):
-        subject_sch = Subject(
-            applet_id=schema.applet_id,
-            creator_id=user.id,
-            language=schema.language,
-            first_name=schema.first_name,
-            last_name=schema.last_name,
-            nickname=schema.nickname,
-            secret_user_id=schema.secret_user_id,
-            email=schema.email,
-        )
-        subject = await SubjectsService(session, user.id).create(subject_sch)
+        await AppletService(session, user.id).exist_by_id(schema.applet_id)
+        await CheckAccessService(session, user.id).check_applet_invite_access(schema.applet_id)
+        service = SubjectsService(session, user.id)
+
+        try:
+            subject = await service.create(Subject(creator_id=user.id, **schema.dict(by_alias=False)))
+        except SecretIDUniqueViolationError:
+            wrapper = ErrorWrapper(
+                ValueError(NonUniqueValue()), ("body", SubjectCreateRequest.field_alias("secret_user_id"))
+            )
+            raise RequestValidationError([wrapper])
+
         return Response(result=Subject.from_orm(subject))
 
 
@@ -114,7 +118,7 @@ async def update_subject(
     async with atomic(session):
         subject.secret_user_id = schema.secret_user_id
         subject.nickname = schema.nickname
-        subject = await subject_srv.update(subject)
+        subject = await subject_srv.update(subject.id, **schema.dict(by_alias=False))
         return Response(result=Subject.from_orm(subject))
 
 

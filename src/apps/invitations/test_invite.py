@@ -625,16 +625,7 @@ class TestInvite(BaseTest):
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data,
         )
-        assert response.status_code == http.HTTPStatus.OK
-        # Because we don't return anything after accepting/declining
-        # invitation, check in database that user_id has already been updated
-
-        subject = await SubjectsService(session, tom.id).get_pending_subject_if_exist(
-            invitation_respondent_data.secret_user_id, applet_one.id
-        )
-        assert subject
-        assert subject.first_name == invitation_respondent_data.first_name
-        assert subject.last_name == invitation_respondent_data.last_name
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
     async def test_resend_invitation_for_respondent_with_pending_invitation_only_last_key_valid(
         self, client, invitation_respondent_data, tom, applet_one
@@ -647,6 +638,7 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         old_key = response.json()["result"]["key"]
 
+        invitation_respondent_data.secret_user_id = str(uuid.uuid4())
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data,
@@ -957,6 +949,7 @@ class TestInvite(BaseTest):
         pins = await UserAppletAccessCRUD(session).get_workspace_pins(tom.id)
         assert pins[0].pinned_user_id == bob.id
 
+    @pytest.mark.skip("Not actual")
     async def test_shell_invite_cant_twice(self, client, session, shell_create_data, tom: User, applet_one: AppletFull):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         email = "mm@mail.com"

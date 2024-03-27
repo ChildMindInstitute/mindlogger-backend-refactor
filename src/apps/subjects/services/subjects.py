@@ -3,12 +3,15 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.alerts.crud.alert import AlertCRUD
-from apps.shared.exception import NotFoundError
+from apps.invitations.constants import InvitationStatus
+from apps.invitations.crud import InvitationCRUD
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
 from apps.subjects.domain import Subject
 
 __all__ = ["SubjectsService"]
+
+from apps.subjects.errors import SecretIDUniqueViolationError
 
 
 class SubjectsService:
@@ -31,22 +34,24 @@ class SubjectsService:
         )
 
     async def create(self, schema: Subject) -> Subject:
+        subject_with_secret = await self.get_by_secret_id(schema.applet_id, schema.secret_user_id)
+        if subject_with_secret and not subject_with_secret.is_deleted:
+            raise SecretIDUniqueViolationError()
+
         return await SubjectsCrud(self.session).upsert(schema)
 
     async def create_many(self, schema: list[Subject]) -> list[SubjectSchema]:
         models = list(map(lambda s: self.__to_db_model(s), schema))
         return await SubjectsCrud(self.session).create_many(models)
 
-    async def update(self, schema: Subject) -> SubjectSchema:
-        subject = SubjectSchema(id=schema.id, nickname=schema.nickname, secret_user_id=schema.secret_user_id)
-        if schema.is_deleted is not None:
-            subject.is_deleted = schema.is_deleted
-        return await SubjectsCrud(self.session).update(subject)
+    async def update(self, id_: uuid.UUID, **values) -> SubjectSchema:
+        return await SubjectsCrud(self.session).update_by_id(id_, **values)
 
     async def delete(self, id_: uuid.UUID):
+        await InvitationCRUD(self.session).delete_by_subject(id_, [InvitationStatus.PENDING])
         repository = SubjectsCrud(self.session)
         await repository.delete_subject_relations(id_)
-        return await SubjectsCrud(self.session).delete_by_id(id_)
+        return await repository.delete_by_id(id_)
 
     async def extend(self, subject_id: uuid.UUID) -> Subject | None:
         """
@@ -82,16 +87,17 @@ class SubjectsService:
         repository = SubjectsCrud(self.session)
         await repository.delete_relation(subject_id, source_subject_id)
 
-    async def exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID):
-        return await SubjectsCrud(self.session).exist(subject_id, applet_id)
-
-    async def check_exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID):
-        is_exist = await self.exist(subject_id, applet_id)
-        if not is_exist:
-            raise NotFoundError()
+    async def get_by_secret_id(self, applet_id: uuid.UUID, secret_id: str) -> Subject | None:
+        subject = await SubjectsCrud(self.session).get_by_secret_id(applet_id, secret_id)
+        if subject:
+            return Subject.from_orm(subject)
+        return None
 
     async def check_secret_id(self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID) -> bool:
-        return await SubjectsCrud(self.session).check_secret_id(subject_id, secret_id, applet_id)
+        subject = await self.get_by_secret_id(applet_id, secret_id)
+        if subject and subject.id != subject_id:
+            return True
+        return False
 
     async def upsert(self, subject: Subject) -> Subject:
         schema = await SubjectsCrud(self.session).upsert(subject)
@@ -102,6 +108,7 @@ class SubjectsService:
         return Subject.from_orm(model) if model else None
 
     async def delete_hard(self, id_: uuid.UUID):
+        await InvitationCRUD(self.session).delete_by_subject(id_)
         await AlertCRUD(self.session).delete_by_subject(id_)
         repository = SubjectsCrud(self.session)
         await repository.delete_subject_relations(id_)

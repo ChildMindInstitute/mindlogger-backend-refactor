@@ -223,6 +223,16 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         db_result: Result = await self._execute(query)
         return db_result.scalar_one_or_none()
 
+    async def get_pending_subject_invitation(self, applet_id: uuid.UUID, subject_id: uuid.UUID) -> InvitationRespondent:
+        query: Query = select(InvitationSchema).where(
+            InvitationSchema.applet_id == applet_id,
+            InvitationSchema.status == InvitationStatus.PENDING,
+            InvitationSchema.soft_exists(),
+            InvitationSchema.subject_id == subject_id,
+        )
+        db_result: Result = await self._execute(query)
+        return db_result.scalar_one_or_none()
+
     async def approve_by_id(self, id_: uuid.UUID, user_id: uuid.UUID):
         query = update(InvitationSchema)
         query = query.where(InvitationSchema.id == id_)
@@ -293,7 +303,15 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query: Query = select(InvitationSchema.email)
         query = query.where(
             InvitationSchema.applet_id == applet_id,
-            InvitationSchema.status.in_([InvitationStatus.APPROVED, InvitationStatus.PENDING]),
+            InvitationSchema.status == InvitationStatus.PENDING,
         )
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def delete_by_subject(self, subject_id: uuid.UUID, statuses: list[InvitationStatus] | None = None):
+        query: Query = delete(InvitationSchema).where(
+            InvitationSchema.role == Role.RESPONDENT, InvitationSchema.subject_id == subject_id
+        )
+        if statuses:
+            query = query.where(InvitationSchema.status.in_(statuses))
+        await self._execute(query)
