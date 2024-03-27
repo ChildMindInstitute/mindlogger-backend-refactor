@@ -188,6 +188,7 @@ class AnswerService:
             scheduled_event_id=item_answer.scheduled_event_id,
             local_end_date=item_answer.local_end_date,
             local_end_time=item_answer.local_end_time,
+            tz_offset=item_answer.tz_offset,
         )
 
         await AnswerItemsCRUD(self.answer_session).create(item_answer)
@@ -263,7 +264,9 @@ class AnswerService:
                     continue
                 answer_item_duplicate.add(key)
                 activity_map[activity_id].answer_dates.append(
-                    AnswerDate(created_at=answer_item.created_at, answer_id=answer.id)
+                    AnswerDate(
+                        created_at=answer_item.created_at, answer_id=answer.id, end_datetime=answer_item.end_datetime
+                    )
                 )
         return list(activity_map.values())
 

@@ -130,9 +130,9 @@ def applet_base_data(encryption: Encryption) -> AppletBase:
         pinned_at=None,
         retention_period=None,
         retention_type=None,
-        stream_enabled=False,
-        stream_ip_address=None,
-        stream_port=None,
+        stream_enabled=True,
+        stream_ip_address="127.0.0.1",
+        stream_port=2323,
         encryption=encryption,
     )
 

@@ -1,5 +1,6 @@
 import datetime
 import json
+import re
 import uuid
 
 import pytest
@@ -978,8 +979,14 @@ class TestAnswerActivityItems(BaseTest):
                 height=1080,
             ),
         )
+        tz_str = "US/Pacific"
+        tz_offset = -420
 
-        response = await client.post(self.answer_url, data=create_data)
+        response = await client.post(
+            self.answer_url,
+            data=create_data,
+            headers={"x-timezone": tz_str},
+        )
 
         assert response.status_code == 201
 
@@ -1034,8 +1041,14 @@ class TestAnswerActivityItems(BaseTest):
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate", "client",
+            "tzOffset", "scheduledEventId",
         }
-        assert int(answer['startDatetime'] * 1000) == 1690188679657
+        assert int(answer["startDatetime"] * 1000) == 1690188679657
+        assert answer["tzOffset"] == tz_offset
+        assert re.match(
+            r"\[admin account\] \([0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}\)",
+            answer["respondentSecretId"]
+        )
         # fmt: on
 
         assert set(assessment.keys()) == expected_keys

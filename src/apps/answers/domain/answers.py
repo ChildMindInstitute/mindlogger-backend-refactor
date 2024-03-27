@@ -61,6 +61,7 @@ class ItemAnswerCreate(InternalModel):
     scheduled_event_id: str | None = None
     local_end_date: datetime.date | None = None
     local_end_time: datetime.time | None = None
+    tz_offset: int | None = None
 
     @validator("item_ids")
     def convert_item_ids(cls, value: list[uuid.UUID]):
@@ -111,6 +112,7 @@ class AssessmentAnswerCreate(InternalModel):
 class AnswerDate(InternalModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    end_datetime: datetime.datetime
 
 
 class ReviewActivity(InternalModel):
@@ -129,6 +131,7 @@ class SummaryActivity(InternalModel):
 class PublicAnswerDate(PublicModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    end_datetime: datetime.datetime
 
 
 class PublicReviewActivity(PublicModel):
@@ -278,6 +281,8 @@ class UserAnswerDataBase(BaseModel):
     start_datetime: datetime.datetime | None = None
     end_datetime: datetime.datetime | None = None
     migrated_date: datetime.datetime | None = None
+    tz_offset: int | None = None
+    scheduled_event_id: uuid.UUID | str | None = None
     applet_history_id: str
     activity_history_id: str | None
     flow_history_id: str | None

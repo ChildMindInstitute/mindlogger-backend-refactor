@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     service: ServiceSettings = ServiceSettings()
 
     # Authentication
-    authentication: AuthenticationSettings = AuthenticationSettings()
+    authentication: AuthenticationSettings
 
     # Encryption
     secrets: SecretSettings = SecretSettings()
