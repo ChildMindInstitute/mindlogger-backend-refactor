@@ -71,8 +71,8 @@ async def create_answer(
         except NotValidAppletHistory:
             raise InvalidVersionError()
         service = AnswerService(session, user.id, answer_session)
-        if tz_offset and not schema.answer.tz_offset:
-            schema.answer.tz_offset = tz_offset // 60
+        if tz_offset is not None and schema.answer.tz_offset is None:
+            schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
             answer = await service.create_answer(schema)
         await service.create_report_from_answer(answer)
@@ -89,8 +89,8 @@ async def create_anonymous_answer(
         assert anonymous_respondent
 
         service = AnswerService(session, anonymous_respondent.id, answer_session)
-        if tz_offset and not schema.answer.tz_offset:
-            schema.answer.tz_offset = tz_offset // 60
+        if tz_offset is not None and schema.answer.tz_offset is None:
+            schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
             answer = await service.create_answer(schema)
         await service.create_report_from_answer(answer)
