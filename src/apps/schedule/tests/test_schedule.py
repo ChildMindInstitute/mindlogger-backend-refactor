@@ -1,6 +1,7 @@
 import datetime
 import http
 import logging
+import uuid
 
 import pytest
 from firebase_admin.exceptions import NotFoundError as FireBaseNotFoundError
@@ -13,14 +14,29 @@ from apps.answers.errors import UserDoesNotHavePermissionError
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
+from apps.applets.errors import AppletNotFoundError
 from apps.applets.service.applet import AppletService
 from apps.schedule.domain import constants
-from apps.schedule.domain.schedule import EventRequest, EventUpdateRequest, PeriodicityRequest, PublicEvent
-from apps.schedule.errors import StartEndTimeEqualError
+from apps.schedule.domain.schedule import (
+    EventRequest,
+    EventUpdateRequest,
+    Notification,
+    NotificationSettingRequest,
+    PeriodicityRequest,
+    PublicEvent,
+    ReminderSettingRequest,
+)
+from apps.schedule.errors import (
+    AccessDeniedToApplet,
+    ActivityOrFlowNotFoundError,
+    EventAlwaysAvailableExistsError,
+    StartEndTimeEqualError,
+)
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
+from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
@@ -115,6 +131,15 @@ def event_daily_data(applet: AppletFull) -> EventRequest:
 
 
 @pytest.fixture
+def event_daily_flow_data(applet: AppletFull, event_daily_data: EventRequest) -> EventRequest:
+    data = event_daily_data.dict()
+    data["activity_id"] = None
+    data["flow_id"] = str(applet.activity_flows[0].id)
+    model = EventRequest(**data)
+    return model
+
+
+@pytest.fixture
 def event_daily_data_update(event_daily_data: EventRequest) -> EventUpdateRequest:
     data = event_daily_data.dict()
     del data["respondent_id"]
@@ -136,6 +161,39 @@ async def daily_event_individual_lucy(
 ) -> PublicEvent:
     data = event_daily_data.copy(deep=True)
     data.respondent_id = lucy.id
+    service = ScheduleService(session)
+    schedule = await service.create_schedule(data, applet_lucy_respondent.id)
+    return schedule
+
+
+@pytest.fixture
+def notification() -> NotificationSettingRequest:
+    return NotificationSettingRequest(
+        trigger_type=constants.NotificationTriggerType.FIXED,
+        at_time=datetime.time(9, 0),
+        from_time=None,
+        to_time=None,
+        order=None,
+    )
+
+
+@pytest.fixture
+def reminder() -> ReminderSettingRequest:
+    return ReminderSettingRequest(activity_incomplete=0, reminder_time=datetime.time(9, 0))
+
+
+@pytest.fixture
+async def daily_event_lucy_with_notification_and_reminder(
+    session: AsyncSession,
+    applet_lucy_respondent: AppletFull,
+    event_daily_data: EventRequest,
+    notification: NotificationSettingRequest,
+    reminder: ReminderSettingRequest,
+    lucy: User,
+):
+    data = event_daily_data.copy(deep=True)
+    data.respondent_id = lucy.id
+    data.notification = Notification(notifications=[notification], reminder=reminder)
     service = ScheduleService(session)
     schedule = await service.create_schedule(data, applet_lucy_respondent.id)
     return schedule
@@ -795,3 +853,284 @@ class TestSchedule:
         assert len(fcm_client.notifications) == 1
         notification = fcm_client.notifications[device_lucy][0]
         assert "Your schedule has been changed, click to update." in notification
+
+    async def test_create_event_with_notifications(
+        self,
+        client: TestClient,
+        event_daily_data: EventRequest,
+        notification: NotificationSettingRequest,
+        user: User,
+        applet: AppletFull,
+    ):
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        data = event_daily_data.copy(deep=True)
+        data.notification = Notification(notifications=[notification])
+        resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        notifications = resp.json()["result"]["notification"]["notifications"]
+        assert len(notifications) == 1
+        assert notifications[0]["triggerType"] == notification.trigger_type
+        assert notifications[0]["fromTime"] == notification.from_time
+        assert notifications[0]["toTime"] == notification.to_time
+        assert notifications[0]["atTime"] == str(notification.at_time)
+        assert notifications[0]["order"] == 1
+
+    async def test_create_event_with_reminder(
+        self,
+        client: TestClient,
+        event_daily_data: EventRequest,
+        reminder: ReminderSettingRequest,
+        user: User,
+        applet: AppletFull,
+    ):
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        data = event_daily_data.copy(deep=True)
+        data.notification = Notification(reminder=reminder)
+        resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        resp_reminder = resp.json()["result"]["notification"]["reminder"]
+        assert resp_reminder["activityIncomplete"] == reminder.activity_incomplete
+        assert resp_reminder["reminderTime"] == str(reminder.reminder_time)
+
+    async def test_delete_all_schedules_twice(
+        self,
+        client: TestClient,
+        user: User,
+        applet: AppletFull,
+    ):
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        resp = await client.delete(self.schedule_url.format(applet_id=applet.id))
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
+
+        resp = await client.delete(self.schedule_url.format(applet_id=applet.id))
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
+
+    async def test_update_schedule__change_periodicity_from_scheduled_type_to_the_always(
+        self,
+        client: TestClient,
+        user: User,
+        daily_event: PublicEvent,
+        applet: AppletFull,
+        event_daily_data_update: EventUpdateRequest,
+    ):
+        # TODO
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        data = event_daily_data_update.copy(deep=True)
+        data.periodicity.type = constants.PeriodicityType.ALWAYS
+        data.one_time_completion = False
+        resp = await client.put(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id), data=data
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["periodicity"]["type"] == constants.PeriodicityType.ALWAYS
+
+        resp = await client.get(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["periodicity"]["type"] == constants.PeriodicityType.ALWAYS
+
+    async def test_update_schedule__add_notification(
+        self,
+        client: TestClient,
+        user: User,
+        daily_event: PublicEvent,
+        applet: AppletFull,
+        event_daily_data_update: EventUpdateRequest,
+        notification: NotificationSettingRequest,
+    ):
+        # TODO
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        data = event_daily_data_update.copy(deep=True)
+        data.notification = Notification(notifications=[notification])
+        resp = await client.put(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id), data=data
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        notifications = resp.json()["result"]["notification"]["notifications"]
+        assert len(notifications) == 1
+        assert notifications[0]["triggerType"] == notification.trigger_type
+        assert notifications[0]["fromTime"] == notification.from_time
+        assert notifications[0]["toTime"] == notification.to_time
+        assert notifications[0]["atTime"] == str(notification.at_time)
+        assert notifications[0]["order"] == 1
+        resp = await client.get(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
+        assert resp.status_code == http.HTTPStatus.OK
+
+        notifications = resp.json()["result"]["notification"]["notifications"]
+        assert len(notifications) == 1
+        assert notifications[0]["triggerType"] == notification.trigger_type
+        assert notifications[0]["fromTime"] == notification.from_time
+        assert notifications[0]["toTime"] == notification.to_time
+        assert notifications[0]["atTime"] == str(notification.at_time)
+        assert notifications[0]["order"] == 1
+
+    async def test_update_schedule__add_reminder(
+        self,
+        client: TestClient,
+        user: User,
+        daily_event: PublicEvent,
+        applet: AppletFull,
+        event_daily_data_update: EventUpdateRequest,
+        reminder: ReminderSettingRequest,
+    ):
+        # TODO
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        data = event_daily_data_update.copy(deep=True)
+        data.notification = Notification(reminder=reminder)
+        resp = await client.put(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id), data=data
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        resp_reminder = resp.json()["result"]["notification"]["reminder"]
+        assert resp_reminder["activityIncomplete"] == reminder.activity_incomplete
+        assert resp_reminder["reminderTime"] == str(reminder.reminder_time)
+
+        resp = await client.get(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
+        assert resp.status_code == http.HTTPStatus.OK
+        resp_reminder = resp.json()["result"]["notification"]["reminder"]
+        assert resp_reminder["activityIncomplete"] == reminder.activity_incomplete
+        assert resp_reminder["reminderTime"] == str(reminder.reminder_time)
+
+    async def test_schedule_create_individual_event__respondent_does_not_have_access_to_the_applet(
+        self,
+        client: TestClient,
+        applet_lucy_respondent: AppletFull,
+        event_daily_data: EventRequest,
+        tom: User,
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        data = event_daily_data.copy(deep=True)
+        data.respondent_id = tom.id
+        resp = await client.post(
+            self.schedule_url.format(applet_id=applet_lucy_respondent.id),
+            data=data,
+        )
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_schedule_create__no_valid_activity_id(
+        self, client: TestClient, event_daily_data: EventRequest, applet: AppletFull, uuid_zero: uuid.UUID
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        data = event_daily_data.copy(deep=True)
+        data.activity_id = uuid_zero
+        resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == ActivityOrFlowNotFoundError.message
+
+    async def test_schedule_create__no_valid_flow_id(
+        self, client: TestClient, event_daily_data: EventRequest, applet: AppletFull, uuid_zero: uuid.UUID
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        data = event_daily_data.dict()
+        data["activity_id"] = None
+        data["flow_id"] = str(uuid_zero)
+        resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == ActivityOrFlowNotFoundError.message
+
+    async def test_user_get_events__user_does_not_have_access_to_the_applet(
+        self, client: TestClient, tom: User, applet: AppletFull
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        resp = await client.get(self.schedule_detail_user_url.format(applet_id=applet.id))
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AccessDeniedToApplet.message
+
+    async def test_import_schedule__always_available_removed_old_events(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        event_daily_data: EventRequest,
+        applet_default_events: list[PublicEvent],
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        data = event_daily_data.dict()
+        data["one_time_completion"] = False
+        data["periodicity"]["type"] = constants.PeriodicityType.ALWAYS
+        data["start_time"] = str(datetime.time(0, 0))
+        data["end_time"] = str(datetime.time(23, 59))
+
+        response = await client.post(self.schedule_import_url.format(applet_id=applet.id), data=[data])
+
+        assert response.status_code == http.HTTPStatus.CREATED
+        events = response.json()["result"]
+        activity_event = next(i for i in applet_default_events if i.activity_id)
+        assert len(events) == 1
+        assert events[0]["id"] != str(activity_event.id)
+
+    @pytest.mark.usefixtures("daily_event_lucy_with_notification_and_reminder")
+    async def test_user_get_events__event_with_reminder_and_notifications(
+        self,
+        client: TestClient,
+        lucy: User,
+        applet: AppletFull,
+        notification: NotificationSettingRequest,
+        reminder: ReminderSettingRequest,
+    ):
+        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        resp = await client.get(self.schedule_detail_user_url.format(applet_id=applet.id))
+        assert resp.status_code == http.HTTPStatus.OK
+        events = resp.json()["result"]["events"]
+        notif_settings = events[0]["notificationSettings"]
+        assert notif_settings["notifications"][0]["triggerType"] == notification.trigger_type
+        assert notif_settings["notifications"][0]["fromTime"] == notification.from_time
+        assert notif_settings["notifications"][0]["toTime"] == notification.to_time
+        assert notif_settings["notifications"][0]["atTime"]["hours"] == notification.at_time.hour  # type: ignore
+        assert notif_settings["notifications"][0]["atTime"]["minutes"] == notification.at_time.minute  # type: ignore
+        assert notif_settings["reminder"]["activityIncomplete"] == reminder.activity_incomplete
+        assert notif_settings["reminder"]["reminderTime"]["hours"] == reminder.reminder_time.hour
+        assert notif_settings["reminder"]["reminderTime"]["minutes"] == reminder.reminder_time.minute
+
+    async def test_schedule_create__can_not_create_event_for_activity_always_avaiable(
+        self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        data = event_daily_data.dict()
+        data["one_time_completion"] = False
+        data["periodicity"]["type"] = constants.PeriodicityType.ALWAYS
+        data["start_time"] = str(datetime.time(0, 0))
+        data["end_time"] = str(datetime.time(23, 59))
+        resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
+        assert resp.status_code == http.HTTPStatus.BAD_REQUEST
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == EventAlwaysAvailableExistsError.message
+
+    async def test_schedule_create__can_not_create_event_for_flow_always_avaiable(
+        self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        data = event_daily_data.dict()
+        data["flow_id"] = str(applet.activity_flows[0].id)
+        data["activity_id"] = None
+        data["one_time_completion"] = False
+        data["periodicity"]["type"] = constants.PeriodicityType.ALWAYS
+        data["start_time"] = str(datetime.time(0, 0))
+        data["end_time"] = str(datetime.time(23, 59))
+        resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
+        assert resp.status_code == http.HTTPStatus.BAD_REQUEST
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == EventAlwaysAvailableExistsError.message
+
+    async def test_public_schedule__applet_is_not_public(self, client: TestClient, uuid_zero: uuid.UUID):
+        resp = await client.get(self.public_events_url.format(key=uuid_zero))
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == str(AppletNotFoundError(key="key", value=str(uuid_zero)))
+
+    async def test_schedule_get_all_for_applet_and_user__user_does_not_exist(
+        self, client: TestClient, applet: AppletFull, uuid_zero: uuid.UUID
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        resp = await client.get(self.schedule_url.format(applet_id=applet.id), query={"respondentId": uuid_zero})
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == UserNotFound.message
