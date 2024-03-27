@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, root_validator, validator
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.response_type_config import NoneResponseType, ResponseType, ResponseTypeValueConfig
+from apps.activities.domain.response_type_config import ResponseType, ResponseTypeValueConfig
 from apps.activities.errors import (
     AlertFlagMissingSingleMultiRowItemError,
     AlertFlagMissingSliderItemError,
@@ -88,7 +88,7 @@ class BaseActivityItem(BaseModel):
         response_type = values.get("response_type")
         if not response_type:
             return value
-        if response_type not in list(NoneResponseType):
+        if response_type not in ResponseType.get_non_response_types():
             if type(value) is not ResponseTypeValueConfig[response_type]["value"]:
                 try:
                     value = ResponseTypeValueConfig[response_type]["value"](**value)

@@ -1,51 +1,198 @@
-# ChildMindInstitute - Mindlogger Backend API
+# Child Mind Institute - MindLogger Backend API
 
-This repository is used as a backend for the service MindLogger
+This repository is used for the backend of the [MindLogger](https://mindlogger.org/) application stack.
 
-## 1. Getting Started / Installation
+## Getting Started
 
-### 1.1 Create `.env` file for future needs
+* MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
+* MindLogger Backend - **This Repo**
+* MindLogger Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
+* MindLogger Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
+
+
+## Contents
+- [Features](#features)
+- [Technologies](#technologies)
+- [Application](#application-stack)
+  - [Prerequisites](#prerequisites)
+  - [Environment Variables](#environment-variables)
+- [Installation](#installation)
+- [Running the app](#running-the-app)
+  - [Running locally](#running-locally)
+  - [Running via docker](#running-via-docker)
+  - [Running using Makefile](#running-using-makefile)
+  - [Docker development](#docker-development)
+- [Testing](#testing)
+- [Scripts](#scripts)
+- [Arbitrary setup](#arbitrary-setup)
+- [License](#license)
+
+## Features
+
+See MindLogger's [Knowledge Base article](https://mindlogger.atlassian.net/servicedesk/customer/portal/3/topic/4d9a9ad4-c663-443b-b7fc-be9faf5d9383/article/337444910) to discover the MindLogger application stack's features.
+
+## Technologies
+
+- ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
+- ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
+- ✅ [FastAPI](https://fastapi.tiangolo.com)
+- ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
+- ✅ [Redis](https://redis.io)
+- ✅ [Docker](https://docs.docker.com/get-docker/)
+- ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
+- ✅ [SQLAlchemy](https://www.sqlalchemy.org/)
+
+And
+
+- ✅ [The 12-Factor App](https://12factor.net)
+
+**Code quality tools:**
+
+- ✅ [ruff](https://github.com/astral-sh/ruff)
+- ✅ [isort](https://github.com/PyCQA/isort)
+- ✅ [mypy](https://github.com/python/mypy)
+- ✅ [pytest](https://github.com/pytest-dev/pytest)
+
+## Application
+
+### Prerequisites
+
+- Python 3.10 - This project requires Python 3.10 as `aioredis` is [incompatible with 3.11+](https://github.com/aio-libs-abandoned/aioredis-py/issues/1409)
+- [Docker](https://docs.docker.com/get-docker/)
+
+#### Recommended Extras
+
+Installing [pyenv](https://github.com/pyenv/pyenv) is recommended to automatically manage Python version in the virtual environment specified in the `Pipfile`
+
+Alternatively, on macOS you can use a tool like [Homebrew](https://brew.sh/) to install multiple versions and specify when creating the virtual environment:
+
+```bash
+pipenv --python /opt/homebrew/bin/python3.10
+```
+
+### Environment Variables
+
+| Key                                                          | Default value              | Description                                                                                                                                                                                                                                                                                                                            |
+|--------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| DATABASE\_\_HOST                                             | postgres                   | Database Host                                                                                                                                                                                                                                                                                                                          |
+| DATABASE\_\_USER                                             | postgres                   | User name for Postgresql Database user                                                                                                                                                                                                                                                                                                 |
+| DATABASE\_\_PASSWORD                                         | postgres                   | Password for Postgresql Database user                                                                                                                                                                                                                                                                                                  |
+| DATABASE\_\_DB                                               | mindlogger_backend         | Database name                                                                                                                                                                                                                                                                                                                          |
+| CORS\_\_ALLOW\_ORIGINS                                       | `*`                        | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000`                                                                                                                                                                                                 |
+| CORS\_\_ALLOW\_ORIGINS\_REGEX                                | -                          | Regex pattern of allowed origins.                                                                                                                                                                                                                                                                                                      |
+| CORS\_\_ALLOW\_CREDENTIALS                                   | true                       | Set the `Access-Control-Allow-Credentials` header                                                                                                                                                                                                                                                                                      |
+| CORS\_\_ALLOW_METHODS                                        | `*`                        | Set the `Access-Control-Allow-Methods` header                                                                                                                                                                                                                                                                                          |
+| CORS\_\_ALLOW_HEADERS                                        | `*`                        | Set the `Access-Control-Allow-Headers` header                                                                                                                                                                                                                                                                                          |
+| AUTHENTICATION\_\_ACCESS\_TOKEN\_\_SECRET\_KEY               | secret1                    | Access token's salt                                                                                                                                                                                                                                                                                                                    |
+| AUTHENTICATION\_\_REFRESH\_TOKEN\_\_SECRET\_KEY              | secret2                    | Refresh token salt                                                                                                                                                                                                                                                                                                                     |
+| AUTHENTICATION\_\_REFRESH\_TOKEN\_\_TRANSITION\_KEY          | transition secret          | Transition refresh token salt. Used for changing refresh token key (generate new key for AUTHENTICATION\_\_REFRESH\_TOKEN\_\_SECRET\_KEY and use previous value as transition token key for accepting previously generated refresh tokens during transition period (see AUTHENTICATION\_\_REFRESH\_TOKEN\_\_TRANSITION\_EXPIRE\_DATE)) |
+| AUTHENTICATION\_\_REFRESH\_TOKEN\_\_TRANSITION\_EXPIRE\_DATE | transition expiration date | Transition expiration date. After this date transition token ignored                                                                                                                                                                                                                                                                   |
+| AUTHENTICATION\_\_ALGORITHM                                  | HS256                      | The JWT's algorithm                                                                                                                                                                                                                                                                                                                    |
+| AUTHENTICATION\_\_ACCESS\_TOKEN\_\_EXPIRATION                | 30                         | Time in minutes after which the access token will stop working                                                                                                                                                                                                                                                                         |
+| AUTHENTICATION\_\_REFRESH\_TOKEN\_\_EXPIRATION               | 30                         | Time in minutes after which the refresh token will stop working                                                                                                                                                                                                                                                                        |
+| ADMIN_DOMAIN                                                 | -                          | Admin panel domain                                                                                                                                                                                                                                                                                                                     |
+| RABBITMQ\_\_URL                                              | rabbitmq                   | Rabbitmq service URL                                                                                                                                                                                                                                                                                                                   
+| RABBITMQ\_\_USE_SSL                                          | True                       | Rabbitmq ssl setting, turn false to local development                                                                                                                                                                                                                                                                                  
+| MAILING\_\_MAIL\_\_USERNAME                                  | mailhog                    | Mail service username                                                                                                                                                                                                                                                                                                                  
+| MAILING\_\_MAIL\_\_PASSWORD                                  | mailhog                    | Mail service password                                                                                                                                                                                                                                                                                                                  
+| MAILING\_\_MAIL\_\_SERVER                                    | mailhog                    | Mail service URL                                                                                                                                                                                                                                                                                                                       
+
+##### ✋ Mandatory:
+
+> You can see that some environment variables have double underscore (`__`) instead of `_`.
+>
+> As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
+
+## Installation
+
+### Create `.env` file for future needs
 
 It is highly recommended to create an `.env` file as far as it is needed for setting up the project with Local and Docker approaches.
-
+Use `.env.default` to get started:\
 ```bash
 cp .env.default .env
 ```
 
-### 1.2 Generate secret keys, update .env with values
+> 🛑 **NOTE:** Make sure to set `RABBITMQ__USE_SSL=False` for local development
+
+### Generate secret keys, update .env with values
 
 ```bash
 openssl rand -hex 32
 ```
 
-### 1.3 Setup Redis
+Generate a key and update `.env` values:
 
-#### 1.3.1 Locally
+* `AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY`
+* `AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY`
 
-✅ [🐧 Linux](https://redis.io/docs/getting-started/installation/install-redis-on-linux/)
+### Required Services
 
-✅ [ MacOs](https://redis.io/docs/getting-started/installation/install-redis-on-mac-os/)
+- Postgres
+- Redis
+- RabbitMQ
+- Mailhog - Only used for running mail services locally
 
-#### 1.3.2 Install via Docker
+Running required services using Docker is **highly** recommended even if you intend to run the app locally.
 
-```bash
-docker-compose up -d redis
-```
+> 🛑 **NOTE:** Make sure to update your environment variables to point to the correct hostname and port for each service.
 
-### 1.4. Install all project dependencies
+#### Run services using Docker
+
+- Run Postgres
+  ```bash
+  docker-compose up -d postgres
+  ```
+
+- Run Redis
+  ```bash
+  docker-compose up -d redis
+  ```
+
+- Run RabbitMQ
+  ```bash
+  docker-compose up -d rabbitmq
+  ```
+
+- Alternatively, you can run all required services:
+  ```bash
+  docker-compose up
+  ```
+
+#### Run services manually
+
+For manual installation refer to each service's documentation:
+
+- [PostgreSQL Downloads](https://www.postgresql.org/download/)
+- [Redis: Install Redis](https://redis.io/docs/install/install-redis/)
+- [RabbitMQ documentation](https://rabbitmq-website.pages.dev/docs/download)
+
+
+### Install all project dependencies
 
 Pipenv used as a default dependencies manager
-
+Create your virtual environment:
 ```bash
 # Activate your environment
 pipenv shell
+```
 
+If `pyenv` is installed Python 3.10 should automatically be installed in the virtual environment, you can check the correct version of Python is active by running:
+```bash
+python --version
+```
+
+If the active version is **not** 3.10, you can manually specify a version while creating your virtual environment:
+```bash
+pipenv --python /opt/homebrew/bin/python3.10
+```
+
+Install all dependencies
+```bash
 # Install all deps from Pipfile.lock
 # to install venv to current directory use `export PIPENV_VENV_IN_PROJECT=1`
 pipenv sync --dev
 ```
-
-<br/>
 
 > 🛑 **NOTE:** if you don't use `pipenv` for some reason remember that you will not have automatically exported variables from your `.env` file.
 >
@@ -68,11 +215,23 @@ set -o allexport; source .env; set +o allexport
 
 > 🛑 **NOTE:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
 
-<br/>
+## Running the app
 
-## 2. Usage
+### Running locally
 
-### 2.1 Running locally
+This option allows you to run the app for development purposes without having to manually build the Docker image. 
+
+- Make sure all [required services](#required-services) are properly setup
+- If you're running required services using Docker, disable the `app` service from `docker-compose` before running:
+  ```bash
+  docker-compose up -d
+  ```
+
+  Alternatively, you may run these services using [make](#running-using-makefile):
+  ```bash
+  make run_local
+  ```
+
 
 > 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
 
@@ -86,8 +245,14 @@ P.S. You don't need to do this additional step if you run application via Docker
 uvicorn src.main:app --proxy-headers --port {PORT} --reload
 ```
 
-### 2.2 Running via docker
+Alternatively, you may run the application using [make](#running-using-makefile):
+```bash
+make run
+```
+### Running via docker
 
+- [Build the application](#build-application-images) 
+- Run the app using Docker:
 ```bash
 docker-compose up
 ```
@@ -99,7 +264,7 @@ Additional `docker-compose up` flags that might be useful for development
 --no-recreate  # If containers already exist, don't recreate them
 ```
 
-#### 2.2.1 Stop the application 🛑
+#### Stop the application 🛑
 
 ```bash
 docker-compose down
@@ -110,7 +275,7 @@ Additional `docker-compose down` flags that might be useful for development
 ```bash
 -v  # Remove with all volumes
 ```
-### 2.3 Running using Makefile
+### Running using Makefile
 
 You can use the `Makefile` to work with project (run the application / code quality tools / tests ...)
 
@@ -129,9 +294,9 @@ make test
 # Check everything in one hop
 make check
 ```
-### 2.4 Docker development
+### Docker development
 
-#### 2.4.1. Build application images
+#### Build application images
 
 ```bash
 docker-compose build
@@ -143,60 +308,7 @@ docker-compose build
 
 💡 If you would like to debug the application insode Docker comtainer make sure that you use `COMPOSE_FILE=docker-compose.dev.yaml` in `.env`. It has opened stdin and tty.
 
-
-## 3 Build With
-
-- ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
-- ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
-- ✅ [FastAPI](https://fastapi.tiangolo.com)
-- ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
-- ✅ [Redis](https://redis.io)
-- ✅ [Docker](https://docs.docker.com/get-docker/)
-- ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
-- ✅ [SQLAlchemy](https://www.sqlalchemy.org/)
-
-And
-
-- ✅ [The 12-Factor App](https://12factor.net)
-
-<br/>
-
-**Code quality tools:**
-
-- ✅ [ruff](https://github.com/astral-sh/ruff)
-- ✅ [isort](https://github.com/PyCQA/isort)
-- ✅ [mypy](https://github.com/python/mypy)
-- ✅ [pytest](https://github.com/pytest-dev/pytest)
-
-<br/>
-
-## 4. Environment Variables
-
-| Key                                       | Default value      | Description                                                                                                                            |
-| ----------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| DATABASE\_\_HOST                          | postgres           | Database Host                                                                                                                          |
-| DATABASE\_\_USER                          | postgres           | User name for Postgresql Database user                                                                                                 |
-| DATABASE\_\_PASSWORD                      | postgres           | Password for Postgresql Database user                                                                                                  |
-| DATABASE\_\_DB                            | mindlogger_backend | Database name                                                                                                                          |
-| CORS\_\_ALLOW_ORIGINS                     | `*`                | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000` |
-| CORS__ALLOW_ORIGINS_REGEX                 | -       | Regex pattern of allowed origins. |
-| CORS\_\_ALLOW_CREDENTIALS                 | true               | Set the `Access-Control-Allow-Credentials` header                                                                                      |
-| CORS\_\_ALLOW_METHODS                     | `*`                | Set the `Access-Control-Allow-Methods` header                                                                                          |
-| CORS\_\_ALLOW_HEADERS                     | `*`                | Set the `Access-Control-Allow-Headers` header                                                                                          |
-| AUTHENTICATION**ACCESS_TOKEN**SECRET_KEY  | secret1            | Access token's salt                                                                                                                    |
-| AUTHENTICATION**REFRESH_TOKEN**SECRET_KEY | secret2            | Refresh token salt                                                                                                                     |
-| AUTHENTICATION\_\_ALGORITHM               | HS256              | The JWT's algorithm                                                                                                                    |
-| AUTHENTICATION**ACCESS_TOKEN**EXPIRATION  | 30                 | Time in minutes after which the access token will stop working                                                                         |
-| AUTHENTICATION**REFRESH_TOKEN**EXPIRATION | 30                 | Time in minutes after which the refresh token will stop working                                                                        |
-| ADMIN_DOMAIN                              | -                  | Admin panel domain                                                                                                                     |
-| RABBITMQ__USE_SSL | True                  |  Rabbitmq ssl setting, turn false to local development
-##### ✋ Mandatory:
-
-> You can see that some environment variables have double underscore (`__`) instead of `_`.
->
-> As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
-
-## 5. Testing
+## Testing
 
 The `pytest` framework is using in order to write unit tests.
 Currently postgresql is used as a database for tests with running configurations that are defined in `pyproject.toml`
@@ -215,7 +327,7 @@ DATABASE__DB=test
 127.0.0.1       postgres
 ```
 
-### 5.1. Adjust your database for using with tests
+### Adjust your database for using with tests
 
 ⚠️️ Remember that you have to do this only once before the first test.
 
@@ -240,7 +352,7 @@ psql# create user test;
 psql# alter user test with password 'test';
 ```
 
-### 5.2. Test coverage
+### Test coverage
 
 To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:
 
@@ -249,7 +361,7 @@ coverage run --concurrency=thread,gevent -m pytest
 coverage report -m
 ```
 
-### 5.3. Running test via docker
+### Running test via docker
 
 (This is how tests are running on CI)
 
@@ -264,9 +376,9 @@ make dtest
 make dcheck
 ```
 
-## 6. Scripts
+## Scripts
 
-### 6.1 Using pre-commit hooks
+### Using pre-commit hooks
 
 It is a good practice to use Git hooks to provide better commits.
 
@@ -284,21 +396,21 @@ make aws-scan
 
 👉 Then all your staged cahnges will be checked via git hooks on every `git commit`
 
-### 6.2 Alembic (migration)
+### Alembic (migration)
 
-#### 6.2.1 Add a new migrations file 🔨
+#### Add a new migrations file 🔨
 
 ```bash
 alembic revision --autogenerate -m "Add a new field"
 ```
 
-#### 6.2.2. Upgrade to the latest migration 🔨
+#### Upgrade to the latest migration 🔨
 
 ```bash
 alembic upgrade head
 ```
 
-#### 6.2.3. Downgrade to the specific one 🔨
+#### Downgrade to the specific one 🔨
 
 ```bash
 alembic downgrade 0e43c346b90d
@@ -306,13 +418,13 @@ alembic downgrade 0e43c346b90d
 
 ✅ This hash is taken from the generated file in the migrations folder
 
-#### 6.2.3. Downgrade to the specific one 🔨
+#### Downgrade to the specific one 🔨
 
 ```bash
 alembic downgrade 0e43c346b90d
 ```
 
-#### 6.2.4. Removing the migration 🔨
+#### Removing the migration 🔨
 
 💡 Do not forget that alembic saves the migration version into the database.
 
@@ -320,13 +432,13 @@ alembic downgrade 0e43c346b90d
 delete from alembic_version;
 ```
 
-#### 6.2.5. Upgrade arbitrary servers
+#### Upgrade arbitrary servers
 
 ```bash
 alembic -c alembic_arbitrary.ini upgrade head
 ```
 
-#### 6.2.6. Database relation structure
+#### Database relation structure
 
 ```mermaid
 
@@ -579,11 +691,11 @@ Flow_histories }o--|| Applet_histories: ""
 
 ```
 
-## 7. Arbitrary setup
+## Arbitrary setup
 
 You can connect arbitrary file storage and database by filling special fields in table `user_workspaces`.
 
-### 7.1. PostgreSQL
+### PostgreSQL
 
 Add your database connection string into `database_uri`
 In next format:
@@ -592,14 +704,16 @@ In next format:
 postgresql+asyncpg://<username>:<password>@<hostname>:port/database
 ```
 
-### 7.2. AWS S3 and GCP S3
+### AWS S3 and GCP S3
 
 For AWS S3 bucket next fields are required:
 `storage_region`,`storage_bucket`, `storage_access_key`,`storage_secret_key`.
 
-### 7.3. Azure Blob
+### Azure Blob
 
 In case of Azure blob, specify your connection string into field `storage_secret_key`
 
+## License
+Common Public Attribution License Version 1.0 (CPAL-1.0)
 
-## 8. License
+Refer to [LICENSE.md](./LICENSE.MD)

@@ -1,7 +1,7 @@
 """Add subjects
 
 Revision ID: edb2781f141b
-Revises: 3fb536a58c94
+Revises: 23fe6ccfb031
 Create Date: 2024-01-05 18:28:37.879517
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "edb2781f141b"
-down_revision = "736adb0ea547"
+down_revision = "23fe6ccfb031"
 branch_labels = None
 depends_on = None
 

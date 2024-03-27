@@ -48,17 +48,6 @@ def scores_and_reports(section: Section) -> ScoresAndReports:
 
 
 @pytest.fixture
-def applet_report_configuration_data(
-    user: User, tom: User, report_server_public_key: str
-) -> AppletReportConfigurationBase:
-    return AppletReportConfigurationBase(
-        report_server_ip="localhost",
-        report_public_key=report_server_public_key,
-        report_recipients=[tom.email_encrypted, user.email_encrypted],
-    )
-
-
-@pytest.fixture
 def applet_data(
     applet_minimal_data: AppletCreate,
     applet_report_configuration_data: AppletReportConfigurationBase,

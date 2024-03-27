@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, String, Text, Time, Unicode
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, Unicode
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils import StringEncryptedType
 
@@ -54,3 +54,4 @@ class AnswerItemSchema(Base):
     is_assessment = Column(Boolean())
     migrated_data = Column(JSONB())
     assessment_activity_id = Column(Text(), nullable=True, index=True)
+    tz_offset = Column(Integer, nullable=True, comment="Local timezone offset in minutes")

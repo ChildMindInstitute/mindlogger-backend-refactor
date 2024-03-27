@@ -11,6 +11,10 @@ from apps.shared.exception import NotFoundError
 from infrastructure.utility.cdn_config import CdnConfig
 
 
+class ObjectNotFoundError(Exception):
+    pass
+
+
 class CDNClient:
     default_container_name = "mindlogger"
 
@@ -70,14 +74,21 @@ class CDNClient:
             future = executor.submit(self._check_existence, bucket, key)
             return await asyncio.wrap_future(future)
 
-    def download(self, key):
-        file = io.BytesIO()
+    def download(self, key, file: BinaryIO | None = None):
+        if not file:
+            file = io.BytesIO()
 
-        if self.env == "testing":
-            local_file = open(key, "rb")
-            file.write(local_file.read())
-        else:
-            self.client.download_fileobj(self.config.bucket, key, file)
+        try:
+            if self.env == "testing":
+                local_file = open(key, "rb")
+                file.write(local_file.read())
+            else:
+                self.client.download_fileobj(self.config.bucket, key, file)
+        except ClientError as e:
+            if int(e.response.get("Error", {}).get("Code", "0")) == 404:
+                raise ObjectNotFoundError()
+            raise
+
         file.seek(0)
         media_type = mimetypes.guess_type(key)[0] if mimetypes.guess_type(key)[0] else "application/octet-stream"
         return file, media_type

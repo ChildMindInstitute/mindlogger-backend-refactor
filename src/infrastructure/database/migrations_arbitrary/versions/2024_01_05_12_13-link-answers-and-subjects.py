@@ -1,7 +1,7 @@
 """empty message
 
 Revision ID: 267dd5b56abf
-Revises: 1ca4c4d3b7df
+Revises: 23fe6ccfb031
 Create Date: 2024-01-05 12:13:47.888811
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "267dd5b56abf"
-down_revision = "60528d410fd1"
+down_revision = "23fe6ccfb031"
 branch_labels = None
 depends_on = None
 
