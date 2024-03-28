@@ -183,11 +183,13 @@ class AssessmentAnswer(InternalModel):
 
 
 class Reviewer(InternalModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
 
 class AnswerReview(InternalModel):
+    id: uuid.UUID
     reviewer_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
@@ -217,11 +219,13 @@ class AppletActivityAnswerPublic(PublicModel):
 
 
 class ReviewerPublic(PublicModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
 
 class AnswerReviewPublic(PublicModel):
+    id: uuid.UUID
     reviewer_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)

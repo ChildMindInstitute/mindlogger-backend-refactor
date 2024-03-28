@@ -50,6 +50,7 @@ from apps.answers.domain import (
     SummaryActivity,
     Version,
 )
+from apps.answers.domain.answer_items import AnswerItem
 from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
@@ -477,11 +478,12 @@ class AnswerService:
                 continue
             results.append(
                 AnswerReview(
+                    id=schema.id,
                     reviewer_public_key=schema.user_public_key,
                     answer=schema.answer,
                     item_ids=schema.item_ids,
                     items=current_activity_items,
-                    reviewer=dict(first_name=user.first_name, last_name=user.last_name),
+                    reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
                 )
             )
         return results
@@ -982,6 +984,13 @@ class AnswerService:
     ) -> dict[uuid.UUID, datetime.datetime]:
         result = await AnswersCRUD(self.answer_session).get_last_activity([respondent_id], applet_id)
         return result
+
+    async def get_answer_assessment_by_id(self, assessment_id: uuid.UUID, answer_id: uuid.UUID) -> AnswerItem | None:
+        schema = await AnswerItemsCRUD(self.answer_session).get_answer_assessment(assessment_id, answer_id)
+        return AnswerItem.from_orm(schema) if schema else None
+
+    async def delete_assessment(self, assessment_id: uuid.UUID):
+        return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)
 
 
 class ReportServerService:
