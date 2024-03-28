@@ -1,4 +1,6 @@
 import http
+import json
+import uuid
 from typing import cast
 
 import pytest
@@ -28,6 +30,8 @@ class TestActivities:
     activity_detail = "/activities/{pk}"
     activities_applet = "/activities/applet/{applet_id}"
     public_activity_detail = "public/activities/{pk}"
+    answer_url = "/answers"
+    applet_update_url = "applets/{applet_id}"
 
     async def test_activity_detail(self, client, applet_one: AppletFull):
         activity = applet_one.activities[0]
@@ -152,3 +156,148 @@ class TestActivities:
         assert result["description"] == activity.description[Language.ENGLISH]
         assert len(result["items"]) == len(activity.items)
         assert result["items"][0]["question"] == activity.items[0].question[Language.ENGLISH]
+
+    # Get only applet activies with submitted answers
+    async def test_activities_applet_has_submitted(
+        self, client, applet_one: AppletFull, default_theme: Theme, tom: User
+    ):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+
+        # Create answer
+        create_data = dict(
+            submit_id=str(uuid.uuid4()),
+            applet_id=str(applet_one.id),
+            version=applet_one.version,
+            activity_id=str(applet_one.activities[0].id),
+            answer=dict(
+                user_public_key="user key",
+                events=json.dumps(dict(events=["event1", "event2"])),
+                answer=json.dumps(
+                    dict(
+                        value=str(uuid.uuid4()),
+                        additional_text=None,
+                    )
+                ),
+                item_ids=[str(applet_one.activities[0].items[0].id)],
+                scheduled_time=1690188679657,
+                start_time=1690188679657,
+                end_time=1690188731636,
+            ),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+                width=819,
+                height=1080,
+            ),
+        )
+
+        response = await client.post(self.answer_url, data=create_data)
+        assert response.status_code == 201, response.json()
+
+        response = await client.get(self.activities_applet.format(applet_id=applet_one.id), {"hasSubmitted": True})
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        activity = applet_one.activities[0]
+        assert len(result["activitiesDetails"]) == 1
+        assert result["activitiesDetails"][0]["id"] == str(activity.id)
+        assert result["activitiesDetails"][0]["name"] == activity.name
+
+    # Get only applet activies with score
+    async def test_activities_applet_has_score(self, client, applet_one: AppletFull, default_theme: Theme, tom: User):
+        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+
+        create_data = dict(
+            display_name="User daily behave",
+            encryption=dict(
+                public_key=uuid.uuid4().hex,
+                prime=uuid.uuid4().hex,
+                base=uuid.uuid4().hex,
+                account_id=str(uuid.uuid4()),
+            ),
+            description=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            about=dict(
+                en="Understand users behave",
+                fr="Comprendre le comportement des utilisateurs",
+            ),
+            activities=[
+                dict(
+                    name="Morning activity",
+                    key="577dbbda-3afc-4962-842b-8d8d11588bfe",
+                    description=dict(
+                        en="Understand morning feelings.",
+                        fr="Understand morning feelings.",
+                    ),
+                    items=[
+                        dict(
+                            name="activity_item_singleselect",
+                            question=dict(
+                                en="How had you slept?",
+                                fr="How had you slept?",
+                            ),
+                            response_type="singleSelect",
+                            response_values=dict(
+                                options=[
+                                    {
+                                        "text": "Good",
+                                        "score": 1,
+                                        "id": "25e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "value": "1",
+                                    },
+                                    {
+                                        "text": "Bad",
+                                        "score": 2,
+                                        "id": "26e69155-22cd-4484-8a49-364779ea9de1",  # noqa E501
+                                        "value": "2",
+                                    },
+                                ],
+                            ),
+                            config=dict(
+                                remove_back_button=False,
+                                skippable_item=False,
+                                add_scores=True,
+                                set_alerts=False,
+                                timer=0,
+                                add_tooltip=False,
+                                set_palette=False,
+                                randomize_options=False,
+                                additional_response_option={
+                                    "text_input_option": False,
+                                    "text_input_required": False,
+                                },
+                            ),
+                        ),
+                    ],
+                )
+            ],
+            activity_flows=[
+                dict(
+                    name="Morning questionnaire",
+                    description=dict(
+                        en="Understand how was the morning",
+                        fr="Understand how was the morning",
+                    ),
+                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
+                )
+            ],
+        )
+
+        response = await client.put(self.applet_update_url.format(applet_id=applet_one.id), data=create_data)
+        assert response.status_code == http.HTTPStatus.OK
+
+        response = await client.get(self.activities_applet.format(applet_id=applet_one.id), {"hasScore": True})
+
+        assert response.status_code == http.HTTPStatus.OK
+
+        result = response.json()["result"]
+        assert len(result["activitiesDetails"]) == 1
+        items = result["activitiesDetails"][0]["items"]
+        assert len(items) == 1
+        item = items[0]
+        assert len(item["responseValues"]["options"]) == 2
+        option = item["responseValues"]["options"][0]
+        assert option["score"] > 0
