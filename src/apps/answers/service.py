@@ -36,6 +36,7 @@ from apps.answers.domain import (
     AnswerAlert,
     AnswerDate,
     AnswerExport,
+    AnswerItem,
     AnswerItemDataEncrypted,
     AnswerNoteDetail,
     AnswerReview,
@@ -50,7 +51,6 @@ from apps.answers.domain import (
     SummaryActivity,
     Version,
 )
-from apps.answers.domain.answer_items import AnswerItem
 from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
