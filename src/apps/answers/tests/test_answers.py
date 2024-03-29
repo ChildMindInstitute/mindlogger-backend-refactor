@@ -1590,8 +1590,9 @@ class TestAnswerActivityItems(BaseTest):
         expected_code,
     ):
         await client.login(self.login_url, email, password)
-        answer = await AnswerService(session, tom.id).create_answer(tom_answer_create_data)
-        await AnswerService(session, tom.id).create_assessment_answer(
+        answer_service = AnswerService(session, tom.id)
+        answer = await answer_service.create_answer(tom_answer_create_data)
+        await answer_service.create_assessment_answer(
             applet_with_reviewable_activity.id, answer.id, tom_answer_assessment_create_data
         )
         assessment = await AnswerItemsCRUD(session).get_assessment(answer.id, tom.id)

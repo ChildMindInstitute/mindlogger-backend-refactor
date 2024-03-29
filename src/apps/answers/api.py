@@ -241,7 +241,8 @@ async def applet_answer_assessment_delete(
     elif assessment.respondent_id != user.id:
         raise AccessDeniedError
     async with atomic(session):
-        await service.delete_assessment(assessment_id)
+        async with atomic(answer_session):
+            await service.delete_assessment(assessment_id)
     return Response()
 
 
