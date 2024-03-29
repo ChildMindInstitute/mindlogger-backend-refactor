@@ -134,6 +134,15 @@ services:
       - './compose/minio:/etc/minio'
     entrypoint: /etc/minio/create_bucket.sh
 
+  opentelemetry:
+    container_name: mindlogger_opentelemetry
+    image: otel/opentelemetry-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - "./compose/opentelemetry/otel-collector-config.yaml:/etc/otel-collector-config.yaml"
+    ports:
+      - "4317:4317"
+
 volumes:
   pg_data: {}
   db_data: {}
