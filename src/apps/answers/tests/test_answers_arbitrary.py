@@ -7,7 +7,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
 
+from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.db.schemas import AnswerSchema
+from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
+from apps.answers.service import AnswerService
 from infrastructure.utility import RedisCacheTest
 
 
@@ -26,6 +29,34 @@ async def assert_answer_exist_on_arbitrary(submit_id: str, session: AsyncSession
 async def assert_answer_not_exist_on_arbitrary(submit_id: str, session: AsyncSession):
     answer = await get_answer_by_submit_id(uuid.UUID(submit_id), session)
     assert not answer
+
+
+@pytest.fixture
+def tom_answer_create_data(tom, applet_with_reviewable_activity):
+    return AppletAnswerCreate(
+        applet_id=applet_with_reviewable_activity.id,
+        version=applet_with_reviewable_activity.version,
+        submit_id=uuid.uuid4(),
+        activity_id=applet_with_reviewable_activity.activities[0].id,
+        answer=ItemAnswerCreate(
+            item_ids=[applet_with_reviewable_activity.activities[0].items[0].id],
+            start_time=datetime.datetime.utcnow(),
+            end_time=datetime.datetime.utcnow(),
+            user_public_key=str(tom.id),
+        ),
+        client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+    )
+
+
+@pytest.fixture
+def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity):
+    activity_assessment_id = applet_with_reviewable_activity.activities[1].id
+    return AssessmentAnswerCreate(
+        answer="0x00",
+        item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
+        reviewer_public_key=f"{tom.id}",
+        assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
+    )
 
 
 class TestAnswerActivityItems:
@@ -50,7 +81,7 @@ class TestAnswerActivityItems:
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"  # noqa: E501
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"  # noqa: E501
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"  # noqa: E501
-
+    assessment_delete_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}"
     arbitrary_url = "postgresql+asyncpg://postgres:postgres@localhost:5432" "/test_arbitrary"
 
     async def test_answer_activity_items_create_for_respondent(
@@ -1191,3 +1222,31 @@ class TestAnswerActivityItems:
         assert response.status_code == 200, response.json()
         data = response.json()["result"]
         assert not data["answers"]
+
+    async def test_own_review_delete(
+        self,
+        tom_answer_create_data,
+        tom_answer_assessment_create_data,
+        mock_kiq_report,
+        session,
+        arbitrary_client,
+        tom,
+        applet_with_reviewable_activity,
+        arbitrary_session,
+    ):
+        await arbitrary_client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        answer_service = AnswerService(session, tom.id, arbitrary_session)
+        answer = await answer_service.create_answer(tom_answer_create_data)
+        await answer_service.create_assessment_answer(
+            applet_with_reviewable_activity.id, answer.id, tom_answer_assessment_create_data
+        )
+        assessment = await AnswerItemsCRUD(arbitrary_session).get_assessment(answer.id, tom.id)
+        assert assessment
+        response = await arbitrary_client.delete(
+            self.assessment_delete_url.format(
+                applet_id=str(applet_with_reviewable_activity.id), answer_id=answer.id, assessment_id=assessment.id
+            )
+        )
+        assert response.status_code == 204
+        assessment = await AnswerItemsCRUD(arbitrary_session).get_assessment(answer.id, tom.id)
+        assert not assessment

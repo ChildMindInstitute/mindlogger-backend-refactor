@@ -13,6 +13,7 @@ from apps.activities.domain.activity_history import (
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.activity_flows.domain.flow_full import FlowFull
+from apps.answers.domain.answer_items import ItemAnswerCreate
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
@@ -47,32 +48,6 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
     ResponseType.MULTISELECT: MultipleSelection,
     ResponseType.SLIDER: Slider,
 }
-
-
-class ItemAnswerCreate(InternalModel):
-    answer: str | None
-    events: str | None
-    item_ids: list[uuid.UUID]
-    identifier: str | None
-    scheduled_time: datetime.datetime | None
-    start_time: datetime.datetime
-    end_time: datetime.datetime
-    user_public_key: str | None
-    scheduled_event_id: str | None = None
-    local_end_date: datetime.date | None = None
-    local_end_time: datetime.time | None = None
-    tz_offset: int | None = None
-
-    @validator("item_ids")
-    def convert_item_ids(cls, value: list[uuid.UUID]):
-        return list(map(str, value))
-
-    _dates_from_ms = validator("start_time", "end_time", "scheduled_time", pre=True, allow_reuse=True)(datetime_from_ms)
-
-
-class AnswerItemSchemaAnsweredActivityItem(InternalModel):
-    activity_item_history_id: str
-    answer: str
 
 
 class AnswerAlert(InternalModel):
@@ -183,11 +158,13 @@ class AssessmentAnswer(InternalModel):
 
 
 class Reviewer(InternalModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
 
 class AnswerReview(InternalModel):
+    id: uuid.UUID
     reviewer_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
@@ -217,11 +194,13 @@ class AppletActivityAnswerPublic(PublicModel):
 
 
 class ReviewerPublic(PublicModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
 
 class AnswerReviewPublic(PublicModel):
+    id: uuid.UUID
     reviewer_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
@@ -435,15 +414,3 @@ class ArbitraryPreprocessor(PublicModel):
 
 class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
-
-
-class AnswerItemDataEncrypted(InternalModel):
-    id: uuid.UUID
-    answer: str
-    events: str | None
-    identifier: str | None
-
-
-class UserAnswerItemData(AnswerItemDataEncrypted):
-    user_public_key: str
-    migrated_data: dict | None
