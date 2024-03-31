@@ -58,8 +58,8 @@ class AnswerAlert(InternalModel):
 class ClientMeta(InternalModel):
     app_id: str
     app_version: str
-    width: int
-    height: int
+    width: int | None = None
+    height: int | None = None
 
 
 class AppletAnswerCreate(InternalModel):
