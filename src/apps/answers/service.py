@@ -484,6 +484,7 @@ class AnswerService:
                     item_ids=schema.item_ids,
                     items=current_activity_items,
                     reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
+                    created_at=schema.created_at,
                 )
             )
         return results
@@ -770,10 +771,13 @@ class AnswerService:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
-        activity_ids_with_answer = await AnswersCRUD(self.answer_session).get_activities_which_has_answer(
+        activity_ids_with_date = await AnswersCRUD(self.answer_session).get_submitted_activity_with_last_date(
             activity_ver_ids, respondent_id
         )
-        answers_act_ids = set(map(lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer))
+        submitted_activities = dict()
+        for activity_history_id, submit_date in activity_ids_with_date:
+            activity_id = activity_history_id.split("_")[0]
+            submitted_activities[activity_id] = submit_date
 
         results = []
         for activity in activities:
@@ -782,7 +786,8 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=str(activity.id) in answers_act_ids,
+                    has_answer=str(activity.id) in submitted_activities,
+                    last_answer_date=submitted_activities.get(str(activity.id)),
                 )
             )
         return results
