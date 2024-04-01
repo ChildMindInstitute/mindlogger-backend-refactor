@@ -17,6 +17,7 @@ class Subject(InternalModel):
     last_name: str
     secret_user_id: str
     nickname: str | None
+    is_deleted: bool = False
 
 
 class SubjectRespondent(PublicModel):

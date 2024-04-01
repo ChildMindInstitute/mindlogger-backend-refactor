@@ -20,7 +20,7 @@ class SubjectSchema(Base):
     language = Column(String(length=5))
     __table_args__ = (
         Index(
-            "unique_subject_user_applet",
+            None,
             "user_id",
             "applet_id",
             unique=True,

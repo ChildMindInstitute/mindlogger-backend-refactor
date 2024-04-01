@@ -1,6 +1,4 @@
-import asyncio
 import uuid
-from functools import wraps
 from typing import Optional
 
 import typer
@@ -13,17 +11,10 @@ from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import WorkspaceArbitraryCreate, WorkspaceArbitraryFields
 from apps.workspaces.errors import ArbitraryServerSettingsError, WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def print_data_table(data: WorkspaceArbitraryFields):
@@ -146,7 +137,7 @@ async def show(
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         if owner_id:
-            data = await WorkspaceService(session, owner_id).get_arbitrary_info_by_owner_id(owner_id)
+            data = await WorkspaceService(session, owner_id).get_arbitrary_info_by_owner_id_if_use_arbitrary(owner_id)
             if not data:
                 print("[bold green]" "Arbitrary server not configured" "[/bold green]")
                 return

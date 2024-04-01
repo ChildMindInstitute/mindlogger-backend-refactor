@@ -1,6 +1,4 @@
-import asyncio
 import uuid
-from functools import wraps
 
 import typer
 from rich import print
@@ -16,17 +14,10 @@ from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service.applet import AppletService
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def print_results(applets: list[tuple[uuid.UUID, str]]):

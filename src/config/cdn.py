@@ -12,6 +12,7 @@ class CDNSettings(BaseModel):
     region: str | None
     bucket: str | None
     bucket_answer: str | None
+    bucket_operations: str | None
     secret_key: str | None
     access_key: str | None
 

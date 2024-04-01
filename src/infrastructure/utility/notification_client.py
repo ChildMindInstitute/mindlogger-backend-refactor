@@ -96,7 +96,10 @@ class FCMNotification:
                     devices,
                     android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
                     data=dict(message=json.dumps(message.dict(by_alias=True), default=str)),
-                    apns=messaging.APNSConfig(payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True))),
+                    apns=messaging.APNSConfig(
+                        headers={"apns-priority": "5"},
+                        payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True)),
+                    ),
                 ),
                 app=self._app,
             )
@@ -107,7 +110,10 @@ class FCMNotification:
                     android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
                     data=dict(message=json.dumps(message.dict(by_alias=True), default=str)),
                     token=devices[0],
-                    apns=messaging.APNSConfig(payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True))),
+                    apns=messaging.APNSConfig(
+                        headers={"apns-priority": "5"},
+                        payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True)),
+                    ),
                 ),
                 app=self._app,
             )

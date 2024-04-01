@@ -30,6 +30,8 @@ from apps.invitations.errors import (
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.users import UserSchema
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from apps.workspaces.domain.constants import UserPinRole
@@ -152,6 +154,20 @@ def shell_create_data():
         lastName="lastName",
         secretUserId="secretUserId",
         nickname="nickname",
+    )
+
+
+@pytest.fixture
+async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
+    return await SubjectsService(session, tom.id).create(
+        Subject(
+            applet_id=applet_one.id,
+            creator_id=tom.id,
+            first_name="Shell",
+            last_name="Account",
+            nickname="shell-account-0",
+            secret_user_id=f"{uuid.uuid4()}",
+        )
     )
 
 
@@ -591,7 +607,7 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["userId"] == exp_user_id
 
     async def test_resend_invitation_with_updates_for_respondent_with_pending_invitation(
-        self, session, client, invitation_respondent_data, tom, applet_one
+        self, session, client, invitation_respondent_data, tom: User, applet_one: AppletFull
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
         response = await client.post(
@@ -610,14 +626,15 @@ class TestInvite(BaseTest):
             invitation_respondent_data,
         )
         assert response.status_code == http.HTTPStatus.OK
-        invitation_key = response.json()["result"]["key"]
         # Because we don't return anything after accepting/declining
         # invitation, check in database that user_id has already been updated
-        inv = await InvitationCRUD(session).get_by_email_and_key(
-            invitation_respondent_data.email, uuid.UUID(invitation_key)
+
+        subject = await SubjectsService(session, tom.id).get_pending_subject_if_exist(
+            invitation_respondent_data.secret_user_id, applet_one.id
         )
-        assert inv.first_name == invitation_respondent_data.first_name
-        assert inv.last_name == invitation_respondent_data.last_name
+        assert subject
+        assert subject.first_name == invitation_respondent_data.first_name
+        assert subject.last_name == invitation_respondent_data.last_name
 
     async def test_resend_invitation_for_respondent_with_pending_invitation_only_last_key_valid(
         self, client, invitation_respondent_data, tom, applet_one
@@ -962,3 +979,23 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         message = response.json()["result"][0]["message"]
         assert message == RespondentInvitationExist.message
+
+    async def test_cant_create_invitation_with_same_secret_id_as_shell_account(
+        self,
+        client,
+        session,
+        applet_one: AppletFull,
+        applet_one_shell_account: Subject,
+        tom: User,
+        invitation_respondent_data,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        invitation_respondent_data.secret_user_id = applet_one_shell_account.secret_user_id
+        response = await client.post(
+            self.invite_respondent_url.format(applet_id=str(applet_one.id)),
+            invitation_respondent_data.dict(),
+        )
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        payload = response.json()
+        assert payload
+        assert payload["result"][0]["message"] == NonUniqueValue().error

@@ -4,6 +4,7 @@ from typing import Any
 from apps.job.constants import JobStatus
 from apps.job.crud import JobCRUD
 from apps.job.domain import Job, JobCreate
+from apps.job.errors import JobStatusError
 
 
 class JobService:
@@ -16,6 +17,8 @@ class JobService:
         name: str,
         status: JobStatus = JobStatus.pending,
         details: dict | None = None,
+        *,
+        accept_statuses: list[JobStatus] | None = None,
     ) -> Job:
         repository = JobCRUD(self.session)
         job = await repository.get_by_name(name, self.user_id)
@@ -28,6 +31,8 @@ class JobService:
             if details:
                 model.details = details
             job = await repository.create(model)
+        elif accept_statuses and job.status not in accept_statuses:
+            raise JobStatusError(job, f"Wrong job status: {job.status}")
 
         return job
 

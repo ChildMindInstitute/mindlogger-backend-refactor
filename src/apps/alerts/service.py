@@ -13,8 +13,7 @@ class AlertService:
     async def get_all_alerts(self, filters: QueryParams) -> list[Alert]:
         alerts = []
         schemas = await AlertCRUD(self.session).get_all_for_user(self.user_id, filters.page, filters.limit)
-
-        for alert, applet_history, access, applet, workspace in schemas:
+        for alert, applet_history, access, applet, workspace, subject in schemas:
             alerts.append(
                 Alert(
                     id=alert.id,
@@ -22,7 +21,7 @@ class AlertService:
                     applet_id=alert.applet_id,
                     applet_name=applet_history.display_name,
                     version=alert.version,
-                    secret_id=access.meta.get("secretUserId", "Anonymous"),
+                    secret_id=subject.secret_user_id if subject else "Anonymous",
                     activity_id=alert.activity_id,
                     activity_item_id=alert.activity_item_id,
                     message=alert.alert_message,

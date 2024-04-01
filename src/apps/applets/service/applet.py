@@ -160,6 +160,9 @@ class AppletService:
                 encryption=create_data.encryption.dict() if create_data.encryption else None,
                 extra_fields=create_data.extra_fields,
                 creator_id=creator_id,
+                stream_enabled=create_data.stream_enabled,
+                stream_ip_address=create_data.stream_ip_address,
+                stream_port=create_data.stream_port,
             )
         )
         return AppletFull.from_orm(schema)

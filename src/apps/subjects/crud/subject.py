@@ -2,10 +2,12 @@ import uuid
 from datetime import datetime
 
 from asyncpg import UniqueViolationError
-from sqlalchemy import delete, or_, select
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import Query
 
+from apps.invitations.constants import InvitationStatus
+from apps.invitations.db import InvitationSchema
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
 from apps.subjects.domain import Subject
 from infrastructure.database.crud import BaseCRUD
@@ -47,17 +49,31 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
     async def delete(self, id_: uuid.UUID):
         return await self._delete(id=id_)
 
-    async def is_secret_id_exist(self, secret_id: str, applet_id: uuid.UUID, email: str | None) -> bool:
-        query: Query = select(SubjectSchema.id)
+    async def get_by_secret_id(self, secret_id: str, applet_id: uuid.UUID) -> SubjectSchema | None:
+        query: Query = select(SubjectSchema)
         query = query.where(
             SubjectSchema.secret_user_id == secret_id,
             SubjectSchema.applet_id == applet_id,
         )
-        if email:
-            query = query.where(SubjectSchema.email != email)
+        res = await self._execute(query)
+        return res.scalars().first()
+
+    async def get_pending_subjects(self, secret_id: str, applet_id: uuid.UUID, subject_id: uuid.UUID | None = None):
+        query: Query = select(SubjectSchema)
+        query = query.join(
+            InvitationSchema,
+            and_(
+                InvitationSchema.meta.has_key("subject_id"),
+                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
+                InvitationSchema.status == InvitationStatus.PENDING,
+            ),
+        )
+        query = query.where(SubjectSchema.secret_user_id == secret_id, SubjectSchema.applet_id == applet_id)
+        if subject_id:
+            query = query.where(SubjectSchema.id == subject_id)
         res = await self._execute(query)
         res = res.scalars().all()
-        return bool(res)
+        return res
 
     async def get_user_subject(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> SubjectSchema | None:
         query: Query = select(SubjectSchema)

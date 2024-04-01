@@ -56,11 +56,13 @@ from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
+from infrastructure.http import get_tz_utc_offset
 
 
 async def create_answer(
     user: User = Depends(get_current_user),
     schema: AppletAnswerCreate = Body(...),
+    tz_offset: int | None = Depends(get_tz_utc_offset()),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> None:
@@ -71,6 +73,8 @@ async def create_answer(
         except NotValidAppletHistory:
             raise InvalidVersionError()
         service = AnswerService(session, user.id, answer_session)
+        if tz_offset and not schema.answer.tz_offset:
+            schema.answer.tz_offset = tz_offset // 60
         async with atomic(answer_session):
             answer = await service.create_answer(schema)
         await service.create_report_from_answer(answer)
@@ -78,6 +82,7 @@ async def create_answer(
 
 async def create_anonymous_answer(
     schema: AppletAnswerCreate = Body(...),
+    tz_offset: int | None = Depends(get_tz_utc_offset()),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> None:
@@ -86,6 +91,8 @@ async def create_anonymous_answer(
         assert anonymous_respondent
 
         service = AnswerService(session, anonymous_respondent.id, answer_session)
+        if tz_offset and not schema.answer.tz_offset:
+            schema.answer.tz_offset = tz_offset // 60
         async with atomic(answer_session):
             answer = await service.create_answer(schema)
         await service.create_report_from_answer(answer)
@@ -387,7 +394,7 @@ async def applet_answers_export(
     total_answers = data.total_answers
     for answer in data.answers:
         if answer.is_manager:
-            answer.respondent_secret_id = f"[admin account] ({answer.respondent_email})"
+            answer.respondent_secret_id = f"[admin account] ({answer.respondent_secret_id})"
 
     if activities_last_version:
         applet = await AppletService(session, user.id).get(applet_id)

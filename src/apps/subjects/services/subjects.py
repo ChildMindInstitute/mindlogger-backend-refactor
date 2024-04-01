@@ -38,13 +38,10 @@ class SubjectsService:
         return await SubjectsCrud(self.session).create_many(models)
 
     async def update(self, schema: Subject) -> SubjectSchema:
-        return await SubjectsCrud(self.session).update(
-            SubjectSchema(
-                id=schema.id,
-                nickname=schema.nickname,
-                secret_user_id=schema.secret_user_id,
-            )
-        )
+        subject = SubjectSchema(id=schema.id, nickname=schema.nickname, secret_user_id=schema.secret_user_id)
+        if schema.is_deleted is not None:
+            subject.is_deleted = schema.is_deleted
+        return await SubjectsCrud(self.session).update(subject)
 
     async def delete(self, id_: uuid.UUID):
         repository = SubjectsCrud(self.session)
@@ -106,7 +103,10 @@ class SubjectsService:
 
     async def delete_hard(self, id_: uuid.UUID):
         await AlertCRUD(self.session).delete_by_subject(id_)
-
         repository = SubjectsCrud(self.session)
         await repository.delete_subject_relations(id_)
         await repository.delete(id_)
+
+    async def get_pending_subject_if_exist(self, secret_id: str, applet_id: uuid.UUID) -> Subject | None:
+        models = await SubjectsCrud(self.session).get_pending_subjects(secret_id, applet_id)
+        return models[0] if models else None

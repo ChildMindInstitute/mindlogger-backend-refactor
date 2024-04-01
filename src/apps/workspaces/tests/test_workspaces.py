@@ -114,6 +114,7 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
             last_name="Account",
             nickname="shell-account-0",
             secret_user_id=f"{uuid.uuid4()}",
+            email="shell@mail.com",
         )
     )
 
@@ -467,6 +468,35 @@ class TestWorkspaces(BaseTest):
         data = response.json()
         assert data["count"] == 0
         assert not data["result"]
+
+    async def test_get_workspace_applet_respondents_filters(
+        self,
+        client,
+        tom,
+        applet_one,
+        tom_applet_one_subject: Subject,
+        lucy: User,
+        applet_one_lucy_respondent,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+
+        url = self.workspace_applet_respondents_list.format(
+            owner_id=tom.id,
+            applet_id=str(applet_one.id),
+        )
+
+        response = await client.get(url, {"userId": str(lucy.id)})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 1
+        assert data["result"][0]["id"] == str(lucy.id)
+
+        response = await client.get(url, {"respondentSecretId": str(tom_applet_one_subject.secret_user_id)})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 1
+        assert data["result"][0]["id"] == str(tom.id)
+        assert data["result"][0]["secretIds"][0] == str(tom_applet_one_subject.secret_user_id)
 
     async def test_get_workspace_respondent_accesses(self, client, tom, lucy, applet_one_lucy_respondent):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
@@ -1060,6 +1090,7 @@ class TestWorkspaces(BaseTest):
         applet_one: AppletFull,
         applet_one_lucy_respondent,  # invited
         applet_one_shell_account,  # not invited,
+        applet_one_user_respondent,  # another one respondent
         applet_one_shell_has_pending_invitation,  # pending
     ):
         await client.login(self.login_url, tom.email_encrypted, "Test1234!")
@@ -1067,7 +1098,7 @@ class TestWorkspaces(BaseTest):
         assert result.status_code == http.HTTPStatus.OK
         payload = result.json()["result"]
         assert payload
-        assert result.json()["count"] == 4
+        assert result.json()["count"] == 5
         lucy_respondent = next(filter(lambda x: x["id"] == str(lucy.id), payload))
         tom_respondent = next(filter(lambda x: x["id"] == str(tom.id), payload))
         shell_account_not_invited = next(
@@ -1080,6 +1111,25 @@ class TestWorkspaces(BaseTest):
         assert tom_respondent["status"] == SubjectStatus.INVITED
         assert shell_account_pending["status"] == SubjectStatus.PENDING
         assert shell_account_not_invited["status"] == SubjectStatus.NOT_INVITED
+
+    async def test_workspace_respondent_emails(
+        self,
+        client,
+        tom: User,
+        user: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_one_lucy_respondent,
+        applet_one_shell_account,
+        applet_one_user_respondent,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        result = await client.get(self.workspace_respondents_url.format(owner_id=tom.id))
+        assert result.status_code == http.HTTPStatus.OK
+        payload = result.json()["result"]
+        assert payload
+        for respondent in payload:
+            assert bool(respondent.get("email"))
 
     async def test_user_last_activity_workspace_respondent_retrieve(
         self, client, tom: User, applet_one: AppletFull, tom_answer_applet_one

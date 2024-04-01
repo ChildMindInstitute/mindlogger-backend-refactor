@@ -4,6 +4,7 @@ import mimetypes
 import os
 import uuid
 from functools import partial
+from typing import cast
 from urllib.parse import quote
 
 import aiofiles
@@ -26,6 +27,7 @@ from apps.file.domain import (
     FilePresignRequest,
     LogFileExistenceResponse,
     PresignedUrl,
+    WebmTargetExtenstion,
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
@@ -38,7 +40,9 @@ from apps.users.domain import User
 from apps.users.services.user import UserService
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.errors import AnswerViewAccessDenied
+from apps.workspaces.service import workspace
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.database.deps import get_session
@@ -148,6 +152,36 @@ async def convert_not_supported_image(file: UploadFile):
     return None
 
 
+def _get_keys_and_bucket_for_media(
+    orig_key: str, target_extension: WebmTargetExtenstion | None = None
+) -> tuple[str, str, str]:
+    if orig_key.lower().endswith(".webm"):
+        extension = target_extension if target_extension else WebmTargetExtenstion.MP3
+        target_key = orig_key + extension
+        upload_key = f"{settings.cdn.bucket}/{orig_key}"
+        bucket = settings.cdn.bucket_operations
+    else:
+        target_key = upload_key = orig_key
+        bucket = settings.cdn.bucket
+    bucket = cast(str, bucket)
+    return target_key, upload_key, bucket
+
+
+def _get_keys_and_bucket_for_image(
+    orig_key: str, arb_info: WorkspaceArbitrary | None, cdn_client
+) -> tuple[str, str, str]:
+    if orig_key.lower().endswith(".heic"):
+        target_key = orig_key + ".jpg"
+        prefix = f"arbitrary-{arb_info.id}" if arb_info else cdn_client.config.bucket
+        upload_key = f"{prefix}/{orig_key}"
+        bucket = settings.cdn.bucket_operations
+    else:
+        target_key = upload_key = orig_key
+        bucket = cdn_client.config.bucket
+    bucket = cast(str, bucket)
+    return target_key, upload_key, bucket
+
+
 async def download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
@@ -253,6 +287,8 @@ async def check_file_uploaded(
     ):
         raise AnswerViewAccessDenied()
 
+    workspace_srv = workspace.WorkspaceService(session, user.id)
+    arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
     cdn_client = await select_storage(applet_id, session)
     results: list[FileExistenceResponse] = []
 
@@ -260,20 +296,21 @@ async def check_file_uploaded(
         cleaned_file_id = file_id.strip()
 
         unique = f"{user.id}/{applet_id}"
-        key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
+        orig_key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
+
+        target_key, upload_key, bucket = _get_keys_and_bucket_for_image(orig_key, arb_info, cdn_client)
 
         file_existence_factory = partial(
             FileExistenceResponse,
-            key=key,
             file_id=file_id,
         )
 
         try:
-            await cdn_client.check_existence(key)
+            await cdn_client.check_existence(bucket, upload_key)
             results.append(
                 file_existence_factory(
                     uploaded=True,
-                    url=cdn_client.generate_private_url(key),
+                    url=cdn_client.generate_private_url(target_key),
                 )
             )
         except NotFoundError:
@@ -362,11 +399,12 @@ async def generate_presigned_media_url(
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_media_bucket),
 ) -> Response[PresignedUrl]:
-    key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
-    data = cdn_client.generate_presigned_post(key)
+    orig_key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
+    target_key, upload_key, bucket = _get_keys_and_bucket_for_media(orig_key, body.target_extension)
+    data = cdn_client.generate_presigned_post(bucket, upload_key)
     return Response(
         result=PresignedUrl(
-            upload_url=data["url"], fields=data["fields"], url=quote(settings.cdn.url.format(key=key), "/:")
+            upload_url=data["url"], fields=data["fields"], url=quote(settings.cdn.url.format(key=target_key), "/:")
         )
     )
 
@@ -383,13 +421,19 @@ async def generate_presigned_answer_url(
         [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
     ):
         raise AnswerViewAccessDenied()
+    # TODO: Refactor this part when file storage is covered by tests. Get arbitrary info only once.
+    workspace_srv = workspace.WorkspaceService(session, user.id)
+    arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
     cdn_client = await select_storage(applet_id, session)
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = body.file_id.strip()
-    key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
-    data = cdn_client.generate_presigned_post(key)
+    orig_key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
+    target_key, upload_key, bucket = _get_keys_and_bucket_for_image(orig_key, arb_info, cdn_client)
+    data = cdn_client.generate_presigned_post(bucket, upload_key)
     return Response(
-        result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
+        result=PresignedUrl(
+            upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(target_key)
+        )
     )
 
 
@@ -401,7 +445,7 @@ async def generate_presigned_logs_url(
 ) -> Response[PresignedUrl]:
     service = LogFileService(user.id, cdn_client)
     key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"
-    data = cdn_client.generate_presigned_post(key)
+    data = cdn_client.generate_presigned_post(cdn_client.config.bucket, key)
     return Response(
         result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
     )

@@ -1,7 +1,7 @@
 """Add subjects
 
 Revision ID: edb2781f141b
-Revises: 3fb536a58c94
+Revises: 23fe6ccfb031
 Create Date: 2024-01-05 18:28:37.879517
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "edb2781f141b"
-down_revision = "736adb0ea547"
+down_revision = "23fe6ccfb031"
 branch_labels = None
 depends_on = None
 
@@ -88,12 +88,11 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_subjects")),
     )
     op.create_index(
-        "unique_subject_user_applet",
+        "ix_subjects_user_id",
         "subjects",
         ["user_id", "applet_id"],
         unique=True,
     )
-
     op.create_table(
         "subject_relations",
         sa.Column(
@@ -214,7 +213,7 @@ def downgrade() -> None:
     )
     op.drop_table("subject_relations")
 
-    op.drop_index("unique_subject_user_applet", table_name="subjects")
+    op.drop_index("ix_subjects_user_id", table_name="subjects")
     op.drop_constraint(op.f("fk_user_pins_pinned_subject_id_subjects"), "user_pins", type_="foreignkey")
     op.alter_column(
         "user_pins",

@@ -857,7 +857,8 @@ class TestAnswerActivityItems:
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate",
-            "relation", "sourceSubjectId", "targetSubjectId","client"
+            "relation", "sourceSubjectId", "targetSubjectId", "client",
+            "tzOffset", "scheduledEventId",
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on
@@ -1181,7 +1182,8 @@ class TestAnswerActivityItems:
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate",
-            "relation", "sourceSubjectId", "targetSubjectId", "client"
+            "relation", "sourceSubjectId", "targetSubjectId", "client",
+            "tzOffset", "scheduledEventId",
         }
         assert int(answer['startDatetime'] * 1000) == 1690188679657
         # fmt: on

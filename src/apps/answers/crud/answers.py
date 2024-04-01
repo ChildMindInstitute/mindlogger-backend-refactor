@@ -181,6 +181,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 reviewed_answer_id.label("reviewed_answer_id"),
                 reviewed_answer_id.label("reviewed_answer_id"),
                 AnswerSchema.client,
+                AnswerItemSchema.tz_offset,
+                AnswerItemSchema.scheduled_event_id,
             )
             .select_from(AnswerSchema)
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
