@@ -1608,3 +1608,54 @@ class TestAnswerActivityItems(BaseTest):
             assert not assessment
         else:
             assert assessment
+
+    async def test_summary_activities_submitted_date_with_answers(
+        self,
+        tom_answer_create_data,
+        tom_answer_assessment_create_data,
+        mock_kiq_report,
+        client,
+        tom,
+        applet_with_reviewable_activity,
+        session,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        applet_id = applet_with_reviewable_activity.id
+        answer_service = AnswerService(session, tom.id)
+        submit_dates = []
+        for i in range(2):
+            answer = await answer_service.create_answer(tom_answer_create_data)
+            submit_dates.append(answer.created_at)
+
+        response = await client.get(
+            self.summary_activities_url.format(
+                applet_id=str(applet_id),
+            )
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        expected_last_date = str(max(submit_dates))
+        actual_last_date = payload["result"][0]["lastAnswerDate"].replace("T", " ")
+        assert actual_last_date == expected_last_date
+
+    async def test_summary_activities_submitted_without_answers(
+        self,
+        tom_answer_create_data,
+        tom_answer_assessment_create_data,
+        mock_kiq_report,
+        client,
+        tom,
+        applet_with_reviewable_activity,
+        session,
+    ):
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        applet_id = applet_with_reviewable_activity.id
+        response = await client.get(
+            self.summary_activities_url.format(
+                applet_id=str(applet_id),
+            )
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        actual_last_date = payload["result"][0]["lastAnswerDate"]
+        assert actual_last_date is None

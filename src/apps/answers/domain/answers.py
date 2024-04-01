@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, root_validator, validator
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
 from apps.activities.domain.activity_history import (
@@ -101,6 +101,7 @@ class SummaryActivity(InternalModel):
     name: str
     is_performance_task: bool
     has_answer: bool
+    last_answer_date: datetime.datetime | None
 
 
 class PublicAnswerDate(PublicModel):
@@ -113,6 +114,17 @@ class PublicReviewActivity(PublicModel):
     id: uuid.UUID
     name: str
     answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
+    last_answer_date: datetime.datetime | None
+
+    @root_validator
+    def calculate_last_answer_date(cls, values):
+        answer_dates = values.get("answer_dates", [])
+        if answer_dates:
+            last_date = max(ad.created_at for ad in answer_dates)
+            values["last_answer_date"] = last_date
+        else:
+            values["last_answer_date"] = None
+        return values
 
 
 class PublicSummaryActivity(InternalModel):
@@ -120,6 +132,7 @@ class PublicSummaryActivity(InternalModel):
     name: str
     is_performance_task: bool
     has_answer: bool
+    last_answer_date: datetime.datetime | None
 
 
 class PublicAnswerDates(PublicModel):
@@ -170,6 +183,7 @@ class AnswerReview(InternalModel):
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: Reviewer
+    created_at: datetime.datetime
 
 
 class ActivityAnswerPublic(PublicModel):
@@ -206,6 +220,7 @@ class AnswerReviewPublic(PublicModel):
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: ReviewerPublic
+    created_at: datetime.datetime
 
 
 class AssessmentAnswerPublic(PublicModel):

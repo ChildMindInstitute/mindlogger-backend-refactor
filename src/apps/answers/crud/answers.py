@@ -308,21 +308,18 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_activities_which_has_answer(
+    async def get_submitted_activity_with_last_date(
         self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
-    ) -> list[str]:
+    ) -> list[tuple[str, datetime.datetime]]:
         activity_ids = set(map(lambda id_version: id_version.split("_")[0], activity_hist_ids))
-        query: Query = select(AnswerSchema.activity_history_id)
+        query: Query = select(AnswerSchema.activity_history_id, func.max(AnswerSchema.created_at))
         query = query.where(or_(*(AnswerSchema.activity_history_id.like(f"{item}_%") for item in activity_ids)))
         if respondent_id:
             query.where(AnswerSchema.respondent_id == respondent_id)
-        query = query.distinct(AnswerSchema.activity_history_id)
+        query = query.group_by(AnswerSchema.activity_history_id)
         query.order_by(AnswerSchema.activity_history_id)
         db_result = await self._execute(query)
-        results = []
-        for activity_id in db_result.all():
-            results.append(activity_id)
-        return [row[0] for row in results]
+        return db_result.all()  # noqa
 
     async def get_completed_answers_data(
         self,
