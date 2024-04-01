@@ -87,11 +87,6 @@ class TestWorkspaces(BaseTest):
         "folders/fixtures/folders.json",
         "invitations/fixtures/invitations.json",
         "workspaces/fixtures/workspaces.json",
-        "schedule/fixtures/periodicity.json",
-        "schedule/fixtures/events.json",
-        "schedule/fixtures/activity_events.json",
-        "schedule/fixtures/flow_events.json",
-        "schedule/fixtures/user_events.json",
         "folders/fixtures/folders_applet.json",
     ]
 

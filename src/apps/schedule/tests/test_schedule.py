@@ -1,17 +1,50 @@
+import datetime
+import http
+import logging
+
 import pytest
+from firebase_admin.exceptions import NotFoundError as FireBaseNotFoundError
+from pytest import FixtureRequest, LogCaptureFixture
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
+from apps.answers.errors import UserDoesNotHavePermissionError
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
+from apps.schedule.domain import constants
+from apps.schedule.domain.schedule import EventRequest, EventUpdateRequest, PeriodicityRequest, PublicEvent
+from apps.schedule.errors import StartEndTimeEqualError
+from apps.schedule.service.schedule import ScheduleService
 from apps.shared.enums import Language
-from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
+from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from infrastructure.utility import FCMNotificationTest
+
+
+def _get_number_default_events(applet: AppletFull) -> int:
+    return len([i for i in applet.activities if not i.is_reviewable]) + len(applet.activity_flows)
+
+
+@pytest.fixture
+async def device_lucy(lucy: User, session: AsyncSession) -> str:
+    device_id = "lucy device"
+    service = UserDeviceService(session, lucy.id)
+    await service.add_device(device_id)
+    return device_id
+
+
+@pytest.fixture
+async def device_user(user: User, session: AsyncSession) -> str:
+    device_id = "user device"
+    service = UserDeviceService(session, user.id)
+    await service.add_device(device_id)
+    return device_id
 
 
 @pytest.fixture
@@ -36,6 +69,13 @@ async def applet(session: AsyncSession, user: User, applet_data: AppletCreate) -
 
 
 @pytest.fixture
+async def applet_default_events(session: AsyncSession, applet: AppletFull) -> list[PublicEvent]:
+    srv = ScheduleService(session)
+    events = await srv.get_all_schedules(applet_id=applet.id)
+    return events
+
+
+@pytest.fixture
 async def applet_lucy_respondent(session: AsyncSession, applet: AppletFull, user: User, lucy: User) -> AppletFull:
     await UserAppletAccessService(session, user.id, applet.id).add_role(lucy.id, Role.RESPONDENT)
     return applet
@@ -50,18 +90,59 @@ async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletF
     return applet
 
 
-@pytest.mark.usefixtures("applet", "applet_lucy_respondent")
-class TestSchedule(BaseTest):
-    fixtures = [
-        "schedule/fixtures/periodicity.json",
-        "schedule/fixtures/events.json",
-        "schedule/fixtures/activity_events.json",
-        "schedule/fixtures/flow_events.json",
-        "schedule/fixtures/user_events.json",
-        "schedule/fixtures/notifications.json",
-        "schedule/fixtures/reminders.json",
-    ]
+@pytest.fixture
+def event_daily_data(applet: AppletFull) -> EventRequest:
+    start_date = datetime.date.today()
+    end_date = start_date + datetime.timedelta(days=1)
+    return EventRequest(
+        activity_id=applet.activities[0].id,
+        flow_id=None,
+        respondent_id=None,
+        periodicity=PeriodicityRequest(
+            type=constants.PeriodicityType.DAILY,
+            start_date=datetime.date.today(),
+            end_date=end_date,
+            selected_date=None,
+        ),
+        start_time=datetime.time(9, 0),
+        end_time=datetime.time(10, 0),
+        access_before_schedule=False,
+        one_time_completion=None,
+        notification=None,
+        timer=None,
+        timer_type=constants.TimerType.NOT_SET,
+    )
 
+
+@pytest.fixture
+def event_daily_data_update(event_daily_data: EventRequest) -> EventUpdateRequest:
+    data = event_daily_data.dict()
+    del data["respondent_id"]
+    del data["activity_id"]
+    del data["flow_id"]
+    return EventUpdateRequest(**data)
+
+
+@pytest.fixture
+async def daily_event(session: AsyncSession, applet: AppletFull, event_daily_data: EventRequest) -> PublicEvent:
+    service = ScheduleService(session)
+    schedule = await service.create_schedule(event_daily_data, applet.id)
+    return schedule
+
+
+@pytest.fixture
+async def daily_event_individual_lucy(
+    session: AsyncSession, applet_lucy_respondent: AppletFull, event_daily_data: EventRequest, lucy: User
+) -> PublicEvent:
+    data = event_daily_data.copy(deep=True)
+    data.respondent_id = lucy.id
+    service = ScheduleService(session)
+    schedule = await service.create_schedule(data, applet_lucy_respondent.id)
+    return schedule
+
+
+@pytest.mark.usefixtures("applet", "applet_lucy_respondent", "device_lucy", "device_user")
+class TestSchedule:
     login_url = "/auth/login"
     applet_detail_url = "applets/{applet_id}"
 
@@ -83,473 +164,288 @@ class TestSchedule(BaseTest):
 
     public_events_url = "public/applets/{key}/events"
 
-    async def test_schedule_create_with_equal_start_end_time(self, client: TestClient, applet: AppletFull):
+    async def test_schedule_create_with_equal_start_end_time(
+        self, client: TestClient, applet: AppletFull, event_daily_data: EventRequest
+    ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "08:00:00",
-            "access_before_schedule": False,
-            "one_time_completion": False,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "ONCE",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": None,
-            "activity_id": str(applet.activities[0].id),
-            "flow_id": None,
-            "notification": {
-                "notifications": [
-                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
-                ],
-                "reminder": {
-                    "activity_incomplete": 1,
-                    "reminder_time": "08:30:00",
-                },
-            },
-        }
+        data = event_daily_data.dict()
+        data["start_time"] = data["end_time"]
+        response = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == StartEndTimeEqualError.message
+
+    async def test_schedule_create_with_activity(
+        self, client: TestClient, applet: AppletFull, event_daily_data: EventRequest
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
 
         response = await client.post(
             self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
+            data=event_daily_data,
         )
-        assert response.status_code == 422
-
-    async def test_schedule_create_with_activity(self, client: TestClient, applet: AppletFull):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": False,
-            "one_time_completion": False,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "ONCE",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": None,
-            "activity_id": str(applet.activities[0].id),
-            "flow_id": None,
-            "notification": {
-                "notifications": [
-                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
-                ],
-                "reminder": {
-                    "activity_incomplete": 1,
-                    "reminder_time": "08:30:00",
-                },
-            },
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-        assert response.status_code == 201
+        assert response.status_code == http.HTTPStatus.CREATED
         event = response.json()["result"]
-        assert event["startTime"] == create_data["start_time"]
-        assert event["activityId"] == create_data["activity_id"]
+        assert event["startTime"] == str(event_daily_data.start_time)
+        assert event["activityId"] == str(event_daily_data.activity_id)
+        assert event["endTime"] == str(event_daily_data.end_time)
+        assert not event["accessBeforeSchedule"]
+        assert event["oneTimeCompletion"] is None
+        assert event["timer"] is None
+        assert event["timerType"] == constants.TimerType.NOT_SET
+        assert event["periodicity"]["type"] == constants.PeriodicityType.DAILY
+        assert event["periodicity"]["startDate"] == str(event_daily_data.periodicity.start_date)
+        assert event["periodicity"]["endDate"] == str(event_daily_data.periodicity.end_date)
+        assert event["periodicity"]["selectedDate"] is None
+        assert event["respondentId"] is None
+        assert event["flowId"] is None
+        assert event["notification"] is None
 
-    async def test_schedule_create_with_respondent_id(self, client: TestClient, applet: AppletFull, lucy: User):
+    async def test_schedule_create_individual_event(
+        self, client: TestClient, applet_lucy_respondent: AppletFull, lucy: User, event_daily_data: EventRequest
+    ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "WEEKLY",
-                "start_date": "2021-09-01",
-                "end_date": "2023-09-01",
-                "selected_date": "2023-01-01",
-            },
-            "respondent_id": str(lucy.id),
-            "activity_id": str(applet.activities[0].id),
-            "flow_id": None,
-        }
+        data = event_daily_data.copy(deep=True)
+        data.respondent_id = lucy.id
 
         response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
+            self.schedule_url.format(applet_id=applet_lucy_respondent.id),
+            data=data,
         )
 
-        assert response.status_code == 201
+        assert response.status_code == http.HTTPStatus.CREATED
         event = response.json()["result"]
-        assert event["respondentId"] == create_data["respondent_id"]
+        assert event["respondentId"] == str(lucy.id)
 
-    async def test_schedule_create_with_flow(self, client: TestClient, applet: AppletFull, user: User):
+    async def test_schedule_create_with_flow(
+        self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest
+    ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(user.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-        }
-
+        data = event_daily_data.dict()
+        data["flow_id"] = str(applet.activity_flows[0].id)
+        data["activity_id"] = None
         response = await client.post(
             self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
+            data=data,
         )
 
-        assert response.status_code == 201
+        assert response.status_code == http.HTTPStatus.CREATED
         event = response.json()["result"]
-        assert event["respondentId"] == create_data["respondent_id"]
-        assert event["flowId"] == create_data["flow_id"]
+        assert event["flowId"] == data["flow_id"]
+        assert event["activityId"] is None
 
-    async def test_schedule_get_all(self, client: TestClient, applet: AppletFull, lucy: User):
+    async def test_schedule_get_all__only_default_events(self, client: TestClient, applet: AppletFull):
         await client.login(self.login_url, "user@example.com", "Test1234!")
 
         response = await client.get(self.schedule_url.format(applet_id=applet.id))
-
-        assert response.status_code == 200
+        number_default_events = _get_number_default_events(applet)
+        assert response.status_code == http.HTTPStatus.OK
         events = response.json()["result"]
-        assert isinstance(events, list)
-        events_count = len(events)
-
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(lucy.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-
-        assert response.status_code == 201
-
-        response = await client.get(self.schedule_url.format(applet_id=applet.id))
-
-        assert response.status_code == 200
-        events = response.json()["result"]
+        events_count = response.json()["count"]
         assert len(events) == events_count
+        assert events_count == number_default_events
+        for event in events:
+            assert event["periodicity"]["type"] == constants.PeriodicityType.ALWAYS
 
-        response = await client.get(self.schedule_url.format(applet_id=applet.id) + f"?respondentId={lucy.id}")
+    @pytest.mark.parametrize(
+        "event_for, field_name, field_name_to_replace",
+        (
+            ("activities", "activity_id", "flow_id"),
+            ("activity_flows", "flow_id", "activity_id"),
+        ),
+    )
+    async def test_schedule_get_all_after_creating_new_event__default_event_replaced_with_scheduled_event(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        event_daily_data: EventRequest,
+        event_for: str,
+        field_name: str,
+        field_name_to_replace: str,
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        data = event_daily_data.dict()
+        data[field_name] = getattr(applet, event_for)[0].id
+        data[field_name_to_replace] = None
+        number_of_events = _get_number_default_events(applet)
 
-        assert response.status_code == 200
+        response = await client.post(
+            self.schedule_url.format(applet_id=applet.id),
+            data=data,
+        )
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        response = await client.get(self.schedule_url.format(applet_id=applet.id))
+        assert response.status_code == http.HTTPStatus.OK
         events = response.json()["result"]
-        assert len(events) == 1
+        # after creating event with scheduled access default events removed for this activity/activity_flow
+        assert len(events) == number_of_events
+        events_count = response.json()["count"]
+        assert events_count == number_of_events
 
-    async def test_public_schedule_get_all(self, client: TestClient, applet_one_with_public_link):
+    @pytest.mark.parametrize(
+        "user_fixture_name,num_individual_events",
+        (
+            ("user", 0),
+            ("lucy", 1),
+        ),
+    )
+    @pytest.mark.usefixtures("daily_event_individual_lucy")
+    async def test_schedule_get_all_for_respondent(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user_fixture_name: str,
+        num_individual_events: int,
+        request: FixtureRequest,
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        user = request.getfixturevalue(user_fixture_name)
+        response = await client.get(self.schedule_url.format(applet_id=applet.id) + f"?respondentId={user.id}")
+        assert response.status_code == http.HTTPStatus.OK
+        events = response.json()["result"]
+        assert len(events) == num_individual_events
+        events_count = response.json()["count"]
+        assert events_count == num_individual_events
+
+    async def test_public_schedule_get_all(self, client: TestClient, applet_one_with_public_link: AppletFull):
         response = await client.get(self.public_events_url.format(key=applet_one_with_public_link.link))
 
-        assert response.status_code == 200
-        events = response.json()["result"]
-        assert isinstance(events, dict)
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+        assert result["appletId"] == str(applet_one_with_public_link.id)
+        events = result["events"]
+        # TODO: check response
+        assert isinstance(events, list)
 
-    async def test_schedule_get_detail(self, client: TestClient, applet: AppletFull, user: User):
+    async def test_schedule_get_detail(self, client: TestClient, applet: AppletFull, daily_event: PublicEvent):
         await client.login(self.login_url, "user@example.com", "Test1234!")
 
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(user.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-        event_id = response.json()["result"]["id"]
-
-        response = await client.get(
-            self.schedule_detail_url.format(
-                applet_id=applet.id,
-                event_id=event_id,
-            )
-        )
-
-        assert response.status_code == 200
+        response = await client.get(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
+        assert response.status_code == http.HTTPStatus.OK
         event = response.json()["result"]
-        assert event["respondentId"] == create_data["respondent_id"]
+        assert event["startTime"] == str(daily_event.start_time)
+        assert event["activityId"] == str(daily_event.activity_id)
+        assert event["endTime"] == str(daily_event.end_time)
+        assert not event["accessBeforeSchedule"]
+        assert event["oneTimeCompletion"] is None
+        assert event["timer"] is None
+        assert event["timerType"] == constants.TimerType.NOT_SET
+        assert event["periodicity"]["type"] == constants.PeriodicityType.DAILY
+        assert event["periodicity"]["startDate"] == str(daily_event.periodicity.start_date)
+        assert event["periodicity"]["endDate"] == str(daily_event.periodicity.end_date)
+        assert event["periodicity"]["selectedDate"] is None
+        assert event["respondentId"] is None
+        assert event["flowId"] is None
+        assert event["notification"] is None
 
-    async def test_schedule_delete_all(self, client: TestClient, applet: AppletFull, user: User):
+    @pytest.mark.usefixtures("daily_event")
+    async def test_schedule_delete_all(self, client: TestClient, applet: AppletFull):
         await client.login(self.login_url, "user@example.com", "Test1234!")
-
         response = await client.delete(self.schedule_url.format(applet_id=applet.id))
-        assert response.status_code == 204
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+        # Check that only default events exist
+        response = await client.get(self.schedule_url.format(applet_id=applet.id))
+        assert response.status_code == http.HTTPStatus.OK
+        for event in response.json()["result"]:
+            assert event["periodicity"]["type"] == constants.PeriodicityType.ALWAYS
 
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(user.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-        assert response.status_code == 201
-
-        response = await client.delete(self.schedule_url.format(applet_id=applet.id))
-
-        assert response.status_code == 204
-
-    async def test_schedule_delete_detail(self, client: TestClient, applet: AppletFull, lucy: User):
+    async def test_schedule_delete_specific_event(
+        self, client: TestClient, applet: AppletFull, daily_event: PublicEvent
+    ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
 
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(lucy.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-        }
+        response = await client.delete(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+        # Check that only default events exist
+        response = await client.get(self.schedule_url.format(applet_id=applet.id))
+        assert response.status_code == http.HTTPStatus.OK
+        for event in response.json()["result"]:
+            assert event["periodicity"]["type"] == constants.PeriodicityType.ALWAYS
 
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-        event = response.json()["result"]
-
-        response = await client.delete(
-            self.schedule_detail_url.format(
-                applet_id=applet.id,
-                event_id=event["id"],
-            )
-        )
-
-        assert response.status_code == 204
-
-    async def test_schedule_update_with_equal_start_end_time(self, client: TestClient, applet: AppletFull, lucy: User):
+    async def test_schedule_update_with_equal_start_end_time(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        daily_event: PublicEvent,
+        event_daily_data_update: EventUpdateRequest,
+    ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(lucy.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-            "notification": {
-                "notifications": [
-                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
-                ],
-                "reminder": {
-                    "activity_incomplete": 1,
-                    "reminder_time": "08:30:00",
-                },
-            },
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
+        data = event_daily_data_update.dict()
+        data["start_time"] = data["end_time"]
+        response = await client.put(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id),
+            data=data,
         )
-        event = response.json()["result"]
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == StartEndTimeEqualError.message
 
-        update_data = {
-            "start_time": "00:00:15",
-            "end_time": "00:00:15",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-        }
+    async def test_schedule_update(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        daily_event: PublicEvent,
+        event_daily_data_update: EventUpdateRequest,
+        fcm_client: FCMNotificationTest,
+        device_lucy: str,
+        device_user: str,
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        data = event_daily_data_update.copy(deep=True)
+        data.start_time = datetime.time(0, 0)
+        data.end_time = datetime.time(23, 0)
 
         response = await client.put(
-            self.schedule_detail_url.format(
-                applet_id=applet.id,
-                event_id=event["id"],
-            ),
-            data=update_data,
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id),
+            data=data,
         )
-        assert response.status_code == 422
-
-    async def test_schedule_update(self, client: TestClient, applet: AppletFull, lucy: User):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(lucy.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-            "notification": {
-                "notifications": [
-                    {"trigger_type": "FIXED", "at_time": "08:30:00"},
-                ],
-                "reminder": {
-                    "activity_incomplete": 1,
-                    "reminder_time": "08:30:00",
-                },
-            },
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
+        assert response.status_code == http.HTTPStatus.OK
         event = response.json()["result"]
-        create_data.pop("activity_id")
-        create_data.pop("flow_id")
-        create_data.pop("respondent_id")
+        assert event["startTime"] == str(data.start_time)
+        assert event["endTime"] == str(data.end_time)
+        # lucy (respondent) and user (owner and respondent)
+        assert len(fcm_client.notifications) == 2
+        assert device_lucy in fcm_client.notifications
+        assert device_user in fcm_client.notifications
 
-        create_data["notification"]["notifications"] = [  # type: ignore[index]
-            {
-                "trigger_type": "RANDOM",
-                "from_time": "08:30:00",
-                "to_time": "08:40:00",
-            },
-        ]
-        create_data["notification"]["reminder"] = {  # type: ignore[index]
-            "activity_incomplete": 2,
-            "reminder_time": "08:40:00",
-        }
-
-        response = await client.put(
-            self.schedule_detail_url.format(
-                applet_id=applet.id,
-                event_id=event["id"],
-            ),
-            data=create_data,
-        )
-        assert response.status_code == 200
-
-        event = response.json()["result"]
-
-        assert (
-            event["notification"]["reminder"]["reminderTime"]
-            == create_data["notification"]["reminder"]["reminder_time"]  # type: ignore[index]
-        )
-
-    async def test_count(self, client: TestClient, applet: AppletFull, user: User):
+    async def test_count(self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest):
         await client.login(self.login_url, "user@example.com", "Test1234!")
+        response = await client.get(self.count_url.format(applet_id=applet.id))
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+        # Default events which with type "ALWAYS" are not included
+        assert not result["activityEvents"]
+        assert not result["flowEvents"]
+        event_for_activity = event_daily_data.copy(deep=True)
+        response = await client.post(self.schedule_url.format(applet_id=applet.id), data=event_for_activity)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        event_for_flow = event_daily_data.dict()
+        event_for_flow["flow_id"] = str(applet.activity_flows[0].id)
+        event_for_flow["activity_id"] = None
+        response = await client.post(self.schedule_url.format(applet_id=applet.id), data=event_for_flow)
+        assert response.status_code == http.HTTPStatus.CREATED
 
         response = await client.get(self.count_url.format(applet_id=applet.id))
-        assert response.status_code == 200
-
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": "00:00:00",
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(user.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-
-        assert response.status_code == 201
-
-        create_data["activity_id"] = str(applet.activities[0].id)
-        create_data["flow_id"] = None
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-
-        assert response.status_code == 201
-
-        response = await client.get(
-            self.count_url.format(applet_id=applet.id),
-        )
-
-        assert response.status_code == 200
-
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
+        assert len(result["activityEvents"]) == 1
+        activity_event = result["activityEvents"][0]
+        assert activity_event["count"] == 1
+        assert activity_event["activityId"] == str(applet.activities[0].id)
+        assert activity_event["activityName"] == applet.activities[0].name
+        assert len(result["flowEvents"]) == 1
+        flow_event = result["flowEvents"][0]
+        assert flow_event["count"] == 1
+        assert flow_event["flowId"] == str(applet.activity_flows[0].id)
+        assert flow_event["flowName"] == applet.activity_flows[0].name
 
-        assert isinstance(result["activityEvents"], list)
-        assert isinstance(result["flowEvents"], list)
-
-    async def test_schedule_delete_user(self, client: TestClient, applet: AppletFull, user: User):
+    async def test_delete_user_events_in_individual_schedule__event_not_found(
+        self, client: TestClient, applet: AppletFull, user: User
+    ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
 
         response = await client.delete(
@@ -558,74 +454,40 @@ class TestSchedule(BaseTest):
                 respondent_id=str(user.id),
             )
         )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-        assert response.status_code == 404  # event for user not found
-
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": None,
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(user.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-        event_id = response.json()["result"]["id"]
-
-        response = await client.get(
-            self.schedule_detail_url.format(
-                applet_id=applet.id,
-                event_id=event_id,
-            )
-        )
-
-        assert response.status_code == 200
-        assert response.json()["result"]["respondentId"] == create_data["respondent_id"]
-
-        response = await client.delete(
-            self.delete_user_url.format(
-                applet_id=applet.id,
-                respondent_id=str(user.id),
-            )
-        )
-        assert response.status_code == 204
-
-        response = await client.get(
-            self.schedule_detail_url.format(
-                applet_id=applet.id,
-                event_id=event_id,
-            )
-        )
-        assert response.status_code == 404
-
-    async def test_schedules_get_user_all(self, client: TestClient):
+    async def test_delete_user_events_in_individual_schedule(
+        self, client: TestClient, applet: AppletFull, user: User, lucy: User, daily_event_individual_lucy: PublicEvent
+    ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
+        response = await client.get(
+            self.schedule_detail_url.format(
+                applet_id=applet.id,
+                event_id=daily_event_individual_lucy.id,
+            )
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        response = await client.delete(self.delete_user_url.format(applet_id=applet.id, respondent_id=str(lucy.id)))
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+        response = await client.get(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event_individual_lucy.id)
+        )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
+    async def test_schedules_get_user_all(self, client: TestClient, applet: AppletFull):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
         response = await client.get(self.schedule_user_url)
-
-        assert response.status_code == 200
-        # one for activity and one for activity flow
-        assert response.json()["count"] == 2
+        num_events = _get_number_default_events(applet)
+        assert response.status_code == http.HTTPStatus.OK
+        # Default events
+        assert response.json()["count"] == num_events
 
     async def test_respondent_schedules_get_user_two_weeks(self, client: TestClient, applet: AppletFull):
         await client.login(self.login_url, "user@example.com", "Test1234!")
 
         response = await client.get(self.erspondent_schedules_user_two_weeks_url)
 
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
         result = response.json()["result"]
         keys = result[0]["events"][0].keys()
@@ -643,121 +505,11 @@ class TestSchedule(BaseTest):
         await client.login(self.login_url, "user@example.com", "Test1234!")
 
         response = await client.get(self.schedule_detail_user_url.format(applet_id=applet.id))
-        assert response.status_code == 200
+        assert response.status_code == http.HTTPStatus.OK
 
-    async def test_schedule_remove_individual(self, client: TestClient, applet: AppletFull, user: User):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-
-        response = await client.delete(
-            self.remove_ind_url.format(
-                applet_id=applet.id,
-                respondent_id=str(user.id),
-            )
-        )
-
-        assert response.status_code == 404  # event for user not found
-
-        create_data = {
-            "start_time": "08:00:00",
-            "end_time": "09:00:00",
-            "access_before_schedule": True,
-            "one_time_completion": True,
-            "timer": None,
-            "timer_type": "NOT_SET",
-            "periodicity": {
-                "type": "MONTHLY",
-                "start_date": "2021-09-01",
-                "end_date": "2021-09-01",
-                "selected_date": "2023-09-01",
-            },
-            "respondent_id": str(user.id),
-            "activity_id": None,
-            "flow_id": str(applet.activity_flows[0].id),
-        }
-
-        response = await client.post(
-            self.schedule_url.format(applet_id=applet.id),
-            data=create_data,
-        )
-        event_id = response.json()["result"]["id"]
-
-        response = await client.get(
-            self.schedule_detail_url.format(
-                applet_id=applet.id,
-                event_id=event_id,
-            )
-        )
-
-        assert response.status_code == 200
-        assert response.json()["result"]["respondentId"] == create_data["respondent_id"]
-
-        response = await client.delete(
-            self.remove_ind_url.format(
-                applet_id=applet.id,
-                respondent_id=str(user.id),
-            )
-        )
-
-        assert response.status_code == 204
-
-        response = await client.get(
-            self.schedule_detail_url.format(
-                applet_id=applet.id,
-                event_id=event_id,
-            )
-        )
-        assert response.status_code == 404
-
-    async def test_schedule_import(self, client: TestClient, applet: AppletFull, lucy: User):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
-        create_data = [
-            {
-                "start_time": "08:00:00",
-                "end_time": "09:00:00",
-                "access_before_schedule": True,
-                "one_time_completion": True,
-                "timer": "00:00:00",
-                "timer_type": "NOT_SET",
-                "periodicity": {
-                    "type": "WEEKLY",
-                    "start_date": "2021-09-01",
-                    "end_date": "2023-09-01",
-                    "selected_date": "2023-01-01",
-                },
-                "respondent_id": str(lucy.id),
-                "activity_id": str(applet.activities[0].id),
-                "flow_id": None,
-            },
-            {
-                "start_time": "08:00:00",
-                "end_time": "09:00:00",
-                "access_before_schedule": True,
-                "one_time_completion": True,
-                "timer": "00:00:00",
-                "timer_type": "NOT_SET",
-                "periodicity": {
-                    "type": "DAILY",
-                    "start_date": "2021-09-01",
-                    "end_date": "2023-09-01",
-                    "selected_date": "2023-01-01",
-                },
-                "respondent_id": str(lucy.id),
-                "activity_id": str(applet.activities[0].id),
-                "flow_id": None,
-            },
-        ]
-
-        response = await client.post(
-            self.schedule_import_url.format(applet_id=applet.id),
-            data=create_data,  # type: ignore[arg-type]
-        )
-
-        assert response.status_code == 201
-        events = response.json()["result"]
-        assert len(events) == 2
-        assert events[0]["respondentId"] == create_data[0]["respondent_id"]
-
-    async def test_schedule_create_individual(self, client: TestClient, applet: AppletFull, lucy: User):
+    async def test_schedule_create_individual(
+        self, client: TestClient, applet: AppletFull, lucy: User, applet_default_events: list[PublicEvent]
+    ):
         await client.login(self.login_url, "user@example.com", "Test1234!")
         response = await client.post(
             self.schedule_create_individual.format(
@@ -765,8 +517,275 @@ class TestSchedule(BaseTest):
                 respondent_id=str(lucy.id),
             ),
         )
-        assert response.status_code == 201
+        assert response.status_code == http.HTTPStatus.CREATED
 
         events = response.json()["result"]
         assert len(events) == 2
         assert events[0]["respondentId"] == str(lucy.id)
+        default_applet_events_ids_set = set(str(i.id) for i in applet_default_events)
+        individual_default_events_ids_set = set(i["id"] for i in events)
+        assert default_applet_events_ids_set != individual_default_events_ids_set
+        for event in events:
+            assert event["periodicity"]["type"] == constants.PeriodicityType.ALWAYS
+
+    async def test_remove_individual_calendar__events_for_user_not_found(
+        self, client: TestClient, applet: AppletFull, user: User
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        response = await client.delete(self.remove_ind_url.format(applet_id=applet.id, respondent_id=str(user.id)))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+    async def test_remove_individual_calendar(
+        self, client: TestClient, applet: AppletFull, user: User, applet_default_events: list[PublicEvent]
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        response = await client.post(self.schedule_create_individual.format(applet_id=applet.id, respondent_id=user.id))
+        assert response.status_code == http.HTTPStatus.CREATED
+        ids = [i["id"] for i in response.json()["result"]]
+
+        response = await client.delete(self.remove_ind_url.format(applet_id=applet.id, respondent_id=str(user.id)))
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+
+        for id_ in ids:
+            response = await client.get(self.schedule_detail_url.format(applet_id=applet.id, event_id=id_))
+            assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+    async def test_schedule_import(
+        self, client: TestClient, applet: AppletFull, lucy: User, event_daily_data: EventRequest
+    ):
+        await client.login(self.login_url, "user@example.com", "Test1234!")
+        # Just create 3 events for import
+        time_pairs_list = [("08:00:00", "09:00:00"), ("12:00:00", "13:00:00"), ("18:00:00", "19:00:00")]
+        import_data = []
+        for start_time, end_time in time_pairs_list:
+            data = event_daily_data.dict()
+            data["respondent_id"] = str(lucy.id)
+            data["start_time"] = start_time
+            data["end_time"] = end_time
+            import_data.append(data)
+
+        response = await client.post(
+            self.schedule_import_url.format(applet_id=applet.id),
+            data=import_data,
+        )
+
+        assert response.status_code == http.HTTPStatus.CREATED
+        events = response.json()["result"]
+        assert len(events) == len(import_data)
+        for act, exp in zip(events, import_data):
+            assert act["startTime"] == exp["start_time"]
+            assert act["endTime"] == exp["end_time"]
+
+    async def test_create_schedule_events__firebase_error_muted(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        mocker: MockerFixture,
+        event_daily_data: EventRequest,
+        caplog: LogCaptureFixture,
+    ):
+        caplog.set_level(logging.ERROR)
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        error_message = "device id not found"
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message=error_message),
+        )
+        resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=event_daily_data)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        assert caplog.messages
+        assert caplog.messages[0] == error_message
+
+    async def test_get_all_schedules_no_permissions(self, client: TestClient, applet: AppletFull, lucy: User):
+        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        resp = await client.get(self.schedule_url.format(applet_id=applet.id))
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == UserDoesNotHavePermissionError.message
+
+    async def test_delete_all_schedule_events__firebase_error_muted(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        mocker: MockerFixture,
+        caplog: LogCaptureFixture,
+    ):
+        caplog.set_level(logging.ERROR)
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        error_message = "device id not found"
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message=error_message),
+        )
+        resp = await client.delete(self.schedule_url.format(applet_id=applet.id))
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
+        assert caplog.messages
+        assert caplog.messages[0] == error_message
+
+    async def test_delete_event_by_id__firebase_error_muted(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        mocker: MockerFixture,
+        caplog: LogCaptureFixture,
+        daily_event: PublicEvent,
+    ):
+        caplog.set_level(logging.ERROR)
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        error_message = "device id not found"
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message=error_message),
+        )
+        resp = await client.delete(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
+        assert caplog.messages
+        assert caplog.messages[0] == error_message
+
+    async def test_update_event__firefase_error_muted(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        mocker: MockerFixture,
+        caplog: LogCaptureFixture,
+        daily_event: PublicEvent,
+        event_daily_data_update: EventUpdateRequest,
+    ):
+        caplog.set_level(logging.ERROR)
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        error_message = "device id not found"
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message=error_message),
+        )
+        resp = await client.put(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id), data=event_daily_data_update
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        assert caplog.messages
+        assert caplog.messages[0] == error_message
+
+    async def test_delete_individual_event_by_id__firebase_error_muted(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        lucy: User,
+        mocker: MockerFixture,
+        caplog: LogCaptureFixture,
+        daily_event_individual_lucy: PublicEvent,
+    ):
+        caplog.set_level(logging.ERROR)
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        error_message = "device id not found"
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message=error_message),
+        )
+        resp = await client.delete(
+            self.delete_user_url.format(
+                applet_id=applet.id, event_id=daily_event_individual_lucy.id, respondent_id=lucy.id
+            )
+        )
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
+        assert caplog.messages
+        assert caplog.messages[0] == error_message
+
+    async def test_delete_individual_calendar__firebase_error_muted(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        lucy: User,
+        mocker: MockerFixture,
+        caplog: LogCaptureFixture,
+        daily_event_individual_lucy: PublicEvent,
+    ):
+        caplog.set_level(logging.ERROR)
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        error_message = "device id not found"
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message=error_message),
+        )
+        resp = await client.delete(
+            self.remove_ind_url.format(
+                applet_id=applet.id, event_id=daily_event_individual_lucy.id, respondent_id=lucy.id
+            )
+        )
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
+        assert caplog.messages
+        assert caplog.messages[0] == error_message
+
+    async def test_create_individual_calendar__firebase_error_muted(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        lucy: User,
+        mocker: MockerFixture,
+        caplog: LogCaptureFixture,
+        event_daily_data: EventRequest,
+    ):
+        caplog.set_level(logging.ERROR)
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        error_message = "device id not found"
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=FireBaseNotFoundError(message=error_message),
+        )
+        data = event_daily_data.copy(deep=True)
+        data.respondent_id = lucy.id
+        resp = await client.post(
+            self.schedule_create_individual.format(applet_id=applet.id, respondent_id=lucy.id), data=data
+        )
+        assert resp.status_code == http.HTTPStatus.CREATED
+        assert caplog.messages
+        assert caplog.messages[0] == error_message
+
+    async def test_update_individual_event__notification_sent_to_the_individual_respondent(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        event_daily_data_update: EventUpdateRequest,
+        daily_event_individual_lucy: PublicEvent,
+        fcm_client: FCMNotificationTest,
+        device_lucy: str,
+    ):
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        data = event_daily_data_update.copy(deep=True)
+        data.start_time = datetime.time(0, 0)
+        data.end_time = datetime.time(20, 0)
+        resp = await client.put(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event_individual_lucy.id), data=data
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        assert device_lucy in fcm_client.notifications
+        assert len(fcm_client.notifications) == 1
+        notification = fcm_client.notifications[device_lucy][0]
+        assert "Your schedule has been changed, click to update." in notification
+
+    async def test_delete_by_id_individual_event__notification_sent_to_the_individual_respondent(
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        user: User,
+        daily_event_individual_lucy: PublicEvent,
+        fcm_client: FCMNotificationTest,
+        device_lucy: str,
+    ):
+        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        resp = await client.delete(
+            self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event_individual_lucy.id)
+        )
+        assert resp.status_code == http.HTTPStatus.NO_CONTENT
+        assert device_lucy in fcm_client.notifications
+        assert len(fcm_client.notifications) == 1
+        notification = fcm_client.notifications[device_lucy][0]
+        assert "Your schedule has been changed, click to update." in notification

@@ -23,19 +23,21 @@ class TestClient:
         return headers_
 
     @staticmethod
-    def _get_body(data: dict[str, Any] | BaseModel | None = None) -> str | None:
+    def _get_body(
+        data: dict[str, Any] | BaseModel | list[dict[str, Any]] | list[BaseModel] | None = None,
+    ) -> str | None:
         if data:
             if isinstance(data, BaseModel):
                 request_data = data.dict()
             else:
-                request_data = data
+                request_data = data  # type: ignore[assignment]
             return json.dumps(request_data, default=str)
         return None
 
     async def post(
         self,
         url: str,
-        data: dict[str, Any] | BaseModel | None = None,
+        data: dict[str, Any] | BaseModel | list[dict[str, Any]] | list[BaseModel] | None = None,
         query: dict | None = None,
         headers: dict | None = None,
         files: Mapping[str, BytesIO] | None = None,
