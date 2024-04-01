@@ -902,16 +902,18 @@ class TestAnswerActivityItems:
     async def test_get_identifiers(self, mock_kiq_report, arbitrary_client, tom, applet):
         await arbitrary_client.login(self.login_url, tom.email_encrypted, "Test1234!")
 
-        response = await arbitrary_client.get(
-            self.identifiers_url.format(
-                applet_id=str(applet.id),
-                activity_id=str(applet.activities[0].id),
-            )
+        identifiers_url = self.identifiers_url.format(
+            applet_id=str(applet.id),
+            activity_id=str(applet.activities[0].id),
         )
+        identifiers_url = f"{identifiers_url}?respondentId={tom.id}"
+
+        response = await arbitrary_client.get(identifiers_url)
 
         assert response.status_code == 200
         assert response.json()["count"] == 0
 
+        created_at = datetime.datetime.utcnow()
         create_data = dict(
             submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
             applet_id=str(applet.id),
@@ -937,23 +939,19 @@ class TestAnswerActivityItems:
                 width=819,
                 height=1080,
             ),
+            created_at=created_at,
         )
 
         response = await arbitrary_client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await arbitrary_client.get(
-            self.identifiers_url.format(
-                applet_id=str(applet.id),
-                activity_id=str(applet.activities[0].id),
-            )
-        )
-
+        response = await arbitrary_client.get(identifiers_url)
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["identifier"] == "some identifier"
         assert response.json()["result"][0]["userPublicKey"] == "user key"
+        assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at
 
     async def test_get_versions(self, mock_kiq_report, arbitrary_client, tom, applet):
         await arbitrary_client.login(self.login_url, tom.email_encrypted, "Test1234!")

@@ -231,25 +231,25 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_identifiers_by_activity_id(
         self,
         activity_hist_ids: Collection[str],
-        respondent_id: uuid.UUID | None,
-    ) -> list[tuple[str, str, dict]]:
+        respondent_id: uuid.UUID,
+    ) -> list[tuple[str, str, dict, datetime.datetime]]:
         query: Query = select(
             AnswerItemSchema.identifier,
             AnswerItemSchema.user_public_key,
             AnswerItemSchema.migrated_data,
+            func.max(AnswerSchema.created_at),
         )
-        query = query.distinct(AnswerItemSchema.identifier)
+        query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+        query = query.group_by(
+            AnswerItemSchema.identifier, AnswerItemSchema.user_public_key, AnswerItemSchema.migrated_data
+        )
         query = query.where(
             AnswerItemSchema.identifier.isnot(None),
             AnswerSchema.activity_history_id.in_(activity_hist_ids),
         )
-        if respondent_id:
-            query = query.where(AnswerSchema.respondent_id == respondent_id)
-
-        query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+        query = query.where(AnswerSchema.respondent_id == respondent_id)
         db_result = await self._execute(query)
-
-        return db_result.all()
+        return db_result.all()  # noqa
 
     async def get_versions_by_activity_id(self, activity_id: uuid.UUID) -> list[Version]:
         query: Query = select(

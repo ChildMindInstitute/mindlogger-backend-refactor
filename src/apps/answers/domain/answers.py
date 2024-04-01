@@ -357,6 +357,7 @@ class VersionPublic(PublicModel):
 class Identifier(InternalModel):
     identifier: str
     user_public_key: str | None = None
+    last_answer_date: datetime.datetime
 
 
 class IdentifierPublic(PublicModel):
@@ -428,4 +429,4 @@ class ArbitraryPreprocessor(PublicModel):
 
 
 class IdentifiersQueryParams(InternalModel):
-    respondent_id: uuid.UUID | None = None
+    respondent_id: uuid.UUID
