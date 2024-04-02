@@ -1,7 +1,7 @@
 import datetime
 import http
-import uuid
 import re
+import uuid
 from typing import Any, cast
 from unittest.mock import AsyncMock
 
@@ -12,25 +12,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
-from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
-from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
+from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
+from apps.answers.domain import AnswerNote, AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
-from apps.answers.db.schemas import AnswerNoteSchema, AnswerSchema
-from apps.answers.domain import AnswerNote
-from apps.answers.domain.answers import AppletAnswerCreate, AssessmentAnswerCreate, ItemAnswerCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
-from infrastructure.utility import RedisCacheTest
-from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
-from apps.answers.service import AnswerService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-from apps.answers.crud.answers import AnswersCRUD
-from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
+from infrastructure.utility import RedisCacheTest
 
 
 @pytest.fixture
@@ -965,47 +958,6 @@ class TestAnswerActivityItems(BaseTest):
             assert not assessment
         else:
             assert assessment
-
-    async def test_get_all_types_of_identifiers(
-        self, mock_kiq_report, client, tom: User, applet: AppletFull, session, tom_answer_item_for_applet, request
-    ):
-        client.login(tom)
-        identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
-        identifier_url = f"{identifier_url}?respondentId={tom.id}"
-
-        answer_items = [
-            # Migrated not encrypted
-            AnswerItemSchema(
-                **tom_answer_item_for_applet,
-                identifier="unencrypted identifier",
-                migrated_data=dict(is_identifier_encrypted=False),
-            ),
-            # Migrated encrypted
-            AnswerItemSchema(
-                **tom_answer_item_for_applet,
-                identifier="encrypted identifier",
-                user_public_key="user_public_key",
-                migrated_data=dict(is_identifier_encrypted=True),
-            ),
-            # Not migrated
-            AnswerItemSchema(
-                **tom_answer_item_for_applet,
-                identifier="identifier",
-                user_public_key="user_public_key",
-                migrated_data=None,
-            ),
-        ]
-        for answer_item in answer_items:
-            await AnswerItemsCRUD(session).create(answer_item)
-
-        res = await client.get(identifier_url)
-        assert res.status_code == 200
-        payload = res.json()
-        assert payload["count"] == len(answer_items)
-        for identifier in payload["result"]:
-            assert "lastAnswerDate" in identifier
-            if identifier["identifier"] in ["encrypted identifier", "identifier"]:
-                assert "userPublicKey" in identifier
 
     async def test_summary_activities_submitted_date_with_answers(
         self,

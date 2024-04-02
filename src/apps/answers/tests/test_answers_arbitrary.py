@@ -10,9 +10,10 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
 
+from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.db.schemas import AnswerNoteSchema, AnswerSchema
-from apps.answers.domain import AnswerNote
-from apps.answers.domain.answers import AppletAnswerCreate, AssessmentAnswerCreate, ItemAnswerCreate
+from apps.answers.domain import AnswerNote, AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
+from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
 from apps.mailing.services import TestMail
@@ -21,9 +22,6 @@ from apps.shared.test.client import TestClient
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from infrastructure.utility import RedisCacheTest
-from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
-from apps.answers.service import AnswerService
-from apps.answers.crud import AnswerItemsCRUD
 
 
 @pytest.fixture
