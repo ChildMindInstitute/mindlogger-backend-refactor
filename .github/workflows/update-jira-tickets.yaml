@@ -54,7 +54,7 @@ jobs:
             fi
 
             echo "Checking for successful Jenkins build for GitHub tag ${$tagName}"
-            response=$(curl -o /dev/null -s -w "%{http_code}\n" -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
+            response=$(curl -o /dev/null --silent -w "%{http_code}\n" -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
             if [ "$response" == "200" ]; then
               echo "Found successful Jenkins build for GitHub tag ${$tagName}: ${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
               echo "::set-output name=tagName::$tagName"
