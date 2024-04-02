@@ -808,7 +808,7 @@ class TestApplet:
     async def test_retrieve_applet_versions__applet_with_flow(
         self, client: TestClient, tom: User, applet_one_with_flow: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.get(
             self.history_url.format(pk=applet_one_with_flow.id, version=applet_one_with_flow.version)
         )
@@ -829,7 +829,7 @@ class TestApplet:
     async def test_create_applet__editor_create_applet__stil_editor_in_new_applet(
         self, client: TestClient, lucy: User, tom: User, applet_minimal_data: AppletCreate, mocker: MockerFixture
     ):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
         mock = mocker.patch("apps.applets.service.AppletService._create_applet_accesses")
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_minimal_data)
         assert resp.status_code == http.HTTPStatus.CREATED
@@ -844,7 +844,7 @@ class TestApplet:
         mocker: MockerFixture,
         encryption: Encryption,
     ):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
         mock = mocker.patch("apps.applets.service.AppletService._create_applet_accesses")
         new_name = applet_one_lucy_editor.display_name + "new"
         resp = await client.post(
@@ -857,7 +857,7 @@ class TestApplet:
     async def test_get_applet_base_info_by_key__link_does_not_exist(
         self, client: TestClient, tom: User, uuid_zero: uuid.UUID
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.get(self.public_applet_base_info_url.format(key=uuid_zero))
         assert resp.status_code == http.HTTPStatus.NOT_FOUND
 
@@ -869,7 +869,7 @@ class TestApplet:
         applet_one_update_data: AppletUpdate,
         mocker: MockerFixture,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_one_update_data.copy(deep=True)
         data.activities[0].is_reviewable = True
         mock = mocker.patch("apps.schedule.service.ScheduleService.delete_by_activity_ids")
@@ -880,7 +880,7 @@ class TestApplet:
     async def test_duplicate_applet__duplicate_applet_with_activity_flow(
         self, client: TestClient, tom: User, applet_one_with_flow: AppletFull, encryption: Encryption
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         new_name = applet_one_with_flow.display_name + "new"
         resp = await client.post(
             self.applet_duplicate_url.format(pk=applet_one_with_flow.id),
@@ -894,14 +894,14 @@ class TestApplet:
     async def test_delete_applet_link__link_does_not_exists(
         self, client: TestClient, tom: User, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.delete(self.access_link_url.format(pk=applet_one.id))
         assert resp.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_get_unique_name_for_applet__applet_name_with_number(
         self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         new_name = AppletService.APPLET_NAME_FORMAT_FOR_DUPLICATES.format(applet_one.display_name, 1)
         resp = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
@@ -918,7 +918,7 @@ class TestApplet:
     async def test_get_applet_changes__version_is_not_valid(
         self, client: TestClient, tom: User, applet_one: AppletFull, not_valid_vesion: str
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.get(self.history_changes_url.format(pk=applet_one.id, version=not_valid_vesion))
         assert resp.status_code == http.HTTPStatus.NOT_FOUND
         result = resp.json()["result"]
@@ -928,7 +928,7 @@ class TestApplet:
         )
 
     async def test_get_applet_changes__one_applet_version(self, client: TestClient, tom: User, applet_one: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.get(self.history_changes_url.format(pk=applet_one.id, version=applet_one.version))
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["displayName"] == f"New applet {applet_one.display_name} added"
