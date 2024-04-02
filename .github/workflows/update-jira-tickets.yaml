@@ -10,10 +10,6 @@ on:
         description: 'Tag Name'
         required: true
 
-  # Temporarily allow workflow to get registered
-  # TODO: Remove this
-  push:
-
 jobs:
   process-release:
     runs-on: ubuntu-latest
