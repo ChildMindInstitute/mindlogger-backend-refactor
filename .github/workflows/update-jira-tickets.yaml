@@ -33,6 +33,14 @@ jobs:
           echo "Tag: ${currentTag}"
           echo "tag=${currentTag}" >> $GITHUB_OUTPUT
 
+      - name: Validate tag
+        run: |
+          git fetch -q --tags
+          if ! git tag --list | grep -qx "${{ steps.get-tag.outputs.tag }}"; then
+            echo "Not a valid tag, ending workflow"
+            exit 1
+          fi
+
       - name: Check if tag is a release candidate
         run: |
           if [[ ${{ steps.get-tag.outputs.tag }} != *"-rc"* ]]; then
