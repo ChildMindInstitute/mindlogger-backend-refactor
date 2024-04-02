@@ -46,14 +46,13 @@ jobs:
         id: ping-jenkins
         run: |
           repoName=${GITHUB_REPOSITORY##*/}
+          echo "Repo name: ${repoName}"
           currentTag=${{ steps.get-tag.outputs.tag }}
+          echo "Current tag: ${currentTag}"
           rcTags=$(git tag --sort=-creatordate | grep rc)
+          echo "Release candidate tags: ${rcTags}"
           started=false
           jenkinsUrl="${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
-          
-          echo "Repo name: ${repoName}"
-          echo "Current tag: ${currentTag}"
-          echo "Release candidate tags: ${rcTags}"
           echo "Jenkins URL: ${jenkinsUrl}"
           
           for tagName in $rcTags
