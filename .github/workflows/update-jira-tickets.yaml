@@ -10,6 +10,10 @@ on:
         description: 'Tag Name'
         required: true
 
+  # Temporarily allow workflow to get registered
+  # TODO: Remove this
+  push:
+
 jobs:
   process-release:
     runs-on: ubuntu-latest
@@ -22,6 +26,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "release" ]; then
             currentTag=${GITHUB_REF#refs/tags/}
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            currentTag=v1.3.21-rc1
           else
             currentTag=${{ github.event.inputs.tagName }}
           fi
