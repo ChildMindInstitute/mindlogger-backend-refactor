@@ -1631,9 +1631,9 @@ class TestAnswerActivityItems(BaseTest):
             assert assessment
 
     async def test_get_all_types_of_identifiers(
-        self, mock_kiq_report, client, tom: User, applet: AppletFull, session, tom_answer_item_for_applet
+        self, mock_kiq_report, client, tom: User, applet: AppletFull, session, tom_answer_item_for_applet, request
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
         identifier_url = f"{identifier_url}?respondentId={tom.id}"
 
