@@ -3,6 +3,12 @@ name: Update Jira Tickets
 on:
   release:
     types: [created]
+  # Allows running manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      tagName:
+        description: 'Tag Name'
+        required: true
 
 jobs:
   process-release:
@@ -14,7 +20,11 @@ jobs:
       - name: Get current tag
         id: get-tag
         run: |
-          currentTag=${GITHUB_REF#refs/tags/}
+          if [ "${{ github.event_name }}" == "release" ]; then
+            currentTag=${GITHUB_REF#refs/tags/}
+          else
+            currentTag=${{ github.event.inputs.tagName }}
+          fi
           echo "Tag: ${currentTag}"
           echo "::set-output name=tag::${currentTag}"
 
