@@ -71,8 +71,8 @@ jobs:
             fi
           done
 
-      - name: Get commit messages between tags
-        id: get-commits
+      - name: Determine Jira tickets from commit messages
+        id: jira-tickets
         run: |
           currentTag=${{ steps.get-tag.outputs.tag }}
           previousTag=${{ steps.ping-jenkins.outputs.tagName }}
@@ -82,12 +82,6 @@ jobs:
             commitMessages=$(git log --pretty=%B $previousTag..$currentTag)
           fi
           echo "Commit messages since the last release: ${commitMessages}"
-          echo "messages=${commitMessages}" >> $GITHUB_OUTPUT
-
-      - name: Determine Jira tickets from commit messages
-        id: jira-tickets
-        run: |
-          commitMessages=${{ steps.get-commits.outputs.messages }}
           jiraTickets=$(echo "$commitMessages" | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
           echo "Jira tickets since the last release: ${jiraTickets}"
           echo "tickets=${jiraTickets}" >> $GITHUB_OUTPUT
