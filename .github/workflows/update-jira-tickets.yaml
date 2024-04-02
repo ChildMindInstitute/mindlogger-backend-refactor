@@ -9,11 +9,31 @@ on:
       tagName:
         description: 'Tag Name'
         required: true
+      jenkinsUser:
+          description: Jenkins user ID
+          required: true
+      jenkinsToken:
+          description: Jenkins API token for the user
+          required: true
+      jenkinsHost:
+          description: "Host name of the Jenkins server (starting with https://)"
+          required: true
+      jiraWebhookUrl:
+          description: URL of the Jira webhook
+          required: true
 
 jobs:
   process-release:
+    env:
+      JENKINS_USER: ${{ secrets.JENKINS_USER || github.event.inputs.jenkinsUser }}
+      JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN || github.event.inputs.jenkinsToken }}
+      JIRA_WEBHOOK_URL: ${{ secrets.JIRA_WEBHOOK_URL || github.event.inputs.jiraWebhookUrl }}
     runs-on: ubuntu-latest
     steps:
+      - name: Set temporary env vars
+        run: |
+          echo "JENKINS_HOST=${{ env.JENKINS_HOST || github.event.inputs.jenkinsHost }}" >> $GITHUB_ENV
+
       - name: Check out code
         uses: actions/checkout@v4
         with:
@@ -55,9 +75,9 @@ jobs:
             fi
 
             echo "Checking for successful Jenkins build for GitHub tag ${tagName}"
-            response=$(curl -o /dev/null --silent -w "%{http_code}\n" -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
+            response=$(curl -o /dev/null --silent -w "%{http_code}\n" -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
             if [ "$response" == "200" ]; then
-              echo "Found successful Jenkins build for GitHub tag ${tagName}: ${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
+              echo "Found successful Jenkins build for GitHub tag ${tagName}: ${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
               echo "tagName=${tagName}" >> $GITHUB_OUTPUT
               break
             fi
@@ -91,12 +111,12 @@ jobs:
           "Waiting for current build to finish.."
           while true; do
             echo -n "."
-            result=$(curl --silent -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${currentTag}/lastBuild/api/json" | jq -r .result)
+            result=$(curl --silent -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${JENKINS_HOST}/job/${repoName}/view/tags/job/${currentTag}/lastBuild/api/json" | jq -r .result)
             if [[ "$result" == "SUCCESS" ]]; then
               echo "Build successful! Submitting ticket numbers to Jira"
               tickets=${{ steps.jira-tickets.outputs.tickets }}
               json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }"
-              curl -X POST -H 'Content-Type: application/json' --url "${{ secrets.JIRA_WEBHOOK_URL }}" --data "$json"
+              curl -X POST -H 'Content-Type: application/json' --url "${JIRA_WEBHOOK_URL}" --data "$json"
               break
             elif [[ "$result" != "null" ]]; then
               # TODO: Determine what the possible states of `result` are
