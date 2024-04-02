@@ -21,8 +21,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-        with:
-          fetch-tags: true
 
       - name: Get current tag
         id: get-tag
@@ -49,6 +47,7 @@ jobs:
           echo "Repo name: ${repoName}"
           currentTag=${{ steps.get-tag.outputs.tag }}
           echo "Current tag: ${currentTag}"
+          git fetch --tags
           rcTags=$(git tag --sort=-creatordate | grep rc)
           echo "Release candidate tags: ${rcTags}"
           started=false
