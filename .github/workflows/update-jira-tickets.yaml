@@ -96,7 +96,7 @@ jobs:
             result=$(curl --silent -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${JENKINS_HOST}/job/${repoName}/view/tags/job/${currentTag}/lastBuild/api/json" | jq -r .result)
             if [[ "$result" == "SUCCESS" ]]; then
               echo "Build successful! Submitting ticket numbers to Jira"
-              tickets=${{ steps.jira-tickets.outputs.tickets }}
+              tickets="${{ steps.jira-tickets.outputs.tickets }}"
               json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }"
               curl -X POST -H 'Content-Type: application/json' --url "${JIRA_WEBHOOK_URL}" --data "$json"
               break
