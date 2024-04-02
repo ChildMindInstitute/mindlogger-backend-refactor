@@ -70,14 +70,14 @@ class TestAlert(BaseTest):
     async def test_alert_get_all(
         self, session, client, lucy: User, lucy_alert_for_applet_three: list[AlertSchema], lucy_subject: Subject
     ):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
         response = await client.get(self.alert_list_url)
         payload = response.json()
         assert response.status_code == http.HTTPStatus.OK
         assert payload["count"] == 2
 
-    async def test_watch_alert(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_watch_alert(self, client, tom):
+        client.login(tom)
 
         response = await client.post(self.watch_alert_url.format(alert_id="6f794861-0ff6-4c39-a3ed-602fd4e22c58"))
         assert response.status_code == http.HTTPStatus.OK
@@ -90,7 +90,7 @@ class TestAlert(BaseTest):
     async def test_alert_secret_id_from_subject(
         self, session, client, lucy: User, lucy_alert_for_applet_three: list[AlertSchema], lucy_subject: Subject
     ):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
         response = await client.get(self.alert_list_url)
         payload = response.json()
         assert response.status_code == http.HTTPStatus.OK

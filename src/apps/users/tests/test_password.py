@@ -42,9 +42,11 @@ class TestPassword:
     password_recovery_approve_url = user_router.url_path_for("password_recovery_approve")
     password_recovery_healthcheck_url = user_router.url_path_for("password_recovery_healthcheck")
 
-    async def test_password_update(self, mock_reencrypt_kiq: AsyncMock, client: TestClient, user_create: UserCreate):
+    async def test_password_update(
+        self, mock_reencrypt_kiq: AsyncMock, client: TestClient, user: User, user_create: UserCreate
+    ):
         # User get token
-        await client.login(url=self.get_token_url, email=user_create.email, password=user_create.password)
+        client.login(user)
 
         # Password update
         password_update_request = PasswordUpdateRequestFactory.build(prev_password=user_create.password)
@@ -57,9 +59,9 @@ class TestPassword:
             password=password_update_request.dict()["password"],
         )
 
-        internal_response: HttpResponse = await client.login(
+        internal_response: HttpResponse = await client.post(
             url=self.get_token_url,
-            **login_request_user.dict(),
+            data=login_request_user.dict(),
         )
 
         assert internal_response.status_code == status.HTTP_200_OK
@@ -257,15 +259,9 @@ class TestPassword:
         assert len(keys) == 0
 
     async def test_update_password__password_contains_whitespaces(
-        self,
-        client: TestClient,
-        user_create: UserCreate,
+        self, client: TestClient, user_create: UserCreate, user: User
     ):
-        await client.login(
-            self.get_token_url,
-            user_create.email,
-            user_create.password,
-        )
+        client.login(user)
 
         data = {
             "password": user_create.password + " ",
@@ -278,16 +274,9 @@ class TestPassword:
         assert result[0]["message"] == PasswordHasSpacesError.message
 
     async def test_update_password__reencryption_already_in_progress(
-        self,
-        client: TestClient,
-        user_create: UserCreate,
-        mocker: MockFixture,
+        self, client: TestClient, user_create: UserCreate, mocker: MockFixture, user: User
     ):
-        await client.login(
-            self.get_token_url,
-            user_create.email,
-            user_create.password,
-        )
+        client.login(user)
 
         data = {
             "password": user_create.password,
@@ -327,7 +316,7 @@ class TestPassword:
     async def test_password_recovery__update_user_email_encrypted_if_no_email_encrypted(
         self, client: TestClient, user_create: UserCreate, user: User, mocker: MockFixture, session: AsyncSession
     ):
-        await client.login(self.get_token_url, user_create.email, user_create.password)
+        client.login(user)
         updated = await UsersCRUD(session).update_encrypted_email(user, "")
         assert not updated.email_encrypted
         spy = mocker.spy(UsersCRUD, "update_encrypted_email")

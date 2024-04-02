@@ -86,9 +86,20 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.respondent_id == user_id)
-        query = query.where(AnswerItemSchema.is_assessment == True)  # noqa
+        query = query.where(AnswerItemSchema.is_assessment.is_(True))
         db_result = await self._execute(query)
         return db_result.scalars().first()
+
+    async def get_answer_assessment(self, answer_item_id: uuid.UUID, answer_id: uuid.UUID) -> AnswerItemSchema | None:
+        query: Query = select(AnswerItemSchema)
+        query = query.where(AnswerItemSchema.id == answer_item_id)
+        query = query.where(AnswerItemSchema.answer_id == answer_id)
+        query = query.where(AnswerItemSchema.is_assessment.is_(True))
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
+
+    async def assessment_hard_delete(self, answer_item_id: uuid.UUID):
+        await super()._delete(id=answer_item_id, is_assessment=True)
 
     async def get_reviews_by_answer_id(self, answer_id: uuid.UUID, activity_items: list) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
@@ -167,3 +178,8 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         )
         db_result = await self._execute(query)
         return db_result.all()  # noqa
+
+    async def delete_assessment(self, assessment_id: uuid.UUID):
+        query: Query = delete(AnswerItemSchema)
+        query = query.where(AnswerItemSchema.id == assessment_id, AnswerItemSchema.is_assessment.is_(True))
+        await self._execute(query)

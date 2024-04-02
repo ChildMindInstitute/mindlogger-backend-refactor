@@ -100,7 +100,7 @@ class TestActivityItems:
         item_fixture: str,
         request: FixtureRequest,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         item_create = request.getfixturevalue(item_fixture)
         data = applet_minimal_data.copy(deep=True)
         data.activities[0].items = [item_create]
@@ -143,7 +143,7 @@ class TestActivityItems:
         fixture_name: str,
         performance_task_type: PerformanceTaskType,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         activity = request.getfixturevalue(fixture_name)
         data.activities = [activity]
@@ -171,7 +171,7 @@ class TestActivityItems:
         applet_minimal_data: AppletCreate,
         activity_create_with_conditional_logic: ActivityCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         data.activities = [activity_create_with_conditional_logic]
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -189,7 +189,7 @@ class TestActivityItems:
         applet_minimal_data: AppletCreate,
         activity_create_with_conditional_logic: ActivityCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         data.activities = [activity_create_with_conditional_logic]
         item_for_condition = activity_create_with_conditional_logic.items[0]
@@ -210,7 +210,7 @@ class TestActivityItems:
         applet_minimal_data: AppletCreate,
         activity_create_with_conditional_logic: ActivityCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         data.activities = [activity_create_with_conditional_logic]
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -239,7 +239,7 @@ class TestActivityItems:
         request: FixtureRequest,
         applet_minimal_data: AppletCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         item = request.getfixturevalue(item_fixture_name)
         data = applet_minimal_data.copy(deep=True)
         # row
@@ -257,7 +257,7 @@ class TestActivityItems:
     async def test_create_applet_single_multi_select_response_values_value_null_auto_set_value(
         self, client, applet_minimal_data, tom, response_type
     ) -> None:
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True).dict()
         item = data["activities"][0]["items"][0]
         option = item["response_values"]["options"][0]
@@ -280,7 +280,7 @@ class TestActivityItems:
     async def test_create_applet_flow_wrong_activity_key(
         self, client: TestClient, applet_minimal_data: AppletCreate, tom: User
     ) -> None:
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.dict()
         activity_key = data["activities"][0]["key"]
         activity_wrong_key = uuid.uuid4()
@@ -311,7 +311,7 @@ class TestActivityItems:
     async def test_update_applet_duplicated_activity_item_name_is_not_allowed(
         self, client: TestClient, applet_minimal_data: AppletCreate, tom: User, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = AppletUpdate(**applet_minimal_data.dict(exclude_unset=True)).dict()
         item = copy.deepcopy(data["activities"][0]["items"][0])
         data["activities"][0]["items"].append(item)
@@ -337,7 +337,7 @@ class TestActivityItems:
         remote_image: str,
         request: FixtureRequest,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         item_create = request.getfixturevalue(fixture_name)
         item_create.response_values.options[0].image = remote_image
@@ -360,7 +360,7 @@ class TestActivityItems:
         fixture_name: str,
         request: FixtureRequest,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         item_create = request.getfixturevalue(fixture_name)
         color = Color("#ffffff")
@@ -381,7 +381,7 @@ class TestActivityItems:
         remote_image: str,
         slider_item_create: ActivityItemCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         slider_item_create.response_values = cast(SliderValues, slider_item_create.response_values)
         slider_item_create.response_values.min_image = remote_image
@@ -400,7 +400,7 @@ class TestActivityItems:
         subscale_setting: SubscaleSetting,
         single_select_item_create_with_score: ActivityItemCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         sub_setting = subscale_setting.copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
@@ -421,7 +421,7 @@ class TestActivityItems:
         subscale_setting: SubscaleSetting,
         subscale_with_item_type_subscale: Subscale,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         sub_settin = subscale_setting.copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
@@ -444,7 +444,7 @@ class TestActivityItems:
         subscale_setting: SubscaleSetting,
         subscale_total_score_table: list[TotalScoreTable],
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         sub_setting = subscale_setting.copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
@@ -466,7 +466,7 @@ class TestActivityItems:
         subscale_setting: SubscaleSetting,
         subscale_lookup_table: list[SubScaleLookupTable],
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         sub_setting = subscale_setting.copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
@@ -487,7 +487,7 @@ class TestActivityItems:
         scores_and_reports: ScoresAndReports,
         single_select_item_create_with_score: ActivityItemCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         reports_data = scores_and_reports.copy(deep=True)
         reports_data.reports[0].items_print = [single_select_item_create_with_score.name]  # type: ignore[index]
@@ -508,7 +508,7 @@ class TestActivityItems:
         section_conditional_logic: SectionConditionalLogic,
         single_select_item_create_with_score: ActivityItemCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         reports_data = scores_and_reports.copy(deep=True)
         reports_data.reports[0].items_print = [single_select_item_create_with_score.name]  # type: ignore[index]

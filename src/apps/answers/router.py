@@ -9,6 +9,7 @@ from apps.answers.api import (
     applet_activity_assessment_retrieve,
     applet_activity_identifiers_retrieve,
     applet_activity_versions_retrieve,
+    applet_answer_assessment_delete,
     applet_answer_reviews_retrieve,
     applet_answers_export,
     applet_completed_entities,
@@ -162,6 +163,11 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_assessment_retrieve)
+
+router.delete(
+    "/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)(applet_answer_assessment_delete)
 
 router.post(
     "/applet/{applet_id}/answers/{answer_id}/assessment",
