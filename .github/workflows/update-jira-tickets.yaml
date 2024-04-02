@@ -54,7 +54,7 @@ jobs:
           repoName=${GITHUB_REPOSITORY##*/}
           currentTag="${{ steps.get-tag.outputs.tag }}"
           git fetch -q --tags
-          rcTags=$(git tag --sort=-creatordate | grep rc)
+          rcTags=$(git tag --sort=-creatordate | grep -- -rc)
           started=false
           previousTag=""
 
