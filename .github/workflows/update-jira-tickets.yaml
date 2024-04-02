@@ -1,0 +1,90 @@
+name: Update Jira Tickets
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  process-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Get current tag
+        id: get-tag
+        run: |
+          currentTag=${GITHUB_REF#refs/tags/}
+          echo "Tag: ${currentTag}"
+          echo "::set-output name=tag::${currentTag}"
+
+      - name: Check if tag is a release candidate
+        run: |
+          if [[ ${{ steps.get-tag.outputs.tag }} != *"-rc"* ]]; then
+            echo "Not a release candidate, ending workflow."
+            exit 0
+          fi
+
+      - name: Get previous tags
+        id: get-prev-tag
+        run: |
+          currentTag=${{ steps.get-tag.outputs.tag }}
+          git fetch --tags
+          previousTag=$(git tag --sort=-creatordate | grep -v $currentTag | grep rc | head -1)
+          echo "Previous release tag is ${previousTag}"
+          echo "::set-output name=prevTag::$previousTag"
+
+      - name: Ping Jenkins for previous successful tag
+        id: ping-jenkins
+        run: |
+          repoName=${GITHUB_REPOSITORY##*/}
+          tagName=${{ steps.get-prev-tag.outputs.prevTag }}
+          while [ -z "$tagName" ]; do
+            echo "Checking for successful Jenkins build for GitHub tag ${$tagName}"
+            response=$(curl --silent "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
+            if [ "$response" != "" ]; then
+              echo "Found successful Jenkins build for GitHub tag ${$tagName}: ${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
+              echo "::set-output name=tagName::$tagName"
+              break
+            fi
+            tagName=$(git tag --sort=-creatordate | grep -v $tagName | grep rc | head -1)
+          done
+
+      - name: Get commit messages between tags
+        id: get-commits
+        run: |
+          currentTag=${{ steps.get-tag.outputs.tag }}
+          previousTag=${{ steps.ping-jenkins.outputs.tagName }}
+          commitMessages=$(git log --pretty=%B $previousTag..$currentTag)
+          echo "Commit messages since the last release: ${commitMessages}"
+          echo "::set-output name=messages::$commitMessages"
+
+      - name: Determine Jira tickets from commit messages
+        id: jira-tickets
+        run: |
+          commitMessages=${{ steps.get-commits.outputs.messages }}
+          jiraTickets=$(echo "$commitMessages" | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
+          echo "Jira tickets since the last release: ${jiraTickets}"
+          echo "::set-output name=tickets::$jiraTickets"
+
+      - name: Periodically ping Jenkins for current tag build status
+        run: |
+          repoName=${GITHUB_REPOSITORY##*/}
+          currentTag=${{ steps.get-tag.outputs.tag }}
+          "Waiting for current build to finish.."
+          while true; do
+            echo -n "."
+            result=$(curl --silent "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${currentTag}/lastBuild/api/json" | jq -r .result)
+            if [[ "$result" == "SUCCESS" ]]; then
+              echo "Build successful! Submitting ticket numbers to Jira"
+              tickets=${{ steps.jira-tickets.outputs.tickets }}
+              json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }"
+              curl -X POST -H 'Content-Type: application/json' --url "${{ secrets.JIRA_WEBHOOK_URL }}" --data "$json"
+              break
+            elif [[ "$result" != "null" ]]; then
+              # TODO: Determine what the possible states of `result` are
+              echo "Build failed, ending workflow"
+              break
+            fi
+            sleep 60
+          done
