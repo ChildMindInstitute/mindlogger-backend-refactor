@@ -56,6 +56,7 @@ jobs:
           git fetch -q --tags
           rcTags=$(git tag --sort=-creatordate | grep rc)
           started=false
+          previousTag=""
 
           for tagName in $rcTags
           do
@@ -74,21 +75,24 @@ jobs:
             echo "Response: ${response}" 
             if [ "$response" == "200" ]; then
               echo "Found successful Jenkins build for GitHub tag ${tagName}: ${jenkinsUrl}"
-              echo "tagName=${tagName}" >> $GITHUB_OUTPUT
+              previousTag="${tagName}"
               break
             fi
           done
+          
+          if [ "${previousTag}" == "" ]; then
+            echo "No successful Jenkins builds found for any previous tags. Ending workflow"
+            exit 1
+          else
+            echo "tagName=${previousTag}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Determine Jira tickets from commit messages
         id: jira-tickets
         run: |
           currentTag="${{ steps.get-tag.outputs.tag }}"
           previousTag="${{ steps.ping-jenkins.outputs.tagName }}"
-          if [ "$previousTag" == "" ]; then
-            commitMessages=$(git log --pretty=%B $currentTag)
-          else
-            commitMessages=$(git log --pretty=%B $previousTag..$currentTag)
-          fi
+          commitMessages=$(git log --pretty=%B $previousTag..$currentTag)
           echo "Commit messages since the last release: ${commitMessages}"
           jiraTickets=$(echo "$commitMessages" | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
           echo "Jira tickets since the last release: ${jiraTickets}"
