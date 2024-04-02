@@ -101,7 +101,6 @@ jobs:
               curl -X POST -H 'Content-Type: application/json' --url "${JIRA_WEBHOOK_URL}" --data "$json"
               break
             elif [[ "$result" != "null" ]]; then
-              # TODO: Determine what the possible states of `result` are
               echo "Build failed, ending workflow"
               break
             fi
