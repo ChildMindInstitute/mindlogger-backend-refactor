@@ -48,7 +48,6 @@ jobs:
           git fetch -q --tags
           rcTags=$(git tag --sort=-creatordate | grep rc)
           started=false
-          jenkinsUrl="${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
           
           for tagName in $rcTags
           do
@@ -60,7 +59,9 @@ jobs:
               continue;
             fi
 
-            echo "Checking for successful Jenkins build for GitHub tag ${tagName}"
+            jenkinsUrl="${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
+            echo "Checking for successful Jenkins build for GitHub tag ${tagName} at ${jenkinsUrl}"
+            
             response=$(curl -o /dev/null --silent -w "%{http_code}\n" -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${jenkinsUrl}/api/json")
             echo "Response: ${response}" 
             if [ "$response" == "200" ]; then
