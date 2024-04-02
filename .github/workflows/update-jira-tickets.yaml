@@ -82,7 +82,7 @@ jobs:
             commitMessages=$(git log --pretty=%B $previousTag..$currentTag)
           fi
           echo "Commit messages since the last release: ${commitMessages}"
-          echo "messages=${$commitMessages}" >> $GITHUB_OUTPUT
+          echo "messages=${commitMessages}" >> $GITHUB_OUTPUT
 
       - name: Determine Jira tickets from commit messages
         id: jira-tickets
@@ -90,7 +90,7 @@ jobs:
           commitMessages=${{ steps.get-commits.outputs.messages }}
           jiraTickets=$(echo "$commitMessages" | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
           echo "Jira tickets since the last release: ${jiraTickets}"
-          echo "tickets=${$jiraTickets}" >> $GITHUB_OUTPUT
+          echo "tickets=${jiraTickets}" >> $GITHUB_OUTPUT
 
       - name: Periodically ping Jenkins for current tag build status
         run: |
