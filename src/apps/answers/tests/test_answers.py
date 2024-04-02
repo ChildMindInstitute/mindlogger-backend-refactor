@@ -7,7 +7,8 @@ import pytest
 from sqlalchemy import select
 
 from apps.answers.crud import AnswerItemsCRUD
-from apps.answers.db.schemas import AnswerSchema
+from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
@@ -51,6 +52,33 @@ def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity):
         item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
         reviewer_public_key=f"{tom.id}",
         assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
+    )
+
+
+@pytest.fixture
+async def tom_answer_item_for_applet(tom, applet, session):
+    answer = await AnswersCRUD(session).create(
+        AnswerSchema(
+            applet_id=applet.id,
+            version=applet.version,
+            submit_id=uuid.uuid4(),
+            client=dict(
+                appId="mindlogger-mobile",
+                appVersion="0.21.48",
+            ),
+            applet_history_id=f"{applet.id}_{applet.version}",
+            activity_history_id=f"{applet.activities[0].id}_{applet.version}",
+            respondent_id=tom.id,
+        )
+    )
+    return dict(
+        answer_id=answer.id,
+        respondent_id=tom.id,
+        answer="0x00",
+        item_ids=[str(item.id) for item in applet.activities[0].items],
+        start_datetime=datetime.datetime.utcnow(),
+        end_datetime=datetime.datetime.utcnow(),
+        is_assessment=False,
     )
 
 
@@ -1109,17 +1137,14 @@ class TestAnswerActivityItems(BaseTest):
 
     async def test_get_identifiers(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
-
-        response = await client.get(
-            self.identifiers_url.format(
-                applet_id=str(applet.id),
-                activity_id=str(applet.activities[0].id),
-            )
-        )
+        identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
+        identifier_url = f"{identifier_url}?respondentId={tom.id}"
+        response = await client.get(identifier_url)
 
         assert response.status_code == 200
         assert response.json()["count"] == 0
 
+        created_at = datetime.datetime.utcnow()
         create_data = dict(
             submit_id=str(uuid.uuid4()),
             applet_id=str(applet.id),
@@ -1145,23 +1170,18 @@ class TestAnswerActivityItems(BaseTest):
                 width=819,
                 height=1080,
             ),
+            created_at=created_at,
         )
-
         response = await client.post(self.answer_url, data=create_data)
 
         assert response.status_code == 201, response.json()
 
-        response = await client.get(
-            self.identifiers_url.format(
-                applet_id=str(applet.id),
-                activity_id=str(applet.activities[0].id),
-            )
-        )
-
+        response = await client.get(identifier_url)
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["identifier"] == "some identifier"
         assert response.json()["result"][0]["userPublicKey"] == "user key"
+        assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at
 
     async def test_get_versions(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
@@ -1609,6 +1629,47 @@ class TestAnswerActivityItems(BaseTest):
             assert not assessment
         else:
             assert assessment
+
+    async def test_get_all_types_of_identifiers(
+        self, mock_kiq_report, client, tom: User, applet: AppletFull, session, tom_answer_item_for_applet, request
+    ):
+        client.login(tom)
+        identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
+        identifier_url = f"{identifier_url}?respondentId={tom.id}"
+
+        answer_items = [
+            # Migrated not encrypted
+            AnswerItemSchema(
+                **tom_answer_item_for_applet,
+                identifier="unencrypted identifier",
+                migrated_data=dict(is_identifier_encrypted=False),
+            ),
+            # Migrated encrypted
+            AnswerItemSchema(
+                **tom_answer_item_for_applet,
+                identifier="encrypted identifier",
+                user_public_key="user_public_key",
+                migrated_data=dict(is_identifier_encrypted=True),
+            ),
+            # Not migrated
+            AnswerItemSchema(
+                **tom_answer_item_for_applet,
+                identifier="identifier",
+                user_public_key="user_public_key",
+                migrated_data=None,
+            ),
+        ]
+        for answer_item in answer_items:
+            await AnswerItemsCRUD(session).create(answer_item)
+
+        res = await client.get(identifier_url)
+        assert res.status_code == 200
+        payload = res.json()
+        assert payload["count"] == len(answer_items)
+        for identifier in payload["result"]:
+            assert "lastAnswerDate" in identifier
+            if identifier["identifier"] in ["encrypted identifier", "identifier"]:
+                assert "userPublicKey" in identifier
 
     async def test_summary_activities_submitted_date_with_answers(
         self,

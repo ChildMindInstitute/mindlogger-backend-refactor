@@ -271,9 +271,8 @@ async def applet_activity_identifiers_retrieve(
 ) -> ResponseMulti[IdentifierPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    respondent_id = query_params.filters.get("respondent_id")
     identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(
-        activity_id, respondent_id
+        activity_id, query_params.filters["respondent_id"]
     )
     return ResponseMulti(result=identifiers, count=len(identifiers))
 

@@ -645,29 +645,18 @@ class AnswerService:
             total_answers=total,
         )
 
-    async def get_activity_identifiers(
-        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None
-    ) -> list[Identifier]:
+    async def get_activity_identifiers(self, activity_id: uuid.UUID, respondent_id: uuid.UUID) -> list[Identifier]:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         await act_hst_crud.exist_by_activity_id_or_raise(activity_id)
         act_hst_list = await act_hst_crud.get_activities(activity_id, None)
         ids = set(map(lambda a: a.id_version, act_hst_list))
         identifiers = await AnswersCRUD(self.answer_session).get_identifiers_by_activity_id(ids, respondent_id)
         results = []
-        for identifier, key, migrated_data in identifiers:
+        for identifier, key, migrated_data, answer_date in identifiers:
             if migrated_data and migrated_data.get("is_identifier_encrypted") is False:
-                results.append(
-                    Identifier(
-                        identifier=identifier,
-                    )
-                )
+                results.append(Identifier(identifier=identifier, last_answer_date=answer_date))
             else:
-                results.append(
-                    Identifier(
-                        identifier=identifier,
-                        user_public_key=key,
-                    )
-                )
+                results.append(Identifier(identifier=identifier, user_public_key=key, last_answer_date=answer_date))
         return results
 
     async def get_activity_versions(
