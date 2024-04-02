@@ -1,8 +1,11 @@
+import uuid
+
+from fastapi import Body, Depends
 from fastapi.routing import APIRouter
 from starlette import status
 
+from apps.authentication.deps import get_current_user
 from apps.invitations.api import (
-    create_shell_account,
     invitation_accept,
     invitation_decline,
     invitation_list,
@@ -20,9 +23,13 @@ from apps.invitations.domain import (
     InvitationResponse,
     InvitationReviewerResponse,
     PrivateInvitationResponse,
-    ShellAccountCreateResponse,
+    ShellAccountCreateRequest,
 )
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE, Response, ResponseMulti
+from apps.subjects.api import create_subject
+from apps.subjects.domain import SubjectCreateRequest, SubjectCreateResponse
+from apps.users.domain import User
+from infrastructure.database.deps import get_session
 
 router = APIRouter(prefix="/invitations", tags=["Invitations"])
 
@@ -118,18 +125,29 @@ router.post("/private/{key}/accept")(private_invitation_accept)
 
 
 # Invitation send for shell account without sending invitation
-router.post(
+@router.post(
     "/{applet_id}/shell-account",
     description="""
     Creation of shell account for current applet
     """,
     response_model_by_alias=True,
-    response_model=Response[ShellAccountCreateResponse],
+    response_model=Response[SubjectCreateResponse],
     responses={
-        status.HTTP_200_OK: {"model": Response[ShellAccountCreateResponse]},
+        status.HTTP_200_OK: {"model": Response[SubjectCreateResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(create_shell_account)
+)
+async def create_shell_account(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    subject_schema: ShellAccountCreateRequest = Body(...),
+    session=Depends(get_session),
+):
+    return await create_subject(
+        user=user,
+        session=session,
+        schema=SubjectCreateRequest(applet_id=applet_id, **subject_schema.dict(by_alias=False)),
+    )
 
 
 # Send invitation to shell account

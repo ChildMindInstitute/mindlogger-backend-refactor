@@ -126,12 +126,14 @@ class TransferService:
         subject_service = SubjectsService(self.session, self._user.id)
         await UserAppletAccessCRUD(self.session).upsert_user_applet_access_list(roles_to_add)
         subject = await subject_service.get_by_user_and_applet(self._user.id, transfer.applet_id)
-        if subject:
-            subject.last_name = self._user.last_name
-            subject.first_name = self._user.first_name
-            subject.email = EmailStr(self._user.email_encrypted)
-            subject.is_deleted = False
-            await subject_service.update(subject)
+        if subject and subject.id:
+            await subject_service.update(
+                subject.id,
+                last_name=self._user.last_name,
+                first_name=self._user.first_name,
+                email=EmailStr(self._user.email_encrypted),
+                is_deleted=False,
+            )
         else:
             subject = Subject(
                 applet_id=transfer.applet_id,
