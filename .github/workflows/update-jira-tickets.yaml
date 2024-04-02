@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
 
       - name: Get current tag
         id: get-tag
@@ -40,7 +42,6 @@ jobs:
         run: |
           repoName=${GITHUB_REPOSITORY##*/}
           currentTag=${{ steps.get-tag.outputs.tag }}
-          git fetch --tags
           rcTags=$(git tag --sort=-creatordate | grep rc)
           started=false
           for tagName in $rcTags
