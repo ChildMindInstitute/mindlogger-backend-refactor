@@ -28,7 +28,7 @@ jobs:
             currentTag=${{ github.event.inputs.tagName }}
           fi
           echo "Tag: ${currentTag}"
-          echo "::set-output name=tag::${currentTag}"
+          echo "tag=${currentTag}" >> $GITHUB_OUTPUT
 
       - name: Check if tag is a release candidate
         run: |
@@ -59,7 +59,7 @@ jobs:
             response=$(curl -o /dev/null --silent -w "%{http_code}\n" -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
             if [ "$response" == "200" ]; then
               echo "Found successful Jenkins build for GitHub tag ${tagName}: ${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
-              echo "::set-output name=tagName::$tagName"
+              echo "tagName=${tagName}" >> $GITHUB_OUTPUT
               break
             fi
           done
@@ -75,7 +75,7 @@ jobs:
             commitMessages=$(git log --pretty=%B $previousTag..$currentTag)
           fi
           echo "Commit messages since the last release: ${commitMessages}"
-          echo "::set-output name=messages::$commitMessages"
+          echo "messages=${$commitMessages}" >> $GITHUB_OUTPUT
 
       - name: Determine Jira tickets from commit messages
         id: jira-tickets
@@ -83,7 +83,7 @@ jobs:
           commitMessages=${{ steps.get-commits.outputs.messages }}
           jiraTickets=$(echo "$commitMessages" | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
           echo "Jira tickets since the last release: ${jiraTickets}"
-          echo "::set-output name=tickets::$jiraTickets"
+          echo "tickets=${$jiraTickets}" >> $GITHUB_OUTPUT
 
       - name: Periodically ping Jenkins for current tag build status
         run: |
