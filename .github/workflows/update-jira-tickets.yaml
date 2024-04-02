@@ -49,6 +49,13 @@ jobs:
           currentTag=${{ steps.get-tag.outputs.tag }}
           rcTags=$(git tag --sort=-creatordate | grep rc)
           started=false
+          jenkinsUrl="${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
+          
+          echo "Repo name: ${repoName}"
+          echo "Current tag: ${currentTag}"
+          echo "Release candidate tags: ${rcTags}"
+          echo "Jenkins URL: ${jenkinsUrl}"
+          
           for tagName in $rcTags
           do
             # Skip tags more recent than the current one
@@ -60,9 +67,9 @@ jobs:
             fi
 
             echo "Checking for successful Jenkins build for GitHub tag ${tagName}"
-            response=$(curl -o /dev/null --silent -w "%{http_code}\n" -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
+            response=$(curl -o /dev/null --silent -w "%{http_code}\n" -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${jenkinsUrl}/api/json")
             if [ "$response" == "200" ]; then
-              echo "Found successful Jenkins build for GitHub tag ${tagName}: ${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
+              echo "Found successful Jenkins build for GitHub tag ${tagName}: ${jenkinsUrl}"
               echo "tagName=${tagName}" >> $GITHUB_OUTPUT
               break
             fi
