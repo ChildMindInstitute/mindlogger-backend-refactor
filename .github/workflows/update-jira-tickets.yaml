@@ -16,7 +16,7 @@ jobs:
       JENKINS_USER: ${{ secrets.JENKINS_USER }}
       JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
       JIRA_WEBHOOK_URL: ${{ secrets.JIRA_WEBHOOK_URL }}
-      JENKINS_HOST: ${{ env.JENKINS_HOST }}
+      JENKINS_HOST: ${{ vars.JENKINS_HOST }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
