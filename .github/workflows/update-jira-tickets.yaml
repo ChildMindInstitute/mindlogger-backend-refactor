@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tagName:
-        description: 'Tag Name'
+        description: "Tag Name"
         required: true
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
           git fetch -q --tags
           rcTags=$(git tag --sort=-creatordate | grep rc)
           started=false
-          
+
           for tagName in $rcTags
           do
             # Skip tags more recent than the current one
