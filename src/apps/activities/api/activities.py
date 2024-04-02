@@ -7,9 +7,14 @@ from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
+from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
 from apps.answers.service import AnswerService
-from apps.applets.domain.applet import AppletActivitiesDetailsPublic, AppletSingleLanguageDetailMobilePublic
+from apps.applets.domain.applet import (
+    AppletActivitiesAndFlowsDetailsPublic,
+    AppletActivitiesDetailsPublic,
+    AppletSingleLanguageDetailMobilePublic,
+)
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response
@@ -118,5 +123,69 @@ async def applet_activities(
         activities_details=activities,
         applet_detail=applet_detail,
         respondent_meta=respondent_meta,
+    )
+    return Response(result=result)
+
+
+async def applet_activities_and_flows(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(parse_query_params(AppletActivityFilter)),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> Response[AppletActivitiesAndFlowsDetailsPublic]:
+    async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+
+        filters = AppletActivityFilter(**query_params.filters)
+
+        activities_future = ActivityService(session, user.id).get_single_language_with_items_by_applet_id(
+            applet_id, language
+        )
+        flows_future = FlowService(session).get_full_flows(applet_id)
+
+        activities, flows = await asyncio.gather(activities_future, flows_future)
+
+        for activity in activities:
+            # Filter by `hasSubmitted` (if the activity has submitted answers)
+            if filters.has_submitted is not None:
+                latest_answer = await AnswerService(session, user.id, answer_session).get_latest_answer_by_activity_id(
+                    applet_id, activity.id
+                )
+                if filters.has_submitted:
+                    if latest_answer is None:
+                        activities.remove(activity)
+                else:
+                    if latest_answer is not None:
+                        activities.remove(activity)
+
+            # Filter by `hasScore` (if the activity has score set to activity items)
+            if filters.has_score is not None:
+                activity_items = await ActivityItemService(session).get_single_language_by_activity_id(
+                    activity.id, language
+                )
+
+                found_score = False
+                for activity_item in activity_items:
+                    if found_score:
+                        break
+
+                    options = getattr(activity_item.response_values, "options", [])
+                    for option in options:
+                        if option.score > 0:
+                            found_score = True
+
+                if filters.has_score:
+                    if not found_score:
+                        activities.remove(activity)
+                else:
+                    if found_score:
+                        activities.remove(activity)
+
+    result = AppletActivitiesAndFlowsDetailsPublic(
+        details=activities + flows,
     )
     return Response(result=result)
