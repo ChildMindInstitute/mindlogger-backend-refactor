@@ -105,7 +105,7 @@ jobs:
           echo "Waiting for current build to finish.."
           while true; do
             echo -n "."
-            result=$(curl --silent -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${JENKINS_HOST}/job/${repoName}/view/tags/job/${currentTag}/5000/api/json" | jq -r .result)
+            result=$(curl --silent -u "${JENKINS_USER}:${JENKINS_TOKEN}" "httpstat.us/500" | jq -r .result)
             if [[ "$result" == "SUCCESS" ]]; then
               echo "Build successful! Submitting ticket numbers to Jira"
               tickets="${{ steps.jira-tickets.outputs.tickets }}"
