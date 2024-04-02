@@ -28,7 +28,7 @@ jobs:
           if [ "${{ github.event_name }}" == "release" ]; then
             currentTag=${GITHUB_REF#refs/tags/}
           else
-            currentTag=${{ github.event.inputs.tagName }}
+            currentTag="${{ github.event.inputs.tagName }}"
           fi
           echo "Tag: ${currentTag}"
           echo "tag=${currentTag}" >> $GITHUB_OUTPUT
@@ -44,7 +44,7 @@ jobs:
         id: ping-jenkins
         run: |
           repoName=${GITHUB_REPOSITORY##*/}
-          currentTag=${{ steps.get-tag.outputs.tag }}
+          currentTag="${{ steps.get-tag.outputs.tag }}"
           git fetch -q --tags
           rcTags=$(git tag --sort=-creatordate | grep rc)
           started=false
@@ -74,8 +74,8 @@ jobs:
       - name: Determine Jira tickets from commit messages
         id: jira-tickets
         run: |
-          currentTag=${{ steps.get-tag.outputs.tag }}
-          previousTag=${{ steps.ping-jenkins.outputs.tagName }}
+          currentTag="${{ steps.get-tag.outputs.tag }}"
+          previousTag="${{ steps.ping-jenkins.outputs.tagName }}"
           if [ "$previousTag" == "" ]; then
             commitMessages=$(git log --pretty=%B $currentTag)
           else
@@ -89,7 +89,7 @@ jobs:
       - name: Periodically ping Jenkins for current tag build status
         run: |
           repoName=${GITHUB_REPOSITORY##*/}
-          currentTag=${{ steps.get-tag.outputs.tag }}
+          currentTag="${{ steps.get-tag.outputs.tag }}"
           echo "Waiting for current build to finish.."
           while true; do
             echo -n "."
