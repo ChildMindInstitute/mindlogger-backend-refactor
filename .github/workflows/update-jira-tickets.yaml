@@ -37,7 +37,7 @@ jobs:
         run: |
           if [[ ${{ steps.get-tag.outputs.tag }} != *"-rc"* ]]; then
             echo "Not a release candidate, ending workflow."
-            exit 0
+            exit 1
           fi
 
       - name: Ping Jenkins for previous successful tag
@@ -98,7 +98,6 @@ jobs:
               echo "Build successful! Submitting ticket numbers to Jira"
               tickets="${{ steps.jira-tickets.outputs.tickets }}"
               json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }"
-              curl -X POST -H 'Content-Type: application/json' --url "${JIRA_WEBHOOK_URL}" --data "$json"
               break
             elif [[ "$result" != "null" ]]; then
               echo "Build failed, ending workflow"
