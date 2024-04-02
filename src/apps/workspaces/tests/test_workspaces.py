@@ -1,9 +1,12 @@
+import datetime
 import http
 import uuid
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.answers.domain import AppletAnswerCreate, ClientMeta, ItemAnswerCreate
+from apps.answers.service import AnswerService
 from apps.applets.domain import Role
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
@@ -120,6 +123,31 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
 async def tom_applets(session: AsyncSession, tom: UserSchema):
     params = QueryParams()
     return await WorkspaceService(session, tom.id).get_workspace_applets(tom.id, "en", params)
+
+
+@pytest.fixture
+async def tom_answer_applet_one(session, tom: User, applet_one: AppletFull):
+    subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet_one.id)
+    items_ids = []
+    activity = applet_one.activities[0]
+    for item in activity.items:
+        items_ids.append(item.id)
+    assert subject
+    activity_answer = AppletAnswerCreate(
+        applet_id=applet_one.id,
+        version=applet_one.version,
+        submit_id=uuid.uuid4(),
+        activity_id=activity.id,
+        answer=ItemAnswerCreate(
+            item_ids=items_ids,
+            start_time=datetime.datetime.utcnow(),
+            end_time=datetime.datetime.utcnow(),
+        ),
+        client=ClientMeta(app_id="web", app_version="1.1.0", width="800", height="600"),
+        target_subject_id=subject.id,
+        source_subject_id=subject.id,
+    )
+    return await AnswerService(session, tom.id).create_answer(activity_answer)
 
 
 @pytest.fixture
@@ -1103,3 +1131,21 @@ class TestWorkspaces(BaseTest):
         assert payload
         for respondent in payload:
             assert bool(respondent.get("email"))
+
+    async def test_user_last_activity_workspace_respondent_retrieve(
+        self, client, tom: User, applet_one: AppletFull, tom_answer_applet_one
+    ):
+        url = self.workspace_get_applet_respondent.format(
+            owner_id=tom.id, applet_id=applet_one.id, respondent_id=tom.id
+        )
+        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        response = await client.get(url)
+        assert response.status_code == 200, response.json()
+        result = response.json()["result"]
+        date_answer = datetime.datetime.fromisoformat(result["lastSeen"])
+        date_now = datetime.datetime.utcnow()
+        assert date_now.day == date_answer.day
+        assert date_now.month == date_answer.month
+        assert date_now.year == date_answer.year
+        assert date_now.hour == date_answer.hour
+        assert date_now.minute == date_answer.minute

@@ -143,3 +143,4 @@ class RespondentInfoPublic(PublicModel):
     nickname: str | None
     secret_user_id: str
     last_seen: datetime.datetime | None
+    subject_id: uuid.UUID
