@@ -862,7 +862,7 @@ class TestSchedule:
         user: User,
         applet: AppletFull,
     ):
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         data = event_daily_data.copy(deep=True)
         data.notification = Notification(notifications=[notification])
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
@@ -883,7 +883,7 @@ class TestSchedule:
         user: User,
         applet: AppletFull,
     ):
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         data = event_daily_data.copy(deep=True)
         data.notification = Notification(reminder=reminder)
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
@@ -898,7 +898,7 @@ class TestSchedule:
         user: User,
         applet: AppletFull,
     ):
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         resp = await client.delete(self.schedule_url.format(applet_id=applet.id))
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
 
@@ -914,7 +914,7 @@ class TestSchedule:
         event_daily_data_update: EventUpdateRequest,
     ):
         # TODO
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         data = event_daily_data_update.copy(deep=True)
         data.periodicity.type = constants.PeriodicityType.ALWAYS
         data.one_time_completion = False
@@ -938,7 +938,7 @@ class TestSchedule:
         notification: NotificationSettingRequest,
     ):
         # TODO
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         data = event_daily_data_update.copy(deep=True)
         data.notification = Notification(notifications=[notification])
         resp = await client.put(
@@ -973,7 +973,7 @@ class TestSchedule:
         reminder: ReminderSettingRequest,
     ):
         # TODO
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
         data = event_daily_data_update.copy(deep=True)
         data.notification = Notification(reminder=reminder)
         resp = await client.put(
@@ -996,8 +996,9 @@ class TestSchedule:
         applet_lucy_respondent: AppletFull,
         event_daily_data: EventRequest,
         tom: User,
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.copy(deep=True)
         data.respondent_id = tom.id
         resp = await client.post(
@@ -1007,9 +1008,14 @@ class TestSchedule:
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_schedule_create__no_valid_activity_id(
-        self, client: TestClient, event_daily_data: EventRequest, applet: AppletFull, uuid_zero: uuid.UUID
+        self,
+        client: TestClient,
+        event_daily_data: EventRequest,
+        applet: AppletFull,
+        uuid_zero: uuid.UUID,
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.copy(deep=True)
         data.activity_id = uuid_zero
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
@@ -1019,9 +1025,14 @@ class TestSchedule:
         assert result[0]["message"] == ActivityOrFlowNotFoundError.message
 
     async def test_schedule_create__no_valid_flow_id(
-        self, client: TestClient, event_daily_data: EventRequest, applet: AppletFull, uuid_zero: uuid.UUID
+        self,
+        client: TestClient,
+        event_daily_data: EventRequest,
+        applet: AppletFull,
+        uuid_zero: uuid.UUID,
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.dict()
         data["activity_id"] = None
         data["flow_id"] = str(uuid_zero)
@@ -1034,7 +1045,7 @@ class TestSchedule:
     async def test_user_get_events__user_does_not_have_access_to_the_applet(
         self, client: TestClient, tom: User, applet: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.get(self.schedule_detail_user_url.format(applet_id=applet.id))
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
         result = resp.json()["result"]
@@ -1047,8 +1058,9 @@ class TestSchedule:
         applet: AppletFull,
         event_daily_data: EventRequest,
         applet_default_events: list[PublicEvent],
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.dict()
         data["one_time_completion"] = False
         data["periodicity"]["type"] = constants.PeriodicityType.ALWAYS
@@ -1072,7 +1084,7 @@ class TestSchedule:
         notification: NotificationSettingRequest,
         reminder: ReminderSettingRequest,
     ):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
         resp = await client.get(self.schedule_detail_user_url.format(applet_id=applet.id))
         assert resp.status_code == http.HTTPStatus.OK
         events = resp.json()["result"]["events"]
@@ -1089,7 +1101,7 @@ class TestSchedule:
     async def test_schedule_create__can_not_create_event_for_activity_always_avaiable(
         self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.dict()
         data["one_time_completion"] = False
         data["periodicity"]["type"] = constants.PeriodicityType.ALWAYS
@@ -1104,7 +1116,7 @@ class TestSchedule:
     async def test_schedule_create__can_not_create_event_for_flow_always_avaiable(
         self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         data = event_daily_data.dict()
         data["flow_id"] = str(applet.activity_flows[0].id)
         data["activity_id"] = None
@@ -1126,9 +1138,13 @@ class TestSchedule:
         assert result[0]["message"] == str(AppletNotFoundError(key="key", value=str(uuid_zero)))
 
     async def test_schedule_get_all_for_applet_and_user__user_does_not_exist(
-        self, client: TestClient, applet: AppletFull, uuid_zero: uuid.UUID
+        self,
+        client: TestClient,
+        applet: AppletFull,
+        uuid_zero: uuid.UUID,
+        user: User,
     ):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.login(user)
         resp = await client.get(self.schedule_url.format(applet_id=applet.id), query={"respondentId": uuid_zero})
         assert resp.status_code == http.HTTPStatus.NOT_FOUND
         result = resp.json()["result"]
