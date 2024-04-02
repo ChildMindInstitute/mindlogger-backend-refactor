@@ -90,7 +90,7 @@ jobs:
         run: |
           repoName=${GITHUB_REPOSITORY##*/}
           currentTag=${{ steps.get-tag.outputs.tag }}
-          "Waiting for current build to finish.."
+          echo "Waiting for current build to finish.."
           while true; do
             echo -n "."
             result=$(curl --silent -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${JENKINS_HOST}/job/${repoName}/view/tags/job/${currentTag}/lastBuild/api/json" | jq -r .result)
