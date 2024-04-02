@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.domain.response_type_config import AdditionalResponseOption, ResponseType, SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues, _SingleSelectionValue
+from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.crud.applets import AppletsCRUD
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
@@ -149,6 +150,30 @@ def applet_minimal_data(applet_base_data: AppletBase, activity_create_session: A
 
 
 @pytest.fixture(scope="session")
+def applet_activity_flow_data(encryption: Encryption, activity_create_session: ActivityCreate) -> AppletCreate:
+    return AppletCreate(
+        display_name="Flow Data",
+        encryption=encryption,
+        activities=[activity_create_session],
+        activity_flows=[
+            FlowCreate(
+                name="test",
+                description={Language.ENGLISH: "test"},
+                items=[FlowItemCreate(activity_key=activity_create_session.key)],
+            )
+        ],
+        link=None,
+        require_login=False,
+        pinned_at=None,
+        retention_period=None,
+        retention_type=None,
+        stream_enabled=False,
+        stream_ip_address=None,
+        stream_port=None,
+    )
+
+
+@pytest.fixture(scope="session")
 async def default_theme(global_session: AsyncSession):
     theme = await ThemeService(global_session, uuid.uuid4()).get_default()
     return theme
@@ -236,3 +261,18 @@ async def applet_four(
 async def applet_one_lucy_editor(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.EDITOR)
     return applet_one
+
+
+@pytest.fixture
+async def applet_activity_flow(
+    session: AsyncSession,
+    tom: User,
+    applet_activity_flow_data: AppletCreate,
+    pytestconfig: Config,
+) -> AsyncGenerator[AppletFull, None]:
+    applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b5")
+    applet_name = "Applet 5"
+    applet = await _get_or_create_applet(session, applet_name, applet_id, applet_activity_flow_data, tom.id)
+    yield applet
+    if not pytestconfig.getoption("--keepdb"):
+        await teardown_applet(session, applet.id)
