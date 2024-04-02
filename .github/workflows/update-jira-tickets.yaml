@@ -35,29 +35,31 @@ jobs:
             exit 0
           fi
 
-      - name: Get previous tags
-        id: get-prev-tag
-        run: |
-          currentTag=${{ steps.get-tag.outputs.tag }}
-          git fetch --tags
-          previousTag=$(git tag --sort=-creatordate | grep -v $currentTag | grep rc | head -1)
-          echo "Previous release tag is ${previousTag}"
-          echo "::set-output name=prevTag::$previousTag"
-
       - name: Ping Jenkins for previous successful tag
         id: ping-jenkins
         run: |
           repoName=${GITHUB_REPOSITORY##*/}
-          tagName=${{ steps.get-prev-tag.outputs.prevTag }}
-          while [ -z "$tagName" ]; do
+          currentTag=${{ steps.get-tag.outputs.tag }}
+          git fetch --tags
+          rcTags=$(git tag --sort=-creatordate | grep rc)
+          started=false
+          for tagName in $rcTags
+          do
+            # Skip tags more recent than the current one
+            if [ "$tagName" != "$currentTag" ] && [ "$started" = false ]; then
+              continue;
+            elif [ "$tagName" == "$currentTag" ]; then
+              started=true;
+              continue;
+            fi
+
             echo "Checking for successful Jenkins build for GitHub tag ${$tagName}"
-            response=$(curl --silent "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
-            if [ "$response" != "" ]; then
+            response=$(curl -o /dev/null -s -w "%{http_code}\n" -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild/api/json")
+            if [ "$response" == "200" ]; then
               echo "Found successful Jenkins build for GitHub tag ${$tagName}: ${{ env.JENKINS_HOST }}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
               echo "::set-output name=tagName::$tagName"
               break
             fi
-            tagName=$(git tag --sort=-creatordate | grep -v $tagName | grep rc | head -1)
           done
 
       - name: Get commit messages between tags
