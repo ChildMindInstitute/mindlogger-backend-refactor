@@ -15,7 +15,6 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-from config import settings
 
 
 @pytest.fixture
@@ -116,14 +115,14 @@ class TestWorkspaces(BaseTest):
 
     @pytest.mark.usefixtures("applet_three")
     async def test_user_workspace_list(self, client, lucy):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         response = await client.get(self.workspaces_list_url)
         assert response.status_code == 200, response.json()
         assert len(response.json()["result"]) == 1
 
-    async def test_user_workspace_list_super_admin(self, client):
-        await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
+    async def test_user_workspace_list_super_admin(self, client, superadmin):
+        client.login(superadmin)
 
         response = await client.get(self.workspaces_list_url)
         assert response.status_code == 200, response.json()
@@ -132,7 +131,7 @@ class TestWorkspaces(BaseTest):
         assert len(response.json()["result"]) == 3
 
     async def test_user_workspace_retrieve_without_managers(self, client, lucy):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         response = await client.get(self.workspaces_detail_url.format(owner_id=lucy.id))
         assert response.status_code == 200, response.json()
@@ -140,14 +139,14 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"]["hasManagers"] is False
 
     async def test_get_users_priority_role_in_workspace(self, client, tom, lucy, applet_one_lucy_coordinator):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         response = await client.get(self.workspaces_priority_role_url.format(owner_id=tom.id))
         assert response.status_code == 200, response.json()
         assert response.json()["result"]["role"] == Role.COORDINATOR
 
-    async def test_get_users_priority_role_in_workspace_super_admin(self, client, tom):
-        await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
+    async def test_get_users_priority_role_in_workspace_super_admin(self, client, tom, superadmin):
+        client.login(superadmin)
 
         response = await client.get(self.workspaces_priority_role_url.format(owner_id=tom.id))
         assert response.status_code == 200, response.json()
@@ -156,7 +155,7 @@ class TestWorkspaces(BaseTest):
     async def test_workspace_roles_retrieve(
         self, client, tom, lucy, applet_one_lucy_respondent, applet_one_lucy_manager, applet_one
     ):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         response = await client.get(self.workspace_roles_url.format(owner_id=tom.id))
         assert response.status_code == 200, response.json()
@@ -169,7 +168,7 @@ class TestWorkspaces(BaseTest):
         crud = UsersCRUD(session)
         await crud.update_by_id(tom.id, UserSchema(is_super_admin=True))
         await session.commit()
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(self.workspace_roles_url.format(owner_id=tom.id))
         assert response.status_code == 200, response.json()
@@ -178,7 +177,7 @@ class TestWorkspaces(BaseTest):
         assert roles == [Role.OWNER, Role.SUPER_ADMIN, Role.RESPONDENT]
 
     async def test_user_workspace_retrieve_with_managers(self, client, tom, applet_one_lucy_manager):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(self.workspaces_detail_url.format(owner_id=tom.id))
         assert response.status_code == 200, response.json()
@@ -186,13 +185,13 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"]["hasManagers"] is True
 
     async def test_user_workspace_retrieve_without_access(self, client, tom, lucy):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(self.workspaces_detail_url.format(owner_id=lucy.id))
         assert response.status_code == 403, response.json()
 
     async def test_workspace_applets_list(self, client, lucy):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         response = await client.get(
             self.workspace_applets_url.format(owner_id=lucy.id),
@@ -206,7 +205,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][2]["role"] == Role.OWNER
 
     async def test_workspace_applets_search(self, client, lucy):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         response = await client.get(self.search_workspace_applets_url.format(owner_id=lucy.id, text="applet"))
         assert response.status_code == 200
@@ -215,7 +214,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][0]["role"] == Role.OWNER
 
     async def test_workspace_applets_list_by_folder_id_filter(self, client, tom, applet_not_in_folder):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(
             self.workspace_applets_url.format(owner_id=tom.id),
@@ -227,7 +226,7 @@ class TestWorkspaces(BaseTest):
         assert len(response.json()["result"]) == expected_count
 
     async def test_workspace_applets_detail(self, client, lucy, applet_one_lucy_manager):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         # check access not exists
         response = await client.get(
@@ -247,7 +246,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
 
     async def test_workspace_applets_respondent_update(self, client, tom, lucy, applet_one_lucy_respondent):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.post(
             self.applet_respondent_url.format(
@@ -282,13 +281,13 @@ class TestWorkspaces(BaseTest):
         assert "f0dd4996-e0eb-461f-b2f8-ba873a674710" in secret_ids
 
     async def test_wrong_workspace_applets_list(self, client, lucy):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         response = await client.get(self.workspace_applets_url.format(owner_id="00000000-0000-0000-0000-000000000000"))
         assert response.status_code == 404
 
     async def test_get_workspace_respondents(self, client, tom, applet_one_lucy_respondent):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(
             self.workspace_respondents_url.format(owner_id=tom.id),
         )
@@ -324,7 +323,7 @@ class TestWorkspaces(BaseTest):
                 assert access_id in access_ids
 
     async def test_get_workspace_applet_respondents(self, client, tom, applet_one, uuid_zero):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(
             self.workspace_applet_respondents_list.format(
                 owner_id=tom.id,
@@ -370,7 +369,7 @@ class TestWorkspaces(BaseTest):
         assert not data["result"]
 
     async def test_get_workspace_respondent_accesses(self, client, tom, lucy, applet_one_lucy_respondent):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(
             self.workspace_respondent_applet_accesses.format(
                 owner_id=tom.id,
@@ -382,7 +381,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["count"] == 1
 
     async def test_get_workspace_managers(self, client, tom, lucy, applet_one_lucy_manager):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(
             self.workspace_managers_url.format(owner_id=tom.id),
         )
@@ -420,7 +419,7 @@ class TestWorkspaces(BaseTest):
                 assert result[0]["id"] == id_
 
     async def test_get_workspace_applet_managers(self, client, tom, applet_one):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(
             self.workspace_applet_managers_list.format(
                 owner_id=tom.id,
@@ -467,7 +466,7 @@ class TestWorkspaces(BaseTest):
                 assert result[0]["email"] == tom.email_encrypted
 
     async def test_set_workspace_manager_accesses(self, client, tom, lucy, applet_one, applet_two):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(
             self.workspace_manager_accesses_url.format(
                 owner_id=tom.id,
@@ -492,7 +491,7 @@ class TestWorkspaces(BaseTest):
         # TODO: check from database results
 
     async def test_pin_workspace_respondents(self, client, tom, applet_one, applet_one_lucy_respondent):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(
             self.workspace_applet_respondents_list.format(
                 owner_id=tom.id,
@@ -560,7 +559,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][-1]["id"] == user_id
 
     async def test_pin_workspace_managers(self, client, tom, applet_one, applet_one_lucy_manager):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(
             self.workspace_applet_managers_list.format(
                 owner_id=tom.id,
@@ -628,7 +627,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][-1]["id"] == user_id
 
     async def test_workspace_remove_manager_access(self, client, tom, lucy, applet_one, applet_one_lucy_manager):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.workspace_managers_url.format(owner_id=tom.id))
 
         assert response.status_code == 200
@@ -653,7 +652,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["count"] == managers_count - 1
 
     async def test_workspace_remove_respondent_access(self, client, tom, lucy, applet_one, applet_one_lucy_respondent):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = {
             "user_id": lucy.id,
             "applet_ids": [
@@ -668,7 +667,7 @@ class TestWorkspaces(BaseTest):
     @pytest.mark.usefixtures("applet_one_lucy_coordinator", "applet_one_user_respondent")
     async def test_workspace_coordinator_remove_respondent_access(self, client, lucy, applet_one, user):
         # coordinator can remove respondent access
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
 
         data = {
             "user_id": user.id,
@@ -686,7 +685,7 @@ class TestWorkspaces(BaseTest):
         roles_to_delete = [Role.OWNER, Role.COORDINATOR, Role.MANAGER, Role.SUPER_ADMIN, Role.REVIEWER]
         await UserAppletAccessCRUD(session).delete_user_roles(uuid.UUID(applet_id), mike.id, roles_to_delete)
         # editor can remove respondent access
-        await client.login(self.login_url, mike.email_encrypted, "Test1234")
+        client.login(mike)
 
         data = {
             "user_id": lucy.id,
@@ -698,7 +697,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 403
 
     async def test_folder_applets(self, client, tom):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(
             self.workspace_folder_applets_url.format(
@@ -711,7 +710,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][1]["displayName"] == "Applet 2"
 
     async def test_folder_applets_not_super_admin(self, client, bob):
-        await client.login(self.login_url, bob.email_encrypted, "Test1234!")
+        client.login(bob)
 
         response = await client.get(
             self.workspace_folder_applets_url.format(
@@ -724,7 +723,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][0]["displayName"] == "Applet 4"
 
     async def test_applets_with_description(self, client, tom, applet_not_in_folder):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(
             self.workspace_applets_url.format(
@@ -738,7 +737,7 @@ class TestWorkspaces(BaseTest):
         assert applet_one["description"] == applet_not_in_folder.description
 
     async def test_applets_flat_list(self, client, lucy):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
         response = await client.get(
             self.workspace_applets_url.format(owner_id=lucy.id),
             dict(ordering="-displayName,created_at", flatList=True),
@@ -748,7 +747,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["result"][0]["type"] == "applet"
 
     async def test_applet_get_respondent_success(self, client, tom, applet_one):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         url = self.workspace_get_applet_respondent.format(
             owner_id=tom.id,
             applet_id=str(applet_one.id),
@@ -764,7 +763,7 @@ class TestWorkspaces(BaseTest):
         assert respondent["lastSeen"] is None
 
     async def test_applet_get_respondent_not_found(self, client, tom, applet_two):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         url = self.workspace_get_applet_respondent.format(
             owner_id=tom.id,
             applet_id=str(applet_two.id),
@@ -774,7 +773,7 @@ class TestWorkspaces(BaseTest):
         assert res.status_code == 404
 
     async def test_applet_get_respondent_access_denied_for_respondent_role(self, client, tom, bob, applet_two):
-        await client.login(self.login_url, bob.email_encrypted, "Test1234!")
+        client.login(bob)
         url = self.workspace_get_applet_respondent.format(
             owner_id=tom.id,
             applet_id=str(applet_two.id),
@@ -784,7 +783,7 @@ class TestWorkspaces(BaseTest):
         assert res.status_code == 403
 
     async def test_get_managers_priority_roles_not_valid_uuid(self, client, tom, bob):
-        await client.login(self.login_url, bob.email_encrypted, "Test1234!")
+        client.login(bob)
         response = await client.get(
             self.workspaces_priority_role_url.format(owner_id=tom.id),
             query={"appletIDs": "92917a56"},
@@ -797,7 +796,7 @@ class TestWorkspaces(BaseTest):
     async def test_get_managers_priority_roles_user_does_not_have_access_to_the_applet(
         self, client, tom, lucy, applet_one_lucy_manager
     ):
-        await client.login(self.login_url, lucy.email_encrypted, "Test123")
+        client.login(lucy)
         response = await client.get(
             self.workspaces_priority_role_url.format(owner_id=tom.id),
             query={"appletIDs": "00000000-0000-0000-0000-000000000000"},

@@ -3,6 +3,7 @@ import http
 from apps.applets.domain.applet_full import AppletFull
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
+from apps.users.domain import User
 
 
 class TestSettings(BaseTest):
@@ -10,8 +11,8 @@ class TestSettings(BaseTest):
     applet_url = "applets/{applet_id}"
     data_retention = applet_url + "/retentions"
 
-    async def test_applet_set_data_retention(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_applet_set_data_retention(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
 
         retention_data = dict(
             period=1,
@@ -29,8 +30,10 @@ class TestSettings(BaseTest):
         assert response.json()["result"]["retentionPeriod"] == retention_data["period"]
         assert response.json()["result"]["retentionType"] == retention_data["retention"]
 
-    async def test_applet_set_data_retention_for_indefinite(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_applet_set_data_retention_for_indefinite(
+        self, client: TestClient, applet_one: AppletFull, tom: User
+    ):
+        client.login(tom)
 
         retention_data = dict(
             retention="indefinitely",
@@ -47,8 +50,10 @@ class TestSettings(BaseTest):
         assert response.json()["result"]["retentionPeriod"] is None
         assert response.json()["result"]["retentionType"] == retention_data["retention"]
 
-    async def test_applet_set_data_retention_for_indefinite_fail(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_applet_set_data_retention_for_indefinite_fail(
+        self, client: TestClient, applet_one: AppletFull, tom: User
+    ):
+        client.login(tom)
 
         retention_data = dict(
             retention="days",
