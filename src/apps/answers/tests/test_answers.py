@@ -113,7 +113,7 @@ class TestAnswerActivityItems(BaseTest):
     assessment_delete_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}"
 
     async def test_answer_activity_items_create_for_respondent(self, mock_kiq_report, client, tom, applet: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         create_data = dict(
             submit_id=str(uuid.uuid4()),
             applet_id=str(applet.id),
@@ -168,7 +168,7 @@ class TestAnswerActivityItems(BaseTest):
         RedisCacheTest._storage = {}
 
     async def test_get_latest_summary(self, mock_report_server_response, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -247,7 +247,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201, response.json()
 
     async def test_answer_skippable_activity_items_create_for_respondent(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -283,7 +283,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"]["dates"]) == 1
 
     async def test_list_submit_dates(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -327,7 +327,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"]["dates"]) == 1
 
     async def test_answer_flow_items_create_for_respondent(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -363,7 +363,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201, response.json()
 
     async def test_answer_with_skipping_all(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -389,7 +389,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201, response.json()
 
     async def test_answered_applet_activities(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -457,7 +457,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"]["events"] == '{"events": ["event1", "event2"]}'
 
     async def test_fail_answered_applet_not_existed_activities(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -514,7 +514,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 404, response.json()
 
     async def test_applet_activity_answers(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -558,7 +558,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
 
     async def test_applet_assessment_retrieve(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -613,7 +613,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200, response.json()
 
     async def test_applet_assessment_create(self, mock_kiq_report, client, tom, applet_with_reviewable_activity):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -732,7 +732,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["reviewer"]["lastName"] == "Isaak"
 
     async def test_applet_activities(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(
             self.review_activities_url.format(applet_id=str(applet.id)),
@@ -747,7 +747,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"][0]["answerDates"]) == 0
 
     async def test_add_note(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -811,7 +811,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
 
     async def test_edit_note(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -899,7 +899,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["note"] == "Some note 2"
 
     async def test_delete_note(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -985,8 +985,8 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 0
 
     @pytest.mark.usefixtures("mock_kiq_report", "user")
-    async def test_answer_activity_items_create_for_not_respondent(self, client, applet):
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+    async def test_answer_activity_items_create_for_not_respondent(self, client, applet, user):
+        client.login(user)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -1018,7 +1018,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 403, response.json()
 
     async def test_answers_export(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         # create answer
         create_data = dict(
@@ -1136,10 +1136,9 @@ class TestAnswerActivityItems(BaseTest):
         assert not data["answers"]
 
     async def test_get_identifiers(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
         identifier_url = f"{identifier_url}?respondentId={tom.id}"
-
         response = await client.get(identifier_url)
 
         assert response.status_code == 200
@@ -1185,7 +1184,7 @@ class TestAnswerActivityItems(BaseTest):
         assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at
 
     async def test_get_versions(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(
             self.versions_url.format(
@@ -1200,7 +1199,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["createdAt"]
 
     async def test_get_summary_activities(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.get(
             self.summary_activities_url.format(
@@ -1215,7 +1214,7 @@ class TestAnswerActivityItems(BaseTest):
         assert not response.json()["result"][0]["hasAnswer"]
 
     async def test_get_summary_activities_after_submitted_answer(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -1263,7 +1262,7 @@ class TestAnswerActivityItems(BaseTest):
         app_width = 819
         app_height = 1080
 
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         create_data = dict(
             submit_id=str(uuid.uuid4()),
             applet_id=str(applet.id),
@@ -1300,7 +1299,7 @@ class TestAnswerActivityItems(BaseTest):
         assert app_height == res.client["height"]
 
     async def test_activity_answers_by_identifier(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -1347,7 +1346,7 @@ class TestAnswerActivityItems(BaseTest):
         assert result["count"] == 1
 
     async def test_applet_completions(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         # create answer
         create_data = dict(
@@ -1425,7 +1424,7 @@ class TestAnswerActivityItems(BaseTest):
         assert activity_answer_data["localEndTime"] == "12:35:00"
 
     async def test_applets_completions(self, mock_kiq_report, client, tom, applet):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         # create answer
         create_data = dict(
@@ -1508,9 +1507,9 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.usefixtures("user_reviewer_applet_one")
     async def test_summary_restricted_for_reviewer_if_external_respondent(
-        self, mock_kiq_report, client, tom, applet_one
+        self, mock_kiq_report, client, tom, applet_one, user
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             submit_id=str(uuid.uuid4()),
@@ -1542,8 +1541,8 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.answer_url, data=create_data)
         assert response.status_code == 201
 
-        await client.logout()
-        await client.login(self.login_url, "user@example.com", "Test1234!")
+        client.logout()
+        client.login(user)
 
         response = await client.get(
             self.summary_activities_url.format(
@@ -1589,13 +1588,14 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 201
 
     @pytest.mark.parametrize(
-        "email,password,expected_code",
+        "user_fixture,expected_code",
         (
-            ("tom@mindlogger.com", "Test1234!", 204),  # owner
-            ("lucy@gmail.com", "Test123", 403),  # not in applet
-            ("bob@gmail.com", "Test1234!", 403),  # reviewer
+            ("tom", 204),  # owner
+            ("lucy", 403),  # not in applet
+            ("bob", 403),  # reviewer
         ),
     )
+    @pytest.mark.usefixtures("bob_reviewer_in_applet_with_reviewable_activity")
     async def test_review_delete(
         self,
         tom_answer_create_data,
@@ -1605,12 +1605,12 @@ class TestAnswerActivityItems(BaseTest):
         tom,
         applet_with_reviewable_activity,
         session,
-        bob_reviewer_in_applet_with_reviewable_activity,
-        email,
-        password,
+        user_fixture,
         expected_code,
+        request,
     ):
-        await client.login(self.login_url, email, password)
+        login_user = request.getfixturevalue(user_fixture)
+        client.login(login_user)
         answer_service = AnswerService(session, tom.id)
         answer = await answer_service.create_answer(tom_answer_create_data)
         await answer_service.create_assessment_answer(
@@ -1681,7 +1681,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_reviewable_activity,
         session,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         applet_id = applet_with_reviewable_activity.id
         answer_service = AnswerService(session, tom.id)
         submit_dates = []
@@ -1710,7 +1710,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_reviewable_activity,
         session,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         applet_id = applet_with_reviewable_activity.id
         response = await client.get(
             self.summary_activities_url.format(

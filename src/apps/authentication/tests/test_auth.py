@@ -10,10 +10,11 @@ from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.authentication.tests.factories import UserLogoutRequestFactory
 from apps.shared.test import BaseTest
-from apps.users import UsersCRUD
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from apps.users.router import router as user_router
 from config import settings
+
+TEST_PASSWORD = "Test1234!"
 
 
 class TestAuthentication(BaseTest):
@@ -26,82 +27,47 @@ class TestAuthentication(BaseTest):
         email="tom2@mindlogger.com",
         first_name="Tom",
         last_name="Isaak",
-        password="Test1234!",
+        password=TEST_PASSWORD,
     )
     create_request_logout_user = UserLogoutRequestFactory.build()
 
-    async def test_get_token(self, session, client):
-        # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
-
-        # Authorize user
-        login_request_user: UserLoginRequest = UserLoginRequest(**self.create_request_user.dict())
+    async def test_get_token(self, session, client, user):
         response = await client.post(
             url=self.get_token_url,
-            data=login_request_user.dict(),
+            data=dict(email=user.email_encrypted, password=TEST_PASSWORD),
         )
-
-        user = await UsersCRUD(session).get_by_email(email=self.create_request_user.dict()["email"])
-
         assert response.status_code == 200
         data = response.json()["result"]
         assert set(data.keys()) == {"user", "token"}
         assert data["user"]["id"] == str(user.id)
 
-    async def test_delete_access_token(self, client):
-        # Creating new user
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
-
-        # Authorize user
-        login_request_user = UserLoginRequest(**self.create_request_user.dict())
-        await client.login(
-            url=self.get_token_url,
-            **login_request_user.dict(),
-        )
-
-        response = await client.post(
-            url=self.delete_token_url,
-        )
-
+    async def test_delete_access_token(self, client, user):
+        client.login(user)
+        response = await client.post(url=self.delete_token_url)
         assert response.status_code == 200
 
-    async def test_refresh_access_token(self, client):
-        # Creating new user
-        internal_response = await client.post(self.user_create_url, data=self.create_request_user.dict())
-
-        # Creating Refresh access token
+    async def test_refresh_access_token(self, client, user):
         refresh_access_token_request = RefreshAccessTokenRequest(
             refresh_token=AuthenticationService.create_refresh_token(
                 {
-                    "sub": str(internal_response.json()["result"]["id"]),
+                    "sub": str(user.id),
                     "jti": str(uuid.uuid4()),
                 }
             )
         )
-
-        response = await client.post(
-            url=self.refresh_access_token_url,
-            data=refresh_access_token_request.dict(),
-        )
-
+        response = await client.post(url=self.refresh_access_token_url, data=refresh_access_token_request.dict())
         assert response.status_code == 200
 
-    async def test_login_and_logout_device(self, client):
-        await client.post(self.user_create_url, data=self.create_request_user.dict())
+    async def test_login_and_logout_device(self, client, user):
         device_id = str(uuid.uuid4())
 
-        login_request_user: UserLoginRequest = UserLoginRequest(**self.create_request_user.dict(), device_id=device_id)
         response = await client.post(
             url=self.get_token_url,
-            data=login_request_user.dict(),
+            data=dict(device_id=device_id, email=user.email_encrypted, password=TEST_PASSWORD),
         )
         assert response.status_code == 200
 
-        await client.login(
-            self.get_token_url,
-            self.create_request_user.email,
-            self.create_request_user.password,
-        )
+        client.login(user)
 
         response = await client.post(
             url=self.delete_token_url,
