@@ -888,7 +888,7 @@ class ScheduleService:
 
     async def _validate_public_applet(self, key: uuid.UUID) -> uuid.UUID:
         # Check if applet exists
-        applet = await AppletsCRUD(self.session).get_by_key(key)
+        applet = await AppletsCRUD(self.session).get_by_link(key)
         if not applet:
             raise AppletNotFoundError(key="key", value=str(key))
         return applet.id

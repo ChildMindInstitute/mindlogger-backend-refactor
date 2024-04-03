@@ -1,7 +1,7 @@
 import datetime
 import typing
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import and_, case, distinct, false, literal, null, or_, select, text, true, update
 from sqlalchemy.engine import Result
@@ -82,9 +82,10 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
             query = query.where(AppletSchema.id != exclude_id)
         db_result = await self._execute(query)
         results = db_result.scalars().all()
+        results = cast(list[AppletSchema], results)
         return results
 
-    async def get_by_link(self, link: uuid.UUID, require_login: bool) -> AppletSchema | None:
+    async def get_by_link(self, link: uuid.UUID, require_login: bool = False) -> AppletSchema | None:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.link == link)
         query = query.where(AppletSchema.require_login == require_login)
@@ -95,9 +96,6 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
 
     async def _fetch(self, key: str, value: Any) -> AppletSchema:
         """Fetch applets by id or display_name from the database."""
-
-        if key not in {"id", "display_name"}:
-            raise errors.AppletsError(key=key, value=value)
 
         # Get applets from the database
         if not (instance := await self._get(key, value)):
@@ -112,17 +110,11 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     async def get_by_ids(self, ids: typing.Iterable[uuid.UUID]) -> list[AppletSchema]:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.id.in_(ids))
+        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
 
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
-
-    async def clear_encryption(self, applet_id: uuid.UUID):
-        query: Query = update(AppletSchema)
-        query = query.where(AppletSchema.id == applet_id)
-        query = query.values(encryption=None)
-
-        await self._execute(query)
 
     async def exist_by_id(self, id_: uuid.UUID) -> bool:
         query: Query = select(AppletSchema)
@@ -132,26 +124,6 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().first() is not None
-
-    async def exist_by_ids(self, ids: list[uuid.UUID]) -> bool:
-        query: Query = select(AppletSchema)
-        query = query.where(AppletSchema.id.in_(ids))
-        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
-
-        query = query.exists()
-        db_result = await self._execute(select(query))
-
-        return db_result.scalars().first() or False
-
-    async def get_by_key(self, key: uuid.UUID, require_login=False) -> AppletSchema:
-        query: Query = select(AppletSchema)
-        query = query.where(AppletSchema.link == key)
-        query = query.where(AppletSchema.is_deleted == False)  # noqa: E712
-        query = query.where(AppletSchema.require_login == require_login)
-
-        db_result = await self._execute(query)
-
-        return db_result.scalars().first()
 
     async def get_applets_by_roles(
         self,
@@ -808,17 +780,3 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.subquery()
         db_result = await self._execute(select(func.count(query.c.id)))
         return db_result.scalars().first() or 0
-
-    async def clear_report_settings(self, applet_id: uuid.UUID):
-        query: Query = update(AppletSchema)
-        query = query.where(AppletSchema.id == applet_id)
-        query = query.values(
-            report_server_ip="",
-            report_public_key="",
-            report_recipients=text("'[]'"),
-            report_include_user_id=False,
-            report_include_case_id=False,
-            report_email_body="",
-        )
-
-        await self._execute(query)

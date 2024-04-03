@@ -63,8 +63,8 @@ class AppletHistoryService:
         return changes
 
     async def _get_applet_changes(self, old_id_version: str) -> AppletHistoryChange:
-        new_schema = await AppletHistoriesCRUD(self.session).fetch_by_id_version(self._id_version)
-        old_schema = await AppletHistoriesCRUD(self.session).fetch_by_id_version(old_id_version)
+        new_schema = await AppletHistoriesCRUD(self.session).retrieve_by_applet_version(self._id_version)
+        old_schema = await AppletHistoriesCRUD(self.session).retrieve_by_applet_version(old_id_version)
 
         new_history: AppletHistory = AppletHistory.from_orm(new_schema)
         old_history: AppletHistory = AppletHistory.from_orm(old_schema)
@@ -78,7 +78,7 @@ class AppletHistoryService:
         return AppletHistory.from_orm(schema)
 
     async def get_prev_version(self):
-        versions = await AppletHistoriesCRUD(self.session).get_id_versions_by_applet_id(self._applet_id)
+        versions = await AppletHistoriesCRUD(self.session).get_versions_by_applet_id(self._applet_id)
         prev_version = INITIAL_VERSION
         if self._version in versions:
             prev_version = versions[max(versions.index(self._version) - 1, 0)]
