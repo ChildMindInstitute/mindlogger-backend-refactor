@@ -23,7 +23,7 @@ from apps.activities.errors import (
 from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
-from apps.applets.errors import AppletAlreadyExist, AppletNotFoundError
+from apps.applets.errors import AppletAlreadyExist, AppletVersionNotFoundError
 from apps.applets.service.applet import AppletService
 from apps.shared.exception import NotFoundError
 from apps.shared.test.client import TestClient
@@ -923,9 +923,7 @@ class TestApplet:
         assert resp.status_code == http.HTTPStatus.NOT_FOUND
         result = resp.json()["result"]
         assert len(result) == 1
-        assert result[0]["message"] == AppletNotFoundError.message.format(
-            key="id_version", value=f"{applet_one.id}_{not_valid_vesion}"
-        )
+        assert result[0]["message"] == AppletVersionNotFoundError.message
 
     async def test_get_applet_changes__one_applet_version(self, client: TestClient, tom: User, applet_one: AppletFull):
         client.login(tom)
