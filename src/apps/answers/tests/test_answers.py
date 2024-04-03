@@ -15,16 +15,42 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.users import User
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility import RedisCacheTest
 
 
 @pytest.fixture
 async def bob_reviewer_in_applet_with_reviewable_activity(session, tom, bob, applet_with_reviewable_activity) -> User:
-    applet_id = applet_with_reviewable_activity.id
-    await UserAppletAccessService(session, tom.id, applet_id).add_role(bob.id, Role.REVIEWER)
+    await UserAppletAccessCRUD(session).save(
+        UserAppletAccessSchema(
+            user_id=bob.id,
+            applet_id=applet_with_reviewable_activity.id,
+            role=Role.REVIEWER,
+            owner_id=tom.id,
+            invitor_id=tom.id,
+            meta=dict(respondents=[str(tom.id)]),
+            nickname=str(uuid.uuid4()),
+        )
+    )
     return bob
+
+
+@pytest.fixture
+async def lucy_manager_in_applet_with_reviewable_activity(session, tom, lucy, applet_with_reviewable_activity) -> User:
+    await UserAppletAccessCRUD(session).save(
+        UserAppletAccessSchema(
+            user_id=lucy.id,
+            applet_id=applet_with_reviewable_activity.id,
+            role=Role.MANAGER,
+            owner_id=tom.id,
+            invitor_id=tom.id,
+            meta=dict(),
+            nickname=str(uuid.uuid4()),
+        )
+    )
+    return lucy
 
 
 @pytest.fixture
@@ -51,6 +77,17 @@ def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity):
         answer="0x00",
         item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
         reviewer_public_key=f"{tom.id}",
+        assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
+    )
+
+
+@pytest.fixture
+def bob_answer_assessment_create_data(bob, applet_with_reviewable_activity):
+    activity_assessment_id = applet_with_reviewable_activity.activities[1].id
+    return AssessmentAnswerCreate(
+        answer="0xff",
+        item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
+        reviewer_public_key=f"{bob.id}",
         assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
     )
 
@@ -1721,3 +1758,56 @@ class TestAnswerActivityItems(BaseTest):
         payload = response.json()
         actual_last_date = payload["result"][0]["lastAnswerDate"]
         assert actual_last_date is None
+
+    @pytest.mark.parametrize(
+        "user_fixture,role",
+        (
+            ("tom", Role.OWNER),
+            ("lucy", Role.MANAGER),
+            ("bob", Role.REVIEWER),
+        ),
+    )
+    async def test_owner_can_view_all_reviews(
+        self,
+        bob_reviewer_in_applet_with_reviewable_activity,
+        lucy_manager_in_applet_with_reviewable_activity,
+        tom_answer_create_data,
+        tom_answer_assessment_create_data,
+        bob_answer_assessment_create_data,
+        mock_kiq_report,
+        client,
+        tom,
+        applet_with_reviewable_activity,
+        session,
+        request,
+        user_fixture,
+        role,
+    ):
+        answer_service = AnswerService(session, tom.id)
+        answer = await answer_service.create_answer(tom_answer_create_data)
+        await AnswerService(session, tom.id).create_assessment_answer(
+            applet_with_reviewable_activity.id, answer.id, tom_answer_assessment_create_data
+        )
+        await AnswerService(session, bob_reviewer_in_applet_with_reviewable_activity.id).create_assessment_answer(
+            applet_with_reviewable_activity.id, answer.id, bob_answer_assessment_create_data
+        )
+
+        login_user = request.getfixturevalue(user_fixture)
+        client.login(login_user)
+        result = await client.get(
+            self.answer_reviews_url.format(applet_id=applet_with_reviewable_activity.id, answer_id=answer.id)
+        )
+        assert result.status_code == 200
+        payload = result.json()
+        assert payload
+        assert payload["count"] == 2
+
+        results = payload["result"]
+        for review in results:
+            reviewer_id = uuid.UUID(review["reviewer"]["id"])
+            if role == Role.REVIEWER and login_user.id != reviewer_id:
+                assert review["answer"] is None
+                assert review["reviewerPublicKey"] is None
+            else:
+                assert review["answer"] is not None
+                assert review["reviewerPublicKey"] is not None

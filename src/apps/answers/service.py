@@ -454,6 +454,7 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
+        current_role = await AppletAccessCRUD(self.session).get_applets_priority_role(applet_id, self.user_id)
         reviewer_activity_version = await AnswerItemsCRUD(self.answer_session).get_assessment_activity_id(answer_id)
         if not reviewer_activity_version:
             return []
@@ -476,11 +477,13 @@ class AnswerService:
             )
             if not user:
                 continue
+
+            can_view = await self.can_view_current_review(user.id, current_role)
             results.append(
                 AnswerReview(
                     id=schema.id,
-                    reviewer_public_key=schema.user_public_key,
-                    answer=schema.answer,
+                    reviewer_public_key=schema.user_public_key if can_view else None,
+                    answer=schema.answer if can_view else None,
                     item_ids=schema.item_ids,
                     items=current_activity_items,
                     reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
@@ -985,6 +988,16 @@ class AnswerService:
 
     async def delete_assessment(self, assessment_id: uuid.UUID):
         return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)
+
+    async def can_view_current_review(self, reviewer_id: uuid.UUID, role: Role | None):
+        if not role:
+            return False
+
+        if role == Role.REVIEWER and reviewer_id == self.user_id:
+            return True
+        elif role in [Role.MANAGER, Role.OWNER]:
+            return True
+        return False
 
 
 class ReportServerService:
