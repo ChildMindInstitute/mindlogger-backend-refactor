@@ -1,14 +1,19 @@
+import datetime
 import uuid
+from unittest import mock
+
+from jose import jwt
 
 from apps.authentication.domain.login import UserLoginRequest
-from apps.authentication.domain.token import RefreshAccessTokenRequest
+from apps.authentication.domain.token import RefreshAccessTokenRequest, TokenPayload
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.authentication.tests.factories import UserLogoutRequestFactory
 from apps.shared.test import BaseTest
 from apps.users import UsersCRUD
-from apps.users.domain import UserCreateRequest
+from apps.users.domain import User, UserCreate, UserCreateRequest
 from apps.users.router import router as user_router
+from config import settings
 
 
 class TestAuthentication(BaseTest):
@@ -104,3 +109,83 @@ class TestAuthentication(BaseTest):
         )
 
         assert response.status_code == 200
+
+    async def _request_refresh_token(self, client, token) -> tuple[int, str | None]:
+        response = await client.post(url=self.refresh_access_token_url, data={"refresh_token": token})
+        if response.status_code == 200:
+            result = response.json()["result"]
+            return response.status_code, result["refreshToken"]
+
+        return response.status_code, None
+
+    async def test_refresh_token_key_transition(self, client, tom: User, tom_create: UserCreate):
+        token_key = settings.authentication.refresh_token.secret_key
+
+        login_request_user: UserLoginRequest = UserLoginRequest(email=tom_create.email, password=tom_create.password)
+        response = await client.post(
+            url=self.get_token_url,
+            data=login_request_user.dict(),
+        )
+        assert response.status_code == 200
+        result = response.json()["result"]
+        refresh_token = result["token"]["refreshToken"]
+        payload = jwt.decode(
+            refresh_token,
+            token_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        token_data = TokenPayload(**payload)
+
+        new_token_key = "new token key"
+        transition_expire_date = datetime.date.today() + datetime.timedelta(days=1)
+
+        # refresh access token, check refresh token not changed
+        _status_code, _token = await self._request_refresh_token(client, refresh_token)
+        assert response.status_code == 200
+        assert _token == refresh_token
+
+        with mock.patch("config.settings.authentication.refresh_token") as token_settings_mock:
+            token_settings_mock.secret_key = new_token_key
+            token_settings_mock.transition_expire_date = transition_expire_date
+            token_settings_mock.expiration = 540
+
+            # test key changed, old token is not valid
+            _status_code, _ = await self._request_refresh_token(client, refresh_token)
+            assert _status_code == 400
+
+            token_settings_mock.transition_key = token_key
+
+            # check transition expire date
+            with mock.patch("apps.authentication.api.auth.datetime") as date_mock:
+                date_mock.utcnow().date.return_value = transition_expire_date + datetime.timedelta(days=1)
+                _status_code, _ = await self._request_refresh_token(client, refresh_token)
+                assert _status_code == 400
+
+            # test transition token key with old token
+            _status_code, new_refresh_token = await self._request_refresh_token(client, refresh_token)
+            assert _status_code == 200
+            assert new_refresh_token
+            assert new_refresh_token != refresh_token
+            # check expiration date copied from prev token
+            payload = jwt.decode(
+                new_refresh_token,
+                new_token_key,
+                algorithms=[settings.authentication.algorithm],
+            )
+            _token_data = TokenPayload(**payload)
+            assert _token_data.exp == token_data.exp
+
+            # check new token is invalid for prev key
+            token_settings_mock.secret_key = token_key
+            _status_code, _ = await self._request_refresh_token(client, new_token_key)
+            assert _status_code == 400
+            token_settings_mock.secret_key = new_token_key
+
+            # check new token works
+            _status_code, _token = await self._request_refresh_token(client, new_refresh_token)
+            assert _status_code == 200
+            assert _token == new_refresh_token
+
+            # check old token blacklisted
+            _status_code, _ = await self._request_refresh_token(client, refresh_token)
+            assert _status_code == 401
