@@ -42,8 +42,8 @@ class TestFolder(BaseTest):
     pin_url = f"{detail_url}/pin/{{applet_id}}"
     applet_detail_url = "applets/{pk}"
 
-    async def test_folder_list(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_folder_list(self, client: TestClient, tom: User):
+        client.login(tom)
 
         response = await client.get(self.list_url)
 
@@ -54,8 +54,8 @@ class TestFolder(BaseTest):
         assert response.json()["result"][1]["id"] == "ecf66358-a717-41a7-8027-807374307732"
         assert response.json()["result"][2]["id"] == "ecf66358-a717-41a7-8027-807374307731"
 
-    async def test_create_folder(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_folder(self, client: TestClient, tom: User):
+        client.login(tom)
         data = dict(name="Daily applets")
 
         response = await client.post(self.list_url, data)
@@ -64,8 +64,8 @@ class TestFolder(BaseTest):
         assert response.json()["result"]["name"] == data["name"]
         assert response.json()["result"]["id"]
 
-    async def test_create_folder_with_already_exists(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_folder_with_already_exists(self, client: TestClient, tom: User):
+        client.login(tom)
         data = dict(name="Morning applets")
 
         response = await client.post(self.list_url, data)
@@ -73,8 +73,8 @@ class TestFolder(BaseTest):
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == "Folder already exists."
 
-    async def test_update_folder_name(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_update_folder_name(self, client: TestClient, tom: User):
+        client.login(tom)
         data = dict(name="Daily applets")
 
         response = await client.put(
@@ -85,8 +85,8 @@ class TestFolder(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["name"] == data["name"]
 
-    async def test_update_folder_with_same_name_success(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_update_folder_with_same_name_success(self, client: TestClient, tom: User):
+        client.login(tom)
         data = dict(name="Morning applets")
 
         response = await client.put(
@@ -97,8 +97,8 @@ class TestFolder(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["name"] == data["name"]
 
-    async def test_update_folder_name_with_already_exists(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_update_folder_name_with_already_exists(self, client: TestClient, tom: User):
+        client.login(tom)
         data = dict(name="Night applets")
 
         response = await client.put(
@@ -109,29 +109,31 @@ class TestFolder(BaseTest):
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == "Folder already exists."
 
-    async def test_delete_folder(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_delete_folder(self, client: TestClient, tom: User):
+        client.login(tom)
 
         response = await client.delete(self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307731"))
         assert response.status_code == http.HTTPStatus.NO_CONTENT
 
-    async def test_delete_not_belonging_folder(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_delete_not_belonging_folder(self, client: TestClient, tom: User):
+        client.login(tom)
 
         response = await client.delete(self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307733"))
 
         assert response.status_code == 403
         assert response.json()["result"][0]["message"] == "Access denied."
 
-    async def test_delete_not_empty_folder(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_delete_not_empty_folder(self, client: TestClient, tom: User):
+        client.login(tom)
 
         response = await client.delete(self.detail_url.format(id="ecf66358-a717-41a7-8027-807374307732"))
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == errors.FolderIsNotEmpty.message
 
-    async def test_pin_applet(self, client: TestClient, applet_one: AppletFull, applet_two_lucy_manager: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_pin_applet(
+        self, client: TestClient, applet_one: AppletFull, applet_two_lucy_manager: AppletFull, tom: User
+    ):
+        client.login(tom)
 
         response = await client.post(
             self.pin_url.format(
@@ -152,8 +154,10 @@ class TestFolder(BaseTest):
         assert response.json()["result"][1]["id"] == str(applet_one.id)
         assert response.json()["result"][1]["isPinned"] is True
 
-    async def test_pin_applet_by_role_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_pin_applet_by_role_manager(
+        self, client: TestClient, applet_two_lucy_manager: AppletFull, lucy: User
+    ):
+        client.login(lucy)
 
         response = await client.post(
             self.pin_url.format(
@@ -164,8 +168,10 @@ class TestFolder(BaseTest):
 
         assert response.status_code == http.HTTPStatus.OK
 
-    async def test_unpin_applet_by_role_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_unpin_applet_by_role_manager(
+        self, client: TestClient, applet_two_lucy_manager: AppletFull, lucy: User
+    ):
+        client.login(lucy)
 
         await client.post(
             self.pin_url.format(
@@ -183,8 +189,8 @@ class TestFolder(BaseTest):
 
         assert response.status_code == http.HTTPStatus.NO_CONTENT
 
-    async def test_unpin_applet(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_unpin_applet(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
 
         response = await client.delete(
             self.pin_url.format(
@@ -195,8 +201,8 @@ class TestFolder(BaseTest):
 
         assert response.status_code == http.HTTPStatus.NO_CONTENT
 
-    async def test_applet_delete(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_applet_delete(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
         response = await client.delete(
             self.applet_detail_url.format(pk=applet_one.id),
         )
@@ -209,8 +215,8 @@ class TestFolder(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
 
-    async def test_list_folders_by_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_list_folders_by_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull, lucy: User):
+        client.login(lucy)
 
         resp = await client.get(self.list_url)
 
@@ -220,8 +226,8 @@ class TestFolder(BaseTest):
         assert resp.json()["result"][1]["name"] == "Midnight applets"
         assert resp.json()["result"][1]["appletCount"] == 1
 
-    async def test_create_folder_by_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_create_folder_by_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull, lucy: User):
+        client.login(lucy)
         data = dict(name="manager")
 
         response = await client.post(self.list_url, data)
@@ -229,8 +235,10 @@ class TestFolder(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
         assert response.json()["result"]["name"] == data["name"]
 
-    async def test_update_folder_name_by_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_update_folder_name_by_manager(
+        self, client: TestClient, applet_two_lucy_manager: AppletFull, lucy: User
+    ):
+        client.login(lucy)
         data = dict(name="hello")
 
         response = await client.put(
@@ -241,14 +249,16 @@ class TestFolder(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["name"] == data["name"]
 
-    async def test_delete_folder_by_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_delete_folder_by_manager(self, client: TestClient, applet_two_lucy_manager: AppletFull, lucy: User):
+        client.login(lucy)
 
         response = await client.delete(self.detail_url.format(id="ecf66358-a717-41a7-8027-999999999999"))
         assert response.status_code == http.HTTPStatus.NO_CONTENT
 
-    async def test_pin_applet_applet_not_in_folder(self, client: TestClient, applet_not_in_folder: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_pin_applet_applet_not_in_folder(
+        self, client: TestClient, applet_not_in_folder: AppletFull, tom: User
+    ):
+        client.login(tom)
 
         response = await client.post(
             self.pin_url.format(

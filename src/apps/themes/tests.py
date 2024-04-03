@@ -8,8 +8,8 @@ class TestThemes(BaseTest):
     list_url = "/themes"
     detail_url = "themes/{id}"
 
-    async def test_create_theme(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_create_theme(self, client, tom):
+        client.login(tom)
         create_data = dict(
             name="Test theme",
             logo="test/logo.png",
@@ -23,8 +23,8 @@ class TestThemes(BaseTest):
         assert response.status_code == 201, response.json()
         assert response.json()["result"]["id"]
 
-    async def test_delete_theme(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_delete_theme(self, client, tom):
+        client.login(tom)
         create_data = dict(
             name="Test theme",
             logo="test/logo.png",
@@ -43,8 +43,8 @@ class TestThemes(BaseTest):
 
         assert response.status_code == 204, response.json()
 
-    async def test_update_theme(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_update_theme(self, client, tom):
+        client.login(tom)
         create_data = dict(
             name="Test theme",
             logo="test/logo.png",
@@ -81,8 +81,8 @@ class TestThemes(BaseTest):
         assert response.json()["result"]["secondaryColor"] == Color(update_data["secondary_color"]).as_hex()
         assert response.json()["result"]["tertiaryColor"] == Color(update_data["tertiary_color"]).as_hex()
 
-    async def test_themes_list(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_themes_list(self, client, tom):
+        client.login(tom)
         response = await client.get(self.list_url)
 
         assert response.status_code == 200

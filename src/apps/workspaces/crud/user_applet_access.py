@@ -409,8 +409,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             func.jsonb_array_elements_text(
                 case(
                     (
-                        func.jsonb_typeof(UserAppletAccessSchema.meta[text("'respondents'")]) == text("'array'"),
-                        UserAppletAccessSchema.meta[text("'respondents'")],
+                        func.jsonb_typeof(UserAppletAccessSchema.meta[text("'subjects'")]) == text("'array'"),
+                        UserAppletAccessSchema.meta[text("'subjects'")],
                     ),
                     else_=text("'[]'::jsonb"),
                 )
@@ -427,7 +427,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER, Role.COORDINATOR]),
                     and_(
                         UserAppletAccessSchema.role == Role.REVIEWER,
-                        UserSchema.id == any_(assigned_respondents),  # TODO subjects here
+                        SubjectSchema.id == any_(assigned_respondents),  # TODO subjects here
                     ),
                 ),
             )

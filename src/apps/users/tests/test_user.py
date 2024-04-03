@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 from pydantic import EmailError, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +9,7 @@ from apps.authentication.router import router as auth_router
 from apps.shared.domain import to_camelcase
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
-from apps.users.domain import UserCreate, UserCreateRequest
+from apps.users.domain import User, UserCreate, UserCreateRequest
 from apps.users.errors import PasswordHasSpacesError, UserIsDeletedError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import UserUpdateRequestFactory
@@ -48,24 +50,25 @@ class TestUser:
         response = await client.post(self.user_create_url, data=request_data.dict())
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    async def test_user_retrieve(self, client: TestClient, user_create: UserCreate):
-        await client.login(url=self.get_token_url, email=user_create.email, password="Test1234!")
+    async def test_user_retrieve(self, client: TestClient, user: User):
+        client.login(user)
         response = await client.get(self.user_retrieve_url)
         assert response.status_code == status.HTTP_200_OK
 
-    async def test_user_update(self, client: TestClient, user_create: UserCreate):
-        await client.login(url=self.get_token_url, email=user_create.email, password="Test1234!")
+    async def test_user_update(self, client: TestClient, user: User):
+        client.login(user)
         response = await client.put(self.user_update_url, data=self.user_update_request.dict())
         assert response.status_code == status.HTTP_200_OK
 
-    async def test_user_delete(self, session: AsyncSession, client: TestClient, user_create: UserCreate):
-        await client.login(url=self.get_token_url, email=user_create.email, password="Test1234!")
+    async def test_user_delete(self, session: AsyncSession, client: TestClient, user: User):
+        client.login(user)
         response = await client.delete(
             self.user_delete_url,
         )
         assert response.status_code == status.HTTP_204_NO_CONTENT
         with pytest.raises(UserIsDeletedError):
-            await UsersCRUD(session).get_by_email(user_create.email)
+            user.email_encrypted = cast(str, user.email_encrypted)
+            await UsersCRUD(session).get_by_email(user.email_encrypted)
 
     async def test_create_user_password_contains_whitespaces(self, client: TestClient, request_data: UserCreateRequest):
         data = request_data.dict()

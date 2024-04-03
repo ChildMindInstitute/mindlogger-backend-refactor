@@ -46,7 +46,7 @@ from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.deps import get_i18n
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.exception import NotFoundError
+from apps.shared.exception import AccessDeniedError, NotFoundError
 from apps.shared.locale import I18N
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
@@ -73,8 +73,8 @@ async def create_answer(
         except NotValidAppletHistory:
             raise InvalidVersionError()
         service = AnswerService(session, user.id, answer_session)
-        if tz_offset and not schema.answer.tz_offset:
-            schema.answer.tz_offset = tz_offset // 60
+        if tz_offset is not None and schema.answer.tz_offset is None:
+            schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
             answer = await service.create_answer(schema)
         await service.create_report_from_answer(answer)
@@ -91,8 +91,8 @@ async def create_anonymous_answer(
         assert anonymous_respondent
 
         service = AnswerService(session, anonymous_respondent.id, answer_session)
-        if tz_offset and not schema.answer.tz_offset:
-            schema.answer.tz_offset = tz_offset // 60
+        if tz_offset is not None and schema.answer.tz_offset is None:
+            schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
             answer = await service.create_answer(schema)
         await service.create_report_from_answer(answer)
@@ -236,6 +236,28 @@ async def applet_answer_reviews_retrieve(
         result=[AnswerReviewPublic.from_orm(review) for review in reviews],
         count=len(reviews),
     )
+
+
+async def applet_answer_assessment_delete(
+    applet_id: uuid.UUID,
+    answer_id: uuid.UUID,
+    assessment_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> Response:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    service = AnswerService(session=session, user_id=user.id, arbitrary_session=answer_session)
+    assessment = await service.get_answer_assessment_by_id(assessment_id, answer_id)
+    if not assessment:
+        raise NotFoundError
+    elif assessment.respondent_id != user.id:
+        raise AccessDeniedError
+    async with atomic(session):
+        async with atomic(answer_session):
+            await service.delete_assessment(assessment_id)
+    return Response()
 
 
 async def applet_activity_assessment_retrieve(
