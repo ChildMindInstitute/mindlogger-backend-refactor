@@ -128,7 +128,7 @@ jobs:
               break
             elif [[ "$result" != "null" ]]; then
               echo "Build failed, ending workflow"
-              break
+              exit 1
             fi
             sleep 60
           done
