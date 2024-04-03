@@ -17,6 +17,9 @@ jobs:
       JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
       JIRA_WEBHOOK_URL: ${{ secrets.JIRA_WEBHOOK_URL }}
       JENKINS_HOST: ${{ vars.JENKINS_HOST }}
+
+      # The max amount of time (in minutes) we should wait for the current Jenkins build to finish. Defaults to 6 hours
+      JENKINS_BUILD_MAX_WAIT_MINS: ${{ vars.JENKINS_BUILD_MAX_WAIT_MINS || 360 }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -103,7 +106,18 @@ jobs:
           repoName=${GITHUB_REPOSITORY##*/}
           currentTag="${{ steps.get-tag.outputs.tag }}"
           echo "Waiting for current build to finish.."
+          
+          start_time=$(date +%s)
           while true; do
+            current_time=$(date +%s)
+            elapsed_time_mins=$(( (current_time - start_time) / 60 ))
+          
+            # Break out of the loop if we've been waiting longer than 6 hours
+            if [ $elapsed_time_mins -ge $JENKINS_BUILD_MAX_WAIT_MINS ]; then
+                echo "Timed out waiting for build to finish"
+                exit 1
+            fi
+          
             echo -n "."
             result=$(curl --silent -u "${JENKINS_USER}:${JENKINS_TOKEN}" -connect-timeout 10 -m 10 "${JENKINS_HOST}/job/${repoName}/view/tags/job/${currentTag}/lastBuild/api/json" | jq -r .result)
             if [[ "$result" == "SUCCESS" ]]; then
