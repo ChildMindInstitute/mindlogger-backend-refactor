@@ -146,3 +146,30 @@ async def show(
             workspaces = await WorkspaceService(session, uuid.uuid4()).get_arbitrary_list()
             for data in workspaces:
                 print_data_table(WorkspaceArbitraryFields.from_orm(data))
+
+
+@app.command(short_help="Remove arbitrary server settings")
+@coro
+async def remove(
+    owner_id: uuid.UUID = typer.Argument(..., help="Workspace owner id"),
+):
+    data = WorkspaceArbitraryFields(
+        database_uri=None,
+        storage_type=None,
+        storage_url=None,
+        storage_access_key=None,
+        storage_secret_key=None,
+        storage_region=None,
+        storage_bucket=None,
+        use_arbitrary=False,
+    )
+
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        async with atomic(session):
+            try:
+                await WorkspaceService(session, owner_id).set_arbitrary_server(data, rewrite=True)
+            except WorkspaceNotFoundError as e:
+                print(wrap_error_msg(e))
+            else:
+                print(f"[bold green]Abitrary setting for owner {owner_id} are removed![/bold green]")
