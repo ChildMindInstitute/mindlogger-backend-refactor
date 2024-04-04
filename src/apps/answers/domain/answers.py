@@ -141,12 +141,21 @@ class PublicAnswerDates(PublicModel):
     dates: list[datetime.date]
 
 
+class Identifier(InternalModel):
+    identifier: str
+    user_public_key: str | None = None
+    last_answer_date: datetime.datetime
+
+
 class ActivityAnswer(InternalModel):
     user_public_key: str | None
     answer: str | None
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+    identifiers: list[Identifier]
+    created_at: datetime.datetime
+    version: str
 
 
 class AppletActivityAnswer(InternalModel):
@@ -194,6 +203,9 @@ class ActivityAnswerPublic(PublicModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+    identifiers: list[Identifier]
+    created_at: datetime.datetime
+    version: str
 
 
 class AppletActivityAnswerPublic(PublicModel):
@@ -357,12 +369,6 @@ class Version(InternalModel):
 class VersionPublic(PublicModel):
     version: str
     created_at: datetime.datetime
-
-
-class Identifier(InternalModel):
-    identifier: str
-    user_public_key: str | None = None
-    last_answer_date: datetime.datetime
 
 
 class IdentifierPublic(PublicModel):

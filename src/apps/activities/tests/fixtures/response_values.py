@@ -6,6 +6,7 @@ import pytest
 from apps.activities.domain.response_values import (
     AudioPlayerValues,
     AudioValues,
+    DrawingProportion,
     DrawingValues,
     MultiSelectionRowsValues,
     MultiSelectionValues,
@@ -73,7 +74,9 @@ def number_selection_response_values() -> NumberSelectionValues:
 
 @pytest.fixture
 def drawing_response_values(remote_image: str) -> DrawingValues:
-    return DrawingValues(drawing_background=remote_image, drawing_example=remote_image)
+    return DrawingValues(
+        drawing_background=remote_image, drawing_example=remote_image, proportion=DrawingProportion(enabled=True)
+    )
 
 
 @pytest.fixture

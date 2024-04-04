@@ -21,6 +21,8 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
 from apps.themes.service import ThemeService
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 async def _get_or_create_applet(
@@ -228,3 +230,9 @@ async def applet_four(
     yield applet
     if not pytestconfig.getoption("--keepdb"):
         await teardown_applet(global_session, applet.id)
+
+
+@pytest.fixture
+async def applet_one_lucy_editor(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.EDITOR)
+    return applet_one

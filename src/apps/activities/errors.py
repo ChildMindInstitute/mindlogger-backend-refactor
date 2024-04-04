@@ -97,21 +97,6 @@ class InvalidScoreLengthError(FieldError):
     message = _("Scores must have the same length as the " "range of min_value and max_value")
 
 
-class TimerRequiredError(FieldError):
-    zero_path = None
-    message = _("Timer is required for this timer type.")
-
-
-class AtTimeFieldRequiredError(FieldError):
-    zero_path = None
-    message = _("at_time is required for this trigger type.")
-
-
-class FromTimeToTimeRequiredError(FieldError):
-    zero_path = None
-    message = _("from_time and to_time are required for this trigger type.")
-
-
 class ActivityAccessDeniedError(AccessDeniedError):
     message = _("Activity access denied")
 

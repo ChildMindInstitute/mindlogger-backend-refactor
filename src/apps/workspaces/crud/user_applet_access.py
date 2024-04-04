@@ -405,7 +405,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(UserSchema, SubjectSchema)
         )
 
-        assigned_respondents = select(literal_column("val").cast(UUID)).select_from(
+        assigned_subjects = select(literal_column("val").cast(UUID)).select_from(
             func.jsonb_array_elements_text(
                 case(
                     (
@@ -427,11 +427,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER, Role.COORDINATOR]),
                     and_(
                         UserAppletAccessSchema.role == Role.REVIEWER,
-                        SubjectSchema.id == any_(assigned_respondents),  # TODO subjects here
+                        SubjectSchema.id == any_(assigned_subjects),
                     ),
                 ),
             )
-            .correlate(AppletSchema, UserSchema)
+            .correlate(AppletSchema, SubjectSchema)
         )
 
         query: Query = select(

@@ -52,7 +52,7 @@ class HistoryMixin:
 
     @classmethod
     def split_id_version(cls, id_version: str) -> tuple[uuid.UUID, str]:
-        parts = id_version.split("_", maxsplit=1)
+        parts = id_version.split("_")
         if len(parts) != 2:
             raise Exception(f"Wrong id_version format: {id_version}")
 

@@ -13,7 +13,6 @@ from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
-from apps.applets.domain import Role
 from apps.applets.domain.applet_full import AppletFull
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
@@ -21,6 +20,7 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
 from apps.users import User
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility import RedisCacheTest
 
@@ -1152,18 +1152,11 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()["result"]
         assert not data["answers"]
 
-    async def test_get_identifiers(self, mock_kiq_report, client, tom, applet, identifiers_query):
+    async def test_get_identifiers(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
         identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
         identifier_url = f"{identifier_url}?respondentId={tom.id}"
         response = await client.get(identifier_url)
-
-        response = await client.get(
-            self.identifiers_url.format(
-                applet_id=str(applet.id),
-                activity_id=str(applet.activities[0].id),
-            )
-        )
 
         assert response.status_code == 200
         assert response.json()["count"] == 0
@@ -1200,14 +1193,6 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-        response = await client.get(
-            self.identifiers_url.format(
-                applet_id=str(applet.id),
-                activity_id=str(applet.activities[0].id),
-            ),
-            query=identifiers_query,
-        )
-
         response = await client.get(identifier_url)
         assert response.status_code == 200
         assert response.json()["count"] == 1
@@ -1231,7 +1216,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["createdAt"]
 
     @pytest.mark.parametrize(
-        ("query"),
+        "query",
         (
             {},
             {"respondentId": "7484f34a-3acc-4ee6-8a94-fd7299502fa1"},
