@@ -4,7 +4,10 @@ import uuid
 from fastapi import Depends
 
 from apps.activities.crud import ActivitiesCRUD
-from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic
+from apps.activities.domain.activity import (
+    ActivityLanguageWithItemsMobileDetailPublic,
+    ActivitySingleLanguageWithItemsDetailPublic,
+)
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
 from apps.activity_flows.service.flow import FlowService
@@ -83,41 +86,10 @@ async def applet_activities(
         applet_detail = AppletSingleLanguageDetailMobilePublic.from_orm(applet)
         respondent_meta = {"nickname": subject.nickname if subject else None}
 
-        for activity in activities:
-            # Filter by `hasSubmitted` (if the activity has submitted answers)
-            if filters.has_submitted is not None:
-                latest_answer = await AnswerService(session, user.id, answer_session).get_latest_answer_by_activity_id(
-                    applet_id, activity.id
-                )
-                if filters.has_submitted:
-                    if latest_answer is None:
-                        activities.remove(activity)
-                else:
-                    if latest_answer is not None:
-                        activities.remove(activity)
-
-            # Filter by `hasScore` (if the activity has score set to activity items)
-            if filters.has_score is not None:
-                activity_items = await ActivityItemService(session).get_single_language_by_activity_id(
-                    activity.id, language
-                )
-
-                found_score = False
-                for activity_item in activity_items:
-                    if found_score:
-                        break
-
-                    options = getattr(activity_item.response_values, "options", [])
-                    for option in options:
-                        if option.score > 0:
-                            found_score = True
-
-                if filters.has_score:
-                    if not found_score:
-                        activities.remove(activity)
-                else:
-                    if found_score:
-                        activities.remove(activity)
+        if filters.has_submitted or filters.has_score:
+            activities = await __filter_activities(
+                activities, applet_id, user.id, filters, language, session, answer_session
+            )
 
     result = AppletActivitiesDetailsPublic(
         activities_details=activities,
@@ -149,43 +121,60 @@ async def applet_activities_and_flows(
 
         activities, flows = await asyncio.gather(activities_future, flows_future)
 
-        for activity in activities:
-            # Filter by `hasSubmitted` (if the activity has submitted answers)
-            if filters.has_submitted is not None:
-                latest_answer = await AnswerService(session, user.id, answer_session).get_latest_answer_by_activity_id(
-                    applet_id, activity.id
-                )
-                if filters.has_submitted:
-                    if latest_answer is None:
-                        activities.remove(activity)
-                else:
-                    if latest_answer is not None:
-                        activities.remove(activity)
-
-            # Filter by `hasScore` (if the activity has score set to activity items)
-            if filters.has_score is not None:
-                activity_items = await ActivityItemService(session).get_single_language_by_activity_id(
-                    activity.id, language
-                )
-
-                found_score = False
-                for activity_item in activity_items:
-                    if found_score:
-                        break
-
-                    options = getattr(activity_item.response_values, "options", [])
-                    for option in options:
-                        if option.score > 0:
-                            found_score = True
-
-                if filters.has_score:
-                    if not found_score:
-                        activities.remove(activity)
-                else:
-                    if found_score:
-                        activities.remove(activity)
+        if filters.has_submitted or filters.has_score:
+            activities = await __filter_activities(
+                activities, applet_id, user.id, filters, language, session, answer_session
+            )
 
     result = AppletActivitiesAndFlowsDetailsPublic(
         details=activities + flows,
     )
     return Response(result=result)
+
+
+async def __filter_activities(
+    activities: list[ActivityLanguageWithItemsMobileDetailPublic],
+    applet_id: uuid.UUID,
+    user_id: uuid.UUID,
+    filters: AppletActivityFilter,
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> list[ActivityLanguageWithItemsMobileDetailPublic]:
+    for activity in activities:
+        # Filter by `hasSubmitted` (if the activity has submitted answers)
+        if filters.has_submitted is not None:
+            latest_answer = await AnswerService(session, user_id, answer_session).get_latest_answer_by_activity_id(
+                applet_id, activity.id
+            )
+            if filters.has_submitted:
+                if latest_answer is None:
+                    activities.remove(activity)
+            else:
+                if latest_answer is not None:
+                    activities.remove(activity)
+
+        # Filter by `hasScore` (if the activity has score set to activity items)
+        if filters.has_score is not None:
+            activity_items = await ActivityItemService(session).get_single_language_by_activity_id(
+                activity.id, language
+            )
+
+            found_score = False
+            for activity_item in activity_items:
+                if found_score:
+                    break
+
+                options = getattr(activity_item.response_values, "options", [])
+                for option in options:
+                    if option.score > 0:
+                        found_score = True
+
+            if filters.has_score:
+                if not found_score:
+                    activities.remove(activity)
+            else:
+                if found_score:
+                    activities.remove(activity)
+
+    return activities
