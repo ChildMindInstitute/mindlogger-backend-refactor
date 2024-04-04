@@ -149,7 +149,7 @@ class TestActivities:
     async def test_activities_flows_applet(
         self, client, applet_activity_flow: AppletFull, default_theme: Theme, tom: User
     ):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         response = await client.get(self.activities_flows_applet.format(applet_id=applet_activity_flow.id))
 
         assert response.status_code == http.HTTPStatus.OK
