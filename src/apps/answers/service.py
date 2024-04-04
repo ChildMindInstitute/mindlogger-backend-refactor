@@ -382,8 +382,7 @@ class AnswerService:
             self.session, applet_id, answer_schema.version
         ).get_by_activity_id(activity_id)
 
-        # TODO fix required filters
-        identifiers = await self.get_activity_identifiers(activity_id)
+        identifiers = await self.get_activity_identifiers(activity_id, IdentifiersQueryParams())
         answer = ActivityAnswer(
             user_public_key=answer_item.user_public_key,
             answer=answer_item.answer,

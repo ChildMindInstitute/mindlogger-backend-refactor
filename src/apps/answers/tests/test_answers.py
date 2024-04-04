@@ -1152,7 +1152,7 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()["result"]
         assert not data["answers"]
 
-    async def test_get_identifiers(self, mock_kiq_report, client, tom, applet, identifiers_query):
+    async def test_get_identifiers(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
         identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
         identifier_url = f"{identifier_url}?respondentId={tom.id}"
@@ -1193,7 +1193,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == 201, response.json()
 
-        response = await client.get(identifier_url, query=identifiers_query)
+        response = await client.get(identifier_url)
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["identifier"] == "some identifier"
