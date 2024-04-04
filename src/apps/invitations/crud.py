@@ -83,6 +83,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             AppletSchema.display_name.label("applet_name"),
             SubjectSchema.secret_user_id.label("user_secret_id"),
             SubjectSchema.nickname.label("nickname"),
+            SubjectSchema.tag.label("tag"),
         )
         query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
         query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
@@ -106,7 +107,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
 
         db_result = await self._execute(query)
         results = []
-        for invitation, applet_name, secret_id, nickname in db_result.all():
+        for invitation, applet_name, secret_id, nickname, tag in db_result.all():
             results.append(
                 InvitationDetail(
                     id=invitation.id,
@@ -123,6 +124,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     created_at=invitation.created_at,
                     nickname=nickname,
                     secret_user_id=secret_id,
+                    tag=tag,
                 )
             )
         return results
@@ -166,6 +168,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             AppletSchema.display_name.label("applet_name"),
             SubjectSchema.secret_user_id,
             SubjectSchema.nickname,
+            SubjectSchema.tag,
         )
         query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
         query = query.outerjoin(
@@ -182,7 +185,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         if not result:
             return None
 
-        invitation, applet_name, secret_id, nickname = result
+        invitation, applet_name, secret_id, nickname, tag = result
         invitation_detail_base = InvitationDetailBase(
             id=invitation.id,
             email=invitation.email,
@@ -201,6 +204,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             return InvitationDetailRespondent(
                 meta=invitation.meta,
                 nickname=nickname,
+                tag=tag,
                 secret_user_id=secret_id,
                 **invitation_detail_base.dict(),
             )

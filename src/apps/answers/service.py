@@ -1262,6 +1262,7 @@ class ReportServerService:
             lastName=subject.last_name,
             nickname=subject.nickname,
             secretId=subject.secret_user_id,
+            tag=subject.tag,
         )
 
     async def _prepare_responses(self, answers_map: dict[uuid.UUID, AnswerSchema]) -> tuple[list[dict], list[str]]:
