@@ -1,0 +1,134 @@
+name: Update Jira Tickets
+
+on:
+  release:
+    types: [created]
+  # Allows running manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      tagName:
+        description: "Tag Name"
+        required: true
+
+jobs:
+  process-release:
+    env:
+      JENKINS_USER: ${{ secrets.JENKINS_USER }}
+      JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+      JIRA_WEBHOOK_URL: ${{ secrets.JIRA_WEBHOOK_URL }}
+      JENKINS_HOST: ${{ vars.JENKINS_HOST }}
+
+      # The max amount of time (in minutes) we should wait for the current Jenkins build to finish. Defaults to 6 hours
+      JENKINS_BUILD_MAX_WAIT_MINS: ${{ vars.JENKINS_BUILD_MAX_WAIT_MINS || 360 }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Get current tag
+        id: get-tag
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            currentTag=${GITHUB_REF#refs/tags/}
+          else
+            currentTag="${{ github.event.inputs.tagName }}"
+          fi
+          echo "Tag: ${currentTag}"
+          echo "tag=${currentTag}" >> $GITHUB_OUTPUT
+
+      - name: Validate tag
+        run: |
+          git fetch -q --tags
+          if ! git tag --list | grep -qx "${{ steps.get-tag.outputs.tag }}"; then
+            echo "Not a valid tag, ending workflow"
+            exit 1
+          fi
+
+      - name: Check if tag is a release candidate
+        run: |
+          if [[ ${{ steps.get-tag.outputs.tag }} != *"-rc"* ]]; then
+            echo "Not a release candidate, ending workflow."
+            exit 1
+          fi
+
+      - name: Ping Jenkins for previous successful tag
+        id: ping-jenkins
+        run: |
+          repoName=${GITHUB_REPOSITORY##*/}
+          currentTag="${{ steps.get-tag.outputs.tag }}"
+          git fetch -q --tags
+          rcTags=$(git tag --sort=-creatordate | grep -- -rc)
+          started=false
+          previousTag=""
+
+          for tagName in $rcTags
+          do
+            # Skip tags more recent than the current one
+            if [ "$tagName" != "$currentTag" ] && [ "$started" = false ]; then
+              continue;
+            elif [ "$tagName" == "$currentTag" ]; then
+              started=true;
+              continue;
+            fi
+
+            jenkinsUrl="${JENKINS_HOST}/job/${repoName}/view/tags/job/${tagName}/lastSuccessfulBuild"
+            echo "Checking for successful Jenkins build for GitHub tag ${tagName} at ${jenkinsUrl}"
+            
+            response=$(curl -o /dev/null --silent -w "%{http_code}\n" -u "${JENKINS_USER}:${JENKINS_TOKEN}" "${jenkinsUrl}/api/json")
+            echo "Response: ${response}" 
+            if [ "$response" == "200" ]; then
+              echo "Found successful Jenkins build for GitHub tag ${tagName}: ${jenkinsUrl}"
+              previousTag="${tagName}"
+              break
+            fi
+          done
+          
+          if [ "${previousTag}" == "" ]; then
+            echo "No successful Jenkins builds found for any previous tags. Ending workflow"
+            exit 1
+          else
+            echo "tagName=${previousTag}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine Jira tickets from commit messages
+        id: jira-tickets
+        run: |
+          currentTag="${{ steps.get-tag.outputs.tag }}"
+          previousTag="${{ steps.ping-jenkins.outputs.tagName }}"
+          commitMessages=$(git log --pretty=%B $previousTag..$currentTag)
+          echo "Commit messages since the last release: ${commitMessages}"
+          jiraTickets=$(echo "$commitMessages" | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
+          echo "Jira tickets since the last release: ${jiraTickets}"
+          echo "tickets=${jiraTickets}" >> $GITHUB_OUTPUT
+
+      - name: Periodically ping Jenkins for current tag build status
+        run: |
+          repoName=${GITHUB_REPOSITORY##*/}
+          currentTag="${{ steps.get-tag.outputs.tag }}"
+          echo "Waiting for current build to finish.."
+          
+          start_time=$(date +%s)
+          while true; do
+            current_time=$(date +%s)
+            elapsed_time_mins=$(( (current_time - start_time) / 60 ))
+          
+            # Break out of the loop if we've been waiting longer than 6 hours
+            if [ $elapsed_time_mins -ge $JENKINS_BUILD_MAX_WAIT_MINS ]; then
+                echo "Timed out waiting for build to finish"
+                exit 1
+            fi
+          
+            echo -n "."
+            result=$(curl --silent -u "${JENKINS_USER}:${JENKINS_TOKEN}" --connect-timeout 10 -m 10 "${JENKINS_HOST}/job/${repoName}/view/tags/job/${currentTag}/lastBuild/api/json" | jq -r .result)
+            if [[ "$result" == "SUCCESS" ]]; then
+              echo "Build successful! Submitting ticket numbers to Jira"
+              tickets="${{ steps.jira-tickets.outputs.tickets }}"
+              json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }"
+              curl -X POST -H 'Content-Type: application/json' --url "${JIRA_WEBHOOK_URL}" --data "$json"
+              break
+            elif [[ "$result" != "null" ]]; then
+              echo "Build failed, ending workflow"
+              exit 1
+            fi
+            sleep 60
+          done

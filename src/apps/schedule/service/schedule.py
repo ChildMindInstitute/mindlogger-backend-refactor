@@ -45,7 +45,6 @@ from apps.schedule.domain.schedule.requests import EventRequest, EventUpdateRequ
 from apps.schedule.errors import (
     AccessDeniedToApplet,
     ActivityOrFlowNotFoundError,
-    AppletScheduleNotFoundError,
     EventAlwaysAvailableExistsError,
     ScheduleNotFoundError,
 )
@@ -274,8 +273,6 @@ class ScheduleService:
         event_schemas: list[EventSchema] = await EventCRUD(self.session).get_all_by_applet_id_with_filter(applet_id)
         event_ids = [event_schema.id for event_schema in event_schemas]
         periodicity_ids = [event_schema.periodicity_id for event_schema in event_schemas]
-        if not event_ids:
-            raise AppletScheduleNotFoundError(applet_id=applet_id)
 
         # Get all activity_ids and flow_ids
         activity_ids = await ActivityEventsCRUD(self.session).get_by_event_ids(event_ids)
@@ -398,8 +395,8 @@ class ScheduleService:
                 reminder = await ReminderCRUD(self.session).create(
                     reminder=ReminderSettingCreate(
                         event_id=event.id,
-                        activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
-                        reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
+                        activity_incomplete=schedule.notification.reminder.activity_incomplete,
+                        reminder_time=schedule.notification.reminder.reminder_time,
                     )
                 )
             notification_public = PublicNotification(
@@ -888,7 +885,7 @@ class ScheduleService:
 
     async def _validate_public_applet(self, key: uuid.UUID) -> uuid.UUID:
         # Check if applet exists
-        applet = await AppletsCRUD(self.session).get_by_key(key)
+        applet = await AppletsCRUD(self.session).get_by_link(key)
         if not applet:
             raise AppletNotFoundError(key="key", value=str(key))
         return applet.id

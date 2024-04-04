@@ -192,7 +192,6 @@ class TestAnswerActivityItems:
                 subject_id=str(subject_id),
             ),
         )
-
         assert response.status_code == 200
 
         response = await arbitrary_client.post(

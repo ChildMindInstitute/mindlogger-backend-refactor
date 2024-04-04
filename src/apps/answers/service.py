@@ -368,9 +368,9 @@ class AnswerService:
         activity_id: uuid.UUID,
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
-
-        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        pk = self._generate_history_id(schema.version)
+        answers_crud = AnswersCRUD(self.answer_session)
+        answer_schema = await answers_crud.get_by_id(answer_id)
+        pk = self._generate_history_id(answer_schema.version)
         answer_items = await AnswerItemsCRUD(self.answer_session).get_by_answer_and_activity(
             answer_id, [pk(activity_id)]
         )
@@ -378,16 +378,21 @@ class AnswerService:
             raise AnswerNotFoundError()
         answer_item = answer_items[0]
 
-        activity_items = await ActivityItemHistoryService(self.session, applet_id, schema.version).get_by_activity_id(
-            activity_id
-        )
+        activity_items = await ActivityItemHistoryService(
+            self.session, applet_id, answer_schema.version
+        ).get_by_activity_id(activity_id)
 
+        # TODO fix required filters
+        identifiers = await self.get_activity_identifiers(activity_id)
         answer = ActivityAnswer(
             user_public_key=answer_item.user_public_key,
             answer=answer_item.answer,
             item_ids=answer_item.item_ids,
             items=activity_items,
             events=answer_item.events,
+            identifiers=identifiers,
+            created_at=answer_schema.created_at,
+            version=answer_schema.version,
         )
 
         return answer
@@ -842,11 +847,11 @@ class AnswerService:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
-        activity_ids_with_answer = await AnswersCRUD(self.answer_session).get_submitted_activity_with_last_date(
+        activity_ids_with_date = await AnswersCRUD(self.answer_session).get_submitted_activity_with_last_date(
             activity_ver_ids, filters.respondent_id, filters.target_subject_id
         )
         submitted_activities = dict()
-        for activity_history_id, submit_date in activity_ids_with_answer:
+        for activity_history_id, submit_date in activity_ids_with_date:
             activity_id = activity_history_id.split("_")[0]
             submitted_activities[activity_id] = submit_date
 

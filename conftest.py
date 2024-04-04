@@ -3,6 +3,7 @@ import os
 import uuid
 from typing import Any, AsyncGenerator, Callable, Generator, cast
 
+import nest_asyncio
 import pytest
 import taskiq_fastapi
 from alembic import command
@@ -35,6 +36,10 @@ pytest_plugins = [
     "apps.applets.tests.fixtures.applets",
     "apps.users.tests.fixtures.user_devices",
 ]
+
+
+# Fix for issue https://github.com/pytest-dev/pytest-asyncio/issues/112
+nest_asyncio.apply()
 
 
 @pytest.fixture(scope="session")

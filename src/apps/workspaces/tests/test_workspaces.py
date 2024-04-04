@@ -67,12 +67,6 @@ async def applet_one_lucy_coordinator(session: AsyncSession, applet_one: AppletF
 
 
 @pytest.fixture
-async def applet_one_lucy_editor(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.EDITOR)
-    return applet_one
-
-
-@pytest.fixture
 async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
     return applet_one
