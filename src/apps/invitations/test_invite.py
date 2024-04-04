@@ -100,10 +100,7 @@ def subject_ids(tom, tom_applet_one_subject) -> list[str]:
 @pytest.fixture
 def invitation_base_data(user_create: UserCreate) -> dict[str, str | EmailStr]:
     return dict(
-        email=user_create.email,
-        first_name=user_create.first_name,
-        last_name=user_create.last_name,
-        language="en",
+        email=user_create.email, first_name=user_create.first_name, last_name=user_create.last_name, language="en"
     )
 
 
@@ -132,6 +129,7 @@ def invitation_respondent_data(
         **invitation_base_data,
         secret_user_id=str(uuid.uuid4()),
         nickname=str(uuid.uuid4()),
+        tag=str(uuid.uuid4()),
     )
 
 
@@ -148,6 +146,7 @@ def shell_create_data():
         lastName="lastName",
         secretUserId="secretUserId",
         nickname="nickname",
+        tag="mytag",
     )
 
 
@@ -160,6 +159,7 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
             first_name="Shell",
             last_name="Account",
             nickname="shell-account-0",
+            tag="shell-account-0-tag",
             secret_user_id=f"{uuid.uuid4()}",
         )
     )
@@ -276,6 +276,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["userId"] == str(user.id)
+
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_respondent_data.email]
         assert TestMail.mails[0].subject == "Applet 1 invitation"
@@ -831,6 +832,7 @@ class TestInvite(BaseTest):
         assert payload["result"]["appletId"] == applet_id
         assert payload["result"]["creatorId"] == creator_id
         assert payload["result"]["language"] == shell_create_data["language"]
+        assert payload["result"]["tag"] == shell_create_data["tag"]
 
     async def test_shell_invite(self, client, session, shell_create_data, bob: User, applet_four: AppletFull):
         client.login(bob)

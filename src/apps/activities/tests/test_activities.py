@@ -47,7 +47,9 @@ class TestActivities:
         assert len(result["items"]) == 1
         assert result["items"][0]["question"] == activity.items[0].question[Language.ENGLISH]
 
-    async def test_activities_applet(self, client, applet_one: AppletFull, default_theme: Theme, tom: User):
+    async def test_activities_applet(
+        self, client, applet_one: AppletFull, default_theme: Theme, tom: User, tom_applet_one_subject
+    ):
         client.login(tom)
         response = await client.get(self.activities_applet.format(applet_id=applet_one.id))
 
@@ -144,7 +146,10 @@ class TestActivities:
         assert result["appletDetail"]["activities"][0]["splashScreen"] == activity.splash_screen
         assert result["appletDetail"]["activityFlows"] == []
 
-        assert result["respondentMeta"] == {"nickname": f"{tom.first_name} {tom.last_name}"}
+        assert result["respondentMeta"] == {
+            "nickname": f"{tom.first_name} {tom.last_name}",
+            "tag": tom_applet_one_subject.tag,
+        }
 
     async def test_activities_flows_applet(
         self, client, applet_activity_flow: AppletFull, default_theme: Theme, tom: User

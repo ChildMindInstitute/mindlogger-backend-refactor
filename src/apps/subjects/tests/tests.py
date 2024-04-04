@@ -28,6 +28,7 @@ def create_shell_body(applet_one):
         first_name="fn",
         last_name="ln",
         secret_user_id="1234",
+        tag="tag1234",
     ).dict()
 
 
@@ -43,6 +44,7 @@ def subject_schema():
         last_name="last_name",
         secret_user_id="secret_user_id",
         nickname="nickname",
+        tag="tag",
     )
 
 
@@ -58,6 +60,7 @@ def subject_updated_schema(subject_schema):
         last_name=f"new-{subject_schema.last_name}",
         secret_user_id=f"new-{subject_schema.secret_user_id}",
         nickname=f"new-{subject_schema.nickname}",
+        tag=f"new-{subject_schema.tag}",
     )
 
 
@@ -246,6 +249,7 @@ class TestSubjects(BaseTest):
         assert payload["result"]["creatorId"] == creator_id
         assert payload["result"]["userId"] is None
         assert payload["result"]["language"] == "en"
+        assert payload["result"]["tag"] == create_shell_body["tag"]
 
     async def test_create_relation(self, client, tom: User, create_shell_body, tom_applet_one_subject):
         subject_id = tom_applet_one_subject.id
@@ -437,9 +441,10 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"secretUserId", "nickname", "lastSeen"}
+        assert set(res.keys()) == {"secretUserId", "nickname", "lastSeen", "tag"}
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
+        assert res["tag"] == tom_applet_one_subject.tag
 
         # not found
         response = await client.get(self.subject_detail_url.format(subject_id=uuid.uuid4()))

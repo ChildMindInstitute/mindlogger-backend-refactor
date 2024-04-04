@@ -98,7 +98,7 @@ async def applet_retrieve(
         applet, subject = await asyncio.gather(applet_future, subject_future)
     return AppletRetrieveResponse(
         result=AppletSingleLanguageDetailPublic.from_orm(applet),
-        respondent_meta={"nickname": subject.nickname if subject else None},
+        respondent_meta={"nickname": subject.nickname if subject else None, "tag": subject.tag if subject else None},
     )
 
 

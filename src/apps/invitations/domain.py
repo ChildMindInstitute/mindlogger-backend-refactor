@@ -43,6 +43,7 @@ class _InvitationRequest(PublicModel):
         description="This field represents the last name of invited user",
     )
     language: InvitationLanguage = Field(description="This field represents the language of invitation")
+    tag: str | None = Field(description="This field represents the tag/label of invited user")
 
     @root_validator
     def email_validation(cls, values):
@@ -188,6 +189,7 @@ class InvitationDetail(InvitationDetailBase):
     meta: dict
     nickname: str | None
     secret_user_id: str | None
+    tag: str | None
 
 
 class InvitationDetailRespondent(InvitationDetailBase):
@@ -198,6 +200,7 @@ class InvitationDetailRespondent(InvitationDetailBase):
     meta: RespondentMeta
     nickname: str | None
     secret_user_id: str
+    tag: str | None
 
 
 class InvitationDetailReviewer(InvitationDetailBase):
@@ -361,6 +364,7 @@ class ShellAccountCreateRequest(PublicModel):
     secret_user_id: str
     nickname: str | None
     email: str | None
+    tag: str | None
 
     _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
 
