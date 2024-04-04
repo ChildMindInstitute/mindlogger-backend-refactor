@@ -40,7 +40,11 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_mobile_with_items_by_applet_id(self, applet_id: uuid.UUID, is_reviewable=None) -> list:
+    async def get_mobile_with_items_by_applet_id(
+        self,
+        applet_id: uuid.UUID,
+        is_reviewable=None,
+    ) -> list:
         query: Query = select(
             ActivitySchema.id,
             ActivitySchema.name,
@@ -55,9 +59,11 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.order,
             ActivitySchema.scores_and_reports,
         )
+
         query = query.where(ActivitySchema.applet_id == applet_id)
         if isinstance(is_reviewable, bool):
             query = query.where(ActivitySchema.is_reviewable == is_reviewable)
+
         query = query.order_by(ActivitySchema.order.asc())
         result = await self._execute(query)
 
