@@ -298,6 +298,7 @@ class WorkspaceArbitraryFields(InternalModel):
 
 class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
     user_id: uuid.UUID
+    email: str
     alembic_version: str | None
 
 
