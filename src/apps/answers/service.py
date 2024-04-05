@@ -36,6 +36,7 @@ from apps.answers.domain import (
     AnswerAlert,
     AnswerDate,
     AnswerExport,
+    AnswerItem,
     AnswerItemDataEncrypted,
     AnswerNoteDetail,
     AnswerReview,
@@ -260,6 +261,7 @@ class AnswerService:
             scheduled_event_id=item_answer.scheduled_event_id,
             local_end_date=item_answer.local_end_date,
             local_end_time=item_answer.local_end_time,
+            tz_offset=item_answer.tz_offset,
         )
 
         await AnswerItemsCRUD(self.answer_session).create(item_answer)
@@ -335,14 +337,16 @@ class AnswerService:
                     continue
                 answer_item_duplicate.add(key)
                 activity_map[activity_id].answer_dates.append(
-                    AnswerDate(created_at=answer_item.created_at, answer_id=answer.id)
+                    AnswerDate(
+                        created_at=answer_item.created_at, answer_id=answer.id, end_datetime=answer_item.end_datetime
+                    )
                 )
         return list(activity_map.values())
 
     async def get_applet_submit_dates(
         self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
     ) -> list[datetime.date]:
-        await self._validate_applet_activity_access(applet_id, filters.respondent_id)
+        await self._validate_applet_activity_access(applet_id, filters.target_subject_id)
         return await AnswersCRUD(self.answer_session).get_respondents_submit_dates(applet_id, filters)
 
     async def _validate_applet_activity_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
@@ -364,9 +368,9 @@ class AnswerService:
         activity_id: uuid.UUID,
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
-
-        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        pk = self._generate_history_id(schema.version)
+        answers_crud = AnswersCRUD(self.answer_session)
+        answer_schema = await answers_crud.get_by_id(answer_id)
+        pk = self._generate_history_id(answer_schema.version)
         answer_items = await AnswerItemsCRUD(self.answer_session).get_by_answer_and_activity(
             answer_id, [pk(activity_id)]
         )
@@ -374,16 +378,20 @@ class AnswerService:
             raise AnswerNotFoundError()
         answer_item = answer_items[0]
 
-        activity_items = await ActivityItemHistoryService(self.session, applet_id, schema.version).get_by_activity_id(
-            activity_id
-        )
+        activity_items = await ActivityItemHistoryService(
+            self.session, applet_id, answer_schema.version
+        ).get_by_activity_id(activity_id)
 
+        identifiers = await self.get_activity_identifiers(activity_id, IdentifiersQueryParams())
         answer = ActivityAnswer(
             user_public_key=answer_item.user_public_key,
             answer=answer_item.answer,
             item_ids=answer_item.item_ids,
             items=activity_items,
             events=answer_item.events,
+            identifiers=identifiers,
+            created_at=answer_schema.created_at,
+            version=answer_schema.version,
         )
 
         return answer
@@ -395,7 +403,7 @@ class AnswerService:
         activity_id: uuid.UUID | None = None,
     ):
         answer_schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        await self._validate_applet_activity_access(applet_id, answer_schema.respondent_id)
+        await self._validate_applet_activity_access(applet_id, answer_schema.target_subject_id)
         if activity_id:
             pk = self._generate_history_id(answer_schema.version)
             await ActivityHistoriesCRUD(self.session).get_by_id(pk(activity_id))
@@ -541,11 +549,13 @@ class AnswerService:
                 continue
             results.append(
                 AnswerReview(
+                    id=schema.id,
                     reviewer_public_key=schema.user_public_key,
                     answer=schema.answer,
                     item_ids=schema.item_ids,
                     items=current_activity_items,
-                    reviewer=dict(first_name=user.first_name, last_name=user.last_name),
+                    reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
+                    created_at=schema.created_at,
                 )
             )
         return results
@@ -740,20 +750,11 @@ class AnswerService:
         ids = set(map(lambda a: a.id_version, act_hst_list))
         identifiers = await AnswersCRUD(self.answer_session).get_identifiers_by_activity_id(ids, filters)
         results = []
-        for identifier, key, migrated_data in identifiers:
+        for identifier, key, migrated_data, answer_date in identifiers:
             if migrated_data and migrated_data.get("is_identifier_encrypted") is False:
-                results.append(
-                    Identifier(
-                        identifier=identifier,
-                    )
-                )
+                results.append(Identifier(identifier=identifier, last_answer_date=answer_date))
             else:
-                results.append(
-                    Identifier(
-                        identifier=identifier,
-                        user_public_key=key,
-                    )
-                )
+                results.append(Identifier(identifier=identifier, user_public_key=key, last_answer_date=answer_date))
         return results
 
     async def get_activity_versions(
@@ -845,10 +846,13 @@ class AnswerService:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
-        activity_ids_with_answer = await AnswersCRUD(self.answer_session).get_activities_which_has_answer(
+        activity_ids_with_date = await AnswersCRUD(self.answer_session).get_submitted_activity_with_last_date(
             activity_ver_ids, filters.respondent_id, filters.target_subject_id
         )
-        answers_act_ids = set(map(lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer))
+        submitted_activities = dict()
+        for activity_history_id, submit_date in activity_ids_with_date:
+            activity_id = activity_history_id.split("_")[0]
+            submitted_activities[activity_id] = submit_date
 
         results = []
         for activity in activities:
@@ -857,7 +861,8 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=str(activity.id) in answers_act_ids,
+                    has_answer=str(activity.id) in submitted_activities,
+                    last_answer_date=submitted_activities.get(str(activity.id)),
                 )
             )
         return results
@@ -1077,6 +1082,13 @@ class AnswerService:
     ) -> dict[uuid.UUID, datetime.datetime]:
         result = await AnswersCRUD(self.answer_session).get_last_answer_dates(subject_ids, applet_id)
         return result
+
+    async def get_answer_assessment_by_id(self, assessment_id: uuid.UUID, answer_id: uuid.UUID) -> AnswerItem | None:
+        schema = await AnswerItemsCRUD(self.answer_session).get_answer_assessment(assessment_id, answer_id)
+        return AnswerItem.from_orm(schema) if schema else None
+
+    async def delete_assessment(self, assessment_id: uuid.UUID):
+        return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)
 
     async def delete_by_subject(self, subject_id: uuid.UUID):
         await AnswersCRUD(self.answer_session).delete_by_subject(subject_id)

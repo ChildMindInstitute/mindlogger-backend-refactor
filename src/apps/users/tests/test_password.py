@@ -42,9 +42,11 @@ class TestPassword:
     password_recovery_approve_url = user_router.url_path_for("password_recovery_approve")
     password_recovery_healthcheck_url = user_router.url_path_for("password_recovery_healthcheck")
 
-    async def test_password_update(self, mock_reencrypt_kiq: AsyncMock, client: TestClient, user_create: UserCreate):
+    async def test_password_update(
+        self, mock_reencrypt_kiq: AsyncMock, client: TestClient, user: User, user_create: UserCreate
+    ):
         # User get token
-        await client.login(url=self.get_token_url, email=user_create.email, password=user_create.password)
+        client.login(user)
 
         # Password update
         password_update_request = PasswordUpdateRequestFactory.build(prev_password=user_create.password)
@@ -57,15 +59,15 @@ class TestPassword:
             password=password_update_request.dict()["password"],
         )
 
-        internal_response: HttpResponse = await client.login(
+        internal_response: HttpResponse = await client.post(
             url=self.get_token_url,
-            **login_request_user.dict(),
+            data=login_request_user.dict(),
         )
 
         assert internal_response.status_code == status.HTTP_200_OK
         mock_reencrypt_kiq.assert_awaited_once()
 
-    async def test_password_recovery_web(self, client: TestClient, user_create: UserCreate):
+    async def test_password_recovery(self, client: TestClient, user_create: UserCreate):
         # Password recovery
         password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
 
@@ -82,7 +84,7 @@ class TestPassword:
         assert password_recovery_request.email in keys[0]
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients[0] == password_recovery_request.email
-        assert TestMail.mails[0].subject == "MindLogger"
+        assert TestMail.mails[0].subject == "Password reset"
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -115,7 +117,7 @@ class TestPassword:
         assert password_recovery_request.email in keys[0]
         assert len(TestMail.mails) == 3
         assert TestMail.mails[0].recipients[0] == password_recovery_request.email
-        assert TestMail.mails[0].subject == "MindLogger Admin"
+        assert TestMail.mails[0].subject == "Password reset"
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -128,6 +130,72 @@ class TestPassword:
         assert len(keys) == 1
         assert keys[0] != new_keys[0]
         assert len(TestMail.mails) == 4
+        assert TestMail.mails[0].recipients[0] == password_recovery_request.email
+
+    async def test_password_recovery_mobile(self, client: TestClient, user_create: UserCreate):
+        # Password recovery
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
+
+        response = await client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.dict(),
+            headers={"MindLogger-Content-Source": "mobile"},
+        )
+
+        cache = RedisCache()
+
+        assert response.status_code == status.HTTP_201_CREATED
+        keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
+        assert len(keys) == 1
+        assert password_recovery_request.email in keys[0]
+        assert len(TestMail.mails) == 5
+        assert TestMail.mails[0].recipients[0] == password_recovery_request.email
+        assert TestMail.mails[0].subject == "Password reset"
+
+        response = await client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.dict(),
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        new_keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
+        assert len(keys) == 1
+        assert keys[0] != new_keys[0]
+        assert len(TestMail.mails) == 6
+        assert TestMail.mails[0].recipients[0] == password_recovery_request.email
+
+    async def test_password_recovery_invalid(self, client: TestClient, user_create: UserCreate):
+        # Password recovery
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
+
+        response = await client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.dict(),
+            headers={"MindLogger-Content-Source": "invalid-content-source"},
+        )
+
+        cache = RedisCache()
+
+        assert response.status_code == status.HTTP_201_CREATED
+        keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
+        assert len(keys) == 1
+        assert password_recovery_request.email in keys[0]
+        assert len(TestMail.mails) == 7
+        assert TestMail.mails[0].recipients[0] == password_recovery_request.email
+        assert TestMail.mails[0].subject == "Password reset"
+
+        response = await client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.dict(),
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        new_keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
+        assert len(keys) == 1
+        assert keys[0] != new_keys[0]
+        assert len(TestMail.mails) == 8
         assert TestMail.mails[0].recipients[0] == password_recovery_request.email
 
     async def test_password_recovery_approve(self, client: TestClient, user_create: UserCreate):
@@ -191,15 +259,9 @@ class TestPassword:
         assert len(keys) == 0
 
     async def test_update_password__password_contains_whitespaces(
-        self,
-        client: TestClient,
-        user_create: UserCreate,
+        self, client: TestClient, user_create: UserCreate, user: User
     ):
-        await client.login(
-            self.get_token_url,
-            user_create.email,
-            user_create.password,
-        )
+        client.login(user)
 
         data = {
             "password": user_create.password + " ",
@@ -212,16 +274,9 @@ class TestPassword:
         assert result[0]["message"] == PasswordHasSpacesError.message
 
     async def test_update_password__reencryption_already_in_progress(
-        self,
-        client: TestClient,
-        user_create: UserCreate,
-        mocker: MockFixture,
+        self, client: TestClient, user_create: UserCreate, mocker: MockFixture, user: User
     ):
-        await client.login(
-            self.get_token_url,
-            user_create.email,
-            user_create.password,
-        )
+        client.login(user)
 
         data = {
             "password": user_create.password,
@@ -261,7 +316,7 @@ class TestPassword:
     async def test_password_recovery__update_user_email_encrypted_if_no_email_encrypted(
         self, client: TestClient, user_create: UserCreate, user: User, mocker: MockFixture, session: AsyncSession
     ):
-        await client.login(self.get_token_url, user_create.email, user_create.password)
+        client.login(user)
         updated = await UsersCRUD(session).update_encrypted_email(user, "")
         assert not updated.email_encrypted
         spy = mocker.spy(UsersCRUD, "update_encrypted_email")

@@ -10,7 +10,7 @@ class TestData(BaseTest):
     applet_list_url = "applets"
 
     async def test_generate_applet(self, client, user):
-        await client.login(self.login_url, user.email_encrypted, "Test1234!")
+        client.login(user)
 
         response = await client.post(
             self.generate_applet_url,

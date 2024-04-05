@@ -236,7 +236,7 @@ class TestSubjects(BaseTest):
     async def test_create_subject(self, client, tom: User, applet_one: AppletFull, create_shell_body):
         creator_id = str(tom.id)
         applet_id = str(applet_one.id)
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(self.subject_list_url, data=create_shell_body)
         assert response.status_code == 201
         payload = response.json()
@@ -249,7 +249,7 @@ class TestSubjects(BaseTest):
 
     async def test_create_relation(self, client, tom: User, create_shell_body, tom_applet_one_subject):
         subject_id = tom_applet_one_subject.id
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(self.subject_list_url, data=create_shell_body)
         subject = response.json()
 
@@ -280,7 +280,7 @@ class TestSubjects(BaseTest):
         source_subject_id,
         exp_code,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(self.subject_list_url, data=create_shell_body)
         source_subject = response.json()
         _source_subject_id = source_subject["result"]["id"]
@@ -312,7 +312,7 @@ class TestSubjects(BaseTest):
 
     async def test_update_subject(self, client, session, tom: User, create_shell_body, update_subject_params):
         body, exp_status = update_subject_params
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(self.subject_list_url, data=create_shell_body)
         subject = response.json()["result"]
         url = self.subject_detail_url.format(subject_id=subject["id"])
@@ -367,7 +367,7 @@ class TestSubjects(BaseTest):
         self, session, client, tom: User, tom_applet_one_subject, answer_create_payload, mock_kiq_report
     ):
         subject_id = tom_applet_one_subject.id
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
@@ -385,7 +385,7 @@ class TestSubjects(BaseTest):
         self, session, client, tom: User, tom_applet_one_subject, answer_create_payload, mock_kiq_report
     ):
         subject_id = tom_applet_one_subject.id
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
@@ -398,16 +398,16 @@ class TestSubjects(BaseTest):
         assert count == 0
 
     @pytest.mark.parametrize(
-        "email,password,expected",
+        "user_fixture,expected",
         (
             # Owner
-            ("tom@mindlogger.com", "Test1234!", http.HTTPStatus.OK),
+            ("tom", http.HTTPStatus.OK),
             # Manager
-            ("lucy@gmail.com", "Test123", http.HTTPStatus.OK),
+            ("lucy", http.HTTPStatus.OK),
             # Coordinator
-            ("bob@gmail.com", "Test1234!", http.HTTPStatus.OK),
+            ("bob", http.HTTPStatus.OK),
             # Editor, reviewer
-            ("pit@gmail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
+            ("pit", http.HTTPStatus.FORBIDDEN),
         ),
     )
     async def test_error_try_delete_subject_by_not_owner(
@@ -419,19 +419,19 @@ class TestSubjects(BaseTest):
         applet_one_bob_coordinator,
         applet_one_pit_editor,
         applet_one_pit_reviewer,
-        email,
-        password,
+        request,
+        user_fixture,
         expected,
     ):
         subject_id = tom_applet_one_subject.id
-        await client.login(self.login_url, email, password)
+        client.login(request.getfixturevalue(user_fixture))
         delete_url = self.subject_detail_url.format(subject_id=subject_id)
         res = await client.delete(delete_url, data=dict(deleteAnswers=True))
         assert res.status_code == expected
 
     async def test_get_subject(self, client, tom: User, tom_applet_one_subject: Subject, lucy, lucy_create):
         subject_id = tom_applet_one_subject.id
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
@@ -446,7 +446,7 @@ class TestSubjects(BaseTest):
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
         # forbidden
-        await client.login(self.login_url, lucy.email_encrypted, lucy_create.password)
+        client.login(lucy)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
@@ -463,12 +463,12 @@ class TestSubjects(BaseTest):
     ):
         subject_id = tom_applet_one_subject.id
         # forbidden for reviewer without subject assigned
-        await client.login(self.login_url, pit.email_encrypted, pit_create.password)
+        client.login(pit)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
         # allowed for reviewer with subject assigned
-        await client.login(self.login_url, lucy.email_encrypted, lucy_create.password)
+        client.login(lucy)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
@@ -479,7 +479,7 @@ class TestSubjects(BaseTest):
     ):
         roles_to_delete = [Role.OWNER, Role.COORDINATOR, Role.MANAGER, Role.SUPER_ADMIN, Role.REVIEWER]
         await UserAppletAccessCRUD(session).delete_user_roles(applet_one.id, mike.id, roles_to_delete)
-        await client.login(self.login_url, mike.email_encrypted, "Test1234")
+        client.login(mike)
         subject = await SubjectsService(session, tom.id).get_by_user_and_applet(lucy.id, applet_one.id)
         assert subject
         delete_url = self.subject_detail_url.format(subject_id=subject.id)
@@ -489,7 +489,7 @@ class TestSubjects(BaseTest):
     async def test_workspace_coordinator_remove_respondent_access(
         self, client, session, lucy, applet_one, user, applet_one_bob_coordinator, applet_one_lucy_respondent, bob, tom
     ):
-        await client.login(self.login_url, bob.email_encrypted, "Test1234!")
+        client.login(bob)
         subject = await SubjectsService(session, tom.id).get_by_user_and_applet(lucy.id, applet_one.id)
         assert subject
         delete_url = self.subject_detail_url.format(subject_id=subject.id)
@@ -497,16 +497,16 @@ class TestSubjects(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
     @pytest.mark.parametrize(
-        "email,password,expected",
+        "user_fixture,expected",
         (
             # Owner
-            ("tom@mindlogger.com", "Test1234!", http.HTTPStatus.OK),
+            ("tom", http.HTTPStatus.OK),
             # Manager
-            ("lucy@gmail.com", "Test123", http.HTTPStatus.OK),
+            ("lucy", http.HTTPStatus.OK),
             # Coordinator
-            ("bob@gmail.com", "Test1234!", http.HTTPStatus.OK),
+            ("bob", http.HTTPStatus.OK),
             # Editor
-            ("pit@gmail.com", "Test1234", http.HTTPStatus.FORBIDDEN),
+            ("pit", http.HTTPStatus.FORBIDDEN),
         ),
     )
     async def test_error_try_get_subject_by_not_inviter(
@@ -517,11 +517,11 @@ class TestSubjects(BaseTest):
         applet_one_lucy_manager,
         applet_one_bob_coordinator,
         applet_one_pit_editor,
-        email,
-        password,
+        request,
+        user_fixture,
         expected,
     ):
         subject_id = tom_applet_one_subject.id
-        await client.login(self.login_url, email, password)
+        client.login(request.getfixturevalue(user_fixture))
         res = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert res.status_code == expected

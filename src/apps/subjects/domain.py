@@ -1,9 +1,10 @@
 import datetime
 import uuid
 
-from pydantic import EmailStr
+from pydantic import EmailStr, validator
 
 from apps.shared.domain import InternalModel, PublicModel
+from apps.shared.domain.custom_validations import lowercase
 
 
 class Subject(InternalModel):
@@ -47,7 +48,15 @@ class SubjectCreateRequest(PublicModel):
     last_name: str
     secret_user_id: str
     nickname: str | None
-    email: str | None
+    email: EmailStr | None
+
+    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
+
+
+class SubjectCreateResponse(SubjectCreateRequest):
+    id: uuid.UUID | None
+    creator_id: uuid.UUID
+    user_id: uuid.UUID | None
 
 
 class SubjectFull(SubjectBase):

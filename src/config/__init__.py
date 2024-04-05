@@ -4,6 +4,7 @@ from pydantic import BaseSettings
 
 from config.alerts import AlertsSettings
 from config.anonymous_respondent import AnonymousRespondent
+from config.applet import AppletEMASettings
 from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.cors import CorsSettings
@@ -39,7 +40,7 @@ class Settings(BaseSettings):
     service: ServiceSettings = ServiceSettings()
 
     # Authentication
-    authentication: AuthenticationSettings = AuthenticationSettings()
+    authentication: AuthenticationSettings
 
     # Encryption
     secrets: SecretSettings = SecretSettings()
@@ -82,6 +83,8 @@ class Settings(BaseSettings):
     task_answer_encryption = AnswerEncryption()
     task_audio_file_convert = AudioFileConvert()
     task_image_convert = ImageConvert()
+
+    applet_ema = AppletEMASettings()
 
     logs: Logs = Logs()
 

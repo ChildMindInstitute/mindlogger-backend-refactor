@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, root_validator, validator
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
 from apps.activities.domain.activity_history import (
@@ -13,6 +13,7 @@ from apps.activities.domain.activity_history import (
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.activity_flows.domain.flow_full import FlowFull
+from apps.answers.domain.answer_items import ItemAnswerCreate
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
@@ -49,31 +50,6 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 }
 
 
-class ItemAnswerCreate(InternalModel):
-    answer: str | None
-    events: str | None
-    item_ids: list[uuid.UUID]
-    identifier: str | None
-    scheduled_time: datetime.datetime | None
-    start_time: datetime.datetime
-    end_time: datetime.datetime
-    user_public_key: str | None
-    scheduled_event_id: str | None = None
-    local_end_date: datetime.date | None = None
-    local_end_time: datetime.time | None = None
-
-    @validator("item_ids")
-    def convert_item_ids(cls, value: list[uuid.UUID]):
-        return list(map(str, value))
-
-    _dates_from_ms = validator("start_time", "end_time", "scheduled_time", pre=True, allow_reuse=True)(datetime_from_ms)
-
-
-class AnswerItemSchemaAnsweredActivityItem(InternalModel):
-    activity_item_history_id: str
-    answer: str
-
-
 class AnswerAlert(InternalModel):
     activity_item_id: uuid.UUID
     message: str
@@ -82,8 +58,8 @@ class AnswerAlert(InternalModel):
 class ClientMeta(InternalModel):
     app_id: str
     app_version: str
-    width: int
-    height: int
+    width: int | None = None
+    height: int | None = None
 
 
 class AppletAnswerCreate(InternalModel):
@@ -113,6 +89,7 @@ class AssessmentAnswerCreate(InternalModel):
 class AnswerDate(InternalModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    end_datetime: datetime.datetime
 
 
 class ReviewActivity(InternalModel):
@@ -126,17 +103,30 @@ class SummaryActivity(InternalModel):
     name: str
     is_performance_task: bool
     has_answer: bool
+    last_answer_date: datetime.datetime | None
 
 
 class PublicAnswerDate(PublicModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    end_datetime: datetime.datetime
 
 
 class PublicReviewActivity(PublicModel):
     id: uuid.UUID
     name: str
     answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
+    last_answer_date: datetime.datetime | None
+
+    @root_validator
+    def calculate_last_answer_date(cls, values):
+        answer_dates = values.get("answer_dates", [])
+        if answer_dates:
+            last_date = max(ad.created_at for ad in answer_dates)
+            values["last_answer_date"] = last_date
+        else:
+            values["last_answer_date"] = None
+        return values
 
 
 class PublicSummaryActivity(InternalModel):
@@ -144,10 +134,17 @@ class PublicSummaryActivity(InternalModel):
     name: str
     is_performance_task: bool
     has_answer: bool
+    last_answer_date: datetime.datetime | None
 
 
 class PublicAnswerDates(PublicModel):
     dates: list[datetime.date]
+
+
+class Identifier(InternalModel):
+    identifier: str
+    user_public_key: str | None = None
+    last_answer_date: datetime.datetime
 
 
 class ActivityAnswer(InternalModel):
@@ -156,6 +153,9 @@ class ActivityAnswer(InternalModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+    identifiers: list[Identifier]
+    created_at: datetime.datetime
+    version: str
 
 
 class AppletActivityAnswer(InternalModel):
@@ -182,16 +182,19 @@ class AssessmentAnswer(InternalModel):
 
 
 class Reviewer(InternalModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
 
 class AnswerReview(InternalModel):
+    id: uuid.UUID
     reviewer_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: Reviewer
+    created_at: datetime.datetime
 
 
 class ActivityAnswerPublic(PublicModel):
@@ -200,6 +203,9 @@ class ActivityAnswerPublic(PublicModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
+    identifiers: list[Identifier]
+    created_at: datetime.datetime
+    version: str
 
 
 class AppletActivityAnswerPublic(PublicModel):
@@ -216,16 +222,19 @@ class AppletActivityAnswerPublic(PublicModel):
 
 
 class ReviewerPublic(PublicModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
 
 class AnswerReviewPublic(PublicModel):
+    id: uuid.UUID
     reviewer_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: ReviewerPublic
+    created_at: datetime.datetime
 
 
 class AssessmentAnswerPublic(PublicModel):
@@ -283,6 +292,8 @@ class UserAnswerDataBase(BaseModel):
     start_datetime: datetime.datetime | None = None
     end_datetime: datetime.datetime | None = None
     migrated_date: datetime.datetime | None = None
+    tz_offset: int | None = None
+    scheduled_event_id: uuid.UUID | str | None = None
     applet_history_id: str
     activity_history_id: str | None
     flow_history_id: str | None
@@ -360,11 +371,6 @@ class VersionPublic(PublicModel):
     created_at: datetime.datetime
 
 
-class Identifier(InternalModel):
-    identifier: str
-    user_public_key: str | None = None
-
-
 class IdentifierPublic(PublicModel):
     identifier: str
     user_public_key: str
@@ -436,15 +442,3 @@ class ArbitraryPreprocessor(PublicModel):
 class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
     target_subject_id: uuid.UUID | None = None
-
-
-class AnswerItemDataEncrypted(InternalModel):
-    id: uuid.UUID
-    answer: str
-    events: str | None
-    identifier: str | None
-
-
-class UserAnswerItemData(AnswerItemDataEncrypted):
-    user_public_key: str
-    migrated_data: dict | None

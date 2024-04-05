@@ -405,12 +405,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(UserSchema, SubjectSchema)
         )
 
-        assigned_respondents = select(literal_column("val").cast(UUID)).select_from(
+        assigned_subjects = select(literal_column("val").cast(UUID)).select_from(
             func.jsonb_array_elements_text(
                 case(
                     (
-                        func.jsonb_typeof(UserAppletAccessSchema.meta[text("'respondents'")]) == text("'array'"),
-                        UserAppletAccessSchema.meta[text("'respondents'")],
+                        func.jsonb_typeof(UserAppletAccessSchema.meta[text("'subjects'")]) == text("'array'"),
+                        UserAppletAccessSchema.meta[text("'subjects'")],
                     ),
                     else_=text("'[]'::jsonb"),
                 )
@@ -427,11 +427,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER, Role.COORDINATOR]),
                     and_(
                         UserAppletAccessSchema.role == Role.REVIEWER,
-                        UserSchema.id == any_(assigned_respondents),  # TODO subjects here
+                        SubjectSchema.id == any_(assigned_subjects),
                     ),
                 ),
             )
-            .correlate(AppletSchema, UserSchema)
+            .correlate(AppletSchema, SubjectSchema)
         )
 
         query: Query = select(
@@ -1073,8 +1073,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         respondent_id: uuid.UUID,
         applet_id: uuid.UUID,
         owner_id: uuid.UUID,
-    ) -> tuple[str, str] | None:
-        query: Query = select(SubjectSchema.nickname, SubjectSchema.secret_user_id)
+    ) -> tuple[str, str, uuid.UUID] | None:
+        query: Query = select(SubjectSchema.nickname, SubjectSchema.secret_user_id, SubjectSchema.id)
         query = query.select_from(UserAppletAccessSchema)
         query = query.where(
             UserAppletAccessSchema.owner_id == owner_id,

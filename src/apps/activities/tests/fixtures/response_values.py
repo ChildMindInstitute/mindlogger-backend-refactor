@@ -4,6 +4,9 @@ from typing import cast
 import pytest
 
 from apps.activities.domain.response_values import (
+    AudioPlayerValues,
+    AudioValues,
+    DrawingProportion,
     DrawingValues,
     MultiSelectionRowsValues,
     MultiSelectionValues,
@@ -42,7 +45,7 @@ def single_select_response_values() -> SingleSelectionValues:
 
 
 @pytest.fixture
-def multi_select_reponse_values(
+def multi_select_response_values(
     single_select_response_values: SingleSelectionValues,
 ) -> MultiSelectionValues:
     data = single_select_response_values.dict()
@@ -65,13 +68,15 @@ def slider_response_values() -> SliderValues:
 
 
 @pytest.fixture
-def number_select_response_values() -> NumberSelectionValues:
+def number_selection_response_values() -> NumberSelectionValues:
     return NumberSelectionValues()
 
 
 @pytest.fixture
 def drawing_response_values(remote_image: str) -> DrawingValues:
-    return DrawingValues(drawing_background=remote_image, drawing_example=remote_image)
+    return DrawingValues(
+        drawing_background=remote_image, drawing_example=remote_image, proportion=DrawingProportion(enabled=True)
+    )
 
 
 @pytest.fixture
@@ -133,3 +138,14 @@ def multi_select_row_response_values(
     single_select_row_response_values: SingleSelectionRowsValues,
 ) -> MultiSelectionRowsValues:
     return MultiSelectionRowsValues(**single_select_row_response_values.dict())
+
+
+@pytest.fixture
+def audio_response_values() -> AudioValues:
+    return AudioValues(max_duration=1)
+
+
+@pytest.fixture
+def audio_player_response_values() -> AudioPlayerValues:
+    # TODO: Add some audio file
+    return AudioPlayerValues(file=None)

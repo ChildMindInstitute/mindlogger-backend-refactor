@@ -9,6 +9,7 @@ from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
+from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
@@ -201,13 +202,15 @@ async def workspace_applet_respondent_update(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
-        subject_srv = SubjectsService(session, user.id)
-        subject = await subject_srv.get_by_user_and_applet(respondent_id, applet_id)
+        subject_service = SubjectsService(session, user.id)
+        subject = await subject_service.get_by_user_and_applet(respondent_id, applet_id)
         if not subject:
             raise NotFoundError()
-        subject.nickname = schema.nickname
-        subject.secret_user_id = schema.secret_user_id
-        await SubjectsService(session, user.id).update(subject)
+        assert subject.id
+        exist = await subject_service.check_secret_id(subject.id, schema.secret_user_id, applet_id)
+        if exist:
+            raise NonUniqueValue()
+        await subject_service.update(subject.id, **schema.dict(by_alias=False))
 
 
 async def workspace_remove_manager_access(
@@ -410,9 +413,8 @@ async def workspace_applet_get_respondent(
     )
     # get last activity time
     result = await AnswerService(session=session, arbitrary_session=answer_session).get_last_answer_dates(
-        [respondent_id],
+        [respondent_info.subject_id],
         applet_id,  # TODO fix respondent->subject usage
     )
-    respondent_info.last_seen = result.get(respondent_id)
-
+    respondent_info.last_seen = result.get(respondent_info.subject_id)
     return Response(result=respondent_info)

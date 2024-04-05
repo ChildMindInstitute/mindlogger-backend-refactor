@@ -1,7 +1,6 @@
 import asyncio
 import importlib
 import uuid
-from functools import wraps
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +13,7 @@ from apps.shared.commands.domain import Patch
 from apps.shared.commands.patch import PatchRegister
 from apps.workspaces.errors import WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 PatchRegister.register(
@@ -67,14 +67,6 @@ PatchRegister.register(
 )
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def print_data_table(data: list[Patch]):
@@ -198,4 +190,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                 f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501
             )
         except Exception as e:
-            print(wrap_error_msg(e))
+            msg = str(e)
+            if isinstance(e, asyncio.TimeoutError):
+                msg = "Timeout Error"
+            print(wrap_error_msg(msg))

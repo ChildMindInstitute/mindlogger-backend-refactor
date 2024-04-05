@@ -128,3 +128,9 @@ def translate(val):
     lang = "en"
     if isinstance(val, dict):
         return val.get(lang, None)
+
+
+def lowercase(value: str | None):
+    if value is not None:
+        value = value.lower()
+    return value

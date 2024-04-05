@@ -1,0 +1,2 @@
+class SecretIDUniqueViolationError(Exception):
+    pass

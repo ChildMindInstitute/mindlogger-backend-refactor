@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from asyncpg import UniqueViolationError
-from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import Query
 
@@ -27,6 +27,15 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
     async def update(self, schema: SubjectSchema) -> SubjectSchema:
         return await self._update_one("id", schema.id, schema)
 
+    async def update_by_id(self, id_, **values):
+        query = (
+            update(self.schema_class).where(self.schema_class.id == id_).values(**values).returning(self.schema_class)
+        )
+        db_result = await self._execute(query)  # TODO test
+        result = db_result.first()
+
+        return self.schema_class(**dict(zip(result.keys(), result)))
+
     async def get_by_id(self, _id: uuid.UUID) -> SubjectSchema | None:
         return await self._get("id", _id)
 
@@ -43,17 +52,15 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         res_db = await self._execute(query)
         return res_db.scalar_one_or_none()
 
-    async def update_by_id(self, schema: SubjectSchema) -> SubjectSchema:
-        return await self._update_one("id", schema.id, schema)
-
     async def delete(self, id_: uuid.UUID):
         return await self._delete(id=id_)
 
-    async def get_by_secret_id(self, secret_id: str, applet_id: uuid.UUID) -> SubjectSchema | None:
+    async def get_by_secret_id(self, applet_id: uuid.UUID, secret_id: str) -> SubjectSchema | None:
         query: Query = select(SubjectSchema)
         query = query.where(
             SubjectSchema.secret_user_id == secret_id,
             SubjectSchema.applet_id == applet_id,
+            SubjectSchema.soft_exists(),
         )
         res = await self._execute(query)
         return res.scalars().first()
@@ -119,7 +126,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         result = await self._execute(query)
         return result.scalar_one_or_none()
 
-    async def check_secret_id(self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID) -> bool:
+    async def check_secret_id(self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID) -> bool:  # TODO remove
         query: Query = select(SubjectSchema.id)
         query = query.where(
             SubjectSchema.secret_user_id == secret_id,

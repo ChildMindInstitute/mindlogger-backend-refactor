@@ -181,6 +181,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 reviewed_answer_id.label("reviewed_answer_id"),
                 reviewed_answer_id.label("reviewed_answer_id"),
                 AnswerSchema.client,
+                AnswerItemSchema.tz_offset,
+                AnswerItemSchema.scheduled_event_id,
             )
             .select_from(AnswerSchema)
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
@@ -239,13 +241,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         self,
         activity_hist_ids: Collection[str],
         filters: IdentifiersQueryParams,
-    ) -> list[tuple[str, str, dict]]:
+    ) -> list[tuple[str, str, dict, datetime.datetime]]:
         query: Query = select(
             AnswerItemSchema.identifier,
             AnswerItemSchema.user_public_key,
             AnswerItemSchema.migrated_data,
+            func.max(AnswerSchema.created_at),
         )
-        query = query.distinct(AnswerItemSchema.identifier)
+        query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+        query = query.group_by(
+            AnswerItemSchema.identifier, AnswerItemSchema.user_public_key, AnswerItemSchema.migrated_data
+        )
         query = query.where(
             AnswerItemSchema.identifier.isnot(None),
             AnswerSchema.activity_history_id.in_(activity_hist_ids),
@@ -254,8 +260,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.target_subject_id == filters.target_subject_id)
         if filters.respondent_id:
             query = query.where(AnswerSchema.respondent_id == filters.respondent_id)
-
-        query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
         db_result = await self._execute(query)
 
         return db_result.all()  # noqa
@@ -327,26 +331,23 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_activities_which_has_answer(
+    async def get_submitted_activity_with_last_date(
         self,
         activity_hist_ids: list[str],
         respondent_id: uuid.UUID | None,
         subject_id: uuid.UUID | None,
-    ) -> list[str]:
+    ) -> list[tuple[str, datetime.datetime]]:
         activity_ids = set(map(lambda id_version: id_version.split("_")[0], activity_hist_ids))
-        query: Query = select(AnswerSchema.activity_history_id)
+        query: Query = select(AnswerSchema.activity_history_id, func.max(AnswerSchema.created_at))
         query = query.where(or_(*(AnswerSchema.activity_history_id.like(f"{item}_%") for item in activity_ids)))
         if respondent_id:
             query = query.where(AnswerSchema.respondent_id == respondent_id)
         if subject_id:
             query = query.where(AnswerSchema.target_subject_id == subject_id)
-        query = query.distinct(AnswerSchema.activity_history_id)
+        query = query.group_by(AnswerSchema.activity_history_id)
         query = query.order_by(AnswerSchema.activity_history_id)
         db_result = await self._execute(query)
-        results = []
-        for activity_id in db_result.all():
-            results.append(activity_id)
-        return [row[0] for row in results]
+        return db_result.all()  # noqa
 
     async def get_completed_answers_data(
         self,

@@ -27,6 +27,7 @@ from apps.file.domain import (
     FilePresignRequest,
     LogFileExistenceResponse,
     PresignedUrl,
+    WebmTargetExtenstion,
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
@@ -151,9 +152,12 @@ async def convert_not_supported_image(file: UploadFile):
     return None
 
 
-def _get_keys_and_bucket_for_media(orig_key: str) -> tuple[str, str, str]:
+def _get_keys_and_bucket_for_media(
+    orig_key: str, target_extension: WebmTargetExtenstion | None = None
+) -> tuple[str, str, str]:
     if orig_key.lower().endswith(".webm"):
-        target_key = orig_key + ".mp3"
+        extension = target_extension if target_extension else WebmTargetExtenstion.MP3
+        target_key = orig_key + extension
         upload_key = f"{settings.cdn.bucket}/{orig_key}"
         bucket = settings.cdn.bucket_operations
     else:
@@ -396,7 +400,7 @@ async def generate_presigned_media_url(
     cdn_client: CDNClient = Depends(get_media_bucket),
 ) -> Response[PresignedUrl]:
     orig_key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
-    target_key, upload_key, bucket = _get_keys_and_bucket_for_media(orig_key)
+    target_key, upload_key, bucket = _get_keys_and_bucket_for_media(orig_key, body.target_extension)
     data = cdn_client.generate_presigned_post(bucket, upload_key)
     return Response(
         result=PresignedUrl(
@@ -441,7 +445,7 @@ async def generate_presigned_logs_url(
 ) -> Response[PresignedUrl]:
     service = LogFileService(user.id, cdn_client)
     key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"
-    data = cdn_client.generate_presigned_post(settings.cdn.bucket, key)
+    data = cdn_client.generate_presigned_post(cdn_client.config.bucket, key)
     return Response(
         result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
     )
