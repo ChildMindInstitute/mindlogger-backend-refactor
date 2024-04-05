@@ -1,7 +1,7 @@
 import uuid
 from typing import Collection, List, Set, Union
 
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
@@ -198,3 +198,10 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query: Query = delete(AnswerItemSchema)
         query = query.where(AnswerItemSchema.id == assessment_id, AnswerItemSchema.is_assessment.is_(True))
         await self._execute(query)
+
+    async def get_reviewers_by_answers(self, answer_ids: list[uuid.UUID]) -> list[tuple[uuid.UUID, list[uuid.UUID]]]:
+        query: Query = select(AnswerItemSchema.answer_id, func.array_agg(AnswerItemSchema.respondent_id))
+        query = query.where(AnswerItemSchema.answer_id.in_(answer_ids), AnswerItemSchema.is_assessment.is_(True))
+        query = query.group_by(AnswerItemSchema.answer_id)
+        db_result = await self._execute(query)
+        return db_result.all()  # noqa

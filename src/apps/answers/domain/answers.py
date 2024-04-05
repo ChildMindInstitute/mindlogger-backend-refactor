@@ -156,8 +156,13 @@ class ActivityAnswer(InternalModel):
     version: str
 
 
+class ReviewsCount(PublicModel):
+    mine: int = 0
+    other: int = 0
+
+
 class AppletActivityAnswer(InternalModel):
-    answer_id: uuid.UUID | None
+    answer_id: uuid.UUID
     version: str | None
     user_public_key: str | None
     answer: str | None
@@ -217,6 +222,7 @@ class AppletActivityAnswerPublic(PublicModel):
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
     subscale_setting: SubscaleSetting | None
+    review_count: ReviewsCount
 
 
 class ReviewerPublic(PublicModel):

@@ -48,6 +48,7 @@ from apps.answers.domain import (
     Identifier,
     ReportServerResponse,
     ReviewActivity,
+    ReviewsCount,
     SummaryActivity,
     Version,
 )
@@ -711,6 +712,14 @@ class AnswerService:
             activity_answer.version = answer.version
             activity_answers.append(activity_answer)
         return activity_answers
+
+    async def get_assessments_count(self, answer_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
+        answer_reviewers_t = await AnswerItemsCRUD(self.answer_session).get_reviewers_by_answers(answer_ids)
+        answer_reviewers: dict[uuid.UUID, ReviewsCount] = {}
+        for answer_id, reviewers in answer_reviewers_t:
+            mine = 1 if self.user_id in reviewers else 0
+            answer_reviewers[answer_id] = ReviewsCount(mine=mine, other=len(reviewers) - mine)
+        return answer_reviewers
 
     async def get_summary_latest_report(
         self,
