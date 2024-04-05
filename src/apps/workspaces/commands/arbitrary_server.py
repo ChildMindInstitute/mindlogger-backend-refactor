@@ -6,15 +6,28 @@ from pydantic import ValidationError
 from rich import print
 from rich.style import Style
 from rich.table import Table
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from apps.workspaces.constants import StorageType
-from apps.workspaces.domain.workspace import WorkspaceArbitraryCreate, WorkspaceArbitraryFields
+from apps.workspaces.domain.workspace import (
+    WorkSpaceArbitraryConsoleOutput,
+    WorkspaceArbitraryCreate,
+    WorkspaceArbitraryFields,
+)
 from apps.workspaces.errors import ArbitraryServerSettingsError, WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
+
+
+async def get_version(database_url):
+    engine = create_async_engine(database_url)
+    async with engine.connect() as conn:
+        db_result = await conn.execute(text("select version_num from alembic_version"))
+        return db_result.scalar_one()
 
 
 def print_data_table(data: WorkspaceArbitraryFields):
@@ -126,7 +139,8 @@ async def add(
                 print_data_table(e.data)
             else:
                 print("[bold green]Success:[/bold green]")
-                print_data_table(data)
+                output = WorkSpaceArbitraryConsoleOutput(user_id=owner_id, **data.dict())
+                print_data_table(output)
 
 
 @app.command(short_help="Show arbitrary server settings")
@@ -141,11 +155,21 @@ async def show(
             if not data:
                 print("[bold green]" "Arbitrary server not configured" "[/bold green]")
                 return
-            print_data_table(WorkspaceArbitraryFields.from_orm(data))
+            alembic_version = await get_version(data.database_uri)
+            arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
+            output = WorkSpaceArbitraryConsoleOutput(
+                **arbitrary_fields.dict(), user_id=owner_id, alembic_version=alembic_version
+            )
+            print_data_table(output)
         else:
             workspaces = await WorkspaceService(session, uuid.uuid4()).get_arbitrary_list()
             for data in workspaces:
-                print_data_table(WorkspaceArbitraryFields.from_orm(data))
+                alembic_version = await get_version(data.database_uri)
+                arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
+                output = WorkSpaceArbitraryConsoleOutput(
+                    **arbitrary_fields.dict(), user_id=data.user_id, alembic_version=alembic_version
+                )
+                print_data_table(output)
 
 
 @app.command(short_help="Remove arbitrary server settings")
