@@ -161,7 +161,7 @@ class TestActivities:
     async def test_activities_applet_has_submitted(
         self, client, applet_one: AppletFull, default_theme: Theme, tom: User
     ):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
 
         # Create answer
         create_data = dict(
@@ -206,7 +206,7 @@ class TestActivities:
 
     # Get only applet activies with score
     async def test_activities_applet_has_score(self, client, applet_one: AppletFull, default_theme: Theme, tom: User):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             display_name="User daily behave",
