@@ -73,7 +73,7 @@ async def tom_answer_item_for_applet(tom: User, applet: AppletFull, session: Asy
     return dict(
         answer_id=answer.id,
         respondent_id=tom.id,
-        answer="0x00",
+        answer=uuid.uuid4().hex,
         item_ids=[str(item.id) for item in applet.activities[0].items],
         start_datetime=datetime.datetime.utcnow(),
         end_datetime=datetime.datetime.utcnow(),
@@ -108,7 +108,7 @@ async def tom_review_answer(
     applet_id = applet_with_reviewable_activity.id
     activity_assessment_id = applet_with_reviewable_activity.activities[1].id
     assessment = AssessmentAnswerCreate(
-        answer="0x00",
+        answer=uuid.uuid4().hex,
         item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
         reviewer_public_key=f"{tom.id}",
         assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
@@ -123,7 +123,7 @@ async def bob_review_answer(
     applet_id = applet_with_reviewable_activity.id
     activity_assessment_id = applet_with_reviewable_activity.activities[1].id
     assessment = AssessmentAnswerCreate(
-        answer="0x00",
+        answer=uuid.uuid4().hex,
         item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
         reviewer_public_key=f"{bob.id}",
         assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
@@ -138,7 +138,7 @@ async def lucy_review_answer(
     applet_id = applet_with_reviewable_activity.id
     activity_assessment_id = applet_with_reviewable_activity.activities[1].id
     assessment = AssessmentAnswerCreate(
-        answer="0x00",
+        answer=uuid.uuid4().hex,
         item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
         reviewer_public_key=f"{lucy.id}",
         assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
