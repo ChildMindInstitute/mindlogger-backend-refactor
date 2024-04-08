@@ -29,6 +29,7 @@ from apps.answers.domain import (
     PublicAnswerExportResponse,
     PublicReviewActivity,
     PublicSummaryActivity,
+    ReviewsCount,
     VersionPublic,
 )
 from apps.answers.filters import (
@@ -145,13 +146,16 @@ async def applet_activity_answers_list(
 ) -> ResponseMulti[AppletActivityAnswerPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    answers = await AnswerService(session, user.id, answer_session).get_activity_answers(
-        applet_id, activity_id, query_params
-    )
-    return ResponseMulti(
-        result=parse_obj_as(list[AppletActivityAnswerPublic], answers),
-        count=len(answers),
-    )
+    service = AnswerService(session, user.id, answer_session)
+    answers = await service.get_activity_answers(applet_id, activity_id, query_params)
+
+    answers_ids = [answer.answer_id for answer in answers if answer.answer_id is not None]
+    answer_reviews = await service.get_assessments_count(answers_ids)
+    result = []
+    for answer in answers:
+        review_count = answer_reviews.get(answer.answer_id, ReviewsCount())
+        result.append(parse_obj_as(AppletActivityAnswerPublic, {**answer.dict(), "review_count": review_count}))
+    return ResponseMulti(result=result, count=len(answers))
 
 
 async def summary_latest_report_retrieve(
