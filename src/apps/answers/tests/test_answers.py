@@ -102,6 +102,28 @@ async def tom_answer(session: AsyncSession, tom: User, applet_with_reviewable_ac
 
 
 @pytest.fixture
+async def tom_answer_activity_flow(session: AsyncSession, tom: User, applet_with_flow: AppletFull) -> AnswerSchema:
+    answer_service = AnswerService(session, tom.id)
+    return await answer_service.create_answer(
+        AppletAnswerCreate(
+            applet_id=applet_with_flow.id,
+            version=applet_with_flow.version,
+            submit_id=uuid.uuid4(),
+            flow_id=applet_with_flow.activity_flows[0].id,
+            is_flow_completed=True,
+            activity_id=applet_with_flow.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_flow.activities[0].items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(tom.id),
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+        )
+    )
+
+
+@pytest.fixture
 async def tom_review_answer(
     session: AsyncSession, tom: User, applet_with_reviewable_activity: AppletFull, tom_answer: AnswerSchema
 ):
@@ -158,6 +180,7 @@ class TestAnswerActivityItems(BaseTest):
     review_activities_url = "/answers/applet/{applet_id}/review/activities"
 
     summary_activities_url = "/answers/applet/{applet_id}/summary/activities"
+    summary_activity_flows_url = "/answers/applet/{applet_id}/summary/flows"
     identifiers_url = f"{summary_activities_url}/{{activity_id}}/identifiers"
     versions_url = f"{summary_activities_url}/{{activity_id}}/versions"
 
@@ -1837,3 +1860,31 @@ class TestAnswerActivityItems(BaseTest):
         payload = response.json()
         assert payload["result"][0]["reviewCount"]["mine"] == 0
         assert payload["result"][0]["reviewCount"]["other"] == 1
+
+    async def test_summary_for_activity_flow_with_answer(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer, tom_answer_activity_flow
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        assert payload["count"] == 1
+        assert payload["result"][0]["id"] == str(applet_with_flow.activity_flows[0].id)
+        assert payload["result"][0]["name"] == applet_with_flow.activity_flows[0].name
+        assert payload["result"][0]["hasAnswer"] is True
+
+    async def test_summary_for_activity_flow_without_answer(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        assert payload["count"] == 1
+        assert payload["result"][0]["id"] == str(applet_with_flow.activity_flows[0].id)
+        assert payload["result"][0]["name"] == applet_with_flow.activity_flows[0].name
+        assert payload["result"][0]["hasAnswer"] is False
