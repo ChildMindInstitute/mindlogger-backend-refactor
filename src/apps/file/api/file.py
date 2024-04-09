@@ -48,7 +48,7 @@ from config import settings
 from infrastructure.database.deps import get_session
 from infrastructure.dependency.cdn import get_log_bucket, get_media_bucket
 from infrastructure.dependency.presign_service import get_presign_service
-from infrastructure.utility.cdn_client import CDNClient
+from infrastructure.utility.cdn_client import CDNClient, ObjectNotFoundError
 
 
 async def upload(
@@ -194,6 +194,8 @@ async def download(
             raise FileNotFoundError
         else:
             raise e
+    except ObjectNotFoundError:
+        raise FileNotFoundError
 
     return StreamingResponse(file, media_type=media_type)
 
