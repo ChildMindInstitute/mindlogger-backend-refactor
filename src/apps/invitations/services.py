@@ -325,7 +325,7 @@ class InvitationsService:
         )
         access, invitation = await asyncio.gather(access_coro, invitation_coro)
         if access or invitation:
-            raise NonUniqueValue(message=f"In applet with id {applet_id} " f"secret User Id is non-unique.")
+            raise NonUniqueValue(message=f"In applet with id {applet_id} secret User Id is non-unique.")
 
     async def _do_respondents_exist(
         self,

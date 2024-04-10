@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f4df5a2f6801671e6718ba4ededf896a485e4542b92c6d89f875f1e535ab2945"
+            "sha256": "3cd5c3680db2dc7bc6e13020c8085cd7307d0c73512930eca9d22a6bf1cd5d0a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -560,7 +560,6 @@
                 "sha256:49a72f5fa6ed26be1c964f0567d931d10bf3fdeeacdf97bc26ef1cd2a44e0bda",
                 "sha256:d178c5c6fa6c6824e9b04f199cf23e79ac15756786573c190d2ad13089411ad2"
             ],
-            "markers": "python_version >= '3.5'",
             "version": "==1.3.1"
         },
         "exceptiongroup": {
@@ -573,19 +572,19 @@
         },
         "fastapi": {
             "hashes": [
-                "sha256:07032e53df9a57165047b4f38731c38bdcc3be5493220471015e2b4b51b486a4",
-                "sha256:254453a2e22f64e2a1b4e1d8baf67d239e55b6c8165c079d25746a5220c81bb4"
+                "sha256:266775f0dcc95af9d3ef39bad55cff525329a931d5fd51930aadd4f428bf7ff3",
+                "sha256:87a1f6fb632a218222c5984be540055346a8f5d8a68e8f6fb647b1dc9934de4b"
             ],
             "index": "pypi",
-            "version": "==0.87.0"
+            "version": "==0.110.0"
         },
         "fastapi-mail": {
             "hashes": [
-                "sha256:01ae8c221dd49d7b47ddab476766ecf720d7246e114a10b84d3e4fd9c3fc34d3",
-                "sha256:6dc41bd47c2276145a5e6d7d8271082a78b19fc4d506883b277f6f0428c7fa9f"
+                "sha256:c19cee2c410321f8eb27247c2fe736fcfde04adde55de7c0284e77c8566c4607",
+                "sha256:e85783a5a05fa8f48677b965ed8f2056535d7c78b8de714359a01f45f1cd3e21"
             ],
             "index": "pypi",
-            "version": "==1.2.5"
+            "version": "==1.2.9"
         },
         "firebase-admin": {
             "hashes": [
@@ -697,11 +696,11 @@
         },
         "google-api-python-client": {
             "hashes": [
-                "sha256:0a62b60fbd61b61a455f15d925264b3301099b67cafd2d33cf8bf151f1fca4f4",
-                "sha256:51a0385cff65ec135106e8be60ee7112557396dde5f44113ae23912baddda143"
+                "sha256:299255fdb8dddf4eb96ab99e8358991160900b4109a9e0d3e3ac127c04b1e2ee",
+                "sha256:97c0410630e2bebd194d99e91bd620dab5bc6b6ec0bf033f9a9109b700b83acb"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==2.125.0"
+            "version": "==2.126.0"
         },
         "google-auth": {
             "hashes": [
@@ -1919,11 +1918,11 @@
         },
         "starlette": {
             "hashes": [
-                "sha256:0efc058261bbcddeca93cad577efd36d0c8a317e44376bcfc0e097a2b3dc24a7",
-                "sha256:b1b52305ee8f7cfc48cde383496f7c11ab897cd7112b33d998b1317dc8ef9027"
+                "sha256:13d429aa93a61dc40bf503e8c801db1f1bca3dc706b10ef2434a36123568f044",
+                "sha256:90a671733cfb35771d8cc605e0b679d23b992f8dcfad48cc60b38cb29aeb7080"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==0.21.0"
+            "markers": "python_version >= '3.8'",
+            "version": "==0.36.3"
         },
         "taskiq": {
             "extras": [
@@ -3641,11 +3640,11 @@
         },
         "virtualenv": {
             "hashes": [
-                "sha256:961c026ac520bac5f69acb8ea063e8a4f071bcc9457b9c1f28f6b085c511583a",
-                "sha256:e08e13ecdca7a0bd53798f356d5831434afa5b07b93f0abdf0797b7a06ffe197"
+                "sha256:6e1281a57849c8a54da89ba82e5eb7c8937b9d057ff01aaf5bc9afaa3552e90f",
+                "sha256:fa7edb8428620518010928242ec17aa7132ae435319c29c1651d1cf4c4173aad"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==20.25.1"
+            "version": "==20.25.2"
         },
         "wcwidth": {
             "hashes": [

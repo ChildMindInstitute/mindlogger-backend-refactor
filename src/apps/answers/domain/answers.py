@@ -372,11 +372,6 @@ class VersionPublic(PublicModel):
     created_at: datetime.datetime
 
 
-class IdentifierPublic(PublicModel):
-    identifier: str
-    user_public_key: str
-
-
 class SafeApplet(AppletBaseInfo, InternalModel):
     id: uuid.UUID
     version: str
