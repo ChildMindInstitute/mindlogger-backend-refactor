@@ -48,6 +48,7 @@ from apps.answers.domain import (
     Identifier,
     ReportServerResponse,
     ReviewActivity,
+    ReviewsCount,
     SummaryActivity,
     Version,
 )
@@ -301,9 +302,9 @@ class AnswerService:
         activity_id: uuid.UUID,
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
-
-        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        pk = self._generate_history_id(schema.version)
+        answers_crud = AnswersCRUD(self.answer_session)
+        answer_schema = await answers_crud.get_by_id(answer_id)
+        pk = self._generate_history_id(answer_schema.version)
         answer_items = await AnswerItemsCRUD(self.answer_session).get_by_answer_and_activity(
             answer_id, [pk(activity_id)]
         )
@@ -311,16 +312,20 @@ class AnswerService:
             raise AnswerNotFoundError()
         answer_item = answer_items[0]
 
-        activity_items = await ActivityItemHistoryService(self.session, applet_id, schema.version).get_by_activity_id(
-            activity_id
-        )
+        activity_items = await ActivityItemHistoryService(
+            self.session, applet_id, answer_schema.version
+        ).get_by_activity_id(activity_id)
 
+        identifiers = await self.get_activity_identifiers(activity_id)
         answer = ActivityAnswer(
             user_public_key=answer_item.user_public_key,
             answer=answer_item.answer,
             item_ids=answer_item.item_ids,
             items=activity_items,
             events=answer_item.events,
+            identifiers=identifiers,
+            created_at=answer_schema.created_at,
+            version=answer_schema.version,
         )
 
         return answer
@@ -648,7 +653,9 @@ class AnswerService:
             total_answers=total,
         )
 
-    async def get_activity_identifiers(self, activity_id: uuid.UUID, respondent_id: uuid.UUID) -> list[Identifier]:
+    async def get_activity_identifiers(
+        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None = None
+    ) -> list[Identifier]:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         await act_hst_crud.exist_by_activity_id_or_raise(activity_id)
         act_hst_list = await act_hst_crud.get_activities(activity_id, None)
@@ -708,6 +715,14 @@ class AnswerService:
             activity_answer.version = answer.version
             activity_answers.append(activity_answer)
         return activity_answers
+
+    async def get_assessments_count(self, answer_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
+        answer_reviewers_t = await AnswerItemsCRUD(self.answer_session).get_reviewers_by_answers(answer_ids)
+        answer_reviewers: dict[uuid.UUID, ReviewsCount] = {}
+        for answer_id, reviewers in answer_reviewers_t:
+            mine = 1 if self.user_id in reviewers else 0
+            answer_reviewers[answer_id] = ReviewsCount(mine=mine, other=len(reviewers) - mine)
+        return answer_reviewers
 
     async def get_summary_latest_report(
         self,

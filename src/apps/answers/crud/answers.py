@@ -231,7 +231,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_identifiers_by_activity_id(
         self,
         activity_hist_ids: Collection[str],
-        respondent_id: uuid.UUID,
+        respondent_id: uuid.UUID | None = None,
     ) -> list[tuple[str, str, dict, datetime.datetime]]:
         query: Query = select(
             AnswerItemSchema.identifier,
@@ -247,7 +247,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             AnswerItemSchema.identifier.isnot(None),
             AnswerSchema.activity_history_id.in_(activity_hist_ids),
         )
-        query = query.where(AnswerSchema.respondent_id == respondent_id)
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
         db_result = await self._execute(query)
         return db_result.all()  # noqa
 

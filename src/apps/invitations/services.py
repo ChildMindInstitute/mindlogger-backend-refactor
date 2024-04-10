@@ -403,7 +403,7 @@ class PrivateInvitationService:
         self.session = session
 
     async def get_invitation(self, link: uuid.UUID) -> PrivateInvitationDetail | None:
-        applet = await PublicAppletService(self.session).get_by_link(link, True)
+        applet = await PublicAppletService(self.session).get_by_link(link, is_private=True)
         if not applet:
             raise InvitationDoesNotExist()
         return PrivateInvitationDetail(
@@ -416,7 +416,7 @@ class PrivateInvitationService:
         )
 
     async def accept_invitation(self, user_id: uuid.UUID, link: uuid.UUID):
-        applet = await PublicAppletService(self.session).get_by_link(link, True)
+        applet = await PublicAppletService(self.session).get_by_link(link, is_private=True)
         if not applet:
             raise InvitationDoesNotExist()
         await UserAppletAccessService(self.session, user_id, applet.id).add_role_by_private_invitation(Role.RESPONDENT)

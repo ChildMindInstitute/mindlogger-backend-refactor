@@ -2,10 +2,8 @@ import datetime
 import uuid
 
 from sqlalchemy import select, update
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query
 
-from apps.applets import errors
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.errors import AppletVersionNotFoundError
@@ -18,8 +16,8 @@ __all__ = ["AppletHistoriesCRUD"]
 class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
     schema_class = AppletHistorySchema
 
-    async def save(self, schema: AppletHistorySchema):
-        await self._create(schema)
+    async def save(self, schema: AppletHistorySchema) -> AppletHistorySchema:
+        return await self._create(schema)
 
     async def get_by_id_version(self, id_version: str) -> AppletHistorySchema | None:
         schema = await self._get("id_version", id_version)
@@ -46,22 +44,10 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         ]
 
     async def retrieve_by_applet_version(self, id_version: str) -> AppletHistorySchema:
-        query: Query = select(AppletHistorySchema)
-        query = query.where(AppletHistorySchema.id_version == id_version)
-        result = await self._execute(query)
-        try:
-            return result.scalars().one()
-        except NoResultFound:
+        history = await self.get_by_id_version(id_version)
+        if history is None:
             raise AppletVersionNotFoundError()
-
-    async def fetch_by_id_version(self, value: str) -> AppletHistorySchema:
-        schema = await self._get("id_version", value)
-        if not schema:
-            raise errors.AppletNotFoundError(
-                key="id_version",
-                value=value,
-            )
-        return schema
+        return history
 
     async def update_display_name(self, id_version: str, display_name: str):
         query: Query = update(AppletHistorySchema)
@@ -71,7 +57,7 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         )
         await self._execute(query)
 
-    async def get_id_versions_by_applet_id(self, applet_id: uuid.UUID) -> list[str]:
+    async def get_versions_by_applet_id(self, applet_id: uuid.UUID) -> list[str]:
         query: Query = select(AppletHistorySchema.version)
         query = query.where(AppletHistorySchema.id == applet_id)
         query = query.order_by(AppletHistorySchema.created_at.asc())
