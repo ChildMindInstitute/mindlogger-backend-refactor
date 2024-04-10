@@ -316,14 +316,14 @@ class AnswerService:
             self.session, applet_id, answer_schema.version
         ).get_by_activity_id(activity_id)
 
-        identifiers = await self.get_activity_identifiers(activity_id)
+        identifiers = await self.get_activity_identifiers(activity_id, answer_id=answer_id)
         answer = ActivityAnswer(
             user_public_key=answer_item.user_public_key,
             answer=answer_item.answer,
             item_ids=answer_item.item_ids,
             items=activity_items,
             events=answer_item.events,
-            identifiers=identifiers,
+            identifier=next(iter(identifiers), None),
             created_at=answer_schema.created_at,
             version=answer_schema.version,
         )
@@ -651,13 +651,15 @@ class AnswerService:
         )
 
     async def get_activity_identifiers(
-        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None = None
+        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None = None, answer_id: uuid.UUID | None = None
     ) -> list[Identifier]:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         await act_hst_crud.exist_by_activity_id_or_raise(activity_id)
         act_hst_list = await act_hst_crud.get_activities(activity_id, None)
         ids = set(map(lambda a: a.id_version, act_hst_list))
-        identifiers = await AnswersCRUD(self.answer_session).get_identifiers_by_activity_id(ids, respondent_id)
+        identifiers = await AnswersCRUD(self.answer_session).get_identifiers_by_activity_id(
+            ids, respondent_id, answer_id
+        )
         results = []
         for identifier, key, migrated_data, answer_date in identifiers:
             if migrated_data and migrated_data.get("is_identifier_encrypted") is False:
