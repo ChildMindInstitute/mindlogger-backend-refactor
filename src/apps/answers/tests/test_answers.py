@@ -1888,3 +1888,47 @@ class TestAnswerActivityItems(BaseTest):
         assert payload["result"][0]["id"] == str(applet_with_flow.activity_flows[0].id)
         assert payload["result"][0]["name"] == applet_with_flow.activity_flows[0].name
         assert payload["result"][0]["hasAnswer"] is False
+
+    @pytest.mark.parametrize(
+        "user_fixture,role",
+        (
+            ("tom", Role.OWNER),
+            ("lucy", Role.MANAGER),
+            ("bob", Role.REVIEWER),
+        ),
+    )
+    async def test_owner_can_view_all_reviews(
+        self,
+        bob_reviewer_in_applet_with_reviewable_activity,
+        lucy_manager_in_applet_with_reviewable_activity,
+        tom_answer,
+        tom_review_answer,
+        bob_review_answer,
+        mock_kiq_report,
+        client,
+        tom,
+        applet_with_reviewable_activity,
+        session,
+        request,
+        user_fixture,
+        role,
+    ):
+        login_user = request.getfixturevalue(user_fixture)
+        client.login(login_user)
+        result = await client.get(
+            self.answer_reviews_url.format(applet_id=applet_with_reviewable_activity.id, answer_id=tom_answer.id)
+        )
+        assert result.status_code == 200
+        payload = result.json()
+        assert payload
+        assert payload["count"] == 2
+
+        results = payload["result"]
+        for review in results:
+            reviewer_id = uuid.UUID(review["reviewer"]["id"])
+            if role == Role.REVIEWER and login_user.id != reviewer_id:
+                assert review["answer"] is None
+                assert review["reviewerPublicKey"] is None
+            else:
+                assert review["answer"] is not None
+                assert review["reviewerPublicKey"] is not None

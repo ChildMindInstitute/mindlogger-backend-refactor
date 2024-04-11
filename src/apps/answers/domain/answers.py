@@ -157,7 +157,7 @@ class ActivityAnswer(InternalModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    identifiers: list[Identifier]
+    identifier: Identifier | None
     created_at: datetime.datetime
     version: str
 
@@ -212,7 +212,7 @@ class ActivityAnswerPublic(PublicModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    identifiers: list[Identifier]
+    identifier: Identifier | None
     created_at: datetime.datetime
     version: str
 

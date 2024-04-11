@@ -170,14 +170,9 @@ class NumberSelectionValues(PublicModel):
         return values
 
 
-class DrawingProportion(PublicModel):
-    enabled: bool
-
-
 class DrawingValues(PublicModel):
     drawing_example: str | None
     drawing_background: str | None
-    proportion: DrawingProportion | None = None
 
     @validator("drawing_example", "drawing_background")
     def validate_image(cls, value):
