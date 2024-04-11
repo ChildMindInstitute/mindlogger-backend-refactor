@@ -785,8 +785,7 @@ class AnswerService:
         )
         submitted_activities = dict()
         for activity_history_id, submit_date in activity_ids_with_date:
-            activity_id = activity_history_id.split("_")[0]
-            submitted_activities[activity_id] = submit_date
+            submitted_activities[activity_history_id] = submit_date
 
         results = []
         for activity in activities:
@@ -795,8 +794,8 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=str(activity.id) in submitted_activities,
-                    last_answer_date=submitted_activities.get(str(activity.id)),
+                    has_answer=str(activity.id_version) in submitted_activities,
+                    last_answer_date=submitted_activities.get(str(activity.id_version)),
                 )
             )
         return results
