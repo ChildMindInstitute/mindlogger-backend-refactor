@@ -1,0 +1,15 @@
+meta {
+  name: Item Choice Retrieve
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/activities/item_choices
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

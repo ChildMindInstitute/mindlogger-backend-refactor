@@ -1,0 +1,22 @@
+meta {
+  name: Applet Duplicate
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/duplicate
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "displayName": "",
+    "encryption": ""
+  }
+}

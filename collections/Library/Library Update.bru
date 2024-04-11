@@ -1,0 +1,22 @@
+meta {
+  name: Library Update
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/library/{library_id}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "keywords": [],
+    "name": ""
+  }
+}

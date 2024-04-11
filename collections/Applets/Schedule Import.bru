@@ -1,0 +1,15 @@
+meta {
+  name: Schedule Import
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/events/import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

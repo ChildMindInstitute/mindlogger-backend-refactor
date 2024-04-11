@@ -1,0 +1,15 @@
+meta {
+  name: Applet Link Get
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/applets/{applet_id}/access_link
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

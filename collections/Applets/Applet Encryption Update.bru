@@ -1,0 +1,15 @@
+meta {
+  name: Applet Encryption Update
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/encryption
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

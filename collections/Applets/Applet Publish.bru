@@ -1,0 +1,15 @@
+meta {
+  name: Applet Publish
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/publish
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

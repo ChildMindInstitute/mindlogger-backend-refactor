@@ -1,0 +1,25 @@
+meta {
+  name: Invitation List For Invited
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/invitations/invited
+  body: none
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~appletId: 
+  ~invitorId: 
+  ~role: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

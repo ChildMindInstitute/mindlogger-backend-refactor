@@ -1,0 +1,15 @@
+meta {
+  name: Private Invitation Accept
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/invitations/private/{key}/accept
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

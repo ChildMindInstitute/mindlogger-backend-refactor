@@ -1,0 +1,19 @@
+meta {
+  name: Notification Log Retrieve
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/logs/notification
+  body: none
+  auth: bearer
+}
+
+query {
+  ~limit: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

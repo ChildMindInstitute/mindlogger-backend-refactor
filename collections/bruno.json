@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "name": "FastAPI",
+  "type": "collection",
+  "scripts": {
+    "moduleWhitelist": [
+      "crypto"
+    ],
+    "filesystemAccess": {
+      "allow": true
+    }
+  }
+}

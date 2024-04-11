@@ -1,0 +1,26 @@
+meta {
+  name: Invitation Reviewer Send
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/invitations/{applet_id}/reviewer
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": "",
+    "firstName": "",
+    "lastName": "",
+    "language": "",
+    "respondents": [],
+    "workspacePrefix": ""
+  }
+}

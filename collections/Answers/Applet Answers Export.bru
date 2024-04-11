@@ -1,0 +1,30 @@
+meta {
+  name: Applet Answers Export
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/a1aee0a5-785c-4ba6-8de9-1c694a3890f7/data?activitiesLastVersion=true&tags=child&tags=parent&hasScore=true&hasSubmitted=true
+  body: json
+  auth: bearer
+}
+
+query {
+  activitiesLastVersion: true
+  tags: child
+  tags: parent
+  hasScore: true
+  hasSubmitted: true
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~respondentIds: 
+  ~fromDate: 
+  ~toDate: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

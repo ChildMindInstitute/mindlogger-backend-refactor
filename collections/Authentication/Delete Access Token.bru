@@ -1,0 +1,21 @@
+meta {
+  name: Delete Access Token
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "deviceId": ""
+  }
+}

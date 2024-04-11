@@ -1,0 +1,32 @@
+meta {
+  name: Get Token
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "cleber@metalab.com",
+    "password": "secret",
+    "deviceId": "{{deviceId}}"
+  }
+}
+
+script:pre-request {
+  const { v4: uuidv4 } = require('uuid');
+  bru.setEnvVar("deviceId", uuidv4());
+}
+
+script:post-response {
+  const data = res.getBody();
+  const token = data.result.token;
+  if (token != null) {
+    bru.setEnvVar("accessToken", token.accessToken);
+  }
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Cart Get
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/library/cart
+  body: none
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,52 @@
+meta {
+  name: Create Answer
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/answers
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "appletId": "{{appletId}}",
+    "activityId": "{{activityId}}",
+    "flowId": null,
+    "submitId": "{{submitId}}",
+    "version": "1.1.0",
+    "createdAt": 1706892187998,
+    "isFlowCompleted": true,
+    "answer": {
+      "answer": "e5d7e1c87726a5d5428bf53751c6e5b0:9a503002cc3ed24d3401a31bebffdc6ada865551e2b50741726058ef18ca1c54",
+      "itemIds": ["{{itemId}}"],
+      "events": "ac8b9a79bd8b9341563c3621df78b1bb:bfe0cc7e1db82bbab27277f85a4719c04a850caa7d0540f33606710549198a1fa9b52f7feb79420ff32ad44b6464c3d4782b8b0c229823d584e0fac538864b803e25df80f1bf17ee82a35adc7e957e2cfebdcb42f0878ca7c1538fd1bb698b8812dff071e8e4c387979482df843bd046e178ad3be6ef00e184236d826440d85934759e955c2866ff62deabbe5a4020517cdd9213a7b949eb77c9a6a8434941d8",
+      "userPublicKey": "[238,233,135,30,47,217,149,36,137,115,168,253,212,177,131,9,237,244,33,77,91,35,12,67,164,102,42,179,214,192,80,234,204,80,7,240,180,77,182,87,54,183,13,94,47,254,38,95,61,87,46,106,68,47,121,134,114,240,126,158,101,161,153,135,161,29,139,141,157,126,201,255,45,205,60,16,93,7,55,184,98,50,192,249,82,211,197,186,250,154,43,190,165,149,86,235,197,123,172,176,229,196,19,81,236,111,249,150,84,246,131,48,207,48,249,247,230,106,93,137,89,35,196,231,4,133,7,31]",
+      "startTime": 1706892184525,
+      "endTime": 1706892187998,
+      "identifier": null,
+      "scheduledEventId": "ece24f61-f579-4610-9b42-118947b3c099",
+      "localEndDate": "2024-02-02",
+      "localEndTime": "13:43"
+    },
+    "alerts": [],
+    "client": {
+      "appId": "mindlogger-web",
+      "appVersion": "dev-build-59",
+      "width": 2242,
+      "height": 1045
+    }
+  }
+  
+}
+
+script:pre-request {
+  const { v4: uuidv4 } = require('uuid');
+  bru.setVar("submitId", uuidv4());
+}

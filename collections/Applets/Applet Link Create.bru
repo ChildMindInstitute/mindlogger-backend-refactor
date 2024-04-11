@@ -1,0 +1,21 @@
+meta {
+  name: Applet Link Create
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/access_link
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "requireLogin": ""
+  }
+}

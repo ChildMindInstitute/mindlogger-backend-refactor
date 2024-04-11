@@ -1,0 +1,23 @@
+meta {
+  name: Summary Activity List
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/{applet_id}/summary/activities
+  body: json
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~respondentId: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

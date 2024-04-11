@@ -1,0 +1,20 @@
+meta {
+  name: Applet Activities
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/activities_flows/applet/84973d8c-9ca1-4cda-835a-372a6014b63f
+  body: none
+  auth: bearer
+}
+
+query {
+  ~hasScore: false
+  ~hasSubmitted: true
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Activity Retrieve
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/activities/{activity_id}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Download
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/file/download
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "key": ""
+  }
+}

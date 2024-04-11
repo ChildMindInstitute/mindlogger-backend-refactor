@@ -1,0 +1,15 @@
+meta {
+  name: Schedule Count
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{baseUrl}}/applets/{applet_id}/events/count
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

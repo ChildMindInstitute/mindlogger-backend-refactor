@@ -1,0 +1,42 @@
+meta {
+  name: Applet Create
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/workspaces/{owner_id}/applets
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "displayName": "",
+    "description": {},
+    "about": {},
+    "image": "",
+    "watermark": "",
+    "themeId": "",
+    "link": "",
+    "requireLogin": "",
+    "pinnedAt": "",
+    "retentionPeriod": "",
+    "retentionType": "",
+    "streamEnabled": "",
+    "encryption": "",
+    "reportServerIp": "",
+    "reportPublicKey": "",
+    "reportRecipients": [],
+    "reportIncludeUserId": "",
+    "reportIncludeCaseId": "",
+    "reportEmailBody": "",
+    "activities": [],
+    "activityFlows": [],
+    "extraFields": {}
+  }
+}

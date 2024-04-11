@@ -1,0 +1,26 @@
+meta {
+  name: Invitation Managers Send
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/invitations/8ea0c441-7ae5-4c58-bb1a-2dfdd91d1887/managers
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": "cleber+1@metalab.com",
+    "firstName": "Cleber",
+    "lastName": "Santos",
+    "language": "en",
+    "role": "manager",
+    "workspacePrefix": "cleber_"
+  }
+}

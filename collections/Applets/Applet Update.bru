@@ -1,0 +1,35 @@
+meta {
+  name: Applet Update
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/applets/{applet_id}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "displayName": "",
+    "description": {},
+    "about": {},
+    "image": "",
+    "watermark": "",
+    "themeId": "",
+    "link": "",
+    "requireLogin": "",
+    "pinnedAt": "",
+    "retentionPeriod": "",
+    "retentionType": "",
+    "streamEnabled": "",
+    "encryption": "",
+    "activities": [],
+    "activityFlows": []
+  }
+}

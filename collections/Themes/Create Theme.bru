@@ -1,0 +1,26 @@
+meta {
+  name: Create Theme
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/themes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "",
+    "logo": "",
+    "backgroundImage": "",
+    "primaryColor": "",
+    "secondaryColor": "",
+    "tertiaryColor": ""
+  }
+}

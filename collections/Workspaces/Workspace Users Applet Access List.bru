@@ -1,0 +1,18 @@
+meta {
+  name: Workspace Users Applet Access List
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/workspaces/{owner_id}/respondents/{respondent_id}/accesses
+  body: none
+  auth: none
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+}

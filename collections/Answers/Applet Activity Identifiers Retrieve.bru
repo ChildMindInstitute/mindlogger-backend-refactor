@@ -1,0 +1,19 @@
+meta {
+  name: Applet Activity Identifiers Retrieve
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/{applet_id}/summary/activities/{activity_id}/identifiers
+  body: json
+  auth: bearer
+}
+
+query {
+  ~respondentId: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

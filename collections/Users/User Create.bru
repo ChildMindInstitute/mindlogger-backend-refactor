@@ -1,0 +1,20 @@
+meta {
+  name: User Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/users
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "cleber@metalab.com",
+    "firstName": "Cleber",
+    "lastName": "Santos",
+    "password": "secret"
+  }
+}

@@ -1,0 +1,11 @@
+meta {
+  name: Folder Delete
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/workspaces/{workspace_id}/folders/{folder_id}
+  body: none
+  auth: none
+}

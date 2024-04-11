@@ -1,0 +1,21 @@
+meta {
+  name: Search Workspace Applets
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/workspaces/{owner_id}/applets/search/{text}
+  body: none
+  auth: none
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~roles: 
+  ~folderId: 
+  ~flatList: 
+}

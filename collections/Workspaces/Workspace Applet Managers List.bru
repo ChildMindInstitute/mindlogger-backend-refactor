@@ -1,0 +1,19 @@
+meta {
+  name: Workspace Applet Managers List
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/workspaces/{owner_id}/applets/{applet_id}/managers
+  body: none
+  auth: none
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~role: 
+}

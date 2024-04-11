@@ -1,0 +1,20 @@
+meta {
+  name: Openapi Auth
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/auth/openapi
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: 
+  username: 
+  password: 
+  scope: 
+  client_id: 
+  client_secret: 
+}

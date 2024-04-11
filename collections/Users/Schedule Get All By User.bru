@@ -1,0 +1,15 @@
+meta {
+  name: Schedule Get All By User
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/users/me/events
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

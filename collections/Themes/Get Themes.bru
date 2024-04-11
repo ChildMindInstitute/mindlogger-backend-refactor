@@ -1,0 +1,25 @@
+meta {
+  name: Get Themes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/themes
+  body: none
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~public: 
+  ~allowRename: 
+  ~creatorId: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Update Alert As Watched
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/alerts/{alert_id}/is_watched
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Delete Theme By Id
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/themes/{pk}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

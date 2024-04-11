@@ -1,0 +1,19 @@
+meta {
+  name: Logs Upload
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/file/log-file/{device_id}
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:multipart-form {
+  file: 
+}

@@ -1,0 +1,51 @@
+meta {
+  name: Create Answer
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/answers
+  body: json
+  auth: bearer
+}
+
+query {
+  ~applet_id: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "appletId": "",
+    "version": "",
+    "submitId": "",
+    "flowId": "",
+    "isFlowCompleted": "",
+    "activityId": "",
+    "answer": {
+      "answer": "",
+      "events": "",
+      "itemIds": [],
+      "identifier": "",
+      "scheduledTime": "",
+      "startTime": "",
+      "endTime": "",
+      "userPublicKey": "",
+      "scheduledEventId": "",
+      "localEndDate": "",
+      "localEndTime": ""
+    },
+    "createdAt": "",
+    "alerts": [],
+    "client": {
+      "appId": "",
+      "appVersion": "",
+      "width": "",
+      "height": ""
+    }
+  }
+}

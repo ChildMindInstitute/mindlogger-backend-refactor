@@ -1,0 +1,21 @@
+meta {
+  name: Check File Uploaded
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/file/{applet_id}/upload/check
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "files": []
+  }
+}

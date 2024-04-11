@@ -1,0 +1,15 @@
+meta {
+  name: Schedule Delete By User
+  type: http
+  seq: 29
+}
+
+delete {
+  url: {{baseUrl}}/applets/{applet_id}/events/delete_individual/{respondent_id}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

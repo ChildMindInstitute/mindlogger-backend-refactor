@@ -1,0 +1,41 @@
+meta {
+  name: Applet List
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/applets
+  body: none
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~roles: 
+  ~folderId: 
+  ~flatList: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+script:post-response {
+  const axios = require("axios");
+  const baseUrl = bru.getEnvVar("baseUrl");
+  const accessToken = bru.getEnvVar("accessToken");
+  const applets = res.body.result;
+  
+  applets.forEach(async applet => {
+    const options = {
+      method: "DELETE",
+      headers: {"Authorization": `Bearer ${accessToken}`},
+      url: `${baseUrl}/applets/${applet.id}`
+    };
+    await axios.request(options);
+  });
+}

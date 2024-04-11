@@ -1,0 +1,15 @@
+meta {
+  name: Public Activity Retrieve
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/public/activities/{id_}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

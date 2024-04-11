@@ -1,0 +1,28 @@
+meta {
+  name: Schedule Update
+  type: http
+  seq: 32
+}
+
+put {
+  url: {{baseUrl}}/applets/{applet_id}/events/{schedule_id}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "startTime": "",
+    "endTime": "",
+    "accessBeforeSchedule": "",
+    "oneTimeCompletion": "",
+    "timer": "",
+    "timerType": "",
+    "periodicity": "",
+    "notification": ""
+  }
+}

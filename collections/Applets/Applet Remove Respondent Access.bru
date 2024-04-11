@@ -1,0 +1,23 @@
+meta {
+  name: Applet Remove Respondent Access
+  type: http
+  seq: 21
+}
+
+delete {
+  url: {{baseUrl}}/applets/respondent/removeAccess
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "userId": "",
+    "appletIds": [],
+    "deleteResponses": ""
+  }
+}

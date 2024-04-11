@@ -1,0 +1,15 @@
+meta {
+  name: Library Get Url
+  type: http
+  seq: 38
+}
+
+get {
+  url: {{baseUrl}}/applets/{applet_id}/library_link
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

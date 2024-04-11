@@ -1,0 +1,18 @@
+meta {
+  name: Workspace Remove Manager Access
+  type: http
+  seq: 20
+}
+
+delete {
+  url: {{baseUrl}}/workspaces/managers/removeAccess
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "userId": "",
+    "appletIds": []
+  }
+}

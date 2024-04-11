@@ -1,0 +1,22 @@
+meta {
+  name: Flow Report Config Update
+  type: http
+  seq: 20
+}
+
+put {
+  url: {{baseUrl}}/applets/{applet_id}/flows/{flow_id}/report_configuration
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "reportIncludedActivityName": "",
+    "reportIncludedItemName": ""
+  }
+}

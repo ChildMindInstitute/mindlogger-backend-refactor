@@ -1,0 +1,15 @@
+meta {
+  name: Applet Delete
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/applets/{applet_id}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

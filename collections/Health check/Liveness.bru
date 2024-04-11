@@ -1,0 +1,15 @@
+meta {
+  name: Liveness
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/liveness
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,11 @@
+meta {
+  name: Schedule Create
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/events
+  body: json
+  auth: none
+}

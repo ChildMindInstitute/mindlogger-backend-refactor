@@ -1,0 +1,22 @@
+meta {
+  name: Applet Set Folder
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/applets/set_folder
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "appletId": "",
+    "folderId": ""
+  }
+}

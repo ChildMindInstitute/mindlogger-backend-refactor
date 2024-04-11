@@ -1,0 +1,15 @@
+meta {
+  name: Applet Version Changes Retrieve
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/applets/{applet_id}/versions/{version}/changes
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Statuscode
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/statuscode
+  body: none
+  auth: bearer
+}
+
+query {
+  ~code: 
+  ~timeout: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

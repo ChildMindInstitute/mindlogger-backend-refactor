@@ -1,0 +1,15 @@
+meta {
+  name: Applet Activity Versions Retrieve
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/{applet_id}/summary/activities/{activity_id}/versions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

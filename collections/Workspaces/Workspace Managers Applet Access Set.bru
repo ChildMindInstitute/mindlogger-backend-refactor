@@ -1,0 +1,17 @@
+meta {
+  name: Workspace Managers Applet Access Set
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/workspaces/{owner_id}/managers/{manager_id}/accesses
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "accesses": []
+  }
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Applet Set Report Configuration
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/report_configuration
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "reportServerIp": "",
+    "reportPublicKey": "",
+    "reportRecipients": [],
+    "reportIncludeUserId": "",
+    "reportIncludeCaseId": "",
+    "reportEmailBody": ""
+  }
+}

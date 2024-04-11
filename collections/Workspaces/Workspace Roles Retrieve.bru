@@ -1,0 +1,15 @@
+meta {
+  name: Workspace Roles Retrieve
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/workspaces/{owner_id}/roles
+  body: none
+  auth: none
+}
+
+query {
+  ~appletIds: 
+}

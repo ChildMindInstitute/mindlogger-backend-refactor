@@ -1,0 +1,15 @@
+meta {
+  name: Schedule Get By Id
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{baseUrl}}/applets/{applet_id}/events/{schedule_id}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

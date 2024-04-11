@@ -1,0 +1,15 @@
+meta {
+  name: Summary Latest Report Retrieve
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

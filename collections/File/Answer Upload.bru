@@ -1,0 +1,23 @@
+meta {
+  name: Answer Upload
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/file/{applet_id}/upload
+  body: multipartForm
+  auth: bearer
+}
+
+query {
+  ~fileId: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:multipart-form {
+  file: 
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Item Choice Create
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/activities/item_choices
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "tokenName": "",
+    "tokenValue": "",
+    "inputType": ""
+  }
+}

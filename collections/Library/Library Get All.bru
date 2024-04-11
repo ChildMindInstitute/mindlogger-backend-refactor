@@ -1,0 +1,21 @@
+meta {
+  name: Library Get All
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/library
+  body: none
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

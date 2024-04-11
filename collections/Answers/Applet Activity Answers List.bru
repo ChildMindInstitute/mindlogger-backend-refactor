@@ -1,0 +1,28 @@
+meta {
+  name: Applet Activity Answers List
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/{applet_id}/activities/{activity_id}/answers
+  body: json
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~respondentId: 
+  ~fromDatetime: 
+  ~toDatetime: 
+  ~identifiers: 
+  ~versions: 
+  ~emptyIdentifiers: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

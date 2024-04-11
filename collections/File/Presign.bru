@@ -1,0 +1,21 @@
+meta {
+  name: Presign
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/file/{applet_id}/presign
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "privateUrls": []
+  }
+}

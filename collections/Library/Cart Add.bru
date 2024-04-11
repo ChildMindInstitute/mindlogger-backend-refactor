@@ -1,0 +1,21 @@
+meta {
+  name: Cart Add
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/library/cart
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "cartItems": []
+  }
+}

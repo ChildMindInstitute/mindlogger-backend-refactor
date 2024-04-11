@@ -1,0 +1,25 @@
+meta {
+  name: Applet List
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/applets
+  body: none
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~roles: 
+  ~folderId: 
+  ~flatList: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Folder Create
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/workspaces/{workspace_id}/folders
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": ""
+  }
+}

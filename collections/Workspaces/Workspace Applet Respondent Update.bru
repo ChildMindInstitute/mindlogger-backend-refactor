@@ -1,0 +1,18 @@
+meta {
+  name: Workspace Applet Respondent Update
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/workspaces/{owner_id}/applets/{applet_id}/respondents/{respondent_id}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nickname": "",
+    "secretUserId": ""
+  }
+}

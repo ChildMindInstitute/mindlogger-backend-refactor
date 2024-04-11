@@ -1,0 +1,22 @@
+meta {
+  name: User Update
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/users/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "firstName": "",
+    "lastName": ""
+  }
+}

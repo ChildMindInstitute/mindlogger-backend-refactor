@@ -1,0 +1,107 @@
+meta {
+  name: Applet Create
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/workspaces/5faf7221-6d16-4693-9b69-fb2a4c8017bd/applets
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "displayName": "{{appletDisplayName}}",
+    "description": { "en": "This is the applet description" },
+    "themeId": "{{themeId}}",
+    "about": { "en": "" },
+    "image": "{{image}}",
+    "watermark": "",
+    "activities": [
+      {
+        "name": "{{activityName}}",
+        "description": { "en": "" },
+        "showAllAtOnce": false,
+        "isSkippable": false,
+        "responseIsEditable": true,
+        "isHidden": false,
+        "isReviewable": false,
+        "items": [
+          {
+            "responseType": "multiSelect",
+            "name": "Item",
+            "question": { "en": "Please choose A or B" },
+            "config": {
+              "removeBackButton": false,
+              "skippableItem": false,
+              "randomizeOptions": false,
+              "addScores": false,
+              "setAlerts": false,
+              "addTooltip": false,
+              "setPalette": false,
+              "timer": 0,
+              "additionalResponseOption": {
+                "textInputOption": false,
+                "textInputRequired": false
+              }
+            },
+            "isHidden": false,
+            "allowEdit": true,
+            "responseValues": {
+              "options": [
+                {
+                  "id": "918181e1-9cab-4609-8c4b-4e28d32a21a7",
+                  "text": "A",
+                  "isHidden": false,
+                  "value": 0
+                },
+                {
+                  "id": "0e49ac91-f033-488d-a32e-67b8445208e9",
+                  "text": "B",
+                  "isHidden": false,
+                  "value": 1
+                }
+              ]
+            }
+          }
+        ],
+        "scoresAndReports": {
+          "generateReport": false,
+          "reports": [],
+          "showScoreSummary": false
+        },
+        "key": "d9bb7af7-f7bc-471a-9b3d-3ee53f731624",
+        "reportIncludedItemName": ""
+      }
+    ],
+    "activityFlows": [],
+    "reportEmailBody": "Please see the report attached to this email.",
+    "encryption": {
+      "publicKey": "[2,158,252,250,8,188,174,223,210,127,225,200,37,139,42,143,112,254,25,250,133,0,39,223,224,235,66,52,11,47,50,43,157,164,233,71,252,84,213,38,39,175,123,6,19,3,38,78,183,21,79,151,119,33,23,6,6,124,179,126,25,76,144,119,9,34,19,93,23,109,152,193,48,200,9,43,46,26,22,231,122,79,47,183,103,22,249,39,152,87,214,158,127,71,155,85,189,236,100,79,111,199,107,229,83,8,243,119,210,126,126,196,35,171,9,99,133,49,42,29,239,81,99,136,36,91,182,78]",
+      "prime": "[246,25,62,57,3,211,201,60,45,201,150,1,190,238,76,102,74,251,46,148,77,29,170,58,244,105,8,98,210,151,133,169,246,23,82,120,229,35,147,74,213,4,72,145,136,233,32,137,37,224,243,5,139,4,160,166,149,244,212,219,224,247,214,181,167,166,108,86,34,111,18,209,99,87,0,176,210,79,16,216,191,44,55,132,214,25,245,124,98,228,240,133,112,89,169,47,151,247,250,57,221,161,14,109,147,162,179,95,51,145,147,18,195,48,190,74,88,26,132,25,66,236,103,148,101,136,234,195]",
+      "base": "[2]",
+      "accountId": "5faf7221-6d16-4693-9b69-fb2a4c8017bd"
+    }
+  }
+}
+
+script:pre-request {
+  const { customAlphabet } = require("nanoid");
+  const nanoid = customAlphabet('1234567890', 5);
+  const id = nanoid();
+  
+  bru.setVar("appletDisplayName", `Applet ${id}`);
+  bru.setVar("activityName", `Activity ${id}`);
+  bru.setVar("image", `https://source.unsplash.com/random/300x300?sig=${id}`);
+}
+
+script:post-response {
+  bru.setEnvVar("appletId", res.body.result.id);
+  bru.setEnvVar("activityId", res.body.result.activities[0].id);
+  bru.setEnvVar("itemId", res.body.result.activities[0].items[0].id);
+}

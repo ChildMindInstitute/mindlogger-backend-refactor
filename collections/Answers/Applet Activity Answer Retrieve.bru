@@ -1,0 +1,15 @@
+meta {
+  name: Applet Activity Answer Retrieve
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

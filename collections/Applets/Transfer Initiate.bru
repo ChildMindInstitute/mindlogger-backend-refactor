@@ -1,0 +1,21 @@
+meta {
+  name: Transfer Initiate
+  type: http
+  seq: 35
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/transferOwnership
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": ""
+  }
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Get All Alerts
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/alerts
+  body: none
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

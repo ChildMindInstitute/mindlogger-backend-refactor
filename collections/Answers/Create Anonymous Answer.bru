@@ -1,0 +1,19 @@
+meta {
+  name: Create Anonymous Answer
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/public/answers
+  body: json
+  auth: bearer
+}
+
+query {
+  ~applet_id: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Applet Set Data Retention
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/retentions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "retention": "",
+    "period": ""
+  }
+}

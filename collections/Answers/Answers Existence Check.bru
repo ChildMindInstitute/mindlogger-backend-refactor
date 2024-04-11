@@ -1,0 +1,27 @@
+meta {
+  name: Answers Existence Check
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/answers/check-existence
+  body: json
+  auth: bearer
+}
+
+query {
+  ~applet_id: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "appletId": "",
+    "createdAt": "",
+    "activityId": ""
+  }
+}

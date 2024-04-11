@@ -1,0 +1,15 @@
+meta {
+  name: Private Invitation Retrieve
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/invitations/private/{key}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

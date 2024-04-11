@@ -1,0 +1,15 @@
+meta {
+  name: Applet Completed Entities
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/{applet_id}/completions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

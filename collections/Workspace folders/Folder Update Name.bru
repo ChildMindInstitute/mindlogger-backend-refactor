@@ -1,0 +1,17 @@
+meta {
+  name: Folder Update Name
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/workspaces/{workspace_id}/folders/{folder_id}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": ""
+  }
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Applet Unique Name Get
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/applets/unique_name
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "",
+    "excludeAppletId": ""
+  }
+}

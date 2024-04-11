@@ -1,0 +1,52 @@
+meta {
+  name: Get Themes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/themes
+  body: none
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+  ~public: 
+  ~allowRename: 
+  ~creatorId: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+script:pre-request {
+  const crypto = require('crypto');
+  
+  function getAES(privateKey, publicKey, appletPrime, appletBase) {
+    const key = crypto.createDiffieHellman(Buffer.from(appletPrime).toString(), Buffer.from(appletBase).toString());
+    key.setPrivateKey(Buffer.from(privateKey).toString());
+    const secretKey = key.computeSecret(Buffer.from(publicKey).toString());
+    return Array.from(crypto.createHash("sha256").update(secretKey).digest());
+  }
+  
+  function encryptData(text, key) {
+    const iv = crypto.randomBytes(16);
+    const keyBuffer = Buffer.from(key)
+    const cipher = crypto.createCipheriv("aes-256-cbc", keyBuffer, iv);
+    let encrypted = cipher.update(text)
+    encrypted = Buffer.concat([encrypted, cipher.final()])
+    return `${iv.toString("hex")}:${encrypted.toString("hex")}`
+  }
+  
+  var output = encryptData("test", crypto.randomBytes(32))
+  console.log(`encryptData: ${output}`)
+}
+
+script:post-response {
+  bru.setEnvVar("themeId", res.body.result[0].id)
+}

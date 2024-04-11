@@ -1,0 +1,15 @@
+meta {
+  name: Applet Conceal
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/applets/{applet_id}/conceal
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

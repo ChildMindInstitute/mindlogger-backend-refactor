@@ -1,0 +1,15 @@
+meta {
+  name: Applet Version Retrieve
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/applets/{applet_id}/versions/{version}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

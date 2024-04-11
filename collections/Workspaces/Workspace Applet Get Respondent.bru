@@ -1,0 +1,11 @@
+meta {
+  name: Workspace Applet Get Respondent
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/workspaces/{owner_id}/applets/{applet_id}/respondents/{respondent_id}
+  body: none
+  auth: none
+}

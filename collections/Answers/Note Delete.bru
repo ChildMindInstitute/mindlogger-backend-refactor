@@ -1,0 +1,15 @@
+meta {
+  name: Note Delete
+  type: http
+  seq: 16
+}
+
+delete {
+  url: {{baseUrl}}/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

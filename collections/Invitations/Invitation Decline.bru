@@ -1,0 +1,15 @@
+meta {
+  name: Invitation Decline
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/invitations/{key}/decline
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

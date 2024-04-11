@@ -1,0 +1,21 @@
+meta {
+  name: Note Add
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "note": ""
+  }
+}

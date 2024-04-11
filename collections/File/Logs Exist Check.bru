@@ -1,0 +1,15 @@
+meta {
+  name: Logs Exist Check
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/file/log-file/{device_id}/check
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Applet Submit Date List
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/{applet_id}/dates
+  body: json
+  auth: bearer
+}
+
+query {
+  ~search: 
+  ~page: 
+  ~limit: 
+  ~ordering: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

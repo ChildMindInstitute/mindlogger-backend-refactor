@@ -1,0 +1,19 @@
+meta {
+  name: Schedule Get All
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{baseUrl}}/applets/{applet_id}/events
+  body: none
+  auth: bearer
+}
+
+query {
+  ~respondentId: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

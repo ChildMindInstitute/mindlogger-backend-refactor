@@ -1,0 +1,15 @@
+meta {
+  name: Applet Activity Assessment Retrieve
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/answers/applet/{applet_id}/answers/{answer_id}/assessment
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

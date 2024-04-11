@@ -1,0 +1,15 @@
+meta {
+  name: Schedule Remove Individual Calendar
+  type: http
+  seq: 30
+}
+
+delete {
+  url: {{baseUrl}}/applets/{applet_id}/events/remove_individual/{respondent_id}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

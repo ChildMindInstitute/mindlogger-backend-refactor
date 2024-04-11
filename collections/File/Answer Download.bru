@@ -1,0 +1,15 @@
+meta {
+  name: Answer Download
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/file/{applet_id}/download
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

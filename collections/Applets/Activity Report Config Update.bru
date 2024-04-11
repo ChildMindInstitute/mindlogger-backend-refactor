@@ -1,0 +1,21 @@
+meta {
+  name: Activity Report Config Update
+  type: http
+  seq: 19
+}
+
+put {
+  url: {{baseUrl}}/applets/{applet_id}/activities/{activity_id}/report_configuration
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "reportIncludedItemName": ""
+  }
+}
