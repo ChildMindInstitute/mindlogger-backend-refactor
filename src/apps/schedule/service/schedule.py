@@ -45,7 +45,6 @@ from apps.schedule.domain.schedule.requests import EventRequest, EventUpdateRequ
 from apps.schedule.errors import (
     AccessDeniedToApplet,
     ActivityOrFlowNotFoundError,
-    AppletScheduleNotFoundError,
     EventAlwaysAvailableExistsError,
     ScheduleNotFoundError,
 )
@@ -189,9 +188,9 @@ class ScheduleService:
             notification=notification,
         )
 
-    async def get_all_schedules(self, applet_id: uuid.UUID, query: QueryParams) -> list[PublicEvent]:
+    async def get_all_schedules(self, applet_id: uuid.UUID, query: QueryParams | None = None) -> list[PublicEvent]:
         # validate respondent_id if present
-        if "respondent_id" in query.filters:
+        if query is not None and "respondent_id" in query.filters:
             respondent_id = query.filters["respondent_id"]
             await self._validate_user(respondent_id)
         else:
@@ -274,8 +273,6 @@ class ScheduleService:
         event_schemas: list[EventSchema] = await EventCRUD(self.session).get_all_by_applet_id_with_filter(applet_id)
         event_ids = [event_schema.id for event_schema in event_schemas]
         periodicity_ids = [event_schema.periodicity_id for event_schema in event_schemas]
-        if not event_ids:
-            raise AppletScheduleNotFoundError(applet_id=applet_id)
 
         # Get all activity_ids and flow_ids
         activity_ids = await ActivityEventsCRUD(self.session).get_by_event_ids(event_ids)
@@ -290,10 +287,7 @@ class ScheduleService:
         for flow_id in flow_ids:
             await self._create_default_event(applet_id=applet_id, activity_id=flow_id, is_activity=False)
 
-    async def delete_schedule_by_id(self, schedule_id: uuid.UUID, applet_id: uuid.UUID) -> uuid.UUID | None:
-        # Check if applet exists
-        await self._validate_applet(applet_id=applet_id)
-
+    async def delete_schedule_by_id(self, schedule_id: uuid.UUID) -> uuid.UUID | None:
         event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
         periodicity_id = event.periodicity_id
         respondent_id = await UserEventsCRUD(self.session).get_by_event_id(event_id=schedule_id)
@@ -401,8 +395,8 @@ class ScheduleService:
                 reminder = await ReminderCRUD(self.session).create(
                     reminder=ReminderSettingCreate(
                         event_id=event.id,
-                        activity_incomplete=schedule.notification.reminder.activity_incomplete,  # noqa: E501
-                        reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
+                        activity_incomplete=schedule.notification.reminder.activity_incomplete,
+                        reminder_time=schedule.notification.reminder.reminder_time,
                     )
                 )
             notification_public = PublicNotification(
@@ -891,7 +885,7 @@ class ScheduleService:
 
     async def _validate_public_applet(self, key: uuid.UUID) -> uuid.UUID:
         # Check if applet exists
-        applet = await AppletsCRUD(self.session).get_by_key(key)
+        applet = await AppletsCRUD(self.session).get_by_link(key)
         if not applet:
             raise AppletNotFoundError(key="key", value=str(key))
         return applet.id
@@ -930,9 +924,6 @@ class ScheduleService:
 
     async def remove_individual_calendar(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> None:
         """Remove individual calendar for user in applet."""
-        # Check if applet exists
-        await self._validate_applet(applet_id=applet_id)
-
         # Check if user exists
         await self._validate_user(user_id=user_id)
 

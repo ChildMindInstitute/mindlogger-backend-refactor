@@ -2,6 +2,7 @@ import copy
 import http
 import json
 import uuid
+from unittest.mock import ANY
 
 import pytest
 from firebase_admin.exceptions import NotFoundError as FireBaseNotFoundError
@@ -22,12 +23,13 @@ from apps.activities.errors import (
 from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
-from apps.applets.errors import AppletAlreadyExist
+from apps.applets.errors import AppletAlreadyExist, AppletVersionNotFoundError
+from apps.applets.service.applet import AppletService
 from apps.shared.exception import NotFoundError
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
-from config import settings
 from infrastructure.utility import FCMNotificationTest
 
 
@@ -56,7 +58,7 @@ class TestApplet:
     async def test_create_applet_with_minimal_data(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(
             self.applet_create_url.format(owner_id=tom.id),
             data=applet_minimal_data,
@@ -85,7 +87,7 @@ class TestApplet:
     async def test_creating_applet_failed_by_duplicate_activity_name(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         data.activities.append(data.activities[0])
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -97,7 +99,7 @@ class TestApplet:
     async def test_creating_applet_failed_by_duplicate_activity_item_name(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         data.activities[0].items.append(data.activities[0].items[0])
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -110,7 +112,7 @@ class TestApplet:
     async def test_create_duplicate_name_applet(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate, applet_name: str
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         data.display_name = applet_name
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -124,7 +126,7 @@ class TestApplet:
     async def test_update_applet(
         self, client: TestClient, tom: User, device_tom: str, applet_one: AppletFull, fcm_client: FCMNotificationTest
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         update_data = AppletUpdate(**applet_one.dict())
 
         response = await client.put(
@@ -139,7 +141,7 @@ class TestApplet:
         assert notification["title"] == "Applet is updated."
 
     async def test_update_applet__add_stream_settings(self, client: TestClient, applet_one: AppletFull, tom: User):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         update_data = AppletUpdate(**applet_one.dict())
         update_data.stream_enabled = True
         update_data.stream_ip_address = "127.0.0.1"  # type: ignore[assignment]
@@ -155,7 +157,7 @@ class TestApplet:
     async def test_update_applet_duplicate_name_activity(
         self, client: TestClient, tom: User, device_tom: str, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         update_data = AppletUpdate(**applet_one.dict())
         update_data.activities.append(update_data.activities[0])
 
@@ -171,7 +173,7 @@ class TestApplet:
     async def test_duplicate_applet(
         self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         new_name = "New Name"
         response = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
@@ -183,7 +185,7 @@ class TestApplet:
     async def test_duplicate_applet_name_already_exists(
         self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
             data=dict(display_name=applet_one.display_name, encryption=encryption.dict()),
@@ -194,7 +196,7 @@ class TestApplet:
         assert result[0]["message"] == AppletAlreadyExist.message
 
     async def test_set_applet_report_configuration(self, client: TestClient, tom: User, applet_one: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         report_configuration = dict(
             report_server_ip="ipaddress",
@@ -222,23 +224,25 @@ class TestApplet:
         assert response.json()["result"]["reportIncludeCaseId"] == report_configuration["report_include_case_id"]
         assert response.json()["result"]["reportEmailBody"] == report_configuration["report_email_body"]
 
-    async def test_publish_conceal_applet(self, client: TestClient, tom: User, applet_one: AppletFull):
+    async def test_publish_conceal_applet(
+        self, client: TestClient, tom: User, applet_one: AppletFull, superadmin: User
+    ):
         # NOTE: only superadmin can publish an applet
-        await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
+        client.login(superadmin)
         response = await client.post(self.applet_publish_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is True
 
         # NOTE: only superadmin can conceal an applet
-        await client.login(self.login_url, settings.super_admin.email, settings.super_admin.password)
+        client.login(superadmin)
         response = await client.post(self.applet_conceal_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK, response.json()
 
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.applet_detail_url.format(pk=applet_one.id))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["isPublished"] is False
@@ -246,7 +250,7 @@ class TestApplet:
     async def test_set_encryption(
         self, client: TestClient, tom: User, applet_one_no_encryption: AppletFull, encryption: Encryption
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         assert applet_one_no_encryption.encryption is None
         response = await client.post(
@@ -259,11 +263,15 @@ class TestApplet:
         assert result["prime"] == encryption.prime
         assert result["base"] == encryption.base
         assert result["accountId"] == encryption.account_id
+        resp = await client.get(
+            self.applet_detail_url.format(pk=applet_one_no_encryption.id),
+        )
+        assert resp.status_code == http.HTTPStatus.OK
 
     async def test_set_encryption__encryption_already_set(
         self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(self.applet_set_encryption_url.format(pk=applet_one.id), data=encryption)
         assert response.status_code == http.HTTPStatus.FORBIDDEN
         result = response.json()["result"]
@@ -271,7 +279,7 @@ class TestApplet:
         assert result[0]["message"] == AppletEncryptionUpdateDenied.message
 
     async def test_applet_list(self, client: TestClient, tom: User, applet_one: AppletFull, applet_two: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.applet_list_url)
 
         assert response.status_code == http.HTTPStatus.OK, response.json()
@@ -283,7 +291,7 @@ class TestApplet:
     async def test_applet_delete(
         self, client: TestClient, tom: User, applet_one: AppletFull, device_tom: str, fcm_client: FCMNotificationTest
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.delete(
             self.applet_detail_url.format(pk=applet_one.id),
         )
@@ -297,23 +305,25 @@ class TestApplet:
         assert notification["title"] == "Applet is deleted."
 
     async def test_applet_delete__applet_does_not_exists(self, client: TestClient, tom: User, uuid_zero: uuid.UUID):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.delete(
             self.applet_detail_url.format(pk=uuid_zero),
         )
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_applet_delete_by_manager(self, client: TestClient, applet_one_lucy_manager: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_applet_delete_by_manager(self, client: TestClient, applet_one_lucy_manager: AppletFull, lucy: User):
+        client.login(lucy)
         response = await client.delete(
             self.applet_detail_url.format(pk=applet_one_lucy_manager.id),
         )
 
         assert response.status_code == http.HTTPStatus.NO_CONTENT
 
-    async def test_applet_delete_by_coordinator(self, client: TestClient, applet_one_lucy_coordinator: AppletFull):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_applet_delete_by_coordinator(
+        self, client: TestClient, applet_one_lucy_coordinator: AppletFull, lucy: User
+    ):
+        client.login(lucy)
         response = await client.delete(
             self.applet_detail_url.format(pk=applet_one_lucy_coordinator.id),
         )
@@ -321,7 +331,7 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_applet_list_with_limit(self, client: TestClient, tom: User, applet_one: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.applet_list_url, dict(ordering="id", limit=1))
 
         assert response.status_code == http.HTTPStatus.OK
@@ -329,7 +339,7 @@ class TestApplet:
         assert response.json()["result"][0]["id"] == str(applet_one.id)
 
     async def test_applet_detail(self, client: TestClient, tom: User, applet_one_with_flow: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.applet_detail_url.format(pk=applet_one_with_flow.id))
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
@@ -347,7 +357,7 @@ class TestApplet:
     async def test_create_applet__initial_version_is_created_in_applet_history(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.post(
             self.applet_create_url.format(owner_id=tom.id),
             data=applet_minimal_data,
@@ -364,14 +374,14 @@ class TestApplet:
         assert versions[0]["version"] == version
 
     async def test_get_versions_for_not_existed_applet(self, client: TestClient, tom: User, uuid_zero: uuid.UUID):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.histories_url.format(pk=uuid_zero))
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_update_applet__applet_history_is_updated(
         self, client: TestClient, tom: User, applet_one: AppletFull, applet_minimal_data: AppletCreate
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         # first change patch version
         update_data_patch = applet_one.dict()
         update_data_patch["description"] = {"en": "description"}
@@ -425,7 +435,7 @@ class TestApplet:
     async def test_get_history_version__applet_version_does_not_exist(
         self, client: TestClient, tom: User, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         response = await client.get(self.history_url.format(pk=applet_one.id, version="0.0.0"))
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
@@ -433,7 +443,7 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_one: AppletFull
     ):
         # NOTE: Only simple test is tested here. All other history changes are tested in unit tests
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         update_data = AppletUpdate(**applet_one.dict())
         new_display_name = "new display name"
         update_data.display_name = new_display_name
@@ -451,7 +461,7 @@ class TestApplet:
     async def test_get_applet_unique_name__name_already_used(
         self, client: TestClient, tom: User, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         response = await client.post(self.applet_unique_name_url, data=dict(name=applet_one.display_name))
 
@@ -461,7 +471,7 @@ class TestApplet:
     async def test_get_applet_unique_name__name_already_used_case_insensitive(
         self, client: TestClient, tom: User, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
 
         name = applet_one.display_name.upper()
         response = await client.post(self.applet_unique_name_url, data=dict(name=name))
@@ -476,7 +486,7 @@ class TestApplet:
         applet_minimal_data: AppletCreate,
         multi_select_item_create: ActivityItemCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         # create applet with minimal data
         data = applet_minimal_data.copy(deep=True)
         multi_select_item_create.is_hidden = True
@@ -501,7 +511,7 @@ class TestApplet:
         applet_one_with_public_link: AppletFull,
         multi_select_item_create: ActivityItemCreate,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         update_data = AppletUpdate(**applet_one_with_public_link.dict())
         multi_select_item_create.is_hidden = True
         update_data.activities[0].items.append(ActivityItemUpdate(**multi_select_item_create.dict()))
@@ -518,8 +528,8 @@ class TestApplet:
         assert response.json()["result"]["activities"][0]["itemCount"] == 1
 
     @pytest.mark.usefixtures("applet_one_lucy_manager")
-    async def test_create_applet_in_another_workspace_not_owner(self, client, applet_minimal_data, tom):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+    async def test_create_applet_in_another_workspace_not_owner(self, client, applet_minimal_data, tom, lucy):
+        client.login(lucy)
         response = await client.post(
             self.applet_create_url.format(owner_id=tom.id),
             data=applet_minimal_data,
@@ -527,9 +537,9 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.CREATED
 
     async def test_create_applet_in_another_workspace_not_owner_user_is_not_invited(
-        self, client, applet_minimal_data, bob
+        self, client, applet_minimal_data, bob, lucy
     ):
-        await client.login(self.login_url, "lucy@gmail.com", "Test123")
+        client.login(lucy)
         response = await client.post(
             self.applet_create_url.format(owner_id=bob.id),
             data=applet_minimal_data,
@@ -540,9 +550,9 @@ class TestApplet:
         assert result[0]["message"] == AppletCreationAccessDenied.message
 
     async def test_create_applet_in_another_workspace_not_owner_user_does_not_have_role_to_create_applet(
-        self, client, applet_minimal_data, tom
+        self, client, applet_minimal_data, tom, bob
     ):
-        await client.login(self.login_url, "bob@gmail.com", "Test1234!")
+        client.login(bob)
         response = await client.post(
             self.applet_create_url.format(owner_id=tom.id),
             data=applet_minimal_data,
@@ -553,7 +563,7 @@ class TestApplet:
         assert result[0]["message"] == AppletCreationAccessDenied.message
 
     async def test_update_applet__firebase_error_muted(self, client, tom, applet_minimal_data, mocker, applet_one):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
             side_effect=FireBaseNotFoundError(message="device id not found"),
@@ -564,7 +574,7 @@ class TestApplet:
     async def test_update_report_config_for_activity__activity_from_another_applet(
         self, client: TestClient, tom: User, applet_one: AppletFull, applet_two, applet_report_configuration_data
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.put(
             self.activity_report_config_url.format(pk=applet_one.id, activity_id=applet_two.activities[0].id),
             data=applet_report_configuration_data,
@@ -582,7 +592,7 @@ class TestApplet:
         applet_report_configuration_data: AppletReportConfigurationBase,
         uuid_zero: uuid.UUID,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.put(
             self.activity_report_config_url.format(pk=applet_one.id, activity_id=uuid_zero),
             data=applet_report_configuration_data,
@@ -600,7 +610,7 @@ class TestApplet:
         applet_two: AppletFull,
         applet_report_configuration_data: AppletReportConfigurationBase,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.put(
             self.flow_report_config_url.format(pk=applet_two.id, flow_id=applet_one_with_flow.activity_flows[0].id),
             data=applet_report_configuration_data,
@@ -618,7 +628,7 @@ class TestApplet:
         applet_report_configuration_data: AppletReportConfigurationBase,
         uuid_zero: uuid.UUID,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.put(
             self.flow_report_config_url.format(pk=applet_one.id, flow_id=uuid_zero),
             data=applet_report_configuration_data,
@@ -631,7 +641,7 @@ class TestApplet:
     async def test_delete_applet__firebase_error_muted(
         self, client: TestClient, tom: User, mocker: MockerFixture, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
             side_effect=FireBaseNotFoundError(message="device id not found"),
@@ -642,7 +652,7 @@ class TestApplet:
     async def test_create_applet__duplicate_flow_name(
         self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_create_with_flow.copy(deep=True)
         data.activity_flows.append(data.activity_flows[0])
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -654,7 +664,7 @@ class TestApplet:
     async def test_create_applet__only_one_reviewable_activity_allowed(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_minimal_data.copy(deep=True)
         data.activities[0].is_reviewable = True
         second_activity = data.activities[0].copy(deep=True)
@@ -669,7 +679,7 @@ class TestApplet:
     async def test_update_applet__only_one_reviewable_activity_allowed(
         self, client: TestClient, tom: User, applet_one: AppletFull, applet_one_update_data: AppletUpdate
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_one_update_data.copy(deep=True)
         data.activities[0].is_reviewable = True
         second_activity = data.activities[0].copy(deep=True)
@@ -686,7 +696,7 @@ class TestApplet:
     async def test_update_applet__duplicated_activity(
         self, client: TestClient, tom: User, applet_one_update_data: AppletUpdate, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_one_update_data.copy(deep=True)
         second_activity = data.activities[0].copy(deep=True)
         second_activity.name += "second"
@@ -701,7 +711,7 @@ class TestApplet:
     async def test_update_applet__duplicate_flow_name(
         self, client: TestClient, tom: User, applet_one_with_flow_update_data: AppletUpdate, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_one_with_flow_update_data.copy(deep=True)
         request_data = data.dict()
         request_data["activity_flows"].append(data.activity_flows[0].dict())
@@ -714,7 +724,7 @@ class TestApplet:
     async def test_update_applet__duplicate_flow_id(
         self, client: TestClient, tom: User, applet_one_with_flow_update_data: AppletUpdate, applet_one: AppletFull
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_one_with_flow_update_data.copy(deep=True)
         flow = data.activity_flows[0].copy(deep=True)
         flow.name += "second"
@@ -734,7 +744,7 @@ class TestApplet:
         applet_one: AppletFull,
         uuid_zero: uuid.UUID,
     ):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         data = applet_one_with_flow_update_data.copy(deep=True)
         request_data = data.dict()
         request_data["activity_flows"][0]["items"][0]["activity_key"] = uuid_zero
@@ -745,7 +755,7 @@ class TestApplet:
         assert result[0]["message"] == FlowItemActivityKeyNotFoundError.message
 
     async def test_create_applet_with_flow(self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_create_with_flow)
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
@@ -757,7 +767,7 @@ class TestApplet:
         assert result["activityFlows"][0]["items"][0]["activityId"] == result["activities"][0]["id"]
 
     async def test_update_applet_activity_report_config(self, client: TestClient, tom: User, applet_one: AppletFull):
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         assert applet_one.activities[0].report_included_item_name is None
         item_name = applet_one.activities[0].items[0].name
         resp = await client.put(
@@ -777,7 +787,7 @@ class TestApplet:
     ):
         assert applet_one_with_flow.activity_flows[0].report_included_activity_name is None
         assert applet_one_with_flow.activity_flows[0].report_included_item_name is None
-        await client.login(self.login_url, tom.email_encrypted, "Test1234!")
+        client.login(tom)
         activity_name = applet_one_with_flow.activities[0].name
         item_name = applet_one_with_flow.activities[0].items[0].name
         resp = await client.put(
@@ -794,3 +804,129 @@ class TestApplet:
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["activityFlows"][0]["reportIncludedActivityName"] == activity_name
         assert resp.json()["result"]["activityFlows"][0]["reportIncludedItemName"] == item_name
+
+    async def test_retrieve_applet_versions__applet_with_flow(
+        self, client: TestClient, tom: User, applet_one_with_flow: AppletFull
+    ):
+        client.login(tom)
+        resp = await client.get(
+            self.history_url.format(pk=applet_one_with_flow.id, version=applet_one_with_flow.version)
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        # TODO: investigate why need the same values
+        assert result["activityFlows"][0]["items"][0]["activity"] == result["activities"][0]
+        flow_data = result["activityFlows"][0]
+        exp_flow_data = applet_one_with_flow.activity_flows[0].dict(by_alias=True)
+        assert flow_data["id"] == str(exp_flow_data["id"])
+        assert flow_data["name"] == exp_flow_data["name"]
+        assert flow_data["description"] == exp_flow_data["description"]
+        assert flow_data["isSingleReport"] == exp_flow_data["isSingleReport"]
+        assert flow_data["hideBadge"] == exp_flow_data["hideBadge"]
+        assert flow_data["order"] == exp_flow_data["order"]
+
+    @pytest.mark.usefixtures("applet_one_lucy_editor")
+    async def test_create_applet__editor_create_applet__stil_editor_in_new_applet(
+        self, client: TestClient, lucy: User, tom: User, applet_minimal_data: AppletCreate, mocker: MockerFixture
+    ):
+        client.login(lucy)
+        mock = mocker.patch("apps.applets.service.AppletService._create_applet_accesses")
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_minimal_data)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        mock.assert_awaited_once_with(ANY, tom.id, lucy.id, Role.EDITOR)
+
+    async def test_duplicate_applet__editor_duplicate_applet__stil_editor_in_new_applet(
+        self,
+        client: TestClient,
+        lucy: User,
+        tom: User,
+        applet_one_lucy_editor: AppletFull,
+        mocker: MockerFixture,
+        encryption: Encryption,
+    ):
+        client.login(lucy)
+        mock = mocker.patch("apps.applets.service.AppletService._create_applet_accesses")
+        new_name = applet_one_lucy_editor.display_name + "new"
+        resp = await client.post(
+            self.applet_duplicate_url.format(pk=applet_one_lucy_editor.id),
+            data=dict(display_name=new_name, encryption=encryption.dict()),
+        )
+        assert resp.status_code == http.HTTPStatus.CREATED
+        mock.assert_awaited_once_with(ANY, tom.id, lucy.id, Role.EDITOR)
+
+    async def test_get_applet_base_info_by_key__link_does_not_exist(
+        self, client: TestClient, tom: User, uuid_zero: uuid.UUID
+    ):
+        client.login(tom)
+        resp = await client.get(self.public_applet_base_info_url.format(key=uuid_zero))
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+
+    async def test_update_applet_with_reviewable_activity__all_schedules_for_activity_are_deleted(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        applet_one_update_data: AppletUpdate,
+        mocker: MockerFixture,
+    ):
+        client.login(tom)
+        data = applet_one_update_data.copy(deep=True)
+        data.activities[0].is_reviewable = True
+        mock = mocker.patch("apps.schedule.service.ScheduleService.delete_by_activity_ids")
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        mock.assert_awaited_once_with(applet_one.id, ANY)
+
+    async def test_duplicate_applet__duplicate_applet_with_activity_flow(
+        self, client: TestClient, tom: User, applet_one_with_flow: AppletFull, encryption: Encryption
+    ):
+        client.login(tom)
+        new_name = applet_one_with_flow.display_name + "new"
+        resp = await client.post(
+            self.applet_duplicate_url.format(pk=applet_one_with_flow.id),
+            data=dict(display_name=new_name, encryption=encryption.dict()),
+        )
+        assert resp.status_code == http.HTTPStatus.CREATED
+        activity_flows = resp.json()["result"]["activityFlows"]
+        assert len(activity_flows) == 1
+        assert activity_flows[0]["name"] == applet_one_with_flow.activity_flows[0].name
+
+    async def test_delete_applet_link__link_does_not_exists(
+        self, client: TestClient, tom: User, applet_one: AppletFull
+    ):
+        client.login(tom)
+        resp = await client.delete(self.access_link_url.format(pk=applet_one.id))
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+
+    async def test_get_unique_name_for_applet__applet_name_with_number(
+        self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
+    ):
+        client.login(tom)
+        new_name = AppletService.APPLET_NAME_FORMAT_FOR_DUPLICATES.format(applet_one.display_name, 1)
+        resp = await client.post(
+            self.applet_duplicate_url.format(pk=applet_one.id),
+            data=dict(display_name=new_name, encryption=encryption.dict()),
+        )
+        assert resp.status_code == http.HTTPStatus.CREATED
+        assert resp.json()["result"]["displayName"] == new_name
+
+        resp = await client.post(self.applet_unique_name_url, data=dict(name=new_name))
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["name"] == AppletService.APPLET_NAME_FORMAT_FOR_DUPLICATES.format(new_name, 2)
+
+    @pytest.mark.parametrize("not_valid_vesion", ("0", "00", "abc", "0.0", "None"))
+    async def test_get_applet_changes__version_is_not_valid(
+        self, client: TestClient, tom: User, applet_one: AppletFull, not_valid_vesion: str
+    ):
+        client.login(tom)
+        resp = await client.get(self.history_changes_url.format(pk=applet_one.id, version=not_valid_vesion))
+        assert resp.status_code == http.HTTPStatus.NOT_FOUND
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AppletVersionNotFoundError.message
+
+    async def test_get_applet_changes__one_applet_version(self, client: TestClient, tom: User, applet_one: AppletFull):
+        client.login(tom)
+        resp = await client.get(self.history_changes_url.format(pk=applet_one.id, version=applet_one.version))
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["displayName"] == f"New applet {applet_one.display_name} added"

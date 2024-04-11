@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from fastapi import Body, Depends
 from firebase_admin.exceptions import FirebaseError
 
+# TODO: don't use answers error for schedule
 from apps.answers.errors import UserDoesNotHavePermissionError
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
@@ -154,7 +155,7 @@ async def schedule_delete_by_id(
         await applet_service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
-        respondent_id = await service.delete_schedule_by_id(schedule_id, applet_id)
+        respondent_id = await service.delete_schedule_by_id(schedule_id)
 
     try:
         respondent_ids = None

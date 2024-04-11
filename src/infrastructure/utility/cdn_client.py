@@ -5,8 +5,9 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO
 
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, EndpointConnectionError
 
+from apps.file.errors import FileNotFoundError
 from apps.shared.exception import NotFoundError
 from infrastructure.utility.cdn_config import CdnConfig
 
@@ -88,6 +89,8 @@ class CDNClient:
             if int(e.response.get("Error", {}).get("Code", "0")) == 404:
                 raise ObjectNotFoundError()
             raise
+        except EndpointConnectionError:
+            raise FileNotFoundError
 
         file.seek(0)
         media_type = mimetypes.guess_type(key)[0] if mimetypes.guess_type(key)[0] else "application/octet-stream"

@@ -14,6 +14,7 @@ from apps.library.errors import (
 )
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
+from apps.users.domain import User
 
 DictStrAny = dict[str, Any]
 
@@ -51,8 +52,8 @@ class TestLibrary(BaseTest):
         "version",
     }
 
-    async def test_library_share(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_share(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
 
         data = dict(
             applet_id=applet_one.id,
@@ -65,15 +66,15 @@ class TestLibrary(BaseTest):
         result = response.json()["result"]
         assert result["keywords"] == ["test", "test2"]
 
-    async def test_library_check_name(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_check_name(self, client, tom: User):
+        client.login(tom)
 
         data = dict(name="PHQ2")
         response = await client.post(self.library_check_name_url, data=data)
         assert response.status_code == http.HTTPStatus.OK
 
-    async def test_library_get_all_search(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_get_all_search(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
 
         data = dict(
             applet_id=applet_one.id,
@@ -96,8 +97,8 @@ class TestLibrary(BaseTest):
         result = response.json()["result"]
         assert len(result) == 1
 
-    async def test_library_get_detail(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_get_detail(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
 
         data = dict(
             applet_id=applet_one.id,
@@ -115,8 +116,8 @@ class TestLibrary(BaseTest):
         assert set(result.keys()) == self.applet_expected_keys
         assert result["keywords"] == ["test", "test2"]
 
-    async def test_library_get_url(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_get_url(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
 
         data = dict(
             applet_id=applet_one.id,
@@ -131,8 +132,8 @@ class TestLibrary(BaseTest):
         result = response.json()["result"]
         assert isinstance(result["url"], str)
 
-    async def test_library_update(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_update(self, client: TestClient, applet_one: AppletFull, tom: User):
+        client.login(tom)
 
         data = dict(
             applet_id=applet_one.id,
@@ -154,8 +155,8 @@ class TestLibrary(BaseTest):
         result = response.json()["result"]
         assert result["keywords"] == ["test", "test2", "test3"]
 
-    async def test_add_to_cart(self, client: TestClient, applet_two: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_add_to_cart(self, client: TestClient, applet_two: AppletFull, tom: User):
+        client.login(tom)
 
         create_data = dict(
             cart_items=[
@@ -212,10 +213,10 @@ class TestLibrary(BaseTest):
         ),
     )
     async def test_cart_search(
-        self, client, search, applet_fixture_name, page, limit, request, applet_three, applet_four
+        self, client, search, applet_fixture_name, page, limit, request, applet_three, applet_four, tom: User
     ):
         applet_fixture = request.getfixturevalue(applet_fixture_name)
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
 
         create_data = dict(
             cart_items=[
@@ -273,10 +274,10 @@ class TestLibrary(BaseTest):
         assert len(response.json()["result"]) <= limit
 
     async def test_library_list_data_integrity(
-        self, client: TestClient, applet_one: AppletFull, applet_two: AppletFull
+        self, client: TestClient, applet_one: AppletFull, applet_two: AppletFull, tom: User
     ):
         applet_id = applet_one.id
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
 
         data = dict(
             applet_id=applet_id,
@@ -300,8 +301,10 @@ class TestLibrary(BaseTest):
         assert applet["image"] == applet_two.image
         assert len(applet["activities"]) == len(applet_two.activities)
 
-    async def test_applet_in_library_item_with_response_values(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_applet_in_library_item_with_response_values(
+        self, client: TestClient, applet_one: AppletFull, tom: User
+    ):
+        client.login(tom)
         response = await client.post(
             self.library_url,
             data=dict(
@@ -321,8 +324,10 @@ class TestLibrary(BaseTest):
         item = applet["activities"][0]["items"][0]
         assert item["responseValues"]
 
-    async def test_library_check_activity_item_config_fields(self, client: TestClient, applet_one: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_check_activity_item_config_fields(
+        self, client: TestClient, applet_one: AppletFull, tom: User
+    ):
+        client.login(tom)
 
         data = dict(
             applet_id=applet_one.id,
@@ -342,8 +347,8 @@ class TestLibrary(BaseTest):
                 for key_inner in value:
                     assert key_inner.find("_") == -1
 
-    async def test_library_applet_name_already_exists(self, client: TestClient, applet_two: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_applet_name_already_exists(self, client: TestClient, applet_two: AppletFull, tom: User):
+        client.login(tom)
         data = dict(name=applet_two.display_name)
         response = await client.post(self.library_check_name_url, data=data)
 
@@ -352,8 +357,8 @@ class TestLibrary(BaseTest):
         assert len(res) == 1
         assert res[0]["message"] == AppletNameExistsError.message
 
-    async def test_library_share_version_exists(self, client: TestClient, applet_two: AppletFull):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_share_version_exists(self, client: TestClient, applet_two: AppletFull, tom: User):
+        client.login(tom)
         data = dict(
             applet_id=applet_two.id,
             keywords=[],
@@ -366,8 +371,8 @@ class TestLibrary(BaseTest):
         assert len(res) == 1
         assert res[0]["message"] == AppletVersionExistsError.message
 
-    async def test_library_update_library_does_not_exist(self, client: TestClient, uuid_zero: uuid.UUID):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_library_update_library_does_not_exist(self, client: TestClient, uuid_zero: uuid.UUID, tom: User):
+        client.login(tom)
 
         data = dict(
             keywords=["test", "test2", "test3"],
@@ -384,16 +389,16 @@ class TestLibrary(BaseTest):
         assert res[0]["message"] == LibraryItemDoesNotExistError.message
 
     @pytest.mark.usefixtures("applet_two")
-    async def test_get_cart_no_cart_for_user(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_get_cart_no_cart_for_user(self, client: TestClient, tom: User):
+        client.login(tom)
         resp = await client.get(self.library_cart_url)
         assert resp.status_code == http.HTTPStatus.OK
         assert not resp.json()["result"]
         assert resp.json()["count"] == 0
 
     @pytest.mark.usefixtures("applet_two")
-    async def test_add_to_cart_no_cart_items(self, client: TestClient):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_add_to_cart_no_cart_items(self, client: TestClient, tom: User):
+        client.login(tom)
         create_data: dict[str, list] = dict(cart_items=[])
         resp = await client.post(self.library_cart_url, data=create_data)
         assert resp.status_code == http.HTTPStatus.OK
@@ -402,9 +407,9 @@ class TestLibrary(BaseTest):
         assert resp.json()["result"]["cartItems"] is None
 
     async def test_get_library_by_id_with_flows(
-        self, client: TestClient, applet_data: DictStrAny, applet_two: AppletFull
+        self, client: TestClient, applet_data: DictStrAny, applet_two: AppletFull, tom: User
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         exp_activity_flow_name = "flow"
         applet_data["activity_flows"] = [
             dict(
@@ -432,9 +437,9 @@ class TestLibrary(BaseTest):
         assert activity_flwo["name"] == exp_activity_flow_name
 
     async def test_get_library_item_by_lib_id_library_does_not_exist(
-        self, client: TestClient, applet_data: DictStrAny, applet_two: AppletFull, uuid_zero: uuid.UUID
+        self, client: TestClient, applet_data: DictStrAny, applet_two: AppletFull, uuid_zero: uuid.UUID, tom: User
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         # Update applet, change version
         resp = await client.put(f"/applets/{applet_two.id}", data=applet_data)
         assert resp.status_code == http.HTTPStatus.OK
@@ -445,9 +450,9 @@ class TestLibrary(BaseTest):
         assert res[0]["message"] == LibraryItemDoesNotExistError.message
 
     async def test_library_get_url_applet_version_does_not_exists(
-        self, client: TestClient, applet_data: DictStrAny, applet_two: AppletFull
+        self, client: TestClient, applet_data: DictStrAny, applet_two: AppletFull, tom: User
     ) -> None:
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
         # Update applet, change version
         resp = await client.put(f"/applets/{applet_two.id}", data=applet_data)
         assert resp.status_code == http.HTTPStatus.OK

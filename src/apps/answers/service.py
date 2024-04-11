@@ -36,6 +36,7 @@ from apps.answers.domain import (
     AnswerAlert,
     AnswerDate,
     AnswerExport,
+    AnswerItem,
     AnswerItemDataEncrypted,
     AnswerNoteDetail,
     AnswerReview,
@@ -477,11 +478,13 @@ class AnswerService:
                 continue
             results.append(
                 AnswerReview(
+                    id=schema.id,
                     reviewer_public_key=schema.user_public_key,
                     answer=schema.answer,
                     item_ids=schema.item_ids,
                     items=current_activity_items,
-                    reviewer=dict(first_name=user.first_name, last_name=user.last_name),
+                    reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
+                    created_at=schema.created_at,
                 )
             )
         return results
@@ -642,29 +645,18 @@ class AnswerService:
             total_answers=total,
         )
 
-    async def get_activity_identifiers(
-        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None
-    ) -> list[Identifier]:
+    async def get_activity_identifiers(self, activity_id: uuid.UUID, respondent_id: uuid.UUID) -> list[Identifier]:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         await act_hst_crud.exist_by_activity_id_or_raise(activity_id)
         act_hst_list = await act_hst_crud.get_activities(activity_id, None)
         ids = set(map(lambda a: a.id_version, act_hst_list))
         identifiers = await AnswersCRUD(self.answer_session).get_identifiers_by_activity_id(ids, respondent_id)
         results = []
-        for identifier, key, migrated_data in identifiers:
+        for identifier, key, migrated_data, answer_date in identifiers:
             if migrated_data and migrated_data.get("is_identifier_encrypted") is False:
-                results.append(
-                    Identifier(
-                        identifier=identifier,
-                    )
-                )
+                results.append(Identifier(identifier=identifier, last_answer_date=answer_date))
             else:
-                results.append(
-                    Identifier(
-                        identifier=identifier,
-                        user_public_key=key,
-                    )
-                )
+                results.append(Identifier(identifier=identifier, user_public_key=key, last_answer_date=answer_date))
         return results
 
     async def get_activity_versions(
@@ -768,10 +760,13 @@ class AnswerService:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
-        activity_ids_with_answer = await AnswersCRUD(self.answer_session).get_activities_which_has_answer(
+        activity_ids_with_date = await AnswersCRUD(self.answer_session).get_submitted_activity_with_last_date(
             activity_ver_ids, respondent_id
         )
-        answers_act_ids = set(map(lambda act_ver: act_ver.split("_")[0], activity_ids_with_answer))
+        submitted_activities = dict()
+        for activity_history_id, submit_date in activity_ids_with_date:
+            activity_id = activity_history_id.split("_")[0]
+            submitted_activities[activity_id] = submit_date
 
         results = []
         for activity in activities:
@@ -780,7 +775,8 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=str(activity.id) in answers_act_ids,
+                    has_answer=str(activity.id) in submitted_activities,
+                    last_answer_date=submitted_activities.get(str(activity.id)),
                 )
             )
         return results
@@ -982,6 +978,13 @@ class AnswerService:
     ) -> dict[uuid.UUID, datetime.datetime]:
         result = await AnswersCRUD(self.answer_session).get_last_activity([respondent_id], applet_id)
         return result
+
+    async def get_answer_assessment_by_id(self, assessment_id: uuid.UUID, answer_id: uuid.UUID) -> AnswerItem | None:
+        schema = await AnswerItemsCRUD(self.answer_session).get_answer_assessment(assessment_id, answer_id)
+        return AnswerItem.from_orm(schema) if schema else None
+
+    async def delete_assessment(self, assessment_id: uuid.UUID):
+        return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)
 
 
 class ReportServerService:
