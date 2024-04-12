@@ -158,7 +158,7 @@ async def update_subject_params(request, tom_applet_one_subject):
         ),
         (dict(secretUserId=str(uuid.uuid4())), http.HTTPStatus.OK),
         (
-            dict(secretUserId=str(uuid.uuid4()), nickname="bob"),
+            dict(secretUserId=str(uuid.uuid4()), nickname="bob", tag="tagUpdated"),
             http.HTTPStatus.OK,
         ),
         (dict(nickname="bob"), http.HTTPStatus.UNPROCESSABLE_ENTITY),
@@ -328,12 +328,15 @@ class TestSubjects(BaseTest):
         if exp_status == http.HTTPStatus.OK:
             exp_secret_id = body.get("secretUserId")
             exp_nickname = body.get("nickname")
+            exp_tag = body.get("tag")
         else:
             exp_secret_id = create_shell_body.get("secret_user_id")
             exp_nickname = create_shell_body.get("nickname")
+            exp_tag = create_shell_body.get("tag")
 
         assert subject.secret_user_id == exp_secret_id
         assert subject.nickname == exp_nickname
+        assert subject.tag == exp_tag
 
     async def test_upsert_for_soft_deleted(self, session: AsyncSession, subject_schema, subject_updated_schema):
         service = SubjectsService(session, subject_schema.user_id)

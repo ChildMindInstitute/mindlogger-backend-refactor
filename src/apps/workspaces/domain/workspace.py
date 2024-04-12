@@ -74,6 +74,7 @@ class WorkspaceRespondentDetails(InternalModel):
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
+    subject_tag: str | None
 
     @root_validator
     def decrypt_nickname(cls, values):
@@ -166,6 +167,7 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
+    subject_tag: str | None
 
 
 class PublicWorkspaceRespondent(PublicModel):

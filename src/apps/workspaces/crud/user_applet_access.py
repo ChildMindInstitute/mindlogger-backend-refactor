@@ -492,6 +492,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     AppletSchema.encryption,
                     text("'subject_id'"),
                     SubjectSchema.id,
+                    text("'subject_tag'"),
+                    SubjectSchema.tag,
                 )
             ).label("details"),
         )

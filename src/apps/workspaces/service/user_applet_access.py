@@ -72,6 +72,7 @@ class UserAppletAccessService:
                 secret_user_id=str(uuid.uuid4()),
                 user_id=user_id,
                 nickname=nickname,
+                tag=access_schema_manager[self._applet_id],
             )
             await SubjectsCrud(self.session).create(subject)
 
@@ -173,6 +174,7 @@ class UserAppletAccessService:
                         last_name=invitation.last_name,
                         secret_user_id=secret_id,
                         nickname=user.get_full_name(),
+                        tag=invitation.tag,
                     )
                 )
         else:
