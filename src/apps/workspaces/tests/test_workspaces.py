@@ -430,6 +430,7 @@ class TestWorkspaces(BaseTest):
         # test search
         access_id = data["result"][0]["details"][0]["accessId"]
         secret_id = data["result"][0]["secretIds"][0]
+        subject_tag = data["result"][0]["details"][0]["subjectTag"]
         response = await client.get(
             self.workspace_applet_respondents_list.format(
                 owner_id=tom.id,
@@ -443,6 +444,7 @@ class TestWorkspaces(BaseTest):
         result = data["result"]
         assert len(result) == 1
         assert access_id == data["result"][0]["details"][0]["accessId"]
+        assert subject_tag == data["result"][0]["details"][0]["subjectTag"]
 
         # test search - there is no respondent
 
@@ -1043,7 +1045,7 @@ class TestWorkspaces(BaseTest):
         assert result.json()["count"] == 4
         respondents = result.json()["result"]
 
-        full_accounts_actual = list(filter(None.__ne__, map(lambda r: r["id"], respondents)))
+        full_accounts_actual: list[dict] = list(filter(None, map(lambda r: r["id"], respondents)))
         for full_account_expected in [lucy.id, user.id, tom.id]:
             assert str(full_account_expected) in full_accounts_actual
 

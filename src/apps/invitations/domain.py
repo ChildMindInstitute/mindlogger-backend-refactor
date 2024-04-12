@@ -143,6 +143,7 @@ class Invitation(InternalModel):
     created_at: datetime
     user_id: uuid.UUID | None
     is_deleted: bool
+    tag: str | None
 
 
 class InvitationRespondent(Invitation):
@@ -179,6 +180,7 @@ class InvitationDetailBase(InternalModel):
     last_name: str
     created_at: datetime
     user_id: uuid.UUID | None
+    tag: str | None
 
 
 class InvitationDetail(InvitationDetailBase):
@@ -189,7 +191,6 @@ class InvitationDetail(InvitationDetailBase):
     meta: dict
     nickname: str | None
     secret_user_id: str | None
-    tag: str | None
 
 
 class InvitationDetailRespondent(InvitationDetailBase):
@@ -200,7 +201,6 @@ class InvitationDetailRespondent(InvitationDetailBase):
     meta: RespondentMeta
     nickname: str | None
     secret_user_id: str
-    tag: str | None
 
 
 class InvitationDetailReviewer(InvitationDetailBase):
@@ -222,6 +222,7 @@ class _InvitationDetail(InternalModel):
     status: str
     key: uuid.UUID
     user_id: uuid.UUID | None
+    tag: str | None
 
 
 class InvitationDetailForRespondent(_InvitationDetail):
@@ -277,6 +278,7 @@ class InvitationResponse(PublicModel):
     meta: dict
     nickname: str | None
     secret_user_id: str | None
+    tag: str | None
 
 
 class _InvitationResponse(PublicModel):
@@ -301,6 +303,7 @@ class _InvitationResponse(PublicModel):
         None,
         description="This field respresents registered user or not. " "Used for tests",
     )
+    tag: str | None = Field(None, description="This field represents subject tag")
 
 
 class InvitationRespondentResponse(_InvitationResponse):

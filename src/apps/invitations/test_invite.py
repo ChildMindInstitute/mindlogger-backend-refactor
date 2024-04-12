@@ -100,7 +100,11 @@ def subject_ids(tom, tom_applet_one_subject) -> list[str]:
 @pytest.fixture
 def invitation_base_data(user_create: UserCreate) -> dict[str, str | EmailStr]:
     return dict(
-        email=user_create.email, first_name=user_create.first_name, last_name=user_create.last_name, language="en"
+        email=user_create.email,
+        first_name=user_create.first_name,
+        last_name=user_create.last_name,
+        language="en",
+        tag="tag",
     )
 
 
@@ -126,10 +130,7 @@ def invitation_respondent_data(
     invitation_base_data: dict[str, str | EmailStr],
 ) -> InvitationRespondentRequest:
     return InvitationRespondentRequest(
-        **invitation_base_data,
-        secret_user_id=str(uuid.uuid4()),
-        nickname=str(uuid.uuid4()),
-        tag=str(uuid.uuid4()),
+        **invitation_base_data, secret_user_id=str(uuid.uuid4()), nickname=str(uuid.uuid4())
     )
 
 
@@ -146,7 +147,7 @@ def shell_create_data():
         lastName="lastName",
         secretUserId="secretUserId",
         nickname="nickname",
-        tag="mytag",
+        tag="tag",
     )
 
 
@@ -212,6 +213,7 @@ class TestInvite(BaseTest):
 
         assert response.json()["result"]["appletId"] == str(applet_one.id)
         assert response.json()["result"]["role"] == Role.MANAGER
+        assert response.json()["result"]["tag"] is not None
 
     async def test_private_invitation_retrieve(self, client, applet_one_with_link, lucy):
         client.login(lucy)
@@ -253,6 +255,9 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["userId"] == str(user.id)
+        assert response.json()["result"]["tag"] == invitation_editor_data.tag
+        assert response.json()["result"]["tag"] is not None
+
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_editor_data.email]
 
@@ -264,6 +269,9 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
         assert response.json()["result"]["userId"] == str(user.id)
+        assert response.json()["result"]["tag"] == invitation_reviewer_data.tag
+        assert response.json()["result"]["tag"] is not None
+
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_reviewer_data.email]
         assert TestMail.mails[0].subject == "Applet 1 invitation"
@@ -276,6 +284,8 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["userId"] == str(user.id)
+        assert response.json()["result"]["tag"] == invitation_respondent_data.tag
+        assert response.json()["result"]["tag"] is not None
 
         assert len(TestMail.mails) == 1
         assert TestMail.mails[0].recipients == [invitation_respondent_data.email]

@@ -21,6 +21,7 @@ class InvitationSchema(Base):
     meta = Column(JSONB())
     nickname = Column(StringEncryptedType(Unicode, get_key))
     user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    tag = Column(String())
 
     @hybrid_property
     def subject_id(self):

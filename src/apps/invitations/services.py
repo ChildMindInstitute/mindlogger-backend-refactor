@@ -95,6 +95,7 @@ class InvitationsService:
             "user_id": invited_user_id,
             "meta": meta.dict(),
             "nickname": schema.nickname,  # TODO remove
+            "tag": schema.tag,
         }
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
         if pending_invitation:
@@ -138,6 +139,7 @@ class InvitationsService:
             status=invitation_internal.status,
             key=invitation_internal.key,
             user_id=invitation_internal.user_id,
+            tag=invitation_internal.tag,
         )
 
     async def send_reviewer_invitation(
@@ -164,6 +166,7 @@ class InvitationsService:
             "user_id": invited_user_id,
             "nickname": None,
             "meta": meta.dict(),
+            "tag": schema.tag,
         }
 
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -212,6 +215,7 @@ class InvitationsService:
             key=invitation_internal.key,
             subjects=schema.subjects,
             user_id=invitation_internal.user_id,
+            tag=invitation_internal.tag,
         )
 
     async def send_managers_invitation(
@@ -235,6 +239,7 @@ class InvitationsService:
             "last_name": schema.last_name,
             "user_id": invited_user_id,
             "meta": {},
+            "tag": schema.tag,
         }
 
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -279,6 +284,7 @@ class InvitationsService:
             status=invitation_internal.status,
             key=invitation_internal.key,
             user_id=invitation_internal.user_id,
+            tag=invitation_internal.tag,
         )
 
     def _get_invitation_url_by_role(self, role: Role):
