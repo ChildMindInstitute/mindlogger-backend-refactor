@@ -271,6 +271,8 @@ async def answer_download(
             raise FileNotFoundError
         else:
             raise e
+    except ObjectNotFoundError:
+        raise FileNotFoundError
     return StreamingResponse(file, media_type=media_type)
 
 
