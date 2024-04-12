@@ -1,6 +1,10 @@
+from typing import Literal
+
 from pydantic import Field, NonNegativeInt, root_validator, validator
 from pydantic.color import Color
 
+from apps.activities.domain import response_type_config
+from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.errors import (
     InvalidDataMatrixByOptionError,
     InvalidDataMatrixError,
@@ -12,47 +16,47 @@ from apps.shared.domain import PublicModel, validate_color, validate_image, vali
 
 
 class TextValues(PublicModel):
-    pass
+    type: Literal[ResponseType.TEXT] | None
 
 
 class MessageValues(PublicModel):
-    pass
+    type: Literal[ResponseType.MESSAGE] | None
 
 
 class TimeRangeValues(PublicModel):
-    pass
+    type: Literal[ResponseType.TIMERANGE] | None
 
 
 class TimeValues(PublicModel):
-    pass
+    type: Literal[ResponseType.TIME] | None
 
 
 class GeolocationValues(PublicModel):
-    pass
+    type: Literal[ResponseType.GEOLOCATION] | None
 
 
 class PhotoValues(PublicModel):
-    pass
+    type: Literal[ResponseType.PHOTO] | None
 
 
 class VideoValues(PublicModel):
-    pass
+    type: Literal[ResponseType.VIDEO] | None
 
 
 class DateValues(PublicModel):
-    pass
+    type: Literal[ResponseType.DATE] | None
 
 
 class FlankerValues(PublicModel):
-    pass
+    type: Literal[ResponseType.FLANKER] | None
 
 
 class StabilityTrackerValues(PublicModel):
-    pass
+    type: Literal[ResponseType.STABILITYTRACKER] | None
 
 
 class ABTrailsValues(PublicModel):
-    pass
+    type: Literal[ResponseType.ABTRAILS] | None
 
 
 class _SingleSelectionValue(PublicModel):
@@ -85,6 +89,7 @@ class _SingleSelectionValue(PublicModel):
 
 
 class SingleSelectionValues(PublicModel):
+    type: Literal[ResponseType.SINGLESELECT] | None
     palette_name: str | None
     options: list[_SingleSelectionValue]
 
@@ -98,6 +103,7 @@ class _MultiSelectionValue(_SingleSelectionValue):
 
 
 class MultiSelectionValues(PublicModel):
+    type: Literal[ResponseType.MULTISELECT] | None
     palette_name: str | None
     options: list[_MultiSelectionValue]
 
@@ -127,7 +133,7 @@ class SliderValueAlert(PublicModel):
         return values
 
 
-class SliderValues(PublicModel):
+class SliderValuesBase(PublicModel):
     min_label: str | None = Field(..., max_length=100)
     max_label: str | None = Field(..., max_length=100)
     min_value: NonNegativeInt = Field(default=0, max_value=11)
@@ -159,7 +165,12 @@ class SliderValues(PublicModel):
         return values
 
 
+class SliderValues(SliderValuesBase):
+    type: Literal[ResponseType.SLIDER] | None
+
+
 class NumberSelectionValues(PublicModel):
+    type: Literal[ResponseType.NUMBERSELECT] | None
     min_value: NonNegativeInt = Field(default=0)
     max_value: NonNegativeInt = Field(default=100)
 
@@ -171,6 +182,7 @@ class NumberSelectionValues(PublicModel):
 
 
 class DrawingValues(PublicModel):
+    type: Literal[ResponseType.DRAWING] | None
     drawing_example: str | None
     drawing_background: str | None
 
@@ -181,7 +193,7 @@ class DrawingValues(PublicModel):
         return value
 
 
-class SliderRowsValue(SliderValues, PublicModel):
+class SliderRowsValue(SliderValuesBase, PublicModel):
     id: str | None = None
     label: str = Field(..., max_length=100)
 
@@ -191,6 +203,7 @@ class SliderRowsValue(SliderValues, PublicModel):
 
 
 class SliderRowsValues(PublicModel):
+    type: Literal[ResponseType.SLIDERROWS] | None
     rows: list[SliderRowsValue]
 
 
@@ -245,6 +258,7 @@ class _SingleSelectionDataRow(PublicModel):
 
 
 class SingleSelectionRowsValues(PublicModel):
+    type: Literal[ResponseType.SINGLESELECTROWS] | None
     rows: list[_SingleSelectionRow]
     options: list[_SingleSelectionOption]
     data_matrix: list[_SingleSelectionDataRow] | None = None
@@ -261,14 +275,16 @@ class SingleSelectionRowsValues(PublicModel):
 
 
 class MultiSelectionRowsValues(SingleSelectionRowsValues, PublicModel):
-    pass
+    type: Literal[ResponseType.MULTISELECTROWS] | None  # type: ignore[assignment]
 
 
 class AudioValues(PublicModel):
+    type: Literal[ResponseType.AUDIO] | None
     max_duration: NonNegativeInt = 300
 
 
 class AudioPlayerValues(PublicModel):
+    type: Literal[ResponseType.AUDIOPLAYER] | None
     file: str | None = Field(default=None)
 
 
@@ -338,3 +354,40 @@ def validate_none_option_flag(options):
         raise MultiSelectNoneOptionError()
 
     return options
+
+
+ResponseTypeConfigOptions = [
+    response_type_config.TextConfig,
+    response_type_config.SingleSelectionConfig,
+    response_type_config.MultiSelectionConfig,
+    response_type_config.SliderConfig,
+    response_type_config.NumberSelectionConfig,
+    response_type_config.TimeRangeConfig,
+    response_type_config.GeolocationConfig,
+    response_type_config.DrawingConfig,
+    response_type_config.PhotoConfig,
+    response_type_config.VideoConfig,
+    response_type_config.DateConfig,
+    response_type_config.SliderRowsConfig,
+    response_type_config.SingleSelectionRowsConfig,
+    response_type_config.MultiSelectionRowsConfig,
+    response_type_config.AudioConfig,
+    response_type_config.AudioPlayerConfig,
+    response_type_config.MessageConfig,
+    response_type_config.TimeConfig,
+    response_type_config.FlankerConfig,
+    response_type_config.StabilityTrackerConfig,
+    response_type_config.ABTrailsConfig,
+]
+
+ResponseTypeValueConfig = {}
+index = 0
+
+for response_type in ResponseType:
+    zipped_type_value = list(zip(ResponseValueConfigOptions, ResponseTypeConfigOptions))
+
+    ResponseTypeValueConfig[response_type] = {
+        "config": zipped_type_value[index][1],
+        "value": zipped_type_value[index][0],
+    }
+    index += 1

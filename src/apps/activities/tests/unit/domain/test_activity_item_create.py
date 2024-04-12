@@ -240,7 +240,7 @@ def test_create_item_with_drawing_response_values_images_are_none(
     item = ActivityItemCreate(
         response_type=ResponseType.DRAWING,
         config=drawing_config,
-        response_values=DrawingValues(drawing_background=None, drawing_example=None),
+        response_values=DrawingValues(drawing_background=None, drawing_example=None, type=ResponseType.DRAWING),
         **base_item_data.dict(),
     )
     item.response_values = cast(DrawingValues, item.response_values)
@@ -526,9 +526,18 @@ def test_slider_rows_item_with_alert(
 
 
 @pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
-def test_single_multi_select_item_withou_datamatrix(request, fixture_name: str):
+def test_single_multi_select_item_row_without_datamatrix(request, fixture_name: str):
     fixture = request.getfixturevalue(fixture_name)
     data = fixture.dict()
     data["response_values"].pop("data_matrix", None)
     item = ActivityItemCreate(**data)
     assert item.response_values.data_matrix is None  # type: ignore[union-attr]
+
+
+@pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
+def test_single_multi_select_item_row__option_value_is_none(request, fixture_name: str):
+    fixture = request.getfixturevalue(fixture_name)
+    data = fixture.dict()
+    data["response_values"]["options"][0]["value"] = None
+    item = ActivityItemCreate(**data)
+    assert item.response_values.data_matrix[0].options[0].value == 0  # type: ignore
