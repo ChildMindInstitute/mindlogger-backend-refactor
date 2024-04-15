@@ -1881,3 +1881,31 @@ class TestAnswerActivityItems(BaseTest):
             else:
                 assert review["answer"] is not None
                 assert review["reviewerPublicKey"] is not None
+
+    async def test_get_summary_activities_after_upgrading_version(
+        self,
+        mock_kiq_report,
+        client,
+        tom,
+        applet_with_reviewable_activity,
+        tom_answer,
+        session,
+    ):
+        client.login(tom)
+        answer_crud = AnswersCRUD(session)
+        answer = await answer_crud.get_by_id(tom_answer.id)
+
+        # Downgrade version on answer
+        activity_id = answer.activity_history_id.split("_")[0]
+        answer.activity_history_id = f"{activity_id}_1.0.0"
+        answer.version = "1.0.0"
+        await answer_crud._update_one("id", answer.id, answer)
+
+        response = await client.get(
+            self.summary_activities_url.format(
+                applet_id=str(applet_with_reviewable_activity.id),
+            )
+        )
+        assert response.status_code == 200
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["hasAnswer"] is True

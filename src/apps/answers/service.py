@@ -783,9 +783,11 @@ class AnswerService:
         activity_ids_with_date = await AnswersCRUD(self.answer_session).get_submitted_activity_with_last_date(
             activity_ver_ids, respondent_id
         )
-        submitted_activities = dict()
+        submitted_activities: dict[str, datetime.datetime] = {}
         for activity_history_id, submit_date in activity_ids_with_date:
-            submitted_activities[activity_history_id] = submit_date
+            activity_id = activity_history_id.split("_")[0]
+            date = submitted_activities.get(activity_id)
+            submitted_activities[activity_id] = max(submit_date, date) if date else submit_date
 
         results = []
         for activity in activities:
@@ -794,8 +796,8 @@ class AnswerService:
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=str(activity.id_version) in submitted_activities,
-                    last_answer_date=submitted_activities.get(str(activity.id_version)),
+                    has_answer=str(activity.id) in submitted_activities,
+                    last_answer_date=submitted_activities.get(str(activity.id)),
                 )
             )
         return results
