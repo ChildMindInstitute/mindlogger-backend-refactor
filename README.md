@@ -91,12 +91,12 @@ pipenv --python /opt/homebrew/bin/python3.10
 | AUTHENTICATION\_\_ACCESS\_TOKEN\_\_EXPIRATION                | 30                         | Time in minutes after which the access token will stop working                                                                                                                                                                                                                                                                         |
 | AUTHENTICATION\_\_REFRESH\_TOKEN\_\_EXPIRATION               | 30                         | Time in minutes after which the refresh token will stop working                                                                                                                                                                                                                                                                        |
 | ADMIN_DOMAIN                                                 | -                          | Admin panel domain                                                                                                                                                                                                                                                                                                                     |
-| RABBITMQ\_\_URL                                              | rabbitmq                   | Rabbitmq service URL                                                                                                                                                                                                                                                                                                                   
-| RABBITMQ\_\_USE_SSL                                          | True                       | Rabbitmq ssl setting, turn false to local development                                                                                                                                                                                                                                                                                  
-| MAILING\_\_MAIL\_\_USERNAME                                  | mailhog                    | Mail service username                                                                                                                                                                                                                                                                                                                  
-| MAILING\_\_MAIL\_\_PASSWORD                                  | mailhog                    | Mail service password                                                                                                                                                                                                                                                                                                                  
-| MAILING\_\_MAIL\_\_SERVER                                    | mailhog                    | Mail service URL                                                                                                                                                                                                                                         
-| SECRETS\_\_SECRET\_KEY                                       | -                          | Secret key for data encryption. Use this key only for local development                                                                                  
+| RABBITMQ\_\_URL                                              | rabbitmq                   | Rabbitmq service URL
+| RABBITMQ\_\_USE_SSL                                          | True                       | Rabbitmq ssl setting, turn false to local development
+| MAILING\_\_MAIL\_\_USERNAME                                  | mailhog                    | Mail service username
+| MAILING\_\_MAIL\_\_PASSWORD                                  | mailhog                    | Mail service password
+| MAILING\_\_MAIL\_\_SERVER                                    | mailhog                    | Mail service URL
+| SECRETS\_\_SECRET\_KEY                                       | -                          | Secret key for data encryption. Use this key only for local development
 
 ##### ✋ Mandatory:
 
@@ -215,12 +215,13 @@ set -o allexport; source .env; set +o allexport
 ```
 
 > 🛑 **NOTE:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
+> 🛑 **NOTE:** Make sure that `DEBUG=true` is set. It is required for opentelemetry.
 
 ## Running the app
 
 ### Running locally
 
-This option allows you to run the app for development purposes without having to manually build the Docker image. 
+This option allows you to run the app for development purposes without having to manually build the Docker image.
 
 - Make sure all [required services](#required-services) are properly setup
 - If you're running required services using Docker, disable the `app` service from `docker-compose` before running:
@@ -233,7 +234,7 @@ This option allows you to run the app for development purposes without having to
   make run_local
   ```
 
-
+> 🛑 **NOTE:** Replace `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://opentelemetry:4317` with `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317`. Or just add in your /etc/hosts following row `127.0.0.1       opentelemetry`
 > 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
 
 In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
@@ -252,7 +253,7 @@ make run
 ```
 ### Running via docker
 
-- [Build the application](#build-application-images) 
+- [Build the application](#build-application-images)
 - Run the app using Docker:
 ```bash
 docker-compose up
