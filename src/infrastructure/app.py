@@ -100,5 +100,6 @@ def create_app():
     app.add_exception_handler(RequestValidationError, pydantic_validation_errors_handler)
     app.add_exception_handler(BaseError, custom_base_errors_handler)
     app.add_exception_handler(Exception, python_base_error_handler)
+    app.openapi_version = "3.0.3"
 
     return app
