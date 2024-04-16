@@ -1,6 +1,5 @@
 from typing import Iterable, Type
 
-# Using the AWS resource Detectors
 import opentelemetry.trace as trace
 import sentry_sdk
 from fastapi import FastAPI
@@ -38,24 +37,6 @@ from infrastructure.http.execeptions import (
     python_base_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
-
-if settings.debug:
-    trace.set_tracer_provider(TracerProvider())
-    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))  # type: ignore[attr-defined]
-    tracer = trace.get_tracer("mindlogger.tracer")
-else:
-    from opentelemetry.sdk.extension.aws.resource.ec2 import AwsEc2ResourceDetector
-    from opentelemetry.sdk.extension.aws.trace import AwsXRayIdGenerator
-    from opentelemetry.sdk.resources import get_aggregated_resources
-
-    span_processor = BatchSpanProcessor(OTLPSpanExporter())
-    trace.set_tracer_provider(
-        TracerProvider(
-            active_span_processor=span_processor,  # type: ignore [arg-type]
-            id_generator=AwsXRayIdGenerator(),
-        )
-    )
-    trace.set_tracer_provider(TracerProvider(resource=get_aggregated_resources([AwsEc2ResourceDetector()])))
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -125,5 +106,24 @@ def create_app():
     app.add_exception_handler(BaseError, custom_base_errors_handler)
     app.add_exception_handler(Exception, python_base_error_handler)
 
-    FastAPIInstrumentor.instrument_app(app)
+    if settings.opentelemetry.otel_exporter_otlp_traces_endpoint:
+        # AWS X-ray
+        if "otel" in settings.opentelemetry.otel_exporter_otlp_traces_endpoint:
+            from opentelemetry.sdk.extension.aws.resource.ec2 import AwsEc2ResourceDetector
+            from opentelemetry.sdk.extension.aws.trace import AwsXRayIdGenerator
+            from opentelemetry.sdk.resources import get_aggregated_resources
+
+            span_processor = BatchSpanProcessor(OTLPSpanExporter())
+            trace.set_tracer_provider(
+                TracerProvider(
+                    active_span_processor=span_processor,
+                    id_generator=AwsXRayIdGenerator(),
+                )
+            )
+            trace.set_tracer_provider(TracerProvider(resource=get_aggregated_resources([AwsEc2ResourceDetector()])))
+        # Local otel collector
+        else:
+            trace.set_tracer_provider(TracerProvider())
+            trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+        FastAPIInstrumentor.instrument_app(app)
     return app
