@@ -27,7 +27,7 @@ sentry-sdk = "~=1.6"
 sqlalchemy = {extras = ["asyncio"], version = "==1.4.49"}
 uvicorn = {extras = ["standard"], version = "==0.19"}
 taskiq = {extras = ["reload"], version = "==0.9.1"}
-aiohttp = "==3.8.5"
+aiohttp = "==3.9.4"
 firebase-admin = "==6.2.0"
 aio-pika = "==9.3.0"
 pyld = "==2.0.3"
