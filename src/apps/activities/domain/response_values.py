@@ -3,8 +3,30 @@ from typing import Literal
 from pydantic import Field, NonNegativeInt, root_validator, validator
 from pydantic.color import Color
 
-from apps.activities.domain import response_type_config
-from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.domain.response_type_config import (
+    ABTrailsConfig,
+    AudioConfig,
+    AudioPlayerConfig,
+    DateConfig,
+    DrawingConfig,
+    FlankerConfig,
+    GeolocationConfig,
+    MessageConfig,
+    MultiSelectionConfig,
+    MultiSelectionRowsConfig,
+    NumberSelectionConfig,
+    PhotoConfig,
+    ResponseType,
+    SingleSelectionConfig,
+    SingleSelectionRowsConfig,
+    SliderConfig,
+    SliderRowsConfig,
+    StabilityTrackerConfig,
+    TextConfig,
+    TimeConfig,
+    TimeRangeConfig,
+    VideoConfig,
+)
 from apps.activities.errors import (
     InvalidDataMatrixByOptionError,
     InvalidDataMatrixError,
@@ -357,27 +379,27 @@ def validate_none_option_flag(options):
 
 
 ResponseTypeConfigOptions = [
-    response_type_config.TextConfig,
-    response_type_config.SingleSelectionConfig,
-    response_type_config.MultiSelectionConfig,
-    response_type_config.SliderConfig,
-    response_type_config.NumberSelectionConfig,
-    response_type_config.TimeRangeConfig,
-    response_type_config.GeolocationConfig,
-    response_type_config.DrawingConfig,
-    response_type_config.PhotoConfig,
-    response_type_config.VideoConfig,
-    response_type_config.DateConfig,
-    response_type_config.SliderRowsConfig,
-    response_type_config.SingleSelectionRowsConfig,
-    response_type_config.MultiSelectionRowsConfig,
-    response_type_config.AudioConfig,
-    response_type_config.AudioPlayerConfig,
-    response_type_config.MessageConfig,
-    response_type_config.TimeConfig,
-    response_type_config.FlankerConfig,
-    response_type_config.StabilityTrackerConfig,
-    response_type_config.ABTrailsConfig,
+    TextConfig,
+    SingleSelectionConfig,
+    MultiSelectionConfig,
+    SliderConfig,
+    NumberSelectionConfig,
+    TimeRangeConfig,
+    GeolocationConfig,
+    DrawingConfig,
+    PhotoConfig,
+    VideoConfig,
+    DateConfig,
+    SliderRowsConfig,
+    SingleSelectionRowsConfig,
+    MultiSelectionRowsConfig,
+    AudioConfig,
+    AudioPlayerConfig,
+    MessageConfig,
+    TimeConfig,
+    FlankerConfig,
+    StabilityTrackerConfig,
+    ABTrailsConfig,
 ]
 
 ResponseTypeValueConfig = {}

@@ -389,30 +389,6 @@ class PerformanceTaskType(str, Enum):
         return [i.value for i in cls]
 
 
-# ResponseTypeConfigOptions = [
-#     TextConfig,
-#     SingleSelectionConfig,
-#     MultiSelectionConfig,
-#     SliderConfig,
-#     NumberSelectionConfig,
-#     TimeRangeConfig,
-#     GeolocationConfig,
-#     DrawingConfig,
-#     PhotoConfig,
-#     VideoConfig,
-#     DateConfig,
-#     SliderRowsConfig,
-#     SingleSelectionRowsConfig,
-#     MultiSelectionRowsConfig,
-#     AudioConfig,
-#     AudioPlayerConfig,
-#     MessageConfig,
-#     TimeConfig,
-#     FlankerConfig,
-#     StabilityTrackerConfig,
-#     ABTrailsConfig,
-# ]
-
 ResponseTypeConfig = (
     TextConfig
     | SingleSelectionConfig
@@ -436,15 +412,3 @@ ResponseTypeConfig = (
     | StabilityTrackerConfig
     | ABTrailsConfig
 )
-
-# ResponseTypeValueConfig = {}
-# index = 0
-
-# for response_type in ResponseType:
-#     zipped_type_value = list(zip(ResponseValueConfigOptions, ResponseTypeConfigOptions))
-
-#     ResponseTypeValueConfig[response_type] = {
-#         "config": zipped_type_value[index][1],
-#         "value": zipped_type_value[index][0],
-#     }
-#     index += 1

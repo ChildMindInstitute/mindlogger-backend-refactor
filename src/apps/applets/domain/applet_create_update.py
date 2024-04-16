@@ -37,10 +37,6 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
             activity_names.add(activity.name)
             activity_keys.add(activity.key)
             assessments_count += int(activity.is_reviewable)
-            # for item in activity.items:
-            #     item.config.type = item.response_type
-            #     if item.response_values:
-            #         item.response_values.type = item.response_type
 
         if assessments_count > 1:
             raise AssessmentLimitExceed()
@@ -85,10 +81,6 @@ class AppletUpdate(AppletBase, PublicModel):
             activity_keys.add(activity.key)
 
             assessments_count += int(activity.is_reviewable)
-            # for item in activity.items:
-            #     item.config.type = item.response_type
-            #     if item.response_values:
-            #         item.response_values.type = item.response_type
 
         if assessments_count > 1:
             raise AssessmentLimitExceed()
