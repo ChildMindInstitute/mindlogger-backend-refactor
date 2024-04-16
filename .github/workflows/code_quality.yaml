@@ -2,7 +2,7 @@ name: Check code quality
 on: [push]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: cmi-build
     steps:
       - uses: actions/checkout@v4
         with:
