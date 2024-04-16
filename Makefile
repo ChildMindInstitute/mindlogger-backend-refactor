@@ -20,7 +20,7 @@ run:
 
 .PHONY: run_local
 run_local:
-	docker-compose up -d redis postgres mailhog
+	docker-compose up -d redis postgres mailhog rabbitmq
 
 .PHONY: test
 test:
