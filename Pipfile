@@ -26,7 +26,7 @@ sqlalchemy = {extras = ["asyncio"], version = "==1.4.49"}
 uvicorn = {extras = ["standard"], version = "==0.29.0"}
 taskiq = {extras = ["reload"], version = "==0.9.1"}
 aiohttp = "==3.9.5"
-firebase-admin = "==6.2.0"
+firebase-admin = "==6.5.0"
 aio-pika = "==9.3.0"
 azure-storage-blob = "==12.18.2"
 taskiq-fastapi = "==0.3.0"
