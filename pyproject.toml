@@ -19,8 +19,6 @@ exclude = [
     "venv",
     "src/infrastructure/database/migrations/versions",
     "src/infrastructure/database/migrations_arbitrary/versions",
-    "src/apps/girderformindlogger",
-    "src/apps/migrate",
 ]
 line-length = 120
 indent-width = 4
@@ -45,7 +43,7 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 120
-skip = '.venv,venv,env,migrate'
+skip = '.venv,venv,env'
 src_paths = ["src"]
 
 [tool.pytest.ini_options]
@@ -72,9 +70,7 @@ omit = [
     "*/test_*.py",
     "*/tests/*",
     "*/migrations/*",
-    "*/girderformindlogger/*",
     "*/jsonld_converter/*",
-    "*/migrate/*",
     "*/migrations_arbitrary/*"
 ]
 
@@ -88,7 +84,7 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 show_error_codes = true
 namespace_packages = true
-exclude = ["apps/girderformindlogger", "apps/migrate", "apps/jsonld_converter"]
+exclude = ["apps/jsonld_converter"]
 
 # Silence "type import errors" as our 3rd-party libs does not have types
 # Check: https://mypy.readthedocs.io/en/latest/config_file.html#import-discovery

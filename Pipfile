@@ -17,8 +17,6 @@ httpx = "~=0.23"
 jinja2 = "~=3.1.2"
 bcrypt = "==4.0.1"
 passlib = {version = "~=1.7.4", extras = ["bcrypt"]}
-pillow = "~=9.3.0"
-psutil = "~=5.9.4"
 pyOpenSSL = "~=22.1.0"
 pydantic = {extras = ["email"], version = "~=1.10.2"}
 python-jose = {version = "~=3.3.0", extras = ["cryptography"]}
@@ -30,7 +28,6 @@ taskiq = {extras = ["reload"], version = "==0.9.1"}
 aiohttp = "==3.8.5"
 firebase-admin = "==6.2.0"
 aio-pika = "==9.3.0"
-pyld = "==2.0.3"
 azure-storage-blob = "==12.18.2"
 taskiq-fastapi = "==0.3.0"
 taskiq-redis = "==0.5.0"
@@ -60,12 +57,14 @@ opentelemetry-exporter-otlp = "==1.24.0"
 opentelemetry-sdk-extension-aws = "==2.0.1"
 
 [dev-packages]
-ipdb = "~=0.13"
-isort = "~=5.10"
-mixer = "~=7.2"
-mypy = "~=0.960"
-pre-commit = "~=2.7.1"
+# Nobody knows for what its needed
 pudb = "~=2022.1"
+ipdb = "~=0.13"
+# Linters and Formatters
+isort = "~=5.10"
+pre-commit = "~=2.7.1"
+ruff = "~=0.1.14"
+# Tests
 pydantic-factories = "~=1.17.0"
 pytest = "~=7.1"
 pytest-asyncio = "~=0.19"
@@ -73,40 +72,25 @@ pytest-cov = "~=3.0"
 pytest-env = "~=0.8.1"
 pytest-lazy-fixture = "~=0.6"
 pytest-mock = "~=3.8"
-respx = "~=0.19"
+nest-asyncio = "==1.6.0"
+gevent = "~=23.9"
+# MyPy
+mypy = "~=0.960"
 types-passlib = "==1.7.7.1"
 types-python-dateutil = "~=2.8.19"
 types-python-jose = "==3.3.4"
 typing-extensions = "~=4.4.0"
-# https://github.com/sqlalchemy/sqlalchemy/issues/7714
-greenlet = "~=2.0.1"
-# Old project requirements
-pymongo = "==3.10.1"
-cherrypy = "==11.0.0"
-"dogpile.cache" = "==0.7.1"
-six = "==1.12.0"
-types-six = "==1.16.21.4"
-reproschema = "*"
-json5 = "==0.9.5"
-redis = "==3.5.2"
-ijson = ">=3.1.4"
-cerberus = "==1.3.2"
-"backports-datetime-fromisoformat" = "==1.0.0"
-"backports.functools-lru-cache" = "==1.5"
-pandas = ">=1.5.3"
-tzlocal = ">=1.5.1"
-pycryptodomex = "==3.9.7"
-psycopg2-binary = "==2.9.6"
-cachetools = "==5.3.0"
-pyld = "==2.0.3"
 types-requests = "==2.31.0.10"
 types-pytz = "==2023.3.1.1"
-gevent = "~=23.9"
 types-aiofiles = "==23.2.0.0"
 types-cachetools = "==5.3.0.7"
-asynctest = "==0.13.0"
-ruff = "~=0.1.14"
-nest-asyncio = "==1.6.0"
+# https://github.com/sqlalchemy/sqlalchemy/issues/7714
+greenlet = "~=2.0.1"
+# JSONLD deps only for dev
+reproschema = "*"
+cachetools = "==5.3.0"
+pyld = "==2.0.3"
+
 
 [requires]
 python_version = "3.10"
