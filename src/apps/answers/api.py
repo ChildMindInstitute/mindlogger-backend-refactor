@@ -22,7 +22,7 @@ from apps.answers.domain import (
     AppletCompletedEntities,
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
-    IdentifierPublic,
+    Identifier,
     IdentifiersQueryParams,
     PublicAnswerDates,
     PublicAnswerExport,
@@ -235,7 +235,7 @@ async def applet_answer_assessment_delete(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
-) -> Response:
+) -> None:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     service = AnswerService(session=session, user_id=user.id, arbitrary_session=answer_session)
@@ -247,7 +247,6 @@ async def applet_answer_assessment_delete(
     async with atomic(session):
         async with atomic(answer_session):
             await service.delete_assessment(assessment_id)
-    return Response()
 
 
 async def applet_activity_assessment_retrieve(
@@ -272,7 +271,7 @@ async def applet_activity_identifiers_retrieve(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
-) -> ResponseMulti[IdentifierPublic]:
+) -> ResponseMulti[Identifier]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(
