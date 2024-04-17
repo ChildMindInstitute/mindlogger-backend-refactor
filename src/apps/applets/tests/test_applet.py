@@ -346,6 +346,7 @@ class TestApplet:
         assert result["displayName"] == applet_one_with_flow.display_name
         assert len(result["activities"]) == 1
         assert len(result["activityFlows"]) == 1
+        assert response.json()["respondentMeta"]["nickname"] == tom.get_full_name()
 
     async def test_public_applet_detail(self, client: TestClient, applet_one_with_public_link: AppletFull):
         response = await client.get(self.public_applet_detail_url.format(key=applet_one_with_public_link.link))
