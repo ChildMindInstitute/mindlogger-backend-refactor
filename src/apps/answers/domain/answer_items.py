@@ -7,6 +7,33 @@ from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import datetime_from_ms
 
 
+class AnswerItem(InternalModel):
+    id: uuid.UUID
+    answer_id: uuid.UUID
+    respondent_id: uuid.UUID
+    answer: str | None
+    events: str | None
+    item_ids: list
+    identifier: str | None
+    user_public_key: str
+    scheduled_datetime: datetime.datetime | None = None
+    start_datetime: datetime.datetime
+    end_datetime: datetime.datetime
+    scheduled_event_id: str | None = None
+    local_end_date: datetime.date | None = None
+    local_end_time: datetime.time | None = None
+    migrated_data: dict | None = None
+    is_assessment: bool = False
+    assessment_activity_id: str | None = None
+    tz_offset: int | None = None
+
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    migrated_date: datetime.datetime | None = None
+    migrated_updated: datetime.datetime | None = None
+    is_deleted: bool
+
+
 class AnswerItemSchemaAnsweredActivityItem(InternalModel):
     activity_item_history_id: str
     answer: str
@@ -24,7 +51,7 @@ class UserAnswerItemData(AnswerItemDataEncrypted):
     migrated_data: dict | None
 
 
-class AnswerItem(InternalModel):
+class AssessmentItem(InternalModel):
     answer_id: uuid.UUID
     respondent_id: uuid.UUID
     is_assessment: bool

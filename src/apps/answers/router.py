@@ -13,6 +13,7 @@ from apps.answers.api import (
     applet_answer_reviews_retrieve,
     applet_answers_export,
     applet_completed_entities,
+    applet_flow_answer_retrieve,
     applet_submit_date_list,
     applets_completed_entities,
     create_anonymous_answer,
@@ -33,6 +34,7 @@ from apps.answers.domain import (
     AppletActivityAnswerPublic,
     AppletCompletedEntities,
     AssessmentAnswerPublic,
+    FlowSubmissionResponse,
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,
@@ -143,6 +145,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_answer_retrieve)
+
+router.get(
+    "/applet/{applet_id}/flows/{flow_id}/submissions/{submit_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[FlowSubmissionResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_answer_retrieve)
 
 router.get(
     "/applet/{applet_id}/answers/{answer_id}/reviews",
