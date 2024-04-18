@@ -165,9 +165,9 @@ class PublicWorkspaceRespondentDetails(PublicModel):
 class PublicWorkspaceRespondent(PublicModel):
     id: uuid.UUID
     nicknames: list[str] | None
-    secret_ids: list[str] | None
+    secret_ids: list[int] | None
     is_anonymous_respondent: bool
-    last_seen: datetime.datetime | None
+    last_seen: datetime.datetime
     is_pinned: bool = False
     details: list[PublicWorkspaceRespondentDetails] | None = None
 
