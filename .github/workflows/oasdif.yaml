@@ -20,6 +20,7 @@ jobs:
           docker run --rm -t -v /tmp:/tmp tufin/oasdiff breaking -o ERR /tmp/new_spec.json /tmp/old_spec.json
           if [ $? -ne 0 ]; then
             echo "has_errors=true" >> $GITHUB_STATE
+            exit 1
           else
             echo "has_errors=false" >> $GITHUB_STATE
           fi
