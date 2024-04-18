@@ -14,7 +14,7 @@ jobs:
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
           docker compose up -d
           make dtest
-          
+
       - name: "Save openapi.json files"
         run: |
           cp .env.default .env
@@ -30,7 +30,7 @@ jobs:
 
       - name: "Send Slack message on failure"
         if: steps.oasdiff.outputs.has_errors == 'true'
-        uses: rtCamp/action-slack-notify@v3
+        uses: rtCamp/action-slack-notify@v2
         with:
           status: failure
           fields: status

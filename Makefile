@@ -32,15 +32,6 @@ test:
 cq:
 	${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
 
-# NOTE: This command is used to run migration from Mongo to Postgres
-.PHONY: migrate
-migrate:
-	python src/apps/migrate/run.py
-
-.PHONY: migrate_answer
-migrate_answer:
-	python src/apps/migrate/answers/run.py
-
 # ###############
 # Docker
 # ###############
@@ -72,4 +63,3 @@ save_specs:
 aws-scan:
 	git secrets --register-aws --global && \
 	pre-commit install
-
