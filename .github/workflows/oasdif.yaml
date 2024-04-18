@@ -17,7 +17,7 @@ jobs:
       - name: "Run oasdiff"
         id: oasdiff
         run: |
-          docker run --rm -t -v /tmp:/tmp tufin/oasdiff breaking -o ERR /tmp/old_spec.json /tmp/new_spec.json
+          docker run --rm -t -v /tmp:/tmp tufin/oasdiff breaking -o ERR /tmp/new_spec.json /tmp/old_spec.json
           if [ $? -ne 0 ]; then
             echo "has_errors=true" >> $GITHUB_STATE
           else
@@ -26,7 +26,7 @@ jobs:
         continue-on-error: true
 
       - name: "Send Slack message on failure"
-        if: env.has_errors == 'true'
+        if: ${{ env.has_errors == 'true' }}
         uses: rtCamp/action-slack-notify@v2
         with:
           status: failure
