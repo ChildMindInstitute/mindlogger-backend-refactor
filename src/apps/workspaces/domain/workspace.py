@@ -67,7 +67,7 @@ class WorkspaceAppletEncryption(InternalModel):
 class WorkspaceRespondentDetails(InternalModel):
     applet_id: uuid.UUID
     applet_display_name: str
-    applet_image: str | None
+    applet_image: str
     access_id: uuid.UUID
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
