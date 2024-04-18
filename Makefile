@@ -2,6 +2,7 @@ PORT = 8000
 HOST = localhost
 
 TEST_COMMAND = pytest -s -vv
+EXPORT_COMMAND = python src/export_spec.py
 
 RUFF_COMMAND = ruff
 ISORT_COMMAND = isort
@@ -31,6 +32,15 @@ test:
 cq:
 	${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
 
+# NOTE: This command is used to run migration from Mongo to Postgres
+.PHONY: migrate
+migrate:
+	python src/apps/migrate/run.py
+
+.PHONY: migrate_answer
+migrate_answer:
+	python src/apps/migrate/answers/run.py
+
 # ###############
 # Docker
 # ###############
@@ -52,9 +62,14 @@ dcheck:
 	${DOCKER_EXEC} \
 		${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./ && ${TEST_COMMAND}
 
+.PHONY: save_specs
+save_specs:
+	${DOCKER_EXEC} \
+		${EXPORT_COMMAND} ./
 
 # Setting pre-commit hooks to search for aws keys
 .PHONY: aws-scan
 aws-scan:
 	git secrets --register-aws --global && \
 	pre-commit install
+
