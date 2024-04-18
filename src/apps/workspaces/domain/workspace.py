@@ -67,7 +67,7 @@ class WorkspaceAppletEncryption(InternalModel):
 class WorkspaceRespondentDetails(InternalModel):
     applet_id: uuid.UUID
     applet_display_name: str
-    applet_image: str
+    applet_image: str | None
     access_id: uuid.UUID
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
@@ -165,9 +165,9 @@ class PublicWorkspaceRespondentDetails(PublicModel):
 class PublicWorkspaceRespondent(PublicModel):
     id: uuid.UUID
     nicknames: list[str] | None
-    secret_ids: list[int] | None
+    secret_ids: list[str] | None
     is_anonymous_respondent: bool
-    last_seen: datetime.datetime
+    last_seen: datetime.datetime | None
     is_pinned: bool = False
     details: list[PublicWorkspaceRespondentDetails] | None = None
 
