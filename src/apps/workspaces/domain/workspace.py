@@ -296,6 +296,12 @@ class WorkspaceArbitraryFields(InternalModel):
         return value
 
 
+class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
+    user_id: uuid.UUID
+    email: str
+    alembic_version: str | None
+
+
 class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
     database_uri: str
     storage_secret_key: str
@@ -322,6 +328,7 @@ class WorkspaceArbitrary(WorkspaceArbitraryFields):
     storage_secret_key: str
     storage_type: str
     storage_bucket_answer: Optional[str] = None
+    user_id: uuid.UUID
 
 
 class AnswerDbApplet(InternalModel):

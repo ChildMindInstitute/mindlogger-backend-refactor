@@ -48,6 +48,7 @@ from apps.answers.domain import (
     Identifier,
     ReportServerResponse,
     ReviewActivity,
+    ReviewsCount,
     SummaryActivity,
     Version,
 )
@@ -301,9 +302,9 @@ class AnswerService:
         activity_id: uuid.UUID,
     ) -> ActivityAnswer:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
-
-        schema = await AnswersCRUD(self.answer_session).get_by_id(answer_id)
-        pk = self._generate_history_id(schema.version)
+        answers_crud = AnswersCRUD(self.answer_session)
+        answer_schema = await answers_crud.get_by_id(answer_id)
+        pk = self._generate_history_id(answer_schema.version)
         answer_items = await AnswerItemsCRUD(self.answer_session).get_by_answer_and_activity(
             answer_id, [pk(activity_id)]
         )
@@ -311,16 +312,20 @@ class AnswerService:
             raise AnswerNotFoundError()
         answer_item = answer_items[0]
 
-        activity_items = await ActivityItemHistoryService(self.session, applet_id, schema.version).get_by_activity_id(
-            activity_id
-        )
+        activity_items = await ActivityItemHistoryService(
+            self.session, applet_id, answer_schema.version
+        ).get_by_activity_id(activity_id)
 
+        identifiers = await self.get_activity_identifiers(activity_id, answer_id=answer_id)
         answer = ActivityAnswer(
             user_public_key=answer_item.user_public_key,
             answer=answer_item.answer,
             item_ids=answer_item.item_ids,
             items=activity_items,
             events=answer_item.events,
+            identifier=next(iter(identifiers), None),
+            created_at=answer_schema.created_at,
+            version=answer_schema.version,
         )
 
         return answer
@@ -454,6 +459,7 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
+        current_role = await AppletAccessCRUD(self.session).get_applets_priority_role(applet_id, self.user_id)
         reviewer_activity_version = await AnswerItemsCRUD(self.answer_session).get_assessment_activity_id(answer_id)
         if not reviewer_activity_version:
             return []
@@ -476,11 +482,13 @@ class AnswerService:
             )
             if not user:
                 continue
+
+            can_view = await self.can_view_current_review(user.id, current_role)
             results.append(
                 AnswerReview(
                     id=schema.id,
-                    reviewer_public_key=schema.user_public_key,
-                    answer=schema.answer,
+                    reviewer_public_key=schema.user_public_key if can_view else None,
+                    answer=schema.answer if can_view else None,
                     item_ids=schema.item_ids,
                     items=current_activity_items,
                     reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
@@ -645,12 +653,16 @@ class AnswerService:
             total_answers=total,
         )
 
-    async def get_activity_identifiers(self, activity_id: uuid.UUID, respondent_id: uuid.UUID) -> list[Identifier]:
+    async def get_activity_identifiers(
+        self, activity_id: uuid.UUID, respondent_id: uuid.UUID | None = None, answer_id: uuid.UUID | None = None
+    ) -> list[Identifier]:
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         await act_hst_crud.exist_by_activity_id_or_raise(activity_id)
         act_hst_list = await act_hst_crud.get_activities(activity_id, None)
         ids = set(map(lambda a: a.id_version, act_hst_list))
-        identifiers = await AnswersCRUD(self.answer_session).get_identifiers_by_activity_id(ids, respondent_id)
+        identifiers = await AnswersCRUD(self.answer_session).get_identifiers_by_activity_id(
+            ids, respondent_id, answer_id
+        )
         results = []
         for identifier, key, migrated_data, answer_date in identifiers:
             if migrated_data and migrated_data.get("is_identifier_encrypted") is False:
@@ -705,6 +717,14 @@ class AnswerService:
             activity_answer.version = answer.version
             activity_answers.append(activity_answer)
         return activity_answers
+
+    async def get_assessments_count(self, answer_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
+        answer_reviewers_t = await AnswerItemsCRUD(self.answer_session).get_reviewers_by_answers(answer_ids)
+        answer_reviewers: dict[uuid.UUID, ReviewsCount] = {}
+        for answer_id, reviewers in answer_reviewers_t:
+            mine = 1 if self.user_id in reviewers else 0
+            answer_reviewers[answer_id] = ReviewsCount(mine=mine, other=len(reviewers) - mine)
+        return answer_reviewers
 
     async def get_summary_latest_report(
         self,
@@ -763,10 +783,11 @@ class AnswerService:
         activity_ids_with_date = await AnswersCRUD(self.answer_session).get_submitted_activity_with_last_date(
             activity_ver_ids, respondent_id
         )
-        submitted_activities = dict()
+        submitted_activities: dict[str, datetime.datetime] = {}
         for activity_history_id, submit_date in activity_ids_with_date:
             activity_id = activity_history_id.split("_")[0]
-            submitted_activities[activity_id] = submit_date
+            date = submitted_activities.get(activity_id)
+            submitted_activities[activity_id] = max(submit_date, date) if date else submit_date
 
         results = []
         for activity in activities:
@@ -985,6 +1006,16 @@ class AnswerService:
 
     async def delete_assessment(self, assessment_id: uuid.UUID):
         return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)
+
+    async def can_view_current_review(self, reviewer_id: uuid.UUID, role: Role | None):
+        if not role:
+            return False
+
+        if role == Role.REVIEWER and reviewer_id == self.user_id:
+            return True
+        elif role in [Role.MANAGER, Role.OWNER]:
+            return True
+        return False
 
 
 class ReportServerService:
