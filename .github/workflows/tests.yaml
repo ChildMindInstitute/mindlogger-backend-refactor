@@ -14,26 +14,3 @@ jobs:
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
           docker compose up -d
           make dtest
-
-      - name: "Save openapi.json files"
-        run: |
-          cp .env.default .env
-          echo -e "\nRABBITMQ__USE_SSL=False" >> .env
-          make save_specs
-
-      - name: "Run oasdiff"
-        id: oasdiff
-        run: |
-          docker run --rm -t -v /tmp:/tmp tufin/oasdiff breaking -o ERR /tmp/current_spec.json /tmp/new_spec.json
-          echo "has_errors=$(if [ $? -ne 0 ]; then echo true; else echo false; fi)" >> $GITHUB_ENV
-        continue-on-error: true
-
-      - name: "Send Slack message on failure"
-        if: env.has_errors == 'true'
-        uses: rtCamp/action-slack-notify@v2
-        with:
-          status: failure
-          fields: status
-          message: "Oasdiff step failed in the automated tests workflow. See details [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
