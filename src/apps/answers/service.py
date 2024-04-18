@@ -50,6 +50,7 @@ from apps.answers.domain import (
     ReviewActivity,
     ReviewsCount,
     SummaryActivity,
+    SummaryActivityFlow,
     Version,
 )
 from apps.answers.errors import (
@@ -770,15 +771,8 @@ class AnswerService:
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
     ) -> list[SummaryActivity]:
         assert self.user_id
-        role = await AppletAccessCRUD(self.session).get_applets_priority_role(applet_id, self.user_id)
-        if role == Role.REVIEWER:
-            access = await UserAppletAccessService(self.session, self.user_id, applet_id).get_access(Role.REVIEWER)
-            respondents = access.meta.get("respondents", []) if access else []
-            if str(respondent_id) not in respondents:
-                raise AnswerAccessDeniedError()
-
         act_hst_crud = ActivityHistoriesCRUD(self.session)
-        activities = await act_hst_crud.get_by_applet_id_for_summary(applet_id=applet_id)
+        activities = await act_hst_crud.get_last_histories_by_applet(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
         activity_ids_with_date = await AnswersCRUD(self.answer_session).get_submitted_activity_with_last_date(
             activity_ver_ids, respondent_id
@@ -788,16 +782,51 @@ class AnswerService:
             activity_id = activity_history_id.split("_")[0]
             date = submitted_activities.get(activity_id)
             submitted_activities[activity_id] = max(submit_date, date) if date else submit_date
+            submitted_activities[activity_history_id] = submit_date
 
         results = []
         for activity in activities:
+            activity_history_answer_date = submitted_activities.get(
+                activity.id_version, submitted_activities.get(str(activity.id))
+            )
             results.append(
                 SummaryActivity(
                     id=activity.id,
                     name=activity.name,
                     is_performance_task=activity.is_performance_task,
-                    has_answer=str(activity.id) in submitted_activities,
-                    last_answer_date=submitted_activities.get(str(activity.id)),
+                    has_answer=bool(activity_history_answer_date),
+                    last_answer_date=activity_history_answer_date,
+                )
+            )
+        return results
+
+    async def get_summary_activity_flows(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+    ) -> list[SummaryActivityFlow]:
+        assert self.user_id
+        flow_crud = FlowsHistoryCRUD(self.session)
+        answer_crud = AnswersCRUD(self.answer_session)
+        flow_history_ids_with_date = await answer_crud.get_submitted_flows_with_last_date(applet_id, respondent_id)
+        activity_flow_histories = await flow_crud.get_last_histories_by_applet(applet_id)
+
+        submitted_activity_flows: dict[str, datetime.datetime] = {}
+        for version_id, submit_date in flow_history_ids_with_date:
+            flow_id = version_id.split("_")[0]
+            date = submitted_activity_flows.get(flow_id)
+            submitted_activity_flows[flow_id] = max(submit_date, date) if date else submit_date
+            submitted_activity_flows[version_id] = submit_date
+
+        results = []
+        for flow_history in activity_flow_histories:
+            flow_history_answer_date = submitted_activity_flows.get(
+                flow_history.id_version, submitted_activity_flows.get(str(flow_history.id))
+            )
+            results.append(
+                SummaryActivityFlow(
+                    id=flow_history.id,
+                    name=flow_history.name,
+                    has_answer=bool(flow_history_answer_date),
+                    last_answer_date=flow_history_answer_date,
                 )
             )
         return results

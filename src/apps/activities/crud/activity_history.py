@@ -76,7 +76,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         if not result:
             raise ActivityHistoryDoeNotExist()
 
-    async def get_by_applet_id_for_summary(self, applet_id: uuid.UUID) -> list[ActivityHistorySchema]:
+    async def get_last_histories_by_applet(self, applet_id: uuid.UUID) -> list[ActivityHistorySchema]:
         query: Query = select(ActivityHistorySchema)
         query = query.join(
             AppletHistorySchema,

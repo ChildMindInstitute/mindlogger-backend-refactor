@@ -96,12 +96,15 @@ class ReviewActivity(InternalModel):
     answer_dates: list[AnswerDate] = Field(default_factory=list)
 
 
-class SummaryActivity(InternalModel):
+class SummaryActivityFlow(InternalModel):
     id: uuid.UUID
     name: str
-    is_performance_task: bool
     has_answer: bool
     last_answer_date: datetime.datetime | None
+
+
+class SummaryActivity(SummaryActivityFlow):
+    is_performance_task: bool
 
 
 class PublicAnswerDate(PublicModel):
@@ -127,12 +130,15 @@ class PublicReviewActivity(PublicModel):
         return values
 
 
-class PublicSummaryActivity(InternalModel):
+class PublicSummaryActivityFlow(InternalModel):
     id: uuid.UUID
     name: str
-    is_performance_task: bool
     has_answer: bool
     last_answer_date: datetime.datetime | None
+
+
+class PublicSummaryActivity(PublicSummaryActivityFlow):
+    is_performance_task: bool
 
 
 class PublicAnswerDates(PublicModel):

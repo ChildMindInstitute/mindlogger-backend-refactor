@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import any_, select
 from sqlalchemy.orm import Query
 
@@ -55,5 +57,20 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
             ActivityFlowHistoriesSchema.id.asc(),
             ActivityFlowHistoriesSchema.updated_at.asc(),
         )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def get_last_histories_by_applet(self, applet_id: uuid.UUID) -> list[ActivityFlowHistoriesSchema]:
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.join(
+            AppletHistorySchema,
+            AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id,
+        )
+        query = query.where(AppletHistorySchema.id == applet_id)
+        query = query.order_by(
+            ActivityFlowHistoriesSchema.id.desc(),
+            ActivityFlowHistoriesSchema.created_at.desc(),
+        )
+        query = query.distinct(ActivityFlowHistoriesSchema.id)
         db_result = await self._execute(query)
         return db_result.scalars().all()
