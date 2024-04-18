@@ -1,7 +1,7 @@
 name: OASDIFF breaking changes
 on: [pull_request]
 jobs:
-  tests:
+  compare:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,21 +17,19 @@ jobs:
       - name: "Run oasdiff"
         id: oasdiff
         run: |
-          docker run --rm -t -v /tmp:/tmp tufin/oasdiff breaking -o ERR /tmp/new_spec.json /tmp/old_spec.json
-          if [ $? -ne 0 ]; then
-            echo "has_errors=true" >> $GITHUB_STATE
-            exit 1
-          else
-            echo "has_errors=false" >> $GITHUB_STATE
-          fi
-        continue-on-error: true
+          docker run --rm -t -v /tmp:/tmp tufin/oasdiff breaking -o ERR /tmp/old_spec.json /tmp/new_spec.json
 
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.compare.result == 'failure' || needs.compare.result == 'timed_out') }}
+    needs:
+      - compare
+    steps:
+      - uses: actions/checkout@v4
       - name: "Send Slack message on failure"
-        if: ${{ env.has_errors == 'true' }}
         uses: rtCamp/action-slack-notify@v2
-        with:
-          status: failure
-          fields: status
-          message: "Oasdiff step failed in the automated tests workflow. See details [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
         env:
+          SLACK_COLOR: ${{ job.status }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_TITLE: Changes Found!
+          SLACK_MESSAGE: 'Oasdiff step failed. API changes found!'
