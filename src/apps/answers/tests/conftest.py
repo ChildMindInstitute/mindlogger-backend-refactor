@@ -8,11 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.activities.domain.response_type_config import SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.activities.domain.scores_reports import ReportType, ScoresAndReports, Section
+from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.domain.base import AppletReportConfigurationBase
 from apps.applets.service.applet import AppletService
+from apps.shared.enums import Language
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -97,4 +99,22 @@ async def applet_with_reviewable_activity(
     srv = AppletService(session, tom.id)
     # NOTE: Fixture 'applet' with scoped class already bound default applet_id
     applet = await srv.create(applet_create, applet_id=uuid.uuid4())
+    return applet
+
+
+@pytest.fixture
+async def applet_with_flow(session: AsyncSession, applet_minimal_data: AppletCreate, tom: User) -> AppletFull:
+    data = applet_minimal_data.copy(deep=True)
+    data.display_name = "applet with flow"
+    data.activity_flows = [
+        FlowCreate(
+            name="flow",
+            description={Language.ENGLISH: "description"},
+            items=[FlowItemCreate(activity_key=data.activities[0].key)],
+        )
+    ]
+    applet_create = AppletCreate(**data.dict())
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_create, applet_id=uuid.uuid4())
+
     return applet

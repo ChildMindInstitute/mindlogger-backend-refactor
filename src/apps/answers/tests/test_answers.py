@@ -102,6 +102,49 @@ async def tom_answer(session: AsyncSession, tom: User, applet_with_reviewable_ac
 
 
 @pytest.fixture
+async def tom_answer_activity_flow(session: AsyncSession, tom: User, applet_with_flow: AppletFull) -> AnswerSchema:
+    answer_service = AnswerService(session, tom.id)
+    return await answer_service.create_answer(
+        AppletAnswerCreate(
+            applet_id=applet_with_flow.id,
+            version=applet_with_flow.version,
+            submit_id=uuid.uuid4(),
+            flow_id=applet_with_flow.activity_flows[0].id,
+            is_flow_completed=True,
+            activity_id=applet_with_flow.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_flow.activities[0].items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(tom.id),
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+        )
+    )
+
+
+@pytest.fixture
+async def tom_answer_activity_no_flow(session: AsyncSession, tom: User, applet_with_flow: AppletFull) -> AnswerSchema:
+    answer_service = AnswerService(session, tom.id)
+    return await answer_service.create_answer(
+        AppletAnswerCreate(
+            applet_id=applet_with_flow.id,
+            version=applet_with_flow.version,
+            submit_id=uuid.uuid4(),
+            is_flow_completed=True,
+            activity_id=applet_with_flow.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_flow.activities[0].items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(tom.id),
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+        )
+    )
+
+
+@pytest.fixture
 async def tom_review_answer(
     session: AsyncSession, tom: User, applet_with_reviewable_activity: AppletFull, tom_answer: AnswerSchema
 ):
@@ -167,7 +210,8 @@ class TestAnswerActivityItems(BaseTest):
     applets_answers_completions_url = "/answers/applet/completions"
     applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
 
-    activity_answers_url = "/answers/applet/{applet_id}/answers/" "{answer_id}/activities/{activity_id}"
+    activity_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}"
+    flow_submission_url = "/answers/applet/{applet_id}/flows/{flow_id}/submissions/{submit_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
 
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"  # noqa: E501
@@ -1909,3 +1953,56 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 200
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["hasAnswer"] is True
+
+    async def test_flow_submission(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow
+    ):
+        client.login(tom)
+        url = self.flow_submission_url.format(
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+            submit_id=tom_answer_activity_flow.submit_id,
+        )
+        response = await client.get(url)
+        assert response.status_code == 200
+        data = response.json()
+        assert "result" in data
+        data = data["result"]
+        assert set(data.keys()) == {"flow", "answers", "summary"}
+        assert len(data["answers"]) == len(applet_with_flow.activities)
+        # fmt: off
+        assert set(data["answers"][0].keys()) == {
+            "activityHistoryId", "activityId", "answer", "createdAt", "endDatetime", "events", "flowHistoryId", "id",
+            "identifier", "itemIds", "migratedData", "submitId", "userPublicKey", "version"
+        }
+        assert data["answers"][0]["submitId"] == str(tom_answer_activity_flow.submit_id)
+        assert data["answers"][0]["flowHistoryId"] == str(tom_answer_activity_flow.flow_history_id)
+        assert set(data["flow"].keys()) == {
+            "id", "activities", "createdAt", "description", "hideBadge", "idVersion", "isHidden", "isSingleReport",
+            "name", "order", "reportIncludedActivityName","reportIncludedItemName"
+        }
+        assert len(data["flow"]["activities"]) == len(applet_with_flow.activities)
+        assert set(data["flow"]["activities"][0].keys()) == {
+            "createdAt", "isSkippable", "showAllAtOnce", "subscaleSetting", "order", "name", "isHidden",
+            "scoresAndReports", "isReviewable", "idVersion", "items", "performanceTaskType", "responseIsEditable",
+            "appletId", "reportIncludedItemName", "description", "id", "splashScreen", "image"
+        }
+        assert len(data["flow"]["activities"][0]["items"]) == len(applet_with_flow.activities[0].items)
+        assert set(data["flow"]["activities"][0]["items"][0].keys()) == {
+            "activityId", "allowEdit", "conditionalLogic", "config", "id", "idVersion", "isHidden", "name", "order",
+            "question", "responseType", "responseValues"
+        }
+        # fmt: on
+        assert data["flow"]["idVersion"] == tom_answer_activity_flow.flow_history_id
+
+    async def test_flow_submission_no_flow(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_no_flow
+    ):
+        client.login(tom)
+        url = self.flow_submission_url.format(
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+            submit_id=tom_answer_activity_no_flow.submit_id,
+        )
+        response = await client.get(url)
+        assert response.status_code == 404
