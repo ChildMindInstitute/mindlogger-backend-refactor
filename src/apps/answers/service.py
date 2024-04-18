@@ -36,7 +36,6 @@ from apps.answers.domain import (
     AnswerAlert,
     AnswerDate,
     AnswerExport,
-    AnswerItem,
     AnswerItemDataEncrypted,
     AnswerNoteDetail,
     AnswerReview,
@@ -45,6 +44,9 @@ from apps.answers.domain import (
     AppletCompletedEntities,
     AssessmentAnswer,
     AssessmentAnswerCreate,
+    AssessmentItem,
+    FlowAnswer,
+    FlowSubmission,
     Identifier,
     ReportServerResponse,
     ReviewActivity,
@@ -342,6 +344,76 @@ class AnswerService:
         if activity_id:
             pk = self._generate_history_id(answer_schema.version)
             await ActivityHistoriesCRUD(self.session).get_by_id(pk(activity_id))
+
+    async def get_flow_submission(
+        self,
+        applet_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        submit_id: uuid.UUID,
+    ) -> FlowSubmission:
+        assert self.user_id is not None
+
+        # TODO properly merge to multiinformant using subject ids
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
+            self.user_id,
+            applet_id,
+            [Role.OWNER, Role.MANAGER, Role.REVIEWER],
+        )
+        allowed_respondents = None
+        if not access:
+            allowed_respondents = [self.user_id]
+        elif access.role == Role.REVIEWER:
+            if isinstance(access.reviewer_respondents, list) and len(access.reviewer_respondents) > 0:
+                allowed_respondents = access.reviewer_respondents  # noqa: E501
+            else:
+                allowed_respondents = [self.user_id]
+
+        repository = AnswersCRUD(self.answer_session)
+        answers = await repository.get_list(
+            applet_id=applet_id,
+            flow_id=flow_id,
+            submit_id=submit_id,
+            respondent_ids=allowed_respondents,
+        )
+        if not answers:
+            raise AnswerNotFoundError()
+
+        activity_hist_ids = set()
+
+        answer_result: list[FlowAnswer] = []
+
+        for answer in answers:
+            answer_item = answer.answer_items[0]
+            answer_result.append(
+                FlowAnswer(
+                    **answer.dict(exclude={"migrated_data"}),
+                    **answer_item.dict(
+                        include={
+                            "user_public_key",
+                            "answer",
+                            "events",
+                            "item_ids",
+                            "identifier",
+                            "migrated_data",
+                            "end_datetime",
+                        }
+                    ),
+                )
+            )
+            activity_hist_ids.add(answer.activity_history_id)
+
+        flow_history_id = answers[0].flow_history_id
+        assert flow_history_id
+
+        flows = await FlowsHistoryCRUD(self.session).load_full([flow_history_id])
+        assert flows
+
+        submission = FlowSubmission(
+            flow=flows[0],
+            answers=answer_result,
+        )
+
+        return submission
 
     async def add_note(
         self,
@@ -1029,9 +1101,11 @@ class AnswerService:
         result = await AnswersCRUD(self.answer_session).get_last_activity([respondent_id], applet_id)
         return result
 
-    async def get_answer_assessment_by_id(self, assessment_id: uuid.UUID, answer_id: uuid.UUID) -> AnswerItem | None:
+    async def get_answer_assessment_by_id(
+        self, assessment_id: uuid.UUID, answer_id: uuid.UUID
+    ) -> AssessmentItem | None:
         schema = await AnswerItemsCRUD(self.answer_session).get_answer_assessment(assessment_id, answer_id)
-        return AnswerItem.from_orm(schema) if schema else None
+        return AssessmentItem.from_orm(schema) if schema else None
 
     async def delete_assessment(self, assessment_id: uuid.UUID):
         return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)

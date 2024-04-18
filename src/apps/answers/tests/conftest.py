@@ -116,4 +116,5 @@ async def applet_with_flow(session: AsyncSession, applet_minimal_data: AppletCre
     applet_create = AppletCreate(**data.dict())
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_create, applet_id=uuid.uuid4())
+
     return applet

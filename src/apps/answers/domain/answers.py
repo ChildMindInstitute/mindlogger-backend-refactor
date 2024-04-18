@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from copy import deepcopy
 from typing import Any
 
 from pydantic import BaseModel, Field, root_validator, validator
@@ -12,12 +13,41 @@ from apps.activities.domain.activity_history import (
 )
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
-from apps.activity_flows.domain.flow_full import FlowFull
-from apps.answers.domain.answer_items import ItemAnswerCreate
+from apps.activity_flows.domain.flow_full import FlowFull, FlowHistoryWithActivityFlat, FlowHistoryWithActivityFull
+from apps.answers.domain.answer_items import AnswerItem, ItemAnswerCreate
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.locale import I18N
+
+
+class ClientMeta(InternalModel):
+    app_id: str
+    app_version: str
+    width: int | None = None
+    height: int | None = None
+
+
+class Answer(InternalModel):
+    id: uuid.UUID
+    applet_id: uuid.UUID
+    version: str
+    submit_id: uuid.UUID
+    client: ClientMeta | None
+    applet_history_id: str
+    flow_history_id: str | None
+    activity_history_id: str
+    respondent_id: uuid.UUID | None
+    is_flow_completed: bool | None = False
+
+    migrated_data: dict | None = None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    migrated_date: datetime.datetime | None = None
+    migrated_updated: datetime.datetime | None = None
+    is_deleted: bool
+
+    answer_items: list[AnswerItem]
 
 
 class Text(InternalModel):
@@ -53,13 +83,6 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 class AnswerAlert(InternalModel):
     activity_item_id: uuid.UUID
     message: str
-
-
-class ClientMeta(InternalModel):
-    app_id: str
-    app_version: str
-    width: int | None = None
-    height: int | None = None
 
 
 class AppletAnswerCreate(InternalModel):
@@ -160,6 +183,73 @@ class ActivityAnswer(InternalModel):
     identifier: Identifier | None
     created_at: datetime.datetime
     version: str
+
+
+class FlowAnswer(PublicModel):
+    id: uuid.UUID
+    submit_id: uuid.UUID
+    version: str
+    activity_history_id: str
+    activity_id: uuid.UUID | None = None
+    flow_history_id: str | None
+    user_public_key: str | None
+    answer: str | None
+    events: str | None
+    item_ids: list[str] = Field(default_factory=list)
+    identifier: str | None = None
+    migrated_data: dict | None = None
+    end_datetime: datetime.datetime
+    created_at: datetime.datetime
+
+    @validator("activity_id", always=True)
+    def extract_activity_id(cls, value, values):
+        if val := values.get("activity_history_id"):
+            return val[:36]
+
+
+class FlowSubmission(PublicModel):
+    flow: FlowHistoryWithActivityFull
+    answers: list[FlowAnswer]
+
+
+class FlowSubmissionSummary(PublicModel):
+    created_at: datetime.datetime
+    identifier: str | None = None
+    version: str
+
+
+class FlowSubmissionResponse(PublicModel):
+    flow: FlowHistoryWithActivityFlat
+    answers: list[FlowAnswer]
+    summary: FlowSubmissionSummary | None = None
+
+    @validator("flow", pre=True)
+    def format_flow(cls, value, values):
+        if isinstance(value, dict) and "items" in value:
+            data = deepcopy(value)
+            del data["items"]
+            data["activities"] = [item["activity"] for item in value["items"]]
+            value = data
+        elif isinstance(value, FlowHistoryWithActivityFull):
+            data = value.dict(exclude={"items"})
+            data["activities"] = [item.activity for item in value.items]
+            value = data
+
+        return value
+
+    @validator("summary", always=True)
+    def generate_summary(cls, value, values):
+        if not value:
+            answers: list[FlowAnswer] = values["answers"]
+            if answers:
+                summary = FlowSubmissionSummary.from_orm(answers[0])
+                if not summary.identifier and len(answers) > 1:
+                    for answer in answers[1:]:
+                        if identifier := answer.identifier:
+                            summary.identifier = identifier
+                            break
+                value = summary
+        return value
 
 
 class ReviewsCount(PublicModel):

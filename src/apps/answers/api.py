@@ -22,6 +22,7 @@ from apps.answers.domain import (
     AppletCompletedEntities,
     AssessmentAnswerCreate,
     AssessmentAnswerPublic,
+    FlowSubmissionResponse,
     Identifier,
     IdentifiersQueryParams,
     PublicAnswerDates,
@@ -231,6 +232,23 @@ async def applet_activity_answer_retrieve(
     return Response(
         result=ActivityAnswerPublic.from_orm(answer),
     )
+
+
+async def applet_flow_answer_retrieve(
+    applet_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    submit_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> Response[FlowSubmissionResponse]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    submission = await AnswerService(session, user.id, answer_session).get_flow_submission(
+        applet_id, flow_id, submit_id
+    )
+    result = FlowSubmissionResponse.from_orm(submission)
+    return Response(result=result)
 
 
 async def applet_answer_reviews_retrieve(
