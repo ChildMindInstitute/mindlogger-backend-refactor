@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import RefreshAccessTokenRequest, TokenPayload
-from apps.authentication.errors import AuthenticationError, InvalidCredentials
+from apps.authentication.errors import AuthenticationError, InvalidCredentials, InvalidRefreshToken
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.authentication.tests.factories import UserLogoutRequestFactory
@@ -216,3 +216,15 @@ class TestAuthentication(BaseTest):
         )
         assert resp.status_code == http.HTTPStatus.OK
         mock_.assert_awaited_once_with(device_id)
+
+    async def test_refresh_access_token__refresh_token_is_expired(self, client: TestClient, user: User):
+        settings.authentication.refresh_token.expiration = -1
+        resp = await client.post(self.get_token_url, data={"email": user.email_encrypted, "password": TEST_PASSWORD})
+        assert resp.status_code == http.HTTPStatus.OK
+        refresh_token = resp.json()["result"]["token"]["refreshToken"]
+        resp = await client.post(self.refresh_access_token_url, data={"refresh_token": refresh_token})
+        assert resp.status_code == http.HTTPStatus.BAD_REQUEST
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == InvalidRefreshToken.message
+        settings.authentication.refresh_token.expiration = 540

@@ -121,7 +121,7 @@ async def test_get_current_access_token__internal_error(access_token: str, mocke
 
 async def test_get_current_access_token__expired_time_is_less_than_now(auth_service: AuthenticationService, user: User):
     data = {JWTClaim.sub: str(user.id), JWTClaim.rjti: RJTI}
-    settings.authentication.access_token.expiration = 0
+    settings.authentication.access_token.expiration = -1
     access_token = auth_service.create_access_token(data)
     coro = get_current_token()
     with pytest.raises(AuthenticationError):
