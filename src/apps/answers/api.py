@@ -10,7 +10,7 @@ from pydantic import parse_obj_as
 from apps.activities.services import ActivityHistoryService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
 from apps.answers.domain import (
-    ActivityAnswerPublic,
+    ActivitySubmissionResponse,
     AnswerExistenceResponse,
     AnswerExport,
     AnswerNote,
@@ -199,18 +199,19 @@ async def applet_submit_date_list(
 
 async def applet_activity_answer_retrieve(
     applet_id: uuid.UUID,
-    answer_id: uuid.UUID,
     activity_id: uuid.UUID,
+    answer_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
-) -> Response[ActivityAnswerPublic]:
+) -> Response[ActivitySubmissionResponse]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    answer = await AnswerService(session, user.id, answer_session).get_by_id(applet_id, answer_id, activity_id)
-    return Response(
-        result=ActivityAnswerPublic.from_orm(answer),
+    submission = await AnswerService(session, user.id, answer_session).get_activity_answer(
+        applet_id, activity_id, answer_id
     )
+    result = ActivitySubmissionResponse.from_orm(submission)
+    return Response(result=result)
 
 
 async def applet_flow_answer_retrieve(

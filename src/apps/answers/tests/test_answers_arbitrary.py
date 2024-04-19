@@ -74,7 +74,7 @@ class TestAnswerActivityItems:
     applet_answers_export_url = "/answers/applet/{applet_id}/data"
     applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
 
-    activity_answers_url = "/answers/applet/{applet_id}/answers/" "{answer_id}/activities/{activity_id}"
+    activity_answers_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
 
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"  # noqa: E501
@@ -461,7 +461,7 @@ class TestAnswerActivityItems:
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["result"]["events"] == '{"events": ["event1", "event2"]}'
+        assert response.json()["result"]["answer"]["events"] == '{"events": ["event1", "event2"]}'
 
     async def test_fail_answered_applet_not_existed_activities(
         self, mock_kiq_report, arbitrary_session, arbitrary_client, tom, applet

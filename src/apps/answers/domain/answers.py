@@ -168,18 +168,7 @@ class Identifier(InternalModel):
     last_answer_date: datetime.datetime
 
 
-class ActivityAnswer(InternalModel):
-    user_public_key: str | None
-    answer: str | None
-    events: str | None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
-    identifier: Identifier | None
-    created_at: datetime.datetime
-    version: str
-
-
-class FlowAnswer(PublicModel):
+class ActivityAnswer(PublicModel):
     id: uuid.UUID
     submit_id: uuid.UUID
     version: str
@@ -201,21 +190,39 @@ class FlowAnswer(PublicModel):
             return val[:36]
 
 
-class FlowSubmission(PublicModel):
-    flow: FlowHistoryWithActivityFull
-    answers: list[FlowAnswer]
-
-
-class FlowSubmissionSummary(PublicModel):
+class SubmissionSummary(PublicModel):
+    end_datetime: datetime.datetime
     created_at: datetime.datetime
     identifier: str | None = None
     version: str
 
 
+class ActivitySubmission(PublicModel):
+    activity: ActivityHistoryFull
+    answer: ActivityAnswer
+
+
+class ActivitySubmissionResponse(ActivitySubmission):
+    summary: SubmissionSummary | None = None
+
+    @validator("summary", always=True)
+    def generate_summary(cls, value, values):
+        if not value:
+            answer: ActivityAnswer = values["answer"]
+            if answer:
+                value = SubmissionSummary.from_orm(answer)
+        return value
+
+
+class FlowSubmission(PublicModel):
+    flow: FlowHistoryWithActivityFull
+    answers: list[ActivityAnswer]
+
+
 class FlowSubmissionResponse(PublicModel):
     flow: FlowHistoryWithActivityFlat
-    answers: list[FlowAnswer]
-    summary: FlowSubmissionSummary | None = None
+    answers: list[ActivityAnswer]
+    summary: SubmissionSummary | None = None
 
     @validator("flow", pre=True)
     def format_flow(cls, value, values):
@@ -234,9 +241,9 @@ class FlowSubmissionResponse(PublicModel):
     @validator("summary", always=True)
     def generate_summary(cls, value, values):
         if not value:
-            answers: list[FlowAnswer] = values["answers"]
+            answers: list[ActivityAnswer] = values["answers"]
             if answers:
-                summary = FlowSubmissionSummary.from_orm(answers[0])
+                summary = SubmissionSummary.from_orm(answers[0])
                 if not summary.identifier and len(answers) > 1:
                     for answer in answers[1:]:
                         if identifier := answer.identifier:
@@ -288,17 +295,6 @@ class AnswerReview(InternalModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: Reviewer
     created_at: datetime.datetime
-
-
-class ActivityAnswerPublic(PublicModel):
-    user_public_key: str | None
-    answer: str | None
-    events: str | None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
-    identifier: Identifier | None
-    created_at: datetime.datetime
-    version: str
 
 
 class AppletActivityAnswerPublic(PublicModel):

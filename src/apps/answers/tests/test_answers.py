@@ -210,7 +210,7 @@ class TestAnswerActivityItems(BaseTest):
     applets_answers_completions_url = "/answers/applet/completions"
     applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
 
-    activity_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}"
+    activity_answers_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}"
     flow_submission_url = "/answers/applet/{applet_id}/flows/{flow_id}/submissions/{submit_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
 
@@ -562,7 +562,7 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["result"]["events"] == '{"events": ["event1", "event2"]}'
+        assert response.json()["result"]["answer"]["events"] == '{"events": ["event1", "event2"]}'
 
     async def test_fail_answered_applet_not_existed_activities(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
@@ -1969,6 +1969,7 @@ class TestAnswerActivityItems(BaseTest):
         assert "result" in data
         data = data["result"]
         assert set(data.keys()) == {"flow", "answers", "summary"}
+
         assert len(data["answers"]) == len(applet_with_flow.activities)
         # fmt: off
         assert set(data["answers"][0].keys()) == {
@@ -1977,6 +1978,7 @@ class TestAnswerActivityItems(BaseTest):
         }
         assert data["answers"][0]["submitId"] == str(tom_answer_activity_flow.submit_id)
         assert data["answers"][0]["flowHistoryId"] == str(tom_answer_activity_flow.flow_history_id)
+
         assert set(data["flow"].keys()) == {
             "id", "activities", "createdAt", "description", "hideBadge", "idVersion", "isHidden", "isSingleReport",
             "name", "order", "reportIncludedActivityName","reportIncludedItemName"
@@ -1992,8 +1994,12 @@ class TestAnswerActivityItems(BaseTest):
             "activityId", "allowEdit", "conditionalLogic", "config", "id", "idVersion", "isHidden", "name", "order",
             "question", "responseType", "responseValues"
         }
-        # fmt: on
         assert data["flow"]["idVersion"] == tom_answer_activity_flow.flow_history_id
+
+        assert set(data["summary"].keys()) == {"identifier", "endDatetime", "version", "createdAt"}
+        assert data["summary"]["createdAt"] == tom_answer_activity_flow.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f")
+        assert data["summary"]["version"] == tom_answer_activity_flow.version
+        # fmt: on
 
     async def test_flow_submission_no_flow(
         self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_no_flow

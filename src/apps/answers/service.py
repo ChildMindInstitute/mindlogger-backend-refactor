@@ -22,7 +22,6 @@ from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist
 from apps.activities.services import ActivityHistoryService
-from apps.activities.services.activity_item_history import ActivityItemHistoryService
 from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -33,6 +32,7 @@ from apps.answers.crud.notes import AnswerNotesCRUD
 from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
 from apps.answers.domain import (
     ActivityAnswer,
+    ActivitySubmission,
     AnswerAlert,
     AnswerDate,
     AnswerExport,
@@ -45,7 +45,6 @@ from apps.answers.domain import (
     AssessmentAnswer,
     AssessmentAnswerCreate,
     AssessmentItem,
-    FlowAnswer,
     FlowSubmission,
     Identifier,
     ReportServerResponse,
@@ -83,6 +82,7 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import WorkspaceRespondent
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
 
@@ -100,7 +100,7 @@ class AnswerService:
     @staticmethod
     def _generate_history_id(version: str):
         def key_generator(pk: uuid.UUID):
-            return f"{pk}_{version}"
+            return HistoryAware.generate_id_version(pk, version)
 
         return key_generator
 
@@ -297,40 +297,69 @@ class AnswerService:
             if str(respondent_id) not in access.meta.get("respondents", []):
                 raise AnswerAccessDeniedError()
 
-    async def get_by_id(
+    async def _get_allowed_respondents(self, applet_id: uuid.UUID) -> list[uuid.UUID] | None:
+        assert self.user_id
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
+            self.user_id,
+            applet_id,
+            [Role.OWNER, Role.MANAGER, Role.REVIEWER],
+        )
+        allowed_respondents = None
+        if not access:
+            allowed_respondents = [self.user_id]
+        elif access.role == Role.REVIEWER:
+            if isinstance(access.reviewer_respondents, list) and len(access.reviewer_respondents) > 0:
+                allowed_respondents = access.reviewer_respondents  # noqa: E501
+            else:
+                allowed_respondents = [self.user_id]
+
+        return allowed_respondents
+
+    async def get_activity_answer(
         self,
         applet_id: uuid.UUID,
-        answer_id: uuid.UUID,
         activity_id: uuid.UUID,
-    ) -> ActivityAnswer:
-        await self._validate_answer_access(applet_id, answer_id, activity_id)
-        answers_crud = AnswersCRUD(self.answer_session)
-        answer_schema = await answers_crud.get_by_id(answer_id)
-        pk = self._generate_history_id(answer_schema.version)
-        answer_items = await AnswerItemsCRUD(self.answer_session).get_by_answer_and_activity(
-            answer_id, [pk(activity_id)]
+        answer_id: uuid.UUID,
+    ) -> ActivitySubmission:
+        # TODO properly merge to multiinformant using subject ids
+        allowed_respondents = await self._get_allowed_respondents(applet_id)
+
+        repository = AnswersCRUD(self.answer_session)
+        answers = await repository.get_list(
+            applet_id=applet_id,
+            activity_id=activity_id,
+            answer_id=answer_id,
+            respondent_ids=allowed_respondents,
         )
-        if not answer_items:
+        if not answers:
             raise AnswerNotFoundError()
-        answer_item = answer_items[0]
 
-        activity_items = await ActivityItemHistoryService(
-            self.session, applet_id, answer_schema.version
-        ).get_by_activity_id(activity_id)
-
-        identifiers = await self.get_activity_identifiers(activity_id, answer_id=answer_id)
-        answer = ActivityAnswer(
-            user_public_key=answer_item.user_public_key,
-            answer=answer_item.answer,
-            item_ids=answer_item.item_ids,
-            items=activity_items,
-            events=answer_item.events,
-            identifier=next(iter(identifiers), None),
-            created_at=answer_schema.created_at,
-            version=answer_schema.version,
+        answer = answers[0]
+        answer_item = answer.answer_items[0]
+        answer_result = ActivityAnswer(
+            **answer.dict(exclude={"migrated_data"}),
+            **answer_item.dict(
+                include={
+                    "user_public_key",
+                    "answer",
+                    "events",
+                    "item_ids",
+                    "identifier",
+                    "migrated_data",
+                    "end_datetime",
+                }
+            ),
         )
 
-        return answer
+        activities = await ActivityHistoriesCRUD(self.session).load_full([answer.activity_history_id])
+        assert activities
+
+        submission = ActivitySubmission(
+            activity=activities[0],
+            answer=answer_result,
+        )
+
+        return submission
 
     async def _validate_answer_access(
         self,
@@ -350,22 +379,8 @@ class AnswerService:
         flow_id: uuid.UUID,
         submit_id: uuid.UUID,
     ) -> FlowSubmission:
-        assert self.user_id is not None
-
         # TODO properly merge to multiinformant using subject ids
-        access = await UserAppletAccessCRUD(self.session).get_by_roles(
-            self.user_id,
-            applet_id,
-            [Role.OWNER, Role.MANAGER, Role.REVIEWER],
-        )
-        allowed_respondents = None
-        if not access:
-            allowed_respondents = [self.user_id]
-        elif access.role == Role.REVIEWER:
-            if isinstance(access.reviewer_respondents, list) and len(access.reviewer_respondents) > 0:
-                allowed_respondents = access.reviewer_respondents  # noqa: E501
-            else:
-                allowed_respondents = [self.user_id]
+        allowed_respondents = await self._get_allowed_respondents(applet_id)
 
         repository = AnswersCRUD(self.answer_session)
         answers = await repository.get_list(
@@ -379,12 +394,12 @@ class AnswerService:
 
         activity_hist_ids = set()
 
-        answer_result: list[FlowAnswer] = []
+        answer_result: list[ActivityAnswer] = []
 
         for answer in answers:
             answer_item = answer.answer_items[0]
             answer_result.append(
-                FlowAnswer(
+                ActivityAnswer(
                     **answer.dict(exclude={"migrated_data"}),
                     **answer_item.dict(
                         include={
