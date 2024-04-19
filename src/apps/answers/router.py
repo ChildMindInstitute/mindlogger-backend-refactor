@@ -28,7 +28,7 @@ from apps.answers.api import (
     summary_latest_report_retrieve,
 )
 from apps.answers.domain import (
-    ActivityAnswerPublic,
+    ActivitySubmissionResponse,
     AnswerExistenceResponse,
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
@@ -149,10 +149,10 @@ router.get(
 )(applet_submit_date_list)
 
 router.get(
-    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}",
+    "/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[ActivityAnswerPublic]},
+        status.HTTP_200_OK: {"model": Response[ActivitySubmissionResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

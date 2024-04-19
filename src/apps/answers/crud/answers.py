@@ -52,6 +52,7 @@ class _AnswerListFilter(Filtering):
 
     submit_id = FilterField(AnswerSchema.submit_id)
     applet_id = FilterField(AnswerSchema.applet_id)
+    activity_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id), cast=str)
     flow_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id), cast=str)
 
 
