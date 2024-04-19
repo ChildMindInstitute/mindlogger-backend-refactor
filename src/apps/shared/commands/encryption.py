@@ -1,17 +1,16 @@
-import typer
-from sqlalchemy import Unicode
-from sqlalchemy.dialects.postgresql import dialect
-
 from typing import Optional
 
+import typer
 from rich import print
 from rich.style import Style
 from rich.table import Table
+from sqlalchemy import Unicode
+from sqlalchemy.dialects.postgresql import dialect
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from infrastructure.database import atomic, session_manager
 from infrastructure.commands.utils import coro
+from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
 
