@@ -347,9 +347,21 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = select(AnswerSchema.activity_history_id, func.max(AnswerSchema.created_at))
         query = query.where(or_(*(AnswerSchema.activity_history_id.like(f"{item}_%") for item in activity_ids)))
         if respondent_id:
-            query.where(AnswerSchema.respondent_id == respondent_id)
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
         query = query.group_by(AnswerSchema.activity_history_id)
-        query.order_by(AnswerSchema.activity_history_id)
+        query = query.order_by(AnswerSchema.activity_history_id)
+        db_result = await self._execute(query)
+        return db_result.all()  # noqa
+
+    async def get_submitted_flows_with_last_date(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+    ) -> list[tuple[str, datetime.datetime]]:
+        query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
+        query = query.where(AnswerSchema.applet_id == applet_id, AnswerSchema.flow_history_id.isnot(None))
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.group_by(AnswerSchema.flow_history_id)
+        query = query.order_by(AnswerSchema.flow_history_id)
         db_result = await self._execute(query)
         return db_result.all()  # noqa
 

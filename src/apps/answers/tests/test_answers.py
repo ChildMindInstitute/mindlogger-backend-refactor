@@ -201,6 +201,7 @@ class TestAnswerActivityItems(BaseTest):
     review_activities_url = "/answers/applet/{applet_id}/review/activities"
 
     summary_activities_url = "/answers/applet/{applet_id}/summary/activities"
+    summary_activity_flows_url = "/answers/applet/{applet_id}/summary/flows"
     identifiers_url = f"{summary_activities_url}/{{activity_id}}/identifiers"
     versions_url = f"{summary_activities_url}/{{activity_id}}/versions"
 
@@ -2006,3 +2007,31 @@ class TestAnswerActivityItems(BaseTest):
         )
         response = await client.get(url)
         assert response.status_code == 404
+
+    async def test_summary_for_activity_flow_with_answer(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer, tom_answer_activity_flow
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        assert payload["count"] == 1
+        assert payload["result"][0]["id"] == str(applet_with_flow.activity_flows[0].id)
+        assert payload["result"][0]["name"] == applet_with_flow.activity_flows[0].name
+        assert payload["result"][0]["hasAnswer"] is True
+
+    async def test_summary_for_activity_flow_without_answer(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        assert payload["count"] == 1
+        assert payload["result"][0]["id"] == str(applet_with_flow.activity_flows[0].id)
+        assert payload["result"][0]["name"] == applet_with_flow.activity_flows[0].name
+        assert payload["result"][0]["hasAnswer"] is False

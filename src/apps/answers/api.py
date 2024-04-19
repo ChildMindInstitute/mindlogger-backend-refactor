@@ -30,6 +30,7 @@ from apps.answers.domain import (
     PublicAnswerExportResponse,
     PublicReviewActivity,
     PublicSummaryActivity,
+    PublicSummaryActivityFlow,
     ReviewsCount,
     VersionPublic,
 )
@@ -127,12 +128,32 @@ async def summary_activity_list(
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[PublicSummaryActivity]:
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    respondent_id = query_params.filters.get("respondent_id")
+    await CheckAccessService(session, user.id).check_summary_access(applet_id, respondent_id)
     activities = await AnswerService(session, user.id, answer_session).get_summary_activities(
         applet_id, query_params.filters.get("respondent_id")
     )
     return ResponseMulti(
         result=parse_obj_as(list[PublicSummaryActivity], activities),
+        count=len(activities),
+    )
+
+
+async def summary_activity_flow_list(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(parse_query_params(SummaryActivityFilter)),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[PublicSummaryActivityFlow]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    respondent_id = query_params.filters.get("respondent_id")  # todo: Change to target_subject_id
+    await CheckAccessService(session, user.id).check_summary_access(applet_id, respondent_id)
+    activities = await AnswerService(session, user.id, answer_session).get_summary_activity_flows(
+        applet_id, respondent_id
+    )
+    return ResponseMulti(
+        result=parse_obj_as(list[PublicSummaryActivityFlow], activities),
         count=len(activities),
     )
 
