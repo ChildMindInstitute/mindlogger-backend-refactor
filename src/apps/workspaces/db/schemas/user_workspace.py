@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Unicode
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from infrastructure.database.base import Base, MigratedMixin
+from infrastructure.database import Base, MigratedMixin
 
 
 class UserWorkspaceSchema(MigratedMixin, Base):
@@ -14,9 +14,7 @@ class UserWorkspaceSchema(MigratedMixin, Base):
         unique=True,
         index=True,
     )
-    workspace_name = Column(
-        StringEncryptedType(Unicode, get_key), nullable=False, index=True
-    )
+    workspace_name = Column(StringEncryptedType(Unicode, get_key), nullable=False, index=True)
     is_modified = Column(Boolean(), default=False)
     database_uri = Column(StringEncryptedType(Unicode, get_key))
     storage_type = Column(StringEncryptedType(Unicode, get_key))

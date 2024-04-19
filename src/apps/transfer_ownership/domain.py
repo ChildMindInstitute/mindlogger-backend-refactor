@@ -18,6 +18,8 @@ class Transfer(InternalModel):
     applet_id: uuid.UUID
     key: uuid.UUID
     status: TransferOwnershipStatus
+    from_user_id: uuid.UUID
+    to_user_id: uuid.UUID | None = None
 
 
 class InitiateTransfer(InternalModel):

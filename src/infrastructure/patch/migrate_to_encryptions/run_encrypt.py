@@ -1,8 +1,6 @@
 import asyncio
 
-from infrastructure.patch.migrate_to_encryptions.services.postgres import (
-    Postgres,
-)
+from infrastructure.patch.migrate_to_encryptions.services.postgres import Postgres
 
 
 async def main():

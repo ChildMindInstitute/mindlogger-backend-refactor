@@ -7,9 +7,7 @@ from apps.users.db.schemas import UserSchema
 from infrastructure.http.domain import MindloggerContentSource
 
 
-async def test_create_log_success(
-    session: AsyncSession, user_tom: UserSchema, base_log_data: dict[str, Any]
-) -> None:
+async def test_create_log_success(session: AsyncSession, user_tom: UserSchema, base_log_data: dict[str, Any]) -> None:
     base_log_data["user_id"] = user_tom.id
     log = await UserActivityLogService(session).create_log(**base_log_data)
     assert log.user_id == user_tom.id

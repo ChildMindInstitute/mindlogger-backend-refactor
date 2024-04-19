@@ -9,18 +9,10 @@ from starlette.responses import Response as HTTPResponse
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity_update import ActivityReportConfiguration
 from apps.activities.services.activity import ActivityService
-from apps.activity_flows.domain.flow_update import (
-    ActivityFlowReportConfiguration,
-)
+from apps.activity_flows.domain.flow_update import ActivityFlowReportConfiguration
 from apps.activity_flows.service.flow import FlowService
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.applets.domain import (
-    AppletFolder,
-    AppletName,
-    AppletUniqueName,
-    PublicAppletHistoryChange,
-    PublicHistory,
-)
+from apps.applets.domain import AppletFolder, AppletName, AppletUniqueName, PublicAppletHistoryChange, PublicHistory
 from apps.applets.domain.applet import (
     AppletActivitiesBaseInfo,
     AppletDataRetention,
@@ -40,13 +32,8 @@ from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.base import Encryption
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
-from apps.applets.service.applet_history import (
-    retrieve_applet_by_version,
-    retrieve_versions,
-)
+from apps.applets.service.applet_history import retrieve_applet_by_version, retrieve_versions
 from apps.authentication.deps import get_current_user
-from apps.mailing.domain import MessageSchema
-from apps.mailing.services import MailingService
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.shared.link import convert_link_key
@@ -58,6 +45,8 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_language
+from infrastructure.logger import logger
+from infrastructure.utility import FirebaseNotificationType
 
 __all__ = [
     "applet_create",
@@ -78,9 +67,6 @@ __all__ = [
     "applet_retrieve_by_key",
 ]
 
-from infrastructure.logger import logger
-from infrastructure.utility import FirebaseNotificationType
-
 
 async def applet_list(
     user: User = Depends(get_current_user),
@@ -89,17 +75,10 @@ async def applet_list(
     session=Depends(get_session),
 ) -> ResponseMulti[AppletSingleLanguageInfoPublic]:
     async with atomic(session):
-        applets = await AppletService(
-            session, user.id
-        ).get_list_by_single_language(language, deepcopy(query_params))
-        count = await AppletService(
-            session, user.id
-        ).get_list_by_single_language_count(deepcopy(query_params))
+        applets = await AppletService(session, user.id).get_list_by_single_language(language, deepcopy(query_params))
+        count = await AppletService(session, user.id).get_list_by_single_language_count(deepcopy(query_params))
     return ResponseMulti(
-        result=[
-            AppletSingleLanguageInfoPublic.from_orm(applet)
-            for applet in applets
-        ],
+        result=[AppletSingleLanguageInfoPublic.from_orm(applet) for applet in applets],
         count=count,
     )
 
@@ -109,17 +88,13 @@ async def applet_retrieve(
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
     session=Depends(get_session),
-) -> Response[AppletSingleLanguageDetailPublic]:
+) -> AppletRetrieveResponse[AppletSingleLanguageDetailPublic]:
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         applet_future = service.get_single_language_by_id(applet_id, language)
-        nickname_future = UserAppletAccessService(
-            session, user.id, applet_id
-        ).get_nickname()
+        nickname_future = UserAppletAccessService(session, user.id, applet_id).get_nickname()
         futures = await asyncio.gather(applet_future, nickname_future)
     return AppletRetrieveResponse(
         result=AppletSingleLanguageDetailPublic.from_orm(futures[0]),
@@ -134,14 +109,10 @@ async def applet_retrieve_by_key(
 ) -> Response[AppletSingleLanguageDetailForPublic]:
     key_guid = convert_link_key(key)
     async with atomic(session):
-        service = AppletService(
-            session, uuid.UUID("00000000-0000-0000-0000-000000000000")
-        )
+        service = AppletService(session, uuid.UUID("00000000-0000-0000-0000-000000000000"))
         await service.exist_by_key(key_guid)
         applet = await service.get_single_language_by_key(key_guid, language)
-    return Response(
-        result=AppletSingleLanguageDetailForPublic.from_orm(applet)
-    )
+    return Response(result=AppletSingleLanguageDetailForPublic.from_orm(applet))
 
 
 async def applet_create(
@@ -151,45 +122,12 @@ async def applet_create(
     session=Depends(get_session),
 ) -> Response[public_detail.Applet]:
     async with atomic(session):
-        await CheckAccessService(session, user.id).check_applet_create_access(
-            owner_id
-        )
-        has_editor = await UserAppletAccessCRUD(
-            session
-        ).check_access_by_user_and_owner(
+        await CheckAccessService(session, user.id).check_applet_create_access(owner_id)
+        has_editor = await UserAppletAccessCRUD(session).check_access_by_user_and_owner(
             user_id=user.id, owner_id=owner_id, roles=[Role.EDITOR]
         )
         manager_role = Role.EDITOR if has_editor else None
-
-        mail_service = MailingService()
-        try:
-            applet = await AppletService(session, owner_id).create(
-                schema, user.id, manager_role
-            )
-        except Exception:
-            await mail_service.send(
-                MessageSchema(
-                    recipients=[user.email_encrypted],
-                    subject="Applet upload failed!",
-                    body=mail_service.get_template(
-                        path="applet_create_failed_en",
-                        first_name=user.first_name,
-                        applet_name=schema.display_name,
-                    ),
-                )
-            )
-            raise
-        await mail_service.send(
-            MessageSchema(
-                recipients=[user.email_encrypted],
-                subject="Applet upload success!",
-                body=mail_service.get_template(
-                    path="applet_create_success_en",
-                    first_name=user.first_name,
-                    applet_name=applet.display_name,
-                ),
-            )
-        )
+        applet = await AppletService(session, owner_id).create(schema, user.id, manager_role)
     return Response(result=public_detail.Applet.from_orm(applet))
 
 
@@ -199,13 +137,10 @@ async def applet_update(
     schema: AppletUpdate = Body(...),
     session=Depends(get_session),
 ) -> Response[public_detail.Applet]:
-    # mail_service = MailingService()
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_edit_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
         applet = await service.update(applet_id, schema)
     try:
         await service.send_notification_to_applet_respondents(
@@ -218,17 +153,6 @@ async def applet_update(
         # mute error
         logger.exception(e)
 
-    # await mail_service.send(
-    #     MessageSchema(
-    #         recipients=[user.email],
-    #         subject="Applet edit success!",
-    #         body=mail_service.get_template(
-    #             path="applet_edit_success_en",
-    #             first_name=user.first_name,
-    #             applet_name=applet.display_name,
-    #         ),
-    #     )
-    # )
     return Response(result=public_detail.Applet.from_orm(applet))
 
 
@@ -241,9 +165,7 @@ async def applet_encryption_update(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_edit_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
         await service.update_encryption(applet_id, schema)
     return Response(result=public_detail.Encryption.from_orm(schema))
 
@@ -254,30 +176,13 @@ async def applet_duplicate(
     schema: AppletDuplicateRequest = Body(...),
     session=Depends(get_session),
 ) -> Response[public_detail.Applet]:
-    mail_service = MailingService()
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_duplicate_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_duplicate_access(applet_id)
         applet_for_duplicate = await service.get_by_id_for_duplicate(applet_id)
 
-        applet = await service.duplicate(
-            applet_for_duplicate, schema.display_name, schema.encryption
-        )
-
-        await mail_service.send(
-            MessageSchema(
-                recipients=[user.email_encrypted],
-                subject="Applet duplicate success!",
-                body=mail_service.get_template(
-                    path="applet_duplicate_success_en",
-                    first_name=user.first_name,
-                    applet_name=applet.display_name,
-                ),
-            )
-        )
+        applet = await service.duplicate(applet_for_duplicate, schema.display_name, schema.encryption)
     return Response(result=public_detail.Applet.from_orm(applet))
 
 
@@ -290,9 +195,7 @@ async def applet_set_report_configuration(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_edit_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
         await service.set_report_configuration(applet_id, schema)
 
 
@@ -305,9 +208,7 @@ async def flow_report_config_update(
 ):
     service = FlowService(session)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_applet_edit_access(
-        applet_id
-    )
+    await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
     flow = await service.get_by_id(flow_id)
     if not flow or flow.applet_id != applet_id:
         raise NotFoundError()
@@ -326,18 +227,14 @@ async def activity_report_config_update(
     session=Depends(get_session),
 ):
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_applet_edit_access(
-        applet_id
-    )
+    await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
 
     activity = await ActivitiesCRUD(session).get_by_id(activity_id)
     if not activity or activity.applet_id != applet_id:
         raise NotFoundError()
 
     async with atomic(session):
-        await ActivityService(session, user.id).update_report(
-            activity_id, schema
-        )
+        await ActivityService(session, user.id).update_report(activity_id, schema)
 
     return HTTPResponse()
 
@@ -350,9 +247,7 @@ async def applet_publish(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id, user.is_super_admin
-        ).check_publish_conceal_access()
+        await CheckAccessService(session, user.id, user.is_super_admin).check_publish_conceal_access()
         await service.publish(applet_id)
 
 
@@ -364,9 +259,7 @@ async def applet_conceal(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id, user.is_super_admin
-        ).check_publish_conceal_access()
+        await CheckAccessService(session, user.id, user.is_super_admin).check_publish_conceal_access()
         await service.conceal(applet_id)
 
 
@@ -377,9 +270,7 @@ async def applet_versions_retrieve(
 ) -> ResponseMulti[PublicHistory]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         histories = await retrieve_versions(session, applet_id)
     return ResponseMulti(
         result=[PublicHistory(**h.dict()) for h in histories],
@@ -395,13 +286,9 @@ async def applet_version_retrieve(
 ) -> Response[public_history_detail.AppletDetailHistory]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         applet = await retrieve_applet_by_version(session, applet_id, version)
-    return Response(
-        result=public_history_detail.AppletDetailHistory(**applet.dict())
-    )
+    return Response(result=public_history_detail.AppletDetailHistory(**applet.dict()))
 
 
 async def applet_version_changes_retrieve(
@@ -412,12 +299,8 @@ async def applet_version_changes_retrieve(
 ) -> Response[PublicAppletHistoryChange]:
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
-        changes = await AppletHistoryService(
-            session, applet_id, version
-        ).get_changes()
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+        changes = await AppletHistoryService(session, applet_id, version).get_changes()
     return Response(result=PublicAppletHistoryChange(**changes.dict()))
 
 
@@ -429,12 +312,8 @@ async def applet_delete(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_delete_access(
-            applet_id
-        )
-        respondents_device_ids = await AppletsCRUD(
-            session
-        ).get_respondents_device_ids(applet_id)
+        await CheckAccessService(session, user.id).check_applet_delete_access(applet_id)
+        respondents_device_ids = await AppletsCRUD(session).get_respondents_device_ids(applet_id)
         await service.delete_applet_by_id(applet_id)
     try:
         await service.send_notification_to_applet_respondents(
@@ -457,9 +336,7 @@ async def applet_set_folder(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_folder.applet_id)
-        await CheckAccessService(session, user.id).check_applet_edit_access(
-            applet_folder.applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_edit_access(applet_folder.applet_id)
         await service.set_applet_folder(applet_folder)
 
 
@@ -469,9 +346,7 @@ async def applet_unique_name_get(
     session=Depends(get_session),
 ) -> Response[AppletUniqueName]:
     async with atomic(session):
-        new_name = await AppletService(session, user.id).get_unique_name(
-            schema
-        )
+        new_name = await AppletService(session, user.id).get_unique_name(schema)
     return Response(result=AppletUniqueName(name=new_name))
 
 
@@ -484,12 +359,8 @@ async def applet_link_create(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_link_edit_access(
-            applet_id
-        )
-        access_link = await service.create_access_link(
-            applet_id=applet_id, create_request=schema
-        )
+        await CheckAccessService(session, user.id).check_link_edit_access(applet_id)
+        access_link = await service.create_access_link(applet_id=applet_id, create_request=schema)
     return Response(result=access_link)
 
 
@@ -513,9 +384,7 @@ async def applet_link_delete(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_link_edit_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_link_edit_access(applet_id)
         await service.delete_access_link(applet_id=applet_id)
 
 
@@ -528,9 +397,7 @@ async def applet_set_data_retention(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_retention_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_retention_access(applet_id)
         await service.set_data_retention(applet_id, schema)
 
 
@@ -542,9 +409,7 @@ async def applet_retrieve_base_info(
 ) -> Response[AppletActivitiesBaseInfo]:
     service = AppletService(session, user.id)
     await service.exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_applet_detail_access(
-        applet_id
-    )
+    await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
     applet = await service.get_info_by_id(applet_id, language)
 
     return Response(result=AppletActivitiesBaseInfo.from_orm(applet))
@@ -556,9 +421,7 @@ async def applet_retrieve_base_info_by_key(
     session=Depends(get_session),
 ) -> Response[AppletSingleLanguageDetailForPublic]:
     key_guid = convert_link_key(key)
-    service = AppletService(
-        session, uuid.UUID("00000000-0000-0000-0000-000000000000")
-    )
+    service = AppletService(session, uuid.UUID("00000000-0000-0000-0000-000000000000"))
     await service.exist_by_key(key_guid)
     applet = await service.get_info_by_key(key_guid, language)
     return Response(result=AppletActivitiesBaseInfo.from_orm(applet))

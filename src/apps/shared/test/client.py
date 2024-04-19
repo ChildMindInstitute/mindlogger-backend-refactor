@@ -1,21 +1,25 @@
 import json
 import urllib.parse
+import uuid
 from io import BytesIO
-from typing import Any, Mapping, Type, TypeVar
+from typing import Any, Mapping
 
-from httpx import AsyncClient, Response
+from httpx import ASGITransport, AsyncClient, Response
 from pydantic import BaseModel
 
-T = TypeVar("T", bound=BaseModel)
+from apps.authentication.domain.token import JWTClaim
+from apps.authentication.services import AuthenticationService
+from apps.users.domain import User
+from config import settings
 
 
 class TestClient:
-    def __init__(self, app):
-        self.client = AsyncClient(app=app, base_url="http://test.com")
-        self.headers = {}
+    def __init__(self, app) -> None:
+        self.client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com")
+        self.headers: dict[str, Any] = {}
 
     @staticmethod
-    def _prepare_url(url, query):
+    def _prepare_url(url, query) -> str:
         return f"{url}?{urllib.parse.urlencode(query)}"
 
     def _get_updated_headers(self, headers: dict | None = None) -> dict:
@@ -25,19 +29,21 @@ class TestClient:
         return headers_
 
     @staticmethod
-    def _get_body(data: dict[str, Any] | Type[T] | None = None):
+    def _get_body(
+        data: dict[str, Any] | BaseModel | list[dict[str, Any]] | list[BaseModel] | None = None,
+    ) -> str | None:
         if data:
             if isinstance(data, BaseModel):
                 request_data = data.dict()
             else:
-                request_data = data
+                request_data = data  # type: ignore[assignment]
             return json.dumps(request_data, default=str)
         return None
 
     async def post(
         self,
         url: str,
-        data: dict[str, Any] | Type[T] | None = None,
+        data: dict[str, Any] | BaseModel | list[dict[str, Any]] | list[BaseModel] | None = None,
         query: dict | None = None,
         headers: dict | None = None,
         files: Mapping[str, BytesIO] | None = None,
@@ -55,7 +61,7 @@ class TestClient:
     async def put(
         self,
         url: str,
-        data: dict | None = None,
+        data: dict | BaseModel | None = None,
         query: dict | None = None,
         headers: dict | None = None,
     ) -> Response:
@@ -76,9 +82,7 @@ class TestClient:
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
-        response = await self.client.get(
-            url, headers=self._get_updated_headers(headers)
-        )
+        response = await self.client.get(url, headers=self._get_updated_headers(headers))
         return response
 
     async def delete(
@@ -98,22 +102,18 @@ class TestClient:
         )
         return response
 
-    async def login(
-        self, url: str, email: str, password: str, device_id: str | None = None
-    ):
-        response = await self.post(
-            url,
-            data={
-                "email": email,
-                "password": password,
-                "device_id": device_id,
-            },
+    def login(self, user: User | uuid.UUID):
+        if isinstance(user, User):
+            sub = user.id
+        else:
+            sub = user
+        access_token = AuthenticationService.create_access_token(
+            {
+                JWTClaim.sub: str(sub),
+                JWTClaim.rjti: str(uuid.uuid4()),
+            }
         )
-        assert response.status_code == 200, response.json()
-        access_token = response.json()["result"]["token"]["accessToken"]
-        token_type = response.json()["result"]["token"]["tokenType"]
-        self.headers["Authorization"] = f"{token_type} {access_token}"
-        return response
+        self.headers["Authorization"] = f"{settings.authentication.token_type} {access_token}"
 
-    async def logout(self):
+    def logout(self) -> None:
         self.headers = {}

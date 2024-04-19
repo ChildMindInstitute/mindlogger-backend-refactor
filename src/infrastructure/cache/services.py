@@ -84,9 +84,7 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         instance: _InputObject,
         ttl: int | None = None,
     ) -> CacheEntry[_InputObject]:
-        enhanced_cache_entry: CacheEntry[_InputObject] = CacheEntry(
-            instance=instance, created_at=datetime.utcnow()
-        )
+        enhanced_cache_entry: CacheEntry[_InputObject] = CacheEntry(instance=instance, created_at=datetime.utcnow())
 
         await self.redis_client.set(
             key=self._build_key(key=key),

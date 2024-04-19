@@ -26,15 +26,12 @@ from apps.applets.api.applets import (
     applet_versions_retrieve,
     flow_report_config_update,
 )
-from apps.applets.domain import (
-    AppletUniqueName,
-    PublicAppletHistoryChange,
-    PublicHistory,
-)
+from apps.applets.domain import AppletUniqueName, PublicAppletHistoryChange, PublicHistory
 from apps.applets.domain.applet import (
     AppletActivitiesBaseInfo,
     AppletRetrieveResponse,
     AppletSingleLanguageDetailForPublic,
+    AppletSingleLanguageDetailPublic,
     AppletSingleLanguageInfoPublic,
 )
 from apps.applets.domain.applet_link import AppletLink
@@ -54,9 +51,7 @@ router.get(
     response_model=ResponseMulti[AppletSingleLanguageInfoPublic],
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {
-            "model": ResponseMulti[AppletSingleLanguageInfoPublic]
-        },
+        status.HTTP_200_OK: {"model": ResponseMulti[AppletSingleLanguageInfoPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -66,7 +61,7 @@ router.get(
     "/{applet_id}",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": AppletRetrieveResponse},
+        status.HTTP_200_OK: {"model": AppletRetrieveResponse[AppletSingleLanguageDetailPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -88,9 +83,7 @@ router.get(
     status_code=status.HTTP_200_OK,
     response_model=Response[public_history_detail.AppletDetailHistory],
     responses={
-        status.HTTP_200_OK: {
-            "model": Response[public_history_detail.AppletDetailHistory]
-        },
+        status.HTTP_200_OK: {"model": Response[public_history_detail.AppletDetailHistory]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -276,9 +269,7 @@ public_router.get(
     status_code=status.HTTP_200_OK,
     response_model=Response[AppletSingleLanguageDetailForPublic],
     responses={
-        status.HTTP_200_OK: {
-            "model": Response[AppletSingleLanguageDetailForPublic]
-        },
+        status.HTTP_200_OK: {"model": Response[AppletSingleLanguageDetailForPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

@@ -16,24 +16,18 @@ __all__ = [
 ]
 
 
-async def get_arbitrary_info(
-    applet_id: uuid.UUID | None, session: AsyncSession
-) -> str | None:
+async def get_arbitrary_info(applet_id: uuid.UUID | None, session: AsyncSession) -> str | None:
     if applet_id:
         service = WorkspaceService(session, uuid.uuid4())
-        server_info = await service.get_arbitrary_info(applet_id)
-        if server_info and server_info.use_arbitrary:
+        server_info = await service.get_arbitrary_info_if_use_arbitrary(applet_id)
+        if server_info:
             return server_info.database_uri
     return None
 
 
-async def get_arbitraries_map(
-    applet_ids: list[uuid.UUID], session: AsyncSession
-) -> dict[str | None, list[uuid.UUID]]:
+async def get_arbitraries_map(applet_ids: list[uuid.UUID], session: AsyncSession) -> dict[str | None, list[uuid.UUID]]:
     """Returning map {"arbitrary_uri": [applet_ids]}"""
-    return await WorkspaceService(session, uuid.uuid4()).get_arbitraries_map(
-        applet_ids
-    )
+    return await WorkspaceService(session, uuid.uuid4()).get_arbitraries_map(applet_ids)
 
 
 async def preprocess_arbitrary_url(
@@ -63,8 +57,8 @@ async def get_answer_session_by_owner_id(
     session: AsyncSession = Depends(get_session),
 ):
     service = WorkspaceService(session, uuid.uuid4())
-    server_info = await service.get_arbitrary_info_by_owner_id(owner_id)
-    if server_info and server_info.use_arbitrary:
+    server_info = await service.get_arbitrary_info_by_owner_id_if_use_arbitrary(owner_id)
+    if server_info:
         url = server_info.database_uri
         if not url:
             yield None

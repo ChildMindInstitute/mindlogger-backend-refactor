@@ -1,26 +1,67 @@
 import json
+import uuid
+from typing import AsyncGenerator
 
-from apps.shared.test import BaseTest
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
+from apps.applets.domain.applet_create_update import AppletCreate
+from apps.applets.domain.applet_full import AppletFull
+from apps.applets.service.applet import AppletService
+from apps.shared.enums import Language
+from apps.shared.test.client import TestClient
+from apps.themes.service import ThemeService
+from apps.users.domain import User
 
 
-class TestAnswerCases(BaseTest):
+@pytest.fixture
+async def applet_data_with_flow(applet_minimal_data: AppletCreate) -> AppletCreate:
+    data = applet_minimal_data.copy(deep=True)
+    data.display_name = "schedule"
+    # By some reasons for test need ActivityFlow
+    data.activity_flows = [
+        FlowCreate(
+            name="flow",
+            description={Language.ENGLISH: "description"},
+            items=[FlowItemCreate(activity_key=data.activities[0].key)],
+        )
+    ]
+    second_activity = data.activities[0].copy(deep=True)
+    second_activity.name = data.activities[0].name + " second"
+    data.activities.append(second_activity)
+    return AppletCreate(**data.dict())
+
+
+@pytest.fixture
+async def applet_with_flow(
+    session: AsyncSession, tom: User, applet_data_with_flow: AppletCreate
+) -> AsyncGenerator[AppletFull, None]:
+    srv = AppletService(session, tom.id)
+    await ThemeService(session, tom.id).get_or_create_default()
+    applet = await srv.create(applet_data_with_flow)
+    yield applet
+
+
+@pytest.mark.usefixtures("mock_kiq_report")
+class TestAnswerCases:
     login_url = "/auth/login"
     answer_url = "/answers"
 
     async def test_answer_activity_items_create_for_respondent(
-        self, mock_kiq_report, client
+        self, client: TestClient, applet_with_flow: AppletFull, tom: User
     ):
-        await self.load_data(
-            "answers/fixtures/duplicate_activity_in_flow.json"
-        )
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+        client.login(tom)
+
+        submit_id = str(uuid.uuid4())
+        answer_value_id = str(uuid.uuid4())
 
         create_data = dict(
-            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            flow_id="3013dfb1-9202-4577-80f2-ba7450fb5831",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3611",
-            version="1.0.0",
+            submit_id=submit_id,
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+            activity_id=applet_with_flow.activities[0].id,
+            version=applet_with_flow.version,
             created_at=1681216969,
             client=dict(
                 appId="mindlogger-mobile",
@@ -32,13 +73,13 @@ class TestAnswerCases(BaseTest):
                 user_public_key="user key",
                 answer=json.dumps(
                     dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        value=answer_value_id,
                         additional_text=None,
                     )
                 ),
                 events=json.dumps(dict(events=["event1", "event2"])),
                 item_ids=[
-                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0011",
+                    applet_with_flow.activities[0].items[0].id,
                 ],
                 identifier="encrypted_identifier",
                 scheduled_time=10,
@@ -51,11 +92,11 @@ class TestAnswerCases(BaseTest):
         assert response.status_code == 201, response.json()
 
         create_data = dict(
-            submit_id="270d86e0-2158-4d18-befd-86b3ce0122ae",
-            applet_id="92917a56-d586-4613-b7aa-991f2c4b15b1",
-            flow_id="3013dfb1-9202-4577-80f2-ba7450fb5831",
-            activity_id="09e3dbf0-aefb-4d0e-9177-bdb321bf3621",
-            version="1.0.0",
+            submit_id=submit_id,
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+            activity_id=applet_with_flow.activities[1].id,
+            version=applet_with_flow.version,
             created_at=1681216969,
             client=dict(
                 appId="mindlogger-mobile",
@@ -67,13 +108,13 @@ class TestAnswerCases(BaseTest):
                 user_public_key="user key",
                 answer=json.dumps(
                     dict(
-                        value="2ba4bb83-ed1c-4140-a225-c2c9b4db66d2",
+                        value=answer_value_id,
                         additional_text=None,
                     )
                 ),
                 events=json.dumps(dict(events=["event1", "event2"])),
                 item_ids=[
-                    "a18d3409-2c96-4a5e-a1f3-1c1c14be0021",
+                    applet_with_flow.activities[1].items[0].id,
                 ],
                 identifier="encrypted_identifier",
                 scheduled_time=10,

@@ -3,9 +3,7 @@ from copy import deepcopy
 
 from fastapi import Body, Depends, Query
 
-from apps.answers.deps.preprocess_arbitrary import (
-    get_answer_session_by_owner_id,
-)
+from apps.answers.deps.preprocess_arbitrary import get_answer_session_by_owner_id
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
@@ -13,11 +11,7 @@ from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.query_params import (
-    BaseQueryParams,
-    QueryParams,
-    parse_query_params,
-)
+from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.users.services.user import UserService
 from apps.workspaces.domain.constants import Role, UserPinRole
@@ -56,13 +50,9 @@ async def user_workspaces(
     """Fetch all workspaces for the specific user."""
 
     if user.is_super_admin:
-        workspaces = await UserAccessService(
-            session, user.id
-        ).get_super_admin_workspaces()
+        workspaces = await UserAccessService(session, user.id).get_super_admin_workspaces()
     else:
-        workspaces = await UserAccessService(
-            session, user.id
-        ).get_user_workspaces()
+        workspaces = await UserAccessService(session, user.id).get_user_workspaces()
 
     return ResponseMulti[PublicWorkspace](
         count=len(workspaces),
@@ -84,9 +74,7 @@ async def workspace_retrieve(
     """Fetch all workspaces for the specific user."""
 
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-    workspace = await WorkspaceService(session, owner_id).get_workspace(
-        user.id
-    )
+    workspace = await WorkspaceService(session, owner_id).get_workspace(user.id)
 
     return Response(result=PublicWorkspaceInfo.from_orm(workspace))
 
@@ -102,9 +90,7 @@ async def managers_priority_role_retrieve(
         return Response(result=WorkspacePrioritizedRole(role=Role.SUPER_ADMIN))
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     await CheckAccessService(session, user.id).check_workspace_access(owner_id)
-    role = await WorkspaceService(
-        session, user.id
-    ).get_applets_roles_by_priority(owner_id, appletIDs.applet_ids)
+    role = await WorkspaceService(session, user.id).get_applets_roles_by_priority(owner_id, appletIDs.applet_ids)
 
     return Response(result=WorkspacePrioritizedRole(role=role))
 
@@ -116,9 +102,9 @@ async def workspace_roles_retrieve(
     session=Depends(get_session),
 ) -> Response[dict[uuid.UUID, list[Role]]]:
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-    applet_roles = await UserAccessService(
-        session, user.id
-    ).get_workspace_applet_roles(owner_id, applet_ids, user.is_super_admin)
+    applet_roles = await UserAccessService(session, user.id).get_workspace_applet_roles(
+        owner_id, applet_ids, user.is_super_admin
+    )
 
     return Response(result=applet_roles)
 
@@ -133,13 +119,9 @@ async def workspace_folder_applets(
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
     if not user.is_super_admin:
-        await CheckAccessService(session, user.id).check_workspace_access(
-            owner_id
-        )
+        await CheckAccessService(session, user.id).check_workspace_access(owner_id)
         await UserAccessService(session, user.id).check_access(owner_id)
-    applets = await service.get_workspace_folder_applets(
-        owner_id, folder_id, language
-    )
+    applets = await service.get_workspace_folder_applets(owner_id, folder_id, language)
 
     return ResponseMulti(
         result=[WorkspaceAppletPublic.from_orm(applet) for applet in applets],
@@ -157,13 +139,9 @@ async def workspace_applets(
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
     if not user.is_super_admin:
-        await CheckAccessService(session, user.id).check_workspace_access(
-            owner_id
-        )
+        await CheckAccessService(session, user.id).check_workspace_access(owner_id)
         await UserAccessService(session, user.id).check_access(owner_id)
-    applets = await service.get_workspace_applets(
-        owner_id, language, deepcopy(query_params)
-    )
+    applets = await service.get_workspace_applets(owner_id, language, deepcopy(query_params))
 
     count = await service.get_workspace_applets_count(owner_id, query_params)
 
@@ -184,20 +162,14 @@ async def search_workspace_applets(
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
     if not user.is_super_admin:
-        await CheckAccessService(session, user.id).check_workspace_access(
-            owner_id
-        )
+        await CheckAccessService(session, user.id).check_workspace_access(owner_id)
         await UserAccessService(session, user.id).check_access(owner_id)
-    applets = await service.search_workspace_applets(
-        owner_id, text, language, deepcopy(query_params)
-    )
+    applets = await service.search_workspace_applets(owner_id, text, language, deepcopy(query_params))
 
     count = await service.search_workspace_applets_count(owner_id, text)
 
     return ResponseMulti(
-        result=[
-            WorkspaceSearchAppletPublic.from_orm(applet) for applet in applets
-        ],
+        result=[WorkspaceSearchAppletPublic.from_orm(applet) for applet in applets],
         count=count,
     )
 
@@ -210,9 +182,7 @@ async def workspace_applet_detail(
 ) -> Response[PublicAppletFull]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-    await CheckAccessService(
-        session, user.id
-    ).check_workspace_applet_detail_access(applet_id)
+    await CheckAccessService(session, user.id).check_workspace_applet_detail_access(applet_id)
     applet = await AppletService(session, user.id).get_full_applet(applet_id)
 
     return Response(result=PublicAppletFull.from_orm(applet))
@@ -229,12 +199,8 @@ async def workspace_applet_respondent_update(
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(
-            applet_id
-        )
-        await UserAppletAccessService(session, user.id, applet_id).update_meta(
-            respondent_id, Role.RESPONDENT, schema
-        )
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+        await UserAppletAccessService(session, user.id, applet_id).update_meta(respondent_id, Role.RESPONDENT, schema)
 
 
 async def workspace_remove_manager_access(
@@ -248,13 +214,11 @@ async def workspace_remove_manager_access(
         # Get applets where user still have access
         ex_admin = await UserService(session).get(schema.user_id)
         if ex_admin:
-            management_applets = await UserAccessService(
-                session, schema.user_id
-            ).get_management_applets(schema.applet_ids)
-            ids_to_remove = set(schema.applet_ids) - set(management_applets)
-            await InvitationsService(session, ex_admin).delete_for_managers(
-                list(ids_to_remove)
+            management_applets = await UserAccessService(session, schema.user_id).get_management_applets(
+                schema.applet_ids
             )
+            ids_to_remove = set(schema.applet_ids) - set(management_applets)
+            await InvitationsService(session, ex_admin).delete_for_managers(list(ids_to_remove))
 
 
 async def applet_remove_respondent_access(
@@ -263,38 +227,28 @@ async def applet_remove_respondent_access(
     session=Depends(get_session),
 ):
     async with atomic(session):
-        await UserAccessService(session, user.id).remove_respondent_access(
-            schema
-        )
+        await UserAccessService(session, user.id).remove_respondent_access(schema)
         ex_resp = await UserService(session).get(schema.user_id)
         if ex_resp:
-            await InvitationsService(session, ex_resp).delete_for_respondents(
-                schema.applet_ids
-            )
+            await InvitationsService(session, ex_resp).delete_for_respondents(schema.applet_ids)
 
 
 async def workspace_respondents_list(
     owner_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    query_params: QueryParams = Depends(
-        parse_query_params(WorkspaceUsersQueryParams)
-    ),
+    query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
 
-    await CheckAccessService(
-        session, user.id
-    ).check_workspace_respondent_list_access(owner_id)
+    await CheckAccessService(session, user.id).check_workspace_respondent_list_access(owner_id)
 
-    data, total = await service.get_workspace_respondents(
-        owner_id, None, deepcopy(query_params)
-    )
+    data, total = await service.get_workspace_respondents(owner_id, None, deepcopy(query_params))
     respondents = await AnswerService(
         session=session, arbitrary_session=answer_session
-    ).fill_last_activity(data)
+    ).fill_last_activity_workspace_respondent(data)
     return ResponseMulti(result=respondents, count=total)
 
 
@@ -302,46 +256,34 @@ async def workspace_applet_respondents_list(
     owner_id: uuid.UUID,
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    query_params: QueryParams = Depends(
-        parse_query_params(WorkspaceUsersQueryParams)
-    ),
+    query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMulti[PublicWorkspaceRespondent]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
 
-    await CheckAccessService(
-        session, user.id
-    ).check_applet_respondent_list_access(applet_id)
+    await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
-    data, total = await service.get_workspace_respondents(
-        owner_id, applet_id, deepcopy(query_params)
-    )
+    data, total = await service.get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
     respondents = await AnswerService(
         session=session, arbitrary_session=answer_session
-    ).fill_last_activity(data, applet_id)
+    ).fill_last_activity_workspace_respondent(data, applet_id)
     return ResponseMulti(result=respondents, count=total)
 
 
 async def workspace_managers_list(
     owner_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    query_params: QueryParams = Depends(
-        parse_query_params(WorkspaceUsersQueryParams)
-    ),
+    query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
 ) -> ResponseMulti[PublicWorkspaceManager]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
 
-    await CheckAccessService(
-        session, user.id
-    ).check_workspace_manager_list_access(owner_id)
+    await CheckAccessService(session, user.id).check_workspace_manager_list_access(owner_id)
 
-    data, total = await service.get_workspace_managers(
-        owner_id, None, deepcopy(query_params)
-    )
+    data, total = await service.get_workspace_managers(owner_id, None, deepcopy(query_params))
     workspaces_manager = []
     for workspace_manager in data:
         workspaces_manager.append(
@@ -363,21 +305,15 @@ async def workspace_applet_managers_list(
     owner_id: uuid.UUID,
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    query_params: QueryParams = Depends(
-        parse_query_params(WorkspaceUsersQueryParams)
-    ),
+    query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
 ) -> ResponseMulti[PublicWorkspaceManager]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
 
-    await CheckAccessService(
-        session, user.id
-    ).check_applet_manager_list_access(applet_id)
+    await CheckAccessService(session, user.id).check_applet_manager_list_access(applet_id)
 
-    data, total = await service.get_workspace_managers(
-        owner_id, applet_id, deepcopy(query_params)
-    )
+    data, total = await service.get_workspace_managers(owner_id, applet_id, deepcopy(query_params))
     workspaces_manager = []
     for workspace_manager in data:
         workspaces_manager.append(
@@ -403,9 +339,7 @@ async def workspace_respondent_pin(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await UserAccessService(session, user.id).pin(
-            owner_id, user_id, UserPinRole.respondent
-        )
+        await UserAccessService(session, user.id).pin(owner_id, user_id, UserPinRole.respondent)
 
 
 async def workspace_manager_pin(
@@ -416,9 +350,7 @@ async def workspace_manager_pin(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await UserAccessService(session, user.id).pin(
-            owner_id, user_id, UserPinRole.manager
-        )
+        await UserAccessService(session, user.id).pin(owner_id, user_id, UserPinRole.manager)
 
 
 async def workspace_users_applet_access_list(
@@ -430,18 +362,11 @@ async def workspace_users_applet_access_list(
 ) -> ResponseMulti[PublicRespondentAppletAccess]:
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     service = UserAccessService(session, user.id)
-    accesses = await service.get_respondent_accesses_by_workspace(
-        owner_id, respondent_id, query_params
-    )
-    count = await service.get_respondent_accesses_by_workspace_count(
-        owner_id, respondent_id
-    )
+    accesses = await service.get_respondent_accesses_by_workspace(owner_id, respondent_id, query_params)
+    count = await service.get_respondent_accesses_by_workspace_count(owner_id, respondent_id)
 
     return ResponseMulti(
-        result=[
-            PublicRespondentAppletAccess.from_orm(access)
-            for access in accesses
-        ],
+        result=[PublicRespondentAppletAccess.from_orm(access) for access in accesses],
         count=count,
     )
 
@@ -455,17 +380,11 @@ async def workspace_managers_applet_access_set(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await AppletService(session, user.id).exist_by_ids(
-            [access.applet_id for access in accesses.accesses]
-        )
-        await CheckAccessService(
-            session, user.id
-        ).check_workspace_manager_accesses_access(owner_id)
+        await AppletService(session, user.id).exist_by_ids([access.applet_id for access in accesses.accesses])
+        await CheckAccessService(session, user.id).check_workspace_manager_accesses_access(owner_id)
         await UserService(session).exists_by_id(manager_id)
 
-        await UserAccessService(session, user.id).set(
-            owner_id, manager_id, accesses
-        )
+        await UserAccessService(session, user.id).set(owner_id, manager_id, accesses)
 
 
 async def workspace_applet_get_respondent(
@@ -474,14 +393,19 @@ async def workspace_applet_get_respondent(
     respondent_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    answer_session=Depends(get_answer_session_by_owner_id),
 ) -> Response[RespondentInfoPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-    await CheckAccessService(
-        session, user.id
-    ).check_applet_respondent_list_access(applet_id)
+    await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
-    respondent_info = await UserAppletAccessService(
-        session, user.id, applet_id
-    ).get_respondent_info(respondent_id, applet_id, owner_id)
+    respondent_info = await UserAppletAccessService(session, user.id, applet_id).get_respondent_info(
+        respondent_id, applet_id, owner_id
+    )
+    # get last activity time
+    result = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity_respondent_info(
+        respondent_id, applet_id
+    )
+    respondent_info.last_seen = result.get(respondent_id)
+
     return Response(result=respondent_info)

@@ -1,6 +1,4 @@
-import asyncio
 import uuid
-from functools import wraps
 from typing import Optional
 
 import typer
@@ -8,28 +6,30 @@ from pydantic import ValidationError
 from rich import print
 from rich.style import Style
 from rich.table import Table
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
+from apps.users.cruds.user import UsersCRUD
+from apps.users.errors import UserIsDeletedError, UserNotFound
 from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import (
+    WorkSpaceArbitraryConsoleOutput,
     WorkspaceArbitraryCreate,
     WorkspaceArbitraryFields,
 )
-from apps.workspaces.errors import (
-    ArbitraryServerSettingsError,
-    WorkspaceNotFoundError,
-)
+from apps.workspaces.errors import ArbitraryServerSettingsError, WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
 
 
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
+async def get_version(database_url):
+    engine = create_async_engine(database_url)
+    async with engine.connect() as conn:
+        db_result = await conn.execute(text("select version_num from alembic_version"))
+        return db_result.scalar_one()
 
 
 def print_data_table(data: WorkspaceArbitraryFields):
@@ -51,7 +51,7 @@ def wrap_error_msg(msg):
 @app.command(short_help="Add arbitrary server settings")
 @coro
 async def add(
-    owner_id: uuid.UUID = typer.Argument(..., help="Workspace owner id"),
+    owner_email: str = typer.Argument(..., help="Workspace owner email"),
     database_uri: str = typer.Option(
         ...,
         "--db-uri",
@@ -133,48 +133,92 @@ async def add(
     async with session_maker() as session:
         async with atomic(session):
             try:
-                await WorkspaceService(session, owner_id).set_arbitrary_server(
-                    data, rewrite=force
-                )
+                owner = await UsersCRUD(session).get_by_email(owner_email)
+                await WorkspaceService(session, owner.id).set_arbitrary_server(data, rewrite=force)
             except WorkspaceNotFoundError as e:
                 print(wrap_error_msg(e))
             except ArbitraryServerSettingsError as e:
-                print(
-                    wrap_error_msg(
-                        "Arbitrary server is already set. "
-                        "Use --force to rewrite."
-                    )
-                )
+                print(wrap_error_msg("Arbitrary server is already set. Use --force to rewrite."))
                 print_data_table(e.data)
+            except (UserNotFound, UserIsDeletedError):
+                print(wrap_error_msg(f"User with email {owner_email} not found"))
             else:
                 print("[bold green]Success:[/bold green]")
-                print_data_table(data)
+                alembic_version = await get_version(data.database_uri)
+                output = WorkSpaceArbitraryConsoleOutput(
+                    email=owner_email, user_id=owner.id, **data.dict(), alembic_version=alembic_version
+                )
+                print_data_table(output)
 
 
 @app.command(short_help="Show arbitrary server settings")
 @coro
 async def show(
-    owner_id: Optional[uuid.UUID] = typer.Argument(
-        None, help="Workspace owner id"
-    ),
+    owner_email: Optional[str] = typer.Argument(None, help="Workspace owner email"),
 ):
     session_maker = session_manager.get_session()
     async with session_maker() as session:
-        if owner_id:
-            data = await WorkspaceService(
-                session, owner_id
-            ).get_arbitrary_info_by_owner_id(owner_id)
-            if not data:
-                print(
-                    "[bold green]"
-                    "Arbitrary server not configured"
-                    "[/bold green]"
+        if owner_email:
+            try:
+                owner = await UsersCRUD(session).get_by_email(owner_email)
+            except (UserNotFound, UserIsDeletedError):
+                print(wrap_error_msg(f"User with email {owner_email} not found"))
+            else:
+                data = await WorkspaceService(session, owner.id).get_arbitrary_info_by_owner_id_if_use_arbitrary(
+                    owner.id
                 )
-                return
-            print_data_table(WorkspaceArbitraryFields.from_orm(data))
+                if not data:
+                    print("[bold green]" "Arbitrary server not configured" "[/bold green]")
+                    return
+                alembic_version = await get_version(data.database_uri)
+                arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
+                output = WorkSpaceArbitraryConsoleOutput(
+                    **arbitrary_fields.dict(), email=owner_email, user_id=owner.id, alembic_version=alembic_version
+                )
+                print_data_table(output)
         else:
-            workspaces = await WorkspaceService(
-                session, uuid.uuid4()
-            ).get_arbitrary_list()
+            workspaces = await WorkspaceService(session, uuid.uuid4()).get_arbitrary_list()
+            user_crud = UsersCRUD(session)
             for data in workspaces:
-                print_data_table(WorkspaceArbitraryFields.from_orm(data))
+                user = await user_crud.get_by_id(data.user_id)
+                alembic_version = await get_version(data.database_uri)
+                arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
+                output = WorkSpaceArbitraryConsoleOutput(
+                    **arbitrary_fields.dict(),
+                    email=user.email_encrypted,
+                    user_id=user.id,
+                    alembic_version=alembic_version,
+                )
+                print_data_table(output)
+
+
+@app.command(short_help="Remove arbitrary server settings")
+@coro
+async def remove(
+    owner_email: str = typer.Argument(..., help="Workspace owner email"),
+):
+    data = WorkspaceArbitraryFields(
+        database_uri=None,
+        storage_type=None,
+        storage_url=None,
+        storage_access_key=None,
+        storage_secret_key=None,
+        storage_region=None,
+        storage_bucket=None,
+        use_arbitrary=False,
+    )
+
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        async with atomic(session):
+            try:
+                owner = await UsersCRUD(session).get_by_email(owner_email)
+                await WorkspaceService(session, owner.id).set_arbitrary_server(data, rewrite=True)
+            except (UserNotFound, UserIsDeletedError):
+                print(wrap_error_msg(f"User with email {owner_email} not found"))
+            except WorkspaceNotFoundError as e:
+                print(wrap_error_msg(e))
+            else:
+                print(
+                    f"[bold green]Abitrary setting for owner {owner_email} with id {owner.id} are removed![/bold green]"
+                )

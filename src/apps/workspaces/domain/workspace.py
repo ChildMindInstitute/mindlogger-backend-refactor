@@ -78,9 +78,9 @@ class WorkspaceRespondentDetails(InternalModel):
     def decrypt_nickname(cls, values):
         nickname = values.get("respondent_nickname")
         if nickname:
-            nickname = StringEncryptedType(
-                Unicode, get_key
-            ).process_result_value(nickname, dialect=PGDialect_asyncpg.name)
+            nickname = StringEncryptedType(Unicode, get_key).process_result_value(
+                nickname, dialect=PGDialect_asyncpg.name
+            )
             values["respondent_nickname"] = str(nickname)
 
         return values
@@ -296,6 +296,12 @@ class WorkspaceArbitraryFields(InternalModel):
         return value
 
 
+class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
+    user_id: uuid.UUID
+    email: str
+    alembic_version: str | None
+
+
 class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
     database_uri: str
     storage_secret_key: str
@@ -311,10 +317,7 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
             required = ["storage_url", "storage_bucket", "storage_access_key"]
 
         if required and not all((values[itm] is not None) for itm in required):
-            raise ValueError(
-                f"{', '.join(required)} are required "
-                f"for {storage_type} storage"
-            )
+            raise ValueError(f"{', '.join(required)} are required " f"for {storage_type} storage")
 
         return values
 
@@ -325,6 +328,7 @@ class WorkspaceArbitrary(WorkspaceArbitraryFields):
     storage_secret_key: str
     storage_type: str
     storage_bucket_answer: Optional[str] = None
+    user_id: uuid.UUID
 
 
 class AnswerDbApplet(InternalModel):

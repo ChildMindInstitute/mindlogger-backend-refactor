@@ -2,124 +2,104 @@ import pytest
 
 from apps.activities.domain.response_type_config import (
     AdditionalResponseOption,
+    AudioConfig,
+    AudioPlayerConfig,
     DateConfig,
+    DefaultConfig,
     DrawingConfig,
+    GeolocationConfig,
+    MessageConfig,
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
+    NumberSelectionConfig,
+    PhotoConfig,
+    ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
     SliderConfig,
     SliderRowsConfig,
     TextConfig,
+    TimeConfig,
+    TimeRangeConfig,
+    VideoConfig,
 )
 
 
 @pytest.fixture
 def additional_response_option() -> AdditionalResponseOption:
-    return AdditionalResponseOption(
-        text_input_option=False, text_input_required=False
+    return AdditionalResponseOption(text_input_option=False, text_input_required=False)
+
+
+@pytest.fixture
+def default_config(additional_response_option: AdditionalResponseOption) -> DefaultConfig:
+    return DefaultConfig(
+        remove_back_button=False, skippable_item=False, additional_response_option=additional_response_option, timer=0
     )
 
 
 @pytest.fixture
-def single_select_config(
-    additional_response_option: AdditionalResponseOption,
-) -> SingleSelectionConfig:
+def single_select_config(default_config: DefaultConfig) -> SingleSelectionConfig:
     return SingleSelectionConfig(
         randomize_options=False,
-        timer=0,
         add_scores=False,
         add_tokens=False,
         set_alerts=False,
         add_tooltip=False,
         set_palette=False,
-        remove_back_button=False,
-        skippable_item=False,
-        additional_response_option=additional_response_option,
+        **default_config.dict(),
+        type=ResponseType.SINGLESELECT,
     )
 
 
 @pytest.fixture
-def multi_select_config(single_select_config) -> MultiSelectionConfig:
+def multi_select_config(single_select_config: SingleSelectionConfig) -> MultiSelectionConfig:
     data = single_select_config.dict()
+    data["type"] = ResponseType.MULTISELECT
     return MultiSelectionConfig(**data)
 
 
 @pytest.fixture
-def slider_config(
-    additional_response_option: AdditionalResponseOption,
-) -> SliderConfig:
+def slider_config(default_config: DefaultConfig) -> SliderConfig:
     return SliderConfig(
-        timer=0,
         add_scores=False,
         set_alerts=False,
-        remove_back_button=False,
-        skippable_item=False,
         show_tick_marks=False,
         show_tick_labels=False,
         continuous_slider=False,
-        additional_response_option=additional_response_option,
+        **default_config.dict(),
+        type=ResponseType.SLIDER,
     )
 
 
 @pytest.fixture
-def date_config(
-    additional_response_option: AdditionalResponseOption,
-) -> DateConfig:
-    return DateConfig(
-        remove_back_button=False,
-        skippable_item=False,
-        timer=0,
-        additional_response_option=additional_response_option,
-    )
+def date_config(default_config: DefaultConfig) -> DateConfig:
+    return DateConfig(**default_config.dict(), type=ResponseType.DATE)
 
 
 @pytest.fixture
-def text_config() -> TextConfig:
-    return TextConfig(
-        remove_back_button=False,
-        skippable_item=False,
-        correct_answer_required=False,
-        numerical_response_required=False,
-        response_data_identifier=False,
-        response_required=False,
-    )
+def number_selection_config(default_config: DefaultConfig) -> NumberSelectionConfig:
+    return NumberSelectionConfig(**default_config.dict(), type=ResponseType.NUMBERSELECT)
 
 
 @pytest.fixture
-def drawing_config(
-    additional_response_option: AdditionalResponseOption,
-) -> DrawingConfig:
-    return DrawingConfig(
-        remove_back_button=False,
-        remove_undo_button=False,
-        additional_response_option=additional_response_option,
-        skippable_item=False,
-        timer=0,
-    )
+def time_config(default_config: DefaultConfig) -> TimeConfig:
+    return TimeConfig(**default_config.dict(), type=ResponseType.TIME)
 
 
 @pytest.fixture
-def slider_rows_config() -> SliderRowsConfig:
-    return SliderRowsConfig(
-        remove_back_button=False,
-        skippable_item=False,
-        add_scores=False,
-        set_alerts=False,
-        timer=0,
-    )
+def time_range_config(default_config: DefaultConfig) -> TimeRangeConfig:
+    return TimeRangeConfig(**default_config.dict(), type=ResponseType.TIMERANGE)
 
 
 @pytest.fixture
-def single_select_row_config() -> SingleSelectionRowsConfig:
+def single_select_row_config(default_config: DefaultConfig) -> SingleSelectionRowsConfig:
     return SingleSelectionRowsConfig(
-        timer=0,
         add_scores=False,
         set_alerts=False,
         add_tooltip=False,
         add_tokens=None,
-        remove_back_button=False,
-        skippable_item=False,
+        **default_config.dict(),
+        type=ResponseType.SINGLESELECTROWS,
     )
 
 
@@ -127,4 +107,58 @@ def single_select_row_config() -> SingleSelectionRowsConfig:
 def multi_select_row_config(
     single_select_row_config: SingleSelectionRowsConfig,
 ) -> MultiSelectionRowsConfig:
-    return MultiSelectionRowsConfig(**single_select_row_config.dict())
+    data = single_select_row_config.dict()
+    data["type"] = ResponseType.MULTISELECTROWS
+    return MultiSelectionRowsConfig(**data)
+
+
+@pytest.fixture
+def slider_rows_config(default_config: DefaultConfig) -> SliderRowsConfig:
+    return SliderRowsConfig(add_scores=False, set_alerts=False, **default_config.dict(), type=ResponseType.SLIDERROWS)
+
+
+@pytest.fixture
+def text_config(default_config: DefaultConfig) -> TextConfig:
+    return TextConfig(
+        **default_config.dict(),
+        correct_answer_required=False,
+        numerical_response_required=False,
+        response_data_identifier=False,
+        response_required=False,
+        type=ResponseType.TEXT,
+    )
+
+
+@pytest.fixture
+def drawing_config(default_config: DefaultConfig) -> DrawingConfig:
+    return DrawingConfig(remove_undo_button=False, **default_config.dict(), type=ResponseType.DRAWING)
+
+
+@pytest.fixture
+def photo_config(default_config: DefaultConfig) -> PhotoConfig:
+    return PhotoConfig(**default_config.dict(), type=ResponseType.PHOTO)
+
+
+@pytest.fixture
+def video_config(default_config: DefaultConfig) -> VideoConfig:
+    return VideoConfig(**default_config.dict(), type=ResponseType.VIDEO)
+
+
+@pytest.fixture
+def geolocation_config(default_config: DefaultConfig) -> GeolocationConfig:
+    return GeolocationConfig(**default_config.dict(), type=ResponseType.GEOLOCATION)
+
+
+@pytest.fixture
+def audio_config(default_config: DefaultConfig) -> AudioConfig:
+    return AudioConfig(**default_config.dict(), type=ResponseType.AUDIO)
+
+
+@pytest.fixture
+def message_config(default_config: DefaultConfig) -> MessageConfig:
+    return MessageConfig(**default_config.dict(), type=ResponseType.MESSAGE)
+
+
+@pytest.fixture
+def audio_player_config(default_config: DefaultConfig) -> AudioPlayerConfig:
+    return AudioPlayerConfig(**default_config.dict(), play_once=False, type=ResponseType.AUDIOPLAYER)

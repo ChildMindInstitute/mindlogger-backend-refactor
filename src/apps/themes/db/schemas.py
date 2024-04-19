@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, Column, ForeignKey, String, Text
 
-from infrastructure.database.base import Base, MigratedMixin
+from infrastructure.database import Base, MigratedMixin
 
 
 class ThemeSchema(MigratedMixin, Base):

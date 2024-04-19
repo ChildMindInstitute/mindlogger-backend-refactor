@@ -1,7 +1,4 @@
-from apps.activities.domain.activity_history import (
-    ActivityHistoryChange,
-    ActivityHistoryFull,
-)
+from apps.activities.domain.activity_history import ActivityHistoryChange, ActivityHistoryFull
 from apps.activities.domain.scores_reports import (
     Score,
     ScoresAndReports,
@@ -9,11 +6,7 @@ from apps.activities.domain.scores_reports import (
     SubscaleCalculationType,
     SubscaleSetting,
 )
-from apps.activities.services.activity_item_change import (
-    ActivityItemChangeService,
-    ChangeStatusEnum,
-    group,
-)
+from apps.activities.services.activity_item_change import ActivityItemChangeService, ChangeStatusEnum, group
 from apps.shared.changes_generator import EMPTY_VALUES, BaseChangeGenerator
 
 
@@ -56,9 +49,7 @@ class ScoresAndReportsChangeService(BaseChangeGenerator):
             self.check_changes(value, changes)
         # Possible this case is not allowed from UI, but need to be ready
         elif not value and old_value:
-            changes.append(
-                self._change_text_generator.removed_text(parent_field_name)
-            )
+            changes.append(self._change_text_generator.removed_text(parent_field_name))
         elif value and value != old_value:
             for key, val in value:
                 old_val = getattr(old_value, key)
@@ -85,17 +76,11 @@ class ScoresAndReportsChangeService(BaseChangeGenerator):
         for k, v in new.items():
             old_v = old.get(k)
             if old_v and old_v != v:
-                changes.append(
-                    self._change_text_generator.updated_text(f"{vn} {v.name}")
-                )
+                changes.append(self._change_text_generator.updated_text(f"{vn} {v.name}"))
         for name in deleted:
-            changes.append(
-                self._change_text_generator.removed_text(f"{vn} {name}")
-            )
+            changes.append(self._change_text_generator.removed_text(f"{vn} {name}"))
         for name in inseted:
-            changes.append(
-                self._change_text_generator.added_text(f"{vn} {name}")
-            )
+            changes.append(self._change_text_generator.added_text(f"{vn} {name}"))
 
 
 class SubscaleSettingChangeService(BaseChangeGenerator):
@@ -120,17 +105,9 @@ class SubscaleSettingChangeService(BaseChangeGenerator):
             vn = self.field_name_verbose_name_map[key]
             if isinstance(val, list):
                 for v in val:
-                    changes.append(
-                        self._change_text_generator.added_text(
-                            f"{vn} {v.name}"
-                        )
-                    )
+                    changes.append(self._change_text_generator.added_text(f"{vn} {v.name}"))
             elif isinstance(val, SubscaleCalculationType):
-                changes.append(
-                    self._change_text_generator.set_text(
-                        vn, self.verbose_total_score_map[val]
-                    )
-                )
+                changes.append(self._change_text_generator.set_text(vn, self.verbose_total_score_map[val]))
             else:
                 changes.append(self._change_text_generator.added_text(vn))
 
@@ -144,9 +121,7 @@ class SubscaleSettingChangeService(BaseChangeGenerator):
         if value and not old_value:
             self.check_changes(value, changes)
         elif not value and old_value:
-            changes.append(
-                self._change_text_generator.removed_text(parent_field_name)
-            )
+            changes.append(self._change_text_generator.removed_text(parent_field_name))
         elif value and value != old_value:
             for key, val in value:
                 old_val = getattr(old_value, key)
@@ -155,32 +130,16 @@ class SubscaleSettingChangeService(BaseChangeGenerator):
                     # Assumption: names are unique
                     old_scales_map = {v.name: v for v in old_val}
                     new_scales_map = {v.name: v for v in val}
-                    inserted_scales = list(
-                        set(new_scales_map) - set(old_scales_map)
-                    )
-                    deleted_scales = list(
-                        set(old_scales_map) - set(new_scales_map)
-                    )
+                    inserted_scales = list(set(new_scales_map) - set(old_scales_map))
+                    deleted_scales = list(set(old_scales_map) - set(new_scales_map))
                     for k, v in new_scales_map.items():
                         old_v = old_scales_map.get(k)
                         if old_v and old_v != v:
-                            changes.append(
-                                self._change_text_generator.updated_text(
-                                    f"{vn} {k}"
-                                )
-                            )
+                            changes.append(self._change_text_generator.updated_text(f"{vn} {k}"))
                     for name in deleted_scales:
-                        changes.append(
-                            self._change_text_generator.removed_text(
-                                f"{vn} {name}"
-                            )
-                        )
+                        changes.append(self._change_text_generator.removed_text(f"{vn} {name}"))
                     for name in inserted_scales:
-                        changes.append(
-                            self._change_text_generator.added_text(
-                                f"{vn} {name}"
-                            )
-                        )
+                        changes.append(self._change_text_generator.added_text(f"{vn} {name}"))
 
                 elif key == "calculate_total_score":
                     verbose_value_map = {
@@ -188,21 +147,11 @@ class SubscaleSettingChangeService(BaseChangeGenerator):
                         "average": "Average of Item Scores",
                     }
                     if val and val != old_val:
-                        changes.append(
-                            self._change_text_generator.set_text(
-                                vn, verbose_value_map[val]
-                            )
-                        )
+                        changes.append(self._change_text_generator.set_text(vn, verbose_value_map[val]))
                     elif val:
-                        changes.append(
-                            self._change_text_generator.set_text(
-                                vn, verbose_value_map[val]
-                            )
-                        )
+                        changes.append(self._change_text_generator.set_text(vn, verbose_value_map[val]))
                     elif old_val:
-                        changes.append(
-                            self._change_text_generator.removed_text(vn)
-                        )
+                        changes.append(self._change_text_generator.removed_text(vn))
 
 
 class ActivityChangeService(BaseChangeGenerator):
@@ -217,7 +166,6 @@ class ActivityChangeService(BaseChangeGenerator):
         "is_reviewable": "Turn the Activity to the Reviewer dashboard assessment",  # noqa E501
         "response_is_editable": "Disable the respondent's ability to change the response",  # noqa E501
         "report_included_item_name": "Report's name included item name",
-        "order": "Activity Order",
         # NOTE: is_hidden should be inverted
         "is_hidden": "Activity Visibility",
         "scores_and_reports": "Scores & Reports option",
@@ -243,32 +191,22 @@ class ActivityChangeService(BaseChangeGenerator):
                 raise ValueError("Not Suppported State")
         return ActivityHistoryChange(name=method((f"Activity {name}")))
 
-    def get_changes(
-        self, activities: list[ActivityHistoryFull]
-    ) -> list[ActivityHistoryChange]:
+    def get_changes(self, activities: list[ActivityHistoryFull]) -> list[ActivityHistoryChange]:
         grouped = group(activities, self._new_version)
-        item_service = ActivityItemChangeService(
-            self._old_version, self._new_version
-        )
+        item_service = ActivityItemChangeService(self._old_version, self._new_version)
         result: list[ActivityHistoryChange] = []
         for _, (old_activity, new_activity) in grouped.items():
             if not old_activity and new_activity:
-                change = self.init_change(
-                    new_activity.name, ChangeStatusEnum.ADDED
-                )
+                change = self.init_change(new_activity.name, ChangeStatusEnum.ADDED)
                 change.changes = self.get_changes_insert(new_activity)
                 change.items = item_service.get_changes(new_activity.items)
                 result.append(change)
             elif not new_activity and old_activity:
-                change = self.init_change(
-                    old_activity.name, ChangeStatusEnum.REMOVED
-                )
+                change = self.init_change(old_activity.name, ChangeStatusEnum.REMOVED)
                 result.append(change)
             elif new_activity and old_activity:
                 changes = self.get_changes_update(old_activity, new_activity)
-                changes_items = item_service.get_changes(
-                    old_activity.items + new_activity.items
-                )
+                changes_items = item_service.get_changes(old_activity.items + new_activity.items)
 
                 if changes or changes_items:
                     change = self.init_change(
@@ -280,9 +218,7 @@ class ActivityChangeService(BaseChangeGenerator):
                     result.append(change)
         return result
 
-    def get_changes_insert(
-        self, new_activity: ActivityHistoryFull
-    ) -> list[str]:
+    def get_changes_insert(self, new_activity: ActivityHistoryFull) -> list[str]:
         changes: list[str] = list()
         for (
             field_name,
@@ -296,11 +232,7 @@ class ActivityChangeService(BaseChangeGenerator):
             elif isinstance(value, bool):
                 self._populate_bool_changes(verbose_name, value, changes)
             elif value not in EMPTY_VALUES:
-                changes.append(
-                    self._change_text_generator.changed_text(
-                        verbose_name, value, is_initial=True
-                    )
-                )
+                changes.append(self._change_text_generator.changed_text(verbose_name, value, is_initial=True))
         return changes
 
     def get_changes_update(
@@ -316,21 +248,13 @@ class ActivityChangeService(BaseChangeGenerator):
             value = getattr(new_activity, field_name)
             old_value = getattr(old_activity, field_name)
             if field_name == "scores_and_reports":
-                self._sar_service.check_update_changes(
-                    verbose_name, old_value, value, changes
-                )
+                self._sar_service.check_update_changes(verbose_name, old_value, value, changes)
             elif field_name == "subscale_setting":
-                self._scale_service.check_update_changes(
-                    verbose_name, old_value, value, changes
-                )
+                self._scale_service.check_update_changes(verbose_name, old_value, value, changes)
             elif isinstance(value, bool):
                 if value != old_value:
                     self._populate_bool_changes(verbose_name, value, changes)
             elif value != old_value:
                 is_initial = old_value in EMPTY_VALUES
-                changes.append(
-                    self._change_text_generator.changed_text(
-                        verbose_name, value, is_initial=is_initial
-                    )
-                )
+                changes.append(self._change_text_generator.changed_text(verbose_name, value, is_initial=is_initial))
         return changes

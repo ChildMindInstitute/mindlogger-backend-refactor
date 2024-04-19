@@ -19,11 +19,7 @@ from apps.invitations.domain import (
     InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
-from apps.shared.domain.response import (
-    DEFAULT_OPENAPI_RESPONSE,
-    Response,
-    ResponseMulti,
-)
+from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE, Response, ResponseMulti
 
 router = APIRouter(prefix="/invitations", tags=["Invitations"])
 

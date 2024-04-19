@@ -16,15 +16,9 @@ from apps.invitations.domain import (
     InvitationReviewerResponse,
     PrivateInvitationResponse,
 )
-from apps.invitations.errors import (
-    ManagerInvitationExist,
-    RespondentInvitationExist,
-)
+from apps.invitations.errors import ManagerInvitationExist, RespondentInvitationExist
 from apps.invitations.filters import InvitationQueryParams
-from apps.invitations.services import (
-    InvitationsService,
-    PrivateInvitationService,
-)
+from apps.invitations.services import InvitationsService, PrivateInvitationService
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users import UserNotFound
@@ -39,27 +33,20 @@ from infrastructure.database.deps import get_session
 
 async def invitation_list(
     user: User = Depends(get_current_user),
-    query_params: QueryParams = Depends(
-        parse_query_params(InvitationQueryParams)
-    ),
+    query_params: QueryParams = Depends(parse_query_params(InvitationQueryParams)),
     session=Depends(get_session),
 ) -> ResponseMulti[InvitationResponse]:
     """Fetch all invitations whose status is pending
     for the specific user who is invitor.
     """
     if query_params.filters.get("applet_id"):
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            query_params.filters["applet_id"]
-        )
+        await CheckAccessService(session, user.id).check_applet_invite_access(query_params.filters["applet_id"])
     service = InvitationsService(session, user)
     invitations = await service.fetch_all(deepcopy(query_params))
     count = await service.fetch_all_count(deepcopy(query_params))
 
     return ResponseMulti[InvitationResponse](
-        result=[
-            InvitationResponse(**invitation.dict())
-            for invitation in invitations
-        ],
+        result=[InvitationResponse(**invitation.dict()) for invitation in invitations],
         count=count,
     )
 
@@ -97,29 +84,19 @@ async def invitation_respondent_send(
 
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
         invitation_srv = InvitationsService(session, user)
         try:
-            invited_user = await UserService(session).get_by_email(
-                invitation_schema.email
-            )
-            is_role_exist = await UserAppletAccessService(
-                session, invited_user.id, applet_id
-            ).has_role(Role.RESPONDENT)
+            invited_user = await UserService(session).get_by_email(invitation_schema.email)
+            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(Role.RESPONDENT)
             if is_role_exist:
                 raise RespondentInvitationExist()
         except UserNotFound:
             pass
 
-        invitation = await invitation_srv.send_respondent_invitation(
-            applet_id, invitation_schema
-        )
+        invitation = await invitation_srv.send_respondent_invitation(applet_id, invitation_schema)
 
-    return Response[InvitationRespondentResponse](
-        result=InvitationRespondentResponse(**invitation.dict())
-    )
+    return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))
 
 
 async def invitation_reviewer_send(
@@ -135,31 +112,21 @@ async def invitation_reviewer_send(
 
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
         invitation_srv = InvitationsService(session, user)
         try:
-            invited_user = await UserService(session).get_by_email(
-                invitation_schema.email
-            )
-            is_role_exist = await UserAppletAccessService(
-                session, invited_user.id, applet_id
-            ).has_role(Role.REVIEWER)
+            invited_user = await UserService(session).get_by_email(invitation_schema.email)
+            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(Role.REVIEWER)
             if is_role_exist:
                 raise ManagerInvitationExist()
         except UserNotFound:
             pass
 
-        invitation: InvitationDetailForReviewer = await (
-            invitation_srv.send_reviewer_invitation(
-                applet_id, invitation_schema
-            )
+        invitation: InvitationDetailForReviewer = await invitation_srv.send_reviewer_invitation(
+            applet_id, invitation_schema
         )
 
-    return Response[InvitationReviewerResponse](
-        result=InvitationReviewerResponse(**invitation.dict())
-    )
+    return Response[InvitationReviewerResponse](result=InvitationReviewerResponse(**invitation.dict()))
 
 
 async def invitation_managers_send(
@@ -176,29 +143,21 @@ async def invitation_managers_send(
 
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(
-            applet_id
-        )
+        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
         invitation_srv = InvitationsService(session, user)
         try:
-            invited_user = await UserService(session).get_by_email(
-                invitation_schema.email
+            invited_user = await UserService(session).get_by_email(invitation_schema.email)
+            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(
+                invitation_schema.role
             )
-            is_role_exist = await UserAppletAccessService(
-                session, invited_user.id, applet_id
-            ).has_role(invitation_schema.role)
             if is_role_exist:
                 raise ManagerInvitationExist()
         except UserNotFound:
             pass
 
-        invitation = await invitation_srv.send_managers_invitation(
-            applet_id, invitation_schema
-        )
+        invitation = await invitation_srv.send_managers_invitation(applet_id, invitation_schema)
 
-    return Response[InvitationManagersResponse](
-        result=InvitationManagersResponse(**invitation.dict())
-    )
+    return Response[InvitationManagersResponse](result=InvitationManagersResponse(**invitation.dict()))
 
 
 async def invitation_accept(

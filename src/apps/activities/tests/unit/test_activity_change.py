@@ -103,9 +103,7 @@ def scores_and_reports(score: Score, section: Section) -> ScoresAndReports:
 
 
 @pytest.fixture
-def old_activity(
-    activity_history_id: uuid.UUID, old_applet_id: str, old_id_version: str
-) -> ActivityHistoryFull:
+def old_activity(activity_history_id: uuid.UUID, old_applet_id: str, old_id_version: str) -> ActivityHistoryFull:
     return ActivityHistoryFull(
         id=activity_history_id,
         applet_id=old_applet_id,
@@ -125,9 +123,7 @@ def old_activity(
 
 
 @pytest.fixture
-def new_activity(
-    activity_history_id: uuid.UUID, new_applet_id: str, new_version: str
-) -> ActivityHistoryFull:
+def new_activity(activity_history_id: uuid.UUID, new_applet_id: str, new_version: str) -> ActivityHistoryFull:
     return ActivityHistoryFull(
         id=activity_history_id,
         applet_id=new_applet_id,
@@ -235,9 +231,7 @@ def test_new_activity_version_no_changes(
     new_activity: ActivityHistoryFull,
     activity_change_service: ActivityChangeService,
 ):
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert not changes
 
 
@@ -247,9 +241,7 @@ def test_new_activity_version_is_hidden(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.is_hidden = True
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == 1
     assert changes[0] == "Activity Visibility was disabled"
 
@@ -260,9 +252,7 @@ def test_new_activity_version_bool_field_enabled(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.show_all_at_once = True
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == 1
     assert changes[0] == "Show all questions at once was enabled"
 
@@ -273,9 +263,7 @@ def test_new_activity_order_was_changed(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.order = 2
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == 1
     assert changes[0] == "Activity Order was changed to 2"
 
@@ -286,9 +274,7 @@ def test_new_activity_description_was_set(
     activity_change_service: ActivityChangeService,
 ):
     new_activity.description = {Language.ENGLISH: "BOOM"}
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == 1
     assert changes[0] == "Activity Description was set to BOOM"
 
@@ -300,9 +286,7 @@ def test_new_activity_description_was_changed(
 ):
     old_activity.description = {Language.ENGLISH: "old"}
     new_activity.description = {Language.ENGLISH: "new"}
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == 1
     assert changes[0] == "Activity Description was changed to new"
 
@@ -314,9 +298,7 @@ def test_new_activity_scores_and_reports_is_none(
     scores_and_reports: ScoresAndReports,
 ):
     old_activity.scores_and_reports = scores_and_reports
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == 1
     assert changes[0] == "Scores & Reports option was removed"
 
@@ -329,18 +311,14 @@ def test_new_activity_scores_and_reports_was_removed(
 ):
     old_activity.scores_and_reports = scores_and_reports
     # This is most realistic way
-    new_activity.scores_and_reports = ScoresAndReports(
-        generate_report=False, show_score_summary=False, reports=[]
-    )
+    new_activity.scores_and_reports = ScoresAndReports(generate_report=False, show_score_summary=False, reports=[])
     exp_changes = [
         "Scores & Reports: Generate Report was disabled",
         "Scores & Reports: Show Score Summary was disabled",
         "Scores & Reports: Score testscore was removed",
         "Scores & Reports: Section testsection was removed",
     ]
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == len(exp_changes)
     assert set(changes) == set(exp_changes)
 
@@ -352,9 +330,7 @@ def test_new_activity_subscale_setting_is_none(
     subscale_setting: SubscaleSetting,
 ):
     old_activity.subscale_setting = subscale_setting
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == 1
     assert changes[0] == "Subscale Setting option was removed"
 
@@ -367,15 +343,11 @@ def test_new_activity_subscale_setting_was_removed(
 ):
     old_activity.subscale_setting = subscale_setting
     # This is most realistic way
-    new_activity.subscale_setting = SubscaleSetting(
-        subscales=list(), calculate_total_score=None
-    )
+    new_activity.subscale_setting = SubscaleSetting(subscales=list(), calculate_total_score=None)
     exp_changes = [
         "Subscale Configuration: Calculate total score was removed",
         "Subscale Configuration: Subscale test was removed",
     ]
-    changes = activity_change_service.get_changes_update(
-        old_activity, new_activity
-    )
+    changes = activity_change_service.get_changes_update(old_activity, new_activity)
     assert len(changes) == len(exp_changes)
     assert set(changes) == set(exp_changes)

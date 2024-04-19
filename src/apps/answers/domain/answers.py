@@ -1,13 +1,11 @@
 import datetime
 import uuid
+from copy import deepcopy
 from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, root_validator, validator
 
-from apps.activities.domain.activity_full import (
-    ActivityFull,
-    PublicActivityItemFull,
-)
+from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
 from apps.activities.domain.activity_history import (
     ActivityHistoryExport,
     ActivityHistoryFull,
@@ -15,11 +13,41 @@ from apps.activities.domain.activity_history import (
 )
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
-from apps.activity_flows.domain.flow_full import FlowFull
+from apps.activity_flows.domain.flow_full import FlowFull, FlowHistoryWithActivityFlat, FlowHistoryWithActivityFull
+from apps.answers.domain.answer_items import AnswerItem, ItemAnswerCreate
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.locale import I18N
+
+
+class ClientMeta(InternalModel):
+    app_id: str
+    app_version: str
+    width: int | None = None
+    height: int | None = None
+
+
+class Answer(InternalModel):
+    id: uuid.UUID
+    applet_id: uuid.UUID
+    version: str
+    submit_id: uuid.UUID
+    client: ClientMeta | None
+    applet_history_id: str
+    flow_history_id: str | None
+    activity_history_id: str
+    respondent_id: uuid.UUID | None
+    is_flow_completed: bool | None = False
+
+    migrated_data: dict | None = None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    migrated_date: datetime.datetime | None = None
+    migrated_updated: datetime.datetime | None = None
+    is_deleted: bool
+
+    answer_items: list[AnswerItem]
 
 
 class Text(InternalModel):
@@ -52,43 +80,9 @@ ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
 }
 
 
-class ItemAnswerCreate(InternalModel):
-    answer: str | None
-    events: str | None
-    item_ids: list[uuid.UUID]
-    identifier: str | None
-    scheduled_time: datetime.datetime | None
-    start_time: datetime.datetime
-    end_time: datetime.datetime
-    user_public_key: str | None
-    scheduled_event_id: str | None = None
-    local_end_date: datetime.date | None = None
-    local_end_time: datetime.time | None = None
-
-    @validator("item_ids")
-    def convert_item_ids(cls, value: list[uuid.UUID]):
-        return list(map(str, value))
-
-    _dates_from_ms = validator(
-        "start_time", "end_time", "scheduled_time", pre=True, allow_reuse=True
-    )(datetime_from_ms)
-
-
-class AnswerItemSchemaAnsweredActivityItem(InternalModel):
-    activity_item_history_id: str
-    answer: str
-
-
 class AnswerAlert(InternalModel):
     activity_item_id: uuid.UUID
     message: str
-
-
-class ClientMeta(InternalModel):
-    app_id: str
-    app_version: str
-    width: int
-    height: int
 
 
 class AppletAnswerCreate(InternalModel):
@@ -103,9 +97,7 @@ class AppletAnswerCreate(InternalModel):
     alerts: list[AnswerAlert] = Field(default_factory=list)
     client: ClientMeta
 
-    _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(
-        datetime_from_ms
-    )
+    _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
 
 class AssessmentAnswerCreate(InternalModel):
@@ -118,6 +110,7 @@ class AssessmentAnswerCreate(InternalModel):
 class AnswerDate(InternalModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    end_datetime: datetime.datetime
 
 
 class ReviewActivity(InternalModel):
@@ -126,45 +119,153 @@ class ReviewActivity(InternalModel):
     answer_dates: list[AnswerDate] = Field(default_factory=list)
 
 
-class SummaryActivity(InternalModel):
+class SummaryActivityFlow(InternalModel):
     id: uuid.UUID
     name: str
-    is_performance_task: bool
     has_answer: bool
+    last_answer_date: datetime.datetime | None
+
+
+class SummaryActivity(SummaryActivityFlow):
+    is_performance_task: bool
 
 
 class PublicAnswerDate(PublicModel):
     created_at: datetime.datetime
     answer_id: uuid.UUID
+    end_datetime: datetime.datetime
 
 
 class PublicReviewActivity(PublicModel):
     id: uuid.UUID
     name: str
     answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
+    last_answer_date: datetime.datetime | None
+
+    @root_validator
+    def calculate_last_answer_date(cls, values):
+        answer_dates = values.get("answer_dates", [])
+        if answer_dates:
+            last_date = max(ad.created_at for ad in answer_dates)
+            values["last_answer_date"] = last_date
+        else:
+            values["last_answer_date"] = None
+        return values
 
 
-class PublicSummaryActivity(InternalModel):
+class PublicSummaryActivityFlow(InternalModel):
     id: uuid.UUID
     name: str
-    is_performance_task: bool
     has_answer: bool
+    last_answer_date: datetime.datetime | None
+
+
+class PublicSummaryActivity(PublicSummaryActivityFlow):
+    is_performance_task: bool
 
 
 class PublicAnswerDates(PublicModel):
     dates: list[datetime.date]
 
 
-class ActivityAnswer(InternalModel):
+class Identifier(InternalModel):
+    identifier: str
+    user_public_key: str | None = None
+    last_answer_date: datetime.datetime
+
+
+class ActivityAnswer(PublicModel):
+    id: uuid.UUID
+    submit_id: uuid.UUID
+    version: str
+    activity_history_id: str
+    activity_id: uuid.UUID | None = None
+    flow_history_id: str | None
     user_public_key: str | None
     answer: str | None
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    identifier: str | None = None
+    migrated_data: dict | None = None
+    end_datetime: datetime.datetime
+    created_at: datetime.datetime
+
+    @validator("activity_id", always=True)
+    def extract_activity_id(cls, value, values):
+        if val := values.get("activity_history_id"):
+            return val[:36]
+
+
+class SubmissionSummary(PublicModel):
+    end_datetime: datetime.datetime
+    created_at: datetime.datetime
+    identifier: str | None = None
+    version: str
+
+
+class ActivitySubmission(PublicModel):
+    activity: ActivityHistoryFull
+    answer: ActivityAnswer
+
+
+class ActivitySubmissionResponse(ActivitySubmission):
+    summary: SubmissionSummary | None = None
+
+    @validator("summary", always=True)
+    def generate_summary(cls, value, values):
+        if not value:
+            answer: ActivityAnswer = values["answer"]
+            if answer:
+                value = SubmissionSummary.from_orm(answer)
+        return value
+
+
+class FlowSubmission(PublicModel):
+    flow: FlowHistoryWithActivityFull
+    answers: list[ActivityAnswer]
+
+
+class FlowSubmissionResponse(PublicModel):
+    flow: FlowHistoryWithActivityFlat
+    answers: list[ActivityAnswer]
+    summary: SubmissionSummary | None = None
+
+    @validator("flow", pre=True)
+    def format_flow(cls, value, values):
+        if isinstance(value, dict) and "items" in value:
+            data = deepcopy(value)
+            del data["items"]
+            data["activities"] = [item["activity"] for item in value["items"]]
+            value = data
+        elif isinstance(value, FlowHistoryWithActivityFull):
+            data = value.dict(exclude={"items"})
+            data["activities"] = [item.activity for item in value.items]
+            value = data
+
+        return value
+
+    @validator("summary", always=True)
+    def generate_summary(cls, value, values):
+        if not value:
+            answers: list[ActivityAnswer] = values["answers"]
+            if answers:
+                summary = SubmissionSummary.from_orm(answers[0])
+                if not summary.identifier and len(answers) > 1:
+                    for answer in answers[1:]:
+                        if identifier := answer.identifier:
+                            summary.identifier = identifier
+                            break
+                value = summary
+        return value
+
+
+class ReviewsCount(PublicModel):
+    mine: int = 0
+    other: int = 0
 
 
 class AppletActivityAnswer(InternalModel):
-    answer_id: uuid.UUID | None
+    answer_id: uuid.UUID
     version: str | None
     user_public_key: str | None
     answer: str | None
@@ -181,32 +282,25 @@ class AssessmentAnswer(InternalModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    items_last: list[PublicActivityItemFull] | None = Field(
-        default_factory=list
-    )
+    items_last: list[PublicActivityItemFull] | None = Field(default_factory=list)
     is_edited: bool = False
     versions: list[str] = []
 
 
 class Reviewer(InternalModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
 
 class AnswerReview(InternalModel):
+    id: uuid.UUID
     reviewer_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: Reviewer
-
-
-class ActivityAnswerPublic(PublicModel):
-    user_public_key: str | None
-    answer: str | None
-    events: str | None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    created_at: datetime.datetime
 
 
 class AppletActivityAnswerPublic(PublicModel):
@@ -220,19 +314,23 @@ class AppletActivityAnswerPublic(PublicModel):
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
     subscale_setting: SubscaleSetting | None
+    review_count: ReviewsCount
 
 
 class ReviewerPublic(PublicModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
 
 class AnswerReviewPublic(PublicModel):
+    id: uuid.UUID
     reviewer_public_key: str | None
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: ReviewerPublic
+    created_at: datetime.datetime
 
 
 class AssessmentAnswerPublic(PublicModel):
@@ -240,9 +338,7 @@ class AssessmentAnswerPublic(PublicModel):
     answer: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    items_last: list[PublicActivityItemFull] | None = Field(
-        default_factory=list
-    )
+    items_last: list[PublicActivityItemFull] | None = Field(default_factory=list)
     versions: list[str]
 
 
@@ -289,6 +385,8 @@ class UserAnswerDataBase(BaseModel):
     start_datetime: datetime.datetime | None = None
     end_datetime: datetime.datetime | None = None
     migrated_date: datetime.datetime | None = None
+    tz_offset: int | None = None
+    scheduled_event_id: uuid.UUID | str | None = None
     applet_history_id: str
     activity_history_id: str | None
     flow_history_id: str | None
@@ -296,6 +394,7 @@ class UserAnswerDataBase(BaseModel):
     reviewed_answer_id: uuid.UUID | str | None
     created_at: datetime.datetime
     migrated_data: dict | None = None
+    client: ClientMeta | None = None
 
 
 class RespondentAnswerData(UserAnswerDataBase, InternalModel):
@@ -337,9 +436,7 @@ class AnswerExport(InternalModel):
 
 class PublicAnswerExportTranslated(PublicModel):
     answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
-    activities: list[ActivityHistoryTranslatedExport] = Field(
-        default_factory=list
-    )
+    activities: list[ActivityHistoryTranslatedExport] = Field(default_factory=list)
 
 
 class PublicAnswerExport(PublicModel):
@@ -349,9 +446,7 @@ class PublicAnswerExport(PublicModel):
     def translate(self, i18n: I18N) -> PublicAnswerExportTranslated:
         return PublicAnswerExportTranslated(
             answers=self.answers,
-            activities=[
-                activity.translate(i18n) for activity in self.activities
-            ],
+            activities=[activity.translate(i18n) for activity in self.activities],
         )
 
 
@@ -367,16 +462,6 @@ class Version(InternalModel):
 class VersionPublic(PublicModel):
     version: str
     created_at: datetime.datetime
-
-
-class Identifier(InternalModel):
-    identifier: str
-    user_public_key: str | None = None
-
-
-class IdentifierPublic(PublicModel):
-    identifier: str
-    user_public_key: str
 
 
 class SafeApplet(AppletBaseInfo, InternalModel):
@@ -443,16 +528,4 @@ class ArbitraryPreprocessor(PublicModel):
 
 
 class IdentifiersQueryParams(InternalModel):
-    respondent_id: uuid.UUID | None = None
-
-
-class AnswerItemDataEncrypted(InternalModel):
-    id: uuid.UUID
-    answer: str
-    events: str | None
-    identifier: str | None
-
-
-class UserAnswerItemData(AnswerItemDataEncrypted):
-    user_public_key: str
-    migrated_data: dict | None
+    respondent_id: uuid.UUID

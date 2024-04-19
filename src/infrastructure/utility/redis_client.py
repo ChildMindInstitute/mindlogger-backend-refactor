@@ -84,7 +84,6 @@ class RedisCache:
         return cls._instance
 
     def __init__(self, **kwargs):
-
         if self._initialized:
             return
 

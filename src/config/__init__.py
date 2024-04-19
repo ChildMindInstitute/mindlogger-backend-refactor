@@ -4,6 +4,7 @@ from pydantic import BaseSettings
 
 from config.alerts import AlertsSettings
 from config.anonymous_respondent import AnonymousRespondent
+from config.applet import AppletEMASettings
 from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.cors import CorsSettings
@@ -11,6 +12,7 @@ from config.database import DatabaseSettings
 from config.logs import Logs
 from config.mailing import MailingSettings
 from config.notification import FirebaseCloudMessagingSettings
+from config.opentelemetry import OpenTelemetrySettings
 from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
@@ -29,7 +31,7 @@ class Settings(BaseSettings):
     default_language: str = "en"
     content_length_limit: int | None = 150 * 1024 * 1024
 
-    debug: bool = True
+    debug: bool = False
     commit_id: str = "Not assigned"
     version: str = "Not assigned"
 
@@ -39,7 +41,7 @@ class Settings(BaseSettings):
     service: ServiceSettings = ServiceSettings()
 
     # Authentication
-    authentication: AuthenticationSettings = AuthenticationSettings()
+    authentication: AuthenticationSettings
 
     # Encryption
     secrets: SecretSettings = SecretSettings()
@@ -83,7 +85,11 @@ class Settings(BaseSettings):
     task_audio_file_convert = AudioFileConvert()
     task_image_convert = ImageConvert()
 
+    applet_ema = AppletEMASettings()
+
     logs: Logs = Logs()
+
+    opentelemetry: OpenTelemetrySettings = OpenTelemetrySettings()
 
     @property
     def uploads_dir(self):

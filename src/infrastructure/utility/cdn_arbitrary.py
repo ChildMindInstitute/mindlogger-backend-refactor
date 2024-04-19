@@ -3,11 +3,7 @@ from datetime import datetime, timedelta
 from typing import BinaryIO
 
 import boto3
-from azure.storage.blob import (
-    BlobSasPermissions,
-    BlobServiceClient,
-    generate_blob_sas,
-)
+from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas
 
 from infrastructure.utility.cdn_client import CDNClient
 from infrastructure.utility.cdn_config import CdnConfig
@@ -46,16 +42,15 @@ class ArbitraryAzureCdnClient(CDNClient):
         self.sec_key = sec_key
         super().__init__(CdnConfig(bucket=bucket), env)
 
-    def generate_key(self, scope, unique, filename):
+    @classmethod
+    def generate_key(cls, scope, unique, filename):
         return f"{scope}/{unique}/{filename}"
 
     def generate_private_url(self, key):
         return f"https://{self.config.bucket}.blob.core.windows.net/mindlogger/{key}"  # noqa
 
     def configure_client(self, _):
-        blob_service_client = BlobServiceClient.from_connection_string(
-            self.sec_key
-        )
+        blob_service_client = BlobServiceClient.from_connection_string(self.sec_key)
         with suppress(Exception):
             blob_service_client.create_container(self.default_container_name)
 
@@ -65,20 +60,14 @@ class ArbitraryAzureCdnClient(CDNClient):
         blob_client = self.client.get_blob_client(blob=path)
         blob_client.upload_blob(body)
 
-    def _check_existence(self, key: str):
-        blob_client = self.client.get_blob_client(
-            self.default_container_name, blob=key
-        )
+    def _check_existence(self, bucket: str, key: str):
+        blob_client = self.client.get_blob_client(self.default_container_name, blob=key)
         return blob_client.exists()
 
     def _generate_presigned_url(self, key: str):
-        blob_client = self.client.get_blob_client(
-            self.default_container_name, key
-        )
+        blob_client = self.client.get_blob_client(self.default_container_name, key)
         permissions = BlobSasPermissions(read=True)
-        expiration = datetime.utcnow() + timedelta(
-            seconds=self.config.ttl_signed_urls
-        )
+        expiration = datetime.utcnow() + timedelta(seconds=self.config.ttl_signed_urls)
         sas_token = generate_blob_sas(
             account_name=self.client.account_name,
             container_name=self.default_container_name,

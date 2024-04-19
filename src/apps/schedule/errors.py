@@ -1,12 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import (
-    AccessDeniedError,
-    FieldError,
-    InternalServerError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import AccessDeniedError, FieldError, InternalServerError, NotFoundError, ValidationError
 
 
 class EventNotFoundError(NotFoundError):
@@ -51,9 +45,7 @@ class UserEventAlreadyExists(ValidationError):
 
 class ActivityEventAlreadyExists(ValidationError):
     message_is_template: bool = True
-    message = _(
-        "The event {event_id} for activity {activity_id} already exists."
-    )
+    message = _("The event {event_id} for activity {activity_id} already exists.")
 
 
 class FlowEventAlreadyExists(ValidationError):
@@ -82,10 +74,7 @@ class OneTimeCompletionCaseError(FieldError):
 
 
 class StartEndTimeAccessBeforeScheduleCaseError(FieldError):
-    message = _(
-        "start_time, end_time, access_before_schedule "
-        "must be set if periodicity is not ALWAYS."
-    )
+    message = _("start_time, end_time, access_before_schedule " "must be set if periodicity is not ALWAYS.")
 
 
 class StartEndTimeEqualError(FieldError):
@@ -94,3 +83,18 @@ class StartEndTimeEqualError(FieldError):
 
 class UnavailableActivityOrFlowError(FieldError):
     message = _("Activity/flow is unavailable at this time.")
+
+
+class AtTimeFieldRequiredError(FieldError):
+    zero_path = None
+    message = _("at_time is required for this trigger type.")
+
+
+class TimerRequiredError(FieldError):
+    zero_path = None
+    message = _("Timer is required for this timer type.")
+
+
+class FromTimeToTimeRequiredError(FieldError):
+    zero_path = None
+    message = _("from_time and to_time are required for this trigger type.")

@@ -1,15 +1,8 @@
 from pydantic import Field
 
 from apps.activities.domain import ActivityHistoryFull
-from apps.activities.domain.activity_full import (
-    ActivityFull,
-    PublicActivityFull,
-)
-from apps.activity_flows.domain.flow_full import (
-    FlowFull,
-    FlowHistoryFull,
-    PublicFlowFull,
-)
+from apps.activities.domain.activity_full import ActivityFull, PublicActivityFull
+from apps.activity_flows.domain.flow_full import FlowFull, FlowHistoryFull, PublicFlowFull
 from apps.applets.domain.base import AppletFetchBase
 from apps.shared.domain import InternalModel, PublicModel
 

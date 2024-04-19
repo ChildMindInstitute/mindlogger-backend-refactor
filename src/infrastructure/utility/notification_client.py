@@ -46,9 +46,7 @@ class FCMNotificationTest:
         if not devices:
             return
         for device in devices:
-            self.notifications[device].append(
-                json.dumps(message.dict(by_alias=True), default=str)
-            )
+            self.notifications[device].append(json.dumps(message.dict(by_alias=True), default=str))
 
 
 class FCMNotification:
@@ -72,9 +70,7 @@ class FCMNotification:
             if not value:
                 return
 
-        self._app = firebase_admin.initialize_app(
-            credentials.Certificate(settings.fcm.certificate)
-        )
+        self._app = firebase_admin.initialize_app(credentials.Certificate(settings.fcm.certificate))
 
         self._initialized = True
 
@@ -98,18 +94,11 @@ class FCMNotification:
                 messaging.send_each_for_multicast,
                 messaging.MulticastMessage(
                     devices,
-                    android=messaging.AndroidConfig(
-                        ttl=settings.fcm.ttl, priority="high"
-                    ),
-                    data=dict(
-                        message=json.dumps(
-                            message.dict(by_alias=True), default=str
-                        )
-                    ),
+                    android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
+                    data=dict(message=json.dumps(message.dict(by_alias=True), default=str)),
                     apns=messaging.APNSConfig(
-                        payload=messaging.APNSPayload(
-                            aps=messaging.Aps(content_available=True)
-                        )
+                        headers={"apns-priority": "5"},
+                        payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True)),
                     ),
                 ),
                 app=self._app,
@@ -118,19 +107,12 @@ class FCMNotification:
             await asyncio.to_thread(
                 messaging.send,
                 messaging.Message(
-                    android=messaging.AndroidConfig(
-                        ttl=settings.fcm.ttl, priority="high"
-                    ),
-                    data=dict(
-                        message=json.dumps(
-                            message.dict(by_alias=True), default=str
-                        )
-                    ),
+                    android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
+                    data=dict(message=json.dumps(message.dict(by_alias=True), default=str)),
                     token=devices[0],
                     apns=messaging.APNSConfig(
-                        payload=messaging.APNSPayload(
-                            aps=messaging.Aps(content_available=True)
-                        )
+                        headers={"apns-priority": "5"},
+                        payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True)),
                     ),
                 ),
                 app=self._app,

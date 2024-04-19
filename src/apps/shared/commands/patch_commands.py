@@ -1,7 +1,5 @@
-import asyncio
 import importlib
 import uuid
-from functools import wraps
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +12,7 @@ from apps.shared.commands.domain import Patch
 from apps.shared.commands.patch import PatchRegister
 from apps.workspaces.errors import WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 PatchRegister.register(
@@ -22,17 +21,27 @@ PatchRegister.register(
     description="Slider tick marks and labels fix patch",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_4906_populate_user_id_in_invitations.sql",
+    task_id="M2-4906",
+    description="Populate user_id column in declined/approved invitations",
+    manage_session=False,
+)
+PatchRegister.register(
+    file_path="m2_5045_auto_advance.py",
+    task_id="M2-5045",
+    description="Set auto_advance=True to all existing singleSelect items without auto_advance flag",  # noqa : E501
+    manage_session=False,
+)
+PatchRegister.register(
+    file_path="m2_4951_add_missing_job_status_to_the_job_status_enum.sql",
+    task_id="M2-4951",
+    description="Add missing job_status to the job_status enum",
+    manage_session=False,
+)
 
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def print_data_table(data: list[Patch]):
@@ -97,7 +106,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                 try:
                     arbitrary = await WorkspaceService(
                         session, owner_id
-                    ).get_arbitrary_info_by_owner_id(owner_id)
+                    ).get_arbitrary_info_by_owner_id_if_use_arbitrary(owner_id)
                     if not arbitrary:
                         raise WorkspaceNotFoundError("Workspace not found")
 
@@ -107,9 +116,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
     arbitrary_session_maker = None
     if arbitrary:
-        arbitrary_session_maker = session_manager.get_session(
-            arbitrary.database_uri
-        )
+        arbitrary_session_maker = session_manager.get_session(arbitrary.database_uri)
 
     session_maker = session_manager.get_session()
 
@@ -119,11 +126,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
             async with atomic(session):
                 try:
                     with open(
-                        (
-                            str(Path(__file__).parent.resolve())
-                            + "/patches/"
-                            + patch.file_path
-                        ),
+                        (str(Path(__file__).parent.resolve()) + "/patches/" + patch.file_path),
                         "r",
                     ) as f:
                         sql = f.read()
@@ -139,9 +142,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
         try:
             # run main from the file
             patch_file = importlib.import_module(
-                str(__package__)
-                + ".patches."
-                + patch.file_path.replace(".py", ""),
+                str(__package__) + ".patches." + patch.file_path.replace(".py", ""),
             )
 
             # if manage_session is True, pass sessions to patch_file main
@@ -153,9 +154,7 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
                         if arbitrary_session_maker:
                             async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
                                 async with atomic(arbitrary_session):
-                                    await patch_file.main(
-                                        session, arbitrary_session
-                                    )
+                                    await patch_file.main(session, arbitrary_session)
                         else:
                             await patch_file.main(session)
 

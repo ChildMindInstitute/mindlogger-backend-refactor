@@ -1,7 +1,9 @@
 import datetime
 import uuid
+from typing import Generic
 
 from pydantic import Field, IPvAnyAddress, PositiveInt, root_validator
+from pydantic.generics import GenericModel
 
 from apps.activities.domain.activity import (
     ActivityBaseInfo,
@@ -17,12 +19,8 @@ from apps.activity_flows.domain.flow import (
     FlowSingleLanguageDetailPublic,
     FlowSingleLanguageMobileDetailPublic,
 )
-from apps.applets.domain.base import (
-    AppletBaseInfo,
-    AppletFetchBase,
-    Encryption,
-)
-from apps.shared.domain import InternalModel, PublicModel, Response
+from apps.applets.domain.base import AppletBaseInfo, AppletFetchBase, Encryption
+from apps.shared.domain import InternalModel, PublicModel, _BaseModel
 from apps.themes.domain import PublicTheme, PublicThemeMobile, Theme
 from apps.workspaces.domain.constants import DataRetention
 
@@ -41,12 +39,8 @@ class AppletSingleLanguageDetail(AppletFetchBase, InternalModel):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetail] = Field(
-        default_factory=list
-    )
-    activity_flows: list[FlowSingleLanguageDetail] = Field(
-        default_factory=list
-    )
+    activities: list[ActivitySingleLanguageDetail] = Field(default_factory=list)
+    activity_flows: list[FlowSingleLanguageDetail] = Field(default_factory=list)
     theme: Theme | None = None
 
 
@@ -56,12 +50,8 @@ class AppletSingleLanguageDetailPublic(AppletFetchBase, PublicModel):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetailPublic] = Field(
-        default_factory=list
-    )
-    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(
-        default_factory=list
-    )
+    activities: list[ActivitySingleLanguageDetailPublic] = Field(default_factory=list)
+    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
     theme: PublicTheme | None = None
 
 
@@ -77,12 +67,8 @@ class AppletMinimumInfo(PublicModel):
 class AppletSingleLanguageDetailMobilePublic(AppletMinimumInfo, PublicModel):
     id: uuid.UUID
     theme: PublicThemeMobile | None = None
-    activities: list[ActivitySingleLanguageMobileDetailPublic] = Field(
-        default_factory=list
-    )
-    activity_flows: list[FlowSingleLanguageMobileDetailPublic] = Field(
-        default_factory=list
-    )
+    activities: list[ActivitySingleLanguageMobileDetailPublic] = Field(default_factory=list)
+    activity_flows: list[FlowSingleLanguageMobileDetailPublic] = Field(default_factory=list)
     encryption: Encryption | None
     stream_enabled: bool | None
     stream_ip_address: IPvAnyAddress | None
@@ -99,12 +85,8 @@ class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetailPublic] = Field(
-        default_factory=list
-    )
-    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(
-        default_factory=list
-    )
+    activities: list[ActivitySingleLanguageDetailPublic] = Field(default_factory=list)
+    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
     theme: PublicTheme
     encryption: Encryption | None
 
@@ -146,14 +128,13 @@ class AppletDataRetention(InternalModel):
         return values
 
 
-class AppletRetrieveResponse(Response[AppletSingleLanguageDetailPublic]):
+class AppletRetrieveResponse(PublicModel, GenericModel, Generic[_BaseModel]):
+    result: _BaseModel
     respondent_meta: dict | None = None
 
 
 class AppletActivitiesDetailsPublic(PublicModel):
-    activities_details: list[
-        ActivityLanguageWithItemsMobileDetailPublic
-    ] = Field(default_factory=list)
+    activities_details: list[ActivityLanguageWithItemsMobileDetailPublic] = Field(default_factory=list)
     applet_detail: AppletSingleLanguageDetailMobilePublic
     respondent_meta: dict | None = None
 

@@ -49,9 +49,7 @@ def parse_query_params(query_param_class):
             elif key == "limit":
                 grouped_query_params.limit = val
             elif key == "ordering":
-                grouped_query_params.ordering = list(
-                    map(_camelcase_to_snakecase, val.split(","))
-                )
+                grouped_query_params.ordering = list(map(_camelcase_to_snakecase, val.split(",")))
             else:
                 grouped_query_params.filters[key] = val
 

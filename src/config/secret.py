@@ -3,5 +3,13 @@ from pydantic import BaseModel
 
 class SecretSettings(BaseModel):
     key_length: int = 32
-    key: bytes = b"\x0e\xb7\xf5\xd4\xc16q\x99\xc2\x1e\x9a.\xc7\x93\xb5\xa4\x81\xb6\x0f\xe2\xaf$FK\xcb\x18\xac\x7f\xa4\x8ad_"  # noqa: E501
-    iv: bytes = b'\xdb\x8b\xa5Z\x14\xe4\xe0`el\x07\x1deaX"'
+    secret_key: str | None = None
+
+    @property
+    def key(self) -> bytes:
+        if self.secret_key:
+            key = bytes.fromhex(self.secret_key)
+            if len(key) != self.key_length:
+                raise ValueError(f"Key length in bytes should be {self.key_length}")
+            return key
+        raise ValueError("Please specify SECRETS__SECRET_KEY variable")

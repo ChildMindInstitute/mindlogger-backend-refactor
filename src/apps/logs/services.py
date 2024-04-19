@@ -19,10 +19,7 @@ class UserActivityLogService:
         mindlogger_content: str,
     ) -> UserActivityLogSchema:
         # TODO: remove this remporary solution when mobile is ready
-        if (
-            mindlogger_content == MindloggerContentSource.undefined.name
-            and firebase_token_id
-        ):
+        if mindlogger_content == MindloggerContentSource.undefined.name and firebase_token_id:
             mindlogger_content = MindloggerContentSource.mobile.name
         schema = UserActivityLogSchema(
             user_id=user_id,

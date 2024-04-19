@@ -1,12 +1,15 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, MetaData, text
+from sqlalchemy import Column, DateTime, MetaData, text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.hybrid import hybrid_method
-from sqlalchemy.orm import declarative_base, declarative_mixin
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm.collections import InstrumentedList
 
-__all__ = ["Base", "MigratedMixin"]
+from infrastructure.database.mixins import SoftDeletable
+
+__all__ = ["Base"]
+
 
 meta = MetaData(
     naming_convention={
@@ -22,7 +25,7 @@ meta = MetaData(
 _Base = declarative_base(metadata=meta)
 
 
-class Base(_Base):  # type: ignore
+class Base(SoftDeletable, _Base):  # type: ignore
     """Base class for all database models."""
 
     __abstract__ = True
@@ -45,40 +48,10 @@ class Base(_Base):  # type: ignore
         server_default=text("timezone('utc', now())"),
         server_onupdate=text("timezone('utc', now())"),
     )
-    is_deleted = Column(Boolean(), default=False)
 
     def __iter__(self):
         return (
             (key, val)
             for key, val in self.__dict__.items()
-            if not key.startswith("_")
+            if not (key.startswith("_") or isinstance(val, InstrumentedList))
         )
-
-    @hybrid_method
-    def soft_exists(self, exists=True):
-        if exists:
-            return self.is_deleted is not True
-        return self.is_deleted is True
-
-    @soft_exists.expression  # type: ignore[no-redef]
-    def soft_exists(cls, exists=True):
-        if exists:
-            return cls.is_deleted.isnot(True)
-        return cls.is_deleted.is_(True)
-
-
-@declarative_mixin
-class MigratedMixin:
-
-    migrated_date = Column(
-        DateTime(),
-        default=None,
-        server_default=None,
-        nullable=True,
-    )
-    migrated_updated = Column(
-        DateTime(),
-        default=None,
-        server_default=None,
-        nullable=True,
-    )

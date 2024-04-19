@@ -1,62 +1,84 @@
+from typing import Literal
+
 from pydantic import Field, NonNegativeInt, root_validator, validator
 from pydantic.color import Color
 
+from apps.activities.domain.response_type_config import (
+    ABTrailsConfig,
+    AudioConfig,
+    AudioPlayerConfig,
+    DateConfig,
+    DrawingConfig,
+    FlankerConfig,
+    GeolocationConfig,
+    MessageConfig,
+    MultiSelectionConfig,
+    MultiSelectionRowsConfig,
+    NumberSelectionConfig,
+    PhotoConfig,
+    ResponseType,
+    SingleSelectionConfig,
+    SingleSelectionRowsConfig,
+    SliderConfig,
+    SliderRowsConfig,
+    StabilityTrackerConfig,
+    TextConfig,
+    TimeConfig,
+    TimeRangeConfig,
+    VideoConfig,
+)
 from apps.activities.errors import (
     InvalidDataMatrixByOptionError,
     InvalidDataMatrixError,
     InvalidScoreLengthError,
     MinValueError,
+    MultiSelectNoneOptionError,
 )
-from apps.shared.domain import (
-    PublicModel,
-    validate_color,
-    validate_image,
-    validate_uuid,
-)
+from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
 
 
 class TextValues(PublicModel):
-    pass
+    type: Literal[ResponseType.TEXT] | None
 
 
 class MessageValues(PublicModel):
-    pass
+    type: Literal[ResponseType.MESSAGE] | None
 
 
 class TimeRangeValues(PublicModel):
-    pass
+    type: Literal[ResponseType.TIMERANGE] | None
 
 
 class TimeValues(PublicModel):
-    pass
+    type: Literal[ResponseType.TIME] | None
 
 
 class GeolocationValues(PublicModel):
-    pass
+    type: Literal[ResponseType.GEOLOCATION] | None
 
 
 class PhotoValues(PublicModel):
-    pass
+    type: Literal[ResponseType.PHOTO] | None
 
 
 class VideoValues(PublicModel):
-    pass
+    type: Literal[ResponseType.VIDEO] | None
 
 
 class DateValues(PublicModel):
-    pass
+    type: Literal[ResponseType.DATE] | None
 
 
 class FlankerValues(PublicModel):
-    pass
+    type: Literal[ResponseType.FLANKER] | None
 
 
 class StabilityTrackerValues(PublicModel):
-    pass
+    type: Literal[ResponseType.STABILITYTRACKER] | None
 
 
 class ABTrailsValues(PublicModel):
-    pass
+    type: Literal[ResponseType.ABTRAILS] | None
 
 
 class _SingleSelectionValue(PublicModel):
@@ -89,6 +111,7 @@ class _SingleSelectionValue(PublicModel):
 
 
 class SingleSelectionValues(PublicModel):
+    type: Literal[ResponseType.SINGLESELECT] | None
     palette_name: str | None
     options: list[_SingleSelectionValue]
 
@@ -97,8 +120,22 @@ class SingleSelectionValues(PublicModel):
         return validate_options_value(value)
 
 
-class MultiSelectionValues(SingleSelectionValues, PublicModel):
-    pass
+class _MultiSelectionValue(_SingleSelectionValue):
+    is_none_above: bool = Field(default=False)
+
+
+class MultiSelectionValues(PublicModel):
+    type: Literal[ResponseType.MULTISELECT] | None
+    palette_name: str | None
+    options: list[_MultiSelectionValue]
+
+    @validator("options")
+    def validate_options(cls, value):
+        return validate_options_value(value)
+
+    @validator("options")
+    def validate_none_option_flag(cls, value):
+        return validate_none_option_flag(value)
 
 
 class SliderValueAlert(PublicModel):
@@ -112,16 +149,13 @@ class SliderValueAlert(PublicModel):
 
     @root_validator()
     def validate_min_max_values(cls, values):
-        if (
-            values.get("min_value") is not None
-            and values.get("max_value") is not None
-        ):
+        if values.get("min_value") is not None and values.get("max_value") is not None:
             if values.get("min_value") >= values.get("max_value"):
                 raise MinValueError()
         return values
 
 
-class SliderValues(PublicModel):
+class SliderValuesBase(PublicModel):
     min_label: str | None = Field(..., max_length=100)
     max_label: str | None = Field(..., max_length=100)
     min_value: NonNegativeInt = Field(default=0, max_value=11)
@@ -148,15 +182,17 @@ class SliderValues(PublicModel):
         # length of scores must be equal to max_value - min_value + 1
         scores = values.get("scores", [])
         if scores:
-            if (
-                len(scores)
-                != values.get("max_value") - values.get("min_value") + 1
-            ):
+            if len(scores) != values.get("max_value") - values.get("min_value") + 1:
                 raise InvalidScoreLengthError()
         return values
 
 
+class SliderValues(SliderValuesBase):
+    type: Literal[ResponseType.SLIDER] | None
+
+
 class NumberSelectionValues(PublicModel):
+    type: Literal[ResponseType.NUMBERSELECT] | None
     min_value: NonNegativeInt = Field(default=0)
     max_value: NonNegativeInt = Field(default=100)
 
@@ -168,6 +204,7 @@ class NumberSelectionValues(PublicModel):
 
 
 class DrawingValues(PublicModel):
+    type: Literal[ResponseType.DRAWING] | None
     drawing_example: str | None
     drawing_background: str | None
 
@@ -178,7 +215,7 @@ class DrawingValues(PublicModel):
         return value
 
 
-class SliderRowsValue(SliderValues, PublicModel):
+class SliderRowsValue(SliderValuesBase, PublicModel):
     id: str | None = None
     label: str = Field(..., max_length=100)
 
@@ -188,6 +225,7 @@ class SliderRowsValue(SliderValues, PublicModel):
 
 
 class SliderRowsValues(PublicModel):
+    type: Literal[ResponseType.SLIDERROWS] | None
     rows: list[SliderRowsValue]
 
 
@@ -242,6 +280,7 @@ class _SingleSelectionDataRow(PublicModel):
 
 
 class SingleSelectionRowsValues(PublicModel):
+    type: Literal[ResponseType.SINGLESELECTROWS] | None
     rows: list[_SingleSelectionRow]
     options: list[_SingleSelectionOption]
     data_matrix: list[_SingleSelectionDataRow] | None = None
@@ -258,14 +297,16 @@ class SingleSelectionRowsValues(PublicModel):
 
 
 class MultiSelectionRowsValues(SingleSelectionRowsValues, PublicModel):
-    pass
+    type: Literal[ResponseType.MULTISELECTROWS] | None  # type: ignore[assignment]
 
 
 class AudioValues(PublicModel):
+    type: Literal[ResponseType.AUDIO] | None
     max_duration: NonNegativeInt = 300
 
 
 class AudioPlayerValues(PublicModel):
+    type: Literal[ResponseType.AUDIOPLAYER] | None
     file: str | None = Field(default=None)
 
 
@@ -315,13 +356,60 @@ def validate_options_value(options):
         if option.value is None:
             option.value = (
                 max(
-                    [
-                        option.value if option.value is not None else -1
-                        for option in options
-                    ],
+                    [option.value if option.value is not None else -1 for option in options],
                     default=-1,
                 )
                 + 1
             )
 
     return options
+
+
+def validate_none_option_flag(options):
+    none_option_counter = 0
+
+    for option in options:
+        if option.is_none_above:
+            none_option_counter += 1
+
+    if none_option_counter > 1:
+        raise MultiSelectNoneOptionError()
+
+    return options
+
+
+ResponseTypeConfigOptions = [
+    TextConfig,
+    SingleSelectionConfig,
+    MultiSelectionConfig,
+    SliderConfig,
+    NumberSelectionConfig,
+    TimeRangeConfig,
+    GeolocationConfig,
+    DrawingConfig,
+    PhotoConfig,
+    VideoConfig,
+    DateConfig,
+    SliderRowsConfig,
+    SingleSelectionRowsConfig,
+    MultiSelectionRowsConfig,
+    AudioConfig,
+    AudioPlayerConfig,
+    MessageConfig,
+    TimeConfig,
+    FlankerConfig,
+    StabilityTrackerConfig,
+    ABTrailsConfig,
+]
+
+ResponseTypeValueConfig = {}
+index = 0
+
+for response_type in ResponseType:
+    zipped_type_value = list(zip(ResponseValueConfigOptions, ResponseTypeConfigOptions))
+
+    ResponseTypeValueConfig[response_type] = {
+        "config": zipped_type_value[index][1],
+        "value": zipped_type_value[index][0],
+    }
+    index += 1

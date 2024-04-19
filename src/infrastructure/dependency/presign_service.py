@@ -3,11 +3,7 @@ from typing import Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.file.services import (
-    AzurePresignService,
-    GCPPresignService,
-    S3PresignService,
-)
+from apps.file.services import AzurePresignService, GCPPresignService, S3PresignService
 from apps.workspaces.constants import StorageType
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -20,7 +16,7 @@ async def get_presign_service(
     session: AsyncSession,
 ) -> Union[S3PresignService, GCPPresignService, AzurePresignService]:
     wsp_service = WorkspaceService(session, user_id)
-    arbitrary_info = await wsp_service.get_arbitrary_info(applet_id)
+    arbitrary_info = await wsp_service.get_arbitrary_info_if_use_arbitrary(applet_id)
     access = await UserAppletAccessCRUD(session).get_by_roles(
         user_id,
         applet_id,

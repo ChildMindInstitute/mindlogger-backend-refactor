@@ -4,32 +4,19 @@ import uuid
 from typing import Collection
 
 from pydantic import parse_obj_as
-from sqlalchemy import (
-    Text,
-    and_,
-    case,
-    column,
-    delete,
-    func,
-    null,
-    or_,
-    select,
-    update,
-)
+from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, update
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, contains_eager
 from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
 
-from apps.activities.db.schemas import (
-    ActivityHistorySchema,
-    ActivityItemHistorySchema,
-)
+from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
 from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import (
+    Answer,
     AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
@@ -45,24 +32,28 @@ from infrastructure.database.crud import BaseCRUD
 
 
 class _AnswersExportFilter(Filtering):
-    respondent_ids = FilterField(
-        AnswerItemSchema.respondent_id, method_name="filter_respondent_ids"
-    )
+    respondent_ids = FilterField(AnswerItemSchema.respondent_id, method_name="filter_respondent_ids")
 
     def filter_respondent_ids(self, field, value):
-        return and_(
-            field.in_(value), AnswerItemSchema.is_assessment.isnot(True)
-        )
+        return and_(field.in_(value), AnswerItemSchema.is_assessment.isnot(True))
 
-    activity_history_ids = FilterField(
-        AnswerSchema.activity_history_id, Comparisons.IN
-    )
-    from_date = FilterField(
-        AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL
-    )
-    to_date = FilterField(
-        AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL
-    )
+    activity_history_ids = FilterField(AnswerSchema.activity_history_id, Comparisons.IN)
+    from_date = FilterField(AnswerItemSchema.created_at, Comparisons.GREAT_OR_EQUAL)
+    to_date = FilterField(AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL)
+
+
+class _AnswerListFilter(Filtering):
+    respondent_ids = FilterField(AnswerItemSchema.respondent_id, method_name="filter_respondent_ids")
+
+    def filter_respondent_ids(self, field, value):
+        if not value:
+            return None
+        return and_(field.in_(value), AnswerItemSchema.is_assessment.isnot(True))
+
+    submit_id = FilterField(AnswerSchema.submit_id)
+    applet_id = FilterField(AnswerSchema.applet_id)
+    activity_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id), cast=str)
+    flow_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id), cast=str)
 
 
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
@@ -72,11 +63,21 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         schema = await self._create(schema)
         return schema
 
-    async def create_many(
-        self, schemas: list[AnswerSchema]
-    ) -> list[AnswerSchema]:
+    async def create_many(self, schemas: list[AnswerSchema]) -> list[AnswerSchema]:
         schemas = await self._create_many(schemas)
         return schemas
+
+    async def get_list(self, **filters) -> list[Answer]:
+        query = select(AnswerSchema).join(AnswerSchema.answer_items).options(contains_eager(AnswerSchema.answer_items))
+
+        _filters = _AnswerListFilter().get_clauses(**filters)
+        if _filters:
+            query = query.where(*_filters)
+
+        res = await self._execute(query)
+        data = res.unique().scalars().all()
+
+        return parse_obj_as(list[Answer], data)
 
     async def get_respondents_answered_activities_by_applet_id(
         self,
@@ -133,9 +134,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             raise AnswerNotFoundError()
         return schema
 
-    async def delete_by_applet_user(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None = None
-    ):
+    async def delete_by_applet_user(self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None = None):
         query: Query = delete(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         if respondent_id:
@@ -199,11 +198,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
                 reviewed_answer_id.label("reviewed_answer_id"),
+                AnswerSchema.client,
+                AnswerItemSchema.tz_offset,
+                AnswerItemSchema.scheduled_event_id,
             )
             .select_from(AnswerSchema)
-            .join(
-                AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
-            )
+            .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 AnswerSchema.applet_id == applet_id,
                 *filter_clauses,
@@ -218,8 +218,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.order_by(AnswerItemSchema.created_at.desc())
         query = paging(query, page, limit)
 
-        coro_data, coro_count = self._execute(query), self._execute(
-            query_count
+        coro_data, coro_count = (
+            self._execute(query),
+            self._execute(query_count),
         )
 
         res, res_count = await asyncio.gather(coro_data, coro_count)
@@ -229,29 +230,21 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return parse_obj_as(list[RespondentAnswerData], answers), total
 
-    async def get_activity_history_by_ids(
-        self, activity_hist_ids: list[str]
-    ) -> list[ActivityHistory]:
+    async def get_activity_history_by_ids(self, activity_hist_ids: list[str]) -> list[ActivityHistory]:
         query: Query = (
             select(ActivityHistorySchema)
             .where(ActivityHistorySchema.id_version.in_(activity_hist_ids))
-            .order_by(
-                ActivityHistorySchema.applet_id, ActivityHistorySchema.order
-            )
+            .order_by(ActivityHistorySchema.applet_id, ActivityHistorySchema.order)
         )
         res = await self._execute(query)
         activities: list[ActivityHistorySchema] = res.scalars().all()
 
         return parse_obj_as(list[ActivityHistory], activities)
 
-    async def get_item_history_by_activity_history(
-        self, activity_hist_ids: list[str]
-    ) -> list[ActivityItemHistoryFull]:
+    async def get_item_history_by_activity_history(self, activity_hist_ids: list[str]) -> list[ActivityItemHistoryFull]:
         query: Query = (
             select(ActivityItemHistorySchema)
-            .where(
-                ActivityItemHistorySchema.activity_id.in_(activity_hist_ids)
-            )
+            .where(ActivityItemHistorySchema.activity_id.in_(activity_hist_ids))
             .order_by(
                 ActivityItemHistorySchema.activity_id,
                 ActivityItemHistorySchema.order,
@@ -265,14 +258,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_identifiers_by_activity_id(
         self,
         activity_hist_ids: Collection[str],
-        respondent_id: uuid.UUID | None,
-    ) -> list[tuple[str, str, dict]]:
+        respondent_id: uuid.UUID | None = None,
+        answer_id: uuid.UUID | None = None,
+    ) -> list[tuple[str, str, dict, datetime.datetime]]:
         query: Query = select(
             AnswerItemSchema.identifier,
             AnswerItemSchema.user_public_key,
             AnswerItemSchema.migrated_data,
+            func.max(AnswerSchema.created_at),
         )
-        query = query.distinct(AnswerItemSchema.identifier)
+        query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+        query = query.group_by(
+            AnswerItemSchema.identifier, AnswerItemSchema.user_public_key, AnswerItemSchema.migrated_data
+        )
         query = query.where(
             AnswerItemSchema.identifier.isnot(None),
             AnswerSchema.activity_history_id.in_(activity_hist_ids),
@@ -280,16 +278,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         if respondent_id:
             query = query.where(AnswerSchema.respondent_id == respondent_id)
 
-        query = query.join(
-            AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id
-        )
+        if answer_id:
+            query = query.where(AnswerItemSchema.answer_id == answer_id)
+
         db_result = await self._execute(query)
+        return db_result.all()  # noqa
 
-        return db_result.all()
-
-    async def get_versions_by_activity_id(
-        self, activity_id: uuid.UUID
-    ) -> list[Version]:
+    async def get_versions_by_activity_id(self, activity_id: uuid.UUID) -> list[Version]:
         query: Query = select(
             ActivityHistorySchema.id,
             AppletHistorySchema.version,
@@ -342,36 +337,34 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.created_at == created_time)
-        query = query.filter(
-            AnswerSchema.activity_history_id.startswith(activity_id)
-        )
+        query = query.filter(AnswerSchema.activity_history_id.startswith(activity_id))
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_activities_which_has_answer(
+    async def get_submitted_activity_with_last_date(
         self, activity_hist_ids: list[str], respondent_id: uuid.UUID | None
-    ) -> list[str]:
-        activity_ids = set(
-            map(lambda id_version: id_version.split("_")[0], activity_hist_ids)
-        )
-        query: Query = select(AnswerSchema.activity_history_id)
-        query = query.where(
-            or_(
-                *(
-                    AnswerSchema.activity_history_id.like(f"{item}_%")
-                    for item in activity_ids
-                )
-            )
-        )
+    ) -> list[tuple[str, datetime.datetime]]:
+        activity_ids = set(map(lambda id_version: id_version.split("_")[0], activity_hist_ids))
+        query: Query = select(AnswerSchema.activity_history_id, func.max(AnswerSchema.created_at))
+        query = query.where(or_(*(AnswerSchema.activity_history_id.like(f"{item}_%") for item in activity_ids)))
         if respondent_id:
-            query.where(AnswerSchema.respondent_id == respondent_id)
-        query = query.distinct(AnswerSchema.activity_history_id)
-        query.order_by(AnswerSchema.activity_history_id)
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.group_by(AnswerSchema.activity_history_id)
+        query = query.order_by(AnswerSchema.activity_history_id)
         db_result = await self._execute(query)
-        results = []
-        for activity_id in db_result.all():
-            results.append(activity_id)
-        return [row[0] for row in results]
+        return db_result.all()  # noqa
+
+    async def get_submitted_flows_with_last_date(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+    ) -> list[tuple[str, datetime.datetime]]:
+        query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
+        query = query.where(AnswerSchema.applet_id == applet_id, AnswerSchema.flow_history_id.isnot(None))
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.group_by(AnswerSchema.flow_history_id)
+        query = query.order_by(AnswerSchema.flow_history_id)
+        db_result = await self._execute(query)
+        return db_result.all()  # noqa
 
     async def get_completed_answers_data(
         self,
@@ -395,9 +388,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
             )
-            .join(
-                AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
-            )
+            .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 AnswerSchema.applet_id == applet_id,
                 AnswerSchema.version == version,
@@ -428,9 +419,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             if row.flow_history_id:
                 flows.append(CompletedEntity(**row, id=row.flow_history_id))
             else:
-                activities.append(
-                    CompletedEntity(**row, id=row.activity_history_id)
-                )
+                activities.append(CompletedEntity(**row, id=row.activity_history_id))
 
         return AppletCompletedEntities(
             id=applet_id,
@@ -458,9 +447,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                     AnswerSchema.version == version,
                 )
             )
-        applet_version_filter: BooleanClauseList = or_(
-            *applet_version_filter_list
-        )
+        applet_version_filter: BooleanClauseList = or_(*applet_version_filter_list)
 
         query: Query = (
             select(
@@ -473,9 +460,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
             )
-            .join(
-                AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
-            )
+            .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
@@ -501,17 +486,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         applet_activities_flows_map: dict[uuid.UUID, dict[str, list]] = dict()
         for row in data:
-            applet_activities_flows_map.setdefault(
-                row.applet_id, {"activities": [], "flows": []}
-            )
+            applet_activities_flows_map.setdefault(row.applet_id, {"activities": [], "flows": []})
             if row.flow_history_id:
                 applet_activities_flows_map[row.applet_id]["flows"].append(
                     CompletedEntity(**row, id=row.flow_history_id)
                 )
             else:
-                applet_activities_flows_map[row.applet_id][
-                    "activities"
-                ].append(CompletedEntity(**row, id=row.activity_history_id))
+                applet_activities_flows_map[row.applet_id]["activities"].append(
+                    CompletedEntity(**row, id=row.activity_history_id)
+                )
 
         result_list: list[AppletCompletedEntities] = list()
         for applet_id, version in applets_version_map.items():
@@ -519,12 +502,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AppletCompletedEntities(
                     id=applet_id,
                     version=version,
-                    activities=applet_activities_flows_map.get(
-                        applet_id, {"activities": [], "flows": []}
-                    )["activities"],
-                    activity_flows=applet_activities_flows_map.get(
-                        applet_id, {"activities": [], "flows": []}
-                    )["flows"],
+                    activities=applet_activities_flows_map.get(applet_id, {"activities": [], "flows": []})[
+                        "activities"
+                    ],
+                    activity_flows=applet_activities_flows_map.get(applet_id, {"activities": [], "flows": []})["flows"],
                 )
             )
 
@@ -552,9 +533,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.migrated_data,
             )
             .select_from(AnswerSchema)
-            .join(
-                AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id
-            )
+            .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 AnswerSchema.applet_id == applet_id,
                 AnswerItemSchema.respondent_id == user_id,
@@ -567,9 +546,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return parse_obj_as(list[UserAnswerItemData], db_result.all())
 
-    async def update_encrypted_fields(
-        self, user_public_key: str, data: list[AnswerItemDataEncrypted]
-    ):
+    async def update_encrypted_fields(self, user_public_key: str, data: list[AnswerItemDataEncrypted]):
         if data:
             vals = Values(
                 column("id", UUID(as_uuid=True)),
@@ -577,12 +554,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 column("events", Text),
                 column("identifier", Text),
                 name="answer_data",
-            ).data(
-                [
-                    (row.id, row.answer, row.events, row.identifier)
-                    for row in data
-                ]
-            )
+            ).data([(row.id, row.answer, row.events, row.identifier) for row in data])
             query = (
                 update(AnswerItemSchema)
                 .where(AnswerItemSchema.id == vals.c.id)
@@ -598,14 +570,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def is_single_report_flow(self, answer_flow_id: str | None) -> bool:
         query: Query = select(ActivityFlowHistoriesSchema)
-        query = query.where(
-            ActivityFlowHistoriesSchema.id_version == answer_flow_id
-        )
+        query = query.where(ActivityFlowHistoriesSchema.id_version == answer_flow_id)
         db_result = await self._execute(query)
         db_result = db_result.first()
-        flow_history_schema = (
-            db_result[0] if db_result else None
-        )  # type: ActivityFlowHistoriesSchema | None
+        flow_history_schema = db_result[0] if db_result else None  # type: ActivityFlowHistoriesSchema | None
         if not flow_history_schema:
             return False
         return flow_history_schema.is_single_report
@@ -614,9 +582,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         self, respondent_ids: list[uuid.UUID], applet_id: uuid.UUID | None
     ) -> dict[uuid.UUID, datetime.datetime]:
         query: Query = (
-            select(
-                AnswerSchema.respondent_id, func.max(AnswerSchema.created_at)
-            )
+            select(AnswerSchema.respondent_id, func.max(AnswerSchema.created_at))
             .group_by(AnswerSchema.respondent_id)
             .where(AnswerSchema.respondent_id.in_(respondent_ids))
         )

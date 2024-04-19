@@ -1,11 +1,6 @@
 import uuid
 
-from apps.schedule.domain.schedule.base import (
-    BaseEvent,
-    BaseNotificationSetting,
-    BasePeriodicity,
-    BaseReminderSetting,
-)
+from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
 from apps.shared.domain import InternalModel
 
 __all__ = [
@@ -24,7 +19,6 @@ __all__ = [
     "NotificationSetting",
     "ReminderSettingCreate",
     "ReminderSetting",
-    # "Notification",
 ]
 
 
@@ -92,11 +86,6 @@ class ReminderSettingCreate(BaseReminderSetting, InternalModel):
 
 class ReminderSetting(ReminderSettingCreate, InternalModel):
     id: uuid.UUID
-
-
-# class Notification(InternalModel):
-#     notifications: list[NotificationSetting] | None = None
-#     reminder: ReminderSetting | None = None
 
 
 class EventFull(InternalModel, BaseEvent):

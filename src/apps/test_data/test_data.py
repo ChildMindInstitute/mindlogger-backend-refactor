@@ -4,19 +4,13 @@ from apps.shared.test import BaseTest
 
 
 class TestData(BaseTest):
-    fixtures = [
-        "users/fixtures/users.json",
-        "folders/fixtures/folders.json",
-        "themes/fixtures/themes.json",
-    ]
-
     login_url = "/auth/login"
     generating_url = "/data"
     generate_applet_url = f"{generating_url}/generate_applet"
     applet_list_url = "applets"
 
-    async def test_generate_applet(self, client):
-        await client.login(self.login_url, "tom@mindlogger.com", "Test1234!")
+    async def test_generate_applet(self, client, user):
+        client.login(user)
 
         response = await client.post(
             self.generate_applet_url,

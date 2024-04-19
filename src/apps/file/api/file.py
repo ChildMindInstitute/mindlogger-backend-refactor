@@ -4,6 +4,7 @@ import mimetypes
 import os
 import uuid
 from functools import partial
+from typing import cast
 from urllib.parse import quote
 
 import aiofiles
@@ -21,8 +22,12 @@ from apps.file.domain import (
     FileCheckRequest,
     FileDownloadRequest,
     FileExistenceResponse,
+    FileIdRequest,
+    FileNameRequest,
     FilePresignRequest,
     LogFileExistenceResponse,
+    PresignedUrl,
+    WebmTargetExtenstion,
 )
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError
@@ -35,13 +40,15 @@ from apps.users.domain import User
 from apps.users.services.user import UserService
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.errors import AnswerViewAccessDenied
+from apps.workspaces.service import workspace
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.database.deps import get_session
 from infrastructure.dependency.cdn import get_log_bucket, get_media_bucket
 from infrastructure.dependency.presign_service import get_presign_service
-from infrastructure.utility.cdn_client import CDNClient
+from infrastructure.utility.cdn_client import CDNClient, ObjectNotFoundError
 
 
 async def upload(
@@ -69,9 +76,7 @@ async def upload(
             filename = file.filename
             reader = file.file  # type: ignore[assignment]
 
-        key = cdn_client.generate_key(
-            FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{filename}"
-        )
+        key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{filename}")
         await cdn_client.upload(key, reader)
     finally:
         for f in to_close:
@@ -79,9 +84,7 @@ async def upload(
 
         for path in to_delete:
             os.remove(path)
-    result = ContentUploadedFile(
-        key=key, url=quote(settings.cdn.url.format(key=key), "/:")
-    )
+    result = ContentUploadedFile(key=key, url=quote(settings.cdn.url.format(key=key), "/:"))
     return Response(result=result)
 
 
@@ -93,7 +96,7 @@ async def _copy(file: UploadFile, path: str):
 
 
 async def convert_not_supported_audio(file: UploadFile):
-
+    file.filename = cast(str, file.filename)
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "video/webm":
         # store file, create task to convert
@@ -120,7 +123,7 @@ async def convert_not_supported_audio(file: UploadFile):
 
 
 async def convert_not_supported_image(file: UploadFile):
-
+    file.filename = cast(str, file.filename)
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "image/heic":
         # store file, create task to convert
@@ -151,6 +154,36 @@ async def convert_not_supported_image(file: UploadFile):
     return None
 
 
+def _get_keys_and_bucket_for_media(
+    orig_key: str, target_extension: WebmTargetExtenstion | None = None
+) -> tuple[str, str, str]:
+    if orig_key.lower().endswith(".webm"):
+        extension = target_extension if target_extension else WebmTargetExtenstion.MP3
+        target_key = orig_key + extension
+        upload_key = f"{settings.cdn.bucket}/{orig_key}"
+        bucket = settings.cdn.bucket_operations
+    else:
+        target_key = upload_key = orig_key
+        bucket = settings.cdn.bucket
+    bucket = cast(str, bucket)
+    return target_key, upload_key, bucket
+
+
+def _get_keys_and_bucket_for_image(
+    orig_key: str, arb_info: WorkspaceArbitrary | None, cdn_client
+) -> tuple[str, str, str]:
+    if orig_key.lower().endswith(".heic"):
+        target_key = orig_key + ".jpg"
+        prefix = f"arbitrary-{arb_info.id}" if arb_info else cdn_client.config.bucket
+        upload_key = f"{prefix}/{orig_key}"
+        bucket = settings.cdn.bucket_operations
+    else:
+        target_key = upload_key = orig_key
+        bucket = cdn_client.config.bucket
+    bucket = cast(str, bucket)
+    return target_key, upload_key, bucket
+
+
 async def download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
@@ -163,6 +196,8 @@ async def download(
             raise FileNotFoundError
         else:
             raise e
+    except ObjectNotFoundError:
+        raise FileNotFoundError
 
     return StreamingResponse(file, media_type=media_type)
 
@@ -173,7 +208,7 @@ async def answer_upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> Response[AnswerUploadedFile]:
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
         applet_id,
@@ -203,12 +238,8 @@ async def answer_upload(
 
         cdn_client = await select_storage(applet_id, session)
         unique = f"{user.id}/{applet_id}"
-        cleaned_file_id = (
-            file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
-        )
-        key = cdn_client.generate_key(
-            FileScopeEnum.ANSWER, unique, cleaned_file_id
-        )
+        cleaned_file_id = file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
+        key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
         await cdn_client.upload(key, reader)
     finally:
         for f in to_close:
@@ -230,7 +261,7 @@ async def answer_download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> StreamingResponse:
     cdn_client = await select_storage(applet_id, session)
     if request.key.startswith(LogFileService.LOG_KEY):
         LogFileService.raise_for_access(user.email)
@@ -242,6 +273,8 @@ async def answer_download(
             raise FileNotFoundError
         else:
             raise e
+    except ObjectNotFoundError:
+        raise FileNotFoundError
     return StreamingResponse(file, media_type=media_type)
 
 
@@ -260,6 +293,8 @@ async def check_file_uploaded(
     ):
         raise AnswerViewAccessDenied()
 
+    workspace_srv = workspace.WorkspaceService(session, user.id)
+    arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
     cdn_client = await select_storage(applet_id, session)
     results: list[FileExistenceResponse] = []
 
@@ -267,30 +302,27 @@ async def check_file_uploaded(
         cleaned_file_id = file_id.strip()
 
         unique = f"{user.id}/{applet_id}"
-        key = cdn_client.generate_key(
-            FileScopeEnum.ANSWER, unique, cleaned_file_id
-        )
+        orig_key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
+
+        target_key, upload_key, bucket = _get_keys_and_bucket_for_image(orig_key, arb_info, cdn_client)
 
         file_existence_factory = partial(
             FileExistenceResponse,
-            key=key,
             file_id=file_id,
         )
 
         try:
-            await cdn_client.check_existence(key)
+            await cdn_client.check_existence(bucket, upload_key)
             results.append(
                 file_existence_factory(
                     uploaded=True,
-                    url=cdn_client.generate_private_url(key),
+                    url=cdn_client.generate_private_url(target_key),
                 )
             )
         except NotFoundError:
             results.append(file_existence_factory(uploaded=False))
 
-    return ResponseMulti[FileExistenceResponse](
-        result=results, count=len(results)
-    )
+    return ResponseMulti[FileExistenceResponse](result=results, count=len(results))
 
 
 async def presign(
@@ -298,7 +330,7 @@ async def presign(
     request: FilePresignRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-):
+) -> ResponseMulti[str | None]:
     service = await get_presign_service(applet_id, user.id, session)
     links = await service.presign(request.private_urls)
     return ResponseMulti[str | None](result=links, count=len(links))  # noqa
@@ -310,9 +342,10 @@ async def logs_upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
-):
+) -> Response[AnswerUploadedFile]:
     service = LogFileService(user.id, cdn_client)
     try:
+        file.filename = cast(str, file.filename)
         key = service.key(device_id=device_id, file_name=file.filename)
         await service.upload(device_id, file, file_id)
         url = await cdn_client.generate_presigned_url(key)
@@ -331,7 +364,7 @@ async def logs_download(
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
     session: AsyncSession = Depends(get_session),
-):
+) -> ResponseMulti[str]:
     user_service = UserService(session)
     log_user = await user_service.get_by_email(user_email)
     service = LogFileService(log_user.id, cdn_client)
@@ -344,14 +377,10 @@ async def logs_download(
         for key in map(lambda f: f["Key"], files):
             futures.append(cdn_client.generate_presigned_url(key))
         result = await asyncio.gather(*futures)
-        await service.backend_log_download(
-            user.email_encrypted, None, device_id, True
-        )
+        await service.backend_log_download(user.email_encrypted, None, device_id, True)
         return ResponseMulti[str](result=result, count=len(result))
     except Exception as ex:
-        await service.backend_log_download(
-            user.email_encrypted, str(ex), device_id, False
-        )
+        await service.backend_log_download(user.email_encrypted, str(ex), device_id, False)
         raise ex
 
 
@@ -360,15 +389,70 @@ async def logs_exist_check(
     files: FileCheckRequest,
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_log_bucket),
-):
+) -> ResponseMulti[LogFileExistenceResponse]:
     service = LogFileService(user.id, cdn_client)
     try:
         result = await service.check_exist(device_id, files.files)
         count = len(result)
         await service.backend_log_check(result, True, None)
-        return ResponseMulti[LogFileExistenceResponse](
-            result=result, count=count
-        )
+        return ResponseMulti[LogFileExistenceResponse](result=result, count=count)
     except Exception as ex:
         await service.backend_log_check([], False, str(ex))
         raise ex
+
+
+async def generate_presigned_media_url(
+    body: FileNameRequest = Body(...),
+    user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_media_bucket),
+) -> Response[PresignedUrl]:
+    orig_key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
+    target_key, upload_key, bucket = _get_keys_and_bucket_for_media(orig_key, body.target_extension)
+    data = cdn_client.generate_presigned_post(bucket, upload_key)
+    return Response(
+        result=PresignedUrl(
+            upload_url=data["url"], fields=data["fields"], url=quote(settings.cdn.url.format(key=target_key), "/:")
+        )
+    )
+
+
+async def generate_presigned_answer_url(
+    applet_id: uuid.UUID,
+    body: FileIdRequest = Body(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> Response[PresignedUrl]:
+    if not await UserAppletAccessCRUD(session).get_by_roles(
+        user.id,
+        applet_id,
+        [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
+    ):
+        raise AnswerViewAccessDenied()
+    # TODO: Refactor this part when file storage is covered by tests. Get arbitrary info only once.
+    workspace_srv = workspace.WorkspaceService(session, user.id)
+    arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
+    cdn_client = await select_storage(applet_id, session)
+    unique = f"{user.id}/{applet_id}"
+    cleaned_file_id = body.file_id.strip()
+    orig_key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
+    target_key, upload_key, bucket = _get_keys_and_bucket_for_image(orig_key, arb_info, cdn_client)
+    data = cdn_client.generate_presigned_post(bucket, upload_key)
+    return Response(
+        result=PresignedUrl(
+            upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(target_key)
+        )
+    )
+
+
+async def generate_presigned_logs_url(
+    device_id: str,
+    body: FileIdRequest = Body(...),
+    user: User = Depends(get_current_user),
+    cdn_client: CDNClient = Depends(get_log_bucket),
+) -> Response[PresignedUrl]:
+    service = LogFileService(user.id, cdn_client)
+    key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"
+    data = cdn_client.generate_presigned_post(cdn_client.config.bucket, key)
+    return Response(
+        result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
+    )

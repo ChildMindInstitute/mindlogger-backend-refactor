@@ -9,9 +9,11 @@ from apps.answers.api import (
     applet_activity_assessment_retrieve,
     applet_activity_identifiers_retrieve,
     applet_activity_versions_retrieve,
+    applet_answer_assessment_delete,
     applet_answer_reviews_retrieve,
     applet_answers_export,
     applet_completed_entities,
+    applet_flow_answer_retrieve,
     applet_submit_date_list,
     applets_completed_entities,
     create_anonymous_answer,
@@ -21,28 +23,27 @@ from apps.answers.api import (
     note_edit,
     note_list,
     review_activity_list,
+    summary_activity_flow_list,
     summary_activity_list,
     summary_latest_report_retrieve,
 )
 from apps.answers.domain import (
-    ActivityAnswerPublic,
+    ActivitySubmissionResponse,
     AnswerExistenceResponse,
     AnswerNoteDetailPublic,
     AnswerReviewPublic,
     AppletActivityAnswerPublic,
     AppletCompletedEntities,
     AssessmentAnswerPublic,
+    FlowSubmissionResponse,
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,
     PublicSummaryActivity,
+    PublicSummaryActivityFlow,
     VersionPublic,
 )
-from apps.shared.domain import (
-    AUTHENTICATION_ERROR_RESPONSES,
-    Response,
-    ResponseMulti,
-)
+from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, Response, ResponseMulti
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
 
 router = APIRouter(prefix="/answers", tags=["Answers"])
@@ -89,6 +90,16 @@ router.get(
 )(summary_activity_list)
 
 router.get(
+    "/applet/{applet_id}/summary/flows",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicSummaryActivityFlow]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(summary_activity_flow_list)
+
+router.get(
     "/applet/{applet_id}/summary/activities/{activity_id}/identifiers",
     status_code=status.HTTP_200_OK,
     responses={
@@ -112,9 +123,7 @@ router.get(
     "/applet/{applet_id}/activities/{activity_id}/answers",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {
-            "model": ResponseMulti[AppletActivityAnswerPublic]
-        },
+        status.HTTP_200_OK: {"model": ResponseMulti[AppletActivityAnswerPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -140,14 +149,24 @@ router.get(
 )(applet_submit_date_list)
 
 router.get(
-    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}",
+    "/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[ActivityAnswerPublic]},
+        status.HTTP_200_OK: {"model": Response[ActivitySubmissionResponse]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_answer_retrieve)
+
+router.get(
+    "/applet/{applet_id}/flows/{flow_id}/submissions/{submit_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[FlowSubmissionResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_answer_retrieve)
 
 router.get(
     "/applet/{applet_id}/answers/{answer_id}/reviews",
@@ -168,6 +187,11 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_assessment_retrieve)
+
+router.delete(
+    "/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)(applet_answer_assessment_delete)
 
 router.post(
     "/applet/{applet_id}/answers/{answer_id}/assessment",
@@ -198,8 +222,7 @@ router.get(
 )(note_list)
 
 router.put(
-    "/applet/{applet_id}/answers/{answer_id}/activities/"
-    "{activity_id}/notes/{note_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/" "{activity_id}/notes/{note_id}",
     # noqa: E501
     status_code=status.HTTP_200_OK,
     responses={
@@ -209,8 +232,7 @@ router.put(
 )(note_edit)
 
 router.delete(
-    "/applet/{applet_id}/answers/{answer_id}/activities/"
-    "{activity_id}/notes/{note_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/" "{activity_id}/notes/{note_id}",
     # noqa: E501
     status_code=status.HTTP_204_NO_CONTENT,
     responses={

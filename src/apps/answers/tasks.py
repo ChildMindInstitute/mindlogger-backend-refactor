@@ -43,18 +43,15 @@ async def create_report(
             if arb_uri:
                 arb_session_maker = session_manager.get_session(arb_uri)
                 async with arb_session_maker() as arb_session:
-                    response = await _create_report(
-                        submit_id, answer_id, session, arb_session
-                    )
+                    response = await _create_report(submit_id, answer_id, session, arb_session)
             else:
                 response = await _create_report(submit_id, answer_id, session)
 
             if not response:
                 return
             file = UploadFile(
-                response.email.attachment,
                 io.BytesIO(base64.b64decode(response.pdf.encode())),
-                "application/pdf",
+                filename=response.email.attachment,
             )
 
             mail_service = MailingService()

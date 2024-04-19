@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal
 
 from pydantic import Field, NonNegativeInt, PositiveInt, validator
 
@@ -24,9 +25,50 @@ from apps.activities.domain.constants_ab_trails_tablet import (
     ABTrailsNodes,
     ABTrailsTutorial,
 )
-from apps.activities.domain.response_values import ResponseValueConfigOptions
+
+# from apps.activities.domain.response_values import ResponseValueConfigOptions
 from apps.activities.errors import CorrectAnswerRequiredError
 from apps.shared.domain import PublicModel
+
+
+class ResponseType(str, Enum):
+    TEXT = "text"
+    SINGLESELECT = "singleSelect"
+    MULTISELECT = "multiSelect"
+    SLIDER = "slider"
+    NUMBERSELECT = "numberSelect"
+    TIMERANGE = "timeRange"
+    GEOLOCATION = "geolocation"
+    DRAWING = "drawing"
+    PHOTO = "photo"
+    VIDEO = "video"
+    DATE = "date"
+    SLIDERROWS = "sliderRows"
+    SINGLESELECTROWS = "singleSelectRows"
+    MULTISELECTROWS = "multiSelectRows"
+    AUDIO = "audio"
+    AUDIOPLAYER = "audioPlayer"
+    MESSAGE = "message"
+    TIME = "time"
+    FLANKER = "flanker"
+    STABILITYTRACKER = "stabilityTracker"
+    ABTRAILS = "ABTrails"
+
+    @classmethod
+    def get_non_response_types(cls):
+        return (
+            cls.TEXT,
+            cls.MESSAGE,
+            cls.TIMERANGE,
+            cls.GEOLOCATION,
+            cls.PHOTO,
+            cls.VIDEO,
+            cls.DATE,
+            cls.TIME,
+            cls.FLANKER,
+            cls.STABILITYTRACKER,
+            cls.ABTRAILS,
+        )
 
 
 class AdditionalResponseOption(PublicModel):
@@ -40,6 +82,7 @@ class _ScreenConfig(PublicModel):
 
 
 class TextConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.TEXT] | None
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
     correct_answer: str | None = Field(
@@ -72,19 +115,22 @@ class _SelectionConfig(_ScreenConfig, PublicModel):
 
 
 class SingleSelectionConfig(_SelectionConfig, PublicModel):
+    type: Literal[ResponseType.SINGLESELECT] | None
     auto_advance: bool = False
 
 
 class MultiSelectionConfig(_SelectionConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.MULTISELECT] | None
 
 
 class MessageConfig(PublicModel):
+    type: Literal[ResponseType.MESSAGE] | None
     remove_back_button: bool
     timer: NonNegativeInt | None
 
 
 class SliderConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.SLIDER] | None
     add_scores: bool
     set_alerts: bool
     additional_response_option: AdditionalResponseOption
@@ -95,6 +141,7 @@ class SliderConfig(_ScreenConfig, PublicModel):
 
 
 class NumberSelectionConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.NUMBERSELECT] | None
     additional_response_option: AdditionalResponseOption
 
 
@@ -104,18 +151,19 @@ class DefaultConfig(_ScreenConfig, PublicModel):
 
 
 class TimeRangeConfig(DefaultConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.TIMERANGE] | None
 
 
 class TimeConfig(DefaultConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.TIME] | None
 
 
 class GeolocationConfig(DefaultConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.GEOLOCATION] | None
 
 
 class DrawingConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.DRAWING] | None
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
     remove_undo_button: bool = False
@@ -123,24 +171,26 @@ class DrawingConfig(_ScreenConfig, PublicModel):
 
 
 class PhotoConfig(DefaultConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.PHOTO] | None
 
 
 class VideoConfig(DefaultConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.VIDEO] | None
 
 
 class DateConfig(DefaultConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.DATE] | None
 
 
 class SliderRowsConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.SLIDERROWS] | None
     add_scores: bool
     set_alerts: bool
     timer: NonNegativeInt | None
 
 
 class SingleSelectionRowsConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.SINGLESELECTROWS] | None
     timer: NonNegativeInt | None
     add_scores: bool
     set_alerts: bool
@@ -149,14 +199,15 @@ class SingleSelectionRowsConfig(_ScreenConfig, PublicModel):
 
 
 class MultiSelectionRowsConfig(SingleSelectionRowsConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.MULTISELECTROWS] | None  # type: ignore[assignment]
 
 
 class AudioConfig(DefaultConfig, PublicModel):
-    pass
+    type: Literal[ResponseType.AUDIO] | None
 
 
 class AudioPlayerConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.AUDIOPLAYER] | None
     additional_response_option: AdditionalResponseOption
     play_once: bool
 
@@ -172,7 +223,8 @@ class Phase(str, Enum):
 
 
 class StabilityTrackerConfig(PublicModel):
-    user_input_type: InputType
+    type: Literal[ResponseType.STABILITYTRACKER] | None
+    user_input_type: InputType | None
     phase: Phase
     trials_number: int = 0
     duration_minutes: float
@@ -234,6 +286,7 @@ class FixationScreen(PublicModel):
 
 
 class FlankerConfig(PublicModel):
+    type: Literal[ResponseType.FLANKER] | None
     stimulus_trials: list[StimulusConfiguration]
     blocks: list[BlockConfiguration]
     buttons: list[ButtonConfiguration]
@@ -266,7 +319,8 @@ class ABTrailsDeviceType(str, Enum):
 
 
 class ABTrailsConfig(PublicModel):
-    device_type: ABTrailsDeviceType
+    type: Literal[ResponseType.ABTRAILS] | None
+    device_type: ABTrailsDeviceType | None
     order_name: ABTrailsOrder
     tutorials: ABTrailsTutorial | None = None
     nodes: ABTrailsNodes | None = None
@@ -324,44 +378,6 @@ class ABTrailsConfig(PublicModel):
         return value
 
 
-class NoneResponseType(str, Enum):
-    TEXT = "text"
-    MESSAGE = "message"
-    TIMERANGE = "timeRange"
-    GEOLOCATION = "geolocation"
-    PHOTO = "photo"
-    VIDEO = "video"
-    DATE = "date"
-    TIME = "time"
-    FLANKER = "flanker"
-    STABILITYTRACKER = "stabilityTracker"
-    ABTRAILS = "ABTrails"
-
-
-class ResponseType(str, Enum):
-    TEXT = "text"
-    SINGLESELECT = "singleSelect"
-    MULTISELECT = "multiSelect"
-    SLIDER = "slider"
-    NUMBERSELECT = "numberSelect"
-    TIMERANGE = "timeRange"
-    GEOLOCATION = "geolocation"
-    DRAWING = "drawing"
-    PHOTO = "photo"
-    VIDEO = "video"
-    DATE = "date"
-    SLIDERROWS = "sliderRows"
-    SINGLESELECTROWS = "singleSelectRows"
-    MULTISELECTROWS = "multiSelectRows"
-    AUDIO = "audio"
-    AUDIOPLAYER = "audioPlayer"
-    MESSAGE = "message"
-    TIME = "time"
-    FLANKER = "flanker"
-    STABILITYTRACKER = "stabilityTracker"
-    ABTRAILS = "ABTrails"
-
-
 class PerformanceTaskType(str, Enum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
@@ -372,30 +388,6 @@ class PerformanceTaskType(str, Enum):
     def get_values(cls) -> list[str]:
         return [i.value for i in cls]
 
-
-ResponseTypeConfigOptions = [
-    TextConfig,
-    SingleSelectionConfig,
-    MultiSelectionConfig,
-    SliderConfig,
-    NumberSelectionConfig,
-    TimeRangeConfig,
-    GeolocationConfig,
-    DrawingConfig,
-    PhotoConfig,
-    VideoConfig,
-    DateConfig,
-    SliderRowsConfig,
-    SingleSelectionRowsConfig,
-    MultiSelectionRowsConfig,
-    AudioConfig,
-    AudioPlayerConfig,
-    MessageConfig,
-    TimeConfig,
-    FlankerConfig,
-    StabilityTrackerConfig,
-    ABTrailsConfig,
-]
 
 ResponseTypeConfig = (
     TextConfig
@@ -420,17 +412,3 @@ ResponseTypeConfig = (
     | StabilityTrackerConfig
     | ABTrailsConfig
 )
-
-ResponseTypeValueConfig = {}
-index = 0
-
-for response_type in ResponseType:
-    zipped_type_value = list(
-        zip(ResponseValueConfigOptions, ResponseTypeConfigOptions)
-    )
-
-    ResponseTypeValueConfig[response_type] = {
-        "config": zipped_type_value[index][1],
-        "value": zipped_type_value[index][0],
-    }
-    index += 1

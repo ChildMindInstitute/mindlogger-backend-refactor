@@ -3,7 +3,8 @@ from typing import Any
 
 from apps.job.constants import JobStatus
 from apps.job.crud import JobCRUD
-from apps.job.domain import JobCreate
+from apps.job.domain import Job, JobCreate
+from apps.job.errors import JobStatusError
 
 
 class JobService:
@@ -14,14 +15,14 @@ class JobService:
     async def get_or_create_owned(
         self,
         name: str,
-        status: JobStatus | None = None,
+        status: JobStatus = JobStatus.pending,
         details: dict | None = None,
-    ):
+        *,
+        accept_statuses: list[JobStatus] | None = None,
+    ) -> Job:
         repository = JobCRUD(self.session)
         job = await repository.get_by_name(name, self.user_id)
         if not job:
-            if not status:
-                status = JobStatus.pending
             model = JobCreate(
                 name=name,
                 creator_id=self.user_id,
@@ -30,10 +31,12 @@ class JobService:
             if details:
                 model.details = details
             job = await repository.create(model)
+        elif accept_statuses and job.status not in accept_statuses:
+            raise JobStatusError(job, f"Wrong job status: {job.status}")
 
         return job
 
-    async def is_job_in_progress(self, job_name: str):
+    async def is_job_in_progress(self, job_name: str) -> bool:
         repository = JobCRUD(self.session)
         job = await repository.get_by_name(job_name, self.user_id)
         if not job or job.status in [JobStatus.success, JobStatus.error]:
@@ -41,9 +44,7 @@ class JobService:
 
         return True
 
-    async def change_status(
-        self, id_: uuid.UUID, status: JobStatus, details: dict | None = None
-    ):
+    async def change_status(self, id_: uuid.UUID, status: JobStatus, details: dict | None = None) -> Job:
         data: dict[str, Any] = dict(status=status)
         if details:
             data["details"] = details

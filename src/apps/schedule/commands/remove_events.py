@@ -1,6 +1,3 @@
-import asyncio
-from functools import wraps
-
 import typer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,17 +5,10 @@ from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas.activity import ActivitySchema
 from apps.schedule.service import ScheduleService
+from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 async def get_assessments(session: AsyncSession) -> list[ActivitySchema]:
@@ -38,12 +28,7 @@ async def remove_events():
                 assessments = await get_assessments(session)
                 service = ScheduleService(session)
                 for activity in assessments:
-                    print(
-                        f"Applet: {activity.applet_id} "
-                        f"Activity: {activity.id}"
-                    )
-                    await service.delete_by_activity_ids(
-                        activity.applet_id, [activity.id]
-                    )
+                    print(f"Applet: {activity.applet_id} " f"Activity: {activity.id}")
+                    await service.delete_by_activity_ids(activity.applet_id, [activity.id])
             except Exception as ex:
                 print(ex)

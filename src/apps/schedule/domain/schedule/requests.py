@@ -2,16 +2,8 @@ import uuid
 
 from pydantic import Field, root_validator, validator
 
-from apps.schedule.domain.constants import (
-    NotificationTriggerType,
-    PeriodicityType,
-)
-from apps.schedule.domain.schedule.base import (
-    BaseEvent,
-    BaseNotificationSetting,
-    BasePeriodicity,
-    BaseReminderSetting,
-)
+from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType
+from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
 from apps.schedule.errors import (
     ActivityOrFlowRequiredError,
     OneTimeCompletionCaseError,
@@ -27,6 +19,7 @@ __all__ = [
     "NotificationSettingRequest",
     "ReminderSettingRequest",
     "EventUpdateRequest",
+    "Notification",
 ]
 
 
@@ -50,8 +43,8 @@ class Notification(PublicModel):
     def validate_notification_order(cls, value):
         if value:
             # set order of notifications
-            for i, notification in enumerate(value):
-                notification.order = i + 1
+            for i, notification in enumerate(value, start=1):
+                notification.order = i
         return value
 
 
@@ -62,59 +55,40 @@ class EventUpdateRequest(BaseEvent, InternalModel):
     @root_validator
     def validate_optional_fields(cls, values):
         # if periodicity is Always, one_time_completion must be set.
-        if (
-            values.get("periodicity").type == PeriodicityType.ALWAYS
-            and not type(values.get("one_time_completion")) == bool
+        if values.get("periodicity").type == PeriodicityType.ALWAYS and not isinstance(
+            values.get("one_time_completion"), bool
         ):
             raise OneTimeCompletionCaseError()
 
-        # if periodicity is not Always, start_time and end_time, access_before_schedule must be set. # noqa: E501
+        start_time = values.get("start_time")
+        end_time = values.get("end_time")
+        # if periodicity is not Always, start_time and end_time, access_before_schedule must be set
         if values.get("periodicity").type != PeriodicityType.ALWAYS:
-            if (
-                not bool(values.get("start_time"))
-                or not bool(values.get("end_time"))
-                or not type(values.get("access_before_schedule")) == bool
-            ):
+            if not start_time or not end_time or not isinstance(values.get("access_before_schedule"), bool):
                 raise StartEndTimeAccessBeforeScheduleCaseError()
 
             # validate notification time
             if values.get("notification"):
                 if values.get("notification").notifications:
-                    for notification in values.get(
-                        "notification"
-                    ).notifications:
-                        if (
-                            notification.trigger_type
-                            == NotificationTriggerType.FIXED
-                            and (
-                                values.get("start_time") is None
-                                or values.get("end_time") is None
-                                or notification.at_time is None  # noqa: E501
-                            )
+                    for notification in values.get("notification").notifications:
+                        if notification.trigger_type == NotificationTriggerType.FIXED and (
+                            notification.at_time < start_time or notification.at_time > end_time
                         ):
                             raise UnavailableActivityOrFlowError()
 
-                        if (
-                            notification.trigger_type
-                            == NotificationTriggerType.RANDOM
-                            and (
-                                values.get("start_time") is None
-                                or values.get("end_time") is None
-                                or notification.from_time is None
-                                or notification.to_time is None  # noqa: E501
-                            )
+                        if notification.trigger_type == NotificationTriggerType.RANDOM and (
+                            notification.from_time < start_time
+                            or notification.from_time > end_time
+                            or notification.to_time < start_time
+                            or notification.to_time > end_time
                         ):
                             raise UnavailableActivityOrFlowError()
                 if values.get("notification").reminder:
-                    if (
-                        values.get("start_time") is None
-                        or values.get("end_time") is None
-                        or values.get("notification").reminder.reminder_time
-                        is None
-                    ):
+                    reminder = values.get("notification").reminder
+                    if reminder.reminder_time < start_time or reminder.reminder_time > end_time:
                         raise UnavailableActivityOrFlowError()
 
-        if values.get("start_time") == values.get("end_time"):
+        if start_time == end_time:
             raise StartEndTimeEqualError()
 
         return values

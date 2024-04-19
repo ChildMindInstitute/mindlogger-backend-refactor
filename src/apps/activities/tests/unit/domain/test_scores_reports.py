@@ -19,9 +19,7 @@ from apps.activities.domain.scores_reports import (
         ("section", errors.DuplicateSectionNameError),
     ),
 )
-def test_duplicated_name_is_not_allowed(
-    scores_and_reports: ScoresAndReports, request, fixture_name: str, error
-):
+def test_duplicated_name_is_not_allowed(scores_and_reports: ScoresAndReports, request, fixture_name: str, error):
     model = request.getfixturevalue(fixture_name)
     copy = model.copy(deep=True)
     data = scores_and_reports.dict()
@@ -30,9 +28,7 @@ def test_duplicated_name_is_not_allowed(
         ScoresAndReports(**data)
 
 
-def test_duplicated_id_for_score_is_not_allowed(
-    scores_and_reports: ScoresAndReports, score: Score
-):
+def test_duplicated_id_for_score_is_not_allowed(scores_and_reports: ScoresAndReports, score: Score):
     copy = score.copy(deep=True)
     # make name unique for test because we want to test the same ids not names
     copy.name = score.name + "1"
@@ -78,9 +74,7 @@ def test_score_and_reports_duplicated_id_in_conditional_logic_is_not_allowed_for
         ScoresAndReports(**data)
 
 
-def test_duplicated_name_for_subscale_settings_is_not_allowed(
-    subscale_setting: SubscaleSetting, subscale: Subscale
-):
+def test_duplicated_name_for_subscale_settings_is_not_allowed(subscale_setting: SubscaleSetting, subscale: Subscale):
     copy = subscale.copy(deep=True)
     subscale_setting.subscales = cast(list, subscale_setting.subscales)
     subscale_setting.subscales.append(copy)

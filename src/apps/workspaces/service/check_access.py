@@ -1,6 +1,8 @@
 import uuid
 
+from apps.answers.errors import AnswerAccessDeniedError
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import (
     AnswerCheckAccessDenied,
@@ -37,9 +39,7 @@ class CheckAccessService:
         if owner_id == self.user_id:
             return
 
-        has_access = await AppletAccessCRUD(
-            self.session
-        ).has_any_roles_for_workspace(owner_id, self.user_id, roles)
+        has_access = await AppletAccessCRUD(self.session).has_any_roles_for_workspace(owner_id, self.user_id, roles)
 
         if not has_access:
             raise exception or WorkspaceAccessDenied()
@@ -51,9 +51,7 @@ class CheckAccessService:
         *,
         exception=None,
     ):
-        has_access = await AppletAccessCRUD(
-            self.session
-        ).has_any_roles_for_applet(applet_id, self.user_id, roles)
+        has_access = await AppletAccessCRUD(self.session).has_any_roles_for_applet(applet_id, self.user_id, roles)
 
         if not has_access:
             raise exception or AppletAccessDenied()
@@ -77,9 +75,7 @@ class CheckAccessService:
     async def check_workspace_access(self, owner_id: uuid.UUID):
         await self._check_workspace_roles(owner_id)
 
-    async def check_workspace_manager_accesses_access(
-        self, owner_id: uuid.UUID
-    ):
+    async def check_workspace_manager_accesses_access(self, owner_id: uuid.UUID):
         await self._check_workspace_roles(owner_id, [Role.OWNER, Role.MANAGER])
 
     async def check_workspace_manager_list_access(self, owner_id: uuid.UUID):
@@ -88,9 +84,7 @@ class CheckAccessService:
     async def check_applet_manager_list_access(self, applet_id: uuid.UUID):
         await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER])
 
-    async def check_workspace_respondent_list_access(
-        self, owner_id: uuid.UUID
-    ):
+    async def check_workspace_respondent_list_access(self, owner_id: uuid.UUID):
         roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.REVIEWER]
         await self._check_workspace_roles(owner_id, roles)
 
@@ -108,24 +102,18 @@ class CheckAccessService:
     async def check_applet_create_access(self, owner_id: uuid.UUID):
         if owner_id == self.user_id:
             return
-        has_access = await AppletAccessCRUD(self.session).can_create_applet(
-            owner_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_create_applet(owner_id, self.user_id)
         if not has_access:
             raise AppletCreationAccessDenied()
 
     async def check_applet_edit_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).can_edit_applet(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_edit_applet(applet_id, self.user_id)
 
         if not has_access:
             raise AppletEditionAccessDenied()
 
     async def check_applet_retention_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).can_set_retention(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_set_retention(applet_id, self.user_id)
 
         if not has_access:
             raise AppletEditionAccessDenied()
@@ -138,65 +126,47 @@ class CheckAccessService:
         )
 
     async def check_applet_duplicate_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).can_edit_applet(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_edit_applet(applet_id, self.user_id)
         if not has_access:
             raise AppletDuplicateAccessDenied()
 
     async def check_applet_delete_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).can_edit_applet(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_edit_applet(applet_id, self.user_id)
         if not has_access:
             raise AppletDeleteAccessDenied()
 
     async def check_answer_create_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).has_role(
-            applet_id, self.user_id, Role.RESPONDENT
-        )
+        has_access = await AppletAccessCRUD(self.session).has_role(applet_id, self.user_id, Role.RESPONDENT)
 
         if not has_access:
             raise AnswerCreateAccessDenied()
 
     async def check_answer_review_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).can_see_data(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_see_data(applet_id, self.user_id)
 
         if not has_access:
             raise AnswerViewAccessDenied()
 
     async def check_note_crud_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).can_see_data(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_see_data(applet_id, self.user_id)
 
         if not has_access:
             raise AnswerNoteCRUDAccessDenied()
 
     async def check_applet_invite_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).can_invite_anyone(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).can_invite_anyone(applet_id, self.user_id)
 
         if not has_access:
             raise AppletInviteAccessDenied()
 
     async def check_applet_schedule_create_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(
-            self.session
-        ).can_set_schedule_and_notifications(applet_id, self.user_id)
+        has_access = await AppletAccessCRUD(self.session).can_set_schedule_and_notifications(applet_id, self.user_id)
 
         if not has_access:
             raise AppletSetScheduleAccessDenied()
 
-    async def check_create_transfer_ownership_access(
-        self, applet_id: uuid.UUID
-    ):
-        has_access = await AppletAccessCRUD(self.session).has_role(
-            applet_id, self.user_id, Role.OWNER
-        )
+    async def check_create_transfer_ownership_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(self.session).has_role(applet_id, self.user_id, Role.OWNER)
 
         if not has_access:
             raise TransferOwnershipAccessDenied()
@@ -206,9 +176,7 @@ class CheckAccessService:
             raise PublishConcealAccessDenied()
 
     async def check_answers_export_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).check_export_access(
-            applet_id, self.user_id
-        )
+        has_access = await AppletAccessCRUD(self.session).check_export_access(applet_id, self.user_id)
 
         if not has_access:
             raise AppletAccessDenied()
@@ -217,17 +185,29 @@ class CheckAccessService:
         await self._check_applet_roles(applet_id, [Role.OWNER])
 
     async def check_answers_mobile_data_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).has_role(
-            applet_id, self.user_id, Role.RESPONDENT
-        )
+        has_access = await AppletAccessCRUD(self.session).has_role(applet_id, self.user_id, Role.RESPONDENT)
 
         if not has_access:
             raise AppletAccessDenied()
 
     async def check_answer_check_access(self, applet_id: uuid.UUID):
-        has_access = await AppletAccessCRUD(self.session).has_role(
-            applet_id, self.user_id, Role.RESPONDENT
-        )
+        has_access = await AppletAccessCRUD(self.session).has_role(applet_id, self.user_id, Role.RESPONDENT)
 
         if not has_access:
             raise AnswerCheckAccessDenied()
+
+    async def check_summary_access(self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None):
+        applet_access_crud = AppletAccessCRUD(self.session)
+        has_access = await applet_access_crud.can_see_data(applet_id, self.user_id)
+        if not has_access:
+            raise AnswerViewAccessDenied()
+
+        role = await applet_access_crud.get_applets_priority_role(applet_id, self.user_id)
+        if role in Role.super_reviewers():
+            return
+        elif role == Role.REVIEWER:
+            schema = await UserAppletAccessCRUD(self.session).get(self.user_id, applet_id, role)
+            respondents = schema.meta.get("respondents", []) if schema else []
+            if str(respondent_id) in respondents:
+                return
+        raise AnswerAccessDeniedError()

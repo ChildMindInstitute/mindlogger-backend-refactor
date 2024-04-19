@@ -3,7 +3,10 @@ from typing import cast
 
 import pytest
 
+from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.response_values import (
+    AudioPlayerValues,
+    AudioValues,
     DrawingValues,
     MultiSelectionRowsValues,
     MultiSelectionValues,
@@ -38,22 +41,22 @@ def single_select_response_values() -> SingleSelectionValues:
                 value=0,
             )
         ],
+        type=ResponseType.SINGLESELECT,
     )
 
 
 @pytest.fixture
-def multi_select_reponse_values(
+def multi_select_response_values(
     single_select_response_values: SingleSelectionValues,
 ) -> MultiSelectionValues:
     data = single_select_response_values.dict()
+    data["type"] = ResponseType.MULTISELECT
     return MultiSelectionValues(**data)
 
 
 @pytest.fixture
 def slider_value_alert() -> SliderValueAlert:
-    return SliderValueAlert(
-        value=0, min_value=None, max_value=None, alert="alert"
-    )
+    return SliderValueAlert(value=0, min_value=None, max_value=None, alert="alert")
 
 
 @pytest.fixture
@@ -63,18 +66,21 @@ def slider_response_values() -> SliderValues:
         max_label=None,
         scores=None,
         alerts=None,
+        type=ResponseType.SLIDER,
     )
 
 
 @pytest.fixture
-def number_select_response_values() -> NumberSelectionValues:
-    return NumberSelectionValues()
+def number_selection_response_values() -> NumberSelectionValues:
+    return NumberSelectionValues(type=ResponseType.NUMBERSELECT)
 
 
 @pytest.fixture
 def drawing_response_values(remote_image: str) -> DrawingValues:
     return DrawingValues(
-        drawing_background=remote_image, drawing_example=remote_image
+        drawing_background=remote_image,
+        drawing_example=remote_image,
+        type=ResponseType.DRAWING,
     )
 
 
@@ -88,7 +94,8 @@ def slider_rows_response_values() -> SliderRowsValues:
                 max_label=None,
                 label="label",
             )
-        ]
+        ],
+        type=ResponseType.SLIDERROWS,
     )
 
 
@@ -116,9 +123,7 @@ def single_select_row_data_row(
     signle_select_row_data_option: _SingleSelectionDataOption,
 ) -> _SingleSelectionDataRow:
     row_id = cast(str, single_select_row.id)
-    return _SingleSelectionDataRow(
-        row_id=row_id, options=[signle_select_row_data_option]
-    )
+    return _SingleSelectionDataRow(row_id=row_id, options=[signle_select_row_data_option])
 
 
 @pytest.fixture
@@ -131,6 +136,7 @@ def single_select_row_response_values(
         rows=[single_select_row],
         options=[single_select_row_option],
         data_matrix=[single_select_row_data_row],
+        type=ResponseType.SINGLESELECTROWS,
     )
 
 
@@ -138,4 +144,17 @@ def single_select_row_response_values(
 def multi_select_row_response_values(
     single_select_row_response_values: SingleSelectionRowsValues,
 ) -> MultiSelectionRowsValues:
-    return MultiSelectionRowsValues(**single_select_row_response_values.dict())
+    data = single_select_row_response_values.dict()
+    data["type"] = ResponseType.MULTISELECTROWS
+    return MultiSelectionRowsValues(**data)
+
+
+@pytest.fixture
+def audio_response_values() -> AudioValues:
+    return AudioValues(max_duration=1, type=ResponseType.AUDIO)
+
+
+@pytest.fixture
+def audio_player_response_values() -> AudioPlayerValues:
+    # TODO: Add some audio file
+    return AudioPlayerValues(file=None, type=ResponseType.AUDIOPLAYER)

@@ -7,17 +7,19 @@ from sqlalchemy import text
 from apps.mailing.services import TestMail
 from apps.shared.test.utils import truncate_tables
 from config import settings
-from infrastructure.database import session_manager
+from infrastructure.database.core import session_manager
 
 
 class BaseTest:
     fixtures: list[str] = []
 
     @pytest.fixture(scope="class", autouse=True)
-    async def initialize(self, request):
-        await self.populate_db()
-        yield
-        await truncate_tables()
+    async def initialize(self):
+        try:
+            await self.populate_db()
+            yield
+        finally:
+            await truncate_tables()
 
     @pytest.fixture(autouse=True)
     async def clear_mails(self):
@@ -27,15 +29,15 @@ class BaseTest:
         for fixture in self.fixtures:
             await self.load_data(fixture)
 
-    async def load_data(self, relative_path):
-        Session = session_manager.get_session()
-        file = open(os.path.join(settings.apps_dir, relative_path), "r")
-        data = json.load(file)
-        async with Session() as session:
+    async def load_data(self, relative_path: str):
+        AsyncSession = session_manager.get_session()
+        async with AsyncSession() as session:
+            file = open(os.path.join(settings.apps_dir, relative_path), "r")
+            data = json.load(file)
             for datum in data:
-                columns = ",".join(
-                    map(lambda field: f'"{field}"', datum["fields"].keys())
-                )
+                if datum["table"] == "users":
+                    continue
+                columns = ",".join(map(lambda field: f'"{field}"', datum["fields"].keys()))
                 values = ",".join(map(_str_caster, datum["fields"].values()))
                 query = text(
                     f"""

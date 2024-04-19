@@ -2,14 +2,8 @@ import uuid
 
 from pydantic import Field, IPvAnyAddress, PositiveInt
 
-from apps.activities.domain import (
-    ActivityHistoryChange,
-    PublicActivityHistoryChange,
-)
-from apps.activity_flows.domain import (
-    ActivityFlowHistoryChange,
-    PublicActivityFlowHistoryChange,
-)
+from apps.activities.domain import ActivityHistoryChange, PublicActivityHistoryChange
+from apps.activity_flows.domain import ActivityFlowHistoryChange, PublicActivityFlowHistoryChange
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.enums import Language
 
@@ -18,12 +12,8 @@ __all__ = ["AppletHistory", "AppletHistoryChange", "PublicAppletHistoryChange"]
 
 class AppletHistory(InternalModel):
     display_name: str
-    description: dict[Language, str] = Field(
-        default_factory=lambda: {Language.ENGLISH: ""}
-    )
-    about: dict[Language, str] = Field(
-        default_factory=lambda: {Language.ENGLISH: ""}
-    )
+    description: dict[Language, str] = Field(default_factory=lambda: {Language.ENGLISH: ""})
+    about: dict[Language, str] = Field(default_factory=lambda: {Language.ENGLISH: ""})
     image: str = ""
     watermark: str = ""
     theme_id: uuid.UUID | None = None
@@ -49,9 +39,7 @@ class AppletHistoryChange(InternalModel):
     display_name: str | None = None
     changes: list[str] = Field(default_factory=list)
     activities: list[ActivityHistoryChange] = Field(default_factory=list)
-    activity_flows: list[ActivityFlowHistoryChange] = Field(
-        default_factory=list
-    )
+    activity_flows: list[ActivityFlowHistoryChange] = Field(default_factory=list)
 
 
 class PublicAppletHistoryChange(PublicModel):
@@ -64,6 +52,4 @@ class PublicAppletHistoryChange(PublicModel):
     display_name: str | None = None
     changes: list[str] | None = Field(default_factory=list)
     activities: list[PublicActivityHistoryChange] = Field(default_factory=list)
-    activity_flows: list[PublicActivityFlowHistoryChange] = Field(
-        default_factory=list
-    )
+    activity_flows: list[PublicActivityFlowHistoryChange] = Field(default_factory=list)

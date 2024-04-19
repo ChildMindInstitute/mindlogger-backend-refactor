@@ -5,11 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.workspaces.constants import StorageType
 from apps.workspaces.service import workspace
 from config import settings
-from infrastructure.utility.cdn_arbitrary import (
-    ArbitraryAzureCdnClient,
-    ArbitraryGCPCdnClient,
-    ArbitraryS3CdnClient,
-)
+from infrastructure.utility.cdn_arbitrary import ArbitraryAzureCdnClient, ArbitraryGCPCdnClient, ArbitraryS3CdnClient
 from infrastructure.utility.cdn_client import CDNClient
 from infrastructure.utility.cdn_config import CdnConfig
 
@@ -19,7 +15,7 @@ async def select_storage(
     session: AsyncSession,
 ):
     service = workspace.WorkspaceService(session, uuid.uuid4())
-    info = await service.get_arbitrary_info(applet_id)
+    info = await service.get_arbitrary_info_if_use_arbitrary(applet_id)
     if not info:
         config_cdn = CdnConfig(
             endpoint_url=settings.cdn.endpoint_url,

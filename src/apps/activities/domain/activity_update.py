@@ -9,13 +9,12 @@ from apps.activities.domain.custom_validation import (
     validate_performance_task_type,
     validate_score_and_sections,
     validate_subscales,
-    validate_unique_item_option_ids,
 )
 from apps.activities.errors import DuplicateActivityItemNameNameError
 from apps.shared.domain import InternalModel, PublicModel
 
 
-class ActivityItemUpdate(BaseActivityItem, InternalModel):
+class ActivityItemUpdate(BaseActivityItem, PublicModel):
     id: uuid.UUID | None
 
 
@@ -24,7 +23,7 @@ class PreparedActivityItemUpdate(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
 
 
-class ActivityUpdate(ActivityBase, InternalModel):
+class ActivityUpdate(ActivityBase, PublicModel):
     id: uuid.UUID | None
     key: uuid.UUID
     items: list[ActivityItemUpdate]
@@ -55,10 +54,6 @@ class ActivityUpdate(ActivityBase, InternalModel):
     @root_validator()
     def validate_performance_task_type(cls, values):
         return validate_performance_task_type(values)
-
-    @root_validator()
-    def validate_unique_item_option_ids(cls, values):
-        return validate_unique_item_option_ids(values)
 
 
 class ActivityReportConfiguration(PublicModel):

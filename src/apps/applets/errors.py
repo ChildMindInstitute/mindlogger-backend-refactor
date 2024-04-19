@@ -11,11 +11,7 @@ __all__ = [
     "NotValidAppletHistory",
 ]
 
-from apps.shared.exception import (
-    AccessDeniedError,
-    NotFoundError,
-    ValidationError,
-)
+from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 
 
 class AppletNotFoundError(NotFoundError):

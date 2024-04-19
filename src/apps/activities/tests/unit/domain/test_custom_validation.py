@@ -12,15 +12,8 @@ from apps.activities.domain.conditions import (
     OptionPayload,
     ValuePayload,
 )
-from apps.activities.domain.custom_validation import (
-    validate_item_flow,
-    validate_score_and_sections,
-    validate_subscales,
-)
-from apps.activities.domain.response_type_config import (
-    ResponseType,
-    SingleSelectionConfig,
-)
+from apps.activities.domain.custom_validation import validate_item_flow, validate_score_and_sections, validate_subscales
+from apps.activities.domain.response_type_config import ResponseType, SingleSelectionConfig
 from apps.activities.domain.scores_reports import (
     ReportType,
     Score,
@@ -65,12 +58,8 @@ ACTIVITY_ITEM_OPTIONS = [
 def items() -> list[ActivityItemCreate]:
     items = []
     for index in range(1, 5):
-        response_type = ACTIVITY_ITEM_OPTIONS[
-            index % len(ACTIVITY_ITEM_OPTIONS)
-        ]
-        response_config = TestDataService.generate_response_value_config(
-            type_=response_type
-        )
+        response_type = ACTIVITY_ITEM_OPTIONS[index % len(ACTIVITY_ITEM_OPTIONS)]
+        response_config = TestDataService.generate_response_value_config(type_=response_type)
 
         item_name = f"activity_item_{index}"
         items.append(
@@ -104,9 +93,7 @@ class TestValidateItemFlow:
         values = {"items": items}
         assert values == validate_item_flow(values)
 
-    def test_non_existent_conditional_name(
-        self, items: list[ActivityItemCreate]
-    ):
+    def test_non_existent_conditional_name(self, items: list[ActivityItemCreate]):
         values = {"items": items}
         items[0].conditional_logic = ConditionalLogic(
             conditions=[
@@ -120,9 +107,7 @@ class TestValidateItemFlow:
         with pytest.raises(IncorrectConditionItemError):
             validate_item_flow(values)
 
-    def test_incorrect_conditional_index(
-        self, items: list[ActivityItemCreate]
-    ):
+    def test_incorrect_conditional_index(self, items: list[ActivityItemCreate]):
         values = {"items": items}
 
         items[0].conditional_logic, items[1].conditional_logic = (
@@ -132,18 +117,14 @@ class TestValidateItemFlow:
         with pytest.raises(IncorrectConditionItemIndexError):
             validate_item_flow(values)
 
-    def test_incorrect_conditional_item_type(
-        self, items: list[ActivityItemCreate]
-    ):
+    def test_incorrect_conditional_item_type(self, items: list[ActivityItemCreate]):
         values = {"items": items}
 
         items[0].response_type = ResponseType.TEXT
         with pytest.raises(IncorrectConditionLogicItemTypeError):
             validate_item_flow(values)
 
-    def test_incorrect_conditional_option(
-        self, items: list[ActivityItemCreate]
-    ):
+    def test_incorrect_conditional_option(self, items: list[ActivityItemCreate]):
         values = {"items": items}
 
         conditions: list[Condition] = [
@@ -364,9 +345,7 @@ class TestValidateSubscales:
         items: list[ActivityItemCreate],
         subscale_setting: SubscaleSetting,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         values = {"items": items, "subscale_setting": subscale_setting}
         assert values == validate_subscales(values)
@@ -378,9 +357,7 @@ class TestValidateSubscales:
         subscale: Subscale,
         subscale_item: SubscaleItem,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         subscale_item.name = "incorrect_item_name"
         subscale.items = [subscale_item]
@@ -394,9 +371,7 @@ class TestValidateSubscales:
         items: list[ActivityItemCreate],
         subscale_setting: SubscaleSetting,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         items[0].response_type = ResponseType.TIMERANGE
         values = {"items": items, "subscale_setting": subscale_setting}
@@ -419,9 +394,7 @@ class TestValidateSubscales:
         subscale: Subscale,
         subscale_item: SubscaleItem,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         subscale_item.type = SubscaleItemType.SUBSCALE
         subscale.items = [subscale_item]
@@ -437,11 +410,9 @@ class TestValidateSubscales:
         subscale: Subscale,
         subscale_item: SubscaleItem,
     ):
-        items0_config: SingleSelectionConfig = items[
-            0
-        ].config  # type: ignore[assignment]
+        items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
-        subscale_item.name = "test subscale name"
+        subscale_item.name = subscale.name
         subscale_item.type = SubscaleItemType.SUBSCALE
         subscale.items = [subscale_item]
         subscale_setting.subscales = [subscale]

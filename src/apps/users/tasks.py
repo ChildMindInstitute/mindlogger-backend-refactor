@@ -4,11 +4,7 @@ from json import JSONDecodeError
 from apps.answers.service import AnswerEncryptor, AnswerService
 from apps.job.constants import JobStatus
 from apps.job.service import JobService
-from apps.shared.encryption import (
-    generate_dh_public_key,
-    generate_dh_user_private_key,
-    geterate_dh_aes_key,
-)
+from apps.shared.encryption import generate_dh_aes_key, generate_dh_public_key, generate_dh_user_private_key
 from apps.workspaces.service.workspace import WorkspaceService
 from broker import broker
 from config import settings
@@ -23,17 +19,13 @@ async def reencrypt_answers(
     old_password,
     new_password,
     retries: int | None = None,
-    retry_timeout: int | None = None,
+    retry_timeout: int = settings.task_answer_encryption.retry_timeout,
 ):
     job_name = "reencrypt_answers"
     logger.info(f"Reencryption {user_id}: reencrypt_answers start")
 
-    old_private_key = generate_dh_user_private_key(
-        user_id, email, old_password
-    )
-    new_private_key = generate_dh_user_private_key(
-        user_id, email, new_password
-    )
+    old_private_key = generate_dh_user_private_key(user_id, email, old_password)
+    new_private_key = generate_dh_user_private_key(user_id, email, new_password)
 
     batch_limit = settings.task_answer_encryption.batch_limit
     success = True
@@ -42,15 +34,11 @@ async def reencrypt_answers(
     async with default_session_maker() as session:
         job_service = JobService(session, user_id)
         async with atomic(session):
-            job = await job_service.get_or_create_owned(
-                job_name, JobStatus.in_progress
-            )
+            job = await job_service.get_or_create_owned(job_name, JobStatus.in_progress)
             if job.status != JobStatus.in_progress:
                 await job_service.change_status(job.id, JobStatus.in_progress)
 
-        db_applets = await WorkspaceService(
-            session, user_id
-        ).get_user_answer_db_info()
+        db_applets = await WorkspaceService(session, user_id).get_user_answer_db_info()
 
     for db_applet_data in db_applets:
         session_maker = default_session_maker
@@ -63,25 +51,14 @@ async def reencrypt_answers(
                 base = json.loads(applet.encryption.base)
                 applet_pub_key = json.loads(applet.encryption.public_key)
             except JSONDecodeError as e:
-                logger.error(
-                    f'Reencryption {user_id}: Wrong applet "{applet.applet_id}"'  # noqa: E501
-                    f" encryption format, skip"
-                )
+                logger.error(f"Reencryption {user_id}: Wrong applet {applet.applet_id} encryption format, skip")
                 logger.exception(str(e))
                 continue
 
-            old_public_key = generate_dh_public_key(
-                old_private_key, prime, base
-            )
-            new_public_key = generate_dh_public_key(
-                new_private_key, prime, base
-            )
-            old_aes_key = geterate_dh_aes_key(
-                old_private_key, applet_pub_key, prime
-            )
-            new_aes_key = geterate_dh_aes_key(
-                new_private_key, applet_pub_key, prime
-            )
+            old_public_key = generate_dh_public_key(old_private_key, prime, base)
+            new_public_key = generate_dh_public_key(new_private_key, prime, base)
+            old_aes_key = generate_dh_aes_key(old_private_key, applet_pub_key, prime)
+            new_aes_key = generate_dh_aes_key(new_private_key, applet_pub_key, prime)
 
             page = 1
             try:
@@ -104,18 +81,13 @@ async def reencrypt_answers(
                             page += 1
 
             except Exception as e:
-                msg = (
-                    f"Reencryption {user_id}: cannot process applet "
-                    f"{applet.applet_id}, skip"
-                )
+                msg = f"Reencryption {user_id}: cannot process applet " f"{applet.applet_id}, skip"
                 logger.error(msg)
                 logger.exception(str(e))
                 async with default_session_maker() as session:
                     async with atomic(session):
                         details = dict(errors=[msg, str(e)])
-                        await JobService(session, user_id).change_status(
-                            job.id, JobStatus.error, details
-                        )
+                        await JobService(session, user_id).change_status(job.id, JobStatus.error, details)
                 success = False
                 continue
 
@@ -123,28 +95,22 @@ async def reencrypt_answers(
     async with default_session_maker() as session:
         async with atomic(session):
             if success:
-                await JobService(session, user_id).change_status(
-                    job.id, JobStatus.success
-                )
+                await JobService(session, user_id).change_status(job.id, JobStatus.success)
             else:
                 if retries:
-                    await JobService(session, user_id).change_status(
-                        job.id, JobStatus.retry
-                    )
+                    await JobService(session, user_id).change_status(job.id, JobStatus.retry)
 
                     logger.info(f"Reencryption {user_id}: schedule retry")
-                    if retry_timeout is None:
-                        retry_timeout = (
-                            settings.task_answer_encryption.retry_timeout
-                        )
                     retries -= 1
-                    await reencrypt_answers.kicker().with_labels(
-                        delay=retry_timeout
-                    ).kiq(
-                        user_id,
-                        email,
-                        old_password,
-                        new_password,
-                        retries=retries,
-                        retry_timeout=retry_timeout,
+                    await (
+                        reencrypt_answers.kicker()
+                        .with_labels(delay=retry_timeout)
+                        .kiq(
+                            user_id,
+                            email,
+                            old_password,
+                            new_password,
+                            retries=retries,
+                            retry_timeout=retry_timeout,
+                        )
                     )

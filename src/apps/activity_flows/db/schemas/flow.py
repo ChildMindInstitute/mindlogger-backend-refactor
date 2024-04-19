@@ -1,5 +1,6 @@
 from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 
 from infrastructure.database import Base, MigratedMixin
 
@@ -15,9 +16,7 @@ class _BaseActivityFlowSchema:
     report_included_item_name = Column(Text(), nullable=True)
     order = Column(REAL())
     is_hidden = Column(Boolean(), default=False)
-    extra_fields = Column(
-        JSONB(), default=dict, server_default=text("'{}'::jsonb")
-    )
+    extra_fields = Column(JSONB(), default=dict, server_default=text("'{}'::jsonb"))
 
 
 class ActivityFlowSchema(_BaseActivityFlowSchema, MigratedMixin, Base):
@@ -26,13 +25,15 @@ class ActivityFlowSchema(_BaseActivityFlowSchema, MigratedMixin, Base):
     applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"))
 
 
-class ActivityFlowHistoriesSchema(
-    _BaseActivityFlowSchema, MigratedMixin, Base
-):
+class ActivityFlowHistoriesSchema(_BaseActivityFlowSchema, MigratedMixin, Base):
     __tablename__ = "flow_histories"
 
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
-    applet_id = Column(
-        ForeignKey("applet_histories.id_version", ondelete="RESTRICT")
+    applet_id = Column(ForeignKey("applet_histories.id_version", ondelete="RESTRICT"))
+
+    items = relationship(
+        "ActivityFlowItemHistorySchema",
+        order_by="asc(ActivityFlowItemHistorySchema.order)",
+        lazy="noload",
     )

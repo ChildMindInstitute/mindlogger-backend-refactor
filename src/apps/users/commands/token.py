@@ -1,23 +1,14 @@
-import asyncio
 import datetime
 import uuid
-from functools import wraps
 
 import typer
 from rich import print
 
 from apps.authentication.domain.token import JWTClaim
 from apps.authentication.services import AuthenticationService
+from infrastructure.commands.utils import coro
 
 app = typer.Typer()
-
-
-def coro(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 @app.command(short_help="Generate access token")

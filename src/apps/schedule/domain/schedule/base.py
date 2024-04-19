@@ -2,17 +2,13 @@ from datetime import date, time, timedelta
 
 from pydantic import BaseModel, Field, NonNegativeInt, root_validator
 
-from apps.activities.errors import (
+from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType, TimerType
+from apps.schedule.errors import (
     AtTimeFieldRequiredError,
     FromTimeToTimeRequiredError,
+    SelectedDateRequiredError,
     TimerRequiredError,
 )
-from apps.schedule.domain.constants import (
-    NotificationTriggerType,
-    PeriodicityType,
-    TimerType,
-)
-from apps.schedule.errors import SelectedDateRequiredError
 
 
 class BasePeriodicity(BaseModel):
@@ -23,8 +19,7 @@ class BasePeriodicity(BaseModel):
     end_date: date | None
     selected_date: date | None = Field(
         None,
-        description="If type is WEEKLY, MONTHLY or ONCE,"
-        " selectedDate must be set.",
+        description="If type is WEEKLY, MONTHLY or ONCE," " selectedDate must be set.",
     )
 
     @root_validator
@@ -66,10 +61,7 @@ class BaseEvent(BaseModel):
 
     @root_validator
     def validate_timer(cls, values):
-        if values.get("timer_type") in [
-            TimerType.TIMER,
-            TimerType.IDLE,
-        ] and not values.get("timer"):
+        if values.get("timer_type") != TimerType.NOT_SET and not values.get("timer"):
             raise TimerRequiredError()
 
         return values

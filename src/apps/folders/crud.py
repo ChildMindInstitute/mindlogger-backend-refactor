@@ -15,9 +15,7 @@ __all__ = ["FolderCRUD"]
 class FolderCRUD(BaseCRUD):
     schema_class = FolderSchema
 
-    async def get_users_folder_in_workspace(
-        self, workspace_id: uuid.UUID, user_id: uuid.UUID
-    ) -> list[FolderSchema]:
+    async def get_users_folder_in_workspace(self, workspace_id: uuid.UUID, user_id: uuid.UUID) -> list[FolderSchema]:
         workspace_applets_query: Query = select(
             func.count(FolderAppletSchema.id).label("applet_count"),
             FolderAppletSchema.folder_id,
@@ -26,15 +24,9 @@ class FolderCRUD(BaseCRUD):
             FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
         )
 
-        workspace_applets_query = workspace_applets_query.where(
-            FolderSchema.workspace_id == workspace_id
-        )
-        workspace_applets_query = workspace_applets_query.group_by(
-            FolderAppletSchema.folder_id
-        )
-        workspace_applets_query = workspace_applets_query.alias(
-            "workspace_applets"
-        )
+        workspace_applets_query = workspace_applets_query.where(FolderSchema.workspace_id == workspace_id)
+        workspace_applets_query = workspace_applets_query.group_by(FolderAppletSchema.folder_id)
+        workspace_applets_query = workspace_applets_query.alias("workspace_applets")
 
         query: Query = select(
             FolderSchema,
@@ -86,9 +78,7 @@ class FolderCRUD(BaseCRUD):
             raise FolderDoesNotExist()
         return result
 
-    async def delete_creators_folder_by_id(
-        self, creator_id: uuid.UUID, id_: uuid.UUID
-    ):
+    async def delete_creators_folder_by_id(self, creator_id: uuid.UUID, id_: uuid.UUID):
         query: Query = delete(FolderSchema)
         query = query.where(FolderSchema.creator_id == creator_id)
         query = query.where(FolderSchema.id == id_)
@@ -97,9 +87,7 @@ class FolderCRUD(BaseCRUD):
 
     async def has_applets(self, folder_id: uuid.UUID):
         query: Query = select(FolderAppletSchema.id, AppletSchema.is_deleted)
-        query = query.join(
-            AppletSchema, AppletSchema.id == FolderAppletSchema.applet_id
-        )
+        query = query.join(AppletSchema, AppletSchema.id == FolderAppletSchema.applet_id)
         query = query.where(
             FolderAppletSchema.folder_id == folder_id,
             AppletSchema.is_deleted.is_(False),
@@ -128,11 +116,9 @@ class FolderCRUD(BaseCRUD):
 
     async def get_applets_folder_id_in_workspace(
         self, workspace_id: uuid.UUID, applet_id: uuid.UUID
-    ) -> list[uuid.UUID] | None:
+    ) -> list[uuid.UUID]:
         query: Query = select(FolderAppletSchema.folder_id)
-        query = query.join(
-            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
-        )
+        query = query.join(FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id)
         query = query.where(FolderSchema.workspace_id == workspace_id)
         query = query.where(FolderAppletSchema.applet_id == applet_id)
 
@@ -147,9 +133,7 @@ class FolderCRUD(BaseCRUD):
         folder_id: uuid.UUID | None,
     ):
         folder_query: Query = select(FolderSchema.id)
-        folder_query = folder_query.where(
-            FolderSchema.workspace_id == workspace_id
-        )
+        folder_query = folder_query.where(FolderSchema.workspace_id == workspace_id)
         folder_query = folder_query.where(FolderSchema.creator_id == user_id)
 
         query: Query = delete(FolderAppletSchema)
@@ -160,34 +144,11 @@ class FolderCRUD(BaseCRUD):
 
         if folder_id is None:
             return
-        query = select(FolderAppletSchema)
-        query = query.where(FolderAppletSchema.folder_id == folder_id)
-        query = query.where(FolderAppletSchema.applet_id == applet_id)
-
-        db_result = await self._execute(query)
-        result = db_result.scalars().first()
-        if result:
-            return
-        await self.save(
-            FolderAppletSchema(folder_id=folder_id, applet_id=applet_id)
-        )
-
-    def get_folder_applets(
-        self, folder_id: uuid.UUID | None, creator_id: uuid.UUID
-    ) -> Query:
-        query: Query = select(FolderAppletSchema.applet_id)
-        query = query.join(
-            FolderSchema, FolderSchema.id == FolderAppletSchema.folder_id
-        )
-        query = query.where(FolderSchema.creator_id == creator_id)
-        if folder_id is None:
-            return query
-        query = query.where(FolderAppletSchema.folder_id == folder_id)
-        return query
+        await self.save(FolderAppletSchema(folder_id=folder_id, applet_id=applet_id))
 
 
 class FolderAppletCRUD(BaseCRUD):
     schema_class = FolderAppletSchema
 
     async def delete_folder_applet_by_applet_id(self, applet_id: uuid.UUID):
-        await self._delete("applet_id", applet_id)
+        await self._delete(applet_id=applet_id)
