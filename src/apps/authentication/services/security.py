@@ -16,11 +16,11 @@ __all__ = ["AuthenticationService"]
 
 
 class AuthenticationService:
-    def __init__(self, session):
+    def __init__(self, session) -> None:
         self.session = session
 
     @staticmethod
-    def create_access_token(data: dict):
+    def create_access_token(data: dict) -> str:
         to_encode = data.copy()
         expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
         expire = datetime.utcnow() + expires_delta
@@ -34,7 +34,7 @@ class AuthenticationService:
         return encoded_jwt
 
     @staticmethod
-    def create_refresh_token(data: dict):
+    def create_refresh_token(data: dict) -> str:
         to_encode = data.copy()
         expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
         expire = datetime.utcnow() + expires_delta
@@ -58,7 +58,7 @@ class AuthenticationService:
     def get_password_hash(password: str) -> str:
         return get_password_hash(password)
 
-    async def authenticate_user(self, user_login_schema: UserLoginRequest):
+    async def authenticate_user(self, user_login_schema: UserLoginRequest) -> User:
         user: User = await UsersCRUD(self.session).get_by_email(email=user_login_schema.email)
         if not self.verify_password(user_login_schema.password, user.hashed_password, False):
             raise InvalidCredentials()
@@ -81,8 +81,13 @@ class AuthenticationService:
         )
         return refresh_token
 
-    async def revoke_token(self, token: InternalToken, type_: TokenPurpose):
-        """Add token to blacklist in Redis."""
+    @staticmethod
+    def extract_token_payload(token: str, key: str) -> TokenPayload:
+        payload = jwt.decode(token, key, algorithms=[settings.authentication.algorithm])
+        return TokenPayload(**payload)
+
+    async def revoke_token(self, token: InternalToken, type_: TokenPurpose) -> None:
+        """Add token to blacklist."""
         await TokensService(self.session).revoke(token, type_)
         if type_ == TokenPurpose.ACCESS:
             if refresh_token := self._get_refresh_token_by_access(token):
