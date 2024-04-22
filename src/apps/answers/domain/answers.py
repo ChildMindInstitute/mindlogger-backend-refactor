@@ -153,13 +153,18 @@ class ActivityAnswer(InternalModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    identifiers: list[Identifier]
+    identifier: Identifier | None
     created_at: datetime.datetime
     version: str
 
 
+class ReviewsCount(PublicModel):
+    mine: int = 0
+    other: int = 0
+
+
 class AppletActivityAnswer(InternalModel):
-    answer_id: uuid.UUID | None
+    answer_id: uuid.UUID
     version: str | None
     user_public_key: str | None
     answer: str | None
@@ -203,7 +208,7 @@ class ActivityAnswerPublic(PublicModel):
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    identifiers: list[Identifier]
+    identifier: Identifier | None
     created_at: datetime.datetime
     version: str
 
@@ -219,6 +224,7 @@ class AppletActivityAnswerPublic(PublicModel):
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
     subscale_setting: SubscaleSetting | None
+    review_count: ReviewsCount
 
 
 class ReviewerPublic(PublicModel):
@@ -371,11 +377,6 @@ class VersionPublic(PublicModel):
     created_at: datetime.datetime
 
 
-class IdentifierPublic(PublicModel):
-    identifier: str
-    user_public_key: str
-
-
 class SafeApplet(AppletBaseInfo, InternalModel):
     id: uuid.UUID
     version: str
@@ -442,3 +443,4 @@ class ArbitraryPreprocessor(PublicModel):
 class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
     target_subject_id: uuid.UUID | None = None
+    answer_id: uuid.UUID | None = None
