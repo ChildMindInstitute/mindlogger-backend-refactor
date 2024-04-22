@@ -50,6 +50,7 @@ class _AnswerListFilter(Filtering):
             return None
         return and_(field.in_(value), AnswerItemSchema.is_assessment.isnot(True))
 
+    answer_id = FilterField(AnswerSchema.id)
     submit_id = FilterField(AnswerSchema.submit_id)
     applet_id = FilterField(AnswerSchema.applet_id)
     activity_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id), cast=str)

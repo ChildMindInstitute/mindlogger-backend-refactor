@@ -117,6 +117,7 @@ async def tom_answer_activity_flow(session: AsyncSession, tom: User, applet_with
                 start_time=datetime.datetime.utcnow(),
                 end_time=datetime.datetime.utcnow(),
                 user_public_key=str(tom.id),
+                identifier="encrypted_identifier",
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
         )
@@ -518,6 +519,7 @@ class TestAnswerActivityItems(BaseTest):
                 scheduled_time=1690188679657,
                 start_time=1690188679657,
                 end_time=1690188731636,
+                identifier="encrypted_identifier",
             ),
             client=dict(
                 appId="mindlogger-mobile",
@@ -553,17 +555,10 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-
-        response = await client.get(
-            self.activity_answers_url.format(
-                applet_id=str(applet.id),
-                answer_id=answer_id,
-                activity_id=str(applet.activities[0].id),
-            )
-        )
-
-        assert response.status_code == 200, response.json()
-        assert response.json()["result"]["answer"]["events"] == '{"events": ["event1", "event2"]}'
+        data = response.json()["result"]
+        assert data["answer"]["events"] == '{"events": ["event1", "event2"]}'
+        assert set(data["summary"]["identifier"]) == {"lastAnswerDate", "identifier", "userPublicKey"}
+        assert data["summary"]["identifier"]["identifier"] == "encrypted_identifier"
 
     async def test_fail_answered_applet_not_existed_activities(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
@@ -2000,6 +1995,9 @@ class TestAnswerActivityItems(BaseTest):
         assert set(data["summary"].keys()) == {"identifier", "endDatetime", "version", "createdAt"}
         assert data["summary"]["createdAt"] == tom_answer_activity_flow.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f")
         assert data["summary"]["version"] == tom_answer_activity_flow.version
+
+        assert set(data["summary"]["identifier"]) == {"lastAnswerDate", "identifier", "userPublicKey"}
+        assert data["summary"]["identifier"]["identifier"] == "encrypted_identifier"
         # fmt: on
 
     async def test_flow_submission_no_flow(
