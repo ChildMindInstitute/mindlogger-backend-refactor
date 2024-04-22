@@ -78,3 +78,4 @@ class SubjectDeleteRequest(PublicModel):
 
 class SubjectReadResponse(SubjectUpdateRequest):
     last_seen: datetime.datetime | None
+    applet_id: uuid.UUID
