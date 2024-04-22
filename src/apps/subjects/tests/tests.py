@@ -444,7 +444,8 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"secretUserId", "nickname", "lastSeen", "tag", "appletId"}
+        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId"}
+        assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
         assert res["tag"] == tom_applet_one_subject.tag
