@@ -444,10 +444,12 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"secretUserId", "nickname", "lastSeen", "tag"}
+        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId"}
+        assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
         assert res["tag"] == tom_applet_one_subject.tag
+        assert uuid.UUID(res["appletId"]) == tom_applet_one_subject.applet_id
 
         # not found
         response = await client.get(self.subject_detail_url.format(subject_id=uuid.uuid4()))

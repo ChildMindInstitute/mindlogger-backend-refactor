@@ -176,9 +176,11 @@ async def get_subject(
 
     return Response(
         result=SubjectReadResponse(
+            id=subject.id,
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
             last_seen=answer_dates.get(subject.id),
             tag=subject.tag,
+            applet_id=subject.applet_id,
         )
     )
