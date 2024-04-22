@@ -1,7 +1,9 @@
 import datetime
 import uuid
+from typing import Generic
 
 from pydantic import Field, IPvAnyAddress, PositiveInt, root_validator
+from pydantic.generics import GenericModel
 
 from apps.activities.domain.activity import (
     ActivityBaseInfo,
@@ -19,7 +21,7 @@ from apps.activity_flows.domain.flow import (
 )
 from apps.activity_flows.domain.flow_full import PublicFlowFull
 from apps.applets.domain.base import AppletBaseInfo, AppletFetchBase, Encryption
-from apps.shared.domain import InternalModel, PublicModel, Response
+from apps.shared.domain import InternalModel, PublicModel, _BaseModel
 from apps.themes.domain import PublicTheme, PublicThemeMobile, Theme
 from apps.workspaces.domain.constants import DataRetention
 
@@ -127,7 +129,8 @@ class AppletDataRetention(InternalModel):
         return values
 
 
-class AppletRetrieveResponse(Response[AppletSingleLanguageDetailPublic]):
+class AppletRetrieveResponse(PublicModel, GenericModel, Generic[_BaseModel]):
+    result: _BaseModel
     respondent_meta: dict | None = None
 
 

@@ -72,6 +72,8 @@ class ConfigChangeService(BaseChangeGenerator):
         if not value:
             return
         for key, val in value:
+            if key == "type":
+                continue
             if isinstance(val, bool):
                 verbose_name = self.field_name_verbose_name_map[key]
                 self._populate_bool_changes(verbose_name, val, changes)

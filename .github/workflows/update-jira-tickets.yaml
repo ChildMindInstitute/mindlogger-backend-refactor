@@ -95,6 +95,7 @@ jobs:
         run: |
           currentTag="${{ steps.get-tag.outputs.tag }}"
           previousTag="${{ steps.ping-jenkins.outputs.tagName }}"
+          git fetch --unshallow
           commitMessages=$(git log --pretty=%B $previousTag..$currentTag)
           echo "Commit messages since the last release: ${commitMessages}"
           jiraTickets=$(echo "$commitMessages" | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
