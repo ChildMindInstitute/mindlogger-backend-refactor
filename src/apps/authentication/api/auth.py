@@ -114,12 +114,6 @@ async def refresh_access_token(
 
             token_data = TokenPayload(**payload)
 
-            if datetime.utcfromtimestamp(token_data.exp) < datetime.utcnow():
-                raise AuthenticationError
-
-            if not (user_id := token_data.sub):
-                raise InvalidRefreshToken()
-
         except (JWTError, ValidationError) as e:
             raise InvalidRefreshToken() from e
 
@@ -129,6 +123,7 @@ async def refresh_access_token(
             raise AuthenticationError
 
         rjti = token_data.jti
+        user_id = token_data.sub
         refresh_token = schema.refresh_token
         if regenerate_refresh_token:
             # blacklist current refresh token

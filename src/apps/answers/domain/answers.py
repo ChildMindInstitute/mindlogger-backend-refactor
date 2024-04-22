@@ -199,7 +199,7 @@ class ActivityAnswer(PublicModel):
 class SubmissionSummary(PublicModel):
     end_datetime: datetime.datetime
     created_at: datetime.datetime
-    identifier: str | None = None
+    identifier: Identifier | None = None
     version: str
 
 
@@ -216,7 +216,20 @@ class ActivitySubmissionResponse(ActivitySubmission):
         if not value:
             answer: ActivityAnswer = values["answer"]
             if answer:
-                value = SubmissionSummary.from_orm(answer)
+                value = SubmissionSummary(
+                    end_datetime=answer.end_datetime,
+                    created_at=answer.created_at,
+                    version=answer.version,
+                )
+                if answer.identifier:
+                    if answer.migrated_data and answer.migrated_data.get("is_identifier_encrypted") is False:
+                        value.identifier = Identifier(identifier=answer.identifier, last_answer_date=answer.created_at)
+                    else:
+                        value.identifier = Identifier(
+                            identifier=answer.identifier,
+                            last_answer_date=answer.created_at,
+                            user_public_key=answer.user_public_key,
+                        )
         return value
 
 
@@ -249,13 +262,23 @@ class FlowSubmissionResponse(PublicModel):
         if not value:
             answers: list[ActivityAnswer] = values["answers"]
             if answers:
-                summary = SubmissionSummary.from_orm(answers[0])
-                if not summary.identifier and len(answers) > 1:
-                    for answer in answers[1:]:
-                        if identifier := answer.identifier:
-                            summary.identifier = identifier
-                            break
-                value = summary
+                value = SubmissionSummary(
+                    end_datetime=answers[0].end_datetime,
+                    created_at=answers[0].created_at,
+                    version=answers[0].version,
+                )
+                for answer in answers:
+                    if identifier := answer.identifier:
+                        if answer.migrated_data and answer.migrated_data.get("is_identifier_encrypted") is False:
+                            value.identifier = Identifier(identifier=identifier, last_answer_date=answer.created_at)
+                        else:
+                            value.identifier = Identifier(
+                                identifier=identifier,
+                                last_answer_date=answer.created_at,
+                                user_public_key=answer.user_public_key,
+                            )
+                        break
+
         return value
 
 
