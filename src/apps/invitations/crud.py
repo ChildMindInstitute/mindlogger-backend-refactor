@@ -198,6 +198,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             created_at=invitation.created_at,
             user_id=invitation.user_id,
             tag=invitation.tag,
+            title=invitation.title,
         )
         if invitation.role == Role.RESPONDENT:
             return InvitationDetailRespondent(

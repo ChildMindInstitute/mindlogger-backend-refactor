@@ -125,6 +125,7 @@ class WorkspaceManager(InternalModel):
     last_seen: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
+    title: str | None
 
     @validator("applets", pre=True)
     def group_applets(cls, value):
@@ -192,6 +193,7 @@ class PublicWorkspaceManager(PublicModel):
     last_seen: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
+    title: str | None
 
 
 class WorkspaceInfo(InternalModel):

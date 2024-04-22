@@ -110,7 +110,7 @@ def invitation_base_data(user_create: UserCreate) -> dict[str, str | EmailStr]:
 
 @pytest.fixture
 def invitation_manager_data(invitation_base_data: dict[str, str | EmailStr]) -> InvitationManagersRequest:
-    return InvitationManagersRequest(**invitation_base_data, role=ManagersRole.MANAGER)
+    return InvitationManagersRequest(**invitation_base_data, role=ManagersRole.MANAGER, title="PHD")
 
 
 @pytest.fixture
@@ -214,6 +214,7 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["appletId"] == str(applet_one.id)
         assert response.json()["result"]["role"] == Role.MANAGER
         assert response.json()["result"]["tag"] is not None
+        assert response.json()["result"]["title"] == "PHD"
 
     async def test_private_invitation_retrieve(self, client, applet_one_with_link, lucy):
         client.login(lucy)

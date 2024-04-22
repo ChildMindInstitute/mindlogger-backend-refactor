@@ -85,6 +85,7 @@ class InvitationReviewerRequest(_InvitationRequest):
         "this name can not be changed anymore.",
         default=None,
     )
+    title: str | None = Field(description="This field represents the team member title")
 
 
 class InvitationManagersRequest(_InvitationRequest):
@@ -102,6 +103,8 @@ class InvitationManagersRequest(_InvitationRequest):
         "this name can not be changed anymore.",
         default=None,
     )
+
+    title: str | None = Field(description="This field represents the team member title")
 
 
 class RespondentMeta(InternalModel):
@@ -144,6 +147,7 @@ class Invitation(InternalModel):
     user_id: uuid.UUID | None
     is_deleted: bool
     tag: str | None
+    title: str | None
 
 
 class InvitationRespondent(Invitation):
@@ -181,6 +185,7 @@ class InvitationDetailBase(InternalModel):
     created_at: datetime
     user_id: uuid.UUID | None
     tag: str | None
+    title: str | None
 
 
 class InvitationDetail(InvitationDetailBase):
@@ -252,6 +257,7 @@ class InvitationDetailForManagers(_InvitationDetail):
 
     email: EmailStr
     role: ManagersRole
+    title: str | None
 
 
 class PrivateInvitationDetail(InternalModel):
@@ -279,6 +285,7 @@ class InvitationResponse(PublicModel):
     nickname: str | None
     secret_user_id: str | None
     tag: str | None
+    title: str | None
 
 
 class _InvitationResponse(PublicModel):
@@ -334,6 +341,7 @@ class InvitationReviewerResponse(_InvitationResponse):
 
     subjects: list[uuid.UUID] = Field(description="This field represents the list of subject id's")
     role: Role = Role.REVIEWER
+    title: str | None = Field(description="This field represents the team member title")
 
 
 class InvitationManagersResponse(_InvitationResponse):
@@ -347,6 +355,7 @@ class InvitationManagersResponse(_InvitationResponse):
     role: ManagersRole = Field(
         description="This field represents the managers role",
     )
+    title: str | None = Field(description="This field represents the team member title")
 
 
 class PrivateInvitationResponse(PublicModel):

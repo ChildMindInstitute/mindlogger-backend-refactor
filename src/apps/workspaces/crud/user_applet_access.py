@@ -195,6 +195,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             "is_deleted": schema.is_deleted,
             "meta": schema.meta,
             "nickname": schema.nickname,
+            "title": schema.title,
         }
         stmt = insert(UserAppletAccessSchema).values(values)
         stmt = stmt.on_conflict_do_update(
@@ -214,6 +215,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "updated_at": datetime.utcnow(),
                 "meta": stmt.excluded.meta,
                 "nickname": stmt.excluded.nickname,
+                "title": stmt.excluded.title,
             },
             where=where,
         ).returning(UserAppletAccessSchema)
@@ -235,6 +237,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "is_deleted": schema.is_deleted,
                 "meta": schema.meta,
                 "nickname": schema.nickname,
+                "title": schema.title,
             }
             for schema in schemas
         ]
@@ -255,6 +258,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "is_deleted": stmt.excluded.is_deleted,
                 "meta": stmt.excluded.meta,
                 "nickname": stmt.excluded.nickname,
+                "title": stmt.excluded.title,
             },
         )
 
@@ -575,6 +579,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserSchema.first_name,
                 UserSchema.last_name,
                 UserSchema.email_encrypted,
+                UserAppletAccessSchema.title,
                 func.coalesce(UserSchema.last_seen_at, UserSchema.created_at).label("last_seen"),
                 is_pinned.label("is_pinned"),
                 func.array_agg(
@@ -624,7 +629,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 has_access,
                 UserAppletAccessSchema.applet_id == applet_id if applet_id else True,
             )
-            .group_by(UserSchema.id)
+            .group_by(UserSchema.id, UserAppletAccessSchema.title)
         )
 
         if query_params.filters:
