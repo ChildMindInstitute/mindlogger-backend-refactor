@@ -39,6 +39,10 @@ async def identifiers_query(request, tom_applet_subject: SubjectSchema):
 
 @pytest.fixture
 async def bob_reviewer_in_applet_with_reviewable_activity(session, tom, bob, applet_with_reviewable_activity) -> User:
+    tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(
+        tom.id, applet_with_reviewable_activity.id
+    )
+    assert tom_subject, "Must have an subject for submitting answers"
     await UserAppletAccessCRUD(session).save(
         UserAppletAccessSchema(
             user_id=bob.id,
@@ -46,7 +50,7 @@ async def bob_reviewer_in_applet_with_reviewable_activity(session, tom, bob, app
             role=Role.REVIEWER,
             owner_id=tom.id,
             invitor_id=tom.id,
-            meta=dict(respondents=[str(tom.id)]),
+            meta=dict(subjects=[str(tom_subject.id)]),
             nickname=str(uuid.uuid4()),
         )
     )
@@ -1872,7 +1876,7 @@ class TestAnswerActivityItems(BaseTest):
             ("bob", Role.REVIEWER),
         ),
     )
-    async def test_owner_can_view_all_reviews(
+    async def test_owner_can_view_all_reviews_other_can_see_empty_encrypted_data(
         self,
         bob_reviewer_in_applet_with_reviewable_activity,
         lucy_manager_in_applet_with_reviewable_activity,
