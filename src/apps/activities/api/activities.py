@@ -28,8 +28,8 @@ async def activity_retrieve(
         schema = await ActivitiesCRUD(session).get_by_id(activity_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(schema.applet_id)
         activity = await ActivityService(session, user.id).get_single_language_by_id(activity_id, language)
-
-    return Response(result=ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity))
+    result = ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity)
+    return Response(result=result)
 
 
 async def public_activity_retrieve(

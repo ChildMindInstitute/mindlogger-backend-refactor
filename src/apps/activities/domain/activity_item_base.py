@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field, root_validator, validator
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.response_type_config import ResponseType, ResponseTypeValueConfig
+from apps.activities.domain.response_type_config import ResponseType, ResponseTypeConfig
+from apps.activities.domain.response_values import ResponseTypeValueConfig, ResponseValueConfig
 from apps.activities.errors import (
     AlertFlagMissingSingleMultiRowItemError,
     AlertFlagMissingSliderItemError,
@@ -16,7 +17,6 @@ from apps.activities.errors import (
     SliderMinMaxValueError,
     SliderRowsValueError,
 )
-from apps.shared.domain import PublicModel
 from apps.shared.exception import BaseError
 
 
@@ -26,8 +26,8 @@ class BaseActivityItem(BaseModel):
     question: dict[str, str] = Field(default_factory=dict)
     response_type: ResponseType
     # smart_union ?
-    response_values: PublicModel | None  # ResponseValueConfig
-    config: PublicModel  # ResponseTypeConfig
+    response_values: ResponseValueConfig | None = Field(None, discriminator="type")
+    config: ResponseTypeConfig = Field(..., discriminator="type")
     name: str
     is_hidden: bool | None = False
     conditional_logic: ConditionalLogic | None = None
@@ -77,6 +77,7 @@ class BaseActivityItem(BaseModel):
         # wrap value in class to validate and pass value
         if type(value) is not ResponseTypeValueConfig[response_type]["config"]:
             try:
+                value["type"] = response_type
                 value = ResponseTypeValueConfig[response_type]["config"](**value)
             except Exception:
                 raise IncorrectConfigError(type=ResponseTypeValueConfig[response_type]["config"])
@@ -91,6 +92,7 @@ class BaseActivityItem(BaseModel):
         if response_type not in ResponseType.get_non_response_types():
             if type(value) is not ResponseTypeValueConfig[response_type]["value"]:
                 try:
+                    value["type"] = response_type
                     value = ResponseTypeValueConfig[response_type]["value"](**value)
                 except BaseError as e:
                     raise e

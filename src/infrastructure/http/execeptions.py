@@ -49,16 +49,17 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
 
 def pydantic_validation_errors_handler(_: Request, error: RequestValidationError) -> JSONResponse:
     """This function is called if the Pydantic validation error was raised."""
-
-    response = ErrorResponseMulti(
-        result=[
-            ErrorResponse(
-                message=err["msg"],
-                path=list(err["loc"]),
-            )
-            for err in error.errors()
-        ]
-    )
+    # TODO: remove it later. This is a fix after updating fastapi version.
+    errors = []
+    for err in error.errors():
+        if isinstance(err, dict):
+            message = err["msg"]
+            path = list(err["loc"])
+        else:
+            message = str(err.exc)
+            path = list(err.loc_tuple())
+        errors.append(ErrorResponse(message=message, path=path))
+    response = ErrorResponseMulti(result=errors)
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),

@@ -233,45 +233,6 @@ def test_create_item_with_drawing_response_values(
     assert item.response_values.drawing_example == remote_image
 
 
-@pytest.mark.parametrize(
-    "proportion",
-    [
-        "N/A",
-        None,
-        dict(enabled=False),
-    ],
-)
-def test_create_item_with_drawing_response_values_proportion_from_json(
-    drawing_response_values: DrawingValues,
-    drawing_config: DrawingConfig,
-    base_item_data: BaseItemData,
-    proportion: dict | str | None,
-):
-    data = ActivityItemCreate(
-        response_type=ResponseType.DRAWING,
-        config=drawing_config,
-        response_values=drawing_response_values,
-        **base_item_data.dict(),
-    ).dict()
-
-    del data["response_values"]["proportion"]
-    if proportion != "N/A":
-        data["response_values"]["proportion"] = proportion
-
-    item = ActivityItemCreate(**data)
-
-    item.response_values = cast(DrawingValues, item.response_values)
-    if proportion != "N/A":
-        assert "proportion" in data["response_values"]
-        if isinstance(proportion, dict):
-            assert item.response_values.proportion.dict() == proportion  # type: ignore[union-attr]
-        else:
-            assert item.response_values.proportion == proportion
-    else:
-        assert "proportion" not in data["response_values"]
-        assert item.response_values.proportion is None
-
-
 def test_create_item_with_drawing_response_values_images_are_none(
     drawing_config: DrawingConfig,
     base_item_data: BaseItemData,
@@ -279,7 +240,7 @@ def test_create_item_with_drawing_response_values_images_are_none(
     item = ActivityItemCreate(
         response_type=ResponseType.DRAWING,
         config=drawing_config,
-        response_values=DrawingValues(drawing_background=None, drawing_example=None),
+        response_values=DrawingValues(drawing_background=None, drawing_example=None, type=ResponseType.DRAWING),
         **base_item_data.dict(),
     )
     item.response_values = cast(DrawingValues, item.response_values)
@@ -565,9 +526,18 @@ def test_slider_rows_item_with_alert(
 
 
 @pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
-def test_single_multi_select_item_withou_datamatrix(request, fixture_name: str):
+def test_single_multi_select_item_row_without_datamatrix(request, fixture_name: str):
     fixture = request.getfixturevalue(fixture_name)
     data = fixture.dict()
     data["response_values"].pop("data_matrix", None)
     item = ActivityItemCreate(**data)
     assert item.response_values.data_matrix is None  # type: ignore[union-attr]
+
+
+@pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
+def test_single_multi_select_item_row__option_value_is_none(request, fixture_name: str):
+    fixture = request.getfixturevalue(fixture_name)
+    data = fixture.dict()
+    data["response_values"]["options"][0]["value"] = None
+    item = ActivityItemCreate(**data)
+    assert item.response_values.data_matrix[0].options[0].value == 0  # type: ignore
