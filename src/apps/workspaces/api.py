@@ -294,6 +294,7 @@ async def workspace_managers_list(
                 last_seen=workspace_manager.last_seen,
                 is_pinned=workspace_manager.is_pinned,
                 applets=workspace_manager.applets,
+                title=workspace_manager.title,
             )
         )
     return ResponseMulti(result=workspaces_manager, count=total)
@@ -324,6 +325,7 @@ async def workspace_applet_managers_list(
                 last_seen=workspace_manager.last_seen,
                 is_pinned=workspace_manager.is_pinned,
                 applets=workspace_manager.applets,
+                title=workspace_manager.title,
             )
         )
     return ResponseMulti(result=workspaces_manager, count=total)

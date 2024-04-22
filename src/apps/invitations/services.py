@@ -240,6 +240,7 @@ class InvitationsService:
             "user_id": invited_user_id,
             "meta": {},
             "tag": schema.tag,
+            "title": schema.title,
         }
 
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -285,6 +286,7 @@ class InvitationsService:
             key=invitation_internal.key,
             user_id=invitation_internal.user_id,
             tag=invitation_internal.tag,
+            title=invitation_internal.title,
         )
 
     def _get_invitation_url_by_role(self, role: Role):
