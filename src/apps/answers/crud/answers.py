@@ -11,7 +11,6 @@ from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
 
 from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
-from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
@@ -55,6 +54,7 @@ class _AnswerListFilter(Filtering):
     applet_id = FilterField(AnswerSchema.applet_id)
     activity_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id), cast=str)
     flow_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id), cast=str)
+    created_date = FilterField(func.date(AnswerItemSchema.created_at))
 
 
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
@@ -69,7 +69,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return schemas
 
     async def get_list(self, **filters) -> list[Answer]:
-        query = select(AnswerSchema).join(AnswerSchema.answer_items).options(contains_eager(AnswerSchema.answer_items))
+        """
+        @param filters: see supported filters: _AnswerListFilter
+        """
+        query = select(AnswerSchema).join(AnswerSchema.answer_item).options(contains_eager(AnswerSchema.answer_item))
 
         _filters = _AnswerListFilter().get_clauses(**filters)
         if _filters:
@@ -230,17 +233,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         total = res_count.scalars().one()
 
         return parse_obj_as(list[RespondentAnswerData], answers), total
-
-    async def get_activity_history_by_ids(self, activity_hist_ids: list[str]) -> list[ActivityHistory]:
-        query: Query = (
-            select(ActivityHistorySchema)
-            .where(ActivityHistorySchema.id_version.in_(activity_hist_ids))
-            .order_by(ActivityHistorySchema.applet_id, ActivityHistorySchema.order)
-        )
-        res = await self._execute(query)
-        activities: list[ActivityHistorySchema] = res.scalars().all()
-
-        return parse_obj_as(list[ActivityHistory], activities)
 
     async def get_item_history_by_activity_history(self, activity_hist_ids: list[str]) -> list[ActivityItemHistoryFull]:
         query: Query = (
