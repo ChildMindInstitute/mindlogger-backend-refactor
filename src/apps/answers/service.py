@@ -17,11 +17,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
-from apps.activities.crud import ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
-from apps.activities.domain import ActivityHistory
+from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist
-from apps.activities.services import ActivityHistoryService
 from apps.activity_flows.crud import FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -233,46 +231,52 @@ class AnswerService:
         created_date: datetime.date,
     ) -> list[ReviewActivity]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
-        answers = await AnswersCRUD(self.answer_session).get_respondents_answered_activities_by_applet_id(
-            respondent_id, applet_id, created_date
+
+        answers_coro = AnswersCRUD(self.answer_session).get_list(
+            applet_id=applet_id, respondent_ids=[respondent_id], created_date=created_date
         )
-        activity_map: dict[str, ReviewActivity] = dict()
-        if not answers:
-            applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-            activities = await ActivityHistoryService(self.session, applet_id, applet.version).activities_list()
-            for activity in activities:
-                activity_map[str(activity.id)] = ReviewActivity(id=activity.id, name=activity.name)
-        else:
-            answer_map = dict()
-            applet_versions = list(set([f"{applet_id}_{answer.version}" for answer in answers]))
-            all_activities = await ActivityHistoriesCRUD(self.session).retrieve_activities_by_applet_id_versions(
-                applet_versions
-            )
-            all_activities_map: dict[str, list[ActivityHistory]] = dict()
-            for activity_ in all_activities:
-                all_activities_map.setdefault(f"{activity_.applet_id}", []).append(activity_)
+        activities_coro = ActivitiesCRUD(self.session).get_by_applet_id(applet_id, is_reviewable=False)
+        answers, activities = await asyncio.gather(answers_coro, activities_coro)
 
+        activity_map: dict[uuid.UUID, ReviewActivity] = dict()
+        for activity in activities:
+            activity_map[activity.id] = ReviewActivity(id=activity.id, name=activity.name)
+
+        if answers:
+            old_activity_answer_dates: dict[uuid.UUID, list[AnswerDate]] = defaultdict(list)
+            activity_history_ids = set()
             for answer in answers:
-                answer_map[answer.id] = answer
-                activities = all_activities_map[f"{applet_id}_{answer.version}"]
-                for activity in activities:
-                    activity_map[str(activity.id)] = ReviewActivity(id=activity.id, name=activity.name)
-
-            answer_items = await AnswerItemsCRUD(self.answer_session).get_answer_ids(list(answer_map.keys()))
-
-            answer_item_duplicate = set()
-            for answer_item in answer_items:
-                answer = answer_map[answer_item.answer_id]
-                activity_id, version = answer.activity_history_id.split("_")
-                key = f"{answer.id}|{activity_id}"
-                if key in answer_item_duplicate:
-                    continue
-                answer_item_duplicate.add(key)
-                activity_map[activity_id].answer_dates.append(
-                    AnswerDate(
-                        created_at=answer_item.created_at, answer_id=answer.id, end_datetime=answer_item.end_datetime
+                activity_id, _ = HistoryAware.split_id_version(answer.activity_history_id)
+                if _activity := activity_map.get(activity_id):
+                    _activity.answer_dates.append(
+                        AnswerDate(
+                            answer_id=answer.id,
+                            created_at=answer.answer_item.created_at,
+                            end_datetime=answer.answer_item.end_datetime,
+                        )
                     )
+                else:
+                    old_activity_answer_dates[activity_id].append(
+                        AnswerDate(
+                            answer_id=answer.id,
+                            created_at=answer.answer_item.created_at,
+                            end_datetime=answer.answer_item.end_datetime,
+                        )
+                    )
+                    activity_history_ids.add(answer.activity_history_id)
+
+            if activity_history_ids:
+                activity_histories = await ActivityHistoriesCRUD(self.session).get_by_history_ids(
+                    list(activity_history_ids)
                 )
+                for activity_history in activity_histories:
+                    if activity_history.id not in activity_map:
+                        activity_map[activity_history.id] = ReviewActivity(
+                            id=activity_history.id,
+                            name=activity_history.name,
+                            answer_dates=old_activity_answer_dates[activity_history.id],
+                        )
+
         return list(activity_map.values())
 
     async def get_applet_submit_dates(
@@ -336,10 +340,9 @@ class AnswerService:
             raise AnswerNotFoundError()
 
         answer = answers[0]
-        answer_item = answer.answer_items[0]
         answer_result = ActivityAnswer(
             **answer.dict(exclude={"migrated_data"}),
-            **answer_item.dict(
+            **answer.answer_item.dict(
                 include={
                     "user_public_key",
                     "answer",
@@ -398,11 +401,10 @@ class AnswerService:
         answer_result: list[ActivityAnswer] = []
 
         for answer in answers:
-            answer_item = answer.answer_items[0]
             answer_result.append(
                 ActivityAnswer(
                     **answer.dict(exclude={"migrated_data"}),
-                    **answer_item.dict(
+                    **answer.answer_item.dict(
                         include={
                             "user_public_key",
                             "answer",
@@ -725,7 +727,7 @@ class AnswerService:
         activities_result = []
         if not skip_activities:
             activities, items = await asyncio.gather(
-                repo_local.get_activity_history_by_ids(list(activity_hist_ids)),
+                ActivityHistoriesCRUD(self.session).get_by_history_ids(list(activity_hist_ids)),
                 repo_local.get_item_history_by_activity_history(list(activity_hist_ids)),
             )
 
