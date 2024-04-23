@@ -893,6 +893,16 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
+        assert set(response.json()["result"][0].keys()) == {
+            "answer",
+            "createdAt",
+            "updatedAt",
+            "id",
+            "itemIds",
+            "items",
+            "reviewer",
+            "reviewerPublicKey",
+        }
         assert response.json()["result"][0]["answer"] == "some answer"
         assert response.json()["result"][0]["reviewerPublicKey"] == "some public key"
         assert response.json()["result"][0]["itemIds"] == [
