@@ -29,6 +29,7 @@ from apps.answers.domain import (
     PublicAnswerExport,
     PublicAnswerExportResponse,
     PublicReviewActivity,
+    PublicReviewFlow,
     PublicSummaryActivity,
     PublicSummaryActivityFlow,
     ReviewsCount,
@@ -37,8 +38,8 @@ from apps.answers.domain import (
 from apps.answers.filters import (
     AnswerExportFilters,
     AppletActivityAnswerFilter,
-    AppletActivityFilter,
     AppletSubmitDateFilter,
+    ReviewAppletItemFilter,
     SummaryActivityFilter,
 )
 from apps.answers.service import AnswerService
@@ -105,7 +106,7 @@ async def review_activity_list(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-    query_params: QueryParams = Depends(parse_query_params(AppletActivityFilter)),
+    query_params: QueryParams = Depends(parse_query_params(ReviewAppletItemFilter)),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[PublicReviewActivity]:
     await AppletService(session, user.id).exist_by_id(applet_id)
@@ -117,6 +118,23 @@ async def review_activity_list(
     return ResponseMulti(
         result=[PublicReviewActivity.from_orm(activity) for activity in activities],
         count=len(activities),
+    )
+
+
+async def review_flow_list(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(parse_query_params(ReviewAppletItemFilter)),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[PublicReviewFlow]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    flows = await AnswerService(session, user.id, answer_session).get_review_flows(applet_id, **query_params.filters)
+
+    return ResponseMulti(
+        result=parse_obj_as(list[PublicReviewFlow], flows),
+        count=len(flows),
     )
 
 

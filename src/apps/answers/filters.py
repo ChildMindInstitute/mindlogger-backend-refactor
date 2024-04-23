@@ -11,7 +11,7 @@ class SummaryActivityFilter(BaseQueryParams):
     respondent_id: uuid.UUID | None
 
 
-class AppletActivityFilter(BaseQueryParams):
+class ReviewAppletItemFilter(BaseQueryParams):
     respondent_id: uuid.UUID
     created_date: datetime.date
 
