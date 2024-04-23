@@ -260,6 +260,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.target_subject_id == filters.target_subject_id)
         if filters.respondent_id:
             query = query.where(AnswerSchema.respondent_id == filters.respondent_id)
+        if filters.answer_id:
+            query = query.where(AnswerItemSchema.answer_id == filters.answer_id)
+
         db_result = await self._execute(query)
 
         return db_result.all()  # noqa
