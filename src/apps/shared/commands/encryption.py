@@ -35,9 +35,6 @@ async def decrypt(encrypted_data: str) -> None:
     print(decrypted)
 
 
-ROWS_PER_SELECT_LIMIT = 1000
-
-
 def print_data_table(mapping: dict[str, list[str]]) -> None:
     table = Table(
         *("Table name", "List of encrypted columns"),
@@ -77,13 +74,13 @@ async def reencrypt(
         None,
         "--decrypt-secret-key",
         "-d",
-        help="Hex of secret key to decrypt data, " "if not key specified, default settings key will be used.",
+        help="Hex of secret key to decrypt data, if not key specified, default settings key will be used.",
     ),
     encrypt_secret_key: Optional[str] = typer.Option(
         None,
         "--encrypt-secret-key",
         "-e",
-        help="Hex of secret key to encrypt data, " "if not key specified, default settings key will be used.",
+        help="Hex of secret key to encrypt data, if not key specified, default settings key will be used.",
     ),
     tables: Optional[list[str]] = typer.Argument(
         None,
@@ -93,10 +90,10 @@ async def reencrypt(
     ),
 ) -> None:
     session_maker = session_manager.get_session()
-    decrypt_key = bytes.fromhex(decrypt_secret_key) if decrypt_secret_key else get_key()
-    decryptor = StringEncryptedType(Unicode, decrypt_key)
-    encrypt_key = bytes.fromhex(encrypt_secret_key) if encrypt_secret_key else get_key()
-    encryptor = StringEncryptedType(Unicode, encrypt_key)
+    decrypt_key = decrypt_secret_key if decrypt_secret_key else settings.secrets.secret_key
+    encrypt_key = encrypt_secret_key if encrypt_secret_key else settings.secrets.secret_key
+    decrypt_key = f"decode('{decrypt_key}', 'hex')"
+    encrypt_key = f"decode('{encrypt_key}', 'hex')"
     table_name_column_name_map = await get_table_name_column_name_map()
     tables = tables if tables else list(table_name_column_name_map.keys())
     print_data_table(table_name_column_name_map)
@@ -104,52 +101,18 @@ async def reencrypt(
     async with session_maker() as session:
         async with atomic(session):
             for table_name in tables:
+                print(f"Started reencrypting data in the table {table_name}")
                 columns = table_name_column_name_map.get(table_name, [])
                 if not columns:
-                    print("[red]" f"[bold]{table_name}[/bold] table does not have " "encrypted columns. Skipped[red]")
+                    print("[red]" f"[bold]{table_name}[/bold] table does not have encrypted columns. Skipped[red]")
                     continue
-                select_cols = ", ".join(columns)
-                cnds = " or ".join([f"{col} is not null" for col in columns])
-                limit = ROWS_PER_SELECT_LIMIT
-                page = 1
-                reencrypted = 0
-                while True:
-                    offset = (page - 1) * limit
+                for column in columns:
+                    print(f"Update column {column}")
                     sql = f"""
-                        select
-                            id,
-                            {select_cols}
-                        from {table_name}
-                        where {cnds}
-                        order by created_at, id
-                        limit {limit} offset {offset}
-                        for update
+                        update {table_name}
+                        set {column} = encrypt_internal(decrypt_internal({column}, {decrypt_key}), {encrypt_key})
+                        where {column} is not null
                     """
-                    result = await session.execute(sql)
-                    rows = result.all()
-                    if not rows:
-                        break
-                    for row in rows:
-                        id_ = row.id
-                        to_update = {}
-                        for col in columns:
-                            value = getattr(row, col)
-                            if value:
-                                decrypted_value = decryptor.process_result_value(value, session.bind.dialect)
-                                encrypted_value = encryptor.process_bind_param(
-                                    decrypted_value,
-                                    session.bind.dialect,
-                                )
-                                to_update[col] = encrypted_value
-                        if to_update:
-                            cols = ", ".join([f"{col} = :{col}" for col in to_update.keys()])
-                            to_update["id"] = id_
-                            await session.execute(f"update {table_name} set {cols} where id = :id", to_update)
-                            reencrypted += 1
-                    print(f"Batch {page} of rows in the table {table_name} was processed.")
-                    if len(rows) < limit:
-                        break
-                    # Get next rows
-                    page += 1
-                print("[green]" f"{reencrypted} rows in [bold]{table_name}[/bold] table were reencrypted." "[green]")
+                    await session.execute(sql)
+                print(f"Finished reencrypting data in the table {table_name}")
     print("Reencryption is ended")
