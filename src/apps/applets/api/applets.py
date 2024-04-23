@@ -88,7 +88,7 @@ async def applet_retrieve(
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
     session=Depends(get_session),
-) -> Response[AppletSingleLanguageDetailPublic]:
+) -> AppletRetrieveResponse[AppletSingleLanguageDetailPublic]:
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)

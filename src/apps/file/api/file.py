@@ -48,7 +48,7 @@ from config import settings
 from infrastructure.database.deps import get_session
 from infrastructure.dependency.cdn import get_log_bucket, get_media_bucket
 from infrastructure.dependency.presign_service import get_presign_service
-from infrastructure.utility.cdn_client import CDNClient
+from infrastructure.utility.cdn_client import CDNClient, ObjectNotFoundError
 
 
 async def upload(
@@ -96,6 +96,7 @@ async def _copy(file: UploadFile, path: str):
 
 
 async def convert_not_supported_audio(file: UploadFile):
+    file.filename = cast(str, file.filename)
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "video/webm":
         # store file, create task to convert
@@ -122,6 +123,7 @@ async def convert_not_supported_audio(file: UploadFile):
 
 
 async def convert_not_supported_image(file: UploadFile):
+    file.filename = cast(str, file.filename)
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "image/heic":
         # store file, create task to convert
@@ -194,6 +196,8 @@ async def download(
             raise FileNotFoundError
         else:
             raise e
+    except ObjectNotFoundError:
+        raise FileNotFoundError
 
     return StreamingResponse(file, media_type=media_type)
 
@@ -269,6 +273,8 @@ async def answer_download(
             raise FileNotFoundError
         else:
             raise e
+    except ObjectNotFoundError:
+        raise FileNotFoundError
     return StreamingResponse(file, media_type=media_type)
 
 
@@ -339,6 +345,7 @@ async def logs_upload(
 ) -> Response[AnswerUploadedFile]:
     service = LogFileService(user.id, cdn_client)
     try:
+        file.filename = cast(str, file.filename)
         key = service.key(device_id=device_id, file_name=file.filename)
         await service.upload(device_id, file, file_id)
         url = await cdn_client.generate_presigned_url(key)

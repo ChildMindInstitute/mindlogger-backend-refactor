@@ -102,14 +102,6 @@ services:
       - 8025:8025
       - 1025:1025
 
-  mongo:
-    image: mongo
-    ports:
-      - '27017:27017'
-    container_name: mindlogger_mongo
-    volumes:
-      - db_data:/data/db
-
   minio:
     image: minio/minio
     container_name: mindlogger_minio
@@ -134,7 +126,15 @@ services:
       - './compose/minio:/etc/minio'
     entrypoint: /etc/minio/create_bucket.sh
 
+  opentelemetry:
+    container_name: mindlogger_opentelemetry
+    image: otel/opentelemetry-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - "./compose/opentelemetry/otel-collector-config.yaml:/etc/otel-collector-config.yaml"
+    ports:
+      - "4317:4317"
+
 volumes:
   pg_data: {}
-  db_data: {}
   datastore: {}

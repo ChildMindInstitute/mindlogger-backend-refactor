@@ -91,11 +91,12 @@ pipenv --python /opt/homebrew/bin/python3.10
 | AUTHENTICATION\_\_ACCESS\_TOKEN\_\_EXPIRATION                | 30                         | Time in minutes after which the access token will stop working                                                                                                                                                                                                                                                                         |
 | AUTHENTICATION\_\_REFRESH\_TOKEN\_\_EXPIRATION               | 30                         | Time in minutes after which the refresh token will stop working                                                                                                                                                                                                                                                                        |
 | ADMIN_DOMAIN                                                 | -                          | Admin panel domain                                                                                                                                                                                                                                                                                                                     |
-| RABBITMQ\_\_URL                                              | rabbitmq                   | Rabbitmq service URL                                                                                                                                                                                                                                                                                                                   
-| RABBITMQ\_\_USE_SSL                                          | True                       | Rabbitmq ssl setting, turn false to local development                                                                                                                                                                                                                                                                                  
-| MAILING\_\_MAIL\_\_USERNAME                                  | mailhog                    | Mail service username                                                                                                                                                                                                                                                                                                                  
-| MAILING\_\_MAIL\_\_PASSWORD                                  | mailhog                    | Mail service password                                                                                                                                                                                                                                                                                                                  
-| MAILING\_\_MAIL\_\_SERVER                                    | mailhog                    | Mail service URL                                                                                                                                                                                                                                                                                                                       
+| RABBITMQ\_\_URL                                              | rabbitmq                   | Rabbitmq service URL
+| RABBITMQ\_\_USE_SSL                                          | True                       | Rabbitmq ssl setting, turn false to local development
+| MAILING\_\_MAIL\_\_USERNAME                                  | mailhog                    | Mail service username
+| MAILING\_\_MAIL\_\_PASSWORD                                  | mailhog                    | Mail service password
+| MAILING\_\_MAIL\_\_SERVER                                    | mailhog                    | Mail service URL
+| SECRETS\_\_SECRET\_KEY                                       | -                          | Secret key for data encryption. Use this key only for local development
 
 ##### ✋ Mandatory:
 
@@ -219,7 +220,7 @@ set -o allexport; source .env; set +o allexport
 
 ### Running locally
 
-This option allows you to run the app for development purposes without having to manually build the Docker image. 
+This option allows you to run the app for development purposes without having to manually build the Docker image.
 
 - Make sure all [required services](#required-services) are properly setup
 - If you're running required services using Docker, disable the `app` service from `docker-compose` before running:
@@ -231,7 +232,6 @@ This option allows you to run the app for development purposes without having to
   ```bash
   make run_local
   ```
-
 
 > 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
 
@@ -251,7 +251,7 @@ make run
 ```
 ### Running via docker
 
-- [Build the application](#build-application-images) 
+- [Build the application](#build-application-images)
 - Run the app using Docker:
 ```bash
 docker-compose up
@@ -717,3 +717,22 @@ In case of Azure blob, specify your connection string into field `storage_secret
 Common Public Attribution License Version 1.0 (CPAL-1.0)
 
 Refer to [LICENSE.md](./LICENSE.MD)
+
+## Opentelemtry
+### If app is running in docker
+- Make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://opentelemetry:4317` endpoint has been already set in `.env`. Run docker container with opentelemetry:
+```bash
+docker-compose up -d opentelemetry
+```
+### If app is running locally
+- Make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317` is exported in environment.
+```bash
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317
+```
+or if you use pipenv for autoloading envs - make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317` is added to `.env` file.
+- The same as for containerized app - up container with opentelemetry
+```
+```bash
+docker-compose up -d opentelemetry
+```
+- Start you app
