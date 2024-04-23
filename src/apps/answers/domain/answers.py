@@ -359,6 +359,7 @@ class AnswerReview(InternalModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: Reviewer
     created_at: datetime.datetime
+    updated_at: datetime.datetime
 
 
 class AppletActivityAnswerPublic(PublicModel):
@@ -389,6 +390,7 @@ class AnswerReviewPublic(PublicModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: ReviewerPublic
     created_at: datetime.datetime
+    updated_at: datetime.datetime
 
 
 class AssessmentAnswerPublic(PublicModel):

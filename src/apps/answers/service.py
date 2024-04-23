@@ -627,6 +627,7 @@ class AnswerService:
                     items=current_activity_items,
                     reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
                     created_at=schema.created_at,
+                    updated_at=schema.updated_at,
                 )
             )
         return results
