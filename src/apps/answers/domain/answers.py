@@ -47,7 +47,7 @@ class Answer(InternalModel):
     migrated_updated: datetime.datetime | None = None
     is_deleted: bool
 
-    answer_items: list[AnswerItem]
+    answer_item: AnswerItem
 
 
 class Text(InternalModel):

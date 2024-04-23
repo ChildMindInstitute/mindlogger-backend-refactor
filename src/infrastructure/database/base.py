@@ -1,13 +1,11 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, MetaData, text
+from sqlalchemy import Column, DateTime, MetaData, inspect, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 
 __all__ = ["Base"]
-
-from sqlalchemy.orm.collections import InstrumentedList
 
 from infrastructure.database.mixins import SoftDeletable
 
@@ -62,8 +60,5 @@ class Base(SoftDeletable, _Base):  # type: ignore
     )
 
     def __iter__(self):
-        return (
-            (key, val)
-            for key, val in self.__dict__.items()
-            if not (key.startswith("_") or isinstance(val, InstrumentedList))
-        )
+        info = inspect(self)
+        return ((c.key, getattr(self, c.key)) for c in info.mapper.column_attrs if c.key not in info.unloaded)
