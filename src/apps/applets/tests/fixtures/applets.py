@@ -85,6 +85,7 @@ def item_response_values() -> SingleSelectionValues:
                 value=0,
             )
         ],
+        type=ResponseType.SINGLESELECT,
     )
 
 
@@ -101,6 +102,7 @@ def item_config() -> SingleSelectionConfig:
         remove_back_button=False,
         skippable_item=False,
         additional_response_option=AdditionalResponseOption(text_input_option=False, text_input_required=False),
+        type=ResponseType.SINGLESELECT,
     )
 
 
@@ -222,6 +224,18 @@ async def applet_one_lucy_respondent(
     session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User
 ) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_lucy_editor(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.EDITOR)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_lucy_coordinator(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.COORDINATOR)
     return applet_one
 
 

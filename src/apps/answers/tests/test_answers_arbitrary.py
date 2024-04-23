@@ -12,7 +12,7 @@ from sqlalchemy.orm import Query
 
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.db.schemas import AnswerNoteSchema, AnswerSchema
-from apps.answers.domain import AnswerNote, AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
+from apps.answers.domain import AnswerNote, AppletAnswerCreate, AssessmentAnswerCreate
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
@@ -22,34 +22,6 @@ from apps.shared.test.client import TestClient
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from infrastructure.utility import RedisCacheTest
-
-
-@pytest.fixture
-def tom_answer_create_data(tom, applet_with_reviewable_activity):
-    return AppletAnswerCreate(
-        applet_id=applet_with_reviewable_activity.id,
-        version=applet_with_reviewable_activity.version,
-        submit_id=uuid.uuid4(),
-        activity_id=applet_with_reviewable_activity.activities[0].id,
-        answer=ItemAnswerCreate(
-            item_ids=[applet_with_reviewable_activity.activities[0].items[0].id],
-            start_time=datetime.datetime.utcnow(),
-            end_time=datetime.datetime.utcnow(),
-            user_public_key=str(tom.id),
-        ),
-        client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
-    )
-
-
-@pytest.fixture
-def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity):
-    activity_assessment_id = applet_with_reviewable_activity.activities[1].id
-    return AssessmentAnswerCreate(
-        answer="0x00",
-        item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
-        reviewer_public_key=f"{tom.id}",
-        assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
-    )
 
 
 def note_url_path_data(answer: AnswerSchema) -> dict[str, Any]:
@@ -105,7 +77,7 @@ class TestAnswerActivityItems(BaseTest):
     applet_answers_export_url = "/answers/applet/{applet_id}/data"
     applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
 
-    activity_answers_url = "/answers/applet/{applet_id}/answers/" "{answer_id}/activities/{activity_id}"
+    activity_answers_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
 
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"
@@ -113,7 +85,7 @@ class TestAnswerActivityItems(BaseTest):
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"
 
-    arbitrary_url = "postgresql+asyncpg://postgres:postgres@localhost:5432" "/test_arbitrary"
+    arbitrary_url = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_arbitrary"
     applet_answers_completions_url = "/answers/applet/{applet_id}/completions"
     applets_answers_completions_url = "/answers/applet/completions"
     check_existence_url = "/answers/check-existence"
@@ -323,7 +295,7 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["events"] == answer_create.answer.events
+        assert response.json()["result"]["answer"]["events"] == answer_create.answer.events
         await assert_answer_exist_on_arbitrary(str(answer_create.submit_id), arbitrary_session)
 
         response = await arbitrary_client.get(
@@ -348,7 +320,7 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["result"]["events"] == answer_create.answer.events
+        assert response.json()["result"]["answer"]["events"] == answer_create.answer.events
 
     async def test_fail_answered_applet_not_existed_activities(
         self,

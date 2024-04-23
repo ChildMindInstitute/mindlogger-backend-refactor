@@ -1,6 +1,7 @@
 from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
 from infrastructure.database.base import Base
@@ -48,4 +49,10 @@ class ActivityHistorySchema(Base, _BaseActivitySchema):
     applet_id = Column(
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
+    )
+
+    items = relationship(
+        "ActivityItemHistorySchema",
+        order_by="asc(ActivityItemHistorySchema.order)",
+        lazy="noload",
     )

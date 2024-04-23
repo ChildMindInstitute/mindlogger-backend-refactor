@@ -64,12 +64,6 @@ async def applet_one_lucy_coordinator(session: AsyncSession, applet_one: AppletF
 
 
 @pytest.fixture
-async def applet_one_lucy_editor(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.EDITOR)
-    return applet_one
-
-
-@pytest.fixture
 async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
     return applet_one
@@ -271,7 +265,10 @@ class TestInvite(BaseTest):
             invitation_respondent_data,
         )
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["result"][0]["message"] == NonUniqueValue.message
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == NonUniqueValue.message
+        assert result[0]["path"] == ["body", "secretUserId"]
 
     async def test_manager_invite_manager_success(self, client, invitation_manager_data, applet_one_lucy_manager, lucy):
         client.login(lucy)

@@ -10,6 +10,7 @@ from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.response_type_config import SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.activities.domain.scores_reports import ReportType, ScoresAndReports, Section
+from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.answers.db.schemas import AnswerNoteSchema, AnswerSchema
 from apps.answers.domain import AnswerNote, ClientMeta
 from apps.answers.domain.answers import AnswerAlert, AppletAnswerCreate, AssessmentAnswerCreate, ItemAnswerCreate
@@ -19,6 +20,7 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.domain.base import AppletReportConfigurationBase
 from apps.applets.service.applet import AppletService
+from apps.shared.enums import Language
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -112,6 +114,24 @@ def client_meta() -> ClientMeta:
 
 
 @pytest.fixture
+async def applet_with_flow(session: AsyncSession, applet_minimal_data: AppletCreate, tom: User) -> AppletFull:
+    data = applet_minimal_data.copy(deep=True)
+    data.display_name = "applet with flow"
+    data.activity_flows = [
+        FlowCreate(
+            name="flow",
+            description={Language.ENGLISH: "description"},
+            items=[FlowItemCreate(activity_key=data.activities[0].key)],
+        )
+    ]
+    applet_create = AppletCreate(**data.dict())
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_create, applet_id=uuid.uuid4())
+
+    return applet
+
+
+@pytest.fixture
 def answer_item_create(
     applet: AppletFull,
     single_select_item_create: ActivityItemCreate,
@@ -128,7 +148,7 @@ def answer_item_create(
         answer=encrypted_answer,
         events=str(["event1", "event2"]),
         item_ids=[i.id for i in applet.activities[0].items],
-        identifier="identifier",
+        identifier="encrypted_identifier",
         scheduled_time=None,
         scheduled_event_id=str(uuid.uuid4()),
         start_time=datetime.datetime.utcnow(),
@@ -394,4 +414,32 @@ async def answer_note_arbitrary(
         answer_arbitrary.id,
         uuid.UUID(answer_arbitrary.activity_history_id.split("_")[0]),
         note=note_create_data.note,
+    )
+
+
+@pytest.fixture
+def tom_answer_create_data(tom, applet_with_reviewable_activity) -> AppletAnswerCreate:
+    return AppletAnswerCreate(
+        applet_id=applet_with_reviewable_activity.id,
+        version=applet_with_reviewable_activity.version,
+        submit_id=uuid.uuid4(),
+        activity_id=applet_with_reviewable_activity.activities[0].id,
+        answer=ItemAnswerCreate(
+            item_ids=[applet_with_reviewable_activity.activities[0].items[0].id],
+            start_time=datetime.datetime.utcnow(),
+            end_time=datetime.datetime.utcnow(),
+            user_public_key=str(tom.id),
+        ),
+        client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+    )
+
+
+@pytest.fixture
+def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity) -> AssessmentAnswerCreate:
+    activity_assessment_id = applet_with_reviewable_activity.activities[1].id
+    return AssessmentAnswerCreate(
+        answer="0x00",
+        item_ids=[applet_with_reviewable_activity.activities[1].items[0].id],
+        reviewer_public_key=f"{tom.id}",
+        assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
     )

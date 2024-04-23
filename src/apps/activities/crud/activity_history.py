@@ -1,9 +1,11 @@
 import uuid
 
+from pydantic import parse_obj_as
 from sqlalchemy import distinct, false, select, update
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, joinedload
 
 from apps.activities.db.schemas import ActivityHistorySchema
+from apps.activities.domain import ActivityHistoryFull
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -76,7 +78,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         if not result:
             raise ActivityHistoryDoeNotExist()
 
-    async def get_by_applet_id_for_summary(self, applet_id: uuid.UUID) -> list[ActivityHistorySchema]:
+    async def get_last_histories_by_applet(self, applet_id: uuid.UUID) -> list[ActivityHistorySchema]:
         query: Query = select(ActivityHistorySchema)
         query = query.join(
             AppletHistorySchema,
@@ -141,3 +143,17 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.values(**values)
         query = query.returning(ActivityHistorySchema)
         await self._execute(query)
+
+    async def load_full(self, id_versions: list[str]) -> list[ActivityHistoryFull]:
+        if not id_versions:
+            return []
+
+        query = (
+            select(ActivityHistorySchema)
+            .options(joinedload(ActivityHistorySchema.items, innerjoin=True))
+            .where(ActivityHistorySchema.id_version.in_(id_versions))
+        )
+        res = await self._execute(query)
+        data = res.unique().scalars().all()
+
+        return parse_obj_as(list[ActivityHistoryFull], data)

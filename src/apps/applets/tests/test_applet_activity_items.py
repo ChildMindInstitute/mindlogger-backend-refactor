@@ -251,7 +251,10 @@ class TestActivityItems:
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.CREATED
         response_values = response.json()["result"]["activities"][0]["items"][0]["responseValues"]
-        assert response_values["options"][0]["value"] == 0
+        if "dataMatrix" in response_values:
+            assert response_values["dataMatrix"][0]["options"][0]["value"] == 0
+        else:
+            assert response_values["options"][0]["value"] == 0
 
     @pytest.mark.parametrize("response_type", (ResponseType.SINGLESELECT, ResponseType.MULTISELECT))
     async def test_create_applet_single_multi_select_response_values_value_null_auto_set_value(

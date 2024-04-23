@@ -1,5 +1,6 @@
 from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import relationship
 
 from infrastructure.database import Base
 
@@ -30,3 +31,9 @@ class ActivityFlowHistoriesSchema(_BaseActivityFlowSchema, Base):
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
     applet_id = Column(ForeignKey("applet_histories.id_version", ondelete="RESTRICT"))
+
+    items = relationship(
+        "ActivityFlowItemHistorySchema",
+        order_by="asc(ActivityFlowItemHistorySchema.order)",
+        lazy="noload",
+    )

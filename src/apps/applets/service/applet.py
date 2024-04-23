@@ -77,12 +77,8 @@ class AppletService:
         if len(applet_ids_set) != len(set(applet_ids)):
             raise AppletNotFoundError(key="id", value=str(applet_ids))
 
-    async def get(self, applet_id: uuid.UUID):
-        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-        if not applet:
-            raise AppletNotFoundError(key="id", value=str(applet_id))
-
-        return applet
+    async def get(self, applet_id: uuid.UUID) -> AppletSchema:
+        return await AppletsCRUD(self.session).get_by_id(applet_id)
 
     async def exist_by_key(self, applet_id: uuid.UUID):
         exists = await AppletsCRUD(self.session).exist_by_key("link", applet_id)
@@ -92,20 +88,21 @@ class AppletService:
     async def _create_applet_accesses(
         self,
         applet_id: uuid.UUID,
+        owner_id: uuid.UUID,
         manager_id: uuid.UUID | None,
         manager_role: Role | None = None,
     ):
         if manager_role is None:
             manager_role = Role.MANAGER
         # TODO: move to api level
-        await UserAppletAccessService(self.session, self.user_id, applet_id).add_role(self.user_id, Role.OWNER)
+        await UserAppletAccessService(self.session, owner_id, applet_id).add_role(owner_id, Role.OWNER)
 
-        await UserAppletAccessService(self.session, self.user_id, applet_id).add_role(self.user_id, Role.RESPONDENT)
+        await UserAppletAccessService(self.session, owner_id, applet_id).add_role(owner_id, Role.RESPONDENT)
 
-        if manager_id and manager_id != self.user_id:
-            await UserAppletAccessService(self.session, self.user_id, applet_id).add_role(manager_id, manager_role)
+        if manager_id and manager_id != owner_id:
+            await UserAppletAccessService(self.session, owner_id, applet_id).add_role(manager_id, manager_role)
 
-            await UserAppletAccessService(self.session, self.user_id, applet_id).add_role(manager_id, Role.RESPONDENT)
+            await UserAppletAccessService(self.session, owner_id, applet_id).add_role(manager_id, Role.RESPONDENT)
 
     async def create(
         self,
@@ -116,7 +113,7 @@ class AppletService:
     ) -> AppletFull:
         applet = await self._create(create_data, manager_id or self.user_id, applet_id=applet_id)
 
-        await self._create_applet_accesses(applet.id, manager_id, manager_role)
+        await self._create_applet_accesses(applet.id, self.user_id, manager_id, manager_role)
 
         applet.activities = await ActivityService(self.session, self.user_id).create(applet.id, create_data.activities)
         activity_key_id_map = dict()
@@ -212,6 +209,8 @@ class AppletService:
 
         applet.encryption = encryption.dict()
         await AppletsCRUD(self.session).save(applet)
+        applt = await AppletsCRUD(self.session).get_by_id(applet_id)
+        return applt
 
     async def duplicate(
         self,
@@ -234,21 +233,8 @@ class AppletService:
         create_data = self._prepare_duplicate(applet_exist, new_name, encryption)
 
         applet = await self._create(create_data, self.user_id)
-        # TODO: move to api level
-        await UserAppletAccessService(self.session, applet_owner.user_id, applet.id).add_role(
-            applet_owner.user_id, Role.OWNER
-        )
-        await UserAppletAccessService(self.session, applet_owner.user_id, applet.id).add_role(
-            applet_owner.user_id, Role.RESPONDENT
-        )
 
-        if self.user_id != applet_owner.user_id:
-            await UserAppletAccessService(self.session, applet_owner.user_id, applet.id).add_role(
-                self.user_id, manager_role
-            )
-            await UserAppletAccessService(self.session, applet_owner.user_id, applet.id).add_role(
-                self.user_id, Role.RESPONDENT
-            )
+        await self._create_applet_accesses(applet.id, applet_owner.user_id, self.user_id, manager_role)
 
         applet.activities = await ActivityService(self.session, applet_owner.user_id).create(
             applet.id, create_data.activities
@@ -353,7 +339,7 @@ class AppletService:
 
         if applet_schema and applet_id:
             version_difference = await self._get_next_version(applet_schema, applet_id)
-        else:
+        else:  # pragma: no cover
             version_difference = VERSION_DIFFERENCE_MINOR
 
         version_parts = version.split(".")
@@ -367,13 +353,13 @@ class AppletService:
             major_version += 1
             middle_version = 0
             minor_version = 0
-        elif version_difference == VERSION_DIFFERENCE_ITEM:
+        else:
             middle_version += 1
             minor_version = 0
 
         return f"{major_version}.{middle_version}.{minor_version}"
 
-    async def _get_next_version(self, applet_schema: AppletUpdate, applet_id: uuid.UUID):
+    async def _get_next_version(self, applet_schema: AppletUpdate, applet_id: uuid.UUID) -> int:
         old_activity_ids = set(await ActivitiesCRUD(self.session).get_ids_by_applet_id(applet_id))
         old_flow_ids = set(await FlowsCRUD(self.session).get_ids_by_applet_id(applet_id))
         new_activity_ids = set(activity.id for activity in applet_schema.activities)
@@ -413,7 +399,6 @@ class AppletService:
         themes = []
         if theme_ids:
             themes = await ThemeService(self.session, self.user_id).get_by_ids(theme_ids)
-            pass
         theme_map = dict((theme.id, theme) for theme in themes)
         applets = []
 
@@ -534,7 +519,7 @@ class AppletService:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
         theme = None
         if schema.theme_id:
-            theme = await ThemeService(self.session, self.user_id).get_users_by_id(schema.theme_id)
+            theme = await ThemeService(self.session, self.user_id).get_by_id(schema.theme_id)
         applet = AppletDuplicate(
             id=schema.id,
             encryption=None,
@@ -606,19 +591,6 @@ class AppletService:
                 greatest_number = number
 
         return self.APPLET_NAME_FORMAT_FOR_DUPLICATES.format(applet_name.name, greatest_number + 1)
-
-    async def get_unique_name_for_duplicate(self, name: str) -> str:
-        duplicate_names = await AppletsCRUD(self.session).get_name_duplicates(self.user_id, name)
-        if not duplicate_names:
-            return name
-
-        greatest_number = 0
-        for duplicate_name in duplicate_names:
-            number = self._get_latest_number(duplicate_name)
-            if number > greatest_number:
-                greatest_number = number
-
-        return self.APPLET_NAME_FORMAT_FOR_DUPLICATES.format(name, greatest_number + 1)
 
     def _get_latest_number(self, text) -> int:
         numbers = re.findall("\\(\\d+\\)", text)

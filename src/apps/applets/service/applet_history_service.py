@@ -6,7 +6,7 @@ from apps.applets.crud import AppletHistoriesCRUD
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain import AppletHistory, AppletHistoryChange
 from apps.applets.domain.applet_full import AppletFull, AppletHistoryFull
-from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
+from apps.applets.errors import NotValidAppletHistory
 from apps.applets.service.applet_change import AppletChangeService
 from apps.shared.version import INITIAL_VERSION
 
@@ -48,10 +48,7 @@ class AppletHistoryService:
         await FlowHistoryService(self.session, applet.id, applet.version).add(applet.activity_flows)
 
     async def get_changes(self) -> AppletHistoryChange:
-        try:
-            prev_version = await self.get_prev_version()
-        except ValueError:
-            raise InvalidVersionError()
+        prev_version = await self.get_prev_version()
         old_id_version = f"{self._applet_id}_{prev_version}"
         changes = await self._get_applet_changes(old_id_version)
         changes.activities = await ActivityHistoryService(self.session, self._applet_id, self._version).get_changes(

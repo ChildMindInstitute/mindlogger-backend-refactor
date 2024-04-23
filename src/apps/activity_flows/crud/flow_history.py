@@ -1,7 +1,12 @@
-from sqlalchemy import any_, select
-from sqlalchemy.orm import Query
+import uuid
 
-from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
+from pydantic import parse_obj_as
+from sqlalchemy import any_, select
+from sqlalchemy.orm import Query, joinedload
+
+from apps.activities.db.schemas import ActivityHistorySchema
+from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, ActivityFlowItemHistorySchema
+from apps.activity_flows.domain.flow_full import FlowHistoryWithActivityFull
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
 
@@ -33,6 +38,24 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
+    async def load_full(self, id_versions: list[str]) -> list[FlowHistoryWithActivityFull]:
+        if not id_versions:
+            return []
+
+        query = (
+            select(ActivityFlowHistoriesSchema)
+            .options(
+                joinedload(ActivityFlowHistoriesSchema.items, innerjoin=True)
+                .joinedload(ActivityFlowItemHistorySchema.activity, innerjoin=True)
+                .joinedload(ActivityHistorySchema.items, innerjoin=True)
+            )
+            .where(ActivityFlowHistoriesSchema.id_version.in_(id_versions))
+        )
+        res = await self._execute(query)
+        data = res.unique().scalars().all()
+
+        return parse_obj_as(list[FlowHistoryWithActivityFull], data)
+
     async def get_by_applet_id(self, applet_id: str) -> list[ActivityFlowHistoriesSchema]:
         query: Query = select(ActivityFlowHistoriesSchema)
         query = query.where(ActivityFlowHistoriesSchema.applet_id == applet_id)
@@ -55,5 +78,20 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
             ActivityFlowHistoriesSchema.id.asc(),
             ActivityFlowHistoriesSchema.updated_at.asc(),
         )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def get_last_histories_by_applet(self, applet_id: uuid.UUID) -> list[ActivityFlowHistoriesSchema]:
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.join(
+            AppletHistorySchema,
+            AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id,
+        )
+        query = query.where(AppletHistorySchema.id == applet_id)
+        query = query.order_by(
+            ActivityFlowHistoriesSchema.id.desc(),
+            ActivityFlowHistoriesSchema.created_at.desc(),
+        )
+        query = query.distinct(ActivityFlowHistoriesSchema.id)
         db_result = await self._execute(query)
         return db_result.scalars().all()

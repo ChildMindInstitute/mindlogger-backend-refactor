@@ -42,28 +42,36 @@ def activity_ab_trails_ipad_create() -> ActivityCreate:
                 question={"en": "Sample A"},
                 response_type=ResponseType.ABTRAILS,
                 response_values=None,
-                config=ABTrailsConfig(device_type=ABTrailsDeviceType.TABLET, order_name=ABTrailsOrder.FIRST),
+                config=ABTrailsConfig(
+                    device_type=ABTrailsDeviceType.TABLET, order_name=ABTrailsOrder.FIRST, type=ResponseType.ABTRAILS
+                ),
                 name="ABTrails_tablet_1",
             ),
             ActivityItemCreate(
                 question={"en": "Test A"},
                 response_type=ResponseType.ABTRAILS,
                 response_values=None,
-                config=ABTrailsConfig(device_type=ABTrailsDeviceType.TABLET, order_name=ABTrailsOrder.SECOND),
+                config=ABTrailsConfig(
+                    device_type=ABTrailsDeviceType.TABLET, order_name=ABTrailsOrder.SECOND, type=ResponseType.ABTRAILS
+                ),
                 name="ABTrails_tablet_2",
             ),
             ActivityItemCreate(
                 question={"en": "Sample B"},
                 response_type=ResponseType.ABTRAILS,
                 response_values=None,
-                config=ABTrailsConfig(device_type=ABTrailsDeviceType.TABLET, order_name=ABTrailsOrder.THIRD),
+                config=ABTrailsConfig(
+                    device_type=ABTrailsDeviceType.TABLET, order_name=ABTrailsOrder.THIRD, type=ResponseType.ABTRAILS
+                ),
                 name="ABTrails_tablet_3",
             ),
             ActivityItemCreate(
                 question={"en": "Test B"},
                 response_type=ResponseType.ABTRAILS,
                 response_values=None,
-                config=ABTrailsConfig(device_type=ABTrailsDeviceType.TABLET, order_name=ABTrailsOrder.FOURTH),
+                config=ABTrailsConfig(
+                    device_type=ABTrailsDeviceType.TABLET, order_name=ABTrailsOrder.FOURTH, type=ResponseType.ABTRAILS
+                ),
                 name="ABTrails_tablet_4",
             ),
         ],
@@ -84,7 +92,9 @@ def activity_ab_trails_mobile_create() -> ActivityCreate:
                 question={"en": "Sample A"},
                 response_type=ResponseType.ABTRAILS,
                 response_values=None,
-                config=ABTrailsConfig(device_type=ABTrailsDeviceType.MOBILE, order_name=ABTrailsOrder.FIRST),
+                config=ABTrailsConfig(
+                    device_type=ABTrailsDeviceType.MOBILE, order_name=ABTrailsOrder.FIRST, type=ResponseType.ABTRAILS
+                ),
                 name="ABTrails_mobile_1",
                 is_hidden=False,
             ),
@@ -92,7 +102,9 @@ def activity_ab_trails_mobile_create() -> ActivityCreate:
                 question={"en": "Test A"},
                 response_type=ResponseType.ABTRAILS,
                 response_values=None,
-                config=ABTrailsConfig(device_type=ABTrailsDeviceType.MOBILE, order_name=ABTrailsOrder.SECOND),
+                config=ABTrailsConfig(
+                    device_type=ABTrailsDeviceType.MOBILE, order_name=ABTrailsOrder.SECOND, type=ResponseType.ABTRAILS
+                ),
                 name="ABTrails_mobile_2",
                 is_hidden=False,
             ),
@@ -100,7 +112,9 @@ def activity_ab_trails_mobile_create() -> ActivityCreate:
                 question={"en": "Sample B"},
                 response_type=ResponseType.ABTRAILS,
                 response_values=None,
-                config=ABTrailsConfig(device_type=ABTrailsDeviceType.MOBILE, order_name=ABTrailsOrder.THIRD),
+                config=ABTrailsConfig(
+                    device_type=ABTrailsDeviceType.MOBILE, order_name=ABTrailsOrder.THIRD, type=ResponseType.ABTRAILS
+                ),
                 name="ABTrails_mobile_3",
                 is_hidden=False,
             ),
@@ -108,7 +122,9 @@ def activity_ab_trails_mobile_create() -> ActivityCreate:
                 question={"en": "Test B"},
                 response_type=ResponseType.ABTRAILS,
                 response_values=None,
-                config=ABTrailsConfig(device_type=ABTrailsDeviceType.MOBILE, order_name=ABTrailsOrder.FOURTH),
+                config=ABTrailsConfig(
+                    device_type=ABTrailsDeviceType.MOBILE, order_name=ABTrailsOrder.FOURTH, type=ResponseType.ABTRAILS
+                ),
                 name="ABTrails_mobile_4",
                 is_hidden=False,
             ),
@@ -131,7 +147,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Flanker_VSR_instructions",
                 is_hidden=False,
             ),
@@ -139,7 +155,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Flanker_Practice_instructions_1",
                 is_hidden=False,
             ),
@@ -148,6 +164,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 response_type=ResponseType.FLANKER,
                 response_values=None,
                 config=FlankerConfig(
+                    type=ResponseType.FLANKER,
                     stimulus_trials=[
                         StimulusConfiguration(
                             id=StimulusConfigId(str(stimulus_id)),
@@ -187,7 +204,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Flanker_Practice_instructions_2",
                 is_hidden=False,
             ),
@@ -196,6 +213,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 response_type=ResponseType.FLANKER,
                 response_values=None,
                 config=FlankerConfig(
+                    type=ResponseType.FLANKER,
                     stimulus_trials=[
                         StimulusConfiguration(
                             id=StimulusConfigId(str(stimulus_id)),
@@ -243,7 +261,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Flanker_Practice_instructions_3",
             ),
             ActivityItemCreate(
@@ -251,6 +269,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 response_type=ResponseType.FLANKER,
                 response_values=None,
                 config=FlankerConfig(
+                    type=ResponseType.FLANKER,
                     stimulus_trials=[
                         StimulusConfiguration(
                             id=StimulusConfigId(str(stimulus_id)),
@@ -298,7 +317,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Flanker_test_instructions_1",
             ),
             ActivityItemCreate(
@@ -306,6 +325,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 response_type=ResponseType.FLANKER,
                 response_values=None,
                 config=FlankerConfig(
+                    type=ResponseType.FLANKER,
                     stimulus_trials=[
                         StimulusConfiguration(
                             id=StimulusConfigId(str(stimulus_id)),
@@ -353,7 +373,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Flanker_test_instructions_2",
             ),
             ActivityItemCreate(
@@ -361,6 +381,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 response_type=ResponseType.FLANKER,
                 response_values=None,
                 config=FlankerConfig(
+                    type=ResponseType.FLANKER,
                     stimulus_trials=[
                         StimulusConfiguration(
                             id=StimulusConfigId(str(stimulus_id)),
@@ -409,7 +430,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Flanker_test_instructions_3",
             ),
             ActivityItemCreate(
@@ -417,6 +438,7 @@ def activity_flanker_create(remote_image: str, local_image_name: str) -> Activit
                 response_type=ResponseType.FLANKER,
                 response_values=None,
                 config=FlankerConfig(
+                    type=ResponseType.FLANKER,
                     stimulus_trials=[
                         StimulusConfiguration(
                             id=StimulusConfigId(str(stimulus_id)),
@@ -478,14 +500,14 @@ def actvitiy_cst_gyroscope_create() -> ActivityCreate:
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Gyroscope_General_instruction",
             ),
             ActivityItemCreate(
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Gyroscope_Calibration_Practice_instruction",
             ),
             ActivityItemCreate(
@@ -498,6 +520,7 @@ def actvitiy_cst_gyroscope_create() -> ActivityCreate:
                     trials_number=3,
                     duration_minutes=5.0,
                     lambda_slope=20.0,
+                    type=ResponseType.STABILITYTRACKER,
                 ),
                 name="Gyroscope_Calibration_Practice",
             ),
@@ -505,7 +528,7 @@ def actvitiy_cst_gyroscope_create() -> ActivityCreate:
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Gyroscope_Test_instruction",
             ),
             ActivityItemCreate(
@@ -518,6 +541,7 @@ def actvitiy_cst_gyroscope_create() -> ActivityCreate:
                     trials_number=3,
                     duration_minutes=5.0,
                     lambda_slope=20.0,
+                    type=ResponseType.STABILITYTRACKER,
                 ),
                 name="Gyroscope_Test",
             ),
@@ -538,14 +562,14 @@ def actvitiy_cst_touch_create() -> ActivityCreate:
                 question={"en": "description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Touch_General_instruction",
             ),
             ActivityItemCreate(
                 question={"en": "Description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Touch_Calibration_Practice_instruction",
             ),
             ActivityItemCreate(
@@ -558,6 +582,7 @@ def actvitiy_cst_touch_create() -> ActivityCreate:
                     trials_number=3,
                     duration_minutes=5.0,
                     lambda_slope=20.0,
+                    type=ResponseType.STABILITYTRACKER,
                 ),
                 name="Touch_Calibration_Practice",
             ),
@@ -565,7 +590,7 @@ def actvitiy_cst_touch_create() -> ActivityCreate:
                 question={"en": "Description"},
                 response_type=ResponseType.MESSAGE,
                 response_values=None,
-                config=MessageConfig(remove_back_button=True, timer=None),
+                config=MessageConfig(remove_back_button=True, timer=None, type=ResponseType.MESSAGE),
                 name="Touch_Test_instruction",
             ),
             ActivityItemCreate(
@@ -578,6 +603,7 @@ def actvitiy_cst_touch_create() -> ActivityCreate:
                     trials_number=3,
                     duration_minutes=5.0,
                     lambda_slope=20.0,
+                    type=ResponseType.STABILITYTRACKER,
                 ),
                 name="Touch_Test",
             ),

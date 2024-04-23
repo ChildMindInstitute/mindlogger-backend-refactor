@@ -6,7 +6,7 @@ from typing import Collection
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, update
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, contains_eager
 from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
 
@@ -16,6 +16,7 @@ from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import (
+    Answer,
     AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
@@ -41,6 +42,21 @@ class _AnswersExportFilter(Filtering):
     to_date = FilterField(AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL)
 
 
+class _AnswerListFilter(Filtering):
+    respondent_ids = FilterField(AnswerItemSchema.respondent_id, method_name="filter_respondent_ids")
+
+    def filter_respondent_ids(self, field, value):
+        if not value:
+            return None
+        return and_(field.in_(value), AnswerItemSchema.is_assessment.isnot(True))
+
+    answer_id = FilterField(AnswerSchema.id)
+    submit_id = FilterField(AnswerSchema.submit_id)
+    applet_id = FilterField(AnswerSchema.applet_id)
+    activity_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id), cast=str)
+    flow_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id), cast=str)
+
+
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
     schema_class = AnswerSchema
 
@@ -51,6 +67,18 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def create_many(self, schemas: list[AnswerSchema]) -> list[AnswerSchema]:
         schemas = await self._create_many(schemas)
         return schemas
+
+    async def get_list(self, **filters) -> list[Answer]:
+        query = select(AnswerSchema).join(AnswerSchema.answer_items).options(contains_eager(AnswerSchema.answer_items))
+
+        _filters = _AnswerListFilter().get_clauses(**filters)
+        if _filters:
+            query = query.where(*_filters)
+
+        res = await self._execute(query)
+        data = res.unique().scalars().all()
+
+        return parse_obj_as(list[Answer], data)
 
     async def get_respondents_answered_activities_by_applet_id(
         self,
@@ -231,7 +259,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_identifiers_by_activity_id(
         self,
         activity_hist_ids: Collection[str],
-        respondent_id: uuid.UUID,
+        respondent_id: uuid.UUID | None = None,
+        answer_id: uuid.UUID | None = None,
     ) -> list[tuple[str, str, dict, datetime.datetime]]:
         query: Query = select(
             AnswerItemSchema.identifier,
@@ -247,7 +276,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             AnswerItemSchema.identifier.isnot(None),
             AnswerSchema.activity_history_id.in_(activity_hist_ids),
         )
-        query = query.where(AnswerSchema.respondent_id == respondent_id)
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+
+        if answer_id:
+            query = query.where(AnswerItemSchema.answer_id == answer_id)
+
         db_result = await self._execute(query)
         return db_result.all()  # noqa
 
@@ -316,9 +350,21 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = select(AnswerSchema.activity_history_id, func.max(AnswerSchema.created_at))
         query = query.where(or_(*(AnswerSchema.activity_history_id.like(f"{item}_%") for item in activity_ids)))
         if respondent_id:
-            query.where(AnswerSchema.respondent_id == respondent_id)
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
         query = query.group_by(AnswerSchema.activity_history_id)
-        query.order_by(AnswerSchema.activity_history_id)
+        query = query.order_by(AnswerSchema.activity_history_id)
+        db_result = await self._execute(query)
+        return db_result.all()  # noqa
+
+    async def get_submitted_flows_with_last_date(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+    ) -> list[tuple[str, datetime.datetime]]:
+        query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
+        query = query.where(AnswerSchema.applet_id == applet_id, AnswerSchema.flow_history_id.isnot(None))
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.group_by(AnswerSchema.flow_history_id)
+        query = query.order_by(AnswerSchema.flow_history_id)
         db_result = await self._execute(query)
         return db_result.all()  # noqa
 
