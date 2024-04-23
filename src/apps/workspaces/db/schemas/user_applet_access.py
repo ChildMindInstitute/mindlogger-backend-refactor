@@ -20,6 +20,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
+from apps.shared.enums import ColumnCommentType
 from apps.workspaces.domain.constants import UserPinRole
 from infrastructure.database.base import Base
 
@@ -39,7 +40,7 @@ class UserAppletAccessSchema(Base):
     owner_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     invitor_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     meta = Column(JSONB())
-    nickname = Column(StringEncryptedType(Unicode, get_key))
+    nickname = Column(StringEncryptedType(Unicode, get_key), comment=ColumnCommentType.ENCRYPTED)
 
     is_pinned = Column(Boolean(), default=False)
     __table_args__ = (
