@@ -203,6 +203,13 @@ class PublicAnswerDates(PublicModel):
     dates: list[datetime.date]
 
 
+class IdentifierData(InternalModel):
+    identifier: str
+    user_public_key: str
+    is_encrypted: bool
+    last_answer_date: datetime.datetime
+
+
 class Identifier(InternalModel):
     identifier: str
     user_public_key: str | None = None

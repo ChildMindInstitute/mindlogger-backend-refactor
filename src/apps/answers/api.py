@@ -8,6 +8,7 @@ from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
 from apps.activities.services import ActivityHistoryService
+from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
 from apps.answers.domain import (
     ActivitySubmissionResponse,
@@ -334,6 +335,26 @@ async def applet_activity_identifiers_retrieve(
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(
         activity_id, query_params.filters["respondent_id"]
+    )
+    return ResponseMulti(result=identifiers, count=len(identifiers))
+
+
+async def applet_flow_identifiers_retrieve(
+    applet_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    query_params: QueryParams = Depends(parse_query_params(IdentifiersQueryParams)),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[Identifier]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    flow = await FlowService(session=session).get_by_id(flow_id)
+    if not flow or flow.applet_id != applet_id:
+        raise NotFoundError("Flow not found")
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+
+    identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(
+        flow_id, query_params.filters["respondent_id"]
     )
     return ResponseMulti(result=identifiers, count=len(identifiers))
 

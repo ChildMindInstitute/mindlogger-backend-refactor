@@ -20,6 +20,7 @@ from apps.answers.domain import (
     AppletCompletedEntities,
     CompletedEntity,
     FlowSubmissionInfo,
+    IdentifierData,
     RespondentAnswerData,
     UserAnswerItemData,
     Version,
@@ -620,3 +621,31 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.applet_id == applet_id)
         result = await self._execute(query)
         return {t[0]: t[1] for t in result.all()}
+
+    async def get_flow_identifiers(self, flow_id: uuid.UUID, respondent_id: uuid.UUID) -> list[IdentifierData]:
+        query = (
+            select(
+                AnswerItemSchema.identifier,
+                AnswerItemSchema.user_public_key,
+                AnswerItemSchema.is_identifier_encrypted.label("is_encrypted"),
+                func.max(AnswerItemSchema.created_at).label("last_answer_date"),
+            )
+            .select_from(AnswerSchema)
+            .join(AnswerSchema.answer_item)
+            .where(
+                AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(flow_id),
+                AnswerItemSchema.respondent_id == respondent_id,
+                AnswerItemSchema.identifier.isnot(None),
+            )
+            .group_by(
+                AnswerItemSchema.identifier,
+                AnswerItemSchema.user_public_key,
+                AnswerItemSchema.is_identifier_encrypted,
+            )
+            .order_by(column("last_answer_date"))
+        )
+
+        result = await self._execute(query)
+        data = result.all()
+
+        return parse_obj_as(list[IdentifierData], data)

@@ -14,6 +14,7 @@ from apps.answers.api import (
     applet_answers_export,
     applet_completed_entities,
     applet_flow_answer_retrieve,
+    applet_flow_identifiers_retrieve,
     applet_submit_date_list,
     applets_completed_entities,
     create_anonymous_answer,
@@ -120,6 +121,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_identifiers_retrieve)
+
+router.get(
+    "/applet/{applet_id}/flows/{flow_id}/identifiers",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[str]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_identifiers_retrieve)
 
 router.get(
     "/applet/{applet_id}/summary/activities/{activity_id}/versions",

@@ -806,6 +806,20 @@ class AnswerService:
                 results.append(Identifier(identifier=identifier, user_public_key=key, last_answer_date=answer_date))
         return results
 
+    async def get_flow_identifiers(self, flow_id: uuid.UUID, respondent_id: uuid.UUID) -> list[Identifier]:
+        # TODO properly merge to multiinformant
+        identifier_data = await AnswersCRUD(self.answer_session).get_flow_identifiers(flow_id, respondent_id)
+        result = [
+            Identifier(
+                identifier=row.identifier,
+                last_answer_date=row.last_answer_date,
+                user_public_key=row.user_public_key if row.is_encrypted else None,
+            )
+            for row in identifier_data
+        ]
+
+        return result
+
     async def get_activity_versions(
         self,
         activity_id: uuid.UUID,
