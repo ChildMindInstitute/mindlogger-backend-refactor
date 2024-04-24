@@ -5,7 +5,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from apps.shared.enums import ColumnCommentType
 from infrastructure.database.base import Base
 from infrastructure.database.mixins import HistoryAware
 
@@ -49,7 +48,7 @@ class AnswerNoteSchema(Base):
 
     answer_id = Column(UUID(as_uuid=True), index=True)
     activity_id = Column(UUID(as_uuid=True))
-    note = Column(StringEncryptedType(Unicode, get_key), comment=ColumnCommentType.ENCRYPTED)
+    note = Column(StringEncryptedType(Unicode, get_key))
     user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
 

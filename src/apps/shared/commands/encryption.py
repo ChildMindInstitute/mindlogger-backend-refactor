@@ -5,16 +5,15 @@ import typer
 from rich import print
 from rich.style import Style
 from rich.table import Table
-from sqlalchemy import MetaData, Unicode
+from sqlalchemy import Unicode
 from sqlalchemy.dialects.postgresql import dialect
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from apps.shared.enums import ColumnCommentType
 from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
-from infrastructure.database.core import build_engine
+from infrastructure.database.base import Base
 
 app = typer.Typer()
 
@@ -48,15 +47,14 @@ def print_data_table(mapping: dict[str, list[str]]) -> None:
 
 
 async def get_table_name_column_name_map() -> dict[str, list[str]]:
-    meta = MetaData()
-    engine = build_engine(settings.database.url)
-    async with engine.connect() as conn:
-        await conn.run_sync(lambda sync_conn: meta.reflect(sync_conn.engine))
+    for app in settings.migrations_apps:
+        __import__(f"apps.{app}.db.schemas")
+
     mapping = collections.defaultdict(list)
-    for table_name, table in meta.tables.items():
-        for col in table.columns:
-            if getattr(col, "comment", "") == ColumnCommentType.ENCRYPTED:
-                mapping[table_name].append(col.name)
+    for mapper in Base.registry.mappers:
+        for column in mapper.columns:
+            if isinstance(column.type, StringEncryptedType):
+                mapping[mapper.class_.__tablename__].append(column.name)
     return mapping
 
 

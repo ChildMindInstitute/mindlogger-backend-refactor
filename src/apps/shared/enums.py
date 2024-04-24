@@ -6,7 +6,3 @@ class Language(str, Enum):
     FRENCH = "fr"
     RUSSIAN = "ru"
     UZBEK = "uz"
-
-
-class ColumnCommentType(str, Enum):
-    ENCRYPTED = "encrypted"

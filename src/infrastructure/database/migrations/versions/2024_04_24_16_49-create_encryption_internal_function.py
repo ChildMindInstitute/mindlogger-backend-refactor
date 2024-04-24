@@ -1,16 +1,16 @@
-"""encrypt internal function
+"""create encryption internal function
 
-Revision ID: f093b9d8208f
-Revises: 074adc7d5c43
-Create Date: 2024-04-23 14:51:41.505270
+Revision ID: 62843fdc3466
+Revises: 23fe6ccfb031
+Create Date: 2024-04-24 16:49:20.166831
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "f093b9d8208f"
-down_revision = "074adc7d5c43"
+revision = "62843fdc3466"
+down_revision = "23fe6ccfb031"
 branch_labels = None
 depends_on = None
 
