@@ -4,7 +4,7 @@ import uuid
 from io import BytesIO
 from typing import Any, Mapping
 
-from httpx import AsyncClient, Response
+from httpx import ASGITransport, AsyncClient, Response
 from pydantic import BaseModel
 
 from apps.authentication.domain.token import JWTClaim
@@ -15,7 +15,7 @@ from config import settings
 
 class TestClient:
     def __init__(self, app) -> None:
-        self.client = AsyncClient(app=app, base_url="http://test.com")
+        self.client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com")
         self.headers: dict[str, Any] = {}
 
     @staticmethod

@@ -31,6 +31,7 @@ from apps.applets.domain.applet import (
     AppletActivitiesBaseInfo,
     AppletRetrieveResponse,
     AppletSingleLanguageDetailForPublic,
+    AppletSingleLanguageDetailPublic,
     AppletSingleLanguageInfoPublic,
 )
 from apps.applets.domain.applet_link import AppletLink
@@ -60,7 +61,7 @@ router.get(
     "/{applet_id}",
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": AppletRetrieveResponse},
+        status.HTTP_200_OK: {"model": AppletRetrieveResponse[AppletSingleLanguageDetailPublic]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

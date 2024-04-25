@@ -50,9 +50,8 @@ async def create_report(
             if not response:
                 return
             file = UploadFile(
-                response.email.attachment,
                 io.BytesIO(base64.b64decode(response.pdf.encode())),
-                "application/pdf",
+                filename=response.email.attachment,
             )
 
             mail_service = MailingService()

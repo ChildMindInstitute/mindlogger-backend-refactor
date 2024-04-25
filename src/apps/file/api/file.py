@@ -96,6 +96,7 @@ async def _copy(file: UploadFile, path: str):
 
 
 async def convert_not_supported_audio(file: UploadFile):
+    file.filename = cast(str, file.filename)
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "video/webm":
         # store file, create task to convert
@@ -122,6 +123,7 @@ async def convert_not_supported_audio(file: UploadFile):
 
 
 async def convert_not_supported_image(file: UploadFile):
+    file.filename = cast(str, file.filename)
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "image/heic":
         # store file, create task to convert
@@ -271,6 +273,8 @@ async def answer_download(
             raise FileNotFoundError
         else:
             raise e
+    except ObjectNotFoundError:
+        raise FileNotFoundError
     return StreamingResponse(file, media_type=media_type)
 
 
@@ -341,6 +345,7 @@ async def logs_upload(
 ) -> Response[AnswerUploadedFile]:
     service = LogFileService(user.id, cdn_client)
     try:
+        file.filename = cast(str, file.filename)
         key = service.key(device_id=device_id, file_name=file.filename)
         await service.upload(device_id, file, file_id)
         url = await cdn_client.generate_presigned_url(key)

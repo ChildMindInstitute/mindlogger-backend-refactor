@@ -59,6 +59,7 @@ def single_selection_values() -> SingleSelectionValues:
         options=[
             _SingleSelectionValue(id=str(TEST_UUID), text="o1", value=0),
         ],
+        type=ResponseType.SINGLESELECT,
     )
 
 
@@ -75,6 +76,7 @@ def single_selection_config() -> SingleSelectionConfig:
         remove_back_button=False,
         set_palette=False,
         skippable_item=False,
+        type=ResponseType.SINGLESELECT,
     )
 
 
@@ -90,7 +92,8 @@ def slider_rows_values() -> SliderRowsValues:
                 min_value=0,
                 max_value=5,
             )
-        ]
+        ],
+        type=ResponseType.SLIDERROWS,
     )
 
 
@@ -99,6 +102,7 @@ def single_select_rows_values() -> SingleSelectionRowsValues:
     return SingleSelectionRowsValues(
         rows=[_SingleSelectionRow(id=str(TEST_UUID), row_name="row1")],
         options=[_SingleSelectionOption(id=str(TEST_UUID), text="option 1")],
+        type=ResponseType.SINGLESELECTROWS,
     )
 
 

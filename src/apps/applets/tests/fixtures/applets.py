@@ -85,6 +85,7 @@ def item_response_values() -> SingleSelectionValues:
                 value=0,
             )
         ],
+        type=ResponseType.SINGLESELECT,
     )
 
 
@@ -101,6 +102,7 @@ def item_config() -> SingleSelectionConfig:
         remove_back_button=False,
         skippable_item=False,
         additional_response_option=AdditionalResponseOption(text_input_option=False, text_input_required=False),
+        type=ResponseType.SINGLESELECT,
     )
 
 
