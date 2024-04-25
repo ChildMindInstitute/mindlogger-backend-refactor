@@ -521,16 +521,6 @@ class PublicAnswerExportResponse(Response[PublicAnswerExportTranslated]):
     count: int = 0
 
 
-class Version(InternalModel):
-    version: str
-    created_at: datetime.datetime
-
-
-class VersionPublic(PublicModel):
-    version: str
-    created_at: datetime.datetime
-
-
 class SafeApplet(AppletBaseInfo, InternalModel):
     id: uuid.UUID
     version: str

@@ -52,7 +52,6 @@ from apps.answers.domain import (
     SubmissionDate,
     SummaryActivity,
     SummaryActivityFlow,
-    Version,
 )
 from apps.answers.errors import (
     ActivityIsNotAssessment,
@@ -69,6 +68,7 @@ from apps.answers.errors import (
 )
 from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
+from apps.applets.domain.applet_history import Version
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
 from apps.mailing.domain import MessageSchema

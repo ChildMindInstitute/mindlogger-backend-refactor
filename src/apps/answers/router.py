@@ -44,8 +44,9 @@ from apps.answers.domain import (
     PublicReviewFlow,
     PublicSummaryActivity,
     PublicSummaryActivityFlow,
-    VersionPublic,
 )
+from apps.applets.api.applets import applet_flow_versions_data_retrieve
+from apps.applets.domain.applet_history import VersionPublic
 from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, Response, ResponseMulti
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
 
@@ -141,6 +142,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_versions_retrieve)
+
+router.get(
+    "/applet/{applet_id}/flows/{flow_id}/versions",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[VersionPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_versions_data_retrieve)
 
 router.get(
     "/applet/{applet_id}/activities/{activity_id}/answers",

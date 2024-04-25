@@ -23,10 +23,10 @@ from apps.answers.domain import (
     IdentifierData,
     RespondentAnswerData,
     UserAnswerItemData,
-    Version,
 )
 from apps.answers.errors import AnswerNotFoundError
 from apps.applets.db.schemas import AppletHistorySchema
+from apps.applets.domain.applet_history import Version
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
@@ -627,7 +627,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             select(
                 AnswerItemSchema.identifier,
                 AnswerItemSchema.user_public_key,
-                AnswerItemSchema.is_identifier_encrypted.label("is_encrypted"),
+                AnswerItemSchema.is_identifier_encrypted.label("is_encrypted"),  # type: ignore[attr-defined]
                 func.max(AnswerItemSchema.created_at).label("last_answer_date"),
             )
             .select_from(AnswerSchema)

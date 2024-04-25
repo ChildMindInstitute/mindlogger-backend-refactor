@@ -34,7 +34,6 @@ from apps.answers.domain import (
     PublicSummaryActivity,
     PublicSummaryActivityFlow,
     ReviewsCount,
-    VersionPublic,
 )
 from apps.answers.filters import (
     AnswerExportFilters,
@@ -46,6 +45,7 @@ from apps.answers.filters import (
 from apps.answers.service import AnswerService
 from apps.applets.crud import AppletsCRUD
 from apps.applets.db.schemas import AppletSchema
+from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user

@@ -15,13 +15,19 @@ class UserPublic(PublicModel):
     last_name: str
 
 
-class History(InternalModel):
+class Version(InternalModel):
     version: str
+    created_at: datetime.datetime
+
+
+class VersionPublic(PublicModel):
+    version: str
+    created_at: datetime.datetime
+
+
+class History(Version):
     creator: User
-    created_at: datetime.datetime
 
 
-class PublicHistory(PublicModel):
-    version: str
+class PublicHistory(VersionPublic):
     creator: UserPublic
-    created_at: datetime.datetime

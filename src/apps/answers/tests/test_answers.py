@@ -284,7 +284,8 @@ class TestAnswerActivityItems(BaseTest):
     summary_activity_flows_url = "/answers/applet/{applet_id}/summary/flows"
     activity_identifiers_url = f"{summary_activities_url}/{{activity_id}}/identifiers"
     flow_identifiers_url = "/answers/applet/{applet_id}/flows/{flow_id}/identifiers"
-    versions_url = f"{summary_activities_url}/{{activity_id}}/versions"
+    activity_versions_url = f"{summary_activities_url}/{{activity_id}}/versions"
+    flow_versions_url = "/answers/applet/{applet_id}/flows/{flow_id}/versions"
 
     answers_for_activity_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers"
     applet_answers_export_url = "/answers/applet/{applet_id}/data"
@@ -1409,11 +1410,11 @@ class TestAnswerActivityItems(BaseTest):
                 assert data[i]["identifier"] == _answer.answer.identifier
                 assert data[i]["userPublicKey"] == _answer.answer.user_public_key
 
-    async def test_get_versions(self, mock_kiq_report, client, tom, applet):
+    async def test_get_activity_versions(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
 
         response = await client.get(
-            self.versions_url.format(
+            self.activity_versions_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
             )
@@ -1423,6 +1424,22 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["version"] == applet.version
         assert response.json()["result"][0]["createdAt"]
+
+    async def test_get_flow_versions(self, mock_kiq_report, client, tom, applet_with_flow: AppletFull):
+        client.login(tom)
+
+        response = await client.get(
+            self.flow_versions_url.format(
+                applet_id=applet_with_flow.id,
+                flow_id=applet_with_flow.activity_flows[0].id,
+            )
+        )
+
+        assert response.status_code == 200
+        assert response.json()["count"] == 1
+        data = response.json()["result"]
+        assert set(data[0].keys()) == {"version", "createdAt"}
+        assert response.json()["result"][0]["version"] == applet_with_flow.version
 
     async def test_get_summary_activities(self, mock_kiq_report, client, tom, applet):
         client.login(tom)
