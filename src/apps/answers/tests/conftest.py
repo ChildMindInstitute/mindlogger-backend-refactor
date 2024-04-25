@@ -117,12 +117,26 @@ def client_meta() -> ClientMeta:
 async def applet_with_flow(session: AsyncSession, applet_minimal_data: AppletCreate, tom: User) -> AppletFull:
     data = applet_minimal_data.copy(deep=True)
     data.display_name = "applet with flow"
+
+    second_activity = data.activities[0].copy(deep=True)
+    second_activity.name = data.activities[0].name + " second"
+    second_activity.key = uuid.uuid4()
+    data.activities.append(second_activity)
+
     data.activity_flows = [
         FlowCreate(
             name="flow",
             description={Language.ENGLISH: "description"},
             items=[FlowItemCreate(activity_key=data.activities[0].key)],
-        )
+        ),
+        FlowCreate(
+            name="flow2",
+            description={Language.ENGLISH: "description2"},
+            items=[
+                FlowItemCreate(activity_key=data.activities[0].key),
+                FlowItemCreate(activity_key=data.activities[1].key),
+            ],
+        ),
     ]
     applet_create = AppletCreate(**data.dict())
     srv = AppletService(session, tom.id)

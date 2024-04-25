@@ -23,6 +23,7 @@ from apps.answers.api import (
     note_edit,
     note_list,
     review_activity_list,
+    review_flow_list,
     summary_activity_flow_list,
     summary_activity_list,
     summary_latest_report_retrieve,
@@ -39,6 +40,7 @@ from apps.answers.domain import (
     PublicAnswerDates,
     PublicAnswerExport,
     PublicReviewActivity,
+    PublicReviewFlow,
     PublicSummaryActivity,
     PublicSummaryActivityFlow,
     VersionPublic,
@@ -78,6 +80,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(review_activity_list)
+
+router.get(
+    "/applet/{applet_id}/review/flows",
+    status_code=status.HTTP_200_OK,
+    response_model=ResponseMulti[PublicReviewFlow],
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(review_flow_list)
 
 router.get(
     "/applet/{applet_id}/summary/activities",

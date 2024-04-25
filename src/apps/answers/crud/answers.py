@@ -19,6 +19,7 @@ from apps.answers.domain import (
     AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
+    FlowSubmissionInfo,
     RespondentAnswerData,
     UserAnswerItemData,
     Version,
@@ -82,6 +83,42 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         data = res.unique().scalars().all()
 
         return parse_obj_as(list[Answer], data)
+
+    async def get_flow_submission_list(
+        self, *, created_date: datetime.date | None = None, **filters
+    ) -> list[FlowSubmissionInfo]:
+        """
+        @param created_date: submission max answer date
+        @param filters: see supported filters: _AnswerListFilter
+        """
+        created_at = func.max(AnswerItemSchema.created_at)
+        query = (
+            select(
+                AnswerSchema.submit_id,
+                AnswerSchema.flow_history_id,
+                AnswerSchema.applet_id,
+                AnswerSchema.version,
+                created_at.label("created_at"),
+                func.max(AnswerItemSchema.end_datetime).label("end_datetime"),
+            )
+            .join(AnswerSchema.answer_item)
+            .where(AnswerSchema.flow_history_id.isnot(None))
+            .group_by(
+                AnswerSchema.submit_id, AnswerSchema.flow_history_id, AnswerSchema.applet_id, AnswerSchema.version
+            )
+            .order_by(created_at)
+        )
+
+        _filters = _AnswerListFilter().get_clauses(**filters)
+        if _filters:
+            query = query.where(*_filters)
+        if created_date:
+            query = query.having(func.date(created_at) == created_date)
+
+        res = await self._execute(query)
+        data = res.all()
+
+        return parse_obj_as(list[FlowSubmissionInfo], data)
 
     async def get_respondents_answered_activities_by_applet_id(
         self,

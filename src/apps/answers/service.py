@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist
-from apps.activity_flows.crud import FlowsHistoryCRUD
+from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain import AlertMessage
@@ -47,7 +47,9 @@ from apps.answers.domain import (
     Identifier,
     ReportServerResponse,
     ReviewActivity,
+    ReviewFlow,
     ReviewsCount,
+    SubmissionDate,
     SummaryActivity,
     SummaryActivityFlow,
     Version,
@@ -278,6 +280,48 @@ class AnswerService:
                         )
 
         return list(activity_map.values())
+
+    async def get_review_flows(
+        self,
+        applet_id: uuid.UUID,
+        respondent_id: uuid.UUID,
+        created_date: datetime.date,
+    ) -> list[ReviewFlow]:
+        await self._validate_applet_activity_access(applet_id, respondent_id)
+
+        submissions_coro = AnswersCRUD(self.answer_session).get_flow_submission_list(
+            applet_id=applet_id, respondent_ids=[respondent_id], created_date=created_date
+        )
+        flows_coro = FlowsCRUD(self.session).get_by_applet_id(applet_id)
+        submissions, flows = await asyncio.gather(submissions_coro, flows_coro)
+
+        flow_map: dict[uuid.UUID, ReviewFlow] = dict()
+        for flow in flows:
+            flow_map[flow.id] = ReviewFlow(id=flow.id, name=flow.name)
+
+        if submissions:
+            old_flow_submission_dates: dict[uuid.UUID, list[SubmissionDate]] = defaultdict(list)
+            flow_history_ids = set()
+            for submission in submissions:
+                flow_id, _ = HistoryAware.split_id_version(submission.flow_history_id)
+                _submission_date = SubmissionDate.from_orm(submission)
+                if _flow := flow_map.get(flow_id):
+                    _flow.answer_dates.append(_submission_date)  # type: ignore[arg-type]
+                else:
+                    old_flow_submission_dates[flow_id].append(_submission_date)
+                    flow_history_ids.add(submission.flow_history_id)
+
+            if flow_history_ids:
+                flow_histories = await FlowsHistoryCRUD(self.session).get_by_id_versions(list(flow_history_ids))
+                for flow_history in flow_histories:
+                    if flow_history.id not in flow_map:
+                        flow_map[flow_history.id] = ReviewFlow(
+                            id=flow_history.id,
+                            name=flow_history.name,
+                            answer_dates=old_flow_submission_dates[flow_history.id],
+                        )
+
+        return list(flow_map.values())
 
     async def get_applet_submit_dates(
         self,
@@ -584,6 +628,7 @@ class AnswerService:
                     items=current_activity_items,
                     reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
                     created_at=schema.created_at,
+                    updated_at=schema.updated_at,
                 )
             )
         return results
