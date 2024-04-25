@@ -22,12 +22,13 @@ class AnswerSchema(HistoryAware, MigratedMixin, Base):
     is_flow_completed = Column(Boolean(), nullable=True)
     migrated_data = Column(JSONB())
 
-    answer_items = relationship(
+    answer_item = relationship(
         "AnswerItemSchema",
         order_by=lambda: asc(AnswerItemSchema.created_at),
         primaryjoin=(
             lambda: and_(AnswerSchema.id == AnswerItemSchema.answer_id, AnswerItemSchema.is_assessment.isnot(True))  # type: ignore[has-type]
         ),
+        uselist=False,
         lazy="noload",
     )
 

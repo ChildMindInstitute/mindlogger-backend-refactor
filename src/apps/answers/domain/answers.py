@@ -1,9 +1,10 @@
 import datetime
 import uuid
 from copy import deepcopy
-from typing import Any
+from typing import Any, Generic
 
 from pydantic import BaseModel, Field, root_validator, validator
+from pydantic.generics import GenericModel
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
 from apps.activities.domain.activity_history import (
@@ -18,6 +19,7 @@ from apps.answers.domain.answer_items import AnswerItem, ItemAnswerCreate
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
+from apps.shared.domain.types import _BaseModel
 from apps.shared.locale import I18N
 
 
@@ -47,7 +49,7 @@ class Answer(InternalModel):
     migrated_updated: datetime.datetime | None = None
     is_deleted: bool
 
-    answer_items: list[AnswerItem]
+    answer_item: AnswerItem
 
 
 class Text(InternalModel):
@@ -136,10 +138,13 @@ class PublicAnswerDate(PublicModel):
     end_datetime: datetime.datetime
 
 
-class PublicReviewActivity(PublicModel):
+class ReviewItem(PublicModel, GenericModel, Generic[_BaseModel]):
     id: uuid.UUID
     name: str
-    answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
+    answer_dates: list[_BaseModel] = Field(default_factory=list)
+
+
+class PublicReviewActivity(ReviewItem[PublicAnswerDate]):
     last_answer_date: datetime.datetime | None
 
     @root_validator
@@ -151,6 +156,36 @@ class PublicReviewActivity(PublicModel):
         else:
             values["last_answer_date"] = None
         return values
+
+
+class SubmissionDate(PublicModel):
+    submit_id: uuid.UUID
+    created_at: datetime.datetime
+    end_datetime: datetime.datetime
+
+
+class ReviewFlow(ReviewItem[SubmissionDate]):
+    ...
+
+
+class PublicReviewFlow(ReviewFlow):
+    last_answer_date: datetime.datetime | None
+
+    @validator("last_answer_date", always=True)
+    def calculate_last_answer_date(cls, value, values):
+        answer_dates = values.get("answer_dates", [])
+        if answer_dates:
+            value = max(v.created_at for v in answer_dates)
+        return value
+
+
+class FlowSubmissionInfo(PublicModel):
+    submit_id: uuid.UUID
+    flow_history_id: str
+    applet_id: uuid.UUID
+    version: str
+    created_at: datetime.datetime
+    end_datetime: datetime.datetime
 
 
 class PublicSummaryActivityFlow(InternalModel):
@@ -324,6 +359,7 @@ class AnswerReview(InternalModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: Reviewer
     created_at: datetime.datetime
+    updated_at: datetime.datetime
 
 
 class AppletActivityAnswerPublic(PublicModel):
@@ -354,6 +390,7 @@ class AnswerReviewPublic(PublicModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: ReviewerPublic
     created_at: datetime.datetime
+    updated_at: datetime.datetime
 
 
 class AssessmentAnswerPublic(PublicModel):
