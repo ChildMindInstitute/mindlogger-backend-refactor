@@ -2,6 +2,7 @@ import datetime
 import http
 import re
 import uuid
+from collections import defaultdict
 from typing import Any, cast
 from unittest.mock import AsyncMock
 
@@ -149,10 +150,7 @@ async def tom_answer_activity_flow(session: AsyncSession, tom: User, applet_with
 
 
 @pytest.fixture
-async def tom_answer_activity_flow_multiple(
-    session: AsyncSession, tom: User, applet_with_flow: AppletFull
-) -> list[AnswerSchema]:
-    answer_service = AnswerService(session, tom.id)
+def applet_with_flow_answer_create(applet_with_flow: AppletFull) -> list[AppletAnswerCreate]:
     submit_id = uuid.uuid4()
     answer_data = dict(
         applet_id=applet_with_flow.id,
@@ -162,54 +160,70 @@ async def tom_answer_activity_flow_multiple(
     answer_item_data = dict(
         start_time=datetime.datetime.utcnow(),
         end_time=datetime.datetime.utcnow(),
-        user_public_key=str(tom.id),
-        identifier="encrypted_identifier",
+        user_public_key=str(uuid.uuid4()),
     )
     answers = [
         # flow#1 submission#1
-        await answer_service.create_answer(
-            AppletAnswerCreate(
-                submit_id=uuid.uuid4(),
-                flow_id=applet_with_flow.activity_flows[0].id,
-                is_flow_completed=True,
-                activity_id=applet_with_flow.activities[0].id,
-                answer=ItemAnswerCreate(item_ids=[applet_with_flow.activities[0].items[0].id], **answer_item_data),
-                **answer_data,
-            )
+        AppletAnswerCreate(
+            submit_id=uuid.uuid4(),
+            flow_id=applet_with_flow.activity_flows[0].id,
+            is_flow_completed=True,
+            activity_id=applet_with_flow.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_flow.activities[0].items[0].id],
+                identifier="encrypted_identifier",
+                **answer_item_data,
+            ),
+            **answer_data,
         ),
         # flow#2 submission#1
-        await answer_service.create_answer(
-            AppletAnswerCreate(
-                submit_id=submit_id,
-                flow_id=applet_with_flow.activity_flows[1].id,
-                is_flow_completed=False,
-                activity_id=applet_with_flow.activities[0].id,
-                answer=ItemAnswerCreate(item_ids=[applet_with_flow.activities[0].items[0].id], **answer_item_data),
-                **answer_data,
-            )
+        AppletAnswerCreate(
+            submit_id=submit_id,
+            flow_id=applet_with_flow.activity_flows[1].id,
+            is_flow_completed=False,
+            activity_id=applet_with_flow.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_flow.activities[0].items[0].id],
+                identifier="encrypted_identifierf2a1",
+                **answer_item_data,
+            ),
+            **answer_data,
         ),
-        await answer_service.create_answer(
-            AppletAnswerCreate(
-                submit_id=submit_id,
-                flow_id=applet_with_flow.activity_flows[1].id,
-                is_flow_completed=False,
-                activity_id=applet_with_flow.activities[1].id,
-                answer=ItemAnswerCreate(item_ids=[applet_with_flow.activities[1].items[0].id], **answer_item_data),
-                **answer_data,
-            )
+        AppletAnswerCreate(
+            submit_id=submit_id,
+            flow_id=applet_with_flow.activity_flows[1].id,
+            is_flow_completed=True,
+            activity_id=applet_with_flow.activities[1].id,
+            answer=ItemAnswerCreate(item_ids=[applet_with_flow.activities[1].items[0].id], **answer_item_data),
+            **answer_data,
         ),
         # flow#1 submission#2
-        await answer_service.create_answer(
-            AppletAnswerCreate(
-                submit_id=uuid.uuid4(),
-                flow_id=applet_with_flow.activity_flows[0].id,
-                is_flow_completed=True,
-                activity_id=applet_with_flow.activities[0].id,
-                answer=ItemAnswerCreate(item_ids=[applet_with_flow.activities[0].items[0].id], **answer_item_data),
-                **answer_data,
-            )
+        AppletAnswerCreate(
+            submit_id=uuid.uuid4(),
+            flow_id=applet_with_flow.activity_flows[0].id,
+            is_flow_completed=True,
+            activity_id=applet_with_flow.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_flow.activities[0].items[0].id],
+                identifier="encrypted_identifierf1a2",
+                **answer_item_data,
+            ),
+            **answer_data,
         ),
     ]
+    return answers
+
+
+@pytest.fixture
+async def tom_answer_activity_flow_multiple(
+    session: AsyncSession, tom: User, applet_with_flow_answer_create
+) -> list[AnswerSchema]:
+    answer_service = AnswerService(session, tom.id)
+    answers = []
+    for _answer in applet_with_flow_answer_create:
+        answer = await answer_service.create_answer(_answer)
+        answers.append(answer)
+
     return answers
 
 
@@ -294,16 +308,19 @@ class TestAnswerActivityItems(BaseTest):
 
     summary_activities_url = "/answers/applet/{applet_id}/summary/activities"
     summary_activity_flows_url = "/answers/applet/{applet_id}/summary/flows"
-    identifiers_url = f"{summary_activities_url}/{{activity_id}}/identifiers"
-    versions_url = f"{summary_activities_url}/{{activity_id}}/versions"
+    activity_identifiers_url = f"{summary_activities_url}/{{activity_id}}/identifiers"
+    flow_identifiers_url = "/answers/applet/{applet_id}/flows/{flow_id}/identifiers"
+    activity_versions_url = f"{summary_activities_url}/{{activity_id}}/versions"
+    flow_versions_url = "/answers/applet/{applet_id}/flows/{flow_id}/versions"
 
-    answers_for_activity_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers"
+    activity_answers_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers"
+    flow_submissions_url = "/answers/applet/{applet_id}/flows/{flow_id}/submissions"
     applet_answers_export_url = "/answers/applet/{applet_id}/data"
     applet_answers_completions_url = "/answers/applet/{applet_id}/completions"
     applets_answers_completions_url = "/answers/applet/completions"
     applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
 
-    activity_answers_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}"
+    activity_answer_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}"
     flow_submission_url = "/answers/applet/{applet_id}/flows/{flow_id}/submissions/{submit_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
 
@@ -555,7 +572,7 @@ class TestAnswerActivityItems(BaseTest):
 
         answer_id = response.json()["result"][0]["answerDates"][0]["answerId"]
         response = await client.get(
-            self.activity_answers_url.format(
+            self.activity_answer_url.format(
                 applet_id=str(answer_create.applet_id),
                 answer_id=answer_id,
                 activity_id=str(answer_create.activity_id),
@@ -570,7 +587,7 @@ class TestAnswerActivityItems(BaseTest):
     async def test_get_answer_activity(self, client: TestClient, tom: User, applet: AppletFull, answer: AnswerSchema):
         client.login(tom)
         response = await client.get(
-            self.activity_answers_url.format(
+            self.activity_answer_url.format(
                 applet_id=str(applet.id),
                 answer_id=answer.id,
                 activity_id=applet.activities[0].id,
@@ -583,7 +600,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         response = await client.get(
-            self.activity_answers_url.format(
+            self.activity_answer_url.format(
                 applet_id=str(applet.id),
                 answer_id=answer.id,
                 activity_id=uuid_zero,
@@ -596,7 +613,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         response = await client.get(
-            self.answers_for_activity_url.format(
+            self.activity_answers_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
             ),
@@ -844,11 +861,13 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == exp_cnt
         assert len(response.json()["result"]["answers"]) == exp_cnt
 
-    async def test_get_identifiers(
+    async def test_get_activity_identifiers(
         self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet: AppletFull
     ):
         client.login(tom)
-        identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
+        identifier_url = self.activity_identifiers_url.format(
+            applet_id=str(applet.id), activity_id=str(applet.activities[0].id)
+        )
         identifier_url = f"{identifier_url}?respondentId={tom.id}"
         response = await client.get(identifier_url)
         assert response.status_code == http.HTTPStatus.OK
@@ -868,12 +887,42 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["userPublicKey"] == answer_create.answer.user_public_key
         assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at
 
+    async def test_get_flow_identifiers(
+        self,
+        mock_kiq_report,
+        client,
+        tom: User,
+        applet_with_flow: AppletFull,
+        applet_with_flow_answer_create: list[AppletAnswerCreate],
+        tom_answer_activity_flow_multiple,
+    ):
+        applet = applet_with_flow
+        answers = applet_with_flow_answer_create
+        client.login(tom)
+
+        for flow in applet.activity_flows:
+            flow_answers = [
+                answer for answer in answers if answer.flow_id == flow.id and answer.answer.identifier is not None
+            ]
+
+            identifier_url = self.flow_identifiers_url.format(applet_id=applet.id, flow_id=flow.id)
+            response = await client.get(identifier_url, dict(respondentId=str(tom.id)))
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["count"] == len(flow_answers)
+            data = data["result"]
+            for i, _answer in enumerate(flow_answers):
+                assert set(data[i].keys()) == {"identifier", "userPublicKey", "lastAnswerDate"}
+                assert data[i]["identifier"] == _answer.answer.identifier
+                assert data[i]["userPublicKey"] == _answer.answer.user_public_key
+
     # TODO: Move to another place, not needed any answer for test
     async def test_get_all_activity_versions_for_applet(self, client: TestClient, tom: User, applet: AppletFull):
         client.login(tom)
 
         response = await client.get(
-            self.versions_url.format(
+            self.activity_versions_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
             )
@@ -901,6 +950,22 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["id"] == str(applet.activities[0].id)
         assert not response.json()["result"][0]["isPerformanceTask"]
         assert not response.json()["result"][0]["hasAnswer"]
+
+    async def test_get_flow_versions(self, client, tom, applet_with_flow: AppletFull):
+        client.login(tom)
+
+        response = await client.get(
+            self.flow_versions_url.format(
+                applet_id=applet_with_flow.id,
+                flow_id=applet_with_flow.activity_flows[0].id,
+            )
+        )
+
+        assert response.status_code == 200
+        assert response.json()["count"] == 1
+        data = response.json()["result"]
+        assert set(data[0].keys()) == {"version", "createdAt"}
+        assert response.json()["result"][0]["version"] == applet_with_flow.version
 
     @pytest.mark.usefixtures("answer")
     async def test_get_summary_activities_has_answer_no_performance_task(
@@ -963,7 +1028,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
 
         response = await client.get(
-            self.answers_for_activity_url.format(
+            self.activity_answers_url.format(
                 applet_id=str(answer_create.applet_id),
                 activity_id=str(answer_create.activity_id),
             ),
@@ -1171,11 +1236,13 @@ class TestAnswerActivityItems(BaseTest):
         actual_last_date = payload["result"][0]["lastAnswerDate"]
         assert actual_last_date is None
 
-    async def test_get_all_types_of_identifiers(
+    async def test_get_all_types_of_activity_identifiers(
         self, client, tom: User, applet: AppletFull, session, tom_answer_item_for_applet
     ):
         client.login(tom)
-        identifier_url = self.identifiers_url.format(applet_id=str(applet.id), activity_id=str(applet.activities[0].id))
+        identifier_url = self.activity_identifiers_url.format(
+            applet_id=str(applet.id), activity_id=str(applet.activities[0].id)
+        )
         identifier_url = f"{identifier_url}?respondentId={tom.id}"
 
         answer_items = [
@@ -1265,7 +1332,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         applet_id = applet_with_reviewable_activity.id
         activity_id = applet_with_reviewable_activity.activities[0].id
-        url = self.answers_for_activity_url.format(applet_id=str(applet_id), activity_id=str(activity_id))
+        url = self.activity_answers_url.format(applet_id=str(applet_id), activity_id=str(activity_id))
         response = await client.get(url)
         assert response.status_code == 200
         payload = response.json()
@@ -1278,7 +1345,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         applet_id = applet_with_reviewable_activity.id
         activity_id = applet_with_reviewable_activity.activities[0].id
-        url = self.answers_for_activity_url.format(applet_id=str(applet_id), activity_id=str(activity_id))
+        url = self.activity_answers_url.format(applet_id=str(applet_id), activity_id=str(activity_id))
         response = await client.get(url)
         assert response.status_code == 200
         payload = response.json()
@@ -1291,7 +1358,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         applet_id = applet_with_reviewable_activity.id
         activity_id = applet_with_reviewable_activity.activities[0].id
-        url = self.answers_for_activity_url.format(applet_id=str(applet_id), activity_id=str(activity_id))
+        url = self.activity_answers_url.format(applet_id=str(applet_id), activity_id=str(activity_id))
         response = await client.get(url)
         assert response.status_code == 200
         payload = response.json()
@@ -1425,16 +1492,17 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()
         assert "result" in data
         data = data["result"]
-        assert set(data.keys()) == {"flow", "answers", "summary"}
+        assert set(data.keys()) == {"flow", "submission", "summary"}
 
-        assert len(data["answers"]) == len(applet_with_flow.activity_flows[0].items)
+        assert len(data["submission"]["answers"]) == len(applet_with_flow.activity_flows[0].items)
+        answer_data = data["submission"]["answers"][0]
         # fmt: off
-        assert set(data["answers"][0].keys()) == {
+        assert set(answer_data.keys()) == {
             "activityHistoryId", "activityId", "answer", "createdAt", "endDatetime", "events", "flowHistoryId", "id",
             "identifier", "itemIds", "migratedData", "submitId", "userPublicKey", "version"
         }
-        assert data["answers"][0]["submitId"] == str(tom_answer_activity_flow.submit_id)
-        assert data["answers"][0]["flowHistoryId"] == str(tom_answer_activity_flow.flow_history_id)
+        assert answer_data["submitId"] == str(tom_answer_activity_flow.submit_id)
+        assert answer_data["flowHistoryId"] == str(tom_answer_activity_flow.flow_history_id)
 
         assert set(data["flow"].keys()) == {
             "id", "activities", "createdAt", "description", "hideBadge", "idVersion", "isHidden", "isSingleReport",
@@ -1515,3 +1583,137 @@ class TestAnswerActivityItems(BaseTest):
         assert flow_data
         assert flow_data["name"] == applet_with_flow.activity_flows[0].name
         assert flow_data["hasAnswer"] is False
+
+    async def test_get_flow_submissions(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow
+    ):
+        client.login(tom)
+        url = self.flow_submissions_url.format(
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+        )
+        response = await client.get(url, dict(respondentId=str(tom.id)))
+        assert response.status_code == 200
+        data = response.json()
+        assert set(data.keys()) == {"result", "count"}
+        assert data["count"] == 1
+        data = data["result"]
+        assert set(data.keys()) == {"flows", "submissions"}
+
+        assert len(data["submissions"]) == 1
+        submission_data = data["submissions"][0]
+        assert set(submission_data.keys()) == {
+            "answers",
+            "appletId",
+            "createdAt",
+            "endDatetime",
+            "flowHistoryId",
+            "isCompleted",
+            "submitId",
+            "version",
+        }
+        assert submission_data["submitId"] == str(tom_answer_activity_flow.submit_id)
+        answer_data = submission_data["answers"][0]
+        assert answer_data["flowHistoryId"] == str(tom_answer_activity_flow.flow_history_id)
+
+        assert len(data["flows"]) == 1
+        flow_data = data["flows"][0]
+        # fmt: off
+        assert set(flow_data.keys()) == {
+            "id", "activities", "createdAt", "description", "hideBadge", "idVersion", "isHidden", "isSingleReport",
+            "name", "order", "reportIncludedActivityName", "reportIncludedItemName"
+        }
+        assert len(flow_data["activities"]) == len(applet_with_flow.activity_flows[0].items)
+        assert set(flow_data["activities"][0].keys()) == {
+            "createdAt", "isSkippable", "showAllAtOnce", "subscaleSetting", "order", "name", "isHidden",
+            "scoresAndReports", "isReviewable", "idVersion", "items", "performanceTaskType", "responseIsEditable",
+            "appletId", "reportIncludedItemName", "description", "id", "splashScreen", "image"
+        }
+        assert len(flow_data["activities"][0]["items"]) == len(applet_with_flow.activities[0].items)
+        assert set(flow_data["activities"][0]["items"][0].keys()) == {
+            "activityId", "allowEdit", "conditionalLogic", "config", "id", "idVersion", "isHidden", "name", "order",
+            "question", "responseType", "responseValues"
+        }
+        # fmt: on
+        assert flow_data["idVersion"] == tom_answer_activity_flow.flow_history_id
+
+    @pytest.mark.parametrize(
+        "query_params",
+        (
+            dict(identifiers="nothing"),
+            dict(versions="0.0.0"),
+            dict(respondentId=str(uuid.uuid4())),
+        ),
+    )
+    async def test_get_flow_submissions_filters_no_data(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow, query_params
+    ):
+        client.login(tom)
+        url = self.flow_submissions_url.format(
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+        )
+        query_params.setdefault("respondentId", str(tom.id))
+        response = await client.get(url, query_params)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 0
+        assert not data["result"]["submissions"]
+        assert not data["result"]["flows"]
+
+    @pytest.mark.parametrize(
+        "flow_index,query_params,total",
+        (
+            (0, dict(identifiers="encrypted_identifier"), 1),
+            (0, dict(identifiers="encrypted_identifierf1a2"), 1),
+            (0, dict(identifiers="encrypted_identifier,encrypted_identifierf1a2"), 2),
+            (0, dict(versions="1.1.0"), 2),
+            (1, dict(versions="1.1.0"), 1),
+            (1, dict(identifiers="encrypted_identifierf2a1"), 1),
+        ),
+    )
+    async def test_get_flow_submissions_filters(
+        self,
+        mock_kiq_report,
+        client,
+        tom: User,
+        applet_with_flow: AppletFull,
+        applet_with_flow_answer_create: list[AppletAnswerCreate],
+        tom_answer_activity_flow_multiple,
+        flow_index,
+        query_params,
+        total,
+    ):
+        client.login(tom)
+        flow_id = applet_with_flow.activity_flows[flow_index].id
+        url = self.flow_submissions_url.format(
+            applet_id=applet_with_flow.id,
+            flow_id=flow_id,
+        )
+        submissions = defaultdict(list)
+        for answer in applet_with_flow_answer_create:
+            if answer.flow_id != flow_id:
+                continue
+            if versions := query_params.get("versions"):
+                if answer.version not in versions.split(","):
+                    continue
+            submissions[answer.submit_id].append(answer)
+        # apply filters
+        filtered_submissions = {}
+        for submit_id, _answers in submissions.items():
+            if identifiers := query_params.get("identifiers"):
+                if not any(a.answer.identifier in identifiers.split(",") for a in _answers):
+                    continue
+            filtered_submissions[submit_id] = _answers
+
+        query_params.setdefault("respondentId", str(tom.id))
+        response = await client.get(url, query_params)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == total
+        assert data["count"] == len(filtered_submissions)
+        assert len(data["result"]["submissions"]) == data["count"]
+        for s in data["result"]["submissions"]:
+            submit_id = uuid.UUID(s["submitId"])
+            assert submit_id in filtered_submissions
+            assert len(filtered_submissions[submit_id]) == len(s["answers"])

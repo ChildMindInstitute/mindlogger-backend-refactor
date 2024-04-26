@@ -243,7 +243,7 @@ class WorkspaceService:
 
     async def get_arbitrary_info_if_use_arbitrary(self, applet_id: uuid.UUID) -> WorkspaceArbitrary | None:
         schema = await UserWorkspaceCRUD(self.session).get_by_applet_id(applet_id)
-        if not schema or not schema.use_arbitrary:
+        if not schema or not schema.use_arbitrary or not schema.database_uri:
             return None
         try:
             return WorkspaceArbitrary.from_orm(schema) if schema else None
@@ -252,7 +252,7 @@ class WorkspaceService:
 
     async def get_arbitrary_info_by_owner_id_if_use_arbitrary(self, owner_id: uuid.UUID) -> WorkspaceArbitrary | None:
         schema = await UserWorkspaceCRUD(self.session).get_by_user_id(owner_id)
-        if not schema or not schema.use_arbitrary:
+        if not schema or not schema.use_arbitrary or not schema.database_uri:
             return None
         try:
             return WorkspaceArbitrary.from_orm(schema) if schema else None
