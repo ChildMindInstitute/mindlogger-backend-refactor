@@ -1,5 +1,6 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Text, Time, Unicode, and_, asc
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Text, Time, Unicode, and_, asc, false, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils import StringEncryptedType
 
@@ -73,3 +74,11 @@ class AnswerItemSchema(Base):
     migrated_data = Column(JSONB())
     assessment_activity_id = Column(Text(), nullable=True, index=True)
     tz_offset = Column(Integer, nullable=True, comment="Local timezone offset in minutes")
+
+    @hybrid_property
+    def is_identifier_encrypted(self):
+        return (self.migrated_data or {}).get("is_identifier_encrypted") is not False
+
+    @is_identifier_encrypted.expression  # type: ignore[no-redef]
+    def is_identifier_encrypted(cls):
+        return cls.migrated_data[text("'is_identifier_encrypted'")].astext.cast(Boolean()).isnot(false())

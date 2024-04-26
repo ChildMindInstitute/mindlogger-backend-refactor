@@ -8,6 +8,7 @@ from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, ActivityFlowItemHistorySchema
 from apps.activity_flows.domain.flow_full import FlowHistoryWithActivityFull
 from apps.applets.db.schemas import AppletHistorySchema
+from apps.applets.domain.applet_history import Version
 from infrastructure.database import BaseCRUD
 
 __all__ = ["FlowsHistoryCRUD"]
@@ -95,3 +96,19 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         query = query.distinct(ActivityFlowHistoriesSchema.id)
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_versions_data(self, flow_id: uuid.UUID) -> list[Version]:
+        query: Query = (
+            select(
+                AppletHistorySchema.version,
+                AppletHistorySchema.created_at,
+            )
+            .select_from(ActivityFlowHistoriesSchema)
+            .join(AppletHistorySchema, AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id)
+            .where(ActivityFlowHistoriesSchema.id == flow_id)
+            .order_by(AppletHistorySchema.created_at)
+        )
+        result = await self._execute(query)
+        data = result.all()
+
+        return parse_obj_as(list[Version], data)

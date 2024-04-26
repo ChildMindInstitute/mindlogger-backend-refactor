@@ -1,6 +1,6 @@
 import uuid
 
-from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD
+from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD, FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.activity_flows.domain.flow import Flow, FlowBaseInfo, FlowDuplicate, FlowSingleLanguageDetail
 from apps.activity_flows.domain.flow_create import FlowCreate, PreparedFlowItemCreate
@@ -8,6 +8,7 @@ from apps.activity_flows.domain.flow_full import FlowFull
 from apps.activity_flows.domain.flow_update import ActivityFlowReportConfiguration, FlowUpdate, PreparedFlowItemUpdate
 from apps.activity_flows.service.flow_item import FlowItemService
 from apps.applets.crud import UserAppletAccessCRUD
+from apps.applets.domain.applet_history import Version
 from apps.schedule.crud.events import EventCRUD, FlowEventsCRUD
 from apps.schedule.service.schedule import ScheduleService
 from apps.workspaces.domain.constants import Role
@@ -283,3 +284,6 @@ class FlowService:
         for schema in schemas:
             flow_map[schema.activity_flow_id].activity_ids.append(schema.activity_id)
         return flows
+
+    async def get_versions(self, flow_id: uuid.UUID) -> list[Version]:
+        return await FlowsHistoryCRUD(self.session).get_versions_data(flow_id)
