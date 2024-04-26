@@ -44,6 +44,8 @@ from apps.answers.domain import (
     AssessmentAnswerCreate,
     AssessmentItem,
     FlowSubmission,
+    FlowSubmissionDetails,
+    FlowSubmissionsDetails,
     Identifier,
     ReportServerResponse,
     ReviewActivity,
@@ -289,7 +291,7 @@ class AnswerService:
     ) -> list[ReviewFlow]:
         await self._validate_applet_activity_access(applet_id, respondent_id)
 
-        submissions_coro = AnswersCRUD(self.answer_session).get_flow_submission_list(
+        submissions_coro = AnswersCRUD(self.answer_session).get_flow_submission_data(
             applet_id=applet_id, respondent_ids=[respondent_id], created_date=created_date
         )
         flows_coro = FlowsCRUD(self.session).get_by_applet_id(applet_id)
@@ -426,7 +428,7 @@ class AnswerService:
         applet_id: uuid.UUID,
         flow_id: uuid.UUID,
         submit_id: uuid.UUID,
-    ) -> FlowSubmission:
+    ) -> FlowSubmissionDetails:
         # TODO properly merge to multiinformant using subject ids
         allowed_respondents = await self._get_allowed_respondents(applet_id)
 
@@ -469,9 +471,17 @@ class AnswerService:
         flows = await FlowsHistoryCRUD(self.session).load_full([flow_history_id])
         assert flows
 
-        submission = FlowSubmission(
+        submission = FlowSubmissionDetails(
+            submission=FlowSubmission(
+                submit_id=submit_id,
+                flow_history_id=flow_history_id,
+                applet_id=applet_id,
+                version=answer_result[0].version,
+                created_at=max([a.created_at for a in answer_result]),
+                end_datetime=max([a.end_datetime for a in answer_result]),
+                answers=answer_result,
+            ),
             flow=flows[0],
-            answers=answer_result,
         )
 
         return submission
@@ -866,6 +876,21 @@ class AnswerService:
             activity_answer.version = answer.version
             activity_answers.append(activity_answer)
         return activity_answers
+
+    async def get_flow_submissions(
+        self,
+        flow_id: uuid.UUID,
+        filters: QueryParams,
+    ) -> tuple[FlowSubmissionsDetails, int]:
+        submissions, total = await AnswersCRUD(self.answer_session).get_flow_submissions(
+            flow_id, page=filters.page, limit=filters.limit, is_completed=True, **filters.filters
+        )
+        flow_history_ids = {s.flow_history_id for s in submissions}
+        flows = []
+        if flow_history_ids:
+            flows = await FlowsHistoryCRUD(self.session).load_full(list(flow_history_ids))
+
+        return FlowSubmissionsDetails(submissions=submissions, flows=flows), total
 
     async def get_assessments_count(self, answer_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
         answer_reviewers_t = await AnswerItemsCRUD(self.answer_session).get_reviewers_by_answers(answer_ids)

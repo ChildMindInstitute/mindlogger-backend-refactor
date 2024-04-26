@@ -276,13 +276,59 @@ class ActivitySubmissionResponse(ActivitySubmission):
 
 
 class FlowSubmission(PublicModel):
-    flow: FlowHistoryWithActivityFull
+    submit_id: uuid.UUID
+    flow_history_id: str
+    applet_id: uuid.UUID
+    version: str
+    created_at: datetime.datetime
+    end_datetime: datetime.datetime | None = None
+    is_completed: bool | None = None
     answers: list[ActivityAnswer]
+
+
+class FlowSubmissionsDetails(PublicModel):
+    submissions: list[FlowSubmission]
+    flows: list[FlowHistoryWithActivityFull]
+
+
+class FlowSubmissionsResponse(PublicModel):
+    submissions: list[FlowSubmission]
+    flows: list[FlowHistoryWithActivityFlat]
+
+    @validator("flows", pre=True)
+    def format_flows(cls, value, values):
+        if value:
+            if isinstance(value[0], dict) and "items" in value[0]:
+                _values = []
+                for _value in value:
+                    data = deepcopy(_value)
+                    del data["items"]
+                    data["activities"] = [item["activity"] for item in _value["items"]]
+                    _values.append(data)
+                value = _values
+            elif isinstance(value[0], FlowHistoryWithActivityFull):
+                _values = []
+                for _value in value:
+                    data = _value.dict(exclude={"items"})
+                    data["activities"] = [item.activity for item in _value.items]
+                    _values.append(data)
+                value = _values
+
+        return value
+
+
+class PublicFlowSubmissionsResponse(Response[FlowSubmissionsResponse]):
+    count: int = 0
+
+
+class FlowSubmissionDetails(PublicModel):
+    submission: FlowSubmission
+    flow: FlowHistoryWithActivityFull
 
 
 class FlowSubmissionResponse(PublicModel):
+    submission: FlowSubmission
     flow: FlowHistoryWithActivityFlat
-    answers: list[ActivityAnswer]
     summary: SubmissionSummary | None = None
 
     @validator("flow", pre=True)
@@ -302,7 +348,7 @@ class FlowSubmissionResponse(PublicModel):
     @validator("summary", always=True)
     def generate_summary(cls, value, values):
         if not value:
-            answers: list[ActivityAnswer] = values["answers"]
+            answers: list[ActivityAnswer] = values["submission"].answers
             if answers:
                 value = SubmissionSummary(
                     end_datetime=answers[0].end_datetime,

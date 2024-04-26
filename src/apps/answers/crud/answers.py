@@ -4,7 +4,7 @@ import uuid
 from typing import Collection
 
 from pydantic import parse_obj_as
-from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, update
+from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Query, contains_eager
 from sqlalchemy.sql import Values
@@ -19,6 +19,7 @@ from apps.answers.domain import (
     AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
+    FlowSubmission,
     FlowSubmissionInfo,
     IdentifierData,
     RespondentAnswerData,
@@ -59,6 +60,27 @@ class _AnswerListFilter(Filtering):
     created_date = FilterField(func.date(AnswerItemSchema.created_at))
 
 
+class _FlowSubmissionsFilter(Filtering):
+    respondent_id = FilterField(AnswerItemSchema.respondent_id)
+    applet_id = FilterField(AnswerSchema.applet_id)
+    versions = FilterField(AnswerSchema.version, Comparisons.IN)
+
+
+class _FlowSubmissionAggregateFilter(Filtering):
+    from_datetime = FilterField(func.max(AnswerItemSchema.end_datetime), Comparisons.GREAT_OR_EQUAL)
+    to_datetime = FilterField(func.max(AnswerItemSchema.end_datetime), Comparisons.LESS_OR_EQUAL)
+    identifiers = FilterField(func.array_agg(AnswerItemSchema.identifier), method_name="filter_by_identifiers")
+    is_completed = FilterField(func.bool_or(AnswerSchema.is_flow_completed), method_name="filter_completed")
+
+    def filter_by_identifiers(self, field, values: list | None):
+        return field.op("&&")(values)
+
+    def filter_completed(self, field, value: bool | None):
+        if value is True:
+            return field.is_(True)
+        return None
+
+
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
     schema_class = AnswerSchema
 
@@ -85,7 +107,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return parse_obj_as(list[Answer], data)
 
-    async def get_flow_submission_list(
+    async def get_flow_submission_data(
         self, *, created_date: datetime.date | None = None, **filters
     ) -> list[FlowSubmissionInfo]:
         """
@@ -120,6 +142,81 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         data = res.all()
 
         return parse_obj_as(list[FlowSubmissionInfo], data)
+
+    async def get_flow_submissions(
+        self, flow_id: uuid.UUID, *, page=None, limit=None, **filters
+    ) -> tuple[list[FlowSubmission], int]:
+        created_at = func.max(AnswerItemSchema.created_at)
+        query = (
+            select(
+                AnswerSchema.submit_id,
+                AnswerSchema.flow_history_id,
+                AnswerSchema.applet_id,
+                AnswerSchema.version,
+                created_at.label("created_at"),
+                func.max(AnswerItemSchema.end_datetime).label("end_datetime"),
+                func.bool_or(AnswerSchema.is_flow_completed).is_(True).label("is_completed"),
+                # fmt: off
+                func.array_agg(
+                    func.json_build_object(
+                        text("'id'"),
+                        AnswerSchema.id,
+                        text("'submit_id'"),
+                        AnswerSchema.submit_id,
+                        text("'version'"),
+                        AnswerSchema.version,
+                        text("'activity_history_id'"),
+                        AnswerSchema.activity_history_id,
+                        text("'flow_history_id'"),
+                        AnswerSchema.flow_history_id,
+                        text("'user_public_key'"),
+                        AnswerItemSchema.user_public_key,
+                        text("'answer'"),
+                        AnswerItemSchema.answer,
+                        text("'events'"),
+                        AnswerItemSchema.events,
+                        text("'item_ids'"),
+                        AnswerItemSchema.item_ids,
+                        text("'identifier'"),
+                        AnswerItemSchema.identifier,
+                        text("'migrated_data'"),
+                        AnswerItemSchema.migrated_data,
+                        text("'end_datetime'"),
+                        AnswerItemSchema.end_datetime,
+                        text("'created_at'"),
+                        AnswerItemSchema.created_at,
+                    )
+                ).label("answers"),
+                # fmt: on
+            )
+            .join(AnswerSchema.answer_item)
+            .where(AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(flow_id))
+            .group_by(
+                AnswerSchema.submit_id, AnswerSchema.flow_history_id, AnswerSchema.applet_id, AnswerSchema.version
+            )
+        )
+
+        _filters = _FlowSubmissionsFilter().get_clauses(**filters)
+        if _filters:
+            query = query.where(*_filters)
+
+        _filters = _FlowSubmissionAggregateFilter().get_clauses(**filters)
+        if _filters:
+            query = query.having(and_(*_filters))
+
+        query_data = query.order_by(created_at)
+        query_data = paging(query_data, page, limit)
+
+        query_count = select(func.count()).select_from(query.with_only_columns(AnswerSchema.submit_id).subquery())
+
+        coro_data = self._execute(query_data)
+        coro_count = self._execute(query_count)
+        result_data, result_count = await asyncio.gather(coro_data, coro_count)
+
+        data = result_data.all()
+        count = result_count.scalar()
+
+        return parse_obj_as(list[FlowSubmission], data), count
 
     async def get_respondents_answered_activities_by_applet_id(
         self,

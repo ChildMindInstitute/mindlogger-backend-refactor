@@ -29,6 +29,7 @@ from apps.answers.domain import (
     PublicAnswerDates,
     PublicAnswerExport,
     PublicAnswerExportResponse,
+    PublicFlowSubmissionsResponse,
     PublicReviewActivity,
     PublicReviewFlow,
     PublicSummaryActivity,
@@ -37,7 +38,7 @@ from apps.answers.domain import (
 )
 from apps.answers.filters import (
     AnswerExportFilters,
-    AppletActivityAnswerFilter,
+    AppletSubmissionsFilter,
     AppletSubmitDateFilter,
     ReviewAppletItemFilter,
     SummaryActivityFilter,
@@ -182,7 +183,7 @@ async def applet_activity_answers_list(
     activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-    query_params: QueryParams = Depends(parse_query_params(AppletActivityAnswerFilter)),
+    query_params: QueryParams = Depends(parse_query_params(AppletSubmissionsFilter)),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[AppletActivityAnswerPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
@@ -197,6 +198,27 @@ async def applet_activity_answers_list(
         review_count = answer_reviews.get(answer.answer_id, ReviewsCount())
         result.append(parse_obj_as(AppletActivityAnswerPublic, {**answer.dict(), "review_count": review_count}))
     return ResponseMulti(result=result, count=len(answers))
+
+
+async def applet_flow_submissions_list(
+    applet_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(parse_query_params(AppletSubmissionsFilter)),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> PublicFlowSubmissionsResponse:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    flow = await FlowService(session=session).get_by_id(flow_id)
+    if not flow or flow.applet_id != applet_id:
+        raise NotFoundError("Flow not found")
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+
+    submissions, total = await AnswerService(session, user.id, answer_session).get_flow_submissions(
+        flow_id, query_params
+    )
+
+    return PublicFlowSubmissionsResponse(result=submissions, count=total)
 
 
 async def summary_latest_report_retrieve(
