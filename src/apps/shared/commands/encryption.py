@@ -18,6 +18,9 @@ from infrastructure.database.base import Base
 app = typer.Typer()
 
 
+ARBITRARY_TABLES_LIST = ("answers", "answers_items")
+
+
 @app.command(short_help="Encrypt data (internal encryption in DB)")
 @coro
 async def encrypt(data: str) -> None:
@@ -52,9 +55,16 @@ async def get_table_name_column_name_map() -> dict[str, list[str]]:
 
     mapping = collections.defaultdict(list)
     for mapper in Base.registry.mappers:
+        table_name = mapper.class_.__tablename__
         for column in mapper.columns:
             if isinstance(column.type, StringEncryptedType):
-                mapping[mapper.class_.__tablename__].append(column.name)
+                if table_name in ARBITRARY_TABLES_LIST:
+                    raise ValueError(
+                        f"Table {table_name} should not contain StringEncryptedType. "
+                        "This table can be in arbitrary database and this database does not have pgcrypto extenstion"
+                    )
+                else:
+                    mapping[table_name].append(column.name)
     return mapping
 
 
