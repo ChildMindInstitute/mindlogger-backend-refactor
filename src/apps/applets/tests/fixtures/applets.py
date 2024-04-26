@@ -214,6 +214,49 @@ async def applet_four(
 
 
 @pytest.fixture
+async def applet_one_lucy_manager(session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.MANAGER)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_lucy_respondent(
+    session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
+    return applet_one
+
+
+@pytest.fixture
 async def applet_one_lucy_editor(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.EDITOR)
     return applet_one
+
+
+@pytest.fixture
+async def applet_one_lucy_coordinator(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.COORDINATOR)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_with_all_performance_tasks(
+    applet_minimal_data: AppletCreate,
+    session: AsyncSession,
+    tom: User,
+    activity_ab_trails_ipad_create: ActivityCreate,
+    activity_ab_trails_mobile_create: ActivityCreate,
+    activity_flanker_create: ActivityCreate,
+    actvitiy_cst_gyroscope_create: ActivityCreate,
+    actvitiy_cst_touch_create: ActivityCreate,
+) -> AppletFull:
+    data = applet_minimal_data.copy(deep=True)
+    data.activities = [
+        activity_ab_trails_ipad_create,
+        activity_ab_trails_mobile_create,
+        activity_flanker_create,
+        actvitiy_cst_gyroscope_create,
+        actvitiy_cst_touch_create,
+    ]
+    applet = await AppletService(session, tom.id).create(data)
+    return applet
