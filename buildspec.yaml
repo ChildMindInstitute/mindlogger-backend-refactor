@@ -30,6 +30,7 @@ phases:
       - echo "ECR_ADDRESS=${ECR_ADDRESS}"
       - echo "ECR_REPO=${ECR_REPO}"
       - echo "TEST_COMMAND=${TEST_COMMAND}"
+      - echo "DU=${DOCKER_USER}"
 
   pre_build:
     commands:
