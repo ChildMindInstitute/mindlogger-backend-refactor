@@ -47,9 +47,9 @@ jobs:
       - name: Run CodeBuild
         uses: aws-actions/aws-codebuild-run-build@v1
         env:
-          DOCKER_USER: $DOCKER_USER
-          DOCKER_PASSWORD: $DOCKER_PASSWORD
-          REPORT_SERVER_PUBLIC_KEY: $REPORT_SERVER_PUBLIC_KEY
+          DOCKER_USER: ${{ env.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ env.DOCKER_PASSWORD }}
+          REPORT_SERVER_PUBLIC_KEY: ${{ env.REPORT_SERVER_PUBLIC_KEY }}
         with:
           project-name: mindlogger-backend-refactor-builder
           env-vars-for-codebuild: |
