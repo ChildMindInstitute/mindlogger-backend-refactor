@@ -88,14 +88,14 @@ phases:
       - ${TEST_COMMAND}
 
       ## build image for ECR
-      - docker build -t ${ECR_REPO}:${BUILD_NAME} -f ./compose/fastapi/Dockerfile .
+      - docker build -t ${ECR_REPO}:${BUILD_NUMBER} -f ./compose/fastapi/Dockerfile .
 
       # logout from docker hub
       - docker logout
 
       # login to ECR
       - aws ecr get-login-password | docker login --username AWS --password-stdin ${ECR_ADDRESS}
-      - docker push ${ECR_REPO}:${BUILD_NAME}
+      - docker push ${ECR_REPO}:${BUILD_NUMBER}
 ##  post_build: # post_build commands run in any case (success or failure)
 ##    commands:
 artifacts:
@@ -104,4 +104,4 @@ artifacts:
     - ${GITHUB_REPO_NAME}/${OUT_DIR}/build.yml
     - ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
   discard-paths: no
-  name: ${BUILD_NAME}.zip
+  name: ${BUILD_NUMBER}.zip
