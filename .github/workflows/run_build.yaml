@@ -16,8 +16,8 @@ jobs:
   run_codebuild_project:
     runs-on: ubuntu-latest
     env:
-        GITHUB_REPO_NAME: $GITHUB_REPOSITORY
-        GITHUB_BRANCH_OR_TAG: $GITHUB_REF
+        GITHUB_REPO_NAME: ${{ github.repository }}
+        GITHUB_BRANCH_OR_TAG: ${{ github.ref }}
         BUILD_NAME: ${{github.event_name}}
         BUILD_NUMBER: ${{github.run_id}}
         ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com/
