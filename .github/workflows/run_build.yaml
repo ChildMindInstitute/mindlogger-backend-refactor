@@ -15,6 +15,18 @@ jobs:
 
   run_codebuild_project:
     runs-on: ubuntu-latest
+    env:
+        GITHUB_REPO_NAME: $GITHUB_REPOSITORY
+        GITHUB_BRANCH_OR_TAG: $GITHUB_REF
+        BUILD_NAME: ${{github.event_name}}
+        BUILD_NUMBER: ${{github.run_id}}
+        ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com/
+        TEST_COMMAND: sleep(10)
+        ECR_REPO: api-server
+        OUT_DIR: ./out
+        DOCKER_USER: $DOCKER_USER
+        DOCKER_PASSWORD: $DOCKER_PASSWORD
+        REPORT_SERVER_PUBLIC_KEY: $REPORT_SERVER_PUBLIC_KEY
     steps:
       - name: Git clone the repository
         uses: actions/checkout@v4
@@ -39,16 +51,3 @@ jobs:
           project-name: mindlogger-backend-refactor-builder
           env-vars-for-codebuild: |
            GITHUB_REPO_NAME, GITHUB_BRANCH_OR_TAG, BUILD_NAME, BUILD_NUMBER, ECR_ADDRESS, TEST_COMMAND, ECR_REPO, OUT_DIR, DOCKER_USER, DOCKER_PASSWORD, REPORT_SERVER_PUBLIC_KEY
-
-      env:
-        GITHUB_REPO_NAME: $GITHUB_REPOSITORY
-        GITHUB_BRANCH_OR_TAG: $GITHUB_REF
-        BUILD_NAME: ${{github.event_name}}
-        BUILD_NUMBER: ${{github.run_id}}
-        ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com/
-        TEST_COMMAND: sleep(10)
-        ECR_REPO: api-server
-        OUT_DIR: ./out
-        DOCKER_USER: $DOCKER_USER
-        DOCKER_PASSWORD: $DOCKER_PASSWORD
-        REPORT_SERVER_PUBLIC_KEY: $REPORT_SERVER_PUBLIC_KEY
