@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
         GITHUB_ORGANIZATION: ${{ github.repository_owner }}
-        GITHUB_REPO_NAME: ${{ github.repository_id }}
+        GITHUB_REPO_NAME: ${{ github.event.repository.name }}
         GITHUB_BRANCH_OR_TAG: ${{ github.ref }}
         BUILD_NAME: ${{github.event_name}}
         BUILD_NUMBER: ${{github.run_id}}
