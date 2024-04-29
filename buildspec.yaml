@@ -42,7 +42,7 @@ phases:
         else
           GITHUB_FETCH="${GITHUB_BRANCH_OR_TAG}:${GITHUB_BRANCH_OR_TAG}";
         fi
-      - git clone --depth 1 --recurse-submodules --quiet https://github.com/${GITHUB_ORGANIZATION}/${GITHUB_REPO_NAME}
+      - git clone --depth 1 --recurse-submodules --quiet https://github.com/${GITHUB_REPO_NAME}
       - cd ${GITHUB_REPO_NAME}
       - git fetch origin ${GITHUB_FETCH} --depth 1 --update-head-ok
       - git checkout ${GITHUB_BRANCH_OR_TAG}
