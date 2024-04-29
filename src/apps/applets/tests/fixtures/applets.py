@@ -3,6 +3,7 @@ from typing import AsyncGenerator
 
 import pytest
 from pytest import Config
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
@@ -236,6 +237,18 @@ async def applet_one_lucy_editor(session: AsyncSession, applet_one: AppletFull, 
 @pytest.fixture
 async def applet_one_lucy_coordinator(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.COORDINATOR)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_lucy_reviewer(
+    session: AsyncSession, applet_one: AppletFull, mocker: MockerFixture, tom: User, lucy: User
+) -> AppletFull:
+    mocker.patch(
+        "apps.workspaces.service.user_applet_access.UserAppletAccessService._get_default_role_meta",
+        return_value={"respondents": [str(tom.id)]},
+    )
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.REVIEWER)
     return applet_one
 
 
