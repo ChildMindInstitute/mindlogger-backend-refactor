@@ -22,7 +22,7 @@ jobs:
         BUILD_NAME: ${{github.event_name}}
         BUILD_NUMBER: ${{github.run_id}}
         ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com/
-        TEST_COMMAND: sleep(10)
+        TEST_COMMAND: sleep 1
         ECR_REPO: api-server
         OUT_DIR: ./out
 
