@@ -221,6 +221,16 @@ async def applet_two(
         await teardown_applet(global_session, applet.id)
 
 
+@pytest.fixture
+async def tom_applet_two_subject(session: AsyncSession, tom: User, applet_two: AppletFull) -> Subject:
+    applet_id = applet_two.id
+    user_id = tom.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
 @pytest.fixture(autouse=True, scope="session")
 async def applet_three(
     global_session: AsyncSession,
