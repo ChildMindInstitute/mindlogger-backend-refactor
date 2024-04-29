@@ -2,18 +2,18 @@ version: 0.2
 env:
   shell: bash
   variables:
-    DOCKER_USER:              secret-value-from-Secrets-Manager
-    DOCKER_PASSWORD:          secret-value-from-Secrets-Manager
-    REPORT_SERVER_PUBLIC_KEY: secret-value-from-Secrets-Manager
-    GITHUB_ORGANIZATION:      get-from-Jenkins
-    GITHUB_REPO_NAME:         get-from-Jenkins
-    GITHUB_BRANCH_OR_TAG:     get-from-Jenkins
-    BUILD_NAME:               get-from-Jenkins
-    BUILD_NUMBER:             get-from-Jenkins
-    ECR_ADDRESS:              get-from-Jenkins
-    TEST_COMMAND:             get-from-Jenkins
-    ECR_REPO:                 get-from-Jenkins
-    OUT_DIR:                  out
+    DOCKER_USER:              $DOCKER_USER
+    DOCKER_PASSWORD:          $DOCKER_PASSWORD
+    REPORT_SERVER_PUBLIC_KEY: $REPORT_SERVER_PUBLIC_KEY
+    GITHUB_ORGANIZATION:      $GITHUB_ORGANIZATION
+    GITHUB_REPO_NAME:         $GITHUB_REPO_NAME
+    GITHUB_BRANCH_OR_TAG:     $GITHUB_BRANCH_OR_TAG
+    BUILD_NAME:               $BUILD_NAME
+    BUILD_NUMBER:             $BUILD_NUMBER
+    ECR_ADDRESS:              $ECR_ADDRESS
+    TEST_COMMAND:             $TEST_COMMAND
+    ECR_REPO:                 $ECR_REPO
+    OUT_DIR:                  $OUT_DIR
 phases:
   install:
     #runtime-versions: ## https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html
