@@ -213,6 +213,8 @@ class TestInvite(BaseTest):
 
         assert response.json()["result"]["appletId"] == str(applet_one.id)
         assert response.json()["result"]["role"] == Role.MANAGER
+        assert response.json()["result"]["firstName"] == "first_name"
+        assert response.json()["result"]["lastName"] == "last_name"
         assert response.json()["result"]["tag"] is not None
         assert response.json()["result"]["title"] == "PHD"
 
