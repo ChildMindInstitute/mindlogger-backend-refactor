@@ -137,6 +137,8 @@ class InvitationsService:
             applet_name=applet.display_name,
             role=invitation_internal.role,
             status=invitation_internal.status,
+            first_name=invitation_internal.first_name,
+            last_name=invitation_internal.last_name,
             key=invitation_internal.key,
             user_id=invitation_internal.user_id,
             tag=invitation_internal.tag,
@@ -167,6 +169,7 @@ class InvitationsService:
             "nickname": None,
             "meta": meta.dict(),
             "tag": schema.tag,
+            "title": schema.title,
         }
 
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -212,10 +215,13 @@ class InvitationsService:
             applet_name=applet.display_name,
             role=invitation_internal.role,
             status=invitation_internal.status,
+            first_name=invitation_internal.first_name,
+            last_name=invitation_internal.last_name,
             key=invitation_internal.key,
             subjects=schema.subjects,
             user_id=invitation_internal.user_id,
             tag=invitation_internal.tag,
+            title=invitation_internal.title,
         )
 
     async def send_managers_invitation(
@@ -283,6 +289,8 @@ class InvitationsService:
             applet_name=applet.display_name,
             role=invitation_internal.role,
             status=invitation_internal.status,
+            first_name=invitation_internal.first_name,
+            last_name=invitation_internal.last_name,
             key=invitation_internal.key,
             user_id=invitation_internal.user_id,
             tag=invitation_internal.tag,

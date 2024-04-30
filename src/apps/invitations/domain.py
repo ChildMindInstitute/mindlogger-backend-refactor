@@ -226,6 +226,8 @@ class _InvitationDetail(InternalModel):
     applet_name: str
     status: str
     key: uuid.UUID
+    first_name: str
+    last_name: str
     user_id: uuid.UUID | None
     tag: str | None
 
@@ -248,6 +250,7 @@ class InvitationDetailForReviewer(_InvitationDetail):
     email: EmailStr
     role: Role = Role.REVIEWER
     subjects: list[uuid.UUID]
+    title: str | None
 
 
 class InvitationDetailForManagers(_InvitationDetail):
@@ -306,6 +309,12 @@ class _InvitationResponse(PublicModel):
     status: InvitationStatus = Field(
         description="This field represents the status for invitation",
     )
+    first_name: str = Field(
+        description="This field represents the first name of invited user",
+    )
+    last_name: str = Field(
+        description="This field represents the last name of invited user",
+    )
     user_id: uuid.UUID | None = Field(
         None,
         description="This field respresents registered user or not. " "Used for tests",
@@ -339,6 +348,9 @@ class InvitationReviewerResponse(_InvitationResponse):
     for reviewer role.
     """
 
+    email: EmailStr = Field(
+        description="This field represents the email of invited reviewer",
+    )
     subjects: list[uuid.UUID] = Field(description="This field represents the list of subject id's")
     role: Role = Role.REVIEWER
     title: str | None = Field(description="This field represents the team member title")
