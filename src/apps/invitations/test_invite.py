@@ -857,12 +857,32 @@ class TestInvite(BaseTest):
         subject = response.json()["result"]
 
         url = self.shell_acc_invite_url.format(applet_id=applet_id)
+        response = await client.post(url, dict(subjectId=subject["id"], email=email, language="fr"))
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(TestMail.mails) == 1
+        subject_model = await SubjectsCrud(session).get_by_id(subject["id"])
+        assert subject_model
+        assert subject_model.email == email
+        assert subject_model.language == "fr"
+
+    async def test_shell_invite_no_language(
+        self, client, session, shell_create_data, bob: User, applet_four: AppletFull
+    ):
+        client.login(bob)
+        email = "mm_english@mail.com"
+        applet_id = str(applet_four.id)
+        url = self.shell_acc_create_url.format(applet_id=applet_id)
+        response = await client.post(url, shell_create_data)
+        subject = response.json()["result"]
+
+        url = self.shell_acc_invite_url.format(applet_id=applet_id)
         response = await client.post(url, dict(subjectId=subject["id"], email=email))
         assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 1
         subject_model = await SubjectsCrud(session).get_by_id(subject["id"])
         assert subject_model
         assert subject_model.email == email
+        assert subject_model.language == shell_create_data["language"]
 
     async def test_invite_and_accept_invitation_as_respondent(
         self, client, session, invitation_respondent_data, tom: User, applet_one: AppletFull, bill_bronson: User
