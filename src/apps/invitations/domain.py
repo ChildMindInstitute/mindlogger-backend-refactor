@@ -238,7 +238,7 @@ class InvitationDetailForRespondent(_InvitationDetail):
     """
 
     secret_user_id: str
-    nickname: str
+    nickname: str | None
     role: Role = Role.RESPONDENT
 
 
@@ -393,8 +393,9 @@ class ShellAccountCreateRequest(PublicModel):
     _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
 
 
-class ShallAccountInvitation(PublicModel):
-    email: EmailStr
-    subject_id: uuid.UUID
+class ShellAccountInvitation(PublicModel):
+    email: EmailStr = Field(description="This field represents the email of invited subject")
+    subject_id: uuid.UUID = Field(description="This field represents the subject id")
+    language: InvitationLanguage | None = Field(description="This field represents the language of invitation")
 
     _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
