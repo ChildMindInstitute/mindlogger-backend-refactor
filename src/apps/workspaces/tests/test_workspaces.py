@@ -827,7 +827,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["type"] == "applet"
 
-    async def test_applet_get_respondent_success(self, client, tom, applet_one):
+    async def test_applet_get_respondent_success(self, client, tom, applet_one, tom_applet_one_subject: Subject):
         client.login(tom)
         url = self.workspace_get_applet_respondent.format(
             owner_id=tom.id,
@@ -842,6 +842,24 @@ class TestWorkspaces(BaseTest):
         # Secret User id is random uuid, so just check that secretUserId exists
         assert respondent["secretUserId"]
         assert respondent["lastSeen"] is None
+        assert uuid.UUID(respondent["subjectId"]) == tom_applet_one_subject.id
+
+    async def test_applet_two_get_respondent_success(self, client, tom, applet_two, tom_applet_two_subject: Subject):
+        client.login(tom)
+        url = self.workspace_get_applet_respondent.format(
+            owner_id=tom.id,
+            applet_id=str(applet_two.id),
+            respondent_id=tom.id,
+        )
+        res = await client.get(url)
+        assert res.status_code == 200
+        body = res.json()
+        respondent = body.get("result")
+        assert respondent["nickname"] == f"{tom.first_name} {tom.last_name}"
+        # Secret User id is random uuid, so just check that secretUserId exists
+        assert respondent["secretUserId"]
+        assert respondent["lastSeen"] is None
+        assert uuid.UUID(respondent["subjectId"]) == tom_applet_two_subject.id
 
     async def test_applet_get_respondent_not_found(self, client, tom, applet_two):
         client.login(tom)

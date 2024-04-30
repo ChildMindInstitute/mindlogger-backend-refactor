@@ -1090,7 +1090,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema.role == Role.RESPONDENT,
             UserAppletAccessSchema.soft_exists(),
         )
-        query = query.join(SubjectSchema, SubjectSchema.user_id == UserAppletAccessSchema.user_id)
+        query = query.join(
+            SubjectSchema,
+            and_(
+                SubjectSchema.user_id == UserAppletAccessSchema.user_id,
+                SubjectSchema.applet_id == UserAppletAccessSchema.applet_id,
+            ),
+        )
         db_result = await self._execute(query)
         db_result = db_result.all()  # noqa
         return db_result[0] if db_result else None
