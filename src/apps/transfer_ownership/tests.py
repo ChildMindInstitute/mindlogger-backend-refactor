@@ -60,7 +60,7 @@ class TestTransfer(BaseTest):
     workspace_applet_managers_list = "/workspaces/{owner_id}/applets/{applet_id}/managers"
     applet_encryption_url = f"{applet_details_url}/encryption"
 
-    async def test_initiate_transfer(self, client: TestClient, applet_one: AppletFull, tom: User):
+    async def test_initiate_transfer(self, client: TestClient, applet_one: AppletFull, tom: User, mailbox: TestMail):
         client.login(tom)
         data = {"email": "lucy@gmail.com"}
 
@@ -70,9 +70,9 @@ class TestTransfer(BaseTest):
         )
 
         assert response.status_code == http.HTTPStatus.OK
-        assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].recipients == [data["email"]]
-        assert TestMail.mails[0].subject == "Transfer ownership of an applet"
+        assert len(mailbox.mails) == 1
+        assert mailbox.mails[0].recipients == [data["email"]]
+        assert mailbox.mails[0].subject == "Transfer ownership of an applet"
 
     async def test_initiate_transfer_fail(self, client: TestClient, tom: User):
         client.login(tom)
@@ -214,7 +214,7 @@ class TestTransfer(BaseTest):
 
     @pytest.mark.usefixtures("user")
     async def test_reinvite_manager_after_transfer(
-        self, client: TestClient, user: User, mike: User, applet_one: AppletFull, tom: User
+        self, client: TestClient, user: User, mike: User, applet_one: AppletFull, tom: User, mailbox: TestMail
     ):
         client.login(tom)
         request_data = dict(
@@ -230,8 +230,8 @@ class TestTransfer(BaseTest):
             data=request_data,
         )
         assert response.status_code == http.HTTPStatus.OK
-        assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].recipients == [request_data["email"]]
+        assert len(mailbox.mails) == 1
+        assert mailbox.mails[0].recipients == [request_data["email"]]
 
         # accept manager invite
         client.login(user)
@@ -251,10 +251,10 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == http.HTTPStatus.OK
 
-        assert len(TestMail.mails) == 2
-        assert TestMail.mails[0].recipients == [data["email"]]
-        assert TestMail.mails[0].subject == "Transfer ownership of an applet"
-        body = TestMail.mails[0].body
+        assert len(mailbox.mails) == 2
+        assert mailbox.mails[0].recipients == [data["email"]]
+        assert mailbox.mails[0].subject == "Transfer ownership of an applet"
+        body = mailbox.mails[0].body
         regex = (
             r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"
         )
