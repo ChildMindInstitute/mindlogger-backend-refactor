@@ -10,6 +10,7 @@ from apps.applets.domain import Role
 from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service import AppletService
+from apps.authentication.errors import PermissionsError
 from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
@@ -306,47 +307,45 @@ class TestTransfer(BaseTest):
         assert response.status_code == ManagerInvitationExist.status_code
         assert response.json()["result"][0]["message"] == ManagerInvitationExist.message
 
-    # TODO: move these tests to the unit tests for service and crud
     async def test_init_transfer__user_to_does_not_exist(
-        self, client: TestClient, session: AsyncSession, applet_one: AppletFull, tom: User
+        self, client: TestClient, session: AsyncSession, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
         data = {"email": "userdoesnotexist@example.com"}
         applet_id = applet_one.id
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
         response = await client.post(
             self.transfer_url.format(applet_id=applet_id),
             data=data,
         )
         assert response.status_code == http.HTTPStatus.OK
-        body = TestMail.mails[0].body
-        regex = (
-            r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"
-        )
-        key = str(re.findall(regex, body)[0][4:-14])
         crud = TransferCRUD(session)
-        transfer = await crud.get_by_key(uuid.UUID(key))
+        transfer = await crud.get_by_key(key)
         assert transfer.to_user_id is None
         assert transfer.from_user_id == tom.id
 
-    # TODO: move these tests to the unit tests for service and crud
     async def test_init_transfer__user_to_exists(
-        self, client: TestClient, session: AsyncSession, lucy: User, applet_one: AppletFull, tom: User
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        lucy: User,
+        applet_one: AppletFull,
+        tom: User,
+        mocker: MockerFixture,
     ):
         client.login(tom)
-        data = {"email": "lucy@gmail.com"}
+        data = {"email": lucy.email_encrypted}
         applet_id = applet_one.id
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
         response = await client.post(
             self.transfer_url.format(applet_id=applet_id),
             data=data,
         )
         assert response.status_code == http.HTTPStatus.OK
-        body = TestMail.mails[0].body
-        regex = (
-            r"\bkey=[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}&action=accept"
-        )
-        key = str(re.findall(regex, body)[0][4:-14])
         crud = TransferCRUD(session)
-        transfer = await crud.get_by_key(uuid.UUID(key))
+        transfer = await crud.get_by_key(key)
         assert transfer.to_user_id == lucy.id
         assert transfer.from_user_id == tom.id
 
@@ -362,3 +361,87 @@ class TestTransfer(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == TransferEmailError.message
+
+    async def test_accept_transfer__user_not_in_transfer(
+        self, client: TestClient, applet_one: AppletFull, tom: User, lucy: User, user: User, mocker: MockerFixture
+    ):
+        client.login(tom)
+        data = {"email": lucy.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one.id), data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+
+        # Transfer sent for lucy
+        client.login(user)
+        resp = await client.post(self.response_url.format(applet_id=applet_one.id, key=key))
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == PermissionsError.message
+
+    async def test_accept_transfer__applet_not_in_transfer(
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        applet_two: AppletFull,
+        tom: User,
+        lucy: User,
+        mocker: MockerFixture,
+    ):
+        client.login(tom)
+        data = {"email": lucy.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one.id), data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+
+        client.login(lucy)
+        # Transfer sent for applet_one
+        resp = await client.post(self.response_url.format(applet_id=applet_two.id, key=key))
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == PermissionsError.message
+
+    async def test_decline_transfer__user_not_in_transfer(
+        self, client: TestClient, applet_one: AppletFull, tom: User, lucy: User, user: User, mocker: MockerFixture
+    ):
+        client.login(tom)
+        data = {"email": lucy.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one.id), data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+
+        # Transfer sent for lucy
+        client.login(user)
+        resp = await client.delete(self.response_url.format(applet_id=applet_one.id, key=key))
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == PermissionsError.message
+
+    async def test_decline_transfer__applet_not_in_transfer(
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        applet_two: AppletFull,
+        tom: User,
+        lucy: User,
+        mocker: MockerFixture,
+    ):
+        client.login(tom)
+        data = {"email": lucy.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one.id), data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+
+        client.login(lucy)
+        # Transfer sent for applet_one
+        resp = await client.delete(self.response_url.format(applet_id=applet_two.id, key=key))
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        result = resp.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == PermissionsError.message
