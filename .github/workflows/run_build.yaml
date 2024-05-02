@@ -1,9 +1,5 @@
 name: run_build
-on: 
-  push:
-    branches:
-      - M2-6353-Develop-backend-workflow
-
+on: [push, pull_request]
 env:
   AWS_REGION : "us-east-1"
 
