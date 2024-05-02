@@ -14,9 +14,11 @@ from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
+from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.errors import TransferEmailError
 from apps.users.domain import User
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 @pytest.fixture
@@ -42,6 +44,12 @@ async def applet_one_with_report_conf(
     await srv.set_report_configuration(applet_one.id, applet_report_configuration_data)
     applet = await srv.get_full_applet(applet_one.id)
     return applet
+
+
+@pytest.fixture
+async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
+    return applet_one
 
 
 class TestTransfer(BaseTest):
@@ -131,7 +139,9 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_accept_transfer(self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, lucy: User):
+    async def test_accept_transfer(
+        self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, lucy: User, session: AsyncSession
+    ):
         client.login(lucy)
         mock = mocker.patch("apps.transfer_ownership.crud.TransferCRUD.approve_by_key")
         key = "6a3ab8e6-f2fa-49ae-b2db-197136677da7"
@@ -144,6 +154,69 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == http.HTTPStatus.OK
         mock.assert_awaited_once_with(uuid.UUID(key), lucy.id)
+        lucy_subject = await SubjectsService(session, lucy.id).get_by_user_and_applet(lucy.id, applet_one.id)
+        assert lucy_subject
+        assert lucy_subject.email == lucy.email_encrypted
+        assert lucy_subject.nickname == f"{lucy.first_name} {lucy.last_name}"
+
+    async def test_accept_transfer_if_subject_already_exists(
+        self,
+        client: TestClient,
+        mocker: MockerFixture,
+        applet_one: AppletFull,
+        session: AsyncSession,
+        applet_one_lucy_respondent: AppletFull,
+        lucy: User,
+    ):
+        client.login(lucy)
+        mock = mocker.patch("apps.transfer_ownership.crud.TransferCRUD.approve_by_key")
+        key = "6a3ab8e6-f2fa-49ae-b2db-197136677da7"
+        response = await client.post(
+            self.response_url.format(
+                applet_id=applet_one.id,
+                key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
+            ),
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        mock.assert_awaited_once_with(uuid.UUID(key), lucy.id)
+        lucy_subject = await SubjectsService(session, lucy.id).get_by_user_and_applet(lucy.id, applet_one.id)
+        assert lucy_subject
+        assert lucy_subject.email == lucy.email_encrypted
+        assert lucy_subject.nickname == f"{lucy.first_name} {lucy.last_name}"
+
+    async def test_accept_transfer_if_deleted_subject_already_exists(
+        self,
+        client: TestClient,
+        mocker: MockerFixture,
+        applet_one: AppletFull,
+        session: AsyncSession,
+        applet_one_lucy_respondent: AppletFull,
+        lucy: User,
+    ):
+        client.login(lucy)
+        mock = mocker.patch("apps.transfer_ownership.crud.TransferCRUD.approve_by_key")
+        key = "6a3ab8e6-f2fa-49ae-b2db-197136677da7"
+
+        subject_service = SubjectsService(session, lucy.id)
+        lucy_subject = await subject_service.get_by_user_and_applet(lucy.id, applet_one.id)
+        assert lucy_subject
+        assert lucy_subject.id
+        await subject_service.delete(lucy_subject.id)
+        response = await client.post(
+            self.response_url.format(
+                applet_id=applet_one.id,
+                key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
+            ),
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        mock.assert_awaited_once_with(uuid.UUID(key), lucy.id)
+        lucy_subject = await subject_service.get_by_user_and_applet(lucy.id, applet_one.id)
+        assert lucy_subject
+        assert not lucy_subject.is_deleted
+        assert lucy_subject.email == lucy.email_encrypted
+        assert lucy_subject.nickname == f"{lucy.first_name} {lucy.last_name}"
 
     async def test_accept_wrong_transfer(self, client: TestClient, lucy: User):
         client.login(lucy)

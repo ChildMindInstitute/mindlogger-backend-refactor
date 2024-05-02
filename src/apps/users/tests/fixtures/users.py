@@ -75,6 +75,21 @@ def mike_create() -> UserCreate:
 
 
 @pytest.fixture(scope="session", autouse=True)
+def pit_create() -> UserCreate:
+    return UserCreate(
+        email=EmailStr("pit@gmail.com"),
+        password="Test1234",
+        first_name="Pit",
+        last_name="Mitch",
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def kate_create() -> UserCreate:
+    return UserCreate(email=EmailStr("kate@gmail.com"), password="Test1234", first_name="Kate", last_name="Manson")
+
+
+@pytest.fixture(scope="session", autouse=True)
 async def user(user_create: UserCreate, global_session: AsyncSession, pytestconfig: Config):
     """Use this fixture if you need for some test clean user without nothing."""
     crud = UsersCRUD(global_session)
@@ -126,6 +141,108 @@ async def mike(mike_create: UserCreate, global_session: AsyncSession, pytestconf
     crud = UsersCRUD(global_session)
     user = await _get_or_create_user(
         crud, mike_create, global_session, uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa4")
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def pit(pit_create: UserCreate, global_session: AsyncSession, pytestconfig: Config):
+    crud = UsersCRUD(global_session)
+    user = await _get_or_create_user(
+        crud, pit_create, global_session, uuid.UUID("6cde911e-8a57-47c0-b6b2-685b3664f418")
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def reviewer(global_session: AsyncSession, pytestconfig: Config):
+    crud = UsersCRUD(global_session)
+    user = await _get_or_create_user(
+        crud,
+        UserCreate(
+            email=EmailStr("reviewer@mail.com"),
+            password="Test1234!",
+            first_name="Reviewer",
+            last_name="User",
+        ),
+        global_session,
+        uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502f00"),
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def kate(kate_create: UserCreate, global_session: AsyncSession, pytestconfig: Config):
+    crud = UsersCRUD(global_session)
+    user = await _get_or_create_user(
+        crud, kate_create, global_session, uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa8")
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def patric(kate_create: UserCreate, global_session: AsyncSession, pytestconfig: Config):
+    # todo: delete after rewriting subjects tests from json to pytest fixtures
+    crud = UsersCRUD(global_session)
+    user = await _get_or_create_user(
+        crud,
+        UserCreate(
+            email=EmailStr("patric@mail.com"),
+            password="Test1234",
+            first_name="Patric",
+            last_name="Davison",
+        ),
+        global_session,
+        uuid.UUID("6a180cd9-db2b-4195-a5ac-30a8733dfb06"),
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def pit_bronson(kate_create: UserCreate, global_session: AsyncSession, pytestconfig: Config):
+    # todo: delete after rewriting subjects tests from json to pytest fixtures
+    crud = UsersCRUD(global_session)
+    kate_create.last_name = "Pit"
+    kate_create.first_name = "Bronson"
+    kate_create.email = EmailStr("pitbronson@mail.com")
+    user = await _get_or_create_user(
+        crud, kate_create, global_session, uuid.UUID("965f1d93-e64a-4f67-b76b-8427f033a864")
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def bill_bronson(global_session: AsyncSession, pytestconfig: Config):
+    # todo: delete after rewriting subjects tests from json to pytest fixtures
+    crud = UsersCRUD(global_session)
+    user = await _get_or_create_user(
+        crud,
+        UserCreate(
+            email=EmailStr("billbronson@mail.com"),
+            password="Test1234!",
+            first_name="Boll",
+            last_name="Bronson",
+        ),
+        global_session,
+        uuid.UUID("f17e92e9-d60b-4756-9ecf-74af5da05092"),
     )
     yield user
     if not pytestconfig.getoption("--keepdb"):

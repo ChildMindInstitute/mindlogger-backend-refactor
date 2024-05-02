@@ -1,7 +1,8 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import delete, select, text, update
+from sqlalchemy import and_, delete, func, select, text, update
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 from sqlalchemy.sql.functions import count
@@ -23,6 +24,7 @@ from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.shared.searching import Searching
+from apps.subjects.db.schemas import SubjectSchema
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from infrastructure.database import BaseCRUD
 
@@ -76,9 +78,23 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         )
 
-        query: Query = select(InvitationSchema, AppletSchema.display_name.label("applet_name"))
+        query: Query = select(
+            InvitationSchema,
+            AppletSchema.display_name.label("applet_name"),
+            SubjectSchema.secret_user_id.label("user_secret_id"),
+            SubjectSchema.nickname.label("nickname"),
+        )
         query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
         query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
+
+        query = query.outerjoin(
+            SubjectSchema,
+            and_(
+                InvitationSchema.meta.has_key("subject_id"),
+                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
+            ),
+        )
+
         query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
         if query_params.filters:
             query = query.where(*_InvitationFiltering().get_clauses(**query_params.filters))
@@ -90,7 +106,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
 
         db_result = await self._execute(query)
         results = []
-        for invitation, applet_name in db_result.all():
+        for invitation, applet_name, secret_id, nickname in db_result.all():
             results.append(
                 InvitationDetail(
                     id=invitation.id,
@@ -105,7 +121,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     first_name=invitation.first_name,
                     last_name=invitation.last_name,
                     created_at=invitation.created_at,
-                    nickname=invitation.nickname,
+                    nickname=nickname,
+                    secret_user_id=secret_id,
                 )
             )
         return results
@@ -144,15 +161,28 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         """Return the specific invitation
         for the user who was invited.
         """
-        query: Query = select(InvitationSchema, AppletSchema.display_name.label("applet_name"))
+        query: Query = select(
+            InvitationSchema,
+            AppletSchema.display_name.label("applet_name"),
+            SubjectSchema.secret_user_id,
+            SubjectSchema.nickname,
+        )
         query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
+        query = query.outerjoin(
+            SubjectSchema,
+            and_(
+                InvitationSchema.meta.has_key("subject_id"),
+                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
+            ),
+        )
         query = query.where(InvitationSchema.email == email)
         query = query.where(InvitationSchema.key == key)
         db_result = await self._execute(query)
         result = db_result.one_or_none()
         if not result:
             return None
-        invitation, applet_name = result
+
+        invitation, applet_name, secret_id, nickname = result
         invitation_detail_base = InvitationDetailBase(
             id=invitation.id,
             email=invitation.email,
@@ -170,7 +200,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         if invitation.role == Role.RESPONDENT:
             return InvitationDetailRespondent(
                 meta=invitation.meta,
-                nickname=invitation.nickname,
+                nickname=nickname,
+                secret_user_id=secret_id,
                 **invitation_detail_base.dict(),
             )
         elif invitation.role == Role.REVIEWER:
@@ -189,6 +220,16 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(InvitationSchema.email == email)
         query = query.where(InvitationSchema.applet_id == applet_id)
         query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
+        db_result: Result = await self._execute(query)
+        return db_result.scalar_one_or_none()
+
+    async def get_pending_subject_invitation(self, applet_id: uuid.UUID, subject_id: uuid.UUID) -> InvitationRespondent:
+        query: Query = select(InvitationSchema).where(
+            InvitationSchema.applet_id == applet_id,
+            InvitationSchema.status == InvitationStatus.PENDING,
+            InvitationSchema.soft_exists(),
+            InvitationSchema.subject_id == subject_id,
+        )
         db_result: Result = await self._execute(query)
         return db_result.scalar_one_or_none()
 
@@ -250,4 +291,27 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             InvitationSchema.role.in_(roles),
             InvitationSchema.soft_exists(),
         )
+        await self._execute(query)
+
+    async def get_meta(self, key: uuid.UUID) -> dict | None:
+        query: Query = select(InvitationSchema.meta)
+        query = query.where(InvitationSchema.key == key)
+        result_db = await self._execute(query)
+        return result_db.scalar_one_or_none()
+
+    async def get_invited_emails(self, applet_id: uuid.UUID) -> list[str]:
+        query: Query = select(InvitationSchema.email)
+        query = query.where(
+            InvitationSchema.applet_id == applet_id,
+            InvitationSchema.status == InvitationStatus.PENDING,
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def delete_by_subject(self, subject_id: uuid.UUID, statuses: list[InvitationStatus] | None = None):
+        query: Query = delete(InvitationSchema).where(
+            InvitationSchema.role == Role.RESPONDENT, InvitationSchema.subject_id == subject_id
+        )
+        if statuses:
+            query = query.where(InvitationSchema.status.in_(statuses))
         await self._execute(query)

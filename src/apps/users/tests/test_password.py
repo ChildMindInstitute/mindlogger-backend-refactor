@@ -67,7 +67,7 @@ class TestPassword:
         assert internal_response.status_code == status.HTTP_200_OK
         mock_reencrypt_kiq.assert_awaited_once()
 
-    async def test_password_recovery_web(self, client: TestClient, user_create: UserCreate):
+    async def test_password_recovery(self, client: TestClient, user_create: UserCreate):
         # Password recovery
         password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
 

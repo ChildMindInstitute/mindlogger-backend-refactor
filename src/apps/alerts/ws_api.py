@@ -77,6 +77,7 @@ async def _handle_websocket(websocket, user_id, session):
                 image=applet_history.image,
                 workspace=workspace.workspace_name,
                 respondent_id=str(alert_message.respondent_id),
+                subject_id=str(alert_message.subject_id),
             )
             await websocket.send_json(applet_alert.dict())
         except ConnectionClosed:

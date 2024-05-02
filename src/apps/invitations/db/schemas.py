@@ -1,5 +1,6 @@
-from sqlalchemy import Column, ForeignKey, String, Unicode
+from sqlalchemy import Column, ForeignKey, String, Unicode, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
@@ -20,3 +21,11 @@ class InvitationSchema(Base):
     meta = Column(JSONB())
     nickname = Column(StringEncryptedType(Unicode, get_key))
     user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+
+    @hybrid_property
+    def subject_id(self):
+        return (self.meta or {}).get("subject_id", None)
+
+    @subject_id.expression  # type: ignore[no-redef]
+    def subject_id(cls):
+        return cls.meta[text("'subject_id'")].astext.cast(UUID(as_uuid=True))

@@ -3,6 +3,7 @@ from typing import AsyncGenerator
 
 import pytest
 from pytest import Config
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
@@ -16,6 +17,8 @@ from apps.applets.service.applet import AppletService
 from apps.applets.tests import constants
 from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
+from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import Subject
 from apps.themes.service import ThemeService
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -168,6 +171,16 @@ async def applet_one(
         await teardown_applet(global_session, applet.id)
 
 
+@pytest.fixture
+async def tom_applet_one_subject(session: AsyncSession, tom: User, applet_one: AppletFull) -> Subject:
+    applet_id = applet_one.id
+    user_id = tom.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
 @pytest.fixture(autouse=True, scope="session")
 async def applet_two(
     global_session: AsyncSession,
@@ -196,6 +209,14 @@ async def applet_three(
     yield applet
     if not pytestconfig.getoption("--keepdb"):
         await teardown_applet(global_session, applet.id)
+
+
+@pytest.fixture
+async def lucy_applet_three_subject(session: AsyncSession, lucy: User, applet_three: AppletFull) -> SubjectSchema:
+    query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_three.id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return model
 
 
 @pytest.fixture(autouse=True, scope="session")

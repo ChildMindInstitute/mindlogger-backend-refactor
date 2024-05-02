@@ -2,6 +2,8 @@ import uuid
 from copy import deepcopy
 
 from fastapi import Body, Depends
+from fastapi.exceptions import RequestValidationError
+from pydantic.error_wrappers import ErrorWrapper
 
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
@@ -15,12 +17,17 @@ from apps.invitations.domain import (
     InvitationReviewerRequest,
     InvitationReviewerResponse,
     PrivateInvitationResponse,
+    ShallAccountInvitation,
 )
-from apps.invitations.errors import ManagerInvitationExist, RespondentInvitationExist
+from apps.invitations.errors import ManagerInvitationExist, NonUniqueValue, RespondentInvitationExist
 from apps.invitations.filters import InvitationQueryParams
 from apps.invitations.services import InvitationsService, PrivateInvitationService
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.query_params import QueryParams, parse_query_params
+from apps.subjects.domain import Subject
+from apps.subjects.errors import SecretIDUniqueViolationError
+from apps.subjects.services import SubjectsService
 from apps.users import UserNotFound
 from apps.users.domain import User
 from apps.users.services.user import UserService
@@ -79,13 +86,13 @@ async def invitation_respondent_send(
 ) -> Response[InvitationRespondentResponse]:
     """
     General endpoint for sending invitations to the concrete applet
-    for the concrete user giving him a roles "respondent".
+    for the concrete user giving him a role "respondent".
     """
 
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
-        invitation_srv = InvitationsService(session, user)
+        invitation_service = InvitationsService(session, user)
         try:
             invited_user = await UserService(session).get_by_email(invitation_schema.email)
             is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(Role.RESPONDENT)
@@ -94,7 +101,18 @@ async def invitation_respondent_send(
         except UserNotFound:
             pass
 
-        invitation = await invitation_srv.send_respondent_invitation(applet_id, invitation_schema)
+        subject_service = SubjectsService(session, user.id)
+        try:
+            subject = await subject_service.create(
+                Subject(creator_id=user.id, applet_id=applet_id, **invitation_schema.dict(by_alias=False))
+            )
+        except SecretIDUniqueViolationError:
+            wrapper = ErrorWrapper(
+                ValueError(NonUniqueValue()), ("body", InvitationRespondentRequest.field_alias("secret_user_id"))
+            )
+            raise RequestValidationError([wrapper])
+        assert subject.id
+        invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject.id)
 
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))
 
@@ -176,7 +194,7 @@ async def private_invitation_accept(
     session=Depends(get_session),
 ):
     async with atomic(session):
-        await PrivateInvitationService(session).accept_invitation(user.id, key)
+        await PrivateInvitationService(session).accept_invitation(user, key)
 
 
 async def invitation_decline(
@@ -187,3 +205,45 @@ async def invitation_decline(
     """General endpoint to decline the applet invitation."""
     async with atomic(session):
         await InvitationsService(session, user).decline(key)
+
+
+async def invitation_subject_send(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    schema: ShallAccountInvitation = Body(...),
+    session=Depends(get_session),
+) -> Response[InvitationRespondentResponse]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
+
+        subject_service = SubjectsService(session, user.id)
+        subject = await subject_service.get(schema.subject_id)
+        if not subject or not subject.soft_exists():
+            raise NotFoundError()
+        if subject.user_id:
+            raise ValidationError("Subject already assigned.")
+
+        # check role exists
+        invitation_service = InvitationsService(session, user)
+        try:
+            invited_user = await UserService(session).get_by_email(schema.email)
+            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(Role.RESPONDENT)
+            if is_role_exist:
+                raise RespondentInvitationExist()
+        except UserNotFound:
+            pass
+
+        invitation_schema = InvitationRespondentRequest(
+            email=schema.email,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
+            language=subject.language,
+            secret_user_id=subject.secret_user_id,
+            nickname=subject.nickname,
+        )
+        invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject.id)
+        if subject.email != schema.email:
+            await subject_service.update(subject.id, email=schema.email)
+
+    return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))

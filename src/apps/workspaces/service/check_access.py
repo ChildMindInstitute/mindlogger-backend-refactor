@@ -1,6 +1,7 @@
 import uuid
 
 from apps.answers.errors import AnswerAccessDeniedError
+from apps.shared.exception import AccessDeniedError
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
@@ -211,3 +212,46 @@ class CheckAccessService:
             if str(respondent_id) in respondents:
                 return
         raise AnswerAccessDeniedError()
+
+    async def check_subject_edit_access(self, applet_id: uuid.UUID):
+        has_access = await AppletAccessCRUD(self.session).can_invite_anyone(applet_id, self.user_id)
+
+        if not has_access:
+            raise AccessDeniedError()
+
+    async def check_subject_answer_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
+        access = await AppletAccessCRUD(self.session).get_priority_access(applet_id, self.user_id)
+        if not access or access.role not in Role.reviewers():
+            raise AccessDeniedError()
+
+        if access.role == Role.REVIEWER:
+            allowed_subject_ids = access.meta.get("subjects", [])
+            if str(subject_id) not in allowed_subject_ids:
+                raise AccessDeniedError()
+
+    async def check_answer_access(
+        self,
+        applet_id: uuid.UUID,
+        target_subject_id: uuid.UUID | None = None,
+        **kwargs,
+    ):
+        if target_subject_id:
+            await self.check_subject_answer_access(applet_id, target_subject_id)
+        else:
+            await self.check_answer_review_access(applet_id)
+
+    async def check_subject_subject_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
+        access = await AppletAccessCRUD(self.session).get_priority_access(applet_id, self.user_id)
+        role = getattr(access, "role", None)
+        if not access:
+            raise AccessDeniedError()
+        elif role in Role.inviters():
+            return True
+        elif role == Role.REVIEWER:
+            if not subject_id:
+                raise AccessDeniedError()
+            allowed_subject_ids = access.meta.get("subjects", [])
+            if str(subject_id) not in allowed_subject_ids:
+                raise AccessDeniedError()
+        else:
+            raise AccessDeniedError()

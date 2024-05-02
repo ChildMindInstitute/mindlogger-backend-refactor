@@ -42,6 +42,8 @@ from apps.shared.version import (
     VERSION_DIFFERENCE_ITEM,
     VERSION_DIFFERENCE_MINOR,
 )
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.themes.service import ThemeService
 from apps.users.services.user import UserService
 from apps.workspaces.errors import AppletEncryptionUpdateDenied
@@ -606,8 +608,18 @@ class AppletService:
         applet_link = await AppletsCRUD(self.session).create_access_link(applet_id, create_request.require_login)
         link = self._generate_link_url(create_request.require_login, applet_link)
         if not create_request.require_login:
-            await UserService(self.session).create_anonymous_respondent()
+            anonym = await UserService(self.session).create_anonymous_respondent()
             await UserAppletAccessService(self.session, self.user_id, applet_id).add_role_for_anonymous_respondent()
+            await SubjectsService(self.session, self.user_id).create(
+                Subject(
+                    applet_id=applet_id,
+                    creator_id=self.user_id,
+                    user_id=anonym.id,
+                    first_name=anonym.first_name,
+                    last_name=anonym.last_name,
+                    secret_user_id=settings.anonymous_respondent.secret_user_id,
+                )
+            )
         return AppletLink(link=link, require_login=create_request.require_login)
 
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:

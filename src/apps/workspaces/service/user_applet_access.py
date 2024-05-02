@@ -6,19 +6,19 @@ from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
-from apps.invitations.domain import InvitationDetailGeneric
+from apps.invitations.domain import InvitationDetailGeneric, RespondentMeta
 from apps.shared.exception import NotFoundError
-from apps.users import UserNotFound, UsersCRUD
+from apps.subjects.crud import SubjectsCrud
+from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
+from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 __all__ = ["UserAppletAccessService"]
 
-from apps.workspaces.domain.user_applet_access import RespondentInfo, RespondentInfoPublic
-from apps.workspaces.errors import (
-    UserAppletAccessNotFound,
-    UserSecretIdAlreadyExists,
-    UserSecretIdAlreadyExistsInInvitation,
-)
+from apps.workspaces.domain.user_applet_access import RespondentInfoPublic
+from apps.workspaces.errors import UserSecretIdAlreadyExists, UserSecretIdAlreadyExistsInInvitation
 
 
 class UserAppletAccessService:
@@ -29,24 +29,20 @@ class UserAppletAccessService:
 
     async def _get_default_role_meta(self, role: Role, user_id: uuid.UUID) -> dict:
         meta: dict = {}
-        if role == Role.RESPONDENT:
-            user = await UsersCRUD(self.session).get_by_id(user_id)
-            meta.update(
-                secretUserId=str(uuid.uuid4()),
-                nickname=f"{user.first_name} {user.last_name}",
-            )
-
         return meta
 
-    async def add_role(self, user_id: uuid.UUID, role: Role) -> UserAppletAccess:
+    async def add_role(
+        self, user_id: uuid.UUID, role: Role, meta: dict | None = None, nickname: str | None = None
+    ) -> UserAppletAccess:
         access_schema = await UserAppletAccessCRUD(self.session).get_applet_role_by_user_id(
             self._applet_id, user_id, role
         )
         if access_schema:
             return UserAppletAccess.from_orm(access_schema)
 
-        meta = await self._get_default_role_meta(role, user_id)
-        nickname = meta.pop("nickname", None)
+        _meta = await self._get_default_role_meta(role, user_id)
+        if meta:
+            _meta.update(meta)
 
         access_schema = await UserAppletAccessCRUD(self.session).save(
             UserAppletAccessSchema(
@@ -55,10 +51,30 @@ class UserAppletAccessService:
                 role=role,
                 owner_id=self._user_id,
                 invitor_id=self._user_id,
-                meta=meta,
-                nickname=nickname,
+                meta=_meta,
             )
         )
+        if role == Role.RESPONDENT:
+            user = await UsersCRUD(self.session).get_by_id(user_id)
+            access_schema_manager = await UserAppletAccessCRUD(self.session).get_applets_roles_by_priority(
+                [self._applet_id], user_id
+            )
+            if access_schema_manager:
+                nickname = user.get_full_name()
+            else:
+                nickname = None
+            subject = SubjectSchema(
+                applet_id=self._applet_id,
+                creator_id=self._user_id,
+                email=user.email_encrypted,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                secret_user_id=str(uuid.uuid4()),
+                user_id=user_id,
+                nickname=nickname,
+            )
+            await SubjectsCrud(self.session).create(subject)
+
         return UserAppletAccess.from_orm(access_schema)
 
     async def add_role_for_anonymous_respondent(
@@ -106,7 +122,6 @@ class UserAppletAccessService:
 
         owner_access = await UserAppletAccessCRUD(self.session).get_applet_owner(invitation.applet_id)
         meta: dict = dict()
-        respondent_nickname = invitation.dict().get("nickname", None)
 
         if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
             meta = invitation.meta.dict(by_alias=True)  # type: ignore
@@ -124,19 +139,19 @@ class UserAppletAccessService:
                 owner_id=owner_access.user_id,
                 invitor_id=invitation.invitor_id,
                 meta=meta,
-                nickname=respondent_nickname,
                 is_deleted=False,
             ),
             where=UserAppletAccessSchema.soft_exists(exists=False),
         )
-
         if invitation.role != Role.RESPONDENT:
             has_respondent = await UserAppletAccessCRUD(self.session).has_role(
                 invitation.applet_id, self._user_id, Role.RESPONDENT
             )
             if not has_respondent:
-                meta = await self._get_default_role_meta(Role.RESPONDENT, self._user_id)
-                nickname = meta.pop("nickname", None)
+                user = await UsersCRUD(self.session).get_by_id(self._user_id)
+
+                secret_id = str(uuid.uuid4())
+
                 schema = UserAppletAccessSchema(
                     user_id=self._user_id,
                     applet_id=invitation.applet_id,
@@ -144,15 +159,32 @@ class UserAppletAccessService:
                     owner_id=owner_access.user_id,
                     invitor_id=invitation.invitor_id,
                     meta=meta,
-                    nickname=nickname,
                     is_deleted=False,
                 )
-
                 await UserAppletAccessCRUD(self.session).upsert_user_applet_access(schema)
+
+                await SubjectsService(self.session, self._user_id).create(
+                    Subject(
+                        applet_id=invitation.applet_id,
+                        email=invitation.email,
+                        creator_id=invitation.invitor_id,
+                        user_id=self._user_id,
+                        first_name=invitation.first_name,
+                        last_name=invitation.last_name,
+                        secret_user_id=secret_id,
+                        nickname=user.get_full_name(),
+                    )
+                )
+        else:
+            subject_id = None
+            if isinstance(invitation.meta, RespondentMeta):
+                subject_id = invitation.meta.subject_id
+            assert subject_id
+            await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id))
 
         return UserAppletAccess.from_orm(access_schema[0])
 
-    async def add_role_by_private_invitation(self, role: Role):
+    async def add_role_by_private_invitation(self, role: Role, user: User):
         owner_access = await UserAppletAccessCRUD(self.session).get_applet_owner(self._applet_id)
 
         if role == Role.RESPONDENT:
@@ -177,22 +209,23 @@ class UserAppletAccessService:
                 schema,
                 where=UserAppletAccessSchema.soft_exists(exists=False),
             )
+            await SubjectsService(self.session, self._user_id).create(
+                Subject(
+                    applet_id=self._applet_id,
+                    email=user.email_encrypted,
+                    creator_id=owner_access.user_id,
+                    user_id=self._user_id,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    secret_user_id=meta["secretUserId"],
+                )
+            )
         except UniqueViolationError:
             pass
 
     async def get_roles(self) -> list[str]:
         roles = await UserAppletAccessCRUD(self.session).get_user_roles_to_applet(self._user_id, self._applet_id)
         return roles
-
-    async def update_meta(self, respondent_id: uuid.UUID, role: Role, schema: RespondentInfo):
-        crud = UserAppletAccessCRUD(self.session)
-        access = await crud.get(respondent_id, self._applet_id, role)
-        if not access:
-            raise UserAppletAccessNotFound()
-        await self._validate_secret_user_id(access.id, schema.secret_user_id)
-        # change here
-        access.meta["secretUserId"] = schema.secret_user_id
-        await crud.update_meta_by_access_id(access.id, access.meta, nickname=schema.nickname)
 
     async def _validate_secret_user_id(self, exclude_id: uuid.UUID, secret_id: str):
         access = await UserAppletAccessCRUD(self.session).get_by_secret_user_id_for_applet(
@@ -324,9 +357,6 @@ class UserAppletAccessService:
 
         return UserAppletAccess.from_orm(schema)
 
-    async def get_nickname(self) -> str | None:
-        return await UserAppletAccessCRUD(self.session).get_user_nickname(self._applet_id, self._user_id)
-
     async def get_respondent_info(
         self,
         respondent_id: uuid.UUID,
@@ -334,19 +364,12 @@ class UserAppletAccessService:
         owner_id: uuid.UUID,
     ) -> RespondentInfoPublic:
         crud = UserAppletAccessCRUD(self.session)
-        respondent_schema = await crud.get_respondent_by_applet_and_owner(respondent_id, applet_id, owner_id)
-        if not respondent_schema:
+        respondent_info = await crud.get_respondent_by_applet_and_owner(respondent_id, applet_id, owner_id)
+        if not respondent_info:
             raise NotFoundError()
-        respondent_info = None
-        if respondent_schema.meta:
-            respondent_info = RespondentInfoPublic(
-                nickname=respondent_schema.nickname,
-                secret_user_id=respondent_schema.meta.get("secretUserId"),
-            )
-        else:
-            respondent_info = RespondentInfoPublic(nickname=respondent_schema.nickname, secret_user_id=None)
-
-        return respondent_info
+        return RespondentInfoPublic(
+            nickname=respondent_info[0], secret_user_id=respondent_info[1], subject_id=respondent_info[2]
+        )
 
     async def has_role(self, role: str) -> bool:
         manager_roles = set(Role.managers())
@@ -359,3 +382,26 @@ class UserAppletAccessService:
         else:
             user_roles = set(current_roles)
             return role in manager_roles and bool(user_roles.intersection(manager_roles))
+
+    async def get_respondent_access(self) -> UserAppletAccessSchema | None:
+        crud = UserAppletAccessCRUD(self.session)
+        return await crud.get(self._user_id, self._applet_id, Role.RESPONDENT.value)
+
+    async def get_owner(self) -> UserAppletAccessSchema:
+        crud = UserAppletAccessCRUD(self.session)
+        return await crud.get_applet_owner(self._applet_id)
+
+    async def remove_access_by_user_and_applet_to_role(self, user_id: uuid.UUID, applet_id: uuid.UUID, role: Role):
+        await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(user_id, [applet_id], [role])
+
+    async def set_subjects_for_review(
+        self, reviewer_id: uuid.UUID, applet_id: uuid.UUID, subjects: list[uuid.UUID]
+    ) -> bool:
+        crud = UserAppletAccessCRUD(self.session)
+        access = await crud.get(reviewer_id, applet_id, Role.REVIEWER)
+        if access:
+            subject_ids = [str(subject_id) for subject_id in subjects]
+            access.meta = {**access.meta, "subjects": subject_ids}
+            await crud.save(access)
+            return True
+        return False

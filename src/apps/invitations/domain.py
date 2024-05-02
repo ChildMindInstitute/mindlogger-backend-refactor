@@ -2,12 +2,12 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from pydantic import EmailStr, Field, root_validator
+from pydantic import EmailStr, Extra, Field, root_validator, validator
 
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.domain.custom_validations import lowercase_email
+from apps.shared.domain.custom_validations import lowercase, lowercase_email
 
 
 class Applet(PublicModel):
@@ -74,8 +74,8 @@ class InvitationReviewerRequest(_InvitationRequest):
     to the user for "reviewer" role.
     """
 
-    respondents: list[uuid.UUID] = Field(
-        description="This field represents the list of users id's " "which invited to the applet as a respondents",
+    subjects: list[uuid.UUID] = Field(
+        description="This field represents the list of subject id's",
     )
     workspace_prefix: str | None = Field(
         description="This field represents the user workspace prefix. "
@@ -108,8 +108,7 @@ class RespondentMeta(InternalModel):
     for representation respondent meta information.
     """
 
-    secret_user_id: str
-    # nickname: str
+    subject_id: str | None
 
 
 class RespondentInfo(InternalModel):
@@ -122,7 +121,10 @@ class ReviewerMeta(InternalModel):
     for representation reviewer meta information.
     """
 
-    respondents: list[str]
+    class Config:
+        extra = Extra.ignore
+
+    subjects: list[str]
 
 
 class Invitation(InternalModel):
@@ -185,6 +187,7 @@ class InvitationDetail(InvitationDetailBase):
 
     meta: dict
     nickname: str | None
+    secret_user_id: str | None
 
 
 class InvitationDetailRespondent(InvitationDetailBase):
@@ -194,6 +197,7 @@ class InvitationDetailRespondent(InvitationDetailBase):
 
     meta: RespondentMeta
     nickname: str | None
+    secret_user_id: str
 
 
 class InvitationDetailReviewer(InvitationDetailBase):
@@ -234,7 +238,7 @@ class InvitationDetailForReviewer(_InvitationDetail):
 
     email: EmailStr
     role: Role = Role.REVIEWER
-    respondents: list[uuid.UUID]
+    subjects: list[uuid.UUID]
 
 
 class InvitationDetailForManagers(_InvitationDetail):
@@ -269,6 +273,7 @@ class InvitationResponse(PublicModel):
     created_at: datetime
     meta: dict
     nickname: str | None
+    secret_user_id: str | None
 
 
 class _InvitationResponse(PublicModel):
@@ -321,9 +326,7 @@ class InvitationReviewerResponse(_InvitationResponse):
     for reviewer role.
     """
 
-    respondents: list[uuid.UUID] = Field(
-        description="This field represents the list of users id's " "which invited to the applet as a respondents",
-    )
+    subjects: list[uuid.UUID] = Field(description="This field represents the list of subject id's")
     role: Role = Role.REVIEWER
 
 
@@ -349,3 +352,21 @@ class PrivateInvitationResponse(PublicModel):
 
 
 InvitationDetailGeneric = InvitationDetailReviewer | InvitationDetailRespondent | InvitationDetail
+
+
+class ShellAccountCreateRequest(PublicModel):
+    language: str
+    first_name: str
+    last_name: str
+    secret_user_id: str
+    nickname: str | None
+    email: str | None
+
+    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
+
+
+class ShallAccountInvitation(PublicModel):
+    email: EmailStr
+    subject_id: uuid.UUID
+
+    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)

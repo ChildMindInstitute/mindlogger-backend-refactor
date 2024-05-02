@@ -13,6 +13,7 @@ __all__ = [
     "validate_audio",
     "extract_history_version",
     "validate_uuid",
+    "lowercase",
     "lowercase_email",
 ]
 
@@ -128,6 +129,12 @@ def translate(val):
     lang = "en"
     if isinstance(val, dict):
         return val.get(lang, None)
+
+
+def lowercase(value: str | None):
+    if value is not None:
+        value = value.lower()
+    return value
 
 
 def array_from_string(comma_separated: bool = False):
