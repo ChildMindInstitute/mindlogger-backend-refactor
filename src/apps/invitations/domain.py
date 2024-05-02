@@ -109,6 +109,8 @@ class RespondentMeta(InternalModel):
     """
 
     subject_id: str | None
+    # This attribute has been moved to the 'subject' table and left here for backwards compatibility.
+    # There is no need to use it for its intended purpose.
     secret_user_id: str | None
 
 
