@@ -109,6 +109,7 @@ class RespondentMeta(InternalModel):
     """
 
     subject_id: str | None
+    secret_user_id: str | None
 
 
 class RespondentInfo(InternalModel):
