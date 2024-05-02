@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, SessionTransaction
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
+from apps.mailing.services import TestMail
 from apps.shared.test.client import TestClient
 from broker import broker
 from config import settings
@@ -293,3 +294,14 @@ def redis() -> RedisCacheTest:
     redis = RedisCacheTest()
     redis._storage.clear()
     return redis
+
+
+@pytest.fixture
+def mailbox() -> TestMail:
+    class Connection:
+        pass
+
+    connection = Connection()
+    box = TestMail(connection)
+    box.clear_mails()
+    return box

@@ -98,6 +98,7 @@ class TestAnswerActivityItems(BaseTest):
         tom: User,
         redis: RedisCacheTest,
         answer_with_alert_create: AppletAnswerCreate,
+        mailbox: TestMail,
     ):
         arbitrary_client.login(tom)
         response = await arbitrary_client.post(self.answer_url, data=answer_with_alert_create)
@@ -110,8 +111,8 @@ class TestAnswerActivityItems(BaseTest):
         assert len(published_values) == 1
         # 2 because alert for lucy and for tom
         assert len(redis._storage) == 1
-        assert len(TestMail.mails) == 1
-        assert TestMail.mails[0].subject == "Response alert"
+        assert len(mailbox.mails) == 1
+        assert mailbox.mails[0].subject == "Response alert"
 
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(answer_with_alert_create.applet_id)),
