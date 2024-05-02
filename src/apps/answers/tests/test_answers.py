@@ -1717,3 +1717,13 @@ class TestAnswerActivityItems(BaseTest):
             submit_id = uuid.UUID(s["submitId"])
             assert submit_id in filtered_submissions
             assert len(filtered_submissions[submit_id]) == len(s["answers"])
+
+    @pytest.mark.usefixtures("applet_one_lucy_reviewer", "applet_one_lucy_coordinator")
+    async def test_get_summary_activity_list_admin_with_role_reviewer_and_any_other_manager_role_can_view_summary(
+        self, client: TestClient, applet_one: AppletFull, lucy: User, tom: User
+    ):
+        client.login(lucy)
+        resp = await client.get(
+            self.summary_activities_url.format(applet_id=applet_one.id), query={"respondentId": tom.id}
+        )
+        assert resp.status_code == http.HTTPStatus.OK
