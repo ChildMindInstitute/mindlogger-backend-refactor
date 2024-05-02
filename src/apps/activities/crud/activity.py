@@ -35,7 +35,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         query: Query = select(ActivitySchema)
         query = query.where(ActivitySchema.applet_id == applet_id)
         if isinstance(is_reviewable, bool):
-            query = query.where(ActivitySchema.is_reviewable == is_reviewable)
+            query = query.where(ActivitySchema.is_reviewable.is_(is_reviewable))
         query = query.order_by(ActivitySchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()

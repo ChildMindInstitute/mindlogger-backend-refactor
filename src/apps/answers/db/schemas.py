@@ -1,12 +1,15 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Text, Time, Unicode
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Text, Time, Unicode, and_, asc, false, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
 from infrastructure.database.base import Base
+from infrastructure.database.mixins import HistoryAware
 
 
-class AnswerSchema(Base):
+class AnswerSchema(HistoryAware, Base):
     __tablename__ = "answers"
 
     applet_id = Column(UUID(as_uuid=True), index=True)
@@ -19,6 +22,25 @@ class AnswerSchema(Base):
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     is_flow_completed = Column(Boolean(), nullable=True)
     migrated_data = Column(JSONB())
+
+    answer_item = relationship(
+        "AnswerItemSchema",
+        order_by=lambda: asc(AnswerItemSchema.created_at),
+        primaryjoin=(
+            lambda: and_(AnswerSchema.id == AnswerItemSchema.answer_id, AnswerItemSchema.is_assessment.isnot(True))  # type: ignore[has-type]
+        ),
+        uselist=False,
+        lazy="noload",
+    )
+
+    assessments = relationship(
+        "AnswerItemSchema",
+        order_by=lambda: asc(AnswerItemSchema.created_at),
+        primaryjoin=(
+            lambda: and_(AnswerSchema.id == AnswerItemSchema.answer_id, AnswerItemSchema.is_assessment.is_(True))  # type: ignore[has-type]
+        ),
+        lazy="noload",
+    )
 
 
 class AnswerNoteSchema(Base):
@@ -52,3 +74,11 @@ class AnswerItemSchema(Base):
     migrated_data = Column(JSONB())
     assessment_activity_id = Column(Text(), nullable=True, index=True)
     tz_offset = Column(Integer, nullable=True, comment="Local timezone offset in minutes")
+
+    @hybrid_property
+    def is_identifier_encrypted(self):
+        return (self.migrated_data or {}).get("is_identifier_encrypted") is not False
+
+    @is_identifier_encrypted.expression  # type: ignore[no-redef]
+    def is_identifier_encrypted(cls):
+        return cls.migrated_data[text("'is_identifier_encrypted'")].astext.cast(Boolean()).isnot(false())

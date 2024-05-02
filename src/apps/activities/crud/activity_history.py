@@ -1,9 +1,11 @@
 import uuid
 
+from pydantic import parse_obj_as
 from sqlalchemy import distinct, false, select, update
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, joinedload
 
 from apps.activities.db.schemas import ActivityHistorySchema
+from apps.activities.domain import ActivityHistory, ActivityHistoryFull
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
 from infrastructure.database import BaseCRUD
@@ -23,14 +25,6 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
     async def retrieve_by_applet_version(self, id_version) -> list[ActivityHistorySchema]:
         query: Query = select(ActivityHistorySchema)
         query = query.where(ActivityHistorySchema.applet_id == id_version)
-        query = query.order_by(ActivityHistorySchema.order.asc())
-        result = await self._execute(query)
-        return result.scalars().all()
-
-    async def retrieve_activities_by_applet_version(self, id_version) -> list[ActivityHistorySchema]:
-        query: Query = select(ActivityHistorySchema)
-        query = query.where(ActivityHistorySchema.applet_id == id_version)
-        query = query.where(ActivityHistorySchema.is_reviewable == false())
         query = query.order_by(ActivityHistorySchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
@@ -76,7 +70,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         if not result:
             raise ActivityHistoryDoeNotExist()
 
-    async def get_by_applet_id_for_summary(self, applet_id: uuid.UUID) -> list[ActivityHistorySchema]:
+    async def get_last_histories_by_applet(self, applet_id: uuid.UUID) -> list[ActivityHistorySchema]:
         query: Query = select(ActivityHistorySchema)
         query = query.join(
             AppletHistorySchema,
@@ -141,3 +135,28 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         query = query.values(**values)
         query = query.returning(ActivityHistorySchema)
         await self._execute(query)
+
+    async def load_full(self, id_versions: list[str]) -> list[ActivityHistoryFull]:
+        if not id_versions:
+            return []
+
+        query = (
+            select(ActivityHistorySchema)
+            .options(joinedload(ActivityHistorySchema.items, innerjoin=True))
+            .where(ActivityHistorySchema.id_version.in_(id_versions))
+        )
+        res = await self._execute(query)
+        data = res.unique().scalars().all()
+
+        return parse_obj_as(list[ActivityHistoryFull], data)
+
+    async def get_by_history_ids(self, activity_history_ids: list[str]) -> list[ActivityHistory]:
+        query: Query = (
+            select(ActivityHistorySchema)
+            .where(ActivityHistorySchema.id_version.in_(activity_history_ids))
+            .order_by(ActivityHistorySchema.applet_id, ActivityHistorySchema.order)
+        )
+        res = await self._execute(query)
+        activities: list[ActivityHistorySchema] = res.scalars().all()
+
+        return parse_obj_as(list[ActivityHistory], activities)
