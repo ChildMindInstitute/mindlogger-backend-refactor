@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -eo pipefail
+set -o nounset
+
+usage() {
+    cat <<EOF
+Usage:
+  $(basename "$0") [ARGS]
+Run migrations for the Mindlogger backend and (or) for the Mindlogger arbitrary servers.
+NOTE: If no ARGS provided, apply migrations only for Mindlogger backend.
+ARGS:
+    arbitrary          Apply migrations only for arbitrary servers
+    all                Apply migrations both for Mindlogger backend and for arbitrary servers
+Help:
+    --help             Print this message and exit
+EOF
+}
+
+case "${1:-}" in
+    --help)
+        usage
+        exit 0
+        ;;
+    arbitrary)
+        echo 'Applying migrations for arbitrary servers'
+        alembic -c alembic_arbitrary.ini upgrade head
+        ;;
+    all)
+        echo 'Applying migrations for Mindlogger backend'
+        alembic upgrade head
+        echo 'Applying migrations for arbitrary servers'
+        alembic -c alembic_arbitrary.ini upgrade head
+        ;;
+    *)
+        echo 'Applying migrations for Mindlogger backend'
+        alembic upgrade head
+        ;;
+esac

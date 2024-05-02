@@ -27,6 +27,14 @@ run_local:
 test:
 	${TEST_COMMAND} ./
 
+.PHONY: migrate
+migrate:
+	./compose/fastapi/migrate
+
+.PHONY: migrate-arbitrary
+migrate-arbitrary:
+	./compose/fastapi/migrate arbitrary
+
 # NOTE: cq == "Code quality"
 .PHONY: cq
 cq:
