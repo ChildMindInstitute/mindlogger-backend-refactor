@@ -10,7 +10,7 @@ from apps.invitations.domain import InvitationDetailGeneric, RespondentMeta
 from apps.shared.exception import NotFoundError
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
-from apps.subjects.domain import Subject
+from apps.subjects.domain import SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
@@ -164,7 +164,7 @@ class UserAppletAccessService:
                 await UserAppletAccessCRUD(self.session).upsert_user_applet_access(schema)
 
                 await SubjectsService(self.session, self._user_id).create(
-                    Subject(
+                    SubjectCreate(
                         applet_id=invitation.applet_id,
                         email=invitation.email,
                         creator_id=invitation.invitor_id,
@@ -210,7 +210,7 @@ class UserAppletAccessService:
                 where=UserAppletAccessSchema.soft_exists(exists=False),
             )
             await SubjectsService(self.session, self._user_id).create(
-                Subject(
+                SubjectCreate(
                     applet_id=self._applet_id,
                     email=user.email_encrypted,
                     creator_id=owner_access.user_id,

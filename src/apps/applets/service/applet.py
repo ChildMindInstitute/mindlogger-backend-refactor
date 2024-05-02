@@ -42,7 +42,7 @@ from apps.shared.version import (
     VERSION_DIFFERENCE_ITEM,
     VERSION_DIFFERENCE_MINOR,
 )
-from apps.subjects.domain import Subject
+from apps.subjects.domain import SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.themes.service import ThemeService
 from apps.users.services.user import UserService
@@ -611,7 +611,7 @@ class AppletService:
             anonym = await UserService(self.session).create_anonymous_respondent()
             await UserAppletAccessService(self.session, self.user_id, applet_id).add_role_for_anonymous_respondent()
             await SubjectsService(self.session, self.user_id).create(
-                Subject(
+                SubjectCreate(
                     applet_id=applet_id,
                     creator_id=self.user_id,
                     user_id=anonym.id,

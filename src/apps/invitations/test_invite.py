@@ -30,7 +30,7 @@ from apps.invitations.errors import (
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
-from apps.subjects.domain import Subject
+from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import UserSchema
 from apps.users.domain import User, UserCreate, UserCreateRequest
@@ -154,7 +154,7 @@ def shell_create_data():
 @pytest.fixture
 async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
     return await SubjectsService(session, tom.id).create(
-        Subject(
+        SubjectCreate(
             applet_id=applet_one.id,
             creator_id=tom.id,
             first_name="Shell",

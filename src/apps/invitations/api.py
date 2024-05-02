@@ -25,7 +25,7 @@ from apps.invitations.services import InvitationsService, PrivateInvitationServi
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.query_params import QueryParams, parse_query_params
-from apps.subjects.domain import Subject
+from apps.subjects.domain import SubjectCreate
 from apps.subjects.errors import SecretIDUniqueViolationError
 from apps.subjects.services import SubjectsService
 from apps.users import UserNotFound
@@ -104,14 +104,13 @@ async def invitation_respondent_send(
         subject_service = SubjectsService(session, user.id)
         try:
             subject = await subject_service.create(
-                Subject(creator_id=user.id, applet_id=applet_id, **invitation_schema.dict(by_alias=False))
+                SubjectCreate(creator_id=user.id, applet_id=applet_id, **invitation_schema.dict(by_alias=False))
             )
         except SecretIDUniqueViolationError:
             wrapper = ErrorWrapper(
                 ValueError(NonUniqueValue()), ("body", InvitationRespondentRequest.field_alias("secret_user_id"))
             )
             raise RequestValidationError([wrapper])
-        assert subject.id
         invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject.id)
 
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))
@@ -218,8 +217,8 @@ async def invitation_subject_send(
         await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
 
         subject_service = SubjectsService(session, user.id)
-        subject = await subject_service.get(schema.subject_id)
-        if not subject or not subject.soft_exists():
+        subject = await subject_service.get_if_soft_exist(schema.subject_id)
+        if not subject:
             raise NotFoundError()
         if subject.user_id:
             raise ValidationError("Subject already assigned.")

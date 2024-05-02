@@ -7,7 +7,7 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
-from apps.subjects.domain import Subject
+from apps.subjects.domain import Subject, SubjectCreate
 
 __all__ = ["SubjectsService"]
 
@@ -20,7 +20,7 @@ class SubjectsService:
         self.user_id = user_id
 
     @staticmethod
-    def __to_db_model(schema: Subject):
+    def __to_db_model(schema: SubjectCreate):
         return SubjectSchema(
             applet_id=schema.applet_id,
             email=schema.email,
@@ -33,16 +33,13 @@ class SubjectsService:
             secret_user_id=schema.secret_user_id,
         )
 
-    async def create(self, schema: Subject) -> Subject:
+    async def create(self, schema: SubjectCreate) -> Subject:
         subject_with_secret = await self.get_by_secret_id(schema.applet_id, schema.secret_user_id)
         if subject_with_secret and not subject_with_secret.is_deleted:
             raise SecretIDUniqueViolationError()
 
-        return await SubjectsCrud(self.session).upsert(schema)
-
-    async def create_many(self, schema: list[Subject]) -> list[SubjectSchema]:
-        models = list(map(lambda s: self.__to_db_model(s), schema))
-        return await SubjectsCrud(self.session).create_many(models)
+        updated_schema = await SubjectsCrud(self.session).upsert(schema)
+        return Subject.from_orm(updated_schema)
 
     async def update(self, id_: uuid.UUID, **values) -> SubjectSchema:
         return await SubjectsCrud(self.session).update_by_id(id_, **values)
@@ -65,8 +62,15 @@ class SubjectsService:
             return Subject.from_orm(subject_model)
         return None
 
-    async def get(self, id_: uuid.UUID) -> SubjectSchema | None:
-        return await SubjectsCrud(self.session).get_by_id(id_)
+    async def get(self, id_: uuid.UUID) -> Subject | None:
+        schema = await SubjectsCrud(self.session).get_by_id(id_)
+        return Subject.from_orm(schema) if schema else None
+
+    async def get_if_soft_exist(self, id_: uuid.UUID) -> Subject | None:
+        schema = await SubjectsCrud(self.session).get_by_id(id_)
+        if schema and schema.soft_exists():
+            return Subject.from_orm(schema)
+        return None
 
     async def create_relation(
         self,
@@ -114,6 +118,6 @@ class SubjectsService:
         await repository.delete_subject_relations(id_)
         await repository.delete(id_)
 
-    async def get_pending_subject_if_exist(self, secret_id: str, applet_id: uuid.UUID) -> Subject | None:
+    async def get_pending_subject_if_exist(self, secret_id: str, applet_id: uuid.UUID) -> SubjectCreate | None:
         models = await SubjectsCrud(self.session).get_pending_subjects(secret_id, applet_id)
         return models[0] if models else None
