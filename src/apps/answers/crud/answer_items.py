@@ -5,7 +5,6 @@ from sqlalchemy import and_, delete, func, select
 from sqlalchemy.orm import Query
 
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
-from apps.answers.filters import AppletActivityAnswerFilter
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.query_params import QueryParams
 from infrastructure.database.crud import BaseCRUD
@@ -20,8 +19,19 @@ class _ActivityAnswerFilter(Filtering):
 
     target_subject_id = FilterField(AnswerSchema.target_subject_id)
 
-    def prepare_versions(self, value: str) -> list[str]:
-        return value.split(",")
+    # TODO can be removed?
+    def prepare_identifiers(self, value: str | list[str]) -> list[str] | None:
+        if not value:
+            return None
+        if isinstance(value, str):
+            return value.split(",")
+        return value
+
+    # TODO can be removed?
+    def prepare_versions(self, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return value.split(",")
+        return value
 
     def filter_by_identifiers(self, field, values: list | str):
         if isinstance(values, str):
@@ -65,12 +75,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(AnswerSchema.activity_history_id.in_(activity_history_ids))
         query = query.order_by(AnswerItemSchema.created_at)
 
-        db_result = await self._execute(query)
-        return db_result.scalars().all()
-
-    async def get_answer_ids(self, answer_ids: list[uuid.UUID]) -> list[AnswerItemSchema]:
-        query: Query = select(AnswerItemSchema)
-        query = query.where(AnswerItemSchema.answer_id.in_(answer_ids))
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
@@ -121,7 +125,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         self,
         applet_id: uuid.UUID,
         activity_ver_ids: Collection[str],
-        filters: AppletActivityAnswerFilter,
+        **filters,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
@@ -135,7 +139,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.activity_history_id.in_(activity_ver_ids))
         query = query.order_by(AnswerSchema.created_at.asc())
-        query = query.where(*_ActivityAnswerFilter().get_clauses(**filters.dict(exclude_unset=True)))
+        query = query.where(*_ActivityAnswerFilter().get_clauses(**filters))
         db_result = await self._execute(query)
         return db_result.all()  # noqa
 
