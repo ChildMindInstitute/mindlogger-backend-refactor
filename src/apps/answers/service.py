@@ -7,7 +7,7 @@ import time
 import uuid
 from collections import defaultdict
 from json import JSONDecodeError
-from typing import List
+from typing import Callable, List
 
 import aiohttp
 import pydantic
@@ -101,35 +101,35 @@ class AnswerService:
         return self._answer_session if self._answer_session else self.session
 
     @staticmethod
-    def _generate_history_id(version: str):
-        def key_generator(pk: uuid.UUID):
+    def _generate_history_id(version: str) -> Callable[..., str]:
+        def key_generator(pk: uuid.UUID) -> str:
             return HistoryAware.generate_id_version(pk, version)
 
         return key_generator
 
-    async def create_answer(self, activity_answer: AppletAnswerCreate):
+    async def create_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
         if self.user_id:
             return await self._create_respondent_answer(activity_answer)
         else:
             return await self._create_anonymous_answer(activity_answer)
 
-    async def _create_respondent_answer(self, activity_answer: AppletAnswerCreate):
+    async def _create_respondent_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
         await self._validate_respondent_answer(activity_answer)
         return await self._create_answer(activity_answer)
 
-    async def _create_anonymous_answer(self, activity_answer: AppletAnswerCreate):
+    async def _create_anonymous_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
         await self._validate_anonymous_answer(activity_answer)
         return await self._create_answer(activity_answer)
 
-    async def _validate_respondent_answer(self, activity_answer: AppletAnswerCreate):
+    async def _validate_respondent_answer(self, activity_answer: AppletAnswerCreate) -> None:
         await self._validate_answer(activity_answer)
         await self._validate_applet_for_user_response(activity_answer.applet_id)
 
-    async def _validate_anonymous_answer(self, activity_answer: AppletAnswerCreate):
+    async def _validate_anonymous_answer(self, activity_answer: AppletAnswerCreate) -> None:
         await self._validate_applet_for_anonymous_response(activity_answer.applet_id, activity_answer.version)
         await self._validate_answer(activity_answer)
 
-    async def _validate_answer(self, applet_answer: AppletAnswerCreate):
+    async def _validate_answer(self, applet_answer: AppletAnswerCreate) -> None:
         existed_answers = await AnswersCRUD(self.session).get_by_submit_id(applet_answer.submit_id)
 
         if existed_answers:
@@ -147,21 +147,21 @@ class AnswerService:
         if not activity_history.applet_id.startswith(f"{applet_answer.applet_id}"):
             raise ActivityHistoryDoeNotExist()
 
-    async def _validate_applet_for_anonymous_response(self, applet_id: uuid.UUID, version: str):
+    async def _validate_applet_for_anonymous_response(self, applet_id: uuid.UUID, version: str) -> None:
         await AppletHistoryService(self.session, applet_id, version).get()
         # Validate applet for anonymous answer
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
         if not schema.link:
             raise NonPublicAppletError()
 
-    async def _validate_applet_for_user_response(self, applet_id: uuid.UUID):
+    async def _validate_applet_for_user_response(self, applet_id: uuid.UUID) -> None:
         assert self.user_id
 
         roles = await UserAppletAccessService(self.session, self.user_id, applet_id).get_roles()
         if not roles:
             raise UserDoesNotHavePermissionError()
 
-    async def _create_answer(self, applet_answer: AppletAnswerCreate):
+    async def _create_answer(self, applet_answer: AppletAnswerCreate) -> AnswerSchema:
         pk = self._generate_history_id(applet_answer.version)
         created_at = applet_answer.created_at or datetime.datetime.utcnow()
         answer = await AnswersCRUD(self.answer_session).create(
@@ -492,7 +492,7 @@ class AnswerService:
         answer_id: uuid.UUID,
         activity_id: uuid.UUID,
         note: str,
-    ):
+    ) -> AnswerNoteSchema:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         schema = AnswerNoteSchema(
             answer_id=answer_id,
@@ -500,7 +500,8 @@ class AnswerService:
             user_id=self.user_id,
             activity_id=activity_id,
         )
-        await AnswerNotesCRUD(self.session).save(schema)
+        note_schema = await AnswerNotesCRUD(self.session).save(schema)
+        return note_schema
 
     async def get_note_list(
         self,

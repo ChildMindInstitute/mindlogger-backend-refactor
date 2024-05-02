@@ -236,7 +236,7 @@ async def answer_upload(
             filename = file.filename
             reader = file.file  # type: ignore[assignment]
 
-        cdn_client = await select_storage(applet_id, session)
+        cdn_client = await select_storage(applet_id=applet_id, session=session)
         unique = f"{user.id}/{applet_id}"
         cleaned_file_id = file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
         key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
@@ -262,7 +262,7 @@ async def answer_download(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> StreamingResponse:
-    cdn_client = await select_storage(applet_id, session)
+    cdn_client = await select_storage(applet_id=applet_id, session=session)
     if request.key.startswith(LogFileService.LOG_KEY):
         LogFileService.raise_for_access(user.email)
 
@@ -295,7 +295,7 @@ async def check_file_uploaded(
 
     workspace_srv = workspace.WorkspaceService(session, user.id)
     arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
-    cdn_client = await select_storage(applet_id, session)
+    cdn_client = await select_storage(applet_id=applet_id, session=session)
     results: list[FileExistenceResponse] = []
 
     for file_id in schema.files:
@@ -431,7 +431,7 @@ async def generate_presigned_answer_url(
     # TODO: Refactor this part when file storage is covered by tests. Get arbitrary info only once.
     workspace_srv = workspace.WorkspaceService(session, user.id)
     arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
-    cdn_client = await select_storage(applet_id, session)
+    cdn_client = await select_storage(applet_id=applet_id, session=session)
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = body.file_id.strip()
     orig_key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
