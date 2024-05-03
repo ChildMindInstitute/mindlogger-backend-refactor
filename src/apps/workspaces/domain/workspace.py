@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from typing import Optional
 
 from pydantic import Field, root_validator, validator
 from sqlalchemy import Unicode
@@ -334,7 +333,6 @@ class WorkspaceArbitrary(WorkspaceArbitraryFields):
     database_uri: str
     storage_secret_key: str
     storage_type: str
-    storage_bucket_answer: Optional[str] = None
     user_id: uuid.UUID
 
 
