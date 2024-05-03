@@ -14,3 +14,33 @@ jobs:
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
           docker compose up -d
           make dtest
+  
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.tests.result == 'failure' || needs.tests.result == 'timed_out') }}
+    needs:
+      - tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+          SLACK_TITLE: Run Unit Tests
+          SLACK_MESSAGE: 'Error when executing Unit tests!'
+  
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.tests.result == 'success' }}
+    needs:
+      - tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on success"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+          SLACK_TITLE: Run Unit Tests
+          SLACK_MESSAGE: 'Unit tests performed successfully!'
