@@ -32,7 +32,7 @@ jobs:
   
   on-success:
     runs-on: ubuntu-latest
-    if: ${{ always() && (needs.tests.result == 'success' }}
+    if: ${{ always() && (needs.tests.result == 'success') }}
     needs:
       - tests
     steps:

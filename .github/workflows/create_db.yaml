@@ -47,7 +47,7 @@ jobs:
   
   on-success:
     runs-on: ubuntu-latest
-    if: ${{ always() && (needs.create_database.result == 'success' }}
+    if: ${{ always() && (needs.create_database.result == 'success') }}
     needs:
       - create_database
     steps:
