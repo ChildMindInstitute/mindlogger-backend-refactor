@@ -25,11 +25,7 @@ jobs:
     - name: Create Database
       run: |
         PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ secrets.DATABASE_NAME }}" -c "CREATE DATABASE <DATABASE_NAME>;"
-    
-    - name: Load Database Dump #specify the correct location of the dump
-      run: |
-        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ secrets.DATABASE_NAME }}" < ./compose/postgres/public.sql 
-  
+
   on-failure:
     runs-on: ubuntu-latest
     if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
