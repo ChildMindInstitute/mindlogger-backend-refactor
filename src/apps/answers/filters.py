@@ -2,8 +2,9 @@ import datetime
 import uuid
 
 from fastapi import Query
-from pydantic import Field, root_validator
+from pydantic import Field, root_validator, validator
 
+from apps.shared.domain.custom_validations import array_from_string
 from apps.shared.query_params import BaseQueryParams
 
 
@@ -12,19 +13,21 @@ class SummaryActivityFilter(BaseQueryParams):
     target_subject_id: uuid.UUID | None
 
 
-class AppletActivityFilter(BaseQueryParams):
+class ReviewAppletItemFilter(BaseQueryParams):
     target_subject_id: uuid.UUID | None
     created_date: datetime.date
 
 
-class AppletActivityAnswerFilter(BaseQueryParams):
+class AppletSubmissionsFilter(BaseQueryParams):
     respondent_id: uuid.UUID | None
     from_datetime: datetime.datetime | None
     to_datetime: datetime.datetime | None
-    identifiers: str | None = None
-    versions: list[str] | None
+    identifiers: str | None
+    versions: str | None
     empty_identifiers: bool = True
     target_subject_id: uuid.UUID | None
+
+    _parse_array = validator("versions", "identifiers", allow_reuse=True)(array_from_string(True))
 
 
 class AppletSubmitDateFilter(BaseQueryParams):

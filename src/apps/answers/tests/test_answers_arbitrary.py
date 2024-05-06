@@ -12,6 +12,7 @@ from apps.answers.db.schemas import AnswerSchema
 from apps.answers.domain import AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
 from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.services import SubjectsService
 from infrastructure.utility import RedisCacheTest
 
 
@@ -75,7 +76,7 @@ class TestAnswerActivityItems:
     applet_answers_export_url = "/answers/applet/{applet_id}/data"
     applet_submit_dates_url = "/answers/applet/{applet_id}/dates"
 
-    activity_answers_url = "/answers/applet/{applet_id}/answers/" "{answer_id}/activities/{activity_id}"
+    activity_answers_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
 
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"  # noqa: E501
@@ -403,7 +404,9 @@ class TestAnswerActivityItems:
         assert response.status_code == 201, response.json()
         await assert_answer_exist_on_arbitrary("270d86e0-2158-4d18-befd-86b3ce0122a7", arbitrary_session)
 
-    async def test_answered_applet_activities(self, mock_kiq_report, arbitrary_session, arbitrary_client, tom, applet):
+    async def test_answered_applet_activities(
+        self, mock_kiq_report, session, arbitrary_session, arbitrary_client, tom, applet
+    ):
         arbitrary_client.login(tom)
 
         create_data = dict(
@@ -440,10 +443,12 @@ class TestAnswerActivityItems:
         assert response.status_code == 201, response.json()
         await assert_answer_exist_on_arbitrary("270d86e0-2158-4d18-befd-86b3ce0122a8", arbitrary_session)
 
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet.id)
+
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(applet.id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -472,10 +477,10 @@ class TestAnswerActivityItems:
         )
 
         assert response.status_code == 200, response.json()
-        assert response.json()["result"]["events"] == '{"events": ["event1", "event2"]}'
+        assert response.json()["result"]["answer"]["events"] == '{"events": ["event1", "event2"]}'
 
     async def test_fail_answered_applet_not_existed_activities(
-        self, mock_kiq_report, arbitrary_session, arbitrary_client, tom, applet
+        self, mock_kiq_report, session, arbitrary_session, arbitrary_client, tom, applet
     ):
         arbitrary_client.login(tom)
 
@@ -510,10 +515,12 @@ class TestAnswerActivityItems:
         assert response.status_code == 201, response.json()
         await assert_answer_exist_on_arbitrary("270d86e0-2158-4d18-befd-86b3ce0122a9", arbitrary_session)
 
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet.id)
+
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(applet.id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -576,7 +583,9 @@ class TestAnswerActivityItems:
         assert response.status_code == 200, response.json()
         assert response.json()["count"] == 1
 
-    async def test_applet_assessment_retrieve(self, mock_kiq_report, arbitrary_session, arbitrary_client, tom, applet):
+    async def test_applet_assessment_retrieve(
+        self, mock_kiq_report, session, arbitrary_session, arbitrary_client, tom, applet
+    ):
         arbitrary_client.login(tom)
 
         create_data = dict(
@@ -609,10 +618,12 @@ class TestAnswerActivityItems:
 
         assert response.status_code == 201, response.json()
 
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet.id)
+
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(applet.id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -632,7 +643,7 @@ class TestAnswerActivityItems:
         assert response.status_code == 200, response.json()
 
     async def test_applet_assessment_create(
-        self, mock_kiq_report, arbitrary_session, arbitrary_client, tom, applet_with_reviewable_activity
+        self, mock_kiq_report, session, arbitrary_session, arbitrary_client, tom, applet_with_reviewable_activity
     ):
         arbitrary_client.login(tom)
 
@@ -668,10 +679,14 @@ class TestAnswerActivityItems:
         response = await arbitrary_client.post(self.answer_url, data=create_data)
         assert response.status_code == 201, response.json()
         await assert_answer_exist_on_arbitrary(submit_id, arbitrary_session)
+
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(
+            tom.id, applet_with_reviewable_activity.id
+        )
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(applet_with_reviewable_activity.id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -805,7 +820,7 @@ class TestAnswerActivityItems:
         await assert_answer_not_exist_on_arbitrary(submit_id, arbitrary_session)
         assert response.status_code == 403, response.json()
 
-    async def test_answers_export(self, mock_kiq_report, arbitrary_client, tom, applet):
+    async def test_answers_export(self, mock_kiq_report, session, arbitrary_client, tom, applet):
         arbitrary_client.login(tom)
 
         # create answer
@@ -840,10 +855,11 @@ class TestAnswerActivityItems:
         assert response.status_code == 201
 
         # get answer id
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet.id)
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(applet.id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -1128,7 +1144,9 @@ class TestAnswerActivityItems:
         result = response.json()
         assert result["count"] == 1
 
-    async def test_answers_arbitrary_export(self, mock_kiq_report, arbitrary_session, arbitrary_client, tom, applet):
+    async def test_answers_arbitrary_export(
+        self, mock_kiq_report, session, arbitrary_session, arbitrary_client, tom, applet
+    ):
         arbitrary_client.login(tom)
 
         # create answer
@@ -1163,10 +1181,11 @@ class TestAnswerActivityItems:
         await assert_answer_exist_on_arbitrary("270d86e0-2158-4d18-befd-86b3ce012222", arbitrary_session)
 
         # get answer id
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet.id)
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(applet.id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )

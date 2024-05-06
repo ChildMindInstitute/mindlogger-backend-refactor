@@ -2,6 +2,7 @@ PORT = 8000
 HOST = localhost
 
 TEST_COMMAND = pytest -s -vv
+EXPORT_COMMAND = python src/export_spec.py
 
 RUFF_COMMAND = ruff
 ISORT_COMMAND = isort
@@ -52,6 +53,10 @@ dcheck:
 	${DOCKER_EXEC} \
 		${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./ && ${TEST_COMMAND}
 
+.PHONY: save_specs
+save_specs:
+	${DOCKER_EXEC} \
+		${EXPORT_COMMAND} ./
 
 # Setting pre-commit hooks to search for aws keys
 .PHONY: aws-scan

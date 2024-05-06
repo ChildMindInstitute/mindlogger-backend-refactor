@@ -3,6 +3,7 @@ from datetime import datetime
 
 from pydantic import Field
 
+from apps.activities.domain import ActivityHistoryFull
 from apps.activity_flows.domain.base import FlowBase, FlowItemBase
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -22,6 +23,10 @@ class FlowItemHistoryFull(InternalModel):
     name: str | None = None
 
 
+class FlowItemHistoryWithActivityFull(FlowItemHistoryFull):
+    activity: ActivityHistoryFull
+
+
 class FlowFull(FlowBase, InternalModel):
     id: uuid.UUID
     items: list[ActivityFlowItemFull] = Field(default_factory=list)
@@ -29,12 +34,23 @@ class FlowFull(FlowBase, InternalModel):
     created_at: datetime
 
 
-class FlowHistoryFull(FlowBase, InternalModel):
+class FlowHistoryBase(FlowBase):
     id: uuid.UUID
     id_version: str
-    items: list[FlowItemHistoryFull] = Field(default_factory=list)
     order: int
     created_at: datetime
+
+
+class FlowHistoryFull(FlowHistoryBase, InternalModel):
+    items: list[FlowItemHistoryFull] = Field(default_factory=list)
+
+
+class FlowHistoryWithActivityFull(FlowHistoryBase, InternalModel):
+    items: list[FlowItemHistoryWithActivityFull] = Field(default_factory=list)
+
+
+class FlowHistoryWithActivityFlat(FlowHistoryBase, InternalModel):
+    activities: list[ActivityHistoryFull] = Field(default_factory=list)
 
 
 class PublicActivityFlowItemFull(FlowItemBase, PublicModel):

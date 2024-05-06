@@ -87,7 +87,9 @@ class Filtering:
             prepare_method = getattr(self, f"prepare_{name}", lambda x: x)
             if filter_field.method_name:
                 filtering_method = getattr(self, filter_field.method_name, None)
-            clauses.append(filter_field.generate_filter(prepare_method(value), filtering_method))
+            _clause = filter_field.generate_filter(prepare_method(value), filtering_method)
+            if _clause is not None:
+                clauses.append(_clause)
         return clauses
 
     def null(self, field, value):

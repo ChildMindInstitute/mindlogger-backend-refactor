@@ -13,6 +13,7 @@ __all__ = [
     "validate_audio",
     "extract_history_version",
     "validate_uuid",
+    "lowercase",
     "lowercase_email",
 ]
 
@@ -134,3 +135,16 @@ def lowercase(value: str | None):
     if value is not None:
         value = value.lower()
     return value
+
+
+def array_from_string(comma_separated: bool = False):
+    def _array_from_string(val):
+        if comma_separated and isinstance(val, list) and len(val) == 1:
+            val = val[0]
+        if isinstance(val, str):
+            if not val:
+                return []
+            val = val.split(",")
+        return val
+
+    return _array_from_string

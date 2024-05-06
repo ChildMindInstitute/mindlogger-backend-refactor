@@ -32,3 +32,4 @@ class EmailDoesNotExist(AccessDeniedError):
 
 class InvalidCredentials(AccessDeniedError):
     message = _("Incorrect email or password")
+    status_code = status.HTTP_401_UNAUTHORIZED

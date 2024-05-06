@@ -1,10 +1,9 @@
-import uuid
-
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils.types import IPAddressType
 
 from infrastructure.database.base import Base
+from infrastructure.database.mixins import HistoryAware
 
 __all__ = ["AppletSchema", "AppletHistorySchema"]
 
@@ -45,21 +44,7 @@ class AppletSchema(_BaseAppletSchema, Base):
     creator_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
 
 
-class HistoryMixin:
-    @classmethod
-    def generate_id_version(cls, id_: str | uuid.UUID, version: str) -> str:
-        return f"{id_}_{version}"
-
-    @classmethod
-    def split_id_version(cls, id_version: str) -> tuple[uuid.UUID, str]:
-        parts = id_version.split("_")
-        if len(parts) != 2:
-            raise Exception(f"Wrong id_version format: {id_version}")
-
-        return uuid.UUID(parts[0]), parts[1]
-
-
-class AppletHistorySchema(_BaseAppletSchema, HistoryMixin, Base):
+class AppletHistorySchema(_BaseAppletSchema, HistoryAware, Base):
     __tablename__ = "applet_histories"
 
     id_version = Column(String(), primary_key=True)
