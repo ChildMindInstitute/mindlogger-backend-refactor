@@ -12,6 +12,8 @@ jobs:
         run: |
           cp .env.default .env
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
+          ls
+          pwd
           make run_local
       - run: make ctest
       - run: make creport SHA=${{ github.sha }}
