@@ -3,7 +3,6 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${SCRIPT_DIR}/funcs.sh
 
-
 DEV_ENV_NAME=${DEV_ENV_NAME:-dev}
 
 if [[ -z "$APP_NAME" ]]; then
@@ -48,7 +47,7 @@ copilot env init --app "$APP_NAME" --name "$DEV_ENV_NAME" --profile "$DEV_PROFIL
 
 copilot env deploy --name "$DEV_ENV_NAME"
 
-copilot svc init --app "$APP_NAME" --name "mindlogger-backend" --svc-type "Load Balanced Web Service" --ingress-type "Internet" -d "service-a/Dockerfile"
+copilot svc init --app "$APP_NAME" --name "mindlogger-backend" --svc-type "Load Balanced Web Service" --ingress-type "Internet" -d "compose/fastapi/Dockerfile"
 copilot svc deploy --name "mindlogger-backend" --env "$DEV_ENV_NAME"
 
 
