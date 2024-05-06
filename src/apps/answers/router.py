@@ -14,6 +14,8 @@ from apps.answers.api import (
     applet_answers_export,
     applet_completed_entities,
     applet_flow_answer_retrieve,
+    applet_flow_identifiers_retrieve,
+    applet_flow_submissions_list,
     applet_submit_date_list,
     applets_completed_entities,
     create_anonymous_answer,
@@ -39,12 +41,14 @@ from apps.answers.domain import (
     FlowSubmissionResponse,
     PublicAnswerDates,
     PublicAnswerExport,
+    PublicFlowSubmissionsResponse,
     PublicReviewActivity,
     PublicReviewFlow,
     PublicSummaryActivity,
     PublicSummaryActivityFlow,
-    VersionPublic,
 )
+from apps.applets.api.applets import applet_flow_versions_data_retrieve
+from apps.applets.domain.applet_history import VersionPublic
 from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, Response, ResponseMulti
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE
 
@@ -122,6 +126,16 @@ router.get(
 )(applet_activity_identifiers_retrieve)
 
 router.get(
+    "/applet/{applet_id}/flows/{flow_id}/identifiers",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[str]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_identifiers_retrieve)
+
+router.get(
     "/applet/{applet_id}/summary/activities/{activity_id}/versions",
     status_code=status.HTTP_200_OK,
     responses={
@@ -132,6 +146,16 @@ router.get(
 )(applet_activity_versions_retrieve)
 
 router.get(
+    "/applet/{applet_id}/flows/{flow_id}/versions",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[VersionPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_versions_data_retrieve)
+
+router.get(
     "/applet/{applet_id}/activities/{activity_id}/answers",
     status_code=status.HTTP_200_OK,
     responses={
@@ -140,6 +164,16 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_answers_list)
+
+router.get(
+    "/applet/{applet_id}/flows/{flow_id}/submissions",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": PublicFlowSubmissionsResponse},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_submissions_list)
 
 router.post(
     "/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report",  # noqa
