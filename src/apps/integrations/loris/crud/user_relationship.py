@@ -43,21 +43,20 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
         relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
         return relationship
 
-
     async def get_by_loris_user_id(self, loris_user_id: str) -> MlLorisUserRelationship:
-            """Return relationship instance by loris user id."""
+        """Return relationship instance by loris user id."""
 
-            query: Query = select(self.schema_class)
-            query = query.where(self.schema_class.loris_user_id == loris_user_id)
+        query: Query = select(self.schema_class)
+        query = query.where(self.schema_class.loris_user_id == loris_user_id)
 
-            result = await self._execute(query)
-            instance = result.scalars().one_or_none()
+        result = await self._execute(query)
+        instance = result.scalars().one_or_none()
 
-            if not instance:
-                raise MlLorisUserRelationshipNotFoundError(key="loris_user_id", value=str(loris_user_id))
+        if not instance:
+            raise MlLorisUserRelationshipNotFoundError(key="loris_user_id", value=str(loris_user_id))
 
-            relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
-            return relationship
+        relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
+        return relationship
 
     # async def update(self, ml_user_uuid: uuid.UUID, schema: MlLorisUserRelationshipUpdate) -> MlLorisUserRelationship:
     #     """Update relationship by ml user id."""

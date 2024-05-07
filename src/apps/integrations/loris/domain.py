@@ -28,10 +28,6 @@ class Item(BaseModel):
     allowEdit: bool | None
 
 
-# todo write own BaseActivityItem
-# use for config - SingleSelectionConfig
-# use for responseValues - class SingleSelectionValues(PublicModel):
-# class ActivityItem(PublicModel):
 class Activitie(BaseModel):
     id: uuid.UUID
     name: str
@@ -40,7 +36,6 @@ class Activitie(BaseModel):
     image: str = ""
     order: int
     createdAt: datetime.datetime
-    # items: list[BaseActivityItem]
     items: list[Item]
 
 
@@ -48,12 +43,6 @@ class UnencryptedApplet(BaseModel):
     id: uuid.UUID
     displayName: str
     description: str
-    # about: str
-    # image: str = ""
-    # watermark: str = ""
-    # version: str
-    # createdAt: datetime.datetime
-    # respondent_nickname: str
     activities: list[Activitie]
 
 
@@ -65,10 +54,7 @@ def to_camelcase(payload: str) -> str:
     if "_" not in payload:
         return payload
 
-    return "".join(
-        word.capitalize() if index else word
-        for index, word in enumerate(payload.split("_"))
-    )
+    return "".join(word.capitalize() if index else word for index, word in enumerate(payload.split("_")))
 
 
 class InternalModel(BaseModel):
@@ -112,8 +98,10 @@ class MlLorisUserRelationshipBase(InternalModel):
     ml_user_uuid: uuid.UUID
     loris_user_id: str
 
+
 class MlLorisUserRelationshipCreate(MlLorisUserRelationshipBase):
     pass
+
 
 class MlLorisUserRelationship(MlLorisUserRelationshipBase):
     pass

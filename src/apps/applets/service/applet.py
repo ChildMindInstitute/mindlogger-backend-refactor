@@ -727,6 +727,7 @@ class AppletService:
             updated_at=schema.updated_at,
             activities=[],
             activity_flows=[],
+            integrations=schema.integrations,
         )
         activities = ActivityService(self.session, self.user_id).get_info_by_applet_id(schema.id, language)
         activity_flows = FlowService(self.session).get_info_by_applet_id(schema.id, language)

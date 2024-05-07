@@ -146,3 +146,4 @@ class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
     updated_at: datetime.datetime | None
     activities: list[ActivityBaseInfo]
     activity_flows: list[FlowBaseInfo]
+    integrations: list[str] | None

@@ -21,9 +21,7 @@ class ConsentCRUD(BaseCRUD[ConsentSchema]):
         """Return consent instance and the created information."""
 
         try:
-            instance: ConsentSchema = await self._create(
-                ConsentSchema(**schema.dict())
-            )
+            instance: ConsentSchema = await self._create(ConsentSchema(**schema.dict()))
         # Raise exception if applet doesn't exist
         except IntegrityError as e:
             raise ConsentError(message=str(e))

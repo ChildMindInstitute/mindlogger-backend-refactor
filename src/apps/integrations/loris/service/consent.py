@@ -17,9 +17,7 @@ class ConsentService:
     def __init__(self, session):
         self.session = session
 
-    async def create_consent(
-        self, new_consent: ConsentRequest
-    ) -> PublicConsent:
+    async def create_consent(self, new_consent: ConsentRequest) -> PublicConsent:
         # Create consent
         consent: Consent = await ConsentCRUD(self.session).save(
             ConsentCreate(
@@ -32,18 +30,12 @@ class ConsentService:
         return PublicConsent(**consent.dict())
 
     async def get_consent_by_id(self, consent_id: uuid.UUID) -> PublicConsent:
-        consent: Consent = await ConsentCRUD(self.session).get_by_id(
-            pk=consent_id
-        )
+        consent: Consent = await ConsentCRUD(self.session).get_by_id(pk=consent_id)
 
         return PublicConsent(**consent.dict())
 
-    async def get_consent_by_user_id(
-        self, user_id: uuid.UUID
-    ) -> PublicConsent:
-        consent: Consent = await ConsentCRUD(self.session).get_by_user_id(
-            user_id=user_id
-        )
+    async def get_consent_by_user_id(self, user_id: uuid.UUID) -> PublicConsent:
+        consent: Consent = await ConsentCRUD(self.session).get_by_user_id(user_id=user_id)
 
         return PublicConsent(**consent.dict())
 

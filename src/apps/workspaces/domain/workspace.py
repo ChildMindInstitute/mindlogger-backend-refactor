@@ -41,8 +41,7 @@ class PublicWorkspace(PublicModel):
         "which is applet owner and prefix",
     )
     integrations: list[str] | None = Field(
-        description="This field represents the list of "
-        "integrations in which the workspace participates"
+        description="This field represents the list of integrations in which the workspace participates"
     )
 
 
@@ -60,8 +59,7 @@ class UserWorkspace(InternalModel):
         "which is applet owner and prefix",
     )
     integrations: list[str] | None = Field(
-        description="This field represents the list of "
-        "integrations in which the workspace participates"
+        description="This field represents the list of integrations in which the workspace participates"
     )
 
 
