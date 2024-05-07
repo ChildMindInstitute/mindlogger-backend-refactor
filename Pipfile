@@ -65,6 +65,7 @@ isort = "~=5.10"
 pre-commit = "~=2.7.1"
 ruff = "~=0.1.14"
 # Tests
+allure-pytest = "~=2.13.0"
 pydantic-factories = "~=1.17.0"
 pytest = "~=7.1"
 pytest-asyncio = "~=0.19"

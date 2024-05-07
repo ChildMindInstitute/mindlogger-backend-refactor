@@ -20,8 +20,8 @@ jobs:
       - name: Collect artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-report
-          path: pytest-report
+          name: allure-results
+          path: allure-results
           if-no-files-found: error
 
   publish-report:
@@ -40,14 +40,14 @@ jobs:
       - name: Fetch results
         uses: actions/download-artifact@v4
         with:
-          name: pytest-report
+          name: allure-results
           path: app
 
       - name: Build test report
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
-          allure_results: app
+          allure_results: allure-results
           gh_pages: gh-pages
           #allure_report: allure-report
           allure_history: allure-history
