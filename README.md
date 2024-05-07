@@ -2,6 +2,8 @@
 
 This repository is used for the backend of the [MindLogger](https://mindlogger.org/) application stack.
 
+![Static Badge](https://img.shields.io/badge/Coverage-89%25-green?logo=pytest)
+
 ## Getting Started
 
 * MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
