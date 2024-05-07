@@ -22,7 +22,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-result
-          path: app/test-result
+          path: test-result
           if-no-files-found: error
 
   publish-report:
