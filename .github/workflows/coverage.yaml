@@ -24,11 +24,13 @@ jobs:
       - run: make creport SHA=${{ github.sha }}
 
       - run: pip install smokeshow
+      - run: ls
+      - run: ls htmlcov
 
       - run: smokeshow upload htmlcov
         env:
           SMOKESHOW_GITHUB_STATUS_DESCRIPTION: Coverage {coverage-percentage}
-          SMOKESHOW_GITHUB_COVERAGE_THRESHOLD: 80
+          SMOKESHOW_GITHUB_COVERAGE_THRESHOLD: 100
           SMOKESHOW_GITHUB_TOKEN: ${{ secrets.FASTAPI_SMOKESHOW_UPLOAD }}
           SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
