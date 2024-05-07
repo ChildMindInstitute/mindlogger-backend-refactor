@@ -1,5 +1,8 @@
 name: Automated tests
-on: [push]
+on: 
+  push:
+    branches:
+      - "M2-6422-Generate-a-test-report-from-pytest"
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -64,7 +67,7 @@ jobs:
           authToken: ${{secrets.GITHUB_TOKEN}}
           context: 'Test report'
           state: 'success'
-          sha: ${{ github.event.pull_request.head.sha }}
+          sha: ${{ github.sha }}
           target_url: https://childmindinstitute.github.io/mindlogger-backend-refactor/${{ github.run_number }}
   
   on-failure:
