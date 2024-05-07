@@ -41,13 +41,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pytest-report
-          path: app/pytest-report
+          path: app
 
       - name: Build test report
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
-          allure_results: pytest-report
+          allure_results: app/pytest-report
           gh_pages: gh-pages
           #allure_report: allure-report
           allure_history: allure-history
