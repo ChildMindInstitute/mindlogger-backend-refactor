@@ -66,7 +66,7 @@ ctest:
 .PHONY: creport
 creport:
 	${COVERAGE_DOCKER_EXEC} \
-		${REPORT_COVERAGE_COMMAND} --show-contexts --title "Coverage for ${SHA}"
+		${REPORT_COVERAGE_COMMAND}
 
 
 .PHONY: dcheck

@@ -24,8 +24,6 @@ jobs:
       - run: make creport SHA=${{ github.sha }}
 
       - run: pip install smokeshow
-      - run: ls
-      - run: ls htmlcov
 
       - run: smokeshow upload htmlcov
         env:
