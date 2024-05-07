@@ -22,6 +22,11 @@ jobs:
       - run: make ctest
 
       - run: make creport SHA=${{ github.sha }}
+      
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
 
       - run: pip install smokeshow
 
