@@ -21,7 +21,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pytest-report
-          path: ./pytest-report
+          path: test-results/backend
           if-no-files-found: error
 
   publish-report:
@@ -41,7 +41,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pytest-report
-          path: ./pytest-report
+          path: test-results/backend
 
       - name: Build test report
         uses: simple-elf/allure-report-action@master
@@ -60,15 +60,15 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: allure-history
 
-      - name: Post the link to the report
-        if: always()
-        uses: Sibz/github-status-action@v1
-        with:
-          authToken: ${{secrets.GITHUB_TOKEN}}
-          context: 'Test report'
-          state: 'success'
-          sha: ${{ github.sha }}
-          target_url: https://childmindinstitute.github.io/mindlogger-backend-refactor/${{ github.run_number }}
+      #- name: Post the link to the report
+      #  if: always()
+      #  uses: Sibz/github-status-action@v1
+      #  with:
+      #    authToken: ${{secrets.GITHUB_TOKEN}}
+      #    context: 'Test report'
+      #    state: 'success'
+      #    sha: ${{ github.sha }}
+      #    target_url: https://childmindinstitute.github.io/mindlogger-backend-refactor/${{ github.run_number }}
   
   on-failure:
     runs-on: ubuntu-latest
