@@ -5,7 +5,7 @@ permissions:
   statuses: write
 
 jobs:
-  tests:
+  coverage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,17 +22,12 @@ jobs:
       - run: make ctest
 
       - run: make creport SHA=${{ github.sha }}
-      
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
 
       - run: pip install smokeshow
 
       - run: smokeshow upload htmlcov
         env:
-          SMOKESHOW_GITHUB_STATUS_DESCRIPTION: сoverage {coverage-percentage}
+          SMOKESHOW_GITHUB_STATUS_DESCRIPTION: Coverage {coverage-percentage}
           SMOKESHOW_GITHUB_COVERAGE_THRESHOLD: 80
           SMOKESHOW_GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
           SMOKESHOW_GITHUB_CONTEXT: coverage

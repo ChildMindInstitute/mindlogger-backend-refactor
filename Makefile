@@ -3,7 +3,7 @@ HOST = localhost
 
 TEST_COMMAND = pytest -s -vv
 COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest  
-REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "mindlogger-backend-refactor coverage for ${SHA}"
+REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${SHA}"
 EXPORT_COMMAND = python src/export_spec.py
 
 RUFF_COMMAND = ruff
