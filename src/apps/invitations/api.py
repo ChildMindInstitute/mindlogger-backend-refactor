@@ -111,7 +111,7 @@ async def invitation_respondent_send(
                 ValueError(NonUniqueValue()), ("body", InvitationRespondentRequest.field_alias("secret_user_id"))
             )
             raise RequestValidationError([wrapper])
-        invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject.id)
+        invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
 
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))
 
@@ -241,7 +241,7 @@ async def invitation_subject_send(
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
         )
-        invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject.id)
+        invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
         if subject.email != schema.email:
             await subject_service.update(subject.id, email=schema.email)
 

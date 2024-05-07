@@ -180,7 +180,7 @@ class UserAppletAccessService:
             if isinstance(invitation.meta, RespondentMeta):
                 subject_id = invitation.meta.subject_id
             assert subject_id
-            await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id))
+            await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id), invitation.email)
 
         return UserAppletAccess.from_orm(access_schema[0])
 

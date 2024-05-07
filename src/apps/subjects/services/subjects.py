@@ -50,7 +50,7 @@ class SubjectsService:
         await repository.delete_subject_relations(id_)
         return await repository.delete_by_id(id_)
 
-    async def extend(self, subject_id: uuid.UUID) -> Subject | None:
+    async def extend(self, subject_id: uuid.UUID, email: str) -> Subject | None:
         """
         Extend shell account with full account for current user
         """
@@ -58,6 +58,7 @@ class SubjectsService:
         subject = await crud.get_by_id(subject_id)
         if subject:
             subject.user_id = self.user_id
+            subject.email = email
             subject_model = await crud.update(subject)
             return Subject.from_orm(subject_model)
         return None

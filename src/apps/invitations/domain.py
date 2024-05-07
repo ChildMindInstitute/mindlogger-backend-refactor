@@ -230,7 +230,7 @@ class InvitationDetailForRespondent(_InvitationDetail):
     """
 
     secret_user_id: str
-    nickname: str
+    nickname: str | None
     role: Role = Role.RESPONDENT
 
 
