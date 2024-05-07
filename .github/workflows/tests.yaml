@@ -21,7 +21,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pytest-report
-          path: test-results/backend
+          path: ./app/
           if-no-files-found: error
 
   publish-report:
@@ -41,7 +41,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: pytest-report
-          path: test-results/backend
+          path: ./app/
 
       - name: Build test report
         uses: simple-elf/allure-report-action@master
