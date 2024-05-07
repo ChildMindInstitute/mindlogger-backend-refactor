@@ -8,7 +8,7 @@ RUFF_COMMAND = ruff
 ISORT_COMMAND = isort
 MYPY_COMMAND = mypy
 
-DOCKER_EXEC = docker-compose run --rm app
+DOCKER_EXEC = docker-compose run --rm -u root app
 
 # ###############
 # Local
