@@ -285,7 +285,9 @@ class WorkspaceService:
 
         return list(db_applets_map.values())
 
-    async def set_arbitrary_server(self, data: WorkspaceArbitraryCreate | WorkspaceArbitraryFields, *, rewrite=False):
+    async def set_arbitrary_server(
+        self, data: WorkspaceArbitraryCreate | WorkspaceArbitraryFields, *, rewrite=False
+    ) -> None:
         repository = UserWorkspaceCRUD(self.session)
         schema = await repository.get_by_user_id(self._user_id)
         if not schema:

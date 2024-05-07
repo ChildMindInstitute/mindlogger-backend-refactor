@@ -357,7 +357,7 @@ psql# alter user test with password 'test';
 To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:
 
 ```bash
-coverage run --concurrency=thread,gevent -m pytest
+coverage run --branch --concurrency=thread,gevent -m pytest
 coverage report -m
 ```
 
