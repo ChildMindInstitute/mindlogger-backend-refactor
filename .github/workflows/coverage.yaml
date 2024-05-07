@@ -13,20 +13,15 @@ jobs:
         with:
           version: '2.23.3'
 
-      #- name: "Get coverage"
-      #  run: |
-      #    cp .env.default .env
-      #    echo -e "\nRABBITMQ__USE_SSL=False" >> .env
-      #    ls
-      #    pwd
-      #    make run_local
-      - run: mkdir test
-      - run: ls
-      - run: touch test.txt
+      - name: "Get coverage"
+        run: |
+          cp .env.default .env
+          echo -e "\nRABBITMQ__USE_SSL=False" >> .env
+          make run_local
 
-      #- run: make dtest
+      - run: make dtest
 
-      #- run: make creport SHA=${{ github.sha }}
+      - run: make creport SHA=${{ github.sha }}
 
       - run: ls
 

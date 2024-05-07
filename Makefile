@@ -59,12 +59,12 @@ dtest:
 
 .PHONY: ctest
 ctest:
-	${DOCKER_EXEC} \
+	docker-compose run --rm -u root app \
 		${COVERAGE_COMMAND}
 
 .PHONY: creport
 creport:
-	${DOCKER_EXEC} \
+	docker-compose run --rm -u root app \
 		${COV_REPORT_COVERAGE_COMMAND} --show-contexts --title "Coverage for ${SHA}"
 
 
