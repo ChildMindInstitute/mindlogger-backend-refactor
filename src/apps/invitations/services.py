@@ -31,6 +31,7 @@ from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.exception import ValidationError
 from apps.shared.query_params import QueryParams
+from apps.subjects.constants import SubjectTag
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UsersCRUD
 from apps.users.domain import User
@@ -168,7 +169,7 @@ class InvitationsService:
             "user_id": invited_user_id,
             "nickname": None,
             "meta": meta.dict(),
-            "tag": schema.tag,
+            "tag": SubjectTag.TEAM,
             "title": schema.title,
         }
 
@@ -245,7 +246,7 @@ class InvitationsService:
             "last_name": schema.last_name,
             "user_id": invited_user_id,
             "meta": {},
-            "tag": schema.tag,
+            "tag": SubjectTag.TEAM,
             "title": schema.title,
         }
 

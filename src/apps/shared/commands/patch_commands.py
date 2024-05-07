@@ -65,6 +65,11 @@ PatchRegister.register(
     task_id="M2-5116",
     description="[Subject] Populate alerts with subject ids",
 )
+PatchRegister.register(
+    file_path="m2_6504_update_subject_tags.sql",
+    task_id="M2-6504",
+    description="[Subject] Update tag fields for managers/reviewers subjects",
+)
 
 app = typer.Typer()
 

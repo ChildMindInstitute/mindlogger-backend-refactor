@@ -8,6 +8,7 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric, RespondentMeta
 from apps.shared.exception import NotFoundError
+from apps.subjects.constants import SubjectTag
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
@@ -72,7 +73,7 @@ class UserAppletAccessService:
                 secret_user_id=str(uuid.uuid4()),
                 user_id=user_id,
                 nickname=nickname,
-                tag=access_schema_manager[self._applet_id],
+                tag=SubjectTag.TEAM,
             )
             await SubjectsCrud(self.session).create(subject)
 
