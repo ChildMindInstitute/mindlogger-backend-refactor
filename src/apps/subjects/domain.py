@@ -7,8 +7,7 @@ from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import lowercase
 
 
-class Subject(InternalModel):
-    id: uuid.UUID | None
+class SubjectCreate(InternalModel):
     applet_id: uuid.UUID
     email: EmailStr | None
     creator_id: uuid.UUID
@@ -19,6 +18,10 @@ class Subject(InternalModel):
     secret_user_id: str
     nickname: str | None
     is_deleted: bool = False
+
+
+class Subject(SubjectCreate):
+    id: uuid.UUID
 
 
 class SubjectRespondent(PublicModel):

@@ -18,7 +18,7 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.subjects.db.schemas import SubjectSchema
-from apps.subjects.domain import Subject
+from apps.subjects.domain import SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -2492,7 +2492,7 @@ class TestAnswerActivityItems(BaseTest):
         url = self.summary_activities_url.format(applet_id=f"{applet_id}")
         if role == Role.REVIEWER:
             subject = await SubjectsService(session, tom.id).create(
-                Subject(
+                SubjectCreate(
                     applet_id=applet_id,
                     creator_id=tom.id,
                     first_name="first_name",

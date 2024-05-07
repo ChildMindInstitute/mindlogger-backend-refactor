@@ -18,7 +18,7 @@ from apps.shared.enums import Language
 from apps.shared.query_params import QueryParams
 from apps.shared.test import BaseTest
 from apps.subjects.constants import SubjectStatus
-from apps.subjects.domain import Subject
+from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.domain.workspace import WorkspaceApplet
@@ -100,7 +100,7 @@ async def applet_one_lucy_roles(
 @pytest.fixture
 async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
     return await SubjectsService(session, tom.id).create(
-        Subject(
+        SubjectCreate(
             applet_id=applet_one.id,
             creator_id=tom.id,
             first_name="Shell",
@@ -146,7 +146,7 @@ async def tom_answer_applet_one(session, tom: User, applet_one: AppletFull):
 @pytest.fixture
 async def applet_one_shell_has_pending_invitation(session, tom: User, user: User, applet_one: AppletFull):
     subject = await SubjectsService(session, tom.id).create(
-        Subject(
+        SubjectCreate(
             applet_id=applet_one.id,
             creator_id=tom.id,
             first_name="Invited",
@@ -463,7 +463,7 @@ class TestWorkspaces(BaseTest):
         client,
         tom,
         applet_one,
-        tom_applet_one_subject: Subject,
+        tom_applet_one_subject: SubjectCreate,
         lucy: User,
         applet_one_lucy_respondent,
     ):

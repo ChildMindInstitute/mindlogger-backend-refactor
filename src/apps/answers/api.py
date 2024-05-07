@@ -149,15 +149,14 @@ async def summary_activity_list(
 ) -> ResponseMulti[PublicSummaryActivity]:
     filters = SummaryActivityFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    if filters.respondent_id and not filters.target_subject_id:
+    target_subject_id = filters.target_subject_id
+    if filters.respondent_id and not target_subject_id:
         target_subject = await SubjectsService(session, user.id).get_by_user_and_applet(
             filters.respondent_id, applet_id
         )
         if not target_subject:
             raise NotFoundError()
         target_subject_id = target_subject.id
-    else:
-        target_subject_id = filters.target_subject_id
     await CheckAccessService(session, user.id).check_subject_answer_access(applet_id, target_subject_id)
     activities = await AnswerService(session, user.id, answer_session).get_summary_activities(applet_id, filters)
     return ResponseMulti(
@@ -239,8 +238,8 @@ async def summary_latest_report_retrieve(
 ) -> FastApiResponse:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    subject = await SubjectsService(session, user.id).get(subject_id)
-    if not subject or not subject.soft_exists():
+    subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
+    if not subject:
         raise NotFoundError(f"Subject {subject_id} not found.")
 
     report = await AnswerService(session, user.id, answer_session).get_summary_latest_report(

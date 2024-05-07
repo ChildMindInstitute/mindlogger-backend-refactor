@@ -11,7 +11,7 @@ from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.domain.applet_full import AppletFull
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
-from apps.subjects.domain import Subject, SubjectCreateRequest, SubjectRelationCreate
+from apps.subjects.domain import Subject, SubjectCreate, SubjectCreateRequest, SubjectRelationCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.domain import UserCreate
@@ -33,7 +33,7 @@ def create_shell_body(applet_one):
 
 @pytest.fixture
 def subject_schema():
-    return Subject(
+    return SubjectCreate(
         applet_id=uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1"),
         email="subject@mail.com",
         creator_id=uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1"),
@@ -48,7 +48,7 @@ def subject_schema():
 
 @pytest.fixture
 def subject_updated_schema(subject_schema):
-    return Subject(
+    return SubjectCreate(
         applet_id=subject_schema.applet_id,
         email=f"new-{subject_schema.email}",
         creator_id=subject_schema.user_id,
@@ -340,7 +340,7 @@ class TestSubjects(BaseTest):
         assert result_subject.id
         actual_subject = await service.get(result_subject.id)
         assert actual_subject
-        for field_name in Subject.__fields__.keys():
+        for field_name in SubjectCreate.__fields__.keys():
             actual = getattr(actual_subject, field_name)
             expected = getattr(result_subject, field_name)
             assert actual == expected
@@ -358,7 +358,7 @@ class TestSubjects(BaseTest):
         assert original_subject.id
         actual_subject = await service.get(original_subject.id)
         assert actual_subject
-        for field_name in Subject.__fields__.keys():
+        for field_name in SubjectCreate.__fields__.keys():
             actual = getattr(actual_subject, field_name)
             expected = getattr(original_subject, field_name)
             assert actual == expected
