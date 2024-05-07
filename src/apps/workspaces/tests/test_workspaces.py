@@ -445,6 +445,7 @@ class TestWorkspaces(BaseTest):
         assert len(result) == 1
         assert access_id == data["result"][0]["details"][0]["accessId"]
         assert subject_tag == data["result"][0]["details"][0]["subjectTag"]
+        assert data["result"][0]["details"][0]["subjectTag"] == "Team"
 
         # test search - there is no respondent
 

@@ -43,7 +43,6 @@ class _InvitationRequest(PublicModel):
         description="This field represents the last name of invited user",
     )
     language: InvitationLanguage = Field(description="This field represents the language of invitation")
-    tag: str | None = Field(description="This field represents the tag/label of invited user")
 
     @root_validator
     def email_validation(cls, values):
@@ -68,6 +67,7 @@ class InvitationRespondentRequest(_InvitationRequest):
         "representativeness but preserve confidentiality",
         default_factory=str,
     )
+    tag: str | None = Field(description="This field represents the tag/label of invited user")
 
 
 class InvitationReviewerRequest(_InvitationRequest):
