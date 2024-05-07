@@ -34,7 +34,7 @@ phases:
 
   pre_build:
     commands:
-      - COMMIT_ID=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:8}
+      - COMMIT_ID=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:5}
       # get sources
       - |
         if [[ $GITHUB_BRANCH_OR_TAG = PR-* ]]; then
