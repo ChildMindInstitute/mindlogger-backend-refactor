@@ -3,7 +3,7 @@ HOST = localhost
 
 TEST_COMMAND = pytest -s -vv
 COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest  
-COV_REPORT_COVERAGE_COMMAND = coverage html 
+REPORT_COVERAGE_COMMAND = coverage html 
 EXPORT_COMMAND = python src/export_spec.py
 
 RUFF_COMMAND = ruff
@@ -11,6 +11,7 @@ ISORT_COMMAND = isort
 MYPY_COMMAND = mypy
 
 DOCKER_EXEC = docker-compose run --rm app
+COVERAGE_DOCKER_EXEC = docker-compose run --rm -u root app
 
 # ###############
 # Local
@@ -59,13 +60,13 @@ dtest:
 
 .PHONY: ctest
 ctest:
-	docker-compose run --rm -u root app \
+	${COVERAGE_DOCKER_EXEC} \
 		${COVERAGE_COMMAND}
 
 .PHONY: creport
 creport:
-	docker-compose run --rm -u root app \
-		${COV_REPORT_COVERAGE_COMMAND} --show-contexts --title "Coverage for ${SHA}"
+	${COVERAGE_DOCKER_EXEC} \
+		${REPORT_COVERAGE_COMMAND} --show-contexts --title "Coverage for ${SHA}"
 
 
 .PHONY: dcheck
