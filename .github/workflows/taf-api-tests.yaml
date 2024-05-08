@@ -1,0 +1,56 @@
+name: Run TAF API tests
+
+on: 
+  - push
+
+jobs:
+  taf_api_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Chrome
+      run: |
+        curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+        echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+        apt-get -y update
+        apt-get -y install google-chrome-stable
+        ln -s /usr/bin/google-chrome /usr/bin/chrome
+        google-chrome --version && which google-chrome
+
+    - name: Run tests
+      run: |
+        npm install
+        npm run test:api
+
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.taf_api_tests.result == 'failure' || needs.taf_api_tests.result == 'timed_out') }}
+    needs:
+      - taf_api_tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+          SLACK_TITLE: TAF API tests
+          SLACK_MESSAGE: 'TAF API tests failed!'
+  
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.taf_api_tests.result == 'success') }}
+    needs:
+      - taf_api_tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on success"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+          SLACK_TITLE: TAF API tests
+          SLACK_MESSAGE: 'TAF API tests passed.'
