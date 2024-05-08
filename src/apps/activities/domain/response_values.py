@@ -85,12 +85,19 @@ class _SingleSelectionValue(PublicModel):
     id: str | None = None
     text: str
     image: str | None = None
-    score: int | None = None
+    score: float | None = None
     tooltip: str | None = None
     is_hidden: bool = Field(default=False)
     color: Color | None = None
     alert: str | None = None
     value: int | None = None
+
+    @validator("score")
+    def validate_score(cls, value):
+        # validate score value to be 2 decimals max
+        if value:
+            return round(value, 2)
+        return value
 
     @validator("image")
     def validate_image(cls, value):
@@ -162,8 +169,15 @@ class SliderValuesBase(PublicModel):
     max_value: NonNegativeInt = Field(default=12, max_value=12)
     min_image: str | None = None
     max_image: str | None = None
-    scores: list[int] | None = None
+    scores: list[float] | None = None
     alerts: list[SliderValueAlert] | None = None
+
+    @validator("scores")
+    def validate_score(cls, value):
+        # validate each score values to be 2 decimals max
+        if value:
+            value = [round(score, 2) for score in value]
+        return value
 
     @validator("min_image", "max_image")
     def validate_image(cls, value):
