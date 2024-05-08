@@ -1,6 +1,7 @@
 import uuid
 
 from asyncpg.exceptions import UniqueViolationError
+from sqlalchemy.exc import IntegrityError
 
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
@@ -11,14 +12,14 @@ from apps.shared.exception import NotFoundError
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import SubjectCreate
+from apps.subjects.errors import AppletUserViolationError
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
-
-__all__ = ["UserAppletAccessService"]
-
 from apps.workspaces.domain.user_applet_access import RespondentInfoPublic
 from apps.workspaces.errors import UserSecretIdAlreadyExists, UserSecretIdAlreadyExistsInInvitation
+
+__all__ = ["UserAppletAccessService"]
 
 
 class UserAppletAccessService:
@@ -180,7 +181,10 @@ class UserAppletAccessService:
             if isinstance(invitation.meta, RespondentMeta):
                 subject_id = invitation.meta.subject_id
             assert subject_id
-            await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id))
+            try:
+                await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id))
+            except IntegrityError:
+                raise AppletUserViolationError()
 
         return UserAppletAccess.from_orm(access_schema[0])
 
