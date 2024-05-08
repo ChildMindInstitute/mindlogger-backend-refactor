@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import Field
+from pydantic import Field, validator
 
 from apps.shared.domain import PublicModel
 
@@ -43,12 +43,20 @@ class OptionPayload(PublicModel):
 
 
 class ValuePayload(PublicModel):
-    value: int
+    value: float
+
+    @validator("value")
+    def validate_score(cls, value):
+        return round(value, 2)
 
 
 class MinMaxPayload(PublicModel):
-    min_value: int
-    max_value: int
+    min_value: float
+    max_value: float
+
+    @validator("min_value", "max_value")
+    def validate_score(cls, value):
+        return round(value, 2)
 
 
 class ScoreConditionPayload(PublicModel):
