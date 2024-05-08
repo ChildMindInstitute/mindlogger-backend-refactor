@@ -91,11 +91,8 @@ class InvitationsService:
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
-            "first_name": subject.first_name,
-            "last_name": subject.last_name,
             "user_id": invited_user_id,
             "meta": meta.dict(),
-            "nickname": subject.nickname,
         }
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
         if pending_invitation:
