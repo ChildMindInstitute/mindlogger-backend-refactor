@@ -2,6 +2,10 @@
 
 This repository is used for the backend of the [MindLogger](https://mindlogger.org/) application stack.
 
+<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/ChildMindInstitute/mindlogger-backend-refactor" target="_blank">
+    <img src="https://coverage-badge.samuelcolvin.workers.dev/ChildMindInstitute/mindlogger-backend-refactor.svg" alt="Coverage">
+</a>
+
 ## Getting Started
 
 * MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
