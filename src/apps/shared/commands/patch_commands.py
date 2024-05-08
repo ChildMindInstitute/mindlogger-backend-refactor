@@ -41,6 +41,11 @@ PatchRegister.register(
     manage_session=False,
 )
 PatchRegister.register(
+    file_path="m2_5551_delete_invitations_of_existing_respondent.sql",
+    task_id="M2-5551",
+    description="[Subject] Delete pending invitations of existing respondent",
+)
+PatchRegister.register(
     file_path="m2_4608_create_subjects.sql",
     task_id="M2-4608",
     description="[Subject] Create subject record for each respondent",
