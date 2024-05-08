@@ -1,7 +1,7 @@
 PORT = 8000
 HOST = localhost
 
-TEST_COMMAND = pytest -s -vv --junit-xml=test-result
+TEST_COMMAND = pytest -s -vv --alluredir=allure-results
 EXPORT_COMMAND = python src/export_spec.py
 
 RUFF_COMMAND = ruff

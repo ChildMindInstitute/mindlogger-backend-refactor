@@ -21,8 +21,8 @@ jobs:
       - name: Collect artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-result
-          path: test-result
+          name: allure-results
+          path: allure-results
           if-no-files-found: error
 
   publish-report:
@@ -48,11 +48,10 @@ jobs:
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
-          allure_results: app/test-result
-          gh_pages: gh-pages
+          allure_results: allure-results
+          #gh_pages: gh-pages
           #allure_report: allure-report
           allure_history: allure-history
-          keep_reports: 20
 
       - name: Deploy report to Github Pages
         if: always()
