@@ -41,8 +41,8 @@ jobs:
       - name: Fetch results
         uses: actions/download-artifact@v4
         with:
-          name: test-result
-          path: app
+          name: allure-results
+          path: allure-results
 
       - name: Build test report
         uses: simple-elf/allure-report-action@master
