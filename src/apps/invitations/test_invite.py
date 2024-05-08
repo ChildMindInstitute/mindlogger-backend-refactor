@@ -165,6 +165,20 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
     )
 
 
+@pytest.fixture
+async def applet_one_lucy_subject(session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User) -> Subject:
+    return await SubjectsService(session, tom.id).create(
+        SubjectCreate(
+            applet_id=applet_one.id,
+            creator_id=lucy.id,
+            first_name="Shell",
+            last_name="Account",
+            nickname="shell-account-0",
+            secret_user_id=f"{uuid.uuid4()}",
+        )
+    )
+
+
 class TestInvite(BaseTest):
     fixtures = [
         "invitations/fixtures/invitations.json",
@@ -204,9 +218,8 @@ class TestInvite(BaseTest):
 
         assert len(response.json()["result"]) == 2
 
-    async def test_invitation_retrieve(self, client, applet_one, lucy):
+    async def test_invitation_retrieve(self, client, applet_one, lucy, applet_one_lucy_subject):
         client.login(lucy)
-
         response = await client.get(self.invitation_detail.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6"))
         assert response.status_code == http.HTTPStatus.OK
 
@@ -835,12 +848,30 @@ class TestInvite(BaseTest):
         assert payload["result"]["creatorId"] == creator_id
         assert payload["result"]["language"] == shell_create_data["language"]
 
-    async def test_shell_invite(self, client, session, shell_create_data, bob: User, applet_four: AppletFull):
+    @pytest.mark.parametrize(
+        "shell_create",
+        (
+            dict(
+                language="en",
+                firstName="firstName",
+                lastName="lastName",
+                secretUserId="secretUserId",
+                nickname="nickname",
+            ),
+            dict(
+                language="en",
+                firstName="firstName",
+                lastName="lastName",
+                secretUserId="secretUserId",
+            ),
+        ),
+    )
+    async def test_shell_invite(self, client, session, bob: User, applet_four: AppletFull, shell_create):
         client.login(bob)
         email = "mm@mail.com"
         applet_id = str(applet_four.id)
         url = self.shell_acc_create_url.format(applet_id=applet_id)
-        response = await client.post(url, shell_create_data)
+        response = await client.post(url, shell_create)
         subject = response.json()["result"]
 
         url = self.shell_acc_invite_url.format(applet_id=applet_id)
@@ -992,3 +1023,37 @@ class TestInvite(BaseTest):
         payload = response.json()
         assert payload
         assert payload["result"][0]["message"] == NonUniqueValue().error
+
+    async def test_shell_update_email_on_accept(
+        self, client, session, bob: User, lucy: User, applet_four: AppletFull, shell_create_data
+    ):
+        client.login(bob)
+        applet_id = str(applet_four.id)
+        url = self.shell_acc_create_url.format(applet_id=applet_id)
+        response = await client.post(url, shell_create_data)
+        subject = response.json()["result"]
+
+        url = self.shell_acc_invite_url.format(applet_id=applet_id)
+        response = await client.post(url, dict(subjectId=subject["id"], email=lucy.email_encrypted))
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(TestMail.mails) == 1
+        invitation_key = response.json()["result"]["key"]
+
+        # Change email for subject directly
+        crud = SubjectsCrud(session)
+        subject_model = await crud.get_by_id(subject["id"])
+        assert subject_model
+        subject_model.email = "mm2@mail.com"
+        await crud._update_one("id", subject_model.id, subject_model)
+        subject_model = await crud.get_by_id(subject["id"])
+        assert subject_model
+        assert subject_model.email != lucy.email_encrypted
+
+        # Accept invite and check that subject have email from invite
+        client.login(lucy)
+        response = await client.post(self.accept_url.format(key=invitation_key))
+        assert response.status_code == http.HTTPStatus.OK
+        subject_model = await crud.get_by_id(subject["id"])
+        assert subject_model
+        assert subject_model.email == lucy.email_encrypted

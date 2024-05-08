@@ -182,7 +182,7 @@ class UserAppletAccessService:
                 subject_id = invitation.meta.subject_id
             assert subject_id
             try:
-                await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id))
+                await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id), invitation.email)
             except IntegrityError:
                 raise AppletUserViolationError()
 

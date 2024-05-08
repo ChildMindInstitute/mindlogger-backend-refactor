@@ -163,7 +163,7 @@ async def applet_one_shell_has_pending_invitation(session, tom: User, user: User
         secret_user_id=f"{uuid.uuid4()}",
     )
     assert subject.id
-    await InvitationsService(session, tom).send_respondent_invitation(applet_one.id, schema, subject.id)
+    await InvitationsService(session, tom).send_respondent_invitation(applet_one.id, schema, subject)
     return subject
 
 

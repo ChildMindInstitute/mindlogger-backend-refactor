@@ -37,6 +37,7 @@ from apps.mailing.services import MailingService
 from apps.shared.exception import ValidationError
 from apps.shared.query_params import QueryParams
 from apps.subjects.crud import SubjectsCrud
+from apps.subjects.domain import Subject
 from apps.subjects.errors import AppletUserViolationError
 from apps.users import UsersCRUD
 from apps.users.domain import User
@@ -76,11 +77,11 @@ class InvitationsService:
         self,
         applet_id: uuid.UUID,
         schema: InvitationRespondentRequest,
-        subject_id: uuid.UUID,
+        subject: Subject,
     ) -> InvitationDetailForRespondent:
         await self._is_validated_role_for_invitation(applet_id, Role.RESPONDENT)
 
-        subject_invitation = await self.invitations_crud.get_pending_subject_invitation(applet_id, subject_id)
+        subject_invitation = await self.invitations_crud.get_pending_subject_invitation(applet_id, subject.id)
         if subject_invitation and subject_invitation.email != schema.email:
             raise ValidationError("Subject already invited with different email.")
 
@@ -88,19 +89,16 @@ class InvitationsService:
         # by user_id in this case
         invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(email=schema.email)
         invited_user_id = invited_user.id if invited_user is not None else None
-        meta = RespondentMeta(subject_id=str(subject_id))
+        meta = RespondentMeta(subject_id=str(subject.id))
         payload = {
-            "email": schema.email,  # TODO remove?
+            "email": schema.email,
             "applet_id": applet_id,
             "role": Role.RESPONDENT,
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
-            "first_name": schema.first_name,  # TODO remove
-            "last_name": schema.last_name,  # TODO remove
             "user_id": invited_user_id,
             "meta": meta.dict(),
-            "nickname": schema.nickname,  # TODO remove
         }
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
         if pending_invitation:
@@ -123,8 +121,8 @@ class InvitationsService:
             subject=self._get_invitation_subject(applet),
             body=service.get_template(
                 path=template_name,
-                first_name=schema.first_name,
-                last_name=schema.last_name,
+                first_name=subject.first_name,
+                last_name=subject.last_name,
                 applet_name=applet.display_name,
                 role=invitation_internal.role,
                 link=self._get_invitation_url_by_role(invitation_internal.role),
@@ -137,7 +135,7 @@ class InvitationsService:
         return InvitationDetailForRespondent(
             id=invitation_internal.id,
             secret_user_id=schema.secret_user_id,
-            nickname=schema.nickname,
+            nickname=subject.nickname,
             applet_id=applet.id,
             applet_name=applet.display_name,
             role=invitation_internal.role,
