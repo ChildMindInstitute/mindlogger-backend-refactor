@@ -1,14 +1,19 @@
+import http
+import io
 import uuid
 from typing import Optional
 
+import httpx
 import typer
 from pydantic import ValidationError
 from rich import print
 from rich.style import Style
 from rich.table import Table
 from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from apps.file.storage import select_storage
 from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserIsDeletedError, UserNotFound
 from apps.workspaces.constants import StorageType
@@ -25,14 +30,18 @@ from infrastructure.database import atomic, session_manager
 app = typer.Typer()
 
 
-async def get_version(database_url):
+async def get_version(database_url) -> str | None:
     engine = create_async_engine(database_url)
     async with engine.connect() as conn:
-        db_result = await conn.execute(text("select version_num from alembic_version"))
-        return db_result.scalar_one()
+        try:
+            db_result = await conn.execute(text("select version_num from alembic_version"))
+        except ProgrammingError:
+            return None
+        result: str | None = db_result.scalar_one()
+        return result
 
 
-def print_data_table(data: WorkspaceArbitraryFields):
+def print_data_table(data: WorkspaceArbitraryFields) -> None:
     table = Table(
         show_header=False,
         title="Arbitrary server settings",
@@ -44,8 +53,9 @@ def print_data_table(data: WorkspaceArbitraryFields):
     print(table)
 
 
-def wrap_error_msg(msg):
-    return f"[bold red]Error: \n{msg}[/bold red]"
+def error(msg: str):
+    print(f"[bold red]Error: \n{msg}[/bold red]")
+    raise typer.Abort()
 
 
 @app.command(short_help="Add arbitrary server settings")
@@ -126,9 +136,7 @@ async def add(
             loc_str = f"{loc[-2]}.{loc[-1]}: "
         elif loc[-1] != "__root__":
             loc_str = f"{loc[-1]}: "
-        print(wrap_error_msg(loc_str + err["msg"]))
-        return
-
+        error(loc_str + err["msg"])
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         async with atomic(session):
@@ -136,19 +144,21 @@ async def add(
                 owner = await UsersCRUD(session).get_by_email(owner_email)
                 await WorkspaceService(session, owner.id).set_arbitrary_server(data, rewrite=force)
             except WorkspaceNotFoundError as e:
-                print(wrap_error_msg(e))
+                error(str(e))
             except ArbitraryServerSettingsError as e:
-                print(wrap_error_msg("Arbitrary server is already set. Use --force to rewrite."))
                 print_data_table(e.data)
+                error("Arbitrary server is already set. Use --force to rewrite.")
             except (UserNotFound, UserIsDeletedError):
-                print(wrap_error_msg(f"User with email {owner_email} not found"))
-            else:
-                print("[bold green]Success:[/bold green]")
-                alembic_version = await get_version(data.database_uri)
-                output = WorkSpaceArbitraryConsoleOutput(
-                    email=owner_email, user_id=owner.id, **data.dict(), alembic_version=alembic_version
-                )
-                print_data_table(output)
+                error(f"User with email {owner_email} not found")
+    alembic_version = await get_version(data.database_uri)
+    output = WorkSpaceArbitraryConsoleOutput(
+        email=owner_email, user_id=owner.id, **data.dict(), alembic_version=alembic_version
+    )
+    print(
+        "[green]Success: Run [bold]ping[/bold] command to check access. "
+        "Don't forget to apply migrations for database.[/green]"
+    )
+    print_data_table(output)
 
 
 @app.command(short_help="Show arbitrary server settings")
@@ -162,13 +172,13 @@ async def show(
             try:
                 owner = await UsersCRUD(session).get_by_email(owner_email)
             except (UserNotFound, UserIsDeletedError):
-                print(wrap_error_msg(f"User with email {owner_email} not found"))
+                error(f"User with email {owner_email} not found")
             else:
                 data = await WorkspaceService(session, owner.id).get_arbitrary_info_by_owner_id_if_use_arbitrary(
                     owner.id
                 )
                 if not data:
-                    print("[bold green]" "Arbitrary server not configured" "[/bold green]")
+                    print(f"[bold green]Arbitrary settings are not configured for {owner_email}[/bold green]")
                     return
                 alembic_version = await get_version(data.database_uri)
                 arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
@@ -192,7 +202,7 @@ async def show(
                 print_data_table(output)
 
 
-@app.command(short_help="Remove arbitrary server settings")
+@app.command(short_help="Remove server settings for an workspace by email")
 @coro
 async def remove(
     owner_email: str = typer.Argument(..., help="Workspace owner email"),
@@ -215,10 +225,55 @@ async def remove(
                 owner = await UsersCRUD(session).get_by_email(owner_email)
                 await WorkspaceService(session, owner.id).set_arbitrary_server(data, rewrite=True)
             except (UserNotFound, UserIsDeletedError):
-                print(wrap_error_msg(f"User with email {owner_email} not found"))
+                error(f"User with email {owner_email} not found")
             except WorkspaceNotFoundError as e:
-                print(wrap_error_msg(e))
+                error(str(e))
             else:
-                print(
-                    f"[bold green]Abitrary setting for owner {owner_email} with id {owner.id} are removed![/bold green]"
+                print(f"[green]Abitrary settings for owner {owner_email} with id {owner.id} are removed![/green]")
+
+
+@app.command(
+    short_help=(
+        "Ping arbitrary database and check uploading to the provided bucket to be sure that everything work correct"
+    )
+)
+@coro
+async def ping(owner_email: str = typer.Argument(..., help="Workspace owner email")) -> None:
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        try:
+            owner = await UsersCRUD(session).get_by_email(owner_email)
+            data = await WorkspaceService(session, owner.id).get_arbitrary_info_by_owner_id_if_use_arbitrary(owner.id)
+        except (UserNotFound, UserIsDeletedError):
+            error(f"User with email {owner_email} not found")
+        except WorkspaceNotFoundError as e:
+            error(str(e))
+        if data is None:
+            print(f"[green]Arbitrary settings are not configured for user {owner_email}.[/green]")
+            return
+        async with session_manager.get_session(data.database_uri)() as arb_session:
+            try:
+                print("Check database availability.")
+                await arb_session.execute("select current_date")
+                print(f"[green]Database for user [bold]{owner_email}[/bold] is available.[/green]")
+            except Exception as e:
+                error(str(e))
+        print(f"Check bucket {data.storage_bucket} availability.")
+        storage = await select_storage(owner_id=owner.id, session=session)
+        key = "mindlogger.txt"
+        presigned_data = storage.generate_presigned_post(data.storage_bucket, key)
+        print(f"Presigned POST fields are following: {presigned_data['fields'].keys()}")
+        file = io.BytesIO(b"")
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    presigned_data["url"], data=presigned_data["fields"], files={"file": (key, file)}
                 )
+                if response.status_code == http.HTTPStatus.NO_CONTENT:
+                    print(f"[green]Bucket {data.storage_bucket} for user {owner_email} is available.[/green]")
+                else:
+                    print(f"Can not upload test file to bucket {data.storage_bucket} for user {owner_email}")
+                    print(response.content)
+            except httpx.HTTPError as e:
+                print(f"Can not upload test file to bucket {data.storage_bucket} for user {owner_email}")
+                error(str(e))

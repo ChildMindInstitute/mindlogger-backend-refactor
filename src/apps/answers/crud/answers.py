@@ -460,8 +460,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_by_applet_activity_created_at(
         self, applet_id: uuid.UUID, activity_id: str, created_at: int
-    ) -> list[AnswerSchema] | None:
-        created_time = datetime.datetime.utcfromtimestamp(created_at)
+    ) -> list[AnswerSchema]:
+        # TODO: investigate this later
+        created_time = datetime.datetime.fromtimestamp(created_at)
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.created_at == created_time)

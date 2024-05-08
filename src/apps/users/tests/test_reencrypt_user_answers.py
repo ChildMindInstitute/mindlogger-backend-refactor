@@ -341,6 +341,7 @@ async def test_reencrypt_answers_arbitrary(
         storage_secret_key="key",
         storage_type=StorageType.AWS,
         storage_region="us-east-1",
+        storage_bucket="bucket",
     )
     await WorkspaceService(session, user.id).create_workspace_from_user(user)
     await WorkspaceService(session, user.id).set_arbitrary_server(w)
