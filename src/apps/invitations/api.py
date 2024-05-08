@@ -1,14 +1,19 @@
+import asyncio
 import uuid
+from contextlib import asynccontextmanager
 from copy import deepcopy
 
 from fastapi import Body, Depends
 from fastapi.exceptions import RequestValidationError
 from pydantic.error_wrappers import ErrorWrapper
 
+from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
+from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.domain import (
     InvitationDetailForReviewer,
+    InvitationDetailRespondent,
     InvitationManagersRequest,
     InvitationManagersResponse,
     InvitationRespondentRequest,
@@ -19,7 +24,12 @@ from apps.invitations.domain import (
     PrivateInvitationResponse,
     ShallAccountInvitation,
 )
-from apps.invitations.errors import ManagerInvitationExist, NonUniqueValue, RespondentInvitationExist
+from apps.invitations.errors import (
+    InvitationSubjectAcceptError,
+    ManagerInvitationExist,
+    NonUniqueValue,
+    RespondentInvitationExist,
+)
 from apps.invitations.filters import InvitationQueryParams
 from apps.invitations.services import InvitationsService, PrivateInvitationService
 from apps.shared.domain import Response, ResponseMulti
@@ -183,8 +193,34 @@ async def invitation_accept(
     session=Depends(get_session),
 ):
     """General endpoint to approve the applet invitation."""
-    async with atomic(session):
-        await InvitationsService(session, user).accept(key)
+    try:
+        async with atomic(session):
+            await InvitationsService(session, user).accept(key)
+    except InvitationSubjectAcceptError as e:
+        # subject applet_id-user_id exists. Check for deleted record
+        invitation = e.invitation
+        assert isinstance(invitation, InvitationDetailRespondent)
+        service = SubjectsService(session, user.id)
+        subject, existing_subject = await asyncio.gather(
+            service.get(uuid.UUID(invitation.meta.subject_id)),
+            service.get_by_user_and_applet(user.id, invitation.applet_id),
+        )
+        assert subject
+        if not existing_subject or existing_subject.is_deleted is not True:
+            raise
+
+        info = await preprocess_arbitrary_url(applet_id=invitation.applet_id, session=session)
+        async with asynccontextmanager(get_answer_session)(info) as answer_session:
+            async with atomic(session):
+                # remove user_id from deleted subject, accept invitation
+                await service.update(existing_subject.id, user_id=None)
+                await InvitationsService(session, user).accept(key)
+
+                # move answers from deleted subject to the new one
+                async with atomic(answer_session):
+                    await AnswerService(
+                        session, user_id=user.id, arbitrary_session=answer_session
+                    ).replace_answer_subject(existing_subject.id, subject.id)
 
 
 async def private_invitation_accept(

@@ -1327,6 +1327,9 @@ class AnswerService:
             return True
         return False
 
+    async def replace_answer_subject(self, sabject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
+        await AnswersCRUD(self.answer_session).replace_answers_subject(sabject_id_from, subject_id_to)
+
 
 class ReportServerService:
     def __init__(self, session, arbitrary_session=None):

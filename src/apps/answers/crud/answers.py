@@ -772,3 +772,29 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         data = result.all()
 
         return parse_obj_as(list[IdentifierData], data)
+
+    async def replace_answers_subject(self, subject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
+        new_target_subject_id = case(
+            (AnswerSchema.target_subject_id == subject_id_from, subject_id_to),
+            else_=AnswerSchema.target_subject_id,
+        )
+        new_source_subject_id = case(
+            (AnswerSchema.source_subject_id == subject_id_from, subject_id_to),
+            else_=AnswerSchema.source_subject_id,
+        )
+
+        query = (
+            update(AnswerSchema)
+            .where(
+                or_(
+                    AnswerSchema.target_subject_id == subject_id_from,
+                    AnswerSchema.source_subject_id == subject_id_from,
+                )
+            )
+            .values(
+                target_subject_id=new_target_subject_id,
+                source_subject_id=new_source_subject_id,
+            )
+        )
+
+        await self._execute(query)
