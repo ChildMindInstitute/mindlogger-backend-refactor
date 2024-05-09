@@ -11,6 +11,13 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Install AWS CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+        aws --version
+
     - name: Install Chrome
       run: |
         curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
@@ -27,7 +34,29 @@ jobs:
         path: 'taf_api_tests'
         token: ${{ secrets.PAT_TOKEN }}
 
+    - name: Get variables from AWS Secrets Manager
+      env:
+        ENV_NAME: ${{ secrets.TAF_TARGET }} # dev | test | stage | uat
+        SECRET_ID: ${{ secrets.TAF_SECRET_ID }} # AWS Secrets Manager - Secret ID
+      run: |
+        API_DOMAIN=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .API_DOMAIN)
+        REPORT_SERVER_IP=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .REPORT_SERVER_IP)
+        WEB_APP_BASE_URL=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .WEB_APP_BASE_URL)
+        ADMIN_APP_BASE_URL=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .ADMIN_APP_BASE_URL)
+
+        echo "API_DOMAIN=${API_DOMAIN}"
+        echo "REPORT_SERVER_IP=${REPORT_SERVER_IP}"
+        echo "WEB_APP_BASE_URL=${WEB_APP_BASE_URL}"
+        echo "ADMIN_APP_BASE_URL=${ADMIN_APP_BASE_URL}"
+
+        REGULAR_DB_CONNECTION_STRING=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .REGULAR_DB_CONNECTION_STRING)
+        ARBITRARY_DB_CONNECTION_STRING=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .ARBITRARY_DB_CONNECTION_STRING)
+        MAILINATOR_TOKEN=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .MAILINATOR_TOKEN)
+
     - name: Run TAF API tests
+      env:
+        HEADLESS: 'true'
+        BROWSER_NAME: 'chrome'
       run: |
         cd taf_api_tests
         npm install
