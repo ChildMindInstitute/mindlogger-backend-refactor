@@ -38,7 +38,7 @@ jobs:
       run: |
         aws --version
         env | grep AWS
-        env | grep ECS
+        env | grep METADATA
         API_DOMAIN=$(aws --region=us-east-1 secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .API_DOMAIN)
         REPORT_SERVER_IP=$(aws --debug secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .REPORT_SERVER_IP)
         WEB_APP_BASE_URL=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .WEB_APP_BASE_URL)
