@@ -41,7 +41,7 @@ jobs:
         WEB_APP_BASE_URL=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .WEB_APP_BASE_URL)
         ADMIN_APP_BASE_URL=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .ADMIN_APP_BASE_URL)
 
-        env
+        env | grep AWS
         echo "API_DOMAIN=${API_DOMAIN}"
         echo "REPORT_SERVER_IP=${REPORT_SERVER_IP}"
         echo "WEB_APP_BASE_URL=${WEB_APP_BASE_URL}"
