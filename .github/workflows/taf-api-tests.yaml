@@ -13,15 +13,23 @@ jobs:
 
     - name: Install Chrome
       run: |
-        curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
-        echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
-        apt-get -y update
-        apt-get -y install google-chrome-stable
-        ln -s /usr/bin/google-chrome /usr/bin/chrome
+        curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb http://dl.google.com/linux/chrome/deb/ stable main" || sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt-get -y update
+        sudo apt-get -y install google-chrome-stable
+        sudo ln -s /usr/bin/google-chrome /usr/bin/chrome
         google-chrome --version && which google-chrome
 
-    - name: Run tests
+    - name: Checkout tests repository
+      uses: actions/checkout@v4
+      with:
+        repository: ChildMindInstitute/MindLogger-TAF
+        path: 'taf_api_tests'
+        token: ${{ secrets.PAT_TOKEN }}
+
+    - name: Run TAF API tests
       run: |
+        cd taf_api_tests
         npm install
         npm run test:api
 
