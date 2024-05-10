@@ -8,6 +8,7 @@ env:
     GITHUB_ORGANIZATION:      ${GITHUB_ORGANIZATION}
     GITHUB_REPO_NAME:         ${GITHUB_REPO_NAME}
     GITHUB_BRANCH_OR_TAG:     ${GITHUB_BRANCH_OR_TAG}
+    GITHUB_REF:               ${GITHUB_REF}
     BUILD_NAME:               ${BUILD_NAME}
     BUILD_NUMBER:             ${BUILD_NUMBER}
     ECR_ADDRESS:              ${ECR_ADDRESS}
@@ -24,8 +25,6 @@ phases:
       - aws --version
       - echo "GITHUB_ORGANIZATION=${GITHUB_ORGANIZATION}"
       - echo "GITHUB_REPO_NAME=${GITHUB_REPO_NAME}"
-      - export GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG/\//-}
-      - export GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG/\//-}
       - echo "GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG}"
       - echo "BUILD_NAME=${BUILD_NAME}"
       - echo "BUILD_NUMBER=${BUILD_NUMBER}"
@@ -39,8 +38,8 @@ phases:
       - COMMIT_ID=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:5}
       # get sources
       - |
-        if [[ $GITHUB_BRANCH_OR_TAG = PR-* ]]; then
-          PR_NUMBER="${GITHUB_BRANCH_OR_TAG//[^0-9]/}";
+        if [[ $GITHUB_REF = PR-* ]]; then
+          PR_NUMBER="${GITHUB_REF//[^0-9]/}";
           GITHUB_FETCH="pull/${PR_NUMBER}/head:pull_${PR_NUMBER}";
           GITHUB_BRANCH_OR_TAG="pull_${PR_NUMBER}";
         else
