@@ -1,0 +1,37 @@
+name: Tear down preview environment for feature branch
+
+on:
+  delete: {}
+
+
+env:
+  APP_NAME: ${{ github.event.repository.name }}
+  COPILOT_SERVICE: mindlogger-backend
+  AWS_REGION: us-east-1
+
+jobs:
+  destroy-preview-env:
+    name: Destroy Preview Env
+    if: github.event.ref_type == 'branch'
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set env name
+        run: |
+          echo "ENV_NAME=$(echo '${{ github.event.ref }}' | sed -E 's/([0-9]+)\/merge/pr\-\1/' | sed 's/\//\-/')" >> $GITHUB_ENV
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
+          role-session-name: gha-preview-env
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Install copilot
+        run: |
+          curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 
+          sudo mv copilot /usr/local/bin/copilot && copilot -v
+      - uses: actions/checkout@v4
+        name: Checkout
+      - name: Delete environment
+        run: scripts/env-stop.sh

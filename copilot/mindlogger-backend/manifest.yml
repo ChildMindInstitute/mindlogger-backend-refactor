@@ -20,8 +20,13 @@ image:
   build:
     dockerfile: compose/fastapi/Dockerfile
     context: .
+    args:
+      PIPENV_EXTRA_ARGS: --dev
   # Port exposed through your container to route traffic to it.
-  port: 80
+  port: 8080
+
+entrypoint: /fastapi-entrypoint
+command: /fastapi-start
 
 cpu: 256       # Number of CPU units for the task.
 memory: 512    # Amount of memory in MiB used by the task.
@@ -30,7 +35,9 @@ count: 1       # Number of tasks that should be running in your service.
 exec: true     # Enable running commands in your container.
 network:
   connect: true # Enable Service Connect for intra-environment traffic between services.
-
+  vpc:
+    security_groups:
+      - sg-0fe1e219a0c0c5afb
 # storage:
   # readonly_fs: true       # Limit to read-only access to mounted root filesystems.
 
@@ -39,8 +46,88 @@ network:
 #variables:                    # Pass environment variables as key value pairs.
 #  LOG_LEVEL: info
 
-#secrets:                      # Pass secrets from AWS Systems Manager (SSM) Parameter Store.
-#  GITHUB_TOKEN: GITHUB_TOKEN  # The key is the name of the environment variable, the value is the name of the SSM parameter.
+variables:
+  # Python configurations
+
+  PYTHONPATH: src/
+
+
+  # PostgreSQL configurations
+  DATABASE__HOST: cmiml-feature-db.cjg844g2kgxp.us-east-1.rds.amazonaws.com
+  DATABASE__PORT: 5432
+  DATABASE__USER: feature
+  DATABASE__DB: mindlogger_backend_${ENV_NAME_SNAKE}
+  REDIS__HOST: cmiml-feature.gwo51x.ng.0001.use1.cache.amazonaws.com
+  REDIS__PORT: 6379
+  REDIS__DB: 0
+
+  RABBITMQ__USER: backendUser
+
+  # Application configurations
+
+  # CORS
+  CORS__ALLOW_ORIGINS: "*"
+  #CORS__ALLOW_ORIGINS_REGEX:
+  CORS__ALLOW_CREDENTIALS: true
+  CORS__ALLOW_METHODS: "*"
+  CORS__ALLOW_HEADERS: "*"
+
+  # Authentication
+  AUTHENTICATION__ACCESS_TOKEN__EXPIRATION: 30
+  AUTHENTICATION__REFRESH_TOKEN__EXPIRATION: 540
+  AUTHENTICATION__ALGORITHM: "HS256"
+  AUTHENTICATION__TOKEN_TYPE: "Bearer"
+  AUTHENTICATION__PASSWORD_RECOVER__EXPIRATION: 900
+
+  # Mailing
+  MAILING__MAIL__USERNAME: mailhog
+  MAILING__MAIL__PASSWORD: mailhog
+  MAILING__MAIL__SERVER: fcm.mail.server
+  MAILING__MAIL__PORT: 1025
+  MAILING__MAIL_STARTTLS:
+  MAILING__MAIL_SSL_TLS:
+  MAILING__MAIL__FROM_EMAIL: "no-reply@mindlogger.org"
+  MAILING__MAIL__FROM_NAME: "Mindlogger"
+  # Currently these settings are not used
+  MAILING__USE_CREDENTIALS: False
+  MAILING__VALIDATE_CERTS: False
+
+  # Third party
+
+  # FCM Notification api key
+  NOTIFICATION__API_KEY:
+
+  # CDN configs (container by default)
+  CDN__ENDPOINT_URL: http://localhost:9000
+  CDN__SECRET_KEY: miniosecret
+  CDN__ACCESS_KEY: minioaccess
+  CDN__REGION:
+  CDN__BUCKET_ANSWER: media
+  CDN__BUCKET: media
+  CDN__BUCKET_OPERATIONS: media
+  CDN__STORAGE_ADDRESS: http://localhost:9000
+  CDN__LEGACY_REGION:
+  CDN__LEGACY_BUCKET:
+  CDN__LEGACY_SECRET_KEY:
+  CDN__LEGACY_ACCESS_KEY:
+  CDN__TTL_SIGNED_URLS: 3600
+
+  # jsonld converter
+  JSONLD_CONVERTER__PROTOCOL_PASSWORD:
+
+
+secrets:
+  DATABASE__PASSWORD:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DATABASE__PASSWORD_BACKEND_USER::"
+  RABBITMQ__URL:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:RABBITMQ__HOST::"
+  RABBITMQ__PASSWORD:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:RABBITMQ__PASSWORD::"
+  AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY::"
+  AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY::"
+
 
 # You can override any of the values defined above by environment.
 #environments:

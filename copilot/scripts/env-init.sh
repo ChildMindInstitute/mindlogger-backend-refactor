@@ -8,8 +8,8 @@ if copilot env ls -a $APP_NAME | grep -q "$ENV_NAME"; then
     echo "Environment already exists"
     exit 0
 else
-    if [ "$ENV_NAME" == 'dev' ]; then
-        echo "You must create dev from bootstrap script locally"
+    if [ "$ENV_NAME" == 'feature' ]; then
+        echo "You must create feature from bootstrap script locally"
         exit 1
     fi
     echo "Creating preview environment $ENV_NAME..."
@@ -47,4 +47,4 @@ copilot env init \
   --import-vpc-id "$VPC_ID" \
   --import-public-subnets "$PUBLIC_SUBNETS" \
   --import-private-subnets "$PRIVATE_SUBNETS" \
-  --profile $PROFILE
+  --profile "$PROFILE"

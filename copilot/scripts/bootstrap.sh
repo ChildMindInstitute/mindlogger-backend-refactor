@@ -3,7 +3,8 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${SCRIPT_DIR}/funcs.sh
 
-DEV_ENV_NAME=${DEV_ENV_NAME:-dev}
+DEV_ENV_NAME=${DEV_ENV_NAME:-feature}
+export ENV_NAME_SNAKE=${DEV_ENV_NAME}
 
 if [[ -z "$APP_NAME" ]]; then
   echo "APP_NAME must be set"
@@ -26,13 +27,6 @@ export DEV_PUBLIC_SUBNETS="$retval"
 get_private_subnets "$DEV_VPC_ID"
 export DEV_PRIVATE_SUBNETS="$retval"
 
-#query='Subnets[?MapPublicIpOnLaunch==`false`].SubnetId'
-#get_subnets "$DEV_VPC_ID" "$query" "$DEV_PROFILE"
-#export DEV_PRIVATE_SUBNETS="$retval"
-#
-#query='Subnets[?AssignIpv6AddressOnCreation==`true`].SubnetId'
-#get_subnets "$DEV_VPC_ID" "$query" "$DEV_PROFILE"
-#export DEV_PUBLIC_SUBNETS="$retval"
 
 echo "DEV VPC_ID: $DEV_VPC_ID"
 echo "DEV PUBLIC_SUBNETS: $DEV_PUBLIC_SUBNETS"
@@ -43,7 +37,6 @@ copilot env init --app "$APP_NAME" --name "$DEV_ENV_NAME" --profile "$DEV_PROFIL
  --import-vpc-id $DEV_VPC_ID \
  --container-insights
 
-# --import-cert-arns arn:aws:acm:us-east-1:017925157769:certificate/d58df2e9-1c16-42ed-9923-cf9fc2fd588c \
 
 copilot env deploy --name "$DEV_ENV_NAME"
 
