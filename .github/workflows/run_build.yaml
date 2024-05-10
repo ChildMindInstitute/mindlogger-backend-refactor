@@ -40,12 +40,6 @@ jobs:
           secret-ids: |
             ,cmiml-devops
       
-      - name: Modify GITHUB_BRANCH_OR_TAG variable
-        run: |
-          export GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG/\//-}
-          export GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG/\//-}
-          echo $GITHUB_BRANCH_OR_TAG
-
       - name: Run CodeBuild
         uses: aws-actions/aws-codebuild-run-build@v1
         env:

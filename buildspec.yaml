@@ -24,6 +24,8 @@ phases:
       - aws --version
       - echo "GITHUB_ORGANIZATION=${GITHUB_ORGANIZATION}"
       - echo "GITHUB_REPO_NAME=${GITHUB_REPO_NAME}"
+      - export GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG/\//-}
+      - export GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG/\//-}
       - echo "GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG}"
       - echo "BUILD_NAME=${BUILD_NAME}"
       - echo "BUILD_NUMBER=${BUILD_NUMBER}"
