@@ -43,12 +43,12 @@ phases:
           GITHUB_FETCH="pull/${PR_NUMBER}/head:pull_${PR_NUMBER}";
           GITHUB_BRANCH_OR_TAG="pull_${PR_NUMBER}";
         else
-          GITHUB_FETCH="${GITHUB_BRANCH_OR_TAG}:${GITHUB_BRANCH_OR_TAG}";
+          GITHUB_FETCH="${GITHUB_REF}:${GITHUB_REF}";
         fi
       - git clone --depth 1 --recurse-submodules --quiet https://github.com/${GITHUB_ORGANIZATION}/${GITHUB_REPO_NAME}
       - cd ${GITHUB_REPO_NAME}
       - git fetch origin ${GITHUB_FETCH} --depth 1 --update-head-ok
-      - git checkout ${GITHUB_BRANCH_OR_TAG}
+      - git checkout ${GITHUB_REF}
 
       # create output directory
       - mkdir ${OUT_DIR}
