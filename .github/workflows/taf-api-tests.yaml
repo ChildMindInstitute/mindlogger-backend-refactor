@@ -5,11 +5,13 @@ on:
 
 env:
   AWS_REGION: 'us-east-1'
+  ENV_NAME: ${{ vars.TAF_TARGET }} # dev | test | stage | uat
 
 jobs:
   taf_api_tests:
     runs-on: ubuntu-latest
 
+    steps:
     - name: Checkout tests repository
       uses: actions/checkout@v4
       with:
@@ -18,8 +20,6 @@ jobs:
         token: ${{ secrets.PAT_TOKEN }}
 
     - name: Run TAF API tests
-      env:
-        ENV_NAME: ${{ vars.TAF_TARGET }} # dev | test | stage | uat
       run: |
         API_DOMAIN=admin-${ENV_NAME}.cmiml.net
         REPORT_SERVER_IP=report-server-${ENV_NAME}.cmiml.net
