@@ -5,6 +5,7 @@ on:
 
 env:
   AWS_REGION: 'us-east-1'
+  ENV_NAME: ${{ vars.TAF_TARGET }}
 
 jobs:
   taf_api_tests:
@@ -19,10 +20,10 @@ jobs:
 
     - name: Run TAF API tests
       env:
-        API_DOMAIN: admin-${{ vars.TAF_TARGET }}.cmiml.net
-        REPORT_SERVER_IP: report-server-${{ vars.TAF_TARGET }}.cmiml.net
-        WEB_APP_BASE_URL: web-${{ vars.TAF_TARGET }}.cmiml.net
-        ADMIN_APP_BASE_URL: admin-${{ vars.TAF_TARGET }}.cmiml.net
+        API_DOMAIN: admin-${ENV_NAME}.cmiml.net
+        REPORT_SERVER_IP: report-server-${ENV_NAME}.cmiml.net
+        WEB_APP_BASE_URL: web-${ENV_NAME}.cmiml.net
+        ADMIN_APP_BASE_URL: admin-${ENV_NAME}.cmiml.net
       run: |
         cd taf_api_tests
         npm install
