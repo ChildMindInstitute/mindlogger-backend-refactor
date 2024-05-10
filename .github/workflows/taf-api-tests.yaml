@@ -30,6 +30,8 @@ jobs:
         npm install
         npm run test:api
 
+        TEST_RESULT=$(sed -n '2p' test-results/api/test-results.xml | grep -oP 'time="\d+\.\d+" tests="\d+" failures="\d+" skipped="\d+"')
+
   on-failure:
     runs-on: ubuntu-latest
     if: ${{ always() && (needs.taf_api_tests.result == 'failure' || needs.taf_api_tests.result == 'timed_out') }}
@@ -43,7 +45,7 @@ jobs:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
           SLACK_TITLE: TAF API tests
-          SLACK_MESSAGE: 'TAF API tests failed!'
+          SLACK_MESSAGE: 'TAF API tests failed! ${TEST_RESULT}'
   
   on-success:
     runs-on: ubuntu-latest
