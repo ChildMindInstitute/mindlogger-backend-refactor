@@ -10,19 +10,6 @@ jobs:
   taf_api_tests:
     runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Install Chrome
-      run: |
-        curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-        echo "deb http://dl.google.com/linux/chrome/deb/ stable main" || sudo tee /etc/apt/sources.list.d/google-chrome.list
-        sudo apt-get -y update
-        sudo apt-get -y install google-chrome-stable
-        sudo ln -s /usr/bin/google-chrome /usr/bin/chrome
-        google-chrome --version && which google-chrome
-
     - name: Checkout tests repository
       uses: actions/checkout@v4
       with:
@@ -30,33 +17,12 @@ jobs:
         path: 'taf_api_tests'
         token: ${{ secrets.PAT_TOKEN }}
 
-    - name: Get variables from AWS Secrets Manager
-      env:
-        ENV_NAME: ${{ vars.TAF_TARGET }} # dev | test | stage | uat
-        SECRET_ID: ${{ secrets.TAF_SECRET_ID }} # AWS Secrets Manager - Secret ID
-        AWS_EC2_METADATA_DISABLED: true
-      run: |
-        aws --version
-        env | grep AWS
-        env | grep METADATA
-        API_DOMAIN=$(aws --region=us-east-1 secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .API_DOMAIN)
-        REPORT_SERVER_IP=$(aws --debug secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .REPORT_SERVER_IP)
-        WEB_APP_BASE_URL=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .WEB_APP_BASE_URL)
-        ADMIN_APP_BASE_URL=$(aws --region=us-east-1 --debug secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .ADMIN_APP_BASE_URL)
-
-        echo "API_DOMAIN=${API_DOMAIN}"
-        echo "REPORT_SERVER_IP=${REPORT_SERVER_IP}"
-        echo "WEB_APP_BASE_URL=${WEB_APP_BASE_URL}"
-        echo "ADMIN_APP_BASE_URL=${ADMIN_APP_BASE_URL}"
-
-        REGULAR_DB_CONNECTION_STRING=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .REGULAR_DB_CONNECTION_STRING)
-        ARBITRARY_DB_CONNECTION_STRING=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .ARBITRARY_DB_CONNECTION_STRING)
-        MAILINATOR_TOKEN=$(aws secretsmanager get-secret-value --secret-id ${SECRET_ID}/${ENV_NAME} --query SecretString --output text | jq -r .MAILINATOR_TOKEN)
-
     - name: Run TAF API tests
       env:
-        HEADLESS: 'true'
-        BROWSER_NAME: 'chrome'
+        API_DOMAIN: admin-${{ vars.TAF_TARGET }}.cmiml.net
+        REPORT_SERVER_IP: report-server-${{ vars.TAF_TARGET }}.cmiml.net
+        WEB_APP_BASE_URL: web-${{ vars.TAF_TARGET }}.cmiml.net
+        ADMIN_APP_BASE_URL: admin-${{ vars.TAF_TARGET }}.cmiml.net
       run: |
         cd taf_api_tests
         npm install
