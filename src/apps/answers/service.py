@@ -1280,8 +1280,7 @@ class AnswerService:
         for respondent_item in respondents:
             if not respondent_item.details:
                 continue
-            subjects_ids = list(map(lambda x: x.subject_id, respondent_item.details))
-            subjects_ids += subjects_ids
+            subjects_ids += list(map(lambda x: x.subject_id, respondent_item.details))
         result = await self.get_last_answer_dates(subjects_ids, applet_id)
         for respondent in respondents:
             respondent_subject_ids = map(
