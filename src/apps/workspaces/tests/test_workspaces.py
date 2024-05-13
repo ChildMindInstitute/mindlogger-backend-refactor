@@ -55,24 +55,6 @@ async def applet_not_in_folder(session: AsyncSession, tom, applet_minimal_data: 
 
 
 @pytest.fixture
-async def applet_one_lucy_manager(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.MANAGER)
-    return applet_one
-
-
-@pytest.fixture
-async def applet_one_lucy_coordinator(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.COORDINATOR)
-    return applet_one
-
-
-@pytest.fixture
-async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
-    return applet_one
-
-
-@pytest.fixture
 async def applet_one_user_respondent(session: AsyncSession, applet_one: AppletFull, tom, user) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(user.id, Role.RESPONDENT)
     return applet_one
@@ -92,9 +74,12 @@ async def applet_three_user_respondent(session: AsyncSession, applet_three: Appl
 
 @pytest.fixture
 async def applet_one_lucy_roles(
-    applet_one_lucy_respondent: AppletFull, applet_one_lucy_coordinator: AppletFull, applet_one_lucy_editor: AppletFull
+    applet_one_lucy_respondent: AppletFull,
+    applet_one_lucy_coordinator: AppletFull,
+    applet_one_lucy_editor: AppletFull,
+    applet_one_lucy_manager: AppletFull,
 ) -> list[AppletFull]:
-    return [applet_one_lucy_respondent, applet_one_lucy_coordinator, applet_one_lucy_editor]
+    return [applet_one_lucy_respondent, applet_one_lucy_coordinator, applet_one_lucy_editor, applet_one_lucy_manager]
 
 
 @pytest.fixture

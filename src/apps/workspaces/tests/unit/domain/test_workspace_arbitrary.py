@@ -8,7 +8,7 @@ from apps.workspaces.domain.workspace import WorkspaceArbitraryCreate
 @pytest.fixture
 def arbitrary_aws_create_data() -> WorkspaceArbitraryCreate:
     return WorkspaceArbitraryCreate(
-        database_uri="postgres://test:test@localhost:5432/test",
+        database_uri="postgresql+asyncpg://test:test@localhost:5432/test",
         storage_type=StorageType.AWS,
         storage_url="test",
         storage_region="region",
@@ -49,7 +49,7 @@ def test_arbitrary_workspace_common_required_fields(
 
 @pytest.mark.parametrize(
     "field_name,",
-    ("storage_region", "storage_access_key"),
+    ("storage_region", "storage_access_key", "storage_bucket"),
 )
 def test_arbitrary_workspace_aws_required_fields(
     arbitrary_aws_create_data: WorkspaceArbitraryCreate, field_name: str
@@ -60,7 +60,7 @@ def test_arbitrary_workspace_aws_required_fields(
         WorkspaceArbitraryCreate(**data)
     errors = exc.value.errors()
     len(errors) == 1
-    assert errors[0]["msg"] == "storage_access_key, storage_region are required for aws storage"
+    assert errors[0]["msg"] == "storage_access_key, storage_region, storage_bucket are required for aws storage"
 
 
 @pytest.mark.parametrize(

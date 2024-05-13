@@ -247,6 +247,15 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return {row.id: RespondentExportData.from_orm(row) for row in data}
 
+    async def get_user_roles_for_applet(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> list[Role]:
+        query: Query = select(UserAppletAccessSchema.role)
+        query = query.where(UserAppletAccessSchema.soft_exists())
+        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
+        db_result = await self._execute(query)
+        result = db_result.scalars().all()
+        return [Role(i) for i in result]
+
     async def get_subject_export_data(
         self, applet_id: uuid.UUID, subject_ids: list[uuid.UUID]
     ) -> dict[uuid.UUID, SubjectExportData]:

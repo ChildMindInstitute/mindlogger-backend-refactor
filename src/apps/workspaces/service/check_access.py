@@ -199,15 +199,11 @@ class CheckAccessService:
 
     async def check_summary_access(self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None):
         applet_access_crud = AppletAccessCRUD(self.session)
-        has_access = await applet_access_crud.can_see_data(applet_id, self.user_id)
-        if not has_access:
-            raise AnswerViewAccessDenied()
-
-        role = await applet_access_crud.get_applets_priority_role(applet_id, self.user_id)
-        if role in Role.super_reviewers():
+        user_roles = await applet_access_crud.get_user_roles_for_applet(applet_id, self.user_id)
+        if set(user_roles) & set(Role.super_reviewers()):
             return
-        elif role == Role.REVIEWER:
-            schema = await UserAppletAccessCRUD(self.session).get(self.user_id, applet_id, role)
+        elif Role.REVIEWER in user_roles:
+            schema = await UserAppletAccessCRUD(self.session).get(self.user_id, applet_id, Role.REVIEWER)
             respondents = schema.meta.get("respondents", []) if schema else []
             if str(respondent_id) in respondents:
                 return
