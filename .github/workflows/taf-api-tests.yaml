@@ -28,12 +28,10 @@ jobs:
 
         cd taf_api_tests
         npm install
-#        npm run test:api
 
     - name: Test results
       id: test_results
       run: |
-#        echo $(sed -n '2p' test-results/api/test-results.xml | grep -oP 'time="\d+\.\d+" tests="\d+" failures="\d+" skipped="\d+"') >> "$GITHUB_OUTPUT"
         echo "11 failed 1 skipped" >> "$GITHUB_OUTPUT"
 
   on-failure:
