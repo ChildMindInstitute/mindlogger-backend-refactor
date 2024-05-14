@@ -33,6 +33,10 @@ jobs:
     - name: Test results
       id: test_results
       run: |
+        ls -all
+        ls test-results/
+        ls test-results/api/
+        cat test-results/api/test-results.xml
         echo result=$(sed -n '2p' test-results/api/test-results.xml | grep -oP 'time="\d+\.\d+" tests="\d+" failures="\d+" skipped="\d+"') >> "$GITHUB_OUTPUT"
 
   on-failure:
