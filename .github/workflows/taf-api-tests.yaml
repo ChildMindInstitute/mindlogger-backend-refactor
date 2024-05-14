@@ -28,11 +28,12 @@ jobs:
 
         cd taf_api_tests
         npm install
+        npm run test:api
 
     - name: Test results
       id: test_results
       run: |
-        echo "result=11 failed 1 skipped" >> "$GITHUB_OUTPUT"
+        echo result=$(sed -n '2p' test-results/api/test-results.xml | grep -oP 'time="\d+\.\d+" tests="\d+" failures="\d+" skipped="\d+"') >> "$GITHUB_OUTPUT"
 
   on-failure:
     runs-on: ubuntu-latest
@@ -47,7 +48,7 @@ jobs:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
           SLACK_TITLE: TAF API tests
-          SLACK_MESSAGE: "TAF API tests failed! ${{ steps.test_results.outputs.result }}"
+          SLACK_MESSAGE: ${{ steps.test_results.outputs.result }}
   
   on-success:
     runs-on: ubuntu-latest
@@ -62,4 +63,4 @@ jobs:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
           SLACK_TITLE: TAF API tests
-          SLACK_MESSAGE: "TAF API tests passed. ${{ steps.test_results.outputs.result }}"
+          SLACK_MESSAGE: ${{ steps.test_results.outputs.result }}
