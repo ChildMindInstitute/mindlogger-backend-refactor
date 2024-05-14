@@ -182,5 +182,6 @@ async def get_subject(
             last_seen=answer_dates.get(subject.id),
             tag=subject.tag,
             applet_id=subject.applet_id,
+            user_id=subject.user_id,
         )
     )
