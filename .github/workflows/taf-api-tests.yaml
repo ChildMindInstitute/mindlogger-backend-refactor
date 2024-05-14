@@ -32,7 +32,7 @@ jobs:
     - name: Test results
       id: test_results
       run: |
-        echo "11 failed 1 skipped" >> "$GITHUB_OUTPUT"
+        echo "result=11 failed 1 skipped" >> "$GITHUB_OUTPUT"
 
   on-failure:
     runs-on: ubuntu-latest
