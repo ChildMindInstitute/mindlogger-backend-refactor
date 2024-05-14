@@ -30,8 +30,8 @@ def enable_proportion(activities: list[ActivityFull]) -> list[ActivityFull]:
 async def main(session: AsyncSession, *args, **kwargs):
     for applet_id in APPLETS:
         fake_user_id = uuid.uuid4()
-        applet = await AppletService(session, fake_user_id).get_full_applet(applet_id)
-        role = await UserAppletAccessCRUD(session).get_applet_owner(applet_id)
+        applet = await AppletService(session, fake_user_id).get_full_applet(uuid.UUID(applet_id))
+        role = await UserAppletAccessCRUD(session).get_applet_owner(uuid.UUID(applet_id))
         fixed_activities = enable_proportion(applet.activities)
         activity_flows = []
         for flow in applet.activity_flows:
