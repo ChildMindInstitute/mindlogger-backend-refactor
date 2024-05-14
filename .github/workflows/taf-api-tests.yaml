@@ -62,4 +62,4 @@ jobs:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
           SLACK_TITLE: TAF API tests
-          SLACK_MESSAGE: 'TAF API tests passed.'
+          SLACK_MESSAGE: "TAF API tests passed. ${{ steps.test_results.outputs.result }}"
