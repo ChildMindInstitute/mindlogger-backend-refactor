@@ -4,7 +4,7 @@ from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
 from apps.transfer_ownership.constants import TransferOwnershipStatus
-from infrastructure.database import Base
+from infrastructure.database.base import Base
 
 
 class TransferSchema(Base):

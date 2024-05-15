@@ -26,13 +26,20 @@ from apps.invitations.domain import (
     RespondentMeta,
     ReviewerMeta,
 )
-from apps.invitations.errors import DoesNotHaveAccess, InvitationAlreadyProcessed, InvitationDoesNotExist
+from apps.invitations.errors import (
+    DoesNotHaveAccess,
+    InvitationAlreadyProcessed,
+    InvitationDoesNotExist,
+    InvitationSubjectAcceptError,
+)
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.exception import ValidationError
 from apps.shared.query_params import QueryParams
 from apps.subjects.constants import SubjectTag
 from apps.subjects.crud import SubjectsCrud
+from apps.subjects.domain import Subject
+from apps.subjects.errors import AppletUserViolationError
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.service.user_access import UserAccessService
@@ -71,11 +78,11 @@ class InvitationsService:
         self,
         applet_id: uuid.UUID,
         schema: InvitationRespondentRequest,
-        subject_id: uuid.UUID,
+        subject: Subject,
     ) -> InvitationDetailForRespondent:
         await self._is_validated_role_for_invitation(applet_id, Role.RESPONDENT)
 
-        subject_invitation = await self.invitations_crud.get_pending_subject_invitation(applet_id, subject_id)
+        subject_invitation = await self.invitations_crud.get_pending_subject_invitation(applet_id, subject.id)
         if subject_invitation and subject_invitation.email != schema.email:
             raise ValidationError("Subject already invited with different email.")
 
@@ -83,19 +90,16 @@ class InvitationsService:
         # by user_id in this case
         invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(email=schema.email)
         invited_user_id = invited_user.id if invited_user is not None else None
-        meta = RespondentMeta(subject_id=str(subject_id))
+        meta = RespondentMeta(subject_id=str(subject.id))
         payload = {
-            "email": schema.email,  # TODO remove?
+            "email": schema.email,
             "applet_id": applet_id,
             "role": Role.RESPONDENT,
             "key": uuid.uuid3(uuid.uuid4(), schema.email),
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
-            "first_name": schema.first_name,  # TODO remove
-            "last_name": schema.last_name,  # TODO remove
             "user_id": invited_user_id,
             "meta": meta.dict(),
-            "nickname": schema.nickname,  # TODO remove
             "tag": schema.tag,
         }
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -119,8 +123,8 @@ class InvitationsService:
             subject=self._get_invitation_subject(applet),
             body=service.get_template(
                 path=template_name,
-                first_name=schema.first_name,
-                last_name=schema.last_name,
+                first_name=subject.first_name,
+                last_name=subject.last_name,
                 applet_name=applet.display_name,
                 role=invitation_internal.role,
                 link=self._get_invitation_url_by_role(invitation_internal.role),
@@ -133,13 +137,13 @@ class InvitationsService:
         return InvitationDetailForRespondent(
             id=invitation_internal.id,
             secret_user_id=schema.secret_user_id,
-            nickname=schema.nickname,
+            nickname=subject.nickname,
             applet_id=applet.id,
             applet_name=applet.display_name,
             role=invitation_internal.role,
             status=invitation_internal.status,
-            first_name=invitation_internal.first_name,
-            last_name=invitation_internal.last_name,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
             key=invitation_internal.key,
             user_id=invitation_internal.user_id,
             tag=invitation_internal.tag,
@@ -349,9 +353,13 @@ class InvitationsService:
         if invitation.status != InvitationStatus.PENDING:
             raise InvitationAlreadyProcessed()
 
-        await UserAppletAccessService(self.session, self._user.id, invitation.applet_id).add_role_by_invitation(
-            invitation
-        )
+        try:
+            await UserAppletAccessService(self.session, self._user.id, invitation.applet_id).add_role_by_invitation(
+                invitation
+            )
+        except AppletUserViolationError:
+            raise InvitationSubjectAcceptError(invitation)
+
         if invitation.role == Role.RESPONDENT and isinstance(invitation.meta, RespondentMeta):
             if invitation.meta.subject_id:
                 await UserAccessService(self.session, self._user.id).change_subject_pins_to_user(

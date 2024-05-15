@@ -16,6 +16,7 @@ from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.response import EmptyResponse
 from apps.subjects.domain import (
     Subject,
+    SubjectCreate,
     SubjectCreateRequest,
     SubjectDeleteRequest,
     SubjectReadResponse,
@@ -45,14 +46,14 @@ async def create_subject(
         service = SubjectsService(session, user.id)
 
         try:
-            subject = await service.create(Subject(creator_id=user.id, **schema.dict(by_alias=False)))
+            subject = await service.create(SubjectCreate(creator_id=user.id, **schema.dict(by_alias=False)))
         except SecretIDUniqueViolationError:
             wrapper = ErrorWrapper(
                 ValueError(NonUniqueValue()), ("body", SubjectCreateRequest.field_alias("secret_user_id"))
             )
             raise RequestValidationError([wrapper])
 
-        return Response(result=Subject.from_orm(subject))
+        return Response(result=subject)
 
 
 async def create_relation(
@@ -63,11 +64,11 @@ async def create_relation(
     session: AsyncSession = Depends(get_session),
 ):
     service = SubjectsService(session, user.id)
-    source_subject = await service.get(source_subject_id)
-    target_subject = await service.get(subject_id)
-    if not source_subject or not source_subject.soft_exists():
+    source_subject = await service.get_if_soft_exist(source_subject_id)
+    target_subject = await service.get_if_soft_exist(subject_id)
+    if not source_subject:
         raise NotFoundError(f"Subject {source_subject_id} not found")
-    if not target_subject or not target_subject.soft_exists():
+    if not target_subject:
         raise NotFoundError(f"Subject {subject_id} not found")
     if source_subject.applet_id != target_subject.applet_id:
         raise ValidationError("applet_id doesn't match")
@@ -106,7 +107,7 @@ async def update_subject(
     schema: SubjectUpdateRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> Response[Subject]:
+) -> Response[SubjectReadResponse]:
     subject_srv = SubjectsService(session, user.id)
     subject = await subject_srv.get(subject_id)
     if not subject:
@@ -119,7 +120,16 @@ async def update_subject(
         subject.secret_user_id = schema.secret_user_id
         subject.nickname = schema.nickname
         subject = await subject_srv.update(subject.id, **schema.dict(by_alias=False))
-        return Response(result=Subject.from_orm(subject))
+        return Response(
+            result=SubjectReadResponse(
+                secret_user_id=subject.secret_user_id,
+                nickname=subject.nickname,
+                id=subject.id,
+                tag=subject.tag,
+                applet_id=subject.applet_id,
+                user_id=subject.user_id,
+            )
+        )
 
 
 async def delete_subject(
@@ -136,11 +146,6 @@ async def delete_subject(
     # Check that user has right on applet
     await UserAccessService(session, user.id).validate_subject_delete_access(subject.applet_id)
     async with atomic(session):
-        # Remove respondent role for user
-        await UserAppletAccessService(session, user.id, subject.applet_id).remove_access_by_user_and_applet_to_role(
-            subject.user_id, subject.applet_id, Role.RESPONDENT
-        )
-
         if params.delete_answers:
             # Remove subject and answers
             await SubjectsService(session, user.id).delete_hard(subject.id)
@@ -158,6 +163,10 @@ async def delete_subject(
             ex_resp = await UserService(session).get(subject.user_id)
             if ex_resp:
                 await InvitationsService(session, ex_resp).delete_for_respondents([subject.applet_id])
+            # Remove respondent role for user
+            await UserAppletAccessService(session, user.id, subject.applet_id).remove_access_by_user_and_applet_to_role(
+                subject.user_id, subject.applet_id, Role.RESPONDENT
+            )
 
 
 async def get_subject(

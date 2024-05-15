@@ -9,7 +9,7 @@ from sqlalchemy.orm import Query
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
-from apps.subjects.domain import Subject
+from apps.subjects.domain import SubjectCreate
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["SubjectsCrud"]
@@ -137,9 +137,8 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         res = await self._execute(query)
         return bool(res.scalar_one_or_none())
 
-    async def upsert(self, schema: Subject) -> Subject:
+    async def upsert(self, schema: SubjectCreate) -> SubjectSchema | None:
         values = {**schema.dict()}
-        values.pop("id")
         stmt = insert(SubjectSchema).values(values)
         stmt = stmt.on_conflict_do_update(
             index_elements=[SubjectSchema.user_id, SubjectSchema.applet_id],
@@ -154,8 +153,9 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         model_id = result.scalar_one_or_none()
         if not model_id:
             raise UniqueViolationError()
-        schema.id = model_id
-        return schema
+        updated_schema = await self.get_by_id(model_id)
+        assert updated_schema
+        return updated_schema
 
     async def reduce_applet_subject_ids(self, applet_id, subject_ids: list[uuid.UUID] | list[str]) -> list[uuid.UUID]:
         query = select(SubjectSchema.id).where(

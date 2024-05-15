@@ -8,7 +8,7 @@ from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.subjects.domain import Subject
+from apps.subjects.domain import SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.constants import TransferOwnershipStatus
 from apps.transfer_ownership.crud import TransferCRUD
@@ -29,10 +29,6 @@ class TransferService:
         """Initiate a transfer of ownership of an applet."""
         # check if user is owner of applet
         applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
-
-        access = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
-        if access.user_id != self._user.id:
-            raise PermissionsError()
 
         to_user = await UsersCRUD(self.session).get_user_or_none_by_email(transfer_request.email)
 
@@ -135,17 +131,18 @@ class TransferService:
                 is_deleted=False,
             )
         else:
-            subject = Subject(
-                applet_id=transfer.applet_id,
-                email=self._user.email_encrypted,
-                creator_id=self._user.id,
-                user_id=self._user.id,
-                first_name=self._user.first_name,
-                last_name=self._user.last_name,
-                secret_user_id=f"{uuid.uuid4()}",
-                nickname=self._user.get_full_name(),
+            await subject_service.create(
+                SubjectCreate(
+                    applet_id=transfer.applet_id,
+                    email=self._user.email_encrypted,
+                    creator_id=self._user.id,
+                    user_id=self._user.id,
+                    first_name=self._user.first_name,
+                    last_name=self._user.last_name,
+                    secret_user_id=f"{uuid.uuid4()}",
+                    nickname=self._user.get_full_name(),
+                )
             )
-            await subject_service.create(subject)
 
         # remove other roles of new owner
         await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(
@@ -181,7 +178,7 @@ class TransferService:
         await AppletsCRUD(self.session).get_by_id(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
-        if transfer.email != self._user.email_encrypted:
+        if transfer.email != self._user.email_encrypted or applet_id != transfer.applet_id:
             raise PermissionsError()
 
         # delete transfer
