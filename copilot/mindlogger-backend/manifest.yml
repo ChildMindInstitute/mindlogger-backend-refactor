@@ -12,24 +12,29 @@ http:
   # To match all requests you can use the "/" path.
   path: '/'
   # You can specify a custom health check path. The default is "/".
-  # healthcheck: '/'
+  healthcheck:
+    path: '/readiness'
+    port: 80
+  port: 80
 
 # Configuration for your containers and service.
 image:
   # Docker build arguments. For additional overrides: https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/#image-build
   build:
     dockerfile: compose/fastapi/Dockerfile
+    target: fargate
     context: .
     args:
       PIPENV_EXTRA_ARGS: --dev
   # Port exposed through your container to route traffic to it.
-  port: 8080
+  port: 80
 
 entrypoint: /fastapi-entrypoint
 command: /fastapi-start
+#command: tail -f /dev/null
 
-cpu: 256       # Number of CPU units for the task.
-memory: 512    # Amount of memory in MiB used by the task.
+cpu: 512       # Number of CPU units for the task.
+memory: 1024    # Amount of memory in MiB used by the task.
 platform: linux/x86_64  # See https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/#platform
 count: 1       # Number of tasks that should be running in your service.
 exec: true     # Enable running commands in your container.
@@ -38,19 +43,36 @@ network:
   vpc:
     security_groups:
       - sg-0fe1e219a0c0c5afb
-# storage:
-  # readonly_fs: true       # Limit to read-only access to mounted root filesystems.
 
-# Optional fields for more advanced use-cases.
-#
-#variables:                    # Pass environment variables as key value pairs.
-#  LOG_LEVEL: info
+storage:
+  readonly_fs: false
+  ephemeral: 20
+  volumes:
+    tmp-dir:
+      efs: false
+      path: /tmp
+      read_only: false
+    shared-dir-uploads:
+      efs: false
+      path: /app/uploads
+      read_only: false
+#    tmp-dir:
+#      efs:
+#        uid: 1000
+#        gid: 1000
+#      path: /tmp
+#      read_only: false
+#    shared-dir-uploads:
+#      efs:
+#        uid: 1000
+#        gid: 1000
+#      path: /app/uploads
+#      read_only: false
+
 
 variables:
   # Python configurations
-
-  PYTHONPATH: src/
-
+  DEBUG: true
 
   # PostgreSQL configurations
   DATABASE__HOST: cmiml-feature-db.cjg844g2kgxp.us-east-1.rds.amazonaws.com
@@ -62,6 +84,7 @@ variables:
   REDIS__DB: 0
 
   RABBITMQ__USER: backendUser
+  RABBITMQ__PORT: 5671
 
   # Application configurations
 
@@ -115,11 +138,10 @@ variables:
   # jsonld converter
   JSONLD_CONVERTER__PROTOCOL_PASSWORD:
 
-
 secrets:
   DATABASE__PASSWORD:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DATABASE__PASSWORD_BACKEND_USER::"
-  RABBITMQ__URL:
+  RABBITMQ__HOST:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:RABBITMQ__HOST::"
   RABBITMQ__PASSWORD:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:RABBITMQ__PASSWORD::"
@@ -127,6 +149,12 @@ secrets:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY::"
   AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY::"
+  SECRETS__SECRET_KEY:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:SECRETS__SECRET_KEY::"
+  APPLET_EMA__ID:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:APPLET_EMA__ID::"
+  APPLET_EMA__NAME:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:APPLET_EMA__NAME::"
 
 
 # You can override any of the values defined above by environment.
@@ -135,3 +163,10 @@ secrets:
 #    count: 2               # Number of tasks to run for the "test" environment.
 #    deployment:            # The deployment strategy for the "test" environment.
 #       rolling: 'recreate' # Stops existing tasks before new ones are started for faster deployments.
+
+taskdef_overrides:
+  - path: ContainerDefinitions[0].Ulimits[-]
+    value:
+      Name: "nofile"
+      SoftLimit: 1048576
+      HardLimit: 1048576
