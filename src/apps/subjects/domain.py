@@ -80,3 +80,4 @@ class SubjectReadResponse(SubjectUpdateRequest):
     id: uuid.UUID
     last_seen: datetime.datetime | None
     applet_id: uuid.UUID
+    user_id: uuid.UUID | None

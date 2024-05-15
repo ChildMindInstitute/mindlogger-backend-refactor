@@ -225,6 +225,21 @@ async def lucy_invitation_payload(lucy: User) -> dict:
     )
 
 
+@pytest.fixture
+async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
+    return await SubjectsService(session, tom.id).create(
+        Subject(
+            applet_id=applet_one.id,
+            creator_id=tom.id,
+            first_name="Shell",
+            last_name="Account",
+            nickname="shell-account-0",
+            secret_user_id=f"{uuid.uuid4()}",
+            email="shell@mail.com",
+        )
+    )
+
+
 class TestSubjects(BaseTest):
     fixtures = [
         "workspaces/fixtures/workspaces.json",
@@ -436,7 +451,7 @@ class TestSubjects(BaseTest):
         res = await client.delete(delete_url, data=dict(deleteAnswers=True))
         assert res.status_code == expected
 
-    async def test_get_subject(self, client, tom: User, tom_applet_one_subject: Subject, lucy, lucy_create):
+    async def test_get_subject_full(self, client, tom: User, tom_applet_one_subject: Subject, lucy, lucy_create):
         subject_id = tom_applet_one_subject.id
         client.login(tom)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
@@ -444,12 +459,13 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId"}
+        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
         assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
         assert res["tag"] == tom_applet_one_subject.tag
         assert uuid.UUID(res["appletId"]) == tom_applet_one_subject.applet_id
+        assert uuid.UUID(res["userId"]) == tom.id
 
         # not found
         response = await client.get(self.subject_detail_url.format(subject_id=uuid.uuid4()))
@@ -459,6 +475,27 @@ class TestSubjects(BaseTest):
         client.login(lucy)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_get_subject_limited(
+        self,
+        client,
+        applet_one_shell_account: Subject,
+        tom: User,
+    ):
+        subject_id = applet_one_shell_account.id
+        client.login(tom)
+        response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()
+        assert data
+        res = data["result"]
+        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert uuid.UUID(res["id"]) == applet_one_shell_account.id
+        assert res["secretUserId"] == applet_one_shell_account.secret_user_id
+        assert res["nickname"] == applet_one_shell_account.nickname
+        assert res["tag"] == applet_one_shell_account.tag
+        assert uuid.UUID(res["appletId"]) == applet_one_shell_account.applet_id
+        assert res["userId"] is None
 
     async def test_get_reviewer_subject(
         self,
