@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from typing import Optional
 
 from pydantic import Field, root_validator, validator
 from sqlalchemy import Unicode
@@ -321,7 +320,7 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
         storage_type = values["storage_type"]
         required = []
         if storage_type == StorageType.AWS:
-            required = ["storage_access_key", "storage_region"]
+            required = ["storage_access_key", "storage_region", "storage_bucket"]
         elif storage_type == StorageType.GCP:
             required = ["storage_url", "storage_bucket", "storage_access_key"]
 
@@ -330,13 +329,19 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
 
         return values
 
+    @validator("database_uri")
+    def validate_database_uri(cls, value: str) -> str:
+        driver_path = "postgresql+asyncpg://"
+        if not value.startswith(driver_path):
+            raise ValueError(f"Database uri must start with {driver_path}")
+        return value
+
 
 class WorkspaceArbitrary(WorkspaceArbitraryFields):
     id: uuid.UUID
     database_uri: str
     storage_secret_key: str
     storage_type: str
-    storage_bucket_answer: Optional[str] = None
     user_id: uuid.UUID
 
 

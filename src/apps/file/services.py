@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import re
 import uuid
-from logging import INFO, WARNING
+from logging import ERROR, INFO
 from typing import List
 
 import pytz
@@ -277,7 +277,7 @@ class LogFileService:
 
     async def backend_log(self, method_name: str, details: dict, success: bool):
         logger.log(
-            self.BE_LOG_LEVEL if success else WARNING,
+            self.BE_LOG_LEVEL if success else ERROR,
             f"{self.BE_LOG_PREFIX} - {method_name}: {details}",
         )
 

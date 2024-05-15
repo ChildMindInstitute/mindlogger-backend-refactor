@@ -338,6 +338,32 @@ class TestValidateScoreAndSections:
         with pytest.raises(IncorrectSectionPrintItemTypeError):
             validate_score_and_sections(values)
 
+    def test_items_score_conditional_logic_value_float(
+        self,
+        items: list[ActivityItemCreate],
+        scores_and_reports: ScoresAndReports,
+        score: Score,
+    ):
+        value = 1.444
+        score.conditional_logic = [
+            ScoreConditionalLogic(
+                name="Some name",
+                id="Some name",
+                items_print=[items[0].name],
+                match="any",
+                conditions=[
+                    EqualCondition(
+                        item_name=score.id,
+                        type=ConditionType.EQUAL,
+                        payload=ValuePayload(value=value),
+                    )
+                ],
+            ),
+        ]
+        scores_and_reports.reports = [score]
+        values = {"items": items, "scores_and_reports": scores_and_reports}
+        assert values == validate_score_and_sections(values)
+
 
 class TestValidateSubscales:
     def test_successful_validation(

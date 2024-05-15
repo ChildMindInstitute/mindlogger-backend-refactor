@@ -30,10 +30,6 @@ class TransferService:
         # check if user is owner of applet
         applet = await AppletsCRUD(self.session).get_by_id(id_=applet_id)
 
-        access = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
-        if access.user_id != self._user.id:
-            raise PermissionsError()
-
         to_user = await UsersCRUD(self.session).get_user_or_none_by_email(transfer_request.email)
 
         if to_user:
@@ -182,7 +178,7 @@ class TransferService:
         await AppletsCRUD(self.session).get_by_id(applet_id)
         transfer = await TransferCRUD(self.session).get_by_key(key=key)
 
-        if transfer.email != self._user.email_encrypted:
+        if transfer.email != self._user.email_encrypted or applet_id != transfer.applet_id:
             raise PermissionsError()
 
         # delete transfer
