@@ -550,12 +550,8 @@ class AnswerService:
         if note.user_id != self.user_id:
             raise AnswerNoteAccessDeniedError()
 
-    async def get_assessment_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> AssessmentAnswer:
-        assert self.user_id
-
-        await self._validate_answer_access(applet_id, answer_id)
+    async def _get_assessment(self, applet_id: uuid.UUID, answer_id: uuid.UUID):
         assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id)
-
         items_crud = ActivityItemHistoriesCRUD(self.session)
         last = items_crud.get_applets_assessments(applet_id)
         if assessment_answer:
@@ -599,6 +595,21 @@ class AnswerService:
                 versions=versions,
             )
         return answer
+
+    async def get_assessment_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> AssessmentAnswer:
+        assert self.user_id
+        await self._validate_answer_access(applet_id, answer_id)
+        assessment_answer = await self._get_assessment(applet_id, answer_id)
+        return assessment_answer
+
+    async def get_assessment_by_submit_id(self, applet_id: uuid.UUID, submit_id: uuid.UUID) -> AssessmentAnswer | None:
+        assert self.user_id
+        answer_id = await self.get_submission_last_answer_id(submit_id)
+        if not answer_id:
+            return None
+        await self._validate_answer_access(applet_id, answer_id)
+        assessment_answer = await self._get_assessment(applet_id, answer_id)
+        return assessment_answer
 
     async def get_reviews_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> list[AnswerReview]:
         assert self.user_id
@@ -648,6 +659,7 @@ class AnswerService:
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
         schema: AssessmentAnswerCreate,
+        submit_id: uuid.UUID | None = None,
     ):
         assert self.user_id
 
@@ -668,6 +680,7 @@ class AnswerService:
                     start_datetime=datetime.datetime.utcnow(),
                     end_datetime=datetime.datetime.utcnow(),
                     assessment_activity_id=schema.assessment_version_id,
+                    reviewed_submit_id=submit_id,
                 )
             )
         else:
@@ -685,6 +698,7 @@ class AnswerService:
                     created_at=now,
                     updated_at=now,
                     assessment_activity_id=schema.assessment_version_id,
+                    reviewed_submit_id=submit_id,
                 )
             )
 
@@ -893,12 +907,20 @@ class AnswerService:
 
         return FlowSubmissionsDetails(submissions=submissions, flows=flows), total
 
-    async def get_assessments_count(self, answer_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
+    async def get_answer_assessments_count(self, answer_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
         answer_reviewers_t = await AnswerItemsCRUD(self.answer_session).get_reviewers_by_answers(answer_ids)
         answer_reviewers: dict[uuid.UUID, ReviewsCount] = {}
         for answer_id, reviewers in answer_reviewers_t:
             mine = 1 if self.user_id in reviewers else 0
             answer_reviewers[answer_id] = ReviewsCount(mine=mine, other=len(reviewers) - mine)
+        return answer_reviewers
+
+    async def get_submission_assessment_count(self, submission_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
+        answer_reviewers_t = await AnswerItemsCRUD(self.answer_session).get_reviewers_by_submission(submission_ids)
+        answer_reviewers: dict[uuid.UUID, ReviewsCount] = {}
+        for submission_id, reviewers in answer_reviewers_t:
+            mine = 1 if self.user_id in reviewers else 0
+            answer_reviewers[submission_id] = ReviewsCount(mine=mine, other=len(reviewers) - mine)
         return answer_reviewers
 
     async def get_summary_latest_report(
@@ -1221,6 +1243,11 @@ class AnswerService:
         elif role in [Role.MANAGER, Role.OWNER]:
             return True
         return False
+
+    async def get_submission_last_answer_id(self, submit_id: uuid.UUID) -> uuid.UUID | None:
+        crud = AnswersCRUD(self.answer_session)
+        answer_id = await crud.get_last_answer_in_flow(submit_id)
+        return answer_id
 
 
 class ReportServerService:

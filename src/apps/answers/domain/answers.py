@@ -275,6 +275,11 @@ class ActivitySubmissionResponse(ActivitySubmission):
         return value
 
 
+class ReviewsCount(PublicModel):
+    mine: int = 0
+    other: int = 0
+
+
 class FlowSubmission(PublicModel):
     submit_id: uuid.UUID
     flow_history_id: str
@@ -284,6 +289,7 @@ class FlowSubmission(PublicModel):
     end_datetime: datetime.datetime | None = None
     is_completed: bool | None = None
     answers: list[ActivityAnswer]
+    review_count: ReviewsCount = ReviewsCount()
 
 
 class FlowSubmissionsDetails(PublicModel):
@@ -368,11 +374,6 @@ class FlowSubmissionResponse(PublicModel):
                         break
 
         return value
-
-
-class ReviewsCount(PublicModel):
-    mine: int = 0
-    other: int = 0
 
 
 class AppletActivityAnswer(InternalModel):

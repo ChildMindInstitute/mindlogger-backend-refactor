@@ -192,7 +192,7 @@ async def applet_activity_answers_list(
     answers = await service.get_activity_answers(applet_id, activity_id, query_params)
 
     answers_ids = [answer.answer_id for answer in answers if answer.answer_id is not None]
-    answer_reviews = await service.get_assessments_count(answers_ids)
+    answer_reviews = await service.get_answer_assessments_count(answers_ids)
     result = []
     for answer in answers:
         review_count = answer_reviews.get(answer.answer_id, ReviewsCount())
@@ -218,6 +218,12 @@ async def applet_flow_submissions_list(
         flow_id, query_params
     )
 
+    answer_service = AnswerService(session, user.id, answer_session)
+    submission_ids = [s.submit_id for s in submissions.submissions]
+    submission_reviews = await answer_service.get_submission_assessment_count(submission_ids)
+    for submission in submissions.submissions:
+        review_count = submission_reviews.get(submission.submit_id, ReviewsCount())
+        submission.review_count = review_count
     return PublicFlowSubmissionsResponse(result=submissions, count=total)
 
 
@@ -330,6 +336,30 @@ async def applet_answer_assessment_delete(
             await service.delete_assessment(assessment_id)
 
 
+async def applet_answer_submission_delete(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    assessment_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> None:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    service = AnswerService(session=session, user_id=user.id, arbitrary_session=answer_session)
+    answer_id = await service.get_submission_last_answer_id(submission_id)
+    if not answer_id:
+        raise NotFoundError()
+    assessment = await service.get_answer_assessment_by_id(assessment_id, answer_id)
+    if not assessment:
+        raise NotFoundError
+    elif assessment.respondent_id != user.id:
+        raise AccessDeniedError
+    async with atomic(session):
+        async with atomic(answer_session):
+            await service.delete_assessment(assessment_id)
+
+
 async def applet_activity_assessment_retrieve(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
@@ -340,6 +370,23 @@ async def applet_activity_assessment_retrieve(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     answer = await AnswerService(session, user.id, answer_session).get_assessment_by_answer_id(applet_id, answer_id)
+    return Response(
+        result=AssessmentAnswerPublic.from_orm(answer),
+    )
+
+
+async def applet_submission_assessment_retrieve(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> Response[AssessmentAnswerPublic]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    answer = await AnswerService(session, user.id, answer_session).get_assessment_by_submit_id(applet_id, submission_id)
+    if not answer:
+        raise NotFoundError()
     return Response(
         result=AssessmentAnswerPublic.from_orm(answer),
     )
@@ -409,6 +456,27 @@ async def applet_activity_assessment_create(
         await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
         async with atomic(answer_session):
             await AnswerService(session, user.id, answer_session).create_assessment_answer(applet_id, answer_id, schema)
+
+
+async def applet_flow_assessment_create(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    schema: AssessmentAnswerCreate = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        async with atomic(answer_session):
+            service = AnswerService(session, user.id, answer_session)
+            answer_id = await service.get_submission_last_answer_id(submission_id)
+            if answer_id:
+                answer_service = AnswerService(session, user.id, answer_session)
+                await answer_service.create_assessment_answer(applet_id, answer_id, schema, submission_id)
+            else:
+                raise NotFoundError()
 
 
 async def note_add(

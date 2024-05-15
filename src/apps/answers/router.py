@@ -11,11 +11,14 @@ from apps.answers.api import (
     applet_activity_versions_retrieve,
     applet_answer_assessment_delete,
     applet_answer_reviews_retrieve,
+    applet_answer_submission_delete,
     applet_answers_export,
     applet_completed_entities,
     applet_flow_answer_retrieve,
+    applet_flow_assessment_create,
     applet_flow_identifiers_retrieve,
     applet_flow_submissions_list,
+    applet_submission_assessment_retrieve,
     applet_submit_date_list,
     applets_completed_entities,
     create_anonymous_answer,
@@ -247,6 +250,31 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_activity_assessment_create)
+
+router.post(
+    "/applet/{applet_id}/submissions/{submission_id}/assessment",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_assessment_create)
+
+
+router.get(
+    "/applet/{applet_id}/submissions/{submission_id}/assessment",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[AssessmentAnswerPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_submission_assessment_retrieve)
+
+router.delete(
+    "/applet/{applet_id}/submissions/{submission_id}/assessment/{assessment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)(applet_answer_submission_delete)
 
 router.post(
     "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",
