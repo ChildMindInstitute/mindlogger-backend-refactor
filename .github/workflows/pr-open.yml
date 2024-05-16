@@ -85,10 +85,10 @@ jobs:
     uses: ./.github/workflows/tests.yaml
 
   create-database:
-    needs: [set-env-name, create-preview-env]
+    needs: [create-preview-env]
     uses: ./.github/workflows/create_db.yaml
     with:
-      db-name: "mindlogger_backend_${{ needs.set-env-name.outputs.env-snake-name }}"
+      db-name: "mindlogger_backend_pr_${{ github.event.number }}"
 
   run-int-tests:
     name: Run TAF Test Suite
