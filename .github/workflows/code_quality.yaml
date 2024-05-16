@@ -2,7 +2,8 @@ name: Check code quality
 on: [push]
 jobs:
   build:
-    runs-on: [self-hosted, Linux, cmiml, devops]
+    runs-on: 
+      group: Default
     steps:
       - uses: actions/checkout@v4
         with:
