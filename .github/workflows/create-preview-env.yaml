@@ -20,6 +20,8 @@ jobs:
       contents: read
       pull-requests: write
       discussions: write
+    env:
+      ENV_NAME: ${{ inputs.env-name }}
     steps:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
