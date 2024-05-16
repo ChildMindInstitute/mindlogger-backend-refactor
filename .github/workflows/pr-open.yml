@@ -23,7 +23,7 @@ env:
 
 jobs:
   set-env-name:
-    uses: .github/workflows/env-name.yaml
+    uses: ./.github/workflows/env-name.yaml
   create-preview-env:
     name: Create Preview Env
     needs: [set-env-name]
