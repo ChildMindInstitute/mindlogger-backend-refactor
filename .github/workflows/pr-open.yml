@@ -22,60 +22,63 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
-  set-env-name:
-    uses: ./.github/workflows/env-name.yaml
+#  set-env-name:
+#    uses: ./.github/workflows/env-name.yaml
   create-preview-env:
-    name: Create Preview Env
-    needs: [set-env-name]
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
-      discussions: write
-    env:
-      ENV_NAME: ${{ needs.set-env-name.outputs.env-name }}
-      ENV_SNAKE_NAME: ${{ needs.set-env-name.outputs.env-snake-name }}
-
-    runs-on: ubuntu-latest
-    steps:
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
-          role-session-name: gha-preview-env
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Install copilot
-        run: |
-          curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 
-          sudo mv copilot /usr/local/bin/copilot && copilot -v
-      - name: Create secrets for environment
-        # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
-        # is copied and tagged properly for copilot to pick it up.
-        run: |
-          SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature)
-          aws secretsmanager create-secret --name cmiml-feature-${{ env.ENV_NAME }} --secret-string '$SECRET_STRING' --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ env.APP_NAME }}" "Key=copilot-environment,Value=${{ env.ENV_NAME }}"
-
-      - uses: actions/checkout@v4
-        name: Checkout
-      - name: Create environment
-        run: scripts/env-init.sh
-      - name: Deploy environment
-        run: scripts/env-deploy.sh
-      - name: Deploy service
-        run: scripts/svc-deploy.sh
-      - name: Get service URL
-        id: service-url
-        run: echo "SERVICE_URL=$(copilot svc show -n service-a --json | jq -r '.routes[] | select( .environment | contains("${{ env.ENV_NAME }}") ) | .url')" >> $GITHUB_OUTPUT
-      - name: Comment on PR
-        uses: thollander/actions-comment-pull-request@v2
-        if: ${{ github.event_name == 'pull_request' }}
-        with:
-          message: |
-            :arrow_right: Preview environment created: [Click Me!](${{ steps.service-url.outputs.SERVICE_URL }})
-          reactions: eyes, rocket
-          comment_tag: service-url
-    outputs:
-      service-url: ${{ steps.service-url.outputs.SERVICE_URL }}
+    uses: ./.github/workflows/create-preview-env.yaml
+    with:
+      env-name: "pr-${{ github.event.number }}"
+#    name: Create Preview Env
+#    needs: [set-env-name]
+#    permissions:
+#      id-token: write
+#      contents: read
+#      pull-requests: write
+#      discussions: write
+#    env:
+#      ENV_NAME: ${{ needs.set-env-name.outputs.env-name }}
+#      ENV_SNAKE_NAME: ${{ needs.set-env-name.outputs.env-snake-name }}
+#
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: configure aws credentials
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
+#          role-session-name: gha-preview-env
+#          aws-region: ${{ env.AWS_REGION }}
+#      - name: Install copilot
+#        run: |
+#          curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot &&
+#          sudo mv copilot /usr/local/bin/copilot && copilot -v
+#      - name: Create secrets for environment
+#        # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
+#        # is copied and tagged properly for copilot to pick it up.
+#        run: |
+#          SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature)
+#          aws secretsmanager create-secret --name cmiml-feature-${{ env.ENV_NAME }} --secret-string '$SECRET_STRING' --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ env.APP_NAME }}" "Key=copilot-environment,Value=${{ env.ENV_NAME }}"
+#
+#      - uses: actions/checkout@v4
+#        name: Checkout
+#      - name: Create environment
+#        run: copilot/scripts/env-init.sh
+#      - name: Deploy environment
+#        run: copilot/scripts/env-deploy.sh
+#      - name: Deploy service
+#        run: copilot/scripts/svc-deploy.sh
+#      - name: Get service URL
+#        id: service-url
+#        run: echo "SERVICE_URL=$(copilot svc show -n service-a --json | jq -r '.routes[] | select( .environment | contains("${{ env.ENV_NAME }}") ) | .url')" >> $GITHUB_OUTPUT
+#      - name: Comment on PR
+#        uses: thollander/actions-comment-pull-request@v2
+#        if: ${{ github.event_name == 'pull_request' }}
+#        with:
+#          message: |
+#            :arrow_right: Preview environment created: [Click Me!](${{ steps.service-url.outputs.SERVICE_URL }})
+#          reactions: eyes, rocket
+#          comment_tag: service-url
+#    outputs:
+#      service-url: ${{ steps.service-url.outputs.SERVICE_URL }}
 
   run-unit-tests:
     needs: [create-preview-env]
