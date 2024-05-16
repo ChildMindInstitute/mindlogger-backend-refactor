@@ -6,9 +6,9 @@ on:
       - opened
       - reopened
       - synchronize
-  push:
-    branches:
-      - "feature/**"
+#  push:
+#    branches:
+#      - "feature/**"
 
 # Only run the latest.  Cancel old runs in progress.
 concurrency:
