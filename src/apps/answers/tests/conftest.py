@@ -457,3 +457,142 @@ def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity) -> A
         reviewer_public_key=f"{tom.id}",
         assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
     )
+
+
+@pytest.fixture
+async def applet_with_reviewable_flow(
+    session: AsyncSession, applet_minimal_data: AppletCreate, tom: User
+) -> AppletFull:
+    data = applet_minimal_data.copy(deep=True)
+    data.display_name = "applet with reviewable flow"
+
+    second_activity = data.activities[0].copy(deep=True)
+    second_activity.name = data.activities[0].name + " second"
+    second_activity.key = uuid.uuid4()
+
+    third_activity = data.activities[0].copy(deep=True)
+    third_activity.name = data.activities[0].name + " third"
+    third_activity.key = uuid.uuid4()
+    third_activity.is_reviewable = True
+
+    data.activities.append(second_activity)
+    data.activities.append(third_activity)
+
+    data.activity_flows = [
+        FlowCreate(
+            name="flow",
+            description={Language.ENGLISH: "description"},
+            items=[
+                FlowItemCreate(activity_key=data.activities[0].key),
+                FlowItemCreate(activity_key=data.activities[1].key),
+            ],
+        ),
+    ]
+    applet_create = AppletCreate(**data.dict())
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_create, applet_id=uuid.uuid4())
+    return applet
+
+
+@pytest.fixture
+def answers_reviewable_submission_create(
+    applet_with_reviewable_flow: AppletFull, answer_item_create: ItemAnswerCreate, client_meta: ClientMeta
+) -> list[AppletAnswerCreate]:
+    item_create = answer_item_create.copy(deep=True)
+    activities = []
+    for activity in applet_with_reviewable_flow.activities:
+        if activity.is_reviewable:
+            continue
+
+        item_create.item_ids = [i.id for i in activity.items]
+        answer_create_data = AppletAnswerCreate(
+            applet_id=applet_with_reviewable_flow.id,
+            version=applet_with_reviewable_flow.version,
+            submit_id=uuid.uuid4(),
+            activity_id=activity.id,
+            answer=item_create,
+            created_at=datetime.datetime.utcnow().replace(microsecond=0),
+            client=client_meta,
+            flow_id=applet_with_reviewable_flow.activity_flows[0].id,
+        )
+        activities.append(answer_create_data)
+    return activities
+
+
+@pytest.fixture
+async def answers_reviewable_submission(
+    session: AsyncSession,
+    tom: User,
+    answers_reviewable_submission_create: list[AppletAnswerCreate],
+) -> list[AnswerSchema]:
+    srv = AnswerService(session, tom.id)
+    answer_schemas = []
+    size_t = len(answers_reviewable_submission_create)
+    for i in range(size_t):
+        answer_data = answers_reviewable_submission_create[i]
+        if i == (size_t - 1):
+            answer_data.is_flow_completed = True
+        answer = await srv.create_answer(answer_data)
+        answer_schemas.append(answer)
+    return answer_schemas
+
+
+@pytest.fixture
+async def answers_reviewable_submission_arbitrary(
+    session: AsyncSession,
+    arbitrary_session: AsyncSession,
+    tom: User,
+    answers_reviewable_submission_create: list[AppletAnswerCreate],
+) -> list[AnswerSchema]:
+    srv = AnswerService(session, tom.id, arbitrary_session)
+    answer_schemas = []
+    size_t = len(answers_reviewable_submission_create)
+    for i in range(size_t):
+        answer_data = answers_reviewable_submission_create[i]
+        if i == (size_t - 1):
+            answer_data.is_flow_completed = True
+        answer = await srv.create_answer(answer_data)
+        answer_schemas.append(answer)
+    return answer_schemas
+
+
+@pytest.fixture
+def assessment_submission_create(
+    tom: User, answers_reviewable_submission: list[AnswerSchema], applet_with_reviewable_flow: AppletFull
+) -> AssessmentAnswerCreate:
+    assessment_activity = next(i for i in applet_with_reviewable_flow.activities if i.is_reviewable)
+    last_flow_answer: AnswerSchema = next(filter(lambda a: a.is_flow_completed, answers_reviewable_submission))
+    return AssessmentAnswerCreate(
+        answer="assessment answer",
+        item_ids=[(i.id) for i in assessment_activity.items],
+        assessment_version_id=f"{assessment_activity.id}_{applet_with_reviewable_flow.version}",
+        reviewer_public_key=str(tom.id),
+        reviewed_submit_id=last_flow_answer.submit_id,
+    )
+
+
+@pytest.fixture
+async def assessment_for_submission(
+    session: AsyncSession,
+    tom: User,
+    answers_reviewable_submission: list[AnswerSchema],
+    assessment_submission_create: AssessmentAnswerCreate,
+) -> None:
+    last_flow_answer: AnswerSchema = next(filter(lambda a: a.is_flow_completed, answers_reviewable_submission))
+    srv = AnswerService(session, tom.id)
+    await srv.create_assessment_answer(last_flow_answer.applet_id, last_flow_answer.id, assessment_submission_create)
+
+
+@pytest.fixture
+async def assessment_for_submission_arbitrary(
+    session: AsyncSession,
+    arbitrary_session: AsyncSession,
+    tom: User,
+    answers_reviewable_submission_arbitrary: list[AnswerSchema],
+    assessment_submission_create: AssessmentAnswerCreate,
+) -> None:
+    last_flow_answer: AnswerSchema = next(
+        filter(lambda a: a.is_flow_completed, answers_reviewable_submission_arbitrary)
+    )
+    srv = AnswerService(session, tom.id, arbitrary_session=arbitrary_session)
+    await srv.create_assessment_answer(last_flow_answer.applet_id, last_flow_answer.id, assessment_submission_create)

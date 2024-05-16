@@ -69,6 +69,22 @@ async def lucy_manager_in_applet_with_reviewable_activity(session, tom, lucy, ap
 
 
 @pytest.fixture
+async def lucy_manager_in_applet_with_reviewable_flow(session, tom, lucy, applet_with_reviewable_flow) -> User:
+    await UserAppletAccessCRUD(session).save(
+        UserAppletAccessSchema(
+            user_id=lucy.id,
+            applet_id=applet_with_reviewable_flow.id,
+            role=Role.MANAGER,
+            owner_id=tom.id,
+            invitor_id=tom.id,
+            meta=dict(),
+            nickname=str(uuid.uuid4()),
+        )
+    )
+    return lucy
+
+
+@pytest.fixture
 def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity) -> AssessmentAnswerCreate:
     activity_assessment_id = applet_with_reviewable_activity.activities[1].id
     return AssessmentAnswerCreate(
@@ -293,6 +309,25 @@ async def lucy_review_answer(
     await AnswerService(session, lucy.id).create_assessment_answer(applet_id, tom_answer.id, assessment)
 
 
+@pytest.fixture
+async def submission_assessment_answer(
+    tom: User,
+    session: AsyncSession,
+    assessment_submission_create: AssessmentAnswerCreate,
+    applet_with_reviewable_flow: AppletFull,
+) -> AnswerItemSchema | None:
+    service = AnswerService(session, tom.id, session)
+    assert assessment_submission_create.reviewed_submit_id
+    answer_id = await service.get_submission_last_answer_id(assessment_submission_create.reviewed_submit_id)
+    assert answer_id
+    submission_id = assessment_submission_create.reviewed_submit_id
+    answer_service = AnswerService(session, tom.id)
+    await answer_service.create_assessment_answer(
+        applet_with_reviewable_flow.id, answer_id, assessment_submission_create, submission_id
+    )
+    return await AnswerItemsCRUD(session).get_assessment(answer_id, tom.id)
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -323,6 +358,12 @@ class TestAnswerActivityItems(BaseTest):
     activity_answer_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{answer_id}"
     flow_submission_url = "/answers/applet/{applet_id}/flows/{flow_id}/submissions/{submit_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
+
+    assessment_submissions_url = "/answers/applet/{applet_id}/submissions/{submission_id}/assessment"
+    assessment_submissions_retrieve_url = "/answers/applet/{applet_id}/submissions/{submission_id}/assessment"
+    assessment_submission_delete_url = (
+        "/answers/applet/{applet_id}/submissions/{submission_id}/assessment/{assessment_id}"
+    )
 
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"
@@ -1610,6 +1651,7 @@ class TestAnswerActivityItems(BaseTest):
             "endDatetime",
             "flowHistoryId",
             "isCompleted",
+            "reviewCount",
             "submitId",
             "version",
         }
@@ -1728,3 +1770,99 @@ class TestAnswerActivityItems(BaseTest):
             self.summary_activities_url.format(applet_id=applet_one.id), query={"respondentId": tom.id}
         )
         assert resp.status_code == http.HTTPStatus.OK
+
+    async def test_applet_assessment_create_for_submission(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        assessment_for_submission: AssessmentAnswerCreate,
+        applet_with_reviewable_flow: AppletFull,
+        assessment_submission_create: AssessmentAnswerCreate,
+    ):
+        assert assessment_submission_create.reviewed_submit_id
+        client.login(tom)
+        applet_id = str(applet_with_reviewable_flow.id)
+        flow_id = str(applet_with_reviewable_flow.activity_flows[0].id)
+        submission_id = str(assessment_submission_create.reviewed_submit_id)
+        response = await client.post(
+            self.assessment_submissions_url.format(applet_id=applet_id, flow_id=flow_id, submission_id=submission_id),
+            data=assessment_submission_create,
+        )
+        assert response.status_code == http.HTTPStatus.CREATED
+        answer_id = await AnswersCRUD(session).get_last_answer_in_flow(assessment_submission_create.reviewed_submit_id)
+        assert answer_id
+        assessment = await AnswerItemsCRUD(session).get_assessment(answer_id, tom.id)
+        assert assessment
+        assert assessment_submission_create.reviewed_submit_id == assessment.reviewed_submit_id
+
+    async def test_applet_assessment_retrive_for_submission(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        assessment_for_submission: AssessmentAnswerCreate,
+        applet_with_reviewable_flow: AppletFull,
+        assessment_submission_create: AssessmentAnswerCreate,
+        submission_assessment_answer: AnswerItemSchema,
+    ):
+        assert assessment_submission_create.reviewed_submit_id
+        client.login(tom)
+        applet_id = str(applet_with_reviewable_flow.id)
+        submission_id = str(assessment_submission_create.reviewed_submit_id)
+        response = await client.get(
+            self.assessment_submissions_retrieve_url.format(
+                applet_id=applet_id,
+                submission_id=submission_id,
+            )
+        )
+        assert response.status_code == http.HTTPStatus.OK
+
+    async def test_applet_assessment_delete_for_submission(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        assessment_for_submission: AssessmentAnswerCreate,
+        applet_with_reviewable_flow: AppletFull,
+        assessment_submission_create: AssessmentAnswerCreate,
+        submission_assessment_answer: AnswerItemSchema,
+    ):
+        assert assessment_submission_create.reviewed_submit_id
+        client.login(tom)
+        applet_id = str(applet_with_reviewable_flow.id)
+        submission_id = str(assessment_submission_create.reviewed_submit_id)
+        response = await client.delete(
+            self.assessment_submission_delete_url.format(
+                applet_id=applet_id, submission_id=submission_id, assessment_id=submission_assessment_answer.id
+            )
+        )
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+
+    @pytest.mark.parametrize("user_fixture,exp_mine,exp_other", (("tom", 1, 0), ("lucy", 0, 1)))
+    async def test_get_flow_submissions_review_count(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        assessment_for_submission: AssessmentAnswerCreate,
+        applet_with_reviewable_flow: AppletFull,
+        assessment_submission_create: AssessmentAnswerCreate,
+        submission_assessment_answer: AnswerItemSchema,
+        lucy_manager_in_applet_with_reviewable_flow,
+        request: FixtureRequest,
+        user_fixture,
+        exp_mine,
+        exp_other,
+    ):
+        user: User = request.getfixturevalue(user_fixture)
+        client.login(user)
+        url = self.flow_submissions_url.format(
+            applet_id=applet_with_reviewable_flow.id,
+            flow_id=applet_with_reviewable_flow.activity_flows[0].id,
+        )
+        response = await client.get(url, dict(respondentId=str(tom.id)))
+        assert response.status_code == 200
+        data = response.json()
+        assert data["result"]["submissions"][0]["reviewCount"]["mine"] == exp_mine
+        assert data["result"]["submissions"][0]["reviewCount"]["other"] == exp_other
