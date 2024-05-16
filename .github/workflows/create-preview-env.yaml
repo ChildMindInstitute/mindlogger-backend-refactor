@@ -38,7 +38,7 @@ jobs:
       discussions: write
     env:
       ENV_NAME: ${{ inputs.env-name }}
-      ENV_SNAKE_NAME: ${{ inputs.env-snake-name }}
+      ENV_NAME_SNAKE: ${{ inputs.env-snake-name }}
       APP_NAME: ${{ inputs.app-name }}
       VPC_ID: ${{ inputs.vpc-id }}
       COPILOT_SERVICE: ${{ inputs.copilot-service }}
