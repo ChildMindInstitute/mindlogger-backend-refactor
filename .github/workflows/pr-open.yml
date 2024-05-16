@@ -49,9 +49,11 @@ jobs:
           curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 
           sudo mv copilot /usr/local/bin/copilot && copilot -v
       - name: Create secrets for environment
+        # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
+        # is copied and tagged properly for copilot to pick it up.
         run: |
-          SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature)
-          aws secretsmanager create-secret --name cmiml-feature-${{ env.ENV_NAME }} --secret-string '$SECRET_STRING' --kms-key-id aws/secretsmanager --tags "Key=copilot-application,Value=${{ env.APP_NAME }}" "Key=copilot-environment,Value=${{ env.ENV_NAME }}"
+          SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature)
+          aws secretsmanager create-secret --name cmiml-feature-${{ env.ENV_NAME }} --secret-string '$SECRET_STRING' --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ env.APP_NAME }}" "Key=copilot-environment,Value=${{ env.ENV_NAME }}"
 
       - uses: actions/checkout@v4
         name: Checkout
@@ -143,6 +145,12 @@ jobs:
           message: |
             :x: Integration tests failed
           comment_tag: taf-results
+      - name: Fail
+        if: steps.taf-tests.outcome != 'success' && github.event_name == 'pull_request'
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Unit tests failed')
 
       - name: Collect artifacts
         uses: actions/upload-artifact@v4
