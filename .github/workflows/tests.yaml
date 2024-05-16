@@ -1,19 +1,17 @@
 name: Automated tests
 
 on:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-  push:
-    branches:
-      - "feature/**"
+  workflow_call:
 
-# Only run the latest.  Cancel old runs in progress.
-concurrency:
-  cancel-in-progress: true
-  group: "preview-env-manage-${{ github.ref_name }}"
+#  pull_request:
+#    types:
+#      - opened
+#      - reopened
+#      - synchronize
+#  push:
+#    branches:
+#      - "feature/**"
+
 
 jobs:
   tests:
@@ -44,6 +42,11 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
           SLACK_TITLE: Run Unit Tests
           SLACK_MESSAGE: 'Error when executing Unit tests!'
+      - name: Fail if tests failed
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Unit tests failed')
   
   on-success:
     runs-on: ubuntu-latest

@@ -1,14 +1,27 @@
 name: Create-RDS-Database
 
 on:
-  workflow_run:
-    workflows: ["Name-of-Your-Triggering-Workflow"]
-    types:
-      - completed
+  # TODO Delete this after testing
+  workflow_dispatch:
+    inputs:
+      db-name:
+        required: true
+        type: string
+        description: Database name to create
+  workflow_call:
+    inputs:
+      db-name:
+        required: true
+        type: string
+        description: Database name to create
+#  workflow_run:
+#    workflows: ["Name-of-Your-Triggering-Workflow"]
+#    types:
+#      - completed
 
 jobs:
   create_database:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, cmiml]
 
     steps:
     - name: Checkout repository
@@ -23,8 +36,19 @@ jobs:
         sudo apt-get install -y postgresql-client-16
 
     - name: Create Database
-      run: |
-        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ secrets.DATABASE_NAME }}" -c "CREATE DATABASE <DATABASE_NAME>;"
+      run: >-
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
+        psql -tc "SELECT 1 FROM pg_database WHERE datname = '${{ inputs.db-name }}'" | grep -q 1 ||
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
+        psql -U postgres -c "CREATE DATABASE ${{ inputs.db-name }}"
+    - name: Grant privileges
+      run: >-
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
+        psql -U postgres -c "grant all privileges on database ${{ inputs.db-name }} to ${{ secrets.DB_BACKEND_USERNAME }};"
+
+#    - name: Create Database
+#      run: |
+#        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ inputs.db-name }}" -c "CREATE DATABASE <DATABASE_NAME>;"
 
   on-failure:
     runs-on: ubuntu-latest

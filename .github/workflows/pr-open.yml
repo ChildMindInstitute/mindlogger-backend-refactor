@@ -24,20 +24,6 @@ env:
 jobs:
   set-env-name:
     uses: .github/workflows/env-name.yaml
-#    name: Set copilot environment name
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Create env name
-#        id: env-name
-#        run: |
-#          echo "ENV_NAME=$(echo '${{ github.ref_name }}' | sed -E 's/([0-9]+)\/merge/pr\-\1/' | sed 's/\//\-/g')" >> $GITHUB_OUTPUTS
-#      - name: Snake case env name
-#        id: env-snake-name
-#        run: |
-#          echo "ENV_NAME_SNAKE=$(echo ${{ env.ENV_NAME }} | sed 's/\-/\_/g')" >> $GITHUB_OUTPUTS
-#    outputs:
-#      env-name: steps.env-name.outputs.ENV_NAME
-#      env-snake-name: steps.env-snake-name.outputs.ENV_NAME_SNAKE
   create-preview-env:
     name: Create Preview Env
     needs: [set-env-name]
@@ -89,10 +75,20 @@ jobs:
     outputs:
       service-url: ${{ steps.service-url.outputs.SERVICE_URL }}
 
+  run-unit-tests:
+    needs: [create-preview-env]
+    uses: .github/workflows/tests.yaml
+
+  create-database:
+    needs: [set-env-name, create-preview-env]
+    uses: .github/workflows/create_db.yaml
+    with:
+      db-name: "mindlogger_backend_${{ needs.set-env-name.outputs.env-snake-name }}"
 
   run-int-tests:
     name: Run TAF Test Suite
     needs: [create-preview-env, run-unit-tests]
+    if: ${{ always() && (needs.run-unit-tests.result == 'success') }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -120,12 +116,7 @@ jobs:
       - name: Setup Environment
         run: |
           sed -i 's/API_DOMAIN.*//' .env ;
-#          echo 'API_DOMAIN=https://api-dev.cmiml.net/' >> .env
           echo 'API_DOMAIN=${{ needs.create-preview-env.outputs.service-url }}' >> .env
-      - name: Validate env
-        run: |
-          cat .env
-
       - name: Get Secrets by Name and by ARN
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
@@ -150,7 +141,7 @@ jobs:
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
-            :x: TAF tests failed
+            :x: Integration tests failed
           comment_tag: taf-results
 
       - name: Collect artifacts

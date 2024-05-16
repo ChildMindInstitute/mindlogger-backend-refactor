@@ -50,7 +50,7 @@ FROM base as fargate
 
 USER root
 RUN chmod 777 /tmp && mkdir -p /app/uploads && chown -R code:code /app
-USER code
+#USER code
 
 RUN touch /app/uploads/.test
 RUN touch /tmp/.test
