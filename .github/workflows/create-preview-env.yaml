@@ -5,6 +5,10 @@ on:
         type: string
         description: Environment name
         required: true
+      aws-region:
+        type: string
+        default: us-east-1
+        required: false
 
 
 jobs:
@@ -22,7 +26,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
           role-session-name: gha-preview-env
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ inputs.aws-region }}
       - name: Install copilot
         run: |
           curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 
