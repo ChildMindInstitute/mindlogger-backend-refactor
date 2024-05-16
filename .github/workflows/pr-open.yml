@@ -77,11 +77,11 @@ jobs:
 
   run-unit-tests:
     needs: [create-preview-env]
-    uses: .github/workflows/tests.yaml
+    uses: ./.github/workflows/tests.yaml
 
   create-database:
     needs: [set-env-name, create-preview-env]
-    uses: .github/workflows/create_db.yaml
+    uses: ./.github/workflows/create_db.yaml
     with:
       db-name: "mindlogger_backend_${{ needs.set-env-name.outputs.env-snake-name }}"
 
