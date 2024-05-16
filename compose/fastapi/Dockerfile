@@ -47,7 +47,6 @@ USER code
 FROM base as fargate
 # Hack for Fargate
 # https://github.com/aws/containers-roadmap/issues/938
-
 USER root
 RUN chmod 777 /tmp && mkdir -p /app/uploads && chown -R code:code /app
 #USER code
