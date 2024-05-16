@@ -2,7 +2,7 @@ name: Check code quality
 on: [push]
 jobs:
   build:
-    runs-on: cmi-build
+    runs-on: [self-hosted, Linux, cmiml, devops]
     steps:
       - uses: actions/checkout@v4
         with:
