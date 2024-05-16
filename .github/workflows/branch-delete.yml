@@ -11,7 +11,7 @@ env:
 
 jobs:
   set-env-name:
-    uses: .github/workflows/env-name.yaml
+    uses: ./.github/workflows/env-name.yaml
   destroy-preview-env:
     name: Destroy Preview Env
     if: github.event.ref_type == 'branch'
