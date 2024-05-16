@@ -28,6 +28,7 @@ jobs:
     uses: ./.github/workflows/create-preview-env.yaml
     with:
       env-name: "pr-${{ github.event.number }}"
+      env-snake-name: "pr_${{ github.event.number }}"
       app-name: ${{ github.event.repository.name }}
       vpc-id: vpc-0a83201b71e854abd
       copilot-service: mindlogger-backend

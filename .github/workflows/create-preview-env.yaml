@@ -5,6 +5,10 @@ on:
         type: string
         description: Environment name
         required: true
+      env-snake-name:
+        type: string
+        description: Env name is snake case
+        required: true
       copilot-service:
         type: string
         description: Copilot service name
@@ -34,6 +38,7 @@ jobs:
       discussions: write
     env:
       ENV_NAME: ${{ inputs.env-name }}
+      ENV_SNAKE_NAME: ${{ inputs.env-snake-name }}
       APP_NAME: ${{ inputs.app-name }}
       VPC_ID: ${{ inputs.vpc-id }}
       COPILOT_SERVICE: ${{ inputs.copilot-service }}
