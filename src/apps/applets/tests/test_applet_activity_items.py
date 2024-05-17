@@ -525,3 +525,50 @@ class TestActivityItems:
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
         assert result["activities"][0]["scoresAndReports"] == reports_data.dict(by_alias=True)
+
+    @pytest.mark.parametrize(
+        "item_fixture",
+        ("message_item_create",),
+    )
+    async def test_create_applet_with_activity_sanitize_strings(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_minimal_data: AppletCreate,
+        item_fixture: str,
+        request: FixtureRequest,
+    ):
+        text_with_script_inside = "One <script>alert('test')</script> Two"
+        sanitized_text = "One  Two"
+        client.login(tom)
+        item_create = request.getfixturevalue(item_fixture)
+        item_create.question = {"en": text_with_script_inside}
+        data = applet_minimal_data.copy(deep=True)
+        data.activities[0].items = [item_create]
+
+        data.display_name = text_with_script_inside
+        data.about = {"en": text_with_script_inside}
+        data.description = {"en": text_with_script_inside}
+        data.activities[0].name = text_with_script_inside
+        data.activities[0].description = {"en": text_with_script_inside}
+
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        resp = await client.get(
+            self.applet_workspace_detail_url.format(owner_id=tom.id, pk=resp.json()["result"]["id"])
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        result["displayName"] = sanitized_text
+        result["about"] = sanitized_text
+        result["description"] = sanitized_text
+        result["activities"][0]["name"] = sanitized_text
+        result["activities"][0]["description"] = sanitized_text
+        items = result["activities"][0]["items"]
+        assert len(items) == 1
+        item = items[0]
+        assert item["responseType"] == item_create.response_type
+        assert item["name"] == item_create.name
+        assert item["question"] == {"en": sanitized_text}
+        assert item["isHidden"] == item_create.is_hidden
+        assert not item["allowEdit"]

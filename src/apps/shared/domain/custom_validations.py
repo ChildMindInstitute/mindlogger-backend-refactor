@@ -1,5 +1,6 @@
 import datetime
 import mimetypes
+import re
 import uuid
 from gettext import gettext as _
 from urllib.parse import urlparse
@@ -141,3 +142,8 @@ def array_from_string(comma_separated: bool = False):
         return val
 
     return _array_from_string
+
+
+def sanitize_string(value: str) -> str:
+    value = re.sub("<script>(.*)<\/script>", "", value)
+    return value

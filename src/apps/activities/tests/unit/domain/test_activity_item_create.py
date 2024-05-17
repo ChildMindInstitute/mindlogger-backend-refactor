@@ -556,7 +556,6 @@ def test_create_single_multi_select_item__add_scores_is_true_with_scores_float_r
 def test_create_slider_item__add_scores_is_true_with_scores_float_rounded(slider_item_create):
     data = slider_item_create.dict()
     data["config"]["add_scores"] = True
-    print(data["response_values"])
     data["response_values"]["scores"] = [
         i + 0.343 for i in range(data["response_values"]["max_value"] - data["response_values"]["min_value"] + 1)
     ]
@@ -565,3 +564,10 @@ def test_create_slider_item__add_scores_is_true_with_scores_float_rounded(slider
 
     for score in item.response_values.scores:
         assert score in rounded_score
+
+
+def test_create_message_item__sanitize_question(message_item_create):
+    data = message_item_create.dict()
+    data["question"] = {"en": "One <script>alert('test')</script> Two"}
+    item = ActivityItemCreate(**data)
+    assert item.question["en"] == "One  Two"
