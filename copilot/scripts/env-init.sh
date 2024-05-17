@@ -26,7 +26,7 @@ echo "PRIVATE_SUBNETS: $PRIVATE_SUBNETS"
 
 
 # Only run this during a GHA run.  copilot requires a profile during env creation.
-if [[ ! -z CI ]]; then
+if [[ ! -z "$CI" ]]; then
   echo "Writing out credentials"
   mkdir -p $HOME/.aws
   echo "[default]" > $HOME/.aws/credentials
@@ -47,4 +47,4 @@ copilot env init \
   --import-vpc-id "$VPC_ID" \
   --import-public-subnets "$PUBLIC_SUBNETS" \
   --import-private-subnets "$PRIVATE_SUBNETS" \
-  --profile "$PROFILE"
+  --profile "$PROFILE" --container-insights
