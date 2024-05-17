@@ -55,6 +55,7 @@ opentelemetry-test-utils = "==0.45b0"
 opentelemetry-util-http = "==0.45b"
 opentelemetry-exporter-otlp = "==1.24.0"
 opentelemetry-sdk-extension-aws = "==2.0.1"
+nh3 = "==0.2.17"
 
 [dev-packages]
 # Nobody knows for what its needed
@@ -90,7 +91,6 @@ greenlet = "~=2.0.1"
 reproschema = "*"
 cachetools = "==5.3.0"
 pyld = "==2.0.4"
-
 
 [requires]
 python_version = "3.10"

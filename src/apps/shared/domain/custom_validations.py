@@ -1,10 +1,11 @@
 import datetime
 import mimetypes
-import re
 import uuid
+from copy import deepcopy
 from gettext import gettext as _
 from urllib.parse import urlparse
 
+import nh3
 import requests
 from pydantic.color import Color
 
@@ -144,6 +145,17 @@ def array_from_string(comma_separated: bool = False):
     return _array_from_string
 
 
+nh3_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+nh3_attributes["h1"] = {"id", "data-line"}
+nh3_attributes["h2"] = {"id", "data-line"}
+nh3_attributes["h3"] = {"id", "data-line"}
+nh3_attributes["h4"] = {"id", "data-line"}
+nh3_attributes["h5"] = {"id", "data-line"}
+nh3_attributes["div"] = {"class"}
+nh3_attributes["p"] = {"data-line"}
+nh3_attributes["blockquote"] = {"data-line"}
+
+
 def sanitize_string(value: str) -> str:
-    value = re.sub("<script>(.*)<\/script>", "", value)
+    value = nh3.clean(value, attributes=nh3_attributes, link_rel=None)
     return value
