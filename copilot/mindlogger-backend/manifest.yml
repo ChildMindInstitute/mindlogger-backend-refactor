@@ -39,7 +39,7 @@ platform: linux/x86_64  # See https://aws.github.io/copilot-cli/docs/manifest/lb
 count: 1       # Number of tasks that should be running in your service.
 exec: true     # Enable running commands in your container.
 network:
-  connect: true # Enable Service Connect for intra-environment traffic between services.
+  connect: false # Enable Service Connect for intra-environment traffic between services.
   vpc:
     security_groups:
       - sg-0fe1e219a0c0c5afb

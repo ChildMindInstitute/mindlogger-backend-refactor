@@ -90,12 +90,13 @@ jobs:
 
   create-database:
     needs: [create-preview-env]
+    name: Create preview env DB
     uses: ./.github/workflows/create_db.yaml
     with:
       db-name: "mindlogger_backend_pr_${{ github.event.number }}"
 
   run-int-tests:
-    name: Run TAF Test Suite
+    name: Run E2E Test Suite
     needs: [create-preview-env, run-unit-tests]
     if: ${{ always() && (needs.run-unit-tests.result == 'success') }}
     runs-on: ubuntu-latest
@@ -175,7 +176,7 @@ jobs:
   publish-report:
     name: Publish Report
     needs: [run-int-tests]
-    if: ${{ always() && github.event_name == 'pull_request'  }}
+    if: ${{ always() && github.event_name == 'pull_request' && (needs.run-int-tests.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
