@@ -56,18 +56,6 @@ storage:
       efs: false
       path: /app/uploads
       read_only: false
-#    tmp-dir:
-#      efs:
-#        uid: 1000
-#        gid: 1000
-#      path: /tmp
-#      read_only: false
-#    shared-dir-uploads:
-#      efs:
-#        uid: 1000
-#        gid: 1000
-#      path: /app/uploads
-#      read_only: false
 
 
 variables:
