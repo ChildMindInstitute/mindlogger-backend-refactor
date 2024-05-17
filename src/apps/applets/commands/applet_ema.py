@@ -33,6 +33,7 @@ from apps.schedule.db.schemas import (
 )
 from apps.schedule.domain.constants import PeriodicityType
 from apps.shared.domain.base import PublicModel
+from apps.subjects.db.schemas import SubjectSchema
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas.user_applet_access import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
@@ -266,7 +267,7 @@ async def get_user_flow_events(
             AppletSchema.id.label("applet_id"),
             literal(scheduled_date, Date).label("date"),
             UserAppletAccessSchema.user_id.label("user_id"),
-            UserAppletAccessSchema.respondent_secret_id.label("secret_user_id"),  # type: ignore[attr-defined] # noqa: E501
+            SubjectSchema.secret_user_id.label("secret_user_id"),
             ActivityFlowSchema.id.label("flow_id"),
             ActivityFlowSchema.name.label("flow_name"),
             AppletSchema.version.label("applet_version"),
@@ -284,6 +285,13 @@ async def get_user_flow_events(
             and_(
                 UserAppletAccessSchema.applet_id == AppletSchema.id,
                 UserAppletAccessSchema.role == Role.RESPONDENT,
+            ),
+        )
+        .join(
+            SubjectSchema,
+            and_(
+                SubjectSchema.applet_id == UserAppletAccessSchema.applet_id,
+                SubjectSchema.user_id == UserAppletAccessSchema.user_id,
             ),
         )
         .join(ActivityFlowSchema, ActivityFlowSchema.applet_id == AppletSchema.id)
@@ -525,7 +533,7 @@ async def get_user_activity_events(
             AppletSchema.id.label("applet_id"),
             literal(scheduled_date, Date).label("date"),
             UserAppletAccessSchema.user_id.label("user_id"),
-            UserAppletAccessSchema.respondent_secret_id.label("secret_user_id"),  # type: ignore[attr-defined] # noqa: E501
+            SubjectSchema.secret_user_id.label("secret_user_id"),
             ActivitySchema.id.label("activity_id"),
             ActivitySchema.name.label("activity_name"),
             AppletSchema.version.label("applet_version"),
@@ -543,6 +551,13 @@ async def get_user_activity_events(
             and_(
                 UserAppletAccessSchema.applet_id == AppletSchema.id,
                 UserAppletAccessSchema.role == Role.RESPONDENT,
+            ),
+        )
+        .join(
+            SubjectSchema,
+            and_(
+                SubjectSchema.applet_id == UserAppletAccessSchema.applet_id,
+                SubjectSchema.user_id == UserAppletAccessSchema.user_id,
             ),
         )
         .join(ActivitySchema, ActivitySchema.applet_id == AppletSchema.id)
