@@ -24,6 +24,7 @@ from apps.activities.domain.scores_reports import (
 )
 from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
+from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
 
@@ -547,10 +548,10 @@ class TestActivityItems:
         data.activities[0].items = [item_create]
 
         data.display_name = text_with_script_inside
-        data.about = {"en": text_with_script_inside}
-        data.description = {"en": text_with_script_inside}
+        data.about = {Language.ENGLISH: text_with_script_inside}
+        data.description = {Language.ENGLISH: text_with_script_inside}
         data.activities[0].name = text_with_script_inside
-        data.activities[0].description = {"en": text_with_script_inside}
+        data.activities[0].description = {Language.ENGLISH: text_with_script_inside}
 
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
@@ -572,3 +573,31 @@ class TestActivityItems:
         assert item["question"] == {"en": sanitized_text}
         assert item["isHidden"] == item_create.is_hidden
         assert not item["allowEdit"]
+
+    @pytest.mark.run
+    async def test_create_applet_flow_sanitize_strings(
+        self, client: TestClient, applet_minimal_data: AppletCreate, tom: User
+    ) -> None:
+        client.login(tom)
+        text_with_script_inside = "One <script>alert('test')</script> Two"
+        sanitized_text = "One  Two"
+        data = applet_minimal_data.dict()
+        activity_key = data["activities"][0]["key"]
+        data["activity_flows"].append(
+            dict(
+                name=text_with_script_inside,
+                description=dict(
+                    en=text_with_script_inside,
+                ),
+                items=[dict(activity_key=activity_key)],
+            )
+        )
+        resp = await client.post(
+            self.applet_create_url.format(owner_id=tom.id),
+            data=data,
+        )
+
+        assert resp.status_code == http.HTTPStatus.CREATED
+        result = resp.json()["result"]
+        assert result["activityFlows"][0]["name"] == sanitized_text
+        assert result["activityFlows"][0]["description"]["en"] == sanitized_text

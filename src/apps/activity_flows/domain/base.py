@@ -24,6 +24,10 @@ class FlowBase(BaseModel):
             value = sanitize_string(value)
         return value
 
+    @validator("name")
+    def validate_string(cls, value):
+        return sanitize_string(value)
+
 
 class FlowItemBase(BaseModel):
     activity_id: uuid.UUID
