@@ -4,9 +4,9 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${SCRIPT_DIR}/funcs.sh
 
 #Create environment only once
-if copilot env ls -a $APP_NAME | grep -q "$ENV_NAME"; then
+if copilot env ls -a "$APP_NAME" | grep -q "$ENV_NAME"; then
     echo "Environment already exists"
-    exit 0
+#    exit 0
 else
     if [ "$ENV_NAME" == 'feature' ]; then
         echo "You must create feature from bootstrap script locally"
