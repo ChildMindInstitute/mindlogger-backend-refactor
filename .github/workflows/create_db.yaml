@@ -21,7 +21,7 @@ on:
 
 jobs:
   create_database:
-    runs-on: [self-hosted, linux, cmiml]
+    runs-on: [self-hosted]
 
     steps:
     - name: Checkout repository
