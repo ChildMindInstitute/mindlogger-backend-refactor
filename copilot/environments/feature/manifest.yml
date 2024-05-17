@@ -10,7 +10,6 @@ type: Environment
 network:
   vpc:
     id: vpc-0a83201b71e854abd
-    placement: private
     subnets:
       public:
         - id: subnet-02bb97c00f46bc632

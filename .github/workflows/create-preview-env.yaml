@@ -64,7 +64,7 @@ jobs:
             exit 0
           fi
           SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature)
-          aws secretsmanager create-secret --name cmiml-feature-${{ inputs.env-name }} --secret-string '$SECRET_STRING' --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ env.APP_NAME }}" "Key=copilot-environment,Value=${{ inputs.env-name }}"
+          aws secretsmanager create-secret --name cmiml-feature-${{ inputs.env-name }} --secret-string '$SECRET_STRING' --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ inputs.app-name }}" "Key=copilot-environment,Value=${{ inputs.env-name }}"
 
       - uses: actions/checkout@v4
         name: Checkout
