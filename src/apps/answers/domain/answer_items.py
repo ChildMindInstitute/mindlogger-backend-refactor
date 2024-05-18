@@ -15,7 +15,7 @@ class AnswerItem(InternalModel):
     events: str | None
     item_ids: list
     identifier: str | None
-    user_public_key: str
+    user_public_key: str | None
     scheduled_datetime: datetime.datetime | None = None
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
