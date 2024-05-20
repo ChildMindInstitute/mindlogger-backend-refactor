@@ -157,7 +157,7 @@ async def summary_activity_list(
         if not target_subject:
             raise NotFoundError()
         target_subject_id = target_subject.id
-    await CheckAccessService(session, user.id).check_subject_answer_access(applet_id, target_subject_id)
+    await CheckAccessService(session, user.id).check_summary_access(applet_id, target_subject_id)
     activities = await AnswerService(session, user.id, answer_session).get_summary_activities(applet_id, filters)
     return ResponseMulti(
         result=parse_obj_as(list[PublicSummaryActivity], activities),
@@ -173,10 +173,10 @@ async def summary_activity_flow_list(
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[PublicSummaryActivityFlow]:
     await AppletService(session, user.id).exist_by_id(applet_id)
-    respondent_id = query_params.filters.get("respondent_id")  # todo: Change to target_subject_id
-    await CheckAccessService(session, user.id).check_summary_access(applet_id, respondent_id)
+    target_subject_id = query_params.filters.get("target_subject_id")
+    await CheckAccessService(session, user.id).check_summary_access(applet_id, target_subject_id)
     activities = await AnswerService(session, user.id, answer_session).get_summary_activity_flows(
-        applet_id, respondent_id
+        applet_id, target_subject_id
     )
     return ResponseMulti(
         result=parse_obj_as(list[PublicSummaryActivityFlow], activities),
