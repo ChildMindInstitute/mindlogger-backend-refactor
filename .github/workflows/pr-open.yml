@@ -32,7 +32,8 @@ jobs:
       app-name: ${{ github.event.repository.name }}
       vpc-id: vpc-0a83201b71e854abd
       copilot-service: mindlogger-backend
-#    name: Create Preview Env
+    secrets: inherit
+  #    name: Create Preview Env
 #    needs: [set-env-name]
 #    permissions:
 #      id-token: write
@@ -87,6 +88,7 @@ jobs:
   run-unit-tests:
     needs: [create-preview-env]
     uses: ./.github/workflows/tests.yaml
+    secrets: inherit
 
   create-database:
     needs: [create-preview-env]
@@ -94,6 +96,7 @@ jobs:
     uses: ./.github/workflows/create_db.yaml
     with:
       db-name: "mindlogger_backend_pr_${{ github.event.number }}"
+    secrets: inherit
 
   run-int-tests:
     name: Run E2E Test Suite

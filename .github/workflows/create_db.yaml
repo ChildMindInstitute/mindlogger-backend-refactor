@@ -1,4 +1,4 @@
-name: Create-RDS-Database
+name: Create RDS Database
 
 on:
   # TODO Delete this after testing
