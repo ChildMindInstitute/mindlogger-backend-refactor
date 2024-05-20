@@ -11,11 +11,18 @@ from infrastructure.utility.cdn_config import CdnConfig
 
 
 async def select_storage(
-    applet_id: uuid.UUID,
+    *,
+    applet_id: uuid.UUID | None = None,
+    owner_id: uuid.UUID | None = None,
     session: AsyncSession,
 ):
     service = workspace.WorkspaceService(session, uuid.uuid4())
-    info = await service.get_arbitrary_info_if_use_arbitrary(applet_id)
+    if applet_id:
+        info = await service.get_arbitrary_info_if_use_arbitrary(applet_id)
+    elif owner_id:
+        info = await service.get_arbitrary_info_by_owner_id_if_use_arbitrary(owner_id)
+    else:
+        raise ValueError("Applet id or owner id should be specified.")
     if not info:
         config_cdn = CdnConfig(
             endpoint_url=settings.cdn.endpoint_url,

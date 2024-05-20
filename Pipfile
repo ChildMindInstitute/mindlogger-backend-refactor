@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 aioredis = "~=2.0.1"
 alembic = "~=1.8.1"
-asyncpg = "~=0.27.0"
+asyncpg = "~=0.29.0"
 boto3 = "==1.26.10"
 fastapi = "==0.110.0"
 # The latest version of the fastapi is not taken because of the issue
@@ -65,6 +65,7 @@ isort = "~=5.10"
 pre-commit = "~=2.7.1"
 ruff = "~=0.1.14"
 # Tests
+allure-pytest = "*"
 pydantic-factories = "~=1.17.0"
 pytest = "~=7.1"
 pytest-asyncio = "~=0.19"
@@ -89,8 +90,7 @@ greenlet = "~=2.0.1"
 # JSONLD deps only for dev
 reproschema = "*"
 cachetools = "==5.3.0"
-pyld = "==2.0.3"
-
+pyld = "==2.0.4"
 
 [requires]
 python_version = "3.10"

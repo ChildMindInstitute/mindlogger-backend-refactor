@@ -39,6 +39,12 @@ PatchRegister.register(
     description="Add missing job_status to the job_status enum",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_6057_drawing_proportion.py",
+    task_id="M2-6057",
+    description="Set proportion.enabled=True to Maki's applets",
+    manage_session=False,
+)
 
 
 app = typer.Typer()

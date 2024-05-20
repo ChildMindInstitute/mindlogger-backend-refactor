@@ -17,13 +17,19 @@ class _ActivityAnswerFilter(Filtering):
     identifiers = FilterField(AnswerItemSchema.identifier, method_name="filter_by_identifiers")
     versions = FilterField(AnswerSchema.version, Comparisons.IN)
 
-    def prepare_identifiers(self, value: str) -> list[str] | None:
-        if value == "":
+    # TODO can be removed?
+    def prepare_identifiers(self, value: str | list[str]) -> list[str] | None:
+        if not value:
             return None
-        return value.split(",")
+        if isinstance(value, str):
+            return value.split(",")
+        return value
 
-    def prepare_versions(self, value: str) -> list[str]:
-        return value.split(",")
+    # TODO can be removed?
+    def prepare_versions(self, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return value.split(",")
+        return value
 
     def filter_by_identifiers(self, field, values: list | None):
         if values is None:
@@ -61,12 +67,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         query = query.where(AnswerSchema.activity_history_id.in_(activity_history_ids))
         query = query.order_by(AnswerItemSchema.created_at)
 
-        db_result = await self._execute(query)
-        return db_result.scalars().all()
-
-    async def get_answer_ids(self, answer_ids: list[uuid.UUID]) -> list[AnswerItemSchema]:
-        query: Query = select(AnswerItemSchema)
-        query = query.where(AnswerItemSchema.answer_id.in_(answer_ids))
         db_result = await self._execute(query)
         return db_result.scalars().all()
 

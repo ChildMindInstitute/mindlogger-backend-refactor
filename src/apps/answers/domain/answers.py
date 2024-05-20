@@ -1,8 +1,10 @@
 import datetime
 import uuid
-from typing import Any
+from copy import deepcopy
+from typing import Any, Generic
 
 from pydantic import BaseModel, Field, root_validator, validator
+from pydantic.generics import GenericModel
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
 from apps.activities.domain.activity_history import (
@@ -12,12 +14,42 @@ from apps.activities.domain.activity_history import (
 )
 from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.scores_reports import SubscaleSetting
-from apps.activity_flows.domain.flow_full import FlowFull
-from apps.answers.domain.answer_items import ItemAnswerCreate
+from apps.activity_flows.domain.flow_full import FlowFull, FlowHistoryWithActivityFlat, FlowHistoryWithActivityFull
+from apps.answers.domain.answer_items import AnswerItem, ItemAnswerCreate
 from apps.applets.domain.base import AppletBaseInfo
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
+from apps.shared.domain.types import _BaseModel
 from apps.shared.locale import I18N
+
+
+class ClientMeta(InternalModel):
+    app_id: str
+    app_version: str
+    width: int | None = None
+    height: int | None = None
+
+
+class Answer(InternalModel):
+    id: uuid.UUID
+    applet_id: uuid.UUID
+    version: str
+    submit_id: uuid.UUID
+    client: ClientMeta | None
+    applet_history_id: str
+    flow_history_id: str | None
+    activity_history_id: str
+    respondent_id: uuid.UUID | None
+    is_flow_completed: bool | None = False
+
+    migrated_data: dict | None = None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    migrated_date: datetime.datetime | None = None
+    migrated_updated: datetime.datetime | None = None
+    is_deleted: bool
+
+    answer_item: AnswerItem
 
 
 class Text(InternalModel):
@@ -55,13 +87,6 @@ class AnswerAlert(InternalModel):
     message: str
 
 
-class ClientMeta(InternalModel):
-    app_id: str
-    app_version: str
-    width: int | None = None
-    height: int | None = None
-
-
 class AppletAnswerCreate(InternalModel):
     applet_id: uuid.UUID
     version: str
@@ -97,12 +122,15 @@ class ReviewActivity(InternalModel):
     answer_dates: list[AnswerDate] = Field(default_factory=list)
 
 
-class SummaryActivity(InternalModel):
+class SummaryActivityFlow(InternalModel):
     id: uuid.UUID
     name: str
-    is_performance_task: bool
     has_answer: bool
     last_answer_date: datetime.datetime | None
+
+
+class SummaryActivity(SummaryActivityFlow):
+    is_performance_task: bool
 
 
 class PublicAnswerDate(PublicModel):
@@ -111,10 +139,13 @@ class PublicAnswerDate(PublicModel):
     end_datetime: datetime.datetime
 
 
-class PublicReviewActivity(PublicModel):
+class ReviewItem(PublicModel, GenericModel, Generic[_BaseModel]):
     id: uuid.UUID
     name: str
-    answer_dates: list[PublicAnswerDate] = Field(default_factory=list)
+    answer_dates: list[_BaseModel] = Field(default_factory=list)
+
+
+class PublicReviewActivity(ReviewItem[PublicAnswerDate]):
     last_answer_date: datetime.datetime | None
 
     @root_validator
@@ -128,16 +159,56 @@ class PublicReviewActivity(PublicModel):
         return values
 
 
-class PublicSummaryActivity(InternalModel):
+class SubmissionDate(PublicModel):
+    submit_id: uuid.UUID
+    created_at: datetime.datetime
+    end_datetime: datetime.datetime
+
+
+class ReviewFlow(ReviewItem[SubmissionDate]):
+    ...
+
+
+class PublicReviewFlow(ReviewFlow):
+    last_answer_date: datetime.datetime | None
+
+    @validator("last_answer_date", always=True)
+    def calculate_last_answer_date(cls, value, values):
+        answer_dates = values.get("answer_dates", [])
+        if answer_dates:
+            value = max(v.created_at for v in answer_dates)
+        return value
+
+
+class FlowSubmissionInfo(PublicModel):
+    submit_id: uuid.UUID
+    flow_history_id: str
+    applet_id: uuid.UUID
+    version: str
+    created_at: datetime.datetime
+    end_datetime: datetime.datetime
+
+
+class PublicSummaryActivityFlow(InternalModel):
     id: uuid.UUID
     name: str
-    is_performance_task: bool
     has_answer: bool
     last_answer_date: datetime.datetime | None
 
 
+class PublicSummaryActivity(PublicSummaryActivityFlow):
+    is_performance_task: bool
+
+
 class PublicAnswerDates(PublicModel):
     dates: list[datetime.date]
+
+
+class IdentifierData(InternalModel):
+    identifier: str
+    user_public_key: str
+    is_encrypted: bool
+    last_answer_date: datetime.datetime
 
 
 class Identifier(InternalModel):
@@ -146,15 +217,158 @@ class Identifier(InternalModel):
     last_answer_date: datetime.datetime
 
 
-class ActivityAnswer(InternalModel):
+class ActivityAnswer(PublicModel):
+    id: uuid.UUID
+    submit_id: uuid.UUID
+    version: str
+    activity_history_id: str
+    activity_id: uuid.UUID | None = None
+    flow_history_id: str | None
     user_public_key: str | None
     answer: str | None
     events: str | None
     item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
-    identifier: Identifier | None
+    identifier: str | None = None
+    migrated_data: dict | None = None
+    end_datetime: datetime.datetime
     created_at: datetime.datetime
+
+    @validator("activity_id", always=True)
+    def extract_activity_id(cls, value, values):
+        if val := values.get("activity_history_id"):
+            return val[:36]
+
+
+class SubmissionSummary(PublicModel):
+    end_datetime: datetime.datetime
+    created_at: datetime.datetime
+    identifier: Identifier | None = None
     version: str
+
+
+class ActivitySubmission(PublicModel):
+    activity: ActivityHistoryFull
+    answer: ActivityAnswer
+
+
+class ActivitySubmissionResponse(ActivitySubmission):
+    summary: SubmissionSummary | None = None
+
+    @validator("summary", always=True)
+    def generate_summary(cls, value, values):
+        if not value:
+            answer: ActivityAnswer = values["answer"]
+            if answer:
+                value = SubmissionSummary(
+                    end_datetime=answer.end_datetime,
+                    created_at=answer.created_at,
+                    version=answer.version,
+                )
+                if answer.identifier:
+                    if answer.migrated_data and answer.migrated_data.get("is_identifier_encrypted") is False:
+                        value.identifier = Identifier(identifier=answer.identifier, last_answer_date=answer.created_at)
+                    else:
+                        value.identifier = Identifier(
+                            identifier=answer.identifier,
+                            last_answer_date=answer.created_at,
+                            user_public_key=answer.user_public_key,
+                        )
+        return value
+
+
+class FlowSubmission(PublicModel):
+    submit_id: uuid.UUID
+    flow_history_id: str
+    applet_id: uuid.UUID
+    version: str
+    created_at: datetime.datetime
+    end_datetime: datetime.datetime | None = None
+    is_completed: bool | None = None
+    answers: list[ActivityAnswer]
+
+
+class FlowSubmissionsDetails(PublicModel):
+    submissions: list[FlowSubmission]
+    flows: list[FlowHistoryWithActivityFull]
+
+
+class FlowSubmissionsResponse(PublicModel):
+    submissions: list[FlowSubmission]
+    flows: list[FlowHistoryWithActivityFlat]
+
+    @validator("flows", pre=True)
+    def format_flows(cls, value, values):
+        if value:
+            if isinstance(value[0], dict) and "items" in value[0]:
+                _values = []
+                for _value in value:
+                    data = deepcopy(_value)
+                    del data["items"]
+                    data["activities"] = [item["activity"] for item in _value["items"]]
+                    _values.append(data)
+                value = _values
+            elif isinstance(value[0], FlowHistoryWithActivityFull):
+                _values = []
+                for _value in value:
+                    data = _value.dict(exclude={"items"})
+                    data["activities"] = [item.activity for item in _value.items]
+                    _values.append(data)
+                value = _values
+
+        return value
+
+
+class PublicFlowSubmissionsResponse(Response[FlowSubmissionsResponse]):
+    count: int = 0
+
+
+class FlowSubmissionDetails(PublicModel):
+    submission: FlowSubmission
+    flow: FlowHistoryWithActivityFull
+
+
+class FlowSubmissionResponse(PublicModel):
+    submission: FlowSubmission
+    flow: FlowHistoryWithActivityFlat
+    summary: SubmissionSummary | None = None
+
+    @validator("flow", pre=True)
+    def format_flow(cls, value, values):
+        if isinstance(value, dict) and "items" in value:
+            data = deepcopy(value)
+            del data["items"]
+            data["activities"] = [item["activity"] for item in value["items"]]
+            value = data
+        elif isinstance(value, FlowHistoryWithActivityFull):
+            data = value.dict(exclude={"items"})
+            data["activities"] = [item.activity for item in value.items]
+            value = data
+
+        return value
+
+    @validator("summary", always=True)
+    def generate_summary(cls, value, values):
+        if not value:
+            answers: list[ActivityAnswer] = values["submission"].answers
+            if answers:
+                value = SubmissionSummary(
+                    end_datetime=answers[0].end_datetime,
+                    created_at=answers[0].created_at,
+                    version=answers[0].version,
+                )
+                for answer in answers:
+                    if identifier := answer.identifier:
+                        if answer.migrated_data and answer.migrated_data.get("is_identifier_encrypted") is False:
+                            value.identifier = Identifier(identifier=identifier, last_answer_date=answer.created_at)
+                        else:
+                            value.identifier = Identifier(
+                                identifier=identifier,
+                                last_answer_date=answer.created_at,
+                                user_public_key=answer.user_public_key,
+                            )
+                        break
+
+        return value
 
 
 class ReviewsCount(PublicModel):
@@ -199,17 +413,7 @@ class AnswerReview(InternalModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: Reviewer
     created_at: datetime.datetime
-
-
-class ActivityAnswerPublic(PublicModel):
-    user_public_key: str | None
-    answer: str | None
-    events: str | None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
-    identifier: Identifier | None
-    created_at: datetime.datetime
-    version: str
+    updated_at: datetime.datetime
 
 
 class AppletActivityAnswerPublic(PublicModel):
@@ -240,6 +444,7 @@ class AnswerReviewPublic(PublicModel):
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: ReviewerPublic
     created_at: datetime.datetime
+    updated_at: datetime.datetime
 
 
 class AssessmentAnswerPublic(PublicModel):
@@ -361,16 +566,6 @@ class PublicAnswerExport(PublicModel):
 
 class PublicAnswerExportResponse(Response[PublicAnswerExportTranslated]):
     count: int = 0
-
-
-class Version(InternalModel):
-    version: str
-    created_at: datetime.datetime
-
-
-class VersionPublic(PublicModel):
-    version: str
-    created_at: datetime.datetime
 
 
 class SafeApplet(AppletBaseInfo, InternalModel):

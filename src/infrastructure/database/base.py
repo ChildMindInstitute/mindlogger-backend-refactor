@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, MetaData, text
+from sqlalchemy import Column, DateTime, MetaData, inspect, text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.hybrid import hybrid_method
 from sqlalchemy.orm import declarative_base
 
 __all__ = ["Base"]
+
+from infrastructure.database.mixins import SoftDeletable
 
 meta = MetaData(
     naming_convention={
@@ -22,7 +23,7 @@ meta = MetaData(
 _Base = declarative_base(metadata=meta)
 
 
-class Base(_Base):  # type: ignore
+class Base(SoftDeletable, _Base):  # type: ignore
     """Base class for all database models."""
 
     __abstract__ = True
@@ -57,19 +58,7 @@ class Base(_Base):  # type: ignore
         server_default=None,
         nullable=True,
     )
-    is_deleted = Column(Boolean(), default=False)
 
     def __iter__(self):
-        return ((key, val) for key, val in self.__dict__.items() if not key.startswith("_"))
-
-    @hybrid_method
-    def soft_exists(self, exists=True):
-        if exists:
-            return self.is_deleted is not True
-        return self.is_deleted is True
-
-    @soft_exists.expression  # type: ignore[no-redef]
-    def soft_exists(cls, exists=True):
-        if exists:
-            return cls.is_deleted.isnot(True)
-        return cls.is_deleted.is_(True)
+        info = inspect(self)
+        return ((c.key, getattr(self, c.key)) for c in info.mapper.column_attrs if c.key not in info.unloaded)

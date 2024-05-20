@@ -4,27 +4,30 @@ import uuid
 from typing import Collection
 
 from pydantic import parse_obj_as
-from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, update
+from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, contains_eager
 from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
 
 from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
-from apps.activities.domain import ActivityHistory
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
 from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
 from apps.answers.domain import (
+    Answer,
     AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
+    FlowSubmission,
+    FlowSubmissionInfo,
+    IdentifierData,
     RespondentAnswerData,
     UserAnswerItemData,
-    Version,
 )
 from apps.answers.errors import AnswerNotFoundError
 from apps.applets.db.schemas import AppletHistorySchema
+from apps.applets.domain.applet_history import Version
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
@@ -41,6 +44,43 @@ class _AnswersExportFilter(Filtering):
     to_date = FilterField(AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL)
 
 
+class _AnswerListFilter(Filtering):
+    respondent_ids = FilterField(AnswerItemSchema.respondent_id, method_name="filter_respondent_ids")
+
+    def filter_respondent_ids(self, field, value):
+        if not value:
+            return None
+        return and_(field.in_(value), AnswerItemSchema.is_assessment.isnot(True))
+
+    answer_id = FilterField(AnswerSchema.id)
+    submit_id = FilterField(AnswerSchema.submit_id)
+    applet_id = FilterField(AnswerSchema.applet_id)
+    activity_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id), cast=str)
+    flow_id = FilterField(AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id), cast=str)
+    created_date = FilterField(func.date(AnswerItemSchema.created_at))
+
+
+class _FlowSubmissionsFilter(Filtering):
+    respondent_id = FilterField(AnswerItemSchema.respondent_id)
+    applet_id = FilterField(AnswerSchema.applet_id)
+    versions = FilterField(AnswerSchema.version, Comparisons.IN)
+
+
+class _FlowSubmissionAggregateFilter(Filtering):
+    from_datetime = FilterField(func.max(AnswerItemSchema.end_datetime), Comparisons.GREAT_OR_EQUAL)
+    to_datetime = FilterField(func.max(AnswerItemSchema.end_datetime), Comparisons.LESS_OR_EQUAL)
+    identifiers = FilterField(func.array_agg(AnswerItemSchema.identifier), method_name="filter_by_identifiers")
+    is_completed = FilterField(func.bool_or(AnswerSchema.is_flow_completed), method_name="filter_completed")
+
+    def filter_by_identifiers(self, field, values: list | None):
+        return field.op("&&")(values)
+
+    def filter_completed(self, field, value: bool | None):
+        if value is True:
+            return field.is_(True)
+        return None
+
+
 class AnswersCRUD(BaseCRUD[AnswerSchema]):
     schema_class = AnswerSchema
 
@@ -51,6 +91,132 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def create_many(self, schemas: list[AnswerSchema]) -> list[AnswerSchema]:
         schemas = await self._create_many(schemas)
         return schemas
+
+    async def get_list(self, **filters) -> list[Answer]:
+        """
+        @param filters: see supported filters: _AnswerListFilter
+        """
+        query = select(AnswerSchema).join(AnswerSchema.answer_item).options(contains_eager(AnswerSchema.answer_item))
+
+        _filters = _AnswerListFilter().get_clauses(**filters)
+        if _filters:
+            query = query.where(*_filters)
+
+        res = await self._execute(query)
+        data = res.unique().scalars().all()
+
+        return parse_obj_as(list[Answer], data)
+
+    async def get_flow_submission_data(
+        self, *, created_date: datetime.date | None = None, **filters
+    ) -> list[FlowSubmissionInfo]:
+        """
+        @param created_date: submission max answer date
+        @param filters: see supported filters: _AnswerListFilter
+        """
+        created_at = func.max(AnswerItemSchema.created_at)
+        query = (
+            select(
+                AnswerSchema.submit_id,
+                AnswerSchema.flow_history_id,
+                AnswerSchema.applet_id,
+                AnswerSchema.version,
+                created_at.label("created_at"),
+                func.max(AnswerItemSchema.end_datetime).label("end_datetime"),
+            )
+            .join(AnswerSchema.answer_item)
+            .where(AnswerSchema.flow_history_id.isnot(None))
+            .group_by(
+                AnswerSchema.submit_id, AnswerSchema.flow_history_id, AnswerSchema.applet_id, AnswerSchema.version
+            )
+            .order_by(created_at)
+        )
+
+        _filters = _AnswerListFilter().get_clauses(**filters)
+        if _filters:
+            query = query.where(*_filters)
+        if created_date:
+            query = query.having(func.date(created_at) == created_date)
+
+        res = await self._execute(query)
+        data = res.all()
+
+        return parse_obj_as(list[FlowSubmissionInfo], data)
+
+    async def get_flow_submissions(
+        self, flow_id: uuid.UUID, *, page=None, limit=None, **filters
+    ) -> tuple[list[FlowSubmission], int]:
+        created_at = func.max(AnswerItemSchema.created_at)
+        query = (
+            select(
+                AnswerSchema.submit_id,
+                AnswerSchema.flow_history_id,
+                AnswerSchema.applet_id,
+                AnswerSchema.version,
+                created_at.label("created_at"),
+                func.max(AnswerItemSchema.end_datetime).label("end_datetime"),
+                func.bool_or(AnswerSchema.is_flow_completed).is_(True).label("is_completed"),
+                # fmt: off
+                func.array_agg(
+                    func.json_build_object(
+                        text("'id'"),
+                        AnswerSchema.id,
+                        text("'submit_id'"),
+                        AnswerSchema.submit_id,
+                        text("'version'"),
+                        AnswerSchema.version,
+                        text("'activity_history_id'"),
+                        AnswerSchema.activity_history_id,
+                        text("'flow_history_id'"),
+                        AnswerSchema.flow_history_id,
+                        text("'user_public_key'"),
+                        AnswerItemSchema.user_public_key,
+                        text("'answer'"),
+                        AnswerItemSchema.answer,
+                        text("'events'"),
+                        AnswerItemSchema.events,
+                        text("'item_ids'"),
+                        AnswerItemSchema.item_ids,
+                        text("'identifier'"),
+                        AnswerItemSchema.identifier,
+                        text("'migrated_data'"),
+                        AnswerItemSchema.migrated_data,
+                        text("'end_datetime'"),
+                        AnswerItemSchema.end_datetime,
+                        text("'created_at'"),
+                        AnswerItemSchema.created_at,
+                    )
+                ).label("answers"),
+                # fmt: on
+            )
+            .join(AnswerSchema.answer_item)
+            .where(AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(flow_id))
+            .group_by(
+                AnswerSchema.submit_id, AnswerSchema.flow_history_id, AnswerSchema.applet_id, AnswerSchema.version
+            )
+        )
+
+        _filters = _FlowSubmissionsFilter().get_clauses(**filters)
+        if _filters:
+            query = query.where(*_filters)
+
+        _filters = _FlowSubmissionAggregateFilter().get_clauses(**filters)
+        if _filters:
+            query = query.having(and_(*_filters))
+
+        query_data = query.order_by(created_at)
+        query_data = paging(query_data, page, limit)
+
+        query_count = select(func.count()).select_from(query.with_only_columns(AnswerSchema.submit_id).subquery())
+
+        coro_data = self._execute(query_data)
+        coro_count = self._execute(query_count)
+        result_data, result_count = await asyncio.gather(coro_data, coro_count)
+
+        data = result_data.all()
+        count = result_count.scalar()
+
+        return parse_obj_as(list[FlowSubmission], data), count
 
     async def get_respondents_answered_activities_by_applet_id(
         self,
@@ -203,17 +369,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return parse_obj_as(list[RespondentAnswerData], answers), total
 
-    async def get_activity_history_by_ids(self, activity_hist_ids: list[str]) -> list[ActivityHistory]:
-        query: Query = (
-            select(ActivityHistorySchema)
-            .where(ActivityHistorySchema.id_version.in_(activity_hist_ids))
-            .order_by(ActivityHistorySchema.applet_id, ActivityHistorySchema.order)
-        )
-        res = await self._execute(query)
-        activities: list[ActivityHistorySchema] = res.scalars().all()
-
-        return parse_obj_as(list[ActivityHistory], activities)
-
     async def get_item_history_by_activity_history(self, activity_hist_ids: list[str]) -> list[ActivityItemHistoryFull]:
         query: Query = (
             select(ActivityItemHistorySchema)
@@ -305,8 +460,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_by_applet_activity_created_at(
         self, applet_id: uuid.UUID, activity_id: str, created_at: int
-    ) -> list[AnswerSchema] | None:
-        created_time = datetime.datetime.utcfromtimestamp(created_at)
+    ) -> list[AnswerSchema]:
+        # TODO: investigate this later
+        created_time = datetime.datetime.fromtimestamp(created_at)
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.created_at == created_time)
@@ -321,9 +477,21 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = select(AnswerSchema.activity_history_id, func.max(AnswerSchema.created_at))
         query = query.where(or_(*(AnswerSchema.activity_history_id.like(f"{item}_%") for item in activity_ids)))
         if respondent_id:
-            query.where(AnswerSchema.respondent_id == respondent_id)
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
         query = query.group_by(AnswerSchema.activity_history_id)
-        query.order_by(AnswerSchema.activity_history_id)
+        query = query.order_by(AnswerSchema.activity_history_id)
+        db_result = await self._execute(query)
+        return db_result.all()  # noqa
+
+    async def get_submitted_flows_with_last_date(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+    ) -> list[tuple[str, datetime.datetime]]:
+        query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
+        query = query.where(AnswerSchema.applet_id == applet_id, AnswerSchema.flow_history_id.isnot(None))
+        if respondent_id:
+            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.group_by(AnswerSchema.flow_history_id)
+        query = query.order_by(AnswerSchema.flow_history_id)
         db_result = await self._execute(query)
         return db_result.all()  # noqa
 
@@ -551,6 +719,34 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.applet_id == applet_id)
         result = await self._execute(query)
         return {t[0]: t[1] for t in result.all()}
+
+    async def get_flow_identifiers(self, flow_id: uuid.UUID, respondent_id: uuid.UUID) -> list[IdentifierData]:
+        query = (
+            select(
+                AnswerItemSchema.identifier,
+                AnswerItemSchema.user_public_key,
+                AnswerItemSchema.is_identifier_encrypted.label("is_encrypted"),  # type: ignore[attr-defined]
+                func.max(AnswerItemSchema.created_at).label("last_answer_date"),
+            )
+            .select_from(AnswerSchema)
+            .join(AnswerSchema.answer_item)
+            .where(
+                AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(flow_id),
+                AnswerItemSchema.respondent_id == respondent_id,
+                AnswerItemSchema.identifier.isnot(None),
+            )
+            .group_by(
+                AnswerItemSchema.identifier,
+                AnswerItemSchema.user_public_key,
+                AnswerItemSchema.is_identifier_encrypted,
+            )
+            .order_by(column("last_answer_date"))
+        )
+
+        result = await self._execute(query)
+        data = result.all()
+
+        return parse_obj_as(list[IdentifierData], data)
 
     async def get_by_applet_id_and_readiness_to_share_data(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID

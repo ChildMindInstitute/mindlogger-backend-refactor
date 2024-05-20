@@ -1,5 +1,10 @@
 name: Automated tests
-on: [pull_request]
+on: 
+  pull_request:
+    types:
+    - opened
+    - reopened
+    - synchronize
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -14,3 +19,83 @@ jobs:
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
           docker compose up -d
           make dtest
+
+      - name: Collect artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+          if-no-files-found: error
+
+  publish-report:
+    name: Publish Report
+    needs: [tests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout
+        with:
+          ref: gh-pages
+          path: gh-pages
+        
+      - name: Fetch results
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+
+      - name: Build test report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: allure-results
+          allure_history: allure-history
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-history
+
+      - name: Post the link to the report
+        if: always()
+        uses: Sibz/github-status-action@v1
+        with:
+          authToken: ${{secrets.PAT_TOKEN}}
+          context: 'Test report'
+          state: 'success'
+          sha: ${{ github.event.pull_request.head.sha }}
+          target_url: https://childmindinstitute.github.io/mindlogger-backend-refactor/${{ github.run_number }}
+  
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.tests.result == 'failure' || needs.tests.result == 'timed_out') }}
+    needs:
+      - tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+          SLACK_TITLE: Run Unit Tests
+          SLACK_MESSAGE: 'Error when executing Unit tests!'
+  
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.tests.result == 'success') }}
+    needs:
+      - tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on success"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+          SLACK_TITLE: Run Unit Tests
+          SLACK_MESSAGE: 'Unit tests performed successfully!'

@@ -233,6 +233,45 @@ def test_create_item_with_drawing_response_values(
     assert item.response_values.drawing_example == remote_image
 
 
+@pytest.mark.parametrize(
+    "proportion",
+    [
+        "N/A",
+        None,
+        dict(enabled=False),
+    ],
+)
+def test_create_item_with_drawing_response_values_proportion_from_json(
+    drawing_response_values: DrawingValues,
+    drawing_config: DrawingConfig,
+    base_item_data: BaseItemData,
+    proportion: dict | str | None,
+):
+    data = ActivityItemCreate(
+        response_type=ResponseType.DRAWING,
+        config=drawing_config,
+        response_values=drawing_response_values,
+        **base_item_data.dict(),
+    ).dict()
+
+    del data["response_values"]["proportion"]
+    if proportion != "N/A":
+        data["response_values"]["proportion"] = proportion
+
+    item = ActivityItemCreate(**data)
+
+    item.response_values = cast(DrawingValues, item.response_values)
+    if proportion != "N/A":
+        assert "proportion" in data["response_values"]
+        if isinstance(proportion, dict):
+            assert item.response_values.proportion.dict() == proportion  # type: ignore[union-attr]
+        else:
+            assert item.response_values.proportion == proportion
+    else:
+        assert "proportion" not in data["response_values"]
+        assert item.response_values.proportion is None
+
+
 def test_create_item_with_drawing_response_values_images_are_none(
     drawing_config: DrawingConfig,
     base_item_data: BaseItemData,
@@ -541,3 +580,27 @@ def test_single_multi_select_item_row__option_value_is_none(request, fixture_nam
     data["response_values"]["options"][0]["value"] = None
     item = ActivityItemCreate(**data)
     assert item.response_values.data_matrix[0].options[0].value == 0  # type: ignore
+
+
+@pytest.mark.parametrize("fixture_name", ("single_select_item_create", "multi_select_item_create"))
+def test_create_single_multi_select_item__add_scores_is_true_with_scores_float_rounded(request, fixture_name):
+    fixture = request.getfixturevalue(fixture_name)
+    data = fixture.dict()
+    data["config"]["add_scores"] = True
+    data["response_values"]["options"][0]["score"] = 1.333
+    item = ActivityItemCreate(**data)
+    assert item.response_values.options[0].score == round(data["response_values"]["options"][0]["score"], 2)
+
+
+def test_create_slider_item__add_scores_is_true_with_scores_float_rounded(slider_item_create):
+    data = slider_item_create.dict()
+    data["config"]["add_scores"] = True
+    print(data["response_values"])
+    data["response_values"]["scores"] = [
+        i + 0.343 for i in range(data["response_values"]["max_value"] - data["response_values"]["min_value"] + 1)
+    ]
+    item = ActivityItemCreate(**data)
+    rounded_score = [round(i, 2) for i in data["response_values"]["scores"]]
+
+    for score in item.response_values.scores:
+        assert score in rounded_score

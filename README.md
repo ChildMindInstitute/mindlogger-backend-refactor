@@ -2,6 +2,11 @@
 
 This repository is used for the backend of the [MindLogger](https://mindlogger.org/) application stack.
 
+[![Automated tests](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml/badge.svg)](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml)
+<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/ChildMindInstitute/mindlogger-backend-refactor" target="_blank">
+    <img src="https://coverage-badge.samuelcolvin.workers.dev/ChildMindInstitute/mindlogger-backend-refactor.svg" alt="Coverage">
+</a>
+
 ## Getting Started
 
 * MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
@@ -357,7 +362,7 @@ psql# alter user test with password 'test';
 To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:
 
 ```bash
-coverage run --concurrency=thread,gevent -m pytest
+coverage run --branch --concurrency=thread,gevent -m pytest
 coverage report -m
 ```
 
