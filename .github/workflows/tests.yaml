@@ -68,6 +68,7 @@ jobs:
           target_url: https://childmindinstitute.github.io/mindlogger-backend-refactor/${{ github.run_number }}
   
   on-failure:
+    name: Unit tests failed
     runs-on: ubuntu-latest
     if: ${{ always() && (needs.tests.result == 'failure' || needs.tests.result == 'timed_out') }}
     needs:
@@ -88,6 +89,7 @@ jobs:
             core.setFailed('Unit tests failed')
   
   on-success:
+    name: Unit tests succeeded
     runs-on: ubuntu-latest
     if: ${{ always() && (needs.tests.result == 'success') }}
     needs:

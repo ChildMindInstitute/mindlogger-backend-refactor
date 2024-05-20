@@ -22,8 +22,6 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
-#  set-env-name:
-#    uses: ./.github/workflows/env-name.yaml
   create-preview-env:
     uses: ./.github/workflows/create-preview-env.yaml
     with:
@@ -33,60 +31,8 @@ jobs:
       vpc-id: vpc-0a83201b71e854abd
       copilot-service: mindlogger-backend
     secrets: inherit
-  #    name: Create Preview Env
-#    needs: [set-env-name]
-#    permissions:
-#      id-token: write
-#      contents: read
-#      pull-requests: write
-#      discussions: write
-#    env:
-#      ENV_NAME: ${{ needs.set-env-name.outputs.env-name }}
-#      ENV_SNAKE_NAME: ${{ needs.set-env-name.outputs.env-snake-name }}
-#
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: configure aws credentials
-#        uses: aws-actions/configure-aws-credentials@v4
-#        with:
-#          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
-#          role-session-name: gha-preview-env
-#          aws-region: ${{ env.AWS_REGION }}
-#      - name: Install copilot
-#        run: |
-#          curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot &&
-#          sudo mv copilot /usr/local/bin/copilot && copilot -v
-#      - name: Create secrets for environment
-#        # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
-#        # is copied and tagged properly for copilot to pick it up.
-#        run: |
-#          SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature)
-#          aws secretsmanager create-secret --name cmiml-feature-${{ env.ENV_NAME }} --secret-string '$SECRET_STRING' --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ env.APP_NAME }}" "Key=copilot-environment,Value=${{ env.ENV_NAME }}"
-#
-#      - uses: actions/checkout@v4
-#        name: Checkout
-#      - name: Create environment
-#        run: copilot/scripts/env-init.sh
-#      - name: Deploy environment
-#        run: copilot/scripts/env-deploy.sh
-#      - name: Deploy service
-#        run: copilot/scripts/svc-deploy.sh
-#      - name: Get service URL
-#        id: service-url
-#        run: echo "SERVICE_URL=$(copilot svc show -n service-a --json | jq -r '.routes[] | select( .environment | contains("${{ env.ENV_NAME }}") ) | .url')" >> $GITHUB_OUTPUT
-#      - name: Comment on PR
-#        uses: thollander/actions-comment-pull-request@v2
-#        if: ${{ github.event_name == 'pull_request' }}
-#        with:
-#          message: |
-#            :arrow_right: Preview environment created: [Click Me!](${{ steps.service-url.outputs.SERVICE_URL }})
-#          reactions: eyes, rocket
-#          comment_tag: service-url
-#    outputs:
-#      service-url: ${{ steps.service-url.outputs.SERVICE_URL }}
 
   run-unit-tests:
-#    needs: [create-preview-env]
     uses: ./.github/workflows/tests.yaml
     secrets: inherit
 
@@ -98,89 +44,14 @@ jobs:
       db-name: "mindlogger_backend_pr_${{ github.event.number }}"
     secrets: inherit
 
-  run-int-tests:
+  run-e2e-tests:
     name: Run E2E Test Suite
-    needs: [create-preview-env, run-unit-tests]
+    needs: [ create-preview-env, run-unit-tests ]
     if: ${{ always() && (needs.run-unit-tests.result == 'success') }}
-    runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write
-      contents: read
-      pull-requests: write
-      discussions: write
-
-    steps:
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
-          role-session-name: OIDC-GHA-session
-          aws-region: ${{ env.AWS_REGION }}
-#      - name: configure aws credentials
-#        uses: aws-actions/configure-aws-credentials@v4
-#        with:
-#          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
-#          role-session-name: gha-preview-env
-#          aws-region: ${{ env.AWS_REGION }}
-      - uses: actions/checkout@v4
-        name: Checkout
-        with:
-          repository: ChildMindInstitute/MindLogger-TAF
-          # Matching deploy key in TAF repo
-          ssh-key: ${{ secrets.TAF_PRIVATE_KEY }}
-          ref: release
-      - name: Install
-        run: npm install
-      - name: Setup Environment
-        run: |
-          sed -i 's/API_DOMAIN.*//' .env ;
-          echo 'API_DOMAIN=${{ needs.create-preview-env.outputs.service-url }}' >> .env
-      - name: Get Secrets by Name and by ARN
-        uses: aws-actions/aws-secretsmanager-get-secrets@v2
-        with:
-          secret-ids: |
-            taf/dev
-          parse-json-secrets: true
-
-      - name: Run tests
-        run: npm run test:api
-        continue-on-error: true
-        id: taf-tests
-
-      - name: Comment on PR with test success
-        if: steps.taf-tests.outcome == 'success' && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            :white_check_mark: Unit/Integration tests passed!
-          comment_tag: taf-results
-      - name: Comment on PR with test failure
-        if: steps.taf-tests.outcome != 'success' && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            :x: Integration tests failed
-          comment_tag: taf-results
-      - name: Fail
-        if: steps.taf-tests.outcome != 'success' && github.event_name == 'pull_request'
-        uses: actions/github-script@v3
-        with:
-          script: |
-            core.setFailed('Unit tests failed')
-
-      - name: Collect artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: taf-results
-          path: test-results/api
-          if-no-files-found: error
-      - name: Fail if tests failed
-        if: steps.taf-tests.outcome != 'success'
-        uses: actions/github-script@v3
-        with:
-          script: |
-            core.setFailed('Unit/Int tests failed')
+    uses: ./.github/workflows/e2e-tests.yaml
+    secrets: inherit
+    with:
+      service-url: ${{ needs.create-preview-env.outputs.service-url }}
 
   publish-report:
     name: Publish Report

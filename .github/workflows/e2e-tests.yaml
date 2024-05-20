@@ -1,0 +1,97 @@
+name: E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      service-url:
+        type: string
+        description: Service URL endpoint
+        required: true
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  run-e2e-tests:
+    name: Run E2E Test Suite
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      discussions: write
+
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
+          role-session-name: OIDC-GHA-session
+          aws-region: ${{ env.AWS_REGION }}
+      #      - name: configure aws credentials
+      #        uses: aws-actions/configure-aws-credentials@v4
+      #        with:
+      #          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
+      #          role-session-name: gha-preview-env
+      #          aws-region: ${{ env.AWS_REGION }}
+      - uses: actions/checkout@v4
+        name: Checkout
+        with:
+          repository: ChildMindInstitute/MindLogger-TAF
+          # Matching deploy key in TAF repo
+          ssh-key: ${{ secrets.TAF_PRIVATE_KEY }}
+          ref: release
+      - name: Install
+        run: npm install
+      - name: Setup Environment
+        run: |
+          sed -i 's/API_DOMAIN.*//' .env ;
+          echo 'API_DOMAIN=${{ inputs.service-url }}' >> .env
+      - name: Validate Environment
+        run: cat .env
+      - name: Get Secrets by Name and by ARN
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            taf/dev
+          parse-json-secrets: true
+
+      - name: Run tests
+        run: npm run test:api
+        continue-on-error: true
+        id: taf-tests
+
+      - name: Comment on PR with test success
+        if: steps.taf-tests.outcome == 'success' && github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :white_check_mark: Unit/Integration tests passed!
+          comment_tag: taf-results
+      - name: Comment on PR with test failure
+        if: steps.taf-tests.outcome != 'success' && github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :x: Integration tests failed
+          comment_tag: taf-results
+      - name: Fail
+        if: steps.taf-tests.outcome != 'success' && github.event_name == 'pull_request'
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Unit tests failed')
+
+      - name: Collect artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: taf-results
+          path: test-results/api
+          if-no-files-found: error
+      - name: Fail if tests failed
+        if: steps.taf-tests.outcome != 'success'
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Unit/Int tests failed')
