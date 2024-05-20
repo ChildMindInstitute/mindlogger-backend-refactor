@@ -1,6 +1,5 @@
 import datetime
 import json
-import os
 import time
 import uuid
 
@@ -17,6 +16,7 @@ from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
 from apps.integrations.loris.domain import MlLorisUserRelationship, UnencryptedApplet
 from apps.integrations.loris.errors import LorisServerError, MlLorisUserRelationshipNotFoundError
 from apps.users.domain import User
+from config import settings
 from infrastructure.database.core import atomic
 from infrastructure.logger import logger
 
@@ -27,20 +27,9 @@ __all__ = [
 
 VISIT = "V1"
 
-LORIS_LOGIN_URL = "https://loris.cmiml.net/api/v0.0.3/login/"
-LORIS_ML_URL = "https://loris.cmiml.net/mindlogger/v1/schema/"
-LORIS_CREATE_CANDIDATE = "https://loris.cmiml.net/api/v0.0.3/candidates"
-LORIS_CREATE_VISIT = "https://loris.cmiml.net/api/v0.0.3/candidates/{}/{}"
-LORIS_START_VISIT = "https://loris.cmiml.net/api/v0.0.4-dev/candidates/{}/{}"
-LORIS_ADD_INSTRUMENTS = "https://loris.cmiml.net/api/v0.0.4-dev/candidates/{}/{}/instruments"
-LORIS_INSTRUMENT_DATA = "https://loris.cmiml.net/api/v0.0.3/candidates/{}/{}/instruments/{}"
-
-LORIS_USERNAME = os.getenv("LORIS_USERNAME")
-LORIS_PASSWORD = os.getenv("LORIS_PASSWORD")
-
 LORIS_LOGIN_DATA = {
-    "username": LORIS_USERNAME,
-    "password": LORIS_PASSWORD,
+    "username": settings.loris.username,
+    "password": settings.loris.password,
 }
 
 
@@ -187,7 +176,8 @@ class LorisIntegrationService:
                     _data = items[i]["responseValues"]["options"][index]["text"]
                     loris_answers[key] = _data
                 case "multiSelect":
-                    loris_answers[key] = list(map(str, data[i]["value"]))
+                    _data = data[i]["value"]
+                    loris_answers[key] = [items[i]["responseValues"]["options"][i_]["text"] for i_ in _data]
                 case "slider":
                     loris_answers[key] = data[i]["value"]
                 case "numberSelect":
@@ -229,23 +219,23 @@ class LorisIntegrationService:
 
                     loris_answers[key] = date
                 case "sliderRows":
-                    data = data[i]["value"]
+                    _data = data[i]["value"]
 
-                    for i, v in enumerate(data):
+                    for i, v in enumerate(_data):
                         _key = key + "__{}".format(i)
                         loris_answers[_key] = v
                 case "singleSelectRows":
-                    data = data[i]["value"]
+                    _data = data[i]["value"]
 
-                    for i, v in enumerate(data):
+                    for i, v in enumerate(_data):
                         _key = key + "__{}".format(i)
                         loris_answers[_key] = v
                 case "multiSelectRows":
-                    data = data[i]["value"]
+                    _data = data[i]["value"]
 
-                    for i, v in enumerate(data):
+                    for i, v in enumerate(_data):
                         _key = key + "__{}".format(i)
-                        loris_answers[_key] = v
+                        loris_answers[_key] = [answer for answer in v if answer is not None]
                 case "time":
                     _data = data[i]["value"]
 
@@ -261,10 +251,10 @@ class LorisIntegrationService:
     async def _login_to_loris(self) -> str:
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(f"Sending LOGIN request to the loris server {LORIS_LOGIN_URL}")
+            logger.info(f"Sending LOGIN request to the loris server {settings.loris.login_url}")
             start = time.time()
             async with session.post(
-                LORIS_LOGIN_URL,
+                settings.loris.login_url,
                 data=json.dumps(LORIS_LOGIN_DATA),
             ) as resp:
                 duration = time.time() - start
@@ -280,10 +270,10 @@ class LorisIntegrationService:
     async def _upload_applet_schema_to_loris(self, schema: dict, headers: dict):
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(f"Sending UPLOAD SCHEMA request to the loris server " f"{LORIS_ML_URL}")
+            logger.info(f"Sending UPLOAD SCHEMA request to the loris server {settings.loris.ml_schema_url}")
             start = time.time()
             async with session.post(
-                LORIS_ML_URL,
+                settings.loris.ml_schema_url,
                 data=UnencryptedApplet(**schema).json(),
                 headers=headers,
             ) as resp:
@@ -300,7 +290,7 @@ class LorisIntegrationService:
     ) -> str:
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(f"Sending CREATE CANDIDATE request to the loris server " f"{LORIS_CREATE_CANDIDATE}")
+            logger.info(f"Sending CREATE CANDIDATE request to the loris server {settings.loris.create_candidate_url}")
             start = time.time()
             _data_candidate = {
                 "Candidate": {
@@ -311,7 +301,7 @@ class LorisIntegrationService:
                 }
             }
             async with session.post(
-                LORIS_CREATE_CANDIDATE,
+                settings.loris.create_candidate_url,
                 data=json.dumps(_data_candidate),
                 headers=headers,
             ) as resp:
@@ -333,9 +323,8 @@ class LorisIntegrationService:
                     )
                 )
 
-            logger.info(
-                f"Sending CREATE VISIT request to the loris server" f"{LORIS_CREATE_VISIT.format(candidate_id, VISIT)}"
-            )
+            create_visit_url: str = settings.loris.create_visit_url.format(candidate_id, VISIT)
+            logger.info(f"Sending CREATE VISIT request to the loris server {create_visit_url}")
             start = time.time()
             _data_create_visit = {
                 "CandID": candidate_id,
@@ -345,7 +334,7 @@ class LorisIntegrationService:
                 "Project": "loris",
             }
             async with session.put(
-                LORIS_CREATE_VISIT.format(candidate_id, VISIT),
+                settings.loris.create_visit_url.format(candidate_id, VISIT),
                 data=json.dumps(_data_create_visit),
                 headers=headers,
             ) as resp:
@@ -357,9 +346,8 @@ class LorisIntegrationService:
                     error_message = await resp.text()
                     raise LorisServerError(message=error_message)
 
-            logger.info(
-                f"Sending START VISIT request to the loris server " f"{LORIS_START_VISIT.format(candidate_id, VISIT)}"
-            )
+            start_visit_url: str = settings.loris.start_visit_url.format(candidate_id, VISIT)
+            logger.info(f"Sending START VISIT request to the loris server {start_visit_url}")
             start = time.time()
             _data_start_visit = {
                 "CandID": candidate_id,
@@ -376,7 +364,7 @@ class LorisIntegrationService:
                 },
             }
             async with session.patch(
-                LORIS_START_VISIT.format(candidate_id, VISIT),
+                settings.loris.start_visit_url.format(candidate_id, VISIT),
                 data=json.dumps(_data_start_visit),
                 headers=headers,
             ) as resp:
@@ -395,7 +383,7 @@ class LorisIntegrationService:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             logger.info(
                 f"Sending ADD INSTRUMENTS request to the loris server "
-                f"{LORIS_ADD_INSTRUMENTS.format(candidate_id, VISIT)}"
+                f"{settings.loris.add_instruments_url.format(candidate_id, VISIT)}"
             )
             start = time.time()
             _data_add_instruments = {
@@ -406,7 +394,7 @@ class LorisIntegrationService:
                 "Instruments": activities_ids,
             }
             async with session.post(
-                LORIS_ADD_INSTRUMENTS.format(candidate_id, VISIT),
+                settings.loris.add_instruments_url.format(candidate_id, VISIT),
                 data=json.dumps(_data_add_instruments),
                 headers=headers,
             ) as resp:
@@ -425,7 +413,7 @@ class LorisIntegrationService:
             for activitie_id in activities_ids:
                 logger.info(
                     f"Sending SEND INSTUMENT DATA request to the loris server "
-                    f"{LORIS_INSTRUMENT_DATA.format(candidate_id, VISIT, activitie_id)}"
+                    f"{settings.loris.instrument_data_url.format(candidate_id, VISIT, activitie_id)}"
                 )
                 start = time.time()
                 _data_instrument_data = {
@@ -439,7 +427,7 @@ class LorisIntegrationService:
                 }
                 logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)} ")
                 async with session.put(
-                    LORIS_INSTRUMENT_DATA.format(candidate_id, VISIT, activitie_id),
+                    settings.loris.instrument_data_url.format(candidate_id, VISIT, activitie_id),
                     data=json.dumps(_data_instrument_data),
                     headers=headers,
                 ) as resp:
