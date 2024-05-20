@@ -47,7 +47,9 @@ class AnswerNoteSchema(Base):
     __tablename__ = "answer_notes"
 
     answer_id = Column(UUID(as_uuid=True), index=True)
-    activity_id = Column(UUID(as_uuid=True))
+    submission_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    activity_id = Column(UUID(as_uuid=True), nullable=True)
+    activity_flow_id = Column(UUID(as_uuid=True), nullable=True)
     note = Column(StringEncryptedType(Unicode, get_key))
     user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 

@@ -358,7 +358,7 @@ def note_create_data() -> AnswerNote:
 async def answer_note(
     session: AsyncSession, tom: User, answer: AnswerSchema, note_create_data: AnswerNote
 ) -> AnswerNoteSchema:
-    return await AnswerService(session, tom.id).add_note(
+    return await AnswerService(session, tom.id).add_answer_note(
         answer.applet_id, answer.id, uuid.UUID(answer.activity_history_id.split("_")[0]), note=note_create_data.note
     )
 
@@ -423,7 +423,7 @@ async def answer_note_arbitrary(
     answer_arbitrary: AnswerSchema,
     note_create_data: AnswerNote,
 ) -> AnswerNoteSchema:
-    return await AnswerService(session, tom.id, arbitrary_session).add_note(
+    return await AnswerService(session, tom.id, arbitrary_session).add_answer_note(
         answer_arbitrary.applet_id,
         answer_arbitrary.id,
         uuid.UUID(answer_arbitrary.activity_history_id.split("_")[0]),
@@ -596,3 +596,16 @@ async def assessment_for_submission_arbitrary(
     )
     srv = AnswerService(session, tom.id, arbitrary_session=arbitrary_session)
     await srv.create_assessment_answer(last_flow_answer.applet_id, last_flow_answer.id, assessment_submission_create)
+
+
+@pytest.fixture
+async def submission_note(
+    session: AsyncSession, tom: User, answers_reviewable_submission: list[AnswerSchema], note_create_data: AnswerNote
+) -> AnswerNoteSchema:
+    last_flow_answer: AnswerSchema = next(filter(lambda a: a.is_flow_completed, answers_reviewable_submission))
+    return await AnswerService(session, tom.id).add_submission_note(
+        last_flow_answer.applet_id,
+        last_flow_answer.submit_id,
+        uuid.UUID(last_flow_answer.flow_history_id.split("_")[0]),
+        note=note_create_data.note,
+    )

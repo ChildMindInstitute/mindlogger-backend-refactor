@@ -423,6 +423,12 @@ class AnswerService:
             pk = self._generate_history_id(answer_schema.version)
             await ActivityHistoriesCRUD(self.session).get_by_id(pk(activity_id))
 
+    async def _validate_submission_access(self, applet_id: uuid.UUID, submission_id: uuid.UUID, flow_id: uuid.UUID):
+        answer = await self.get_submission_last_answer(submission_id, flow_id)
+        if not answer:
+            raise AnswerNotFoundError()
+        await self._validate_applet_activity_access(applet_id, answer.respondent_id)
+
     async def get_flow_submission(
         self,
         applet_id: uuid.UUID,
@@ -486,7 +492,7 @@ class AnswerService:
 
         return submission
 
-    async def add_note(
+    async def add_answer_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
@@ -522,7 +528,10 @@ class AnswerService:
     async def get_notes_count(self, answer_id: uuid.UUID, activity_id: uuid.UUID) -> int:
         return await AnswerNotesCRUD(self.session).get_count_by_answer_id(answer_id, activity_id)
 
-    async def edit_note(
+    async def get_submission_notes_count(self, answer_id: uuid.UUID, activity_id: uuid.UUID) -> int:
+        return await AnswerNotesCRUD(self.session).get_count_by_submission_id(answer_id, activity_id)
+
+    async def edit_answer_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
@@ -534,7 +543,7 @@ class AnswerService:
         await self._validate_note_access(note_id)
         await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
 
-    async def delete_note(
+    async def delete_answer_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
@@ -1246,8 +1255,69 @@ class AnswerService:
 
     async def get_submission_last_answer_id(self, submit_id: uuid.UUID) -> uuid.UUID | None:
         crud = AnswersCRUD(self.answer_session)
-        answer_id = await crud.get_last_answer_in_flow(submit_id)
+        answer_id = await crud.get_last_answer_in_flow_id(submit_id)
         return answer_id
+
+    async def get_submission_last_answer(
+        self, submit_id: uuid.UUID, flow_id: uuid.UUID | None = None
+    ) -> AnswerSchema | None:
+        return await AnswersCRUD(self.answer_session).get_last_answer_in_flow(submit_id, flow_id)
+
+    async def add_submission_note(
+        self,
+        applet_id: uuid.UUID,
+        submission_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        note: str,
+    ):
+        answer = await self.get_submission_last_answer(submission_id)
+        if not answer:
+            raise AnswerNotFoundError()
+        await self._validate_applet_activity_access(applet_id, answer)
+        schema = AnswerNoteSchema(
+            answer_id=answer.id, note=note, user_id=self.user_id, activity_flow_id=flow_id, submission_id=submission_id
+        )
+        note_schema = await AnswerNotesCRUD(self.session).save(schema)
+        return note_schema
+
+    async def get_submission_note_list(
+        self,
+        applet_id: uuid.UUID,
+        submission_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        query_params: QueryParams,
+    ) -> list[AnswerNoteDetail]:
+        await self._validate_submission_access(applet_id, submission_id, flow_id)
+        notes_crud = AnswerNotesCRUD(self.session)
+        note_schemas = await notes_crud.get_by_submission_id(submission_id, flow_id, query_params)
+        user_ids = set(map(lambda n: n.user_id, note_schemas))
+        users_crud = UsersCRUD(self.session)
+        users = await users_crud.get_by_ids(user_ids)
+        notes = await notes_crud.map_users_and_notes(note_schemas, users)
+        return notes
+
+    async def edit_submission_note(
+        self,
+        applet_id: uuid.UUID,
+        submission_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        note_id: uuid.UUID,
+        note: str,
+    ):
+        await self._validate_submission_access(applet_id, submission_id, flow_id)
+        await self._validate_note_access(note_id)
+        await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
+
+    async def delete_submission_note(
+        self,
+        applet_id: uuid.UUID,
+        submission_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        note_id: uuid.UUID,
+    ):
+        await self._validate_submission_access(applet_id, submission_id, flow_id)
+        await self._validate_note_access(note_id)
+        await AnswerNotesCRUD(self.session).delete_note_by_id(note_id)
 
 
 class ReportServerService:

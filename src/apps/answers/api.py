@@ -479,7 +479,86 @@ async def applet_flow_assessment_create(
                 raise NotFoundError()
 
 
-async def note_add(
+async def submission_note_add(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    schema: AnswerNote = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+        async with atomic(answer_session):
+            await AnswerService(session, user.id, answer_session).add_submission_note(
+                applet_id, submission_id, flow_id, schema.note
+            )
+    return
+
+
+async def submission_note_list(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[AnswerNoteDetailPublic]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+    notes = await AnswerService(session, user.id, answer_session).get_submission_note_list(
+        applet_id, submission_id, flow_id, query_params
+    )
+    count = await AnswerService(session, user.id, answer_session).get_submission_notes_count(submission_id, flow_id)
+    return ResponseMulti(
+        result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
+        count=count,
+    )
+
+
+async def submission_note_edit(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    note_id: uuid.UUID,
+    schema: AnswerNote = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+        async with atomic(answer_session):
+            await AnswerService(session, user.id, answer_session).edit_submission_note(
+                applet_id, submission_id, flow_id, note_id, schema.note
+            )
+    return
+
+
+async def submission_note_delete(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    note_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+        async with atomic(answer_session):
+            await AnswerService(session, user.id, answer_session).delete_submission_note(
+                applet_id, submission_id, flow_id, note_id
+            )
+    return
+
+
+async def answer_note_add(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -492,13 +571,13 @@ async def note_add(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
         async with atomic(answer_session):
-            await AnswerService(session, user.id, answer_session).add_note(
+            await AnswerService(session, user.id, answer_session).add_answer_note(
                 applet_id, answer_id, activity_id, schema.note
             )
     return
 
 
-async def note_list(
+async def answer_note_list(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -519,7 +598,7 @@ async def note_list(
     )
 
 
-async def note_edit(
+async def answer_note_edit(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -533,13 +612,13 @@ async def note_edit(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
         async with atomic(answer_session):
-            await AnswerService(session, user.id, answer_session).edit_note(
+            await AnswerService(session, user.id, answer_session).edit_answer_note(
                 applet_id, answer_id, activity_id, note_id, schema.note
             )
     return
 
 
-async def note_delete(
+async def answer_note_delete(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -552,7 +631,7 @@ async def note_delete(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
         async with atomic(answer_session):
-            await AnswerService(session, user.id, answer_session).delete_note(
+            await AnswerService(session, user.id, answer_session).delete_answer_note(
                 applet_id, answer_id, activity_id, note_id
             )
     return

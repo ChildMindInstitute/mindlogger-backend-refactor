@@ -328,6 +328,15 @@ async def submission_assessment_answer(
     return await AnswerItemsCRUD(session).get_assessment(answer_id, tom.id)
 
 
+@pytest.fixture
+async def submission_answer(
+    client: TestClient,
+    tom: User,
+    answers_reviewable_submission: list[AnswerSchema],
+):
+    return next(filter(lambda a: a.is_flow_completed, answers_reviewable_submission))
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -368,6 +377,10 @@ class TestAnswerActivityItems(BaseTest):
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"
+    submission_notes_url = "/answers/applet/{applet_id}/submissions/{submission_id}/flows/{flow_id}/notes"
+    submission_note_detail_url = (
+        "/answers/applet/{applet_id}/submissions/{submission_id}/flows/{flow_id}/notes/{note_id}"
+    )
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"
     check_existence_url = "/answers/check-existence"
     assessment_delete_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}"
@@ -1790,7 +1803,9 @@ class TestAnswerActivityItems(BaseTest):
             data=assessment_submission_create,
         )
         assert response.status_code == http.HTTPStatus.CREATED
-        answer_id = await AnswersCRUD(session).get_last_answer_in_flow(assessment_submission_create.reviewed_submit_id)
+        answer_id = await AnswersCRUD(session).get_last_answer_in_flow_id(
+            assessment_submission_create.reviewed_submit_id
+        )
         assert answer_id
         assessment = await AnswerItemsCRUD(session).get_assessment(answer_id, tom.id)
         assert assessment
@@ -1866,3 +1881,106 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()
         assert data["result"]["submissions"][0]["reviewCount"]["mine"] == exp_mine
         assert data["result"]["submissions"][0]["reviewCount"]["other"] == exp_other
+
+    async def test_add_submission_note(
+        self,
+        client: TestClient,
+        tom: User,
+        note_create_data: AnswerNote,
+        applet_with_reviewable_flow: AppletFull,
+        answers_reviewable_submission: list[AnswerSchema],
+    ):
+        client.login(tom)
+        last_flow_answer: AnswerSchema = next(filter(lambda a: a.is_flow_completed, answers_reviewable_submission))
+
+        response = await client.post(
+            self.submission_notes_url.format(
+                applet_id=applet_with_reviewable_flow.id,
+                submission_id=last_flow_answer.submit_id,
+                flow_id=applet_with_reviewable_flow.activity_flows[0].id,
+            ),
+            data=note_create_data,
+        )
+
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+        response = await client.get(
+            self.submission_notes_url.format(
+                applet_id=applet_with_reviewable_flow.id,
+                submission_id=last_flow_answer.submit_id,
+                flow_id=applet_with_reviewable_flow.activity_flows[0].id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.json()["count"] == 1
+        note = response.json()["result"][0]
+        assert note["note"] == note_create_data.note
+        assert note["user"]["firstName"] == tom.first_name
+        assert note["user"]["lastName"] == tom.last_name
+        assert note["id"]
+        assert note["createdAt"]
+
+    async def test_edit_submission_note(
+        self,
+        client: TestClient,
+        tom: User,
+        submission_note: AnswerNoteSchema,
+        applet_with_reviewable_flow: AppletFull,
+        answers_reviewable_submission: list[AnswerSchema],
+    ):
+        client.login(tom)
+        last_flow_answer: AnswerSchema = next(filter(lambda a: a.is_flow_completed, answers_reviewable_submission))
+        note_new = submission_note.note + "new"
+        response = await client.put(
+            self.submission_note_detail_url.format(
+                applet_id=applet_with_reviewable_flow.id,
+                submission_id=last_flow_answer.submit_id,
+                flow_id=applet_with_reviewable_flow.activity_flows[0].id,
+                note_id=submission_note.id,
+            ),
+            dict(note=note_new),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+
+        response = await client.get(
+            self.submission_notes_url.format(
+                applet_id=applet_with_reviewable_flow.id,
+                submission_id=last_flow_answer.submit_id,
+                flow_id=applet_with_reviewable_flow.activity_flows[0].id,
+            )
+        )
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["note"] == note_new
+
+    async def test_delete_submission_note(
+        self,
+        client: TestClient,
+        tom: User,
+        submission_note: AnswerNoteSchema,
+        applet_with_reviewable_flow: AppletFull,
+        submission_answer: AnswerSchema,
+    ):
+        client.login(tom)
+
+        response = await client.delete(
+            self.submission_note_detail_url.format(
+                applet_id=applet_with_reviewable_flow.id,
+                submission_id=submission_answer.submit_id,
+                flow_id=applet_with_reviewable_flow.activity_flows[0].id,
+                note_id=submission_note.id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+
+        response = await client.get(
+            self.submission_notes_url.format(
+                applet_id=applet_with_reviewable_flow.id,
+                submission_id=submission_answer.submit_id,
+                flow_id=applet_with_reviewable_flow.activity_flows[0].id,
+            )
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["count"] == 0

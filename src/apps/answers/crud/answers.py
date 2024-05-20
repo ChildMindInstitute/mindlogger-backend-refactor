@@ -748,11 +748,22 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return parse_obj_as(list[IdentifierData], data)
 
-    async def get_last_answer_in_flow(self, submit_id: uuid.UUID) -> AnswerSchema | None:
+    async def get_last_answer_in_flow_id(self, submit_id: uuid.UUID) -> uuid.UUID | None:
         query = select(AnswerSchema.id)
         query = query.where(
             AnswerSchema.submit_id == submit_id,
             AnswerSchema.is_flow_completed.is_(True),
         )
+        result = await self._execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_last_answer_in_flow(self, submit_id: uuid.UUID, flow_id: uuid.UUID | None) -> AnswerSchema | None:
+        query = select(AnswerSchema)
+        query = query.where(
+            AnswerSchema.submit_id == submit_id,
+            AnswerSchema.is_flow_completed.is_(True),
+        )
+        if flow_id:
+            query = query.where(AnswerSchema.flow_history_id.like(f"{flow_id}_%"))
         result = await self._execute(query)
         return result.scalar_one_or_none()
