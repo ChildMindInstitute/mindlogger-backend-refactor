@@ -32,6 +32,8 @@ jobs:
       copilot-service: mindlogger-backend
     secrets: inherit
 
+
+
   run-unit-tests:
     uses: ./.github/workflows/tests.yaml
     secrets: inherit
