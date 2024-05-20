@@ -52,7 +52,7 @@ jobs:
     - name: Install pg_cron
       run: >-
         PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
-        -c "CREATE SCHEMA IF NOT EXISTS cron;" ${{ inputs.db-name }}
+        -c "CREATE SCHEMA IF NOT EXISTS cron AUTHORIZATION ${{ secrets.DB_BACKEND_USERNAME }};"  ${{ inputs.db-name }}
 
   #    - name: Create Database
 #      run: |
