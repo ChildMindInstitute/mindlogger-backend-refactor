@@ -1,16 +1,17 @@
 PORT = 8000
 HOST = localhost
 
-TEST_COMMAND = pytest -s -vv
+TEST_COMMAND = pytest -s -vv --alluredir=allure-results
 COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest  
 REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${SHA}"
+
 EXPORT_COMMAND = python src/export_spec.py
 
 RUFF_COMMAND = ruff
 ISORT_COMMAND = isort
 MYPY_COMMAND = mypy
 
-DOCKER_EXEC = docker-compose run --rm app
+DOCKER_EXEC = docker-compose run --rm -u root app
 COVERAGE_DOCKER_EXEC = docker-compose run --rm -u root app
 
 # ###############
