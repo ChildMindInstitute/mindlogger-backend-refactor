@@ -57,7 +57,7 @@ jobs:
       run: >-
         PGPASSWORD="${{ secrets.DB_BACKEND_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_BACKEND_USERNAME }}"
         -c "CREATE TABLE cron.job (
-                jobid int8 DEFAULT nextval('cron.jobid_seq'::regclass) NOT NULL,
+                jobid int8 DEFAULT 0 NOT NULL,
                 schedule text NOT NULL,
                 command text NOT NULL,
                 nodename text DEFAULT 'localhost'::text NOT NULL,
