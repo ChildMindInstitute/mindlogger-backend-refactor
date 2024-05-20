@@ -10,7 +10,6 @@ env:
 jobs:
   taf_api_tests:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout tests repository
       uses: actions/checkout@v4
@@ -35,11 +34,10 @@ jobs:
       id: test_results
       run: |
         cd taf_api_tests
-        ls -all
-        ls test-results/
-        ls test-results/api/
-        cat test-results/api/test-results.xml
-        echo result=$(sed -n '2p' test-results/api/test-results.xml | grep -oP 'time="\d+\.\d+" tests="\d+" failures="\d+" skipped="\d+"') >> "$GITHUB_OUTPUT"
+        echo test_results=$(sed -n '2p' test-results/api/test-results.xml | grep -oP 'time="\d+\.\d+" tests="\d+" failures="\d+" skipped="\d+"') >> "$GITHUB_OUTPUT"
+
+    outputs:
+      test_results: ${{ steps.test_results.outputs.test_results }}
 
   on-failure:
     runs-on: ubuntu-latest
@@ -54,7 +52,7 @@ jobs:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
           SLACK_TITLE: TAF API tests
-          SLACK_MESSAGE: ${{ steps.test_results.outputs.result }}
+          SLACK_MESSAGE: ${{ needs.taf_api_tests.outputs.test_results }}
   
   on-success:
     runs-on: ubuntu-latest
@@ -69,4 +67,4 @@ jobs:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
           SLACK_TITLE: TAF API tests
-          SLACK_MESSAGE: ${{ steps.test_results.outputs.result }}
+          SLACK_MESSAGE: ${{ needs.taf_api_tests.outputs.test_results }}
