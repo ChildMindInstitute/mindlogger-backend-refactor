@@ -1,5 +1,5 @@
 name: run_build
-on: [push, pull_request]
+on: [push]
 env:
   AWS_REGION : "us-east-1"
 
