@@ -55,7 +55,7 @@ jobs:
 
   publish-report:
     name: Publish Report
-    needs: [run-int-tests]
+    needs: [run-e2e-tests]
     if: ${{ always() && github.event_name == 'pull_request' && (needs.run-int-tests.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
