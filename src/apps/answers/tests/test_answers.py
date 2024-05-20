@@ -1788,6 +1788,18 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert resp.status_code == http.HTTPStatus.OK
 
+    @pytest.mark.usefixtures("applet_one_lucy_reviewer")
+    @pytest.mark.usefixtures("applet_one_lucy_coordinator")
+    async def test_get_summary_activity_list_role_reviewer_and_coordinator(
+        self, client: TestClient, applet_one: AppletFull, lucy: User, tom: User, tom_applet_subject: Subject
+    ):
+        client.login(lucy)
+        resp = await client.get(
+            self.summary_activities_url.format(applet_id=applet_one.id),
+            query={"targetSubjectId": tom_applet_subject.id},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+
     @pytest.mark.parametrize(
         "role,expected",
         (

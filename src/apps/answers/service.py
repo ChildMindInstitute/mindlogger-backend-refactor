@@ -1060,12 +1060,12 @@ class AnswerService:
         return results
 
     async def get_summary_activity_flows(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, target_subject_id: uuid.UUID | None
     ) -> list[SummaryActivityFlow]:
         assert self.user_id
         flow_crud = FlowsHistoryCRUD(self.session)
         answer_crud = AnswersCRUD(self.answer_session)
-        flow_history_ids_with_date = await answer_crud.get_submitted_flows_with_last_date(applet_id, respondent_id)
+        flow_history_ids_with_date = await answer_crud.get_submitted_flows_with_last_date(applet_id, target_subject_id)
         activity_flow_histories = await flow_crud.get_last_histories_by_applet(applet_id)
 
         submitted_activity_flows: dict[str, datetime.datetime] = {}

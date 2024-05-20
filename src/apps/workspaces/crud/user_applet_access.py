@@ -290,7 +290,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         self,
         user_id: uuid.UUID,
         applet_id: uuid.UUID,
-        ordered_roles: list[str],
+        ordered_roles: list[Role],
     ) -> UserAppletAccessSchema | None:
         """
         Get first role by order
