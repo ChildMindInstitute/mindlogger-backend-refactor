@@ -481,8 +481,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_by_applet_activity_created_at(
         self, applet_id: uuid.UUID, activity_id: str, created_at: int
-    ) -> list[AnswerSchema] | None:
-        created_time = datetime.datetime.utcfromtimestamp(created_at)
+    ) -> list[AnswerSchema]:
+        # TODO: investigate this later
+        created_time = datetime.datetime.fromtimestamp(created_at)
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.created_at == created_time)
@@ -782,3 +783,29 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         data = result.all()
 
         return parse_obj_as(list[IdentifierData], data)
+
+    async def replace_answers_subject(self, subject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
+        new_target_subject_id = case(
+            (AnswerSchema.target_subject_id == subject_id_from, subject_id_to),
+            else_=AnswerSchema.target_subject_id,
+        )
+        new_source_subject_id = case(
+            (AnswerSchema.source_subject_id == subject_id_from, subject_id_to),
+            else_=AnswerSchema.source_subject_id,
+        )
+
+        query = (
+            update(AnswerSchema)
+            .where(
+                or_(
+                    AnswerSchema.target_subject_id == subject_id_from,
+                    AnswerSchema.source_subject_id == subject_id_from,
+                )
+            )
+            .values(
+                target_subject_id=new_target_subject_id,
+                source_subject_id=new_source_subject_id,
+            )
+        )
+
+        await self._execute(query)

@@ -134,9 +134,7 @@ class ReviewerMeta(InternalModel):
     subjects: list[str]
 
 
-class Invitation(InternalModel):
-    """This is an invitation representation for internal needs."""
-
+class _Invitation(InternalModel):
     id: uuid.UUID
     email: EmailStr
     applet_id: uuid.UUID
@@ -144,8 +142,6 @@ class Invitation(InternalModel):
     key: uuid.UUID
     status: str
     invitor_id: uuid.UUID
-    first_name: str
-    last_name: str
     created_at: datetime
     user_id: uuid.UUID | None
     is_deleted: bool
@@ -153,7 +149,14 @@ class Invitation(InternalModel):
     title: str | None
 
 
-class InvitationRespondent(Invitation):
+class Invitation(_Invitation):
+    """This is an invitation representation for internal needs."""
+
+    first_name: str
+    last_name: str
+
+
+class InvitationRespondent(_Invitation):
     """This is an invitation representation for internal needs."""
 
     meta: RespondentMeta

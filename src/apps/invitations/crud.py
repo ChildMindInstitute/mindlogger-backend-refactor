@@ -83,6 +83,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             AppletSchema.display_name.label("applet_name"),
             SubjectSchema.secret_user_id.label("user_secret_id"),
             SubjectSchema.nickname.label("nickname"),
+            SubjectSchema.first_name.label("first_name"),
+            SubjectSchema.last_name.label("last_name"),
         )
         query = query.where(InvitationSchema.applet_id.in_(user_applet_ids))
         query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
@@ -106,7 +108,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
 
         db_result = await self._execute(query)
         results = []
-        for invitation, applet_name, secret_id, nickname in db_result.all():
+        for invitation, applet_name, secret_id, nickname, first_name, last_name in db_result.all():
             results.append(
                 InvitationDetail(
                     id=invitation.id,
@@ -118,8 +120,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     status=invitation.status,
                     invitor_id=invitation.invitor_id,
                     meta=invitation.meta,
-                    first_name=invitation.first_name,
-                    last_name=invitation.last_name,
+                    first_name=first_name if invitation.role == Role.RESPONDENT else invitation.first_name,
+                    last_name=last_name if invitation.role == Role.RESPONDENT else invitation.last_name,
                     created_at=invitation.created_at,
                     nickname=nickname,
                     secret_user_id=secret_id,
@@ -167,6 +169,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             AppletSchema.display_name.label("applet_name"),
             SubjectSchema.secret_user_id,
             SubjectSchema.nickname,
+            SubjectSchema.first_name,
+            SubjectSchema.last_name,
         )
         query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
         query = query.outerjoin(
@@ -183,7 +187,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         if not result:
             return None
 
-        invitation, applet_name, secret_id, nickname = result
+        invitation, applet_name, secret_id, nickname, first_name, last_name = result
         invitation_detail_base = InvitationDetailBase(
             id=invitation.id,
             email=invitation.email,
@@ -193,8 +197,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             key=invitation.key,
             status=invitation.status,
             invitor_id=invitation.invitor_id,
-            first_name=invitation.first_name,
-            last_name=invitation.last_name,
+            first_name=first_name if invitation.role == Role.RESPONDENT else invitation.first_name,
+            last_name=last_name if invitation.role == Role.RESPONDENT else invitation.last_name,
             created_at=invitation.created_at,
             user_id=invitation.user_id,
             tag=invitation.tag,

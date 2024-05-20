@@ -1,0 +1,109 @@
+version: 0.2
+env:
+  shell: bash
+  variables:
+    DOCKER_USER:              ${DOCKER_USER}
+    DOCKER_PASSWORD:          ${DOCKER_PASSWORD}
+    REPORT_SERVER_PUBLIC_KEY: ${REPORT_SERVER_PUBLIC_KEY}
+    GITHUB_ORGANIZATION:      ${GITHUB_ORGANIZATION}
+    GITHUB_REPO_NAME:         ${GITHUB_REPO_NAME}
+    GITHUB_BRANCH_OR_TAG:     ${GITHUB_BRANCH_OR_TAG}
+    GITHUB_REF:               ${GITHUB_REF}
+    BUILD_NAME:               ${BUILD_NAME}
+    BUILD_NUMBER:             ${BUILD_NUMBER}
+    ECR_ADDRESS:              ${ECR_ADDRESS}
+    TEST_COMMAND:             ${TEST_COMMAND}
+    ECR_REPO:                 ${ECR_REPO}
+    OUT_DIR:                  ${OUT_DIR}
+phases:
+  install:
+    #runtime-versions: ## https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html
+    #  nodejs: 16.x    ## https://docs.aws.amazon.com/codebuild/latest/userguide/available-runtimes.html
+    commands:
+      # Show current variables
+      - echo "AWS_REGION=${AWS_REGION}"
+      - aws --version
+      - echo "GITHUB_ORGANIZATION=${GITHUB_ORGANIZATION}"
+      - echo "GITHUB_REPO_NAME=${GITHUB_REPO_NAME}"
+      - echo "GITHUB_BRANCH_OR_TAG=${GITHUB_BRANCH_OR_TAG}"
+      - echo "BUILD_NAME=${BUILD_NAME}"
+      - echo "BUILD_NUMBER=${BUILD_NUMBER}"
+      - echo "ECR_ADDRESS=${ECR_ADDRESS}"
+      - echo "ECR_REPO=${ECR_REPO}"
+      - echo "TEST_COMMAND=${TEST_COMMAND}"
+      - echo "DU=${DOCKER_USER}"
+
+  pre_build:
+    commands:
+      - COMMIT_ID=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:5}
+      # get sources
+      - |
+        if [[ $GITHUB_REF = PR-* ]]; then
+          PR_NUMBER="${GITHUB_REF//[^0-9]/}";
+          GITHUB_FETCH="pull/${PR_NUMBER}/head:pull_${PR_NUMBER}";
+          GITHUB_BRANCH_OR_TAG="pull_${PR_NUMBER}";
+        else
+          GITHUB_FETCH="${GITHUB_REF}:${GITHUB_REF}";
+        fi
+      - git clone --depth 1 --recurse-submodules --quiet https://github.com/${GITHUB_ORGANIZATION}/${GITHUB_REPO_NAME}
+      - cd ${GITHUB_REPO_NAME}
+      - git fetch origin ${GITHUB_FETCH} --depth 1 --update-head-ok
+      - git checkout ${GITHUB_REF}
+
+      # create output directory
+      - mkdir ${OUT_DIR}
+      - |
+        echo "buildNumber: ${BUILD_NUMBER}"          > ${OUT_DIR}/build.yml
+        echo "branch:      ${GITHUB_BRANCH_OR_TAG}" >> ${OUT_DIR}/build.yml
+        echo "buildName:   ${BUILD_NAME}"           >> ${OUT_DIR}/build.yml
+        echo "commitId:    $(git rev-parse HEAD)"   >> ${OUT_DIR}/build.yml
+
+      - echo "Extracting Jira ticket numbers from the latest commit message"
+      - tickets=$(git log -1 --pretty=%B | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
+      - |
+        if [ -z "$tickets" ]; then
+            echo "No Jira tickets found in the latest commit message."
+        else
+            echo "Jira ticket numbers found: ${tickets}"
+            if [ "${GITHUB_BRANCH_OR_TAG}" != "develop" ]; then
+                echo "Skipping saving Jira ticket numbers to a file because the branch is not develop"
+            else
+              file="${OUT_DIR}/jira-tickets.json"
+              echo "{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }" > "${file}"
+              echo "Jira ticket numbers saved to ${file}"
+            fi
+        fi
+
+  build:
+    commands:
+      - ls
+
+      # login to docker hub to pull base image without limits
+      - docker login -u="${DOCKER_USER}" -p="${DOCKER_PASSWORD}"
+
+      ## run backend tests
+      - docker --version
+      #- docker compose --version
+      - docker-compose --version
+      - cp .env.default .env
+      - echo -e "\nRABBITMQ__USE_SSL=False" >> .env
+      - ${TEST_COMMAND}
+
+      ## build image for ECR
+      - docker build -t ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${COMMIT_ID} -f ./compose/fastapi/Dockerfile .
+
+      # logout from docker hub
+      - docker logout
+
+      # login to ECR
+      - aws ecr get-login-password | docker login --username AWS --password-stdin ${ECR_ADDRESS}
+      - docker push ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${COMMIT_ID}
+##  post_build: # post_build commands run in any case (success or failure)
+##    commands:
+artifacts:
+  files:
+    #- '**/*'
+    - ${GITHUB_REPO_NAME}/${OUT_DIR}/build.yml
+    - ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
+  discard-paths: no
+  name: ${BUILD_NUMBER}.zip

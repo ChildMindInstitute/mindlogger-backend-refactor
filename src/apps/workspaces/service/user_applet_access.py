@@ -1,6 +1,7 @@
 import uuid
 
 from asyncpg.exceptions import UniqueViolationError
+from sqlalchemy.exc import IntegrityError
 
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import Role, UserAppletAccess
@@ -11,15 +12,15 @@ from apps.shared.exception import NotFoundError
 from apps.subjects.constants import SubjectTag
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
-from apps.subjects.domain import Subject
+from apps.subjects.domain import SubjectCreate
+from apps.subjects.errors import AppletUserViolationError
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
-
-__all__ = ["UserAppletAccessService"]
-
 from apps.workspaces.domain.user_applet_access import RespondentInfoPublic
 from apps.workspaces.errors import UserSecretIdAlreadyExists, UserSecretIdAlreadyExistsInInvitation
+
+__all__ = ["UserAppletAccessService"]
 
 
 class UserAppletAccessService:
@@ -167,7 +168,7 @@ class UserAppletAccessService:
                 await UserAppletAccessCRUD(self.session).upsert_user_applet_access(schema)
 
                 await SubjectsService(self.session, self._user_id).create(
-                    Subject(
+                    SubjectCreate(
                         applet_id=invitation.applet_id,
                         email=invitation.email,
                         creator_id=invitation.invitor_id,
@@ -184,7 +185,10 @@ class UserAppletAccessService:
             if isinstance(invitation.meta, RespondentMeta):
                 subject_id = invitation.meta.subject_id
             assert subject_id
-            await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id))
+            try:
+                await SubjectsService(self.session, self._user_id).extend(uuid.UUID(subject_id), invitation.email)
+            except IntegrityError:
+                raise AppletUserViolationError()
 
         return UserAppletAccess.from_orm(access_schema[0])
 
@@ -214,7 +218,7 @@ class UserAppletAccessService:
                 where=UserAppletAccessSchema.soft_exists(exists=False),
             )
             await SubjectsService(self.session, self._user_id).create(
-                Subject(
+                SubjectCreate(
                     applet_id=self._applet_id,
                     email=user.email_encrypted,
                     creator_id=owner_access.user_id,

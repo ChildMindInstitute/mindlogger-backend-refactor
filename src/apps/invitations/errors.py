@@ -1,5 +1,6 @@
 from gettext import gettext as _
 
+from apps.invitations.domain import InvitationDetailGeneric
 from apps.shared.exception import AccessDeniedError, FieldError, NotFoundError, ValidationError
 
 
@@ -39,3 +40,9 @@ class ManagerInvitationExist(FieldError):
 class RespondentInvitationExist(FieldError):
     zero_path = "email"
     message = _("Respondent already invited.")
+
+
+class InvitationSubjectAcceptError(Exception):
+    def __init__(self, invitation: InvitationDetailGeneric, *args, **kwargs):
+        self.invitation = invitation
+        super().__init__(*args, **kwargs)

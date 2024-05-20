@@ -2,6 +2,8 @@ PORT = 8000
 HOST = localhost
 
 TEST_COMMAND = pytest -s -vv
+COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest  
+REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${SHA}"
 EXPORT_COMMAND = python src/export_spec.py
 
 RUFF_COMMAND = ruff
@@ -9,6 +11,7 @@ ISORT_COMMAND = isort
 MYPY_COMMAND = mypy
 
 DOCKER_EXEC = docker-compose run --rm app
+COVERAGE_DOCKER_EXEC = docker-compose run --rm -u root app
 
 # ###############
 # Local
@@ -26,6 +29,14 @@ run_local:
 .PHONY: test
 test:
 	${TEST_COMMAND} ./
+
+.PHONY: migrate
+migrate:
+	./compose/fastapi/migrate
+
+.PHONY: migrate-arbitrary
+migrate-arbitrary:
+	./compose/fastapi/migrate arbitrary
 
 # NOTE: cq == "Code quality"
 .PHONY: cq
@@ -46,6 +57,16 @@ dcq:
 dtest:
 	${DOCKER_EXEC} \
 		${TEST_COMMAND} ./
+
+.PHONY: ctest
+ctest:
+	${COVERAGE_DOCKER_EXEC} \
+		${COVERAGE_COMMAND}
+
+.PHONY: creport
+creport:
+	${COVERAGE_DOCKER_EXEC} \
+		${REPORT_COVERAGE_COMMAND}
 
 
 .PHONY: dcheck

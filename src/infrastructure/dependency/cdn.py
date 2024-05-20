@@ -59,7 +59,7 @@ async def get_answer_bucket(
     ArbitraryGCPCdnClient,
     ArbitraryS3CdnClient,
 ]:
-    return await select_storage(applet_id, session)
+    return await select_storage(applet_id=applet_id, session=session)
 
 
 async def get_legacy_bucket():
