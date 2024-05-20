@@ -58,6 +58,10 @@ jobs:
         run: |
           curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 
           sudo mv copilot /usr/local/bin/copilot && copilot -v
+      - name: Install session manager plugin
+        run: |
+          curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb" &&
+          sudo dpkg -i session-manager-plugin.deb
       - name: Create secrets for environment
         # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
         # is copied and tagged properly for copilot to pick it up.
@@ -78,6 +82,9 @@ jobs:
         run: copilot/scripts/env-deploy.sh
       - name: Deploy service
         run: copilot/scripts/svc-deploy.sh
+      - name: Run DB migration
+        run: |
+          copilot svc exec -a ${{ inputs.app-name }} -e ${{ inputs.env-name }} -n ${{ inputs.copilot-service }} --command "/fastapi-migrate"
       - name: Get service URL
         id: service-url
         run: echo "SERVICE_URL=$(copilot svc show -n ${{ inputs.copilot-service }} --json | jq -r '.routes[] | select( .environment | contains("${{ inputs.env-name }}") ) | .url')" >> $GITHUB_OUTPUT

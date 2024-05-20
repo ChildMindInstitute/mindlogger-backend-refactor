@@ -22,7 +22,16 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
+
+  create-database:
+    name: Create preview env DB
+    uses: ./.github/workflows/create_db.yaml
+    with:
+      db-name: "mindlogger_backend_pr_${{ github.event.number }}"
+    secrets: inherit
+
   create-preview-env:
+    needs: [create-database]
     uses: ./.github/workflows/create-preview-env.yaml
     with:
       env-name: "pr-${{ github.event.number }}"
@@ -36,13 +45,7 @@ jobs:
     uses: ./.github/workflows/tests.yaml
     secrets: inherit
 
-  create-database:
-    needs: [create-preview-env]
-    name: Create preview env DB
-    uses: ./.github/workflows/create_db.yaml
-    with:
-      db-name: "mindlogger_backend_pr_${{ github.event.number }}"
-    secrets: inherit
+
 
   run-e2e-tests:
     name: Run E2E Test Suite
