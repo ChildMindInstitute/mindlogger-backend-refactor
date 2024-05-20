@@ -37,12 +37,12 @@ jobs:
 
     - name: Create Database
       run: >-
-        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -tc "SELECT 1 FROM pg_database WHERE datname = '${{ inputs.db-name }}'" | grep -q 1 ||
-        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -U postgres -c "CREATE DATABASE ${{ inputs.db-name }}"
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -tc "SELECT 1 FROM pg_database WHERE datname = '${{ inputs.db-name }}'" postgres | grep -q 1 ||
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -c "CREATE DATABASE ${{ inputs.db-name }}" postgres
     - name: Grant privileges
       run: >-
         PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
-        -U postgres -c "grant all privileges on database ${{ inputs.db-name }} to ${{ secrets.DB_BACKEND_USERNAME }};"
+        -c "grant all privileges on database ${{ inputs.db-name }} to ${{ secrets.DB_BACKEND_USERNAME }};" postgres
 
 #    - name: Create Database
 #      run: |
