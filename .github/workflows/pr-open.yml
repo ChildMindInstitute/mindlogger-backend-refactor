@@ -47,7 +47,7 @@ jobs:
   run-e2e-tests:
     name: Run E2E Test Suite
     needs: [ create-preview-env, run-unit-tests ]
-    if: ${{ always() && needs.run-unit-tests.result == 'success' needs.create-preview-env.result == 'success' }}
+    if: ${{ always() && needs.run-unit-tests.result == 'success' && needs.create-preview-env.result == 'success' }}
     uses: ./.github/workflows/e2e-tests.yaml
     secrets: inherit
     with:
