@@ -49,7 +49,12 @@ jobs:
         PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
         -c "grant all privileges on database ${{ inputs.db-name }} to ${{ secrets.DB_BACKEND_USERNAME }};" postgres
 
-#    - name: Create Database
+    - name: Install pg_cron
+      run: >-
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
+        -c "CREATE EXTENSION pg_cron;" ${{ inputs.db-name }}
+
+  #    - name: Create Database
 #      run: |
 #        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ inputs.db-name }}" -c "CREATE DATABASE <DATABASE_NAME>;"
 
