@@ -34,6 +34,7 @@ jobs:
       if: always()
       id: test_results
       run: |
+        cd taf_api_tests
         ls -all
         ls test-results/
         ls test-results/api/
