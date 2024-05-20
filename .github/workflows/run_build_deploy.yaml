@@ -62,7 +62,7 @@ jobs:
       ECS_SERVICE_NAME: backend
       IMAGE_PREFIX: ${{ github.ref_name }}
       COMMIT_HASH: ${{ github.sha }}
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
     steps:
 
       - name: configure aws credentials
