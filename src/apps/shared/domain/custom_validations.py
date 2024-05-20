@@ -146,14 +146,35 @@ def array_from_string(comma_separated: bool = False):
 
 
 nh3_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
-nh3_attributes["h1"] = {"id", "data-line"}
-nh3_attributes["h2"] = {"id", "data-line"}
-nh3_attributes["h3"] = {"id", "data-line"}
-nh3_attributes["h4"] = {"id", "data-line"}
-nh3_attributes["h5"] = {"id", "data-line"}
-nh3_attributes["div"] = {"class"}
-nh3_attributes["p"] = {"data-line"}
+default_attributes = {
+    "id",
+    "data-line",
+    "class",
+}
+nh3_attributes["h1"] = default_attributes
+nh3_attributes["h2"] = default_attributes
+nh3_attributes["h3"] = default_attributes
+nh3_attributes["h4"] = default_attributes
+nh3_attributes["h5"] = default_attributes
+nh3_attributes["h6"] = default_attributes
+nh3_attributes["div"] = default_attributes
+nh3_attributes["p"] = default_attributes
+nh3_attributes["ul"] = default_attributes
+nh3_attributes["ol"] = default_attributes
+nh3_attributes["li"] = default_attributes
+nh3_attributes["details"] = default_attributes
+nh3_attributes["summary"] = default_attributes
+nh3_attributes["span"] = default_attributes
+nh3_attributes["table"] = default_attributes
+nh3_attributes["code"] = {*default_attributes, "language"}
 nh3_attributes["blockquote"] = {"data-line"}
+
+nh3_attributes["img"].add("loading")
+nh3_attributes["img"].add("class")
+nh3_attributes["img"].add("style")
+nh3_attributes["a"].add("target")
+nh3_attributes["a"].add("style")
+nh3_attributes["a"].add("class")
 
 
 def sanitize_string(value: str) -> str:
