@@ -49,6 +49,7 @@ jobs:
 #        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ inputs.db-name }}" -c "CREATE DATABASE <DATABASE_NAME>;"
 
   on-failure:
+    name: Database creation failed
     runs-on: ubuntu-latest
     if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
     needs:
@@ -64,6 +65,7 @@ jobs:
           SLACK_MESSAGE: 'Error during database creation!'
   
   on-success:
+    name: Database creation succeeded
     runs-on: ubuntu-latest
     if: ${{ always() && (needs.create_database.result == 'success') }}
     needs:
