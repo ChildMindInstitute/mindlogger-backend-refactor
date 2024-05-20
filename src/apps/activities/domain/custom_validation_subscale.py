@@ -27,7 +27,7 @@ def validate_score_subscale_table(value: str):
 def validate_raw_score_subscale(value: str):
     # make sure it's format is "x~y" or "x"
     if "~" not in value:
-        if not value.isnumeric():
+        if not value.lstrip("-").isnumeric():
             raise InvalidRawScoreSubscaleError()
 
     if "~" in value:
@@ -36,8 +36,8 @@ def validate_raw_score_subscale(value: str):
         y: str | int
         x, y = value.split("~")
         try:
-            x = int(x)  # noqa: F841
-            y = int(y)  # noqa: F841
+            x = int(x.lstrip("-"))  # noqa: F841
+            y = int(y.lstrip("-"))  # noqa: F841
         except ValueError:
             raise InvalidRawScoreSubscaleError()
 

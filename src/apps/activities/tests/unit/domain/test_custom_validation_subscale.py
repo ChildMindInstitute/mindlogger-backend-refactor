@@ -52,3 +52,9 @@ class TestValidateRawScoreSubscale:
         raw_score = "12342.1~1231"
         with pytest.raises(InvalidRawScoreSubscaleError):
             validate_raw_score_subscale(raw_score)
+
+    def test_successful_negative_validation(self):
+        raw_score = "-1"
+        assert raw_score == validate_raw_score_subscale(raw_score)
+        raw_score = "-12342~1231"
+        assert raw_score == validate_raw_score_subscale(raw_score)
