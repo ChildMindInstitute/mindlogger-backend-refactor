@@ -25,7 +25,7 @@ async def get_current_user_for_ws(websocket: WebSocket, session=Depends(get_sess
         if not authorization:
             raise ValueError
         scheme, token = authorization.split("|")
-        if scheme.lower() != "bearer":
+        if scheme.lower() != settings.authentication.token_type.lower():
             raise ValueError
     except ValueError:
         raise HTTPException(
@@ -103,13 +103,10 @@ async def get_current_user(
 async def openapi_auth(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session=Depends(get_session),
-):
+) -> dict[str, str]:
     async with atomic(session):
         user_login_schema = UserLoginRequest(email=EmailStr(form_data.username), password=form_data.password)
         user: User = await AuthenticationService(session).authenticate_user(user_login_schema)
-        if not user:
-            raise AuthenticationError
-
         access_token = AuthenticationService.create_access_token({JWTClaim.sub: str(user.id)})
 
     return {

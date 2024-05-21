@@ -9,6 +9,7 @@ from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.cors import CorsSettings
 from config.database import DatabaseSettings
+from config.integrations import LorisSettings
 from config.logs import Logs
 from config.mailing import MailingSettings
 from config.notification import FirebaseCloudMessagingSettings
@@ -90,6 +91,8 @@ class Settings(BaseSettings):
     logs: Logs = Logs()
 
     opentelemetry: OpenTelemetrySettings = OpenTelemetrySettings()
+
+    loris: LorisSettings = LorisSettings()
 
     @property
     def uploads_dir(self):

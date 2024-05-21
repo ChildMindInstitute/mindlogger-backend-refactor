@@ -1,0 +1,39 @@
+name: Coverage
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  statuses: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: KengoTODA/actions-setup-docker-compose@v1
+        with:
+          version: '2.23.3'
+
+      - name: "Get coverage"
+        run: |
+          cp .env.default .env
+          echo -e "\nRABBITMQ__USE_SSL=False" >> .env
+          make run_local
+
+      - run: make ctest
+
+      - run: make creport SHA=${{ github.sha }}
+
+      - run: pip install smokeshow
+
+      - run: smokeshow upload htmlcov
+        env:
+          SMOKESHOW_GITHUB_STATUS_DESCRIPTION: Coverage {coverage-percentage}
+          SMOKESHOW_GITHUB_COVERAGE_THRESHOLD: 80
+          SMOKESHOW_GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          SMOKESHOW_GITHUB_CONTEXT: coverage
+          SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
+          

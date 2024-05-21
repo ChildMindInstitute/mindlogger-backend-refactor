@@ -45,13 +45,13 @@ def save_to_file(spec: dict[str, Any], file_name: str):
 
 
 def main():
-    current_specification_url = "https://api-dev.cmiml.net/openapi.json"
+    old_specification_url = "https://api-dev.cmiml.net/openapi.json"
     new_spec = create_app().openapi()
-    current_spec = httpx.get(current_specification_url).json()
+    old_spec = httpx.get(old_specification_url).json()
     fix_exclusive_values(new_spec)
-    fix_exclusive_values(current_spec)
+    fix_exclusive_values(old_spec)
     save_to_file(new_spec, "new_spec.json")
-    save_to_file(current_spec, "current_spec.json")
+    save_to_file(old_spec, "old_spec.json")
 
 
 if __name__ == "__main__":

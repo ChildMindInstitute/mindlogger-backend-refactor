@@ -17,7 +17,7 @@ from infrastructure.database.crud import BaseCRUD
 class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
     schema_class = AnswerNoteSchema
 
-    async def save(self, schema: AnswerNoteSchema):
+    async def save(self, schema: AnswerNoteSchema) -> AnswerNoteSchema:
         return await self._create(schema)
 
     async def get_by_answer_id(

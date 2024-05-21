@@ -7,6 +7,7 @@ from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.domain.response_values import (
     AudioPlayerValues,
     AudioValues,
+    DrawingProportion,
     DrawingValues,
     MultiSelectionRowsValues,
     MultiSelectionValues,
@@ -81,6 +82,7 @@ def drawing_response_values(remote_image: str) -> DrawingValues:
         drawing_background=remote_image,
         drawing_example=remote_image,
         type=ResponseType.DRAWING,
+        proportion=DrawingProportion(enabled=True),
     )
 
 

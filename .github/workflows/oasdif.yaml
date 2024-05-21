@@ -1,0 +1,39 @@
+name: OASDIFF breaking changes
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: KengoTODA/actions-setup-docker-compose@v1
+        with:
+          version: "2.23.3"
+      - name: "Save openapi.json files"
+        run: |
+          cp .env.default .env
+          echo -e "\nRABBITMQ__USE_SSL=False" >> .env
+          make save_specs
+
+      - name: "Run oasdiff"
+        id: oasdiff
+        run: |
+          docker run --rm -t -v /tmp:/tmp tufin/oasdiff breaking -o ERR /tmp/old_spec.json /tmp/new_spec.json
+
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.compare.result == 'failure' || needs.compare.result == 'timed_out') }}
+    needs:
+      - compare
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_TITLE: Changes Found!
+          SLACK_MESSAGE: "Oasdiff step failed. API changes found!"

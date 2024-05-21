@@ -36,13 +36,13 @@ def startup_opentelemetry(app: FastAPI) -> None:
 
 async def startup_taskiq() -> None:
     if not broker.is_worker_process:
-        print("Brocker startup")
+        print("Broker startup")
         await broker.startup()
 
 
 async def shutdown_taskiq() -> None:
     if not broker.is_worker_process:
-        print("Brocker shutdown")
+        print("Broker shutdown")
         await broker.shutdown()
 
 

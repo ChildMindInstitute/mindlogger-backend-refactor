@@ -27,6 +27,7 @@ from apps.applets.domain.applet_create_update import (
     AppletReportConfiguration,
     AppletUpdate,
 )
+from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.base import Encryption
@@ -275,6 +276,26 @@ async def applet_versions_retrieve(
     return ResponseMulti(
         result=[PublicHistory(**h.dict()) for h in histories],
         count=len(histories),
+    )
+
+
+async def applet_flow_versions_data_retrieve(
+    applet_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[VersionPublic]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    service = FlowService(session=session)
+    flow = await service.get_by_id(flow_id)
+    if not flow or flow.applet_id != applet_id:
+        raise NotFoundError("Flow not found")
+    await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+
+    versions = await service.get_versions(flow.id)
+    return ResponseMulti(
+        result=versions,
+        count=len(versions),
     )
 
 

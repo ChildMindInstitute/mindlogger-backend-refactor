@@ -98,12 +98,6 @@ async def refresh_access_token(
 
             token_data = TokenPayload(**payload)
 
-            if datetime.utcfromtimestamp(token_data.exp) < datetime.utcnow():
-                raise AuthenticationError
-
-            if not (user_id := token_data.sub):
-                raise InvalidRefreshToken()
-
         except (JWTError, ValidationError) as e:
             raise InvalidRefreshToken() from e
 
@@ -113,6 +107,7 @@ async def refresh_access_token(
             raise AuthenticationError
 
         rjti = token_data.jti
+        user_id = token_data.sub
         refresh_token = schema.refresh_token
         if regenerate_refresh_token:
             # blacklist current refresh token
@@ -138,7 +133,7 @@ async def delete_access_token(
     token: InternalToken = Depends(get_current_token()),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-):
+) -> EmptyResponse:
     """Add token to the blacklist."""
     async with atomic(session):
         await AuthenticationService(session).revoke_token(token, TokenPurpose.ACCESS)
@@ -152,7 +147,7 @@ async def delete_refresh_token(
     schema: UserLogoutRequest | None = Body(default=None),
     token: InternalToken = Depends(get_current_token(TokenPurpose.REFRESH)),
     session=Depends(get_session),
-):
+) -> EmptyResponse:
     """Add token to the blacklist."""
     async with atomic(session):
         await AuthenticationService(session).revoke_token(token, TokenPurpose.REFRESH)
