@@ -350,6 +350,7 @@ class TestAnswerActivityItems(BaseTest):
     latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"
     check_existence_url = "/answers/check-existence"
     assessment_delete_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}"
+    multiinformat_assessment_validate_url = "/answers/applet/{applet_id}/multiinformant-assessment/validate"
 
     async def test_answer_activity_items_create_for_respondent(
         self,
@@ -1825,3 +1826,241 @@ class TestAnswerActivityItems(BaseTest):
         client.login(user)
         response = await client.get(url)
         assert response.status_code == expected
+
+    async def test_validate_multiinformant_assessment_success(
+        self, client, tom: User, applet_one: AppletFull, session: AsyncSession
+    ):
+        client.login(tom)
+
+        subject_service = SubjectsService(session, tom.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is True
+
+    async def test_validate_multiinformant_assessment_success_with_flow(
+        self, client, tom: User, applet_with_flow: AppletFull, session: AsyncSession
+    ):
+        client.login(tom)
+
+        subject_service = SubjectsService(session, tom.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_with_flow.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_with_flow.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_with_flow.id)
+
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_with_flow.activity_flows[0].id}"
+        )
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is True
+
+    async def test_validat_multiinformant_assessment_fail_not_manager(self, client, lucy: User, applet_one: AppletFull):
+        client.login(lucy)
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_validate_multiinformant_assessment_fail_no_applet(self, client, lucy: User):
+        client.login(lucy)
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=uuid.uuid4())
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+    async def test_validate_multiinformant_assessment_success_no_params(
+        self, client, tom: User, applet_one: AppletFull
+    ):
+        client.login(tom)
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is True
+
+    async def test_validate_multiinformant_assessment_fail_source_subject_not_found(
+        self, client, tom: User, applet_one: AppletFull, applet_two: AppletFull, session: AsyncSession
+    ):
+        client.login(tom)
+
+        subject_service = SubjectsService(session, tom.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_two.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+
+        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is False
+        assert response.json()["result"]["code"] == "invalid_source_subject"
+
+    async def test_validate_multiinformant_assessment_fail_target_subject_not_found(
+        self, client, tom: User, applet_one: AppletFull, applet_two: AppletFull, session: AsyncSession
+    ):
+        client.login(tom)
+
+        subject_service = SubjectsService(session, tom.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_two.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+
+        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is False
+        assert response.json()["result"]["code"] == "invalid_target_subject"
+
+    async def test_validate_multiinformant_assessment_fail_no_permissions(
+        self,
+        client,
+        lucy: User,
+        applet_one_lucy_manager: AppletFull,
+    ):
+        client.login(lucy)
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one_lucy_manager.id)
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is False
+        assert response.json()["result"]["code"] == "no_access_to_applet"
+
+    async def test_validate_multiinformant_assessment_fail_no_activity(
+        self, client, tom: User, applet_one: AppletFull, session: AsyncSession
+    ):
+        client.login(tom)
+
+        subject_service = SubjectsService(session, tom.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={uuid.uuid4()}"
+        )
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is False
+        assert response.json()["result"]["code"] == "invalid_activity_or_flow_id"

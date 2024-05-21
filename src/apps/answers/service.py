@@ -61,6 +61,10 @@ from apps.answers.errors import (
     AnswerAccessDeniedError,
     AnswerNoteAccessDeniedError,
     AnswerNotFoundError,
+    MultiinformantAssessmentInvalidActivityOrFlow,
+    MultiinformantAssessmentInvalidSourceSubject,
+    MultiinformantAssessmentInvalidTargetSubject,
+    MultiinformantAssessmentNoAccessApplet,
     NonPublicAppletError,
     ReportServerError,
     ReportServerIsNotConfigured,
@@ -275,6 +279,41 @@ class AnswerService:
             applet_answer.alerts,
         )
         return answer
+
+    async def validate_multiinformant_assessment(
+        self,
+        applet_id: uuid.UUID,
+        target_subject_id: uuid.UUID | None = None,
+        source_subject_id: uuid.UUID | None = None,
+        activity_or_flow_id: uuid.UUID | None = None,
+    ):
+        assert self.user_id
+        subject_crud = SubjectsCrud(self.session)
+
+        respondent_subject = await subject_crud.get_user_subject(user_id=self.user_id, applet_id=applet_id)
+        if not respondent_subject or not respondent_subject.soft_exists():
+            raise MultiinformantAssessmentNoAccessApplet()
+
+        if target_subject_id:
+            target_subject = await subject_crud.get_by_id(target_subject_id)
+            if not target_subject or not target_subject.soft_exists() or target_subject.applet_id != applet_id:
+                raise MultiinformantAssessmentInvalidTargetSubject()
+
+        if source_subject_id:
+            source_subject = await subject_crud.get_by_id(source_subject_id)
+            if not source_subject or not source_subject.soft_exists() or source_subject.applet_id != applet_id:
+                raise MultiinformantAssessmentInvalidSourceSubject()
+
+        if activity_or_flow_id:
+            activity_future = ActivitiesCRUD(self.session).get_by_applet_id_and_activity_id(
+                applet_id=applet_id, activity_id=activity_or_flow_id
+            )
+            flow_future = FlowsCRUD(self.session).get_by_applet_id_and_flow_id(
+                applet_id=applet_id, flow_id=activity_or_flow_id
+            )
+            activity, flow = await asyncio.gather(activity_future, flow_future)
+            if not activity and not flow:
+                raise MultiinformantAssessmentInvalidActivityOrFlow()
 
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)

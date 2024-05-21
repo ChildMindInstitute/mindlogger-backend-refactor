@@ -639,3 +639,9 @@ class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
     target_subject_id: uuid.UUID | None = None
     answer_id: uuid.UUID | None = None
+
+
+class MultiinformantAssessmentValidationResponse(PublicModel):
+    valid: bool
+    message: str | None = None
+    code: str | None = None
