@@ -24,6 +24,7 @@ from apps.activities.domain.scores_reports import (
 )
 from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
+from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
 
@@ -525,3 +526,78 @@ class TestActivityItems:
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
         assert result["activities"][0]["scoresAndReports"] == reports_data.dict(by_alias=True)
+
+    @pytest.mark.parametrize(
+        "item_fixture",
+        ("message_item_create",),
+    )
+    async def test_create_applet_with_activity_sanitize_strings(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_minimal_data: AppletCreate,
+        item_fixture: str,
+        request: FixtureRequest,
+    ):
+        text_with_script_inside = "One <script>alert('test')</script> Two"
+        sanitized_text = "One  Two"
+        client.login(tom)
+        item_create = request.getfixturevalue(item_fixture)
+        item_create.question = {"en": text_with_script_inside}
+        data = applet_minimal_data.copy(deep=True)
+        data.activities[0].items = [item_create]
+
+        data.display_name = text_with_script_inside
+        data.about = {Language.ENGLISH: text_with_script_inside}
+        data.description = {Language.ENGLISH: text_with_script_inside}
+        data.activities[0].name = text_with_script_inside
+        data.activities[0].description = {Language.ENGLISH: text_with_script_inside}
+
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        resp = await client.get(
+            self.applet_workspace_detail_url.format(owner_id=tom.id, pk=resp.json()["result"]["id"])
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        result["displayName"] = sanitized_text
+        result["about"] = sanitized_text
+        result["description"] = sanitized_text
+        result["activities"][0]["name"] = sanitized_text
+        result["activities"][0]["description"] = sanitized_text
+        items = result["activities"][0]["items"]
+        assert len(items) == 1
+        item = items[0]
+        assert item["responseType"] == item_create.response_type
+        assert item["name"] == item_create.name
+        assert item["question"] == {"en": sanitized_text}
+        assert item["isHidden"] == item_create.is_hidden
+        assert not item["allowEdit"]
+
+    @pytest.mark.run
+    async def test_create_applet_flow_sanitize_strings(
+        self, client: TestClient, applet_minimal_data: AppletCreate, tom: User
+    ) -> None:
+        client.login(tom)
+        text_with_script_inside = "One <script>alert('test')</script> Two"
+        sanitized_text = "One  Two"
+        data = applet_minimal_data.dict()
+        activity_key = data["activities"][0]["key"]
+        data["activity_flows"].append(
+            dict(
+                name=text_with_script_inside,
+                description=dict(
+                    en=text_with_script_inside,
+                ),
+                items=[dict(activity_key=activity_key)],
+            )
+        )
+        resp = await client.post(
+            self.applet_create_url.format(owner_id=tom.id),
+            data=data,
+        )
+
+        assert resp.status_code == http.HTTPStatus.CREATED
+        result = resp.json()["result"]
+        assert result["activityFlows"][0]["name"] == sanitized_text
+        assert result["activityFlows"][0]["description"]["en"] == sanitized_text

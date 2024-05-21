@@ -7,6 +7,7 @@ from apps.activities.domain.scores_reports import (
     Score,
     ScoreConditionalLogic,
     ScoresAndReports,
+    Section,
     Subscale,
     SubscaleSetting,
 )
@@ -100,3 +101,33 @@ def test_score_conditional_logic_condition_item_name_is_not_the_same_with_score_
     data["conditional_logic"] = [conditional_logic_data]
     with pytest.raises(errors.ScoreConditionItemNameError):
         Score(**data)
+
+
+def test_score_conditional_logic_sanitize_string(  # noqa: E501
+    score: Score,
+):
+    text_with_script_inside = "One <script>alert('test')</script> Two"
+    sanitized_text = "One  Two"
+    score.message = text_with_script_inside
+
+    assert score.message == sanitized_text
+
+
+def test_score_sanitize_string(  # noqa: E501
+    score_conditional_logic: ScoreConditionalLogic,
+):
+    text_with_script_inside = "One <script>alert('test')</script> Two"
+    sanitized_text = "One  Two"
+    score_conditional_logic.message = text_with_script_inside
+
+    assert score_conditional_logic.message == sanitized_text
+
+
+def test_section_sanitize_string(  # noqa: E501
+    section: Section,
+):
+    text_with_script_inside = "One <script>alert('test')</script> Two"
+    sanitized_text = "One  Two"
+    section.message = text_with_script_inside
+
+    assert section.message == sanitized_text
