@@ -1131,7 +1131,7 @@ class AnswerService:
                     AlertMessage(
                         id=alert.id,
                         respondent_id=self.user_id,
-                        subject_id=self.user_id,
+                        subject_id=subject_id,
                         applet_id=applet_id,
                         version=version,
                         message=alert.alert_message,
