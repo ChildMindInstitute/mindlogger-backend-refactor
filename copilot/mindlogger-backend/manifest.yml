@@ -60,7 +60,6 @@ storage:
 
 variables:
   # Python configurations
-  DEBUG: true
   ENV: testing
 
   # PostgreSQL configurations
