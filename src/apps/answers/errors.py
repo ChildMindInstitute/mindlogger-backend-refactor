@@ -70,3 +70,23 @@ class DuplicateActivityInAnswerGroup(ValidationError):
 
 class WrongRespondentForAnswerGroup(ValidationError):
     message = _("Different users can not submit with the same submit id.")
+
+
+class MultiinformantAssessmentInvalidSourceSubject(ValidationError):
+    message = _("Source subject not found")
+    code = _("invalid_source_subject")
+
+
+class MultiinformantAssessmentInvalidTargetSubject(ValidationError):
+    message = _("Target subject not found")
+    code = _("invalid_target_subject")
+
+
+class MultiinformantAssessmentNoAccessApplet(ValidationError):
+    message = _("No access to applet")
+    code = _("no_access_to_applet")
+
+
+class MultiinformantAssessmentInvalidActivityOrFlow(ValidationError):
+    message = _("Activity or Flow not found")
+    code = _("invalid_activity_or_flow_id")

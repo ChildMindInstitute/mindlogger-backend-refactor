@@ -36,8 +36,10 @@ from apps.answers.domain import (
     PublicSummaryActivityFlow,
     ReviewsCount,
 )
+from apps.answers.domain.answers import MultiinformantAssessmentValidationResponse
 from apps.answers.filters import (
     AnswerExportFilters,
+    AppletMultiinformantAssessmentParams,
     AppletSubmissionsFilter,
     AppletSubmitDateFilter,
     ReviewAppletItemFilter,
@@ -634,3 +636,32 @@ async def answers_existence_check(
     )
 
     return Response[AnswerExistenceResponse](result=AnswerExistenceResponse(exists=is_exist))
+
+
+async def applet_validate_multiinformant_assessment(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(parse_query_params(AppletMultiinformantAssessmentParams)),
+    answer_session=Depends(get_answer_session),
+) -> Response[MultiinformantAssessmentValidationResponse]:
+    is_valid = True
+    message = None
+    code = None
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_manager_list_access(applet_id)
+
+        await AnswerService(session, user.id, answer_session).validate_multiinformant_assessment(
+            applet_id, **query_params.filters
+        )
+
+        is_valid = True
+    except ValidationError as ex:
+        message = ex.error
+        is_valid = False
+        code = ex.code
+
+    return Response[MultiinformantAssessmentValidationResponse](
+        result=MultiinformantAssessmentValidationResponse(valid=is_valid, message=message, code=code)
+    )

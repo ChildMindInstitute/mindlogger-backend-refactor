@@ -2,7 +2,7 @@ PORT = 8000
 HOST = localhost
 
 TEST_COMMAND = pytest -s -vv
-COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest  
+COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest
 REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${SHA}"
 EXPORT_COMMAND = python src/export_spec.py
 
@@ -41,7 +41,7 @@ migrate-arbitrary:
 # NOTE: cq == "Code quality"
 .PHONY: cq
 cq:
-	${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
+	${RUFF_COMMAND} . && ${RUFF_COMMAND} format . && ${ISORT_COMMAND} . && ${MYPY_COMMAND} .
 
 # ###############
 # Docker
