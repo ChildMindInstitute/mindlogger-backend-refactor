@@ -4,11 +4,17 @@ from apps.activities.errors import InvalidRawScoreSubscaleError, InvalidScoreSub
 def validate_score_subscale_table(value: str):
     # make sure it's format is "x~y" or "x"
     if "~" not in value:
-        if not value.isnumeric():
+        # make sure x is float with 5 decimal points
+        x: float
+        try:
+            x = float(value)  # noqa: F841
+            if len(str(x).split(".")[1]) > 5:
+                raise InvalidScoreSubscaleError()
+        except ValueError:
             raise InvalidScoreSubscaleError()
 
     if "~" in value:
-        # make sure x and y are integers
+        # make sure x and y are float with 5 decimal points
         x: str | float
         y: str | float
         x, y = value.split("~")
@@ -16,7 +22,7 @@ def validate_score_subscale_table(value: str):
             x = float(x)  # noqa: F841
             y = float(y)  # noqa: F841
 
-            if len(str(x).split(".")[1]) > 5 or len(str(x).split(".")[1]) > 5:
+            if len(str(x).split(".")[1]) > 5 or len(str(y).split(".")[1]) > 5:
                 raise InvalidScoreSubscaleError()
         except ValueError:
             raise InvalidScoreSubscaleError()
@@ -27,17 +33,26 @@ def validate_score_subscale_table(value: str):
 def validate_raw_score_subscale(value: str):
     # make sure it's format is "x~y" or "x"
     if "~" not in value:
-        if not value.lstrip("-").isnumeric():
+        # make sure x is float with 5 decimal points
+        x: float
+        try:
+            x = float(value)  # noqa: F841
+            if len(str(x).split(".")[1]) > 2:
+                raise InvalidRawScoreSubscaleError()
+        except ValueError:
             raise InvalidRawScoreSubscaleError()
 
     if "~" in value:
-        # make sure x and y are integers
-        x: str | int
-        y: str | int
+        # make sure x and y are float with 5 decimal points
+        x: str | float
+        y: str | float
         x, y = value.split("~")
         try:
-            x = int(x.lstrip("-"))  # noqa: F841
-            y = int(y.lstrip("-"))  # noqa: F841
+            x = float(x)  # noqa: F841
+            y = float(y)  # noqa: F841
+
+            if len(str(x).split(".")[1]) > 2 or len(str(y).split(".")[1]) > 2:
+                raise InvalidRawScoreSubscaleError()
         except ValueError:
             raise InvalidRawScoreSubscaleError()
 
