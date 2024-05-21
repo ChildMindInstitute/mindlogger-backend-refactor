@@ -53,23 +53,7 @@ jobs:
       run: >-
         PGPASSWORD="${{ secrets.DB_BACKEND_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_BACKEND_USERNAME }}"
         -c "CREATE SCHEMA IF NOT EXISTS cron;"  ${{ inputs.db-name }}
-    - name: Fake cron table
-      run: >-
-        PGPASSWORD="${{ secrets.DB_BACKEND_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_BACKEND_USERNAME }}"
-        -c "CREATE TABLE cron.job (
-                jobid int8 DEFAULT 0 NOT NULL,
-                schedule text NOT NULL,
-                command text NOT NULL,
-                nodename text DEFAULT 'localhost'::text NOT NULL,
-                nodeport int4 DEFAULT inet_server_port() NOT NULL,
-                "database" text DEFAULT current_database() NOT NULL,
-                username text DEFAULT CURRENT_USER NOT NULL,
-                active bool DEFAULT true NOT NULL,
-                jobname text NULL,
-                CONSTRAINT job_pkey PRIMARY KEY (jobid),
-                CONSTRAINT jobname_username_uniq UNIQUE (jobname, username)
-            );"  ${{ inputs.db-name }}
-    
+
 #    - name: Create Database
 #      run: |
 #        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ inputs.db-name }}" -c "CREATE DATABASE <DATABASE_NAME>;"
