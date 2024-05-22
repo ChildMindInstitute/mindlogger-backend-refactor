@@ -87,9 +87,7 @@ async def applet(session: AsyncSession, tom: User, applet_data: AppletCreate) ->
 
 @pytest.fixture
 async def tom_applet_subject(session: AsyncSession, tom: User, applet: AppletFull) -> SubjectSchema:
-    applet_id = applet.id
-    user_id = tom.id
-    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
+    query = select(SubjectSchema).where(SubjectSchema.user_id == tom.id, SubjectSchema.applet_id == applet.id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
     return model
