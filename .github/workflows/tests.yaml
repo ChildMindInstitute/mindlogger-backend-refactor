@@ -1,6 +1,10 @@
 name: Automated tests
 on:
   workflow_call:
+    outputs:
+      report-url:
+        description: URL to test report
+        value: ${{ jobs.publish-report.outputs.report-url }}
 
 jobs:
   tests:
@@ -57,16 +61,17 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: allure-history
 
-      - name: Post the link to the report
+      - name: Generate Report URL
         if: always()
-        uses: Sibz/github-status-action@v1
+        id: report-url
+        uses: actions/github-script@v3
         with:
-          authToken: ${{secrets.PAT_TOKEN}}
-          context: 'Test report'
-          state: 'success'
-          sha: ${{ github.event.pull_request.head.sha }}
-          target_url: https://childmindinstitute.github.io/mindlogger-backend-refactor/${{ github.run_number }}
-  
+          script: |
+            core.setOutput('report-url', 'https://childmindinstitute.github.io/preview-app-demo/${{ github.run_number }}')
+
+    outputs:
+      report-url: ${{ steps.report-url.outputs.report-url }}
+
   on-failure:
     name: Unit tests failed
     runs-on: ubuntu-latest

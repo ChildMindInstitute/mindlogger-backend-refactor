@@ -29,8 +29,6 @@ on:
         default: us-east-1
         required: false
 
-
-
 jobs:
   create-preview-env:
     runs-on: ubuntu-latest
@@ -88,14 +86,7 @@ jobs:
       - name: Get service URL
         id: service-url
         run: echo "SERVICE_URL=$(copilot svc show -n ${{ inputs.copilot-service }} --json | jq -r '.routes[] | select( .environment | contains("${{ inputs.env-name }}") ) | .url')" >> $GITHUB_OUTPUT
-      # TODO Move to parent workflow
-      - name: Comment on PR
-        uses: thollander/actions-comment-pull-request@v2
-        if: ${{ github.event_name == 'pull_request' }}
-        with:
-          message: |
-            :arrow_right: Preview environment created: [Click Me!](${{ steps.service-url.outputs.SERVICE_URL }})
-          reactions: eyes, rocket
-          comment_tag: service-url
+
+       # TODO Slack notification?e
     outputs:
       service-url: ${{ steps.service-url.outputs.SERVICE_URL }}

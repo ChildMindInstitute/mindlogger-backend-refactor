@@ -41,9 +41,41 @@ jobs:
       copilot-service: mindlogger-backend
     secrets: inherit
 
+  comment-create-preview-env:
+    name: Comment on preview env
+    runs-on: ubuntu-latest
+    needs: [create-preview-env]
+    if: ${{ always() }}
+    steps:
+      - name: Comment on PR
+        uses: thollander/actions-comment-pull-request@v2
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          message: |
+            :arrow_right: Preview environment created: [Click Me!](${{ needs.create-preview-env.outupts.service-url }})
+          reactions: eyes, rocket
+          comment_tag: service-url
+
   run-unit-tests:
     uses: ./.github/workflows/tests.yaml
     secrets: inherit
+
+  comment-tests:
+    name: Comment on unit test outcome
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [run-unit-tests]
+    steps:
+      - name: Post the link to the report
+        if: always()
+        uses: Sibz/github-status-action@v1
+        with:
+          authToken: ${{secrets.PAT_TOKEN}}
+          context: 'Test report'
+          state: 'success'
+          sha: ${{ github.event.pull_request.head.sha }}
+          target_url: ${{ needs.run-unit-tests.outputs.report-url }}
+
 
   run-e2e-tests:
     name: Run E2E Test Suite
@@ -54,11 +86,11 @@ jobs:
     with:
       service-url: ${{ needs.create-preview-env.outputs.service-url }}
 
-  publish-report:
-    name: Publish Report
-    needs: [run-e2e-tests]
+  comment-e2e-tests:
+    name: Comment on test outcome
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    needs: [run-e2e-tests]
     steps:
       - name: Comment on PR with test success
         if: ${{ needs.run-e2e-tests.outcome == 'success' }}
@@ -75,41 +107,13 @@ jobs:
             :x: Integration tests failed
           comment_tag: taf-results
 
-      - uses: actions/checkout@v4
-        name: Checkout
-        with:
-          ref: gh-pages
-          path: gh-pages
-
-      - name: Fetch results
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-results
-          path: test-results/api
-
-      - name: Build test report
-        uses: simple-elf/allure-report-action@master
-        if: always()
-        with:
-          allure_results: test-results/api
-          gh_pages: gh-pages
-          allure_history: allure-history
-          keep_reports: 20
-
-      - name: Deploy report to Github Pages
-        if: always()
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: allure-history
-
       - name: Post the link to the report
         if: always()
         uses: Sibz/github-status-action@v1
         with:
           authToken: ${{secrets.GITHUB_TOKEN}}
           context: 'Test report'
-          state: ${{ needs.run-e2e-tests.outcome }}
+          state: ${{ needs.run-e2e-tests.outputs.report-url }}
           sha: ${{ github.event.pull_request.head.sha }}
-          target_url: https://childmindinstitute.github.io/preview-app-demo/${{ github.run_number }}
+          target_url: ${{ needs.run-e2e-tests.outputs.report-url }}
 
