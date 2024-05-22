@@ -56,20 +56,7 @@ jobs:
         continue-on-error: true
         id: taf-tests
 
-      - name: Comment on PR with test success
-        if: steps.taf-tests.outcome == 'success' && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            :white_check_mark: Unit/Integration tests passed!
-          comment_tag: taf-results
-      - name: Comment on PR with test failure
-        if: steps.taf-tests.outcome != 'success' && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            :x: Integration tests failed
-          comment_tag: taf-results
+
       - name: Fail
         if: steps.taf-tests.outcome != 'success' && github.event_name == 'pull_request'
         uses: actions/github-script@v3

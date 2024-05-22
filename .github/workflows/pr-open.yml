@@ -54,12 +54,36 @@ jobs:
     with:
       service-url: ${{ needs.create-preview-env.outputs.service-url }}
 
+
+
   publish-report:
     name: Publish Report
     needs: [run-e2e-tests]
-    if: ${{ always() && github.event_name == 'pull_request' && (needs.run-int-tests.result == 'success') }}
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_USERNAME: GithubActions
+          SLACK_ICON: https://cdn-icons-png.flaticon.com/128/2111/2111432.png
+          SLACK_COLOR: ${{ needs.run-e2e-tests.outcome }}
+      - name: Comment on PR with test success
+        if: ${{ needs.run-e2e-tests.outcome == 'success' }}
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :white_check_mark: Unit/Integration tests passed!
+          comment_tag: taf-results
+      - name: Comment on PR with test failure
+        if: ${{ needs.run-e2e-tests.outcome != 'success' }}
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :x: Integration tests failed
+          comment_tag: taf-results
+
       - uses: actions/checkout@v4
         name: Checkout
         with:
@@ -94,7 +118,7 @@ jobs:
         with:
           authToken: ${{secrets.GITHUB_TOKEN}}
           context: 'Test report'
-          state: 'success'
+          state: ${{ needs.run-e2e-tests.outcome }}
           sha: ${{ github.event.pull_request.head.sha }}
           target_url: https://childmindinstitute.github.io/preview-app-demo/${{ github.run_number }}
 
