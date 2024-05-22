@@ -11,7 +11,7 @@ from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
-from apps.shared.domain import Response, ResponseMulti
+from apps.shared.domain import Response, ResponseMulti, ResponseMultiOrdering
 from apps.shared.exception import NotFoundError
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
@@ -237,17 +237,17 @@ async def workspace_respondents_list(
     query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
-) -> ResponseMulti[PublicWorkspaceRespondent]:
+) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
 
     await CheckAccessService(session, user.id).check_workspace_respondent_list_access(owner_id)
 
-    data, total = await service.get_workspace_respondents(owner_id, None, deepcopy(query_params))
+    data, total, ordering_fields = await service.get_workspace_respondents(owner_id, None, deepcopy(query_params))
     respondents = await AnswerService(
         session=session, arbitrary_session=answer_session
     ).fill_last_activity_workspace_respondent(data)
-    return ResponseMulti(result=respondents, count=total)
+    return ResponseMultiOrdering(result=respondents, count=total, ordering_fields=ordering_fields)
 
 
 async def workspace_applet_respondents_list(
@@ -263,11 +263,11 @@ async def workspace_applet_respondents_list(
 
     await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
-    data, total = await service.get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
+    data, total, ordering_fields = await service.get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
     respondents = await AnswerService(
         session=session, arbitrary_session=answer_session
     ).fill_last_activity_workspace_respondent(data, applet_id)
-    return ResponseMulti(result=respondents, count=total)
+    return ResponseMultiOrdering(result=respondents, count=total, ordering_fields=ordering_fields)
 
 
 async def workspace_managers_list(
@@ -275,13 +275,13 @@ async def workspace_managers_list(
     user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
-) -> ResponseMulti[PublicWorkspaceManager]:
+) -> ResponseMultiOrdering[PublicWorkspaceManager]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
 
     await CheckAccessService(session, user.id).check_workspace_manager_list_access(owner_id)
 
-    data, total = await service.get_workspace_managers(owner_id, None, deepcopy(query_params))
+    data, total, ordering_fields = await service.get_workspace_managers(owner_id, None, deepcopy(query_params))
     workspaces_manager = []
     for workspace_manager in data:
         workspaces_manager.append(
@@ -297,7 +297,7 @@ async def workspace_managers_list(
                 title=workspace_manager.title,
             )
         )
-    return ResponseMulti(result=workspaces_manager, count=total)
+    return ResponseMultiOrdering(result=workspaces_manager, count=total, ordering_fields=ordering_fields)
 
 
 async def workspace_applet_managers_list(
@@ -306,13 +306,13 @@ async def workspace_applet_managers_list(
     user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
-) -> ResponseMulti[PublicWorkspaceManager]:
+) -> ResponseMultiOrdering[PublicWorkspaceManager]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
 
     await CheckAccessService(session, user.id).check_applet_manager_list_access(applet_id)
 
-    data, total = await service.get_workspace_managers(owner_id, applet_id, deepcopy(query_params))
+    data, total, ordering_fields = await service.get_workspace_managers(owner_id, applet_id, deepcopy(query_params))
     workspaces_manager = []
     for workspace_manager in data:
         workspaces_manager.append(
@@ -328,7 +328,7 @@ async def workspace_applet_managers_list(
                 title=workspace_manager.title,
             )
         )
-    return ResponseMulti(result=workspaces_manager, count=total)
+    return ResponseMultiOrdering(result=workspaces_manager, count=total, ordering_fields=ordering_fields)
 
 
 async def workspace_respondent_pin(

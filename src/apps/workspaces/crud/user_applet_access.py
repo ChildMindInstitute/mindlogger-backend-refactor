@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 from datetime import datetime
 from typing import Tuple
@@ -51,6 +50,11 @@ from infrastructure.database.crud import BaseCRUD
 __all__ = ["UserAppletAccessCRUD"]
 
 
+# Record limits for manual sorting of respondents and managers based on resource use
+RESPONDENTS_MANUAL_SORT_LIMIT = 200
+MANAGERS_MANUAL_SORT_LIMIT = 200
+
+
 class _AppletUsersFilter(Filtering):
     role = FilterField(UserAppletAccessSchema.role)
     shell = FilterField(UserSchema.id, method_name="null")
@@ -59,12 +63,23 @@ class _AppletUsersFilter(Filtering):
 
 
 class _WorkspaceRespondentOrdering(Ordering):
+    # Regular SQL ordering clauses
     is_pinned = Ordering.Clause(literal_column("is_pinned"))
     secret_ids = Ordering.Clause(literal_column("secret_ids"))
+    tags = Ordering.Clause(literal_column("tags_order"))
     created_at = Ordering.Clause(func.min(UserAppletAccessSchema.created_at))
-    # last_seen = Ordering.Clause(
-    #     func.coalesce(UserSchema.last_seen_at, UserSchema.created_at)
-    # )
+    status = Ordering.Clause(literal_column("status_order"))
+
+    # Because nickname is encrypted, we need to support manual sorting by that field as well as any
+    # other field (in order to support manual sorting by multiple keys)
+    manual_fields = {
+        "nicknames": ("nicknames", 0),
+        "is_pinned": "is_pinned",
+        "secret_ids": ("secret_ids", 0),
+        "tags": ("tags_order", 0),
+        "created_at": "created_at",
+        "status": "status_order",
+    }
 
 
 class _WorkspaceRespondentSearch(Searching):
@@ -81,12 +96,23 @@ class _AppletRespondentSearch(Searching):
 
 
 class _AppletManagersOrdering(Ordering):
-    email = UserSchema.email
-    first_name = UserSchema.first_name
-    last_name = UserSchema.last_name
+    # Regular SQL ordering clauses
     created_at = UserSchema.created_at
     is_pinned = Ordering.Clause(literal_column("is_pinned"))
+    last_seen = Ordering.Clause(literal_column("last_seen"))
     roles = Ordering.Clause(literal_column("roles"))
+
+    # Because email, first name and last name are encrypted, we need to support manual sorting by
+    # those fields as well as any other field (in order to support manual sorting by multiple keys)
+    manual_fields = {
+        "email": "email_encrypted",
+        "first_name": "first_name",
+        "last_name": "last_name",
+        "created_at": "created_at",
+        "is_pinned": "is_pinned",
+        "last_seen": "last_seen",
+        "roles": ("roles", 0),
+    }
 
 
 class _AppletUsersSearch(Searching):
@@ -376,7 +402,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         owner_id: uuid.UUID,
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
-    ) -> Tuple[list[WorkspaceRespondent], int]:
+    ) -> Tuple[list[WorkspaceRespondent], int, list[str]]:
         field_nickname = SubjectSchema.nickname
         field_secret_user_id = SubjectSchema.secret_user_id
         workspace_applets_sq = self.workspace_applets_subquery(owner_id, applet_id)
@@ -438,6 +464,19 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema, SubjectSchema)
         )
 
+        status_invited = UserSchema.id.isnot(None)
+        status_pending = (
+            select(InvitationSchema.id)
+            .where(
+                InvitationSchema.status == InvitationStatus.PENDING,
+                InvitationSchema.applet_id.in_(workspace_applets_sq),
+                InvitationSchema.meta.has_key("subject_id"),
+                func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True))
+                == any_(func.array_agg(SubjectSchema.id)),
+            )
+            .exists()
+        )
+
         query: Query = select(
             # fmt: off
             UserSchema.id,
@@ -448,24 +487,19 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "is_anonymous_respondent"
             ),
             case(
-                (UserSchema.id.isnot(None), SubjectStatus.INVITED),
-                (
-                    (
-                        select(InvitationSchema.id)
-                        .where(
-                            InvitationSchema.status == InvitationStatus.PENDING,
-                            InvitationSchema.applet_id.in_(workspace_applets_sq),
-                            InvitationSchema.meta.has_key("subject_id"),
-                            func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True))
-                            == any_(func.array_agg(SubjectSchema.id)),
-                        )
-                        .exists()
-                    ),
-                    SubjectStatus.PENDING,
-                ),
+                (status_invited, SubjectStatus.INVITED),
+                (status_pending, SubjectStatus.PENDING),
                 else_=SubjectStatus.NOT_INVITED,
             ).label("status"),
+            # Add special ordering for status column (used only in order_by)
+            case(
+                (status_pending, 0),  # Pending full accounts
+                (status_invited, 1),  # Full accounts
+                else_=2,  # Limited accounts
+            ).label("status_order"),
             func.array_agg(SubjectSchema.id).label("subjects"),
+            # Add tag column for ordering
+            func.array_agg(SubjectSchema.tag).label("tags_order"),
             is_pinned.label("is_pinned"),
             func.array_remove(func.array_agg(func.distinct(field_nickname)), None)
             .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
@@ -532,16 +566,37 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         if query_params.search:
             query = query.having(_WorkspaceRespondentSearch().get_clauses(query_params.search))
 
+        # Get total count before ordering and pagination to evaluate eligibility for manual sorting
         coro_total = self._execute(select(count()).select_from(query.with_only_columns(UserSchema.id).subquery()))
+        total = (await coro_total).scalar()
+
+        ordering = _WorkspaceRespondentOrdering()
+        manual_order_fields = None
 
         if query_params.ordering:
-            query = query.order_by(*_WorkspaceRespondentOrdering().get_clauses(*query_params.ordering))
-        query = paging(query, query_params.page, query_params.limit)
-        coro_data = self._execute(query)
-        res_data, res_total = await asyncio.gather(coro_data, coro_total)
-        data = parse_obj_as(list[WorkspaceRespondent], res_data.all())
-        total = res_total.scalar()
-        return data, total
+            if total < RESPONDENTS_MANUAL_SORT_LIMIT:
+                manual_order_fields = ordering.get_manual_fields(*query_params.ordering)
+            # Only perform SQL ORDER BY if all requested ordering fields can be done by SQL
+            if not manual_order_fields:
+                query = query.order_by(*ordering.get_clauses(*query_params.ordering))
+
+        # If able to use SQL ordering, also use SQL-based paging; else paginate post-execute
+        if not manual_order_fields:
+            query = paging(query, query_params.page, query_params.limit)
+
+        res_data = await self._execute(query)
+
+        data = res_data.all()
+
+        # If sorting manually, both sort and paginate manually
+        if manual_order_fields:
+            data = ordering.manual_sort(data, manual_order_fields)
+            data = ordering.manual_paginate(data, query_params.page, query_params.limit)
+
+        data = parse_obj_as(list[WorkspaceRespondent], data)
+        ordering_fields = ordering.get_ordering_fields(total < RESPONDENTS_MANUAL_SORT_LIMIT)
+
+        return data, total, ordering_fields
 
     async def get_workspace_managers(
         self,
@@ -549,7 +604,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         owner_id: uuid.UUID,
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
-    ) -> Tuple[list[WorkspaceManager], int]:
+    ) -> Tuple[list[WorkspaceManager], int, list[str]]:
         is_pinned = (
             exists()
             .where(
@@ -636,17 +691,33 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
 
         coro_total = self._execute(select(count()).select_from(query.with_only_columns(UserSchema.id).subquery()))
+        total = (await coro_total).scalar()
+
+        ordering = _AppletManagersOrdering()
+        manual_order_fields = None
 
         if query_params.ordering:
-            query = query.order_by(*_AppletManagersOrdering().get_clauses(*query_params.ordering))
-        query = paging(query, query_params.page, query_params.limit)
+            if total < MANAGERS_MANUAL_SORT_LIMIT:
+                manual_order_fields = ordering.get_manual_fields(*query_params.ordering)
+            # Only perform SQL ORDER BY if all requested ordering fields can be done by SQL
+            if not manual_order_fields:
+                query = query.order_by(*ordering.get_clauses(*query_params.ordering))
 
-        coro_data = self._execute(query)
+        # If able to use SQL ordering, also use SQL-based paging; else paginate post-execute
+        if not manual_order_fields:
+            query = paging(query, query_params.page, query_params.limit)
 
-        res_data, res_total = await asyncio.gather(coro_data, coro_total)
+        res_data = await self._execute(query)
 
-        data = parse_obj_as(list[WorkspaceManager], res_data.all())
-        total = res_total.scalar()
+        data = res_data.all()
+
+        # If sorting manually, both sort and paginate manually
+        if manual_order_fields:
+            data = ordering.manual_sort(data, manual_order_fields)
+            data = ordering.manual_paginate(data, query_params.page, query_params.limit)
+
+        data = parse_obj_as(list[WorkspaceManager], data)
+        ordering_fields = ordering.get_ordering_fields(total < MANAGERS_MANUAL_SORT_LIMIT)
 
         # TODO: Fix via class Searching
         #  using database fields - StringEncryptedType
@@ -674,9 +745,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 ):
                     data_search.append(manager)
                     total_search += 1
-            return data_search, total_search
+            return data_search, total_search, ordering_fields
 
-        return data, total
+        return data, total, ordering_fields
 
     async def get_all_by_user_id_and_roles(self, user_id_: uuid.UUID, roles: list[Role]) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
