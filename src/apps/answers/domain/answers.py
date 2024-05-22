@@ -507,6 +507,7 @@ class UserAnswerDataBase(BaseModel):
     flow_history_id: str | None
     flow_name: str | None
     reviewed_answer_id: uuid.UUID | str | None
+    reviewed_submission_id: uuid.UUID | str | None
     created_at: datetime.datetime
     migrated_data: dict | None = None
     client: ClientMeta | None = None

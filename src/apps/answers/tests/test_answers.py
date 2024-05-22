@@ -1984,3 +1984,22 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 0
+
+    async def test_submission_get_export_data(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        assessment_for_submission: AssessmentAnswerCreate,
+        applet_with_reviewable_flow: AppletFull,
+        assessment_submission_create: AssessmentAnswerCreate,
+        submission_assessment_answer: AnswerItemSchema,
+    ):
+        client.login(tom)
+        response = await client.get(
+            self.applet_answers_export_url.format(applet_id=str(applet_with_reviewable_flow.id)),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()
+        assert data["result"]["answers"]
+        assert next(filter(lambda answer: answer["reviewedSubmissionId"], data["result"]["answers"]))
