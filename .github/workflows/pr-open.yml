@@ -84,7 +84,7 @@ jobs:
       - name: Fetch results
         uses: actions/download-artifact@v4
         with:
-          name: taf-results
+          name: e2e-results
           path: test-results/api
 
       - name: Build test report
