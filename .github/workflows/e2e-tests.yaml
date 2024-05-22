@@ -54,24 +54,29 @@ jobs:
       - name: Run tests
         run: npm run test:api
         continue-on-error: true
-        id: taf-tests
+        id: e2e-tests
 
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_USERNAME: GithubActions
+          SLACK_ICON: https://github.com/github.png?size=48
+          SLACK_COLOR: ${{ steps.e2e-tests.outcome }}
+          SLACK_MESSAGE_ON_SUCCESS: "E2E tests succeeded"
+          SLACK_MESSAGE_ON_FAILURE: "E2E tests failed"
+          MSG_MINIMAL: actions url
 
-      - name: Fail
-        if: steps.taf-tests.outcome != 'success' && github.event_name == 'pull_request'
-        uses: actions/github-script@v3
-        with:
-          script: |
-            core.setFailed('Unit tests failed')
 
       - name: Collect artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: taf-results
+          name: e2e-results
           path: test-results/api
           if-no-files-found: error
+
       - name: Fail if tests failed
-        if: steps.taf-tests.outcome != 'success'
+        if: steps.e2e-tests.outcome != 'success'
         uses: actions/github-script@v3
         with:
           script: |

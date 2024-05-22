@@ -54,21 +54,12 @@ jobs:
     with:
       service-url: ${{ needs.create-preview-env.outputs.service-url }}
 
-
-
   publish-report:
     name: Publish Report
     needs: [run-e2e-tests]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-      - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-          SLACK_USERNAME: GithubActions
-          SLACK_ICON: https://cdn-icons-png.flaticon.com/128/2111/2111432.png
-          SLACK_COLOR: ${{ needs.run-e2e-tests.outcome }}
       - name: Comment on PR with test success
         if: ${{ needs.run-e2e-tests.outcome == 'success' }}
         uses: thollander/actions-comment-pull-request@v2
