@@ -1,5 +1,4 @@
-class JsonLDBaseError(Exception):
-    ...
+class JsonLDBaseError(Exception): ...
 
 
 class JsonLDStructureError(JsonLDBaseError):
@@ -35,8 +34,8 @@ class ConditionalLogicError(JsonLDBaseError):
 
 
 class ConditionalLogicParsingError(JsonLDBaseError):
-    ...
+    pass
 
 
 class SubscaleParsingError(JsonLDBaseError):
-    ...
+    pass

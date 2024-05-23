@@ -137,7 +137,7 @@ class ContainsNestedMixin(ABC, ContextResolverAwareMixin):
     @classmethod
     @abstractmethod
     def get_supported_types(cls) -> list[Type["LdDocumentBase"]]:
-        ...
+        pass
 
     @classmethod
     def _get_supported(cls, doc: dict) -> Type["LdDocumentBase"] | None:
@@ -313,12 +313,10 @@ class LdDocumentBase(ABC, ContextResolverAwareMixin):
 
     @classmethod
     @abstractmethod
-    def supports(cls, doc: dict) -> bool:
-        ...
+    def supports(cls, doc: dict) -> bool: ...
 
     @abstractmethod
-    def export(self) -> InternalModel | PublicModel:
-        ...
+    def export(self) -> InternalModel | PublicModel: ...
 
     async def load(self, doc: dict, base_url: str | None = None):
         self.doc = doc

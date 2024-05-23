@@ -167,7 +167,7 @@ class SubmissionDate(PublicModel):
 
 
 class ReviewFlow(ReviewItem[SubmissionDate]):
-    ...
+    pass
 
 
 class PublicReviewFlow(ReviewFlow):

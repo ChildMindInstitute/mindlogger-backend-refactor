@@ -12,7 +12,7 @@ class ContainsNestedModelMixin(ABC, ContextResolverAwareMixin):
     @classmethod
     @abstractmethod
     def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
-        ...
+        pass
 
     def get_supported_processor(self, model: InternalModel) -> "BaseModelExport":
         for candidate in self.get_supported_types():
@@ -42,11 +42,11 @@ class BaseModelExport(ABC, ContextResolverAwareMixin):
     @classmethod
     @abstractmethod
     def supports(cls, model: InternalModel) -> bool:
-        ...
+        pass
 
     @abstractmethod
     async def export(self, model: InternalModel, expand: bool = False) -> ModelExportData:
-        ...
+        pass
 
     async def _post_process(self, doc: dict, expand: bool):
         if expand:

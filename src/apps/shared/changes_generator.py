@@ -1,6 +1,7 @@
 """
 Dictionary to generate needed text in one format
 """
+
 _DICTIONARY = dict(
     en=dict(
         added="{0} was added",

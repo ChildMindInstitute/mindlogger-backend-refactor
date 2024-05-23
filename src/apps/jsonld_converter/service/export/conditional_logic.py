@@ -37,11 +37,11 @@ class BaseExpression(ABC):
     @classmethod
     @abstractmethod
     def supports(cls, condition: Condition) -> bool:
-        ...
+        pass
 
     @abstractmethod
     def export(self) -> str:
-        ...
+        pass
 
 
 @register_expression

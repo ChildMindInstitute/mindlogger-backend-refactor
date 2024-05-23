@@ -52,7 +52,7 @@ class LdSubscaleBase(CommonFieldsMixin, ABC):
 
     @abstractmethod
     def export(self):
-        ...
+        pass
 
 
 class LdSubscaleFinal(LdSubscaleBase):

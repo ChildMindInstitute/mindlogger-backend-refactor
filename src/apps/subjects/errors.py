@@ -3,4 +3,4 @@ class SecretIDUniqueViolationError(Exception):
 
 
 class AppletUserViolationError(Exception):
-    ...
+    pass

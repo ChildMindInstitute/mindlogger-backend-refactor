@@ -123,7 +123,7 @@ class UserAccessAlreadyExists(ValidationError):
 
 
 class WorkspaceNotFoundError(Exception):
-    ...
+    pass
 
 
 class ArbitraryServerSettingsError(Exception):
