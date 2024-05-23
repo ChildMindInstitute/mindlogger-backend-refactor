@@ -28,8 +28,7 @@ jobs:
       name: Database creation failed
       runs-on: ubuntu-latest
       if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
-      needs:
-        - create_database
+      needs: [create-database]
       steps:
         - name: "Send Slack message on failure"
           uses: rtCamp/action-slack-notify@v2
