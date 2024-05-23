@@ -9,6 +9,7 @@ from botocore.exceptions import ClientError, EndpointConnectionError
 
 from apps.file.errors import FileNotFoundError
 from apps.shared.exception import NotFoundError
+from infrastructure.logger import logger
 from infrastructure.utility.cdn_config import CdnConfig
 
 
@@ -46,7 +47,7 @@ class CDNClient:
             return boto3.client("s3", region_name=config.region)
         # TODO: do we need this? If exception is caught self.client will be None
         except KeyError:
-            print("CDN configuration is not full")
+            logger.warning("CDN configuration is not full")
 
     def _upload(self, path, body: BinaryIO):
         if self.env == "testing":
@@ -65,12 +66,11 @@ class CDNClient:
     def _check_existence(self, bucket: str, key: str):
         try:
             return self.client.head_object(Bucket=bucket, Key=key)
-        except ClientError:
+        except ClientError as e:
+            logger.warning(f"Error when trying to check existence for {key} in {bucket}: {e}")
             raise NotFoundError
 
     async def check_existence(self, bucket: str, key: str):
-        if self.env == "testing":
-            return
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._check_existence, bucket, key)
             return await asyncio.wrap_future(future)
@@ -80,16 +80,15 @@ class CDNClient:
             file = io.BytesIO()
 
         try:
-            if self.env == "testing":
-                local_file = open(key, "rb")
-                file.write(local_file.read())
-            else:
-                self.client.download_fileobj(self.config.bucket, key, file)
+            self.client.download_fileobj(self.config.bucket, key, file)
         except ClientError as e:
             if int(e.response.get("Error", {}).get("Code", "0")) == 404:
+                logger.warning(f"Trying to download not existing file {key}")
                 raise ObjectNotFoundError()
+            logger.error(f"Error when trying to download file {key}: {e}")
             raise
-        except EndpointConnectionError:
+        except EndpointConnectionError as e:
+            logger.error(f"Error when trying to download file {key}: {e}")
             raise FileNotFoundError
 
         file.seek(0)

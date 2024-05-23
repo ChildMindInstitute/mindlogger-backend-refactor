@@ -30,7 +30,7 @@ from apps.file.domain import (
     WebmTargetExtenstion,
 )
 from apps.file.enums import FileScopeEnum
-from apps.file.errors import FileNotFoundError
+from apps.file.errors import FileNotFoundError, SomethingWentWrongError
 from apps.file.services import LogFileService
 from apps.file.storage import select_storage
 from apps.file.tasks import convert_audio_file, convert_image
@@ -51,11 +51,12 @@ from infrastructure.dependency.presign_service import get_presign_service
 from infrastructure.utility.cdn_client import CDNClient, ObjectNotFoundError
 
 
+# TODO: delete later, it is not used anymore
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_media_bucket),
-) -> Response[ContentUploadedFile]:
+) -> Response[ContentUploadedFile]:  # pragma: no cover
     converters = [convert_not_supported_audio]
 
     to_close = []
@@ -88,14 +89,15 @@ async def upload(
     return Response(result=result)
 
 
-async def _copy(file: UploadFile, path: str):
+async def _copy(file: UploadFile, path: str):  # pragma: no cover
     async with aiofiles.open(path, "wb") as fout:
         _size = 1024 * 1024
         while content := await file.read(_size):
             await fout.write(content)
 
 
-async def convert_not_supported_audio(file: UploadFile):
+# TODO: delete later, it is not used anymore
+async def convert_not_supported_audio(file: UploadFile):  # pragma: no cover
     file.filename = cast(str, file.filename)
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "video/webm":
@@ -122,7 +124,8 @@ async def convert_not_supported_audio(file: UploadFile):
     return None
 
 
-async def convert_not_supported_image(file: UploadFile):
+# TODO: delete later, it is not used, because mobile app does not send heic files, only jpeg.
+async def convert_not_supported_image(file: UploadFile):  # pragma: no cover
     file.filename = cast(str, file.filename)
     type_ = mimetypes.guess_type(file.filename)[0] or ""
     if type_.lower() == "image/heic":
@@ -191,11 +194,8 @@ async def download(
 ) -> StreamingResponse:
     try:
         file, media_type = cdn_client.download(request.key)
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            raise FileNotFoundError
-        else:
-            raise e
+    except ClientError:
+        raise SomethingWentWrongError
     except ObjectNotFoundError:
         raise FileNotFoundError
 
@@ -268,11 +268,8 @@ async def answer_download(
 
     try:
         file, media_type = cdn_client.download(request.key)
-    except ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            raise FileNotFoundError
-        else:
-            raise e
+    except ClientError:
+        raise SomethingWentWrongError
     except ObjectNotFoundError:
         raise FileNotFoundError
     return StreamingResponse(file, media_type=media_type)
@@ -354,7 +351,7 @@ async def logs_upload(
         return Response(result=result)
     except Exception as ex:
         await service.backend_log_upload(file_id, False, str(ex))
-        raise ex
+        raise SomethingWentWrongError
 
 
 async def logs_download(
@@ -365,11 +362,11 @@ async def logs_download(
     cdn_client: CDNClient = Depends(get_log_bucket),
     session: AsyncSession = Depends(get_session),
 ) -> ResponseMulti[str]:
+    UserAccessService.raise_for_developer_access(user.email_encrypted)
     user_service = UserService(session)
     log_user = await user_service.get_by_email(user_email)
     service = LogFileService(log_user.id, cdn_client)
     try:
-        UserAccessService.raise_for_developer_access(user.email_encrypted)
         end = datetime.datetime.now(tz=pytz.UTC)
         start = end - datetime.timedelta(days=days)
         files = await service.log_list(device_id, start, end)
@@ -381,7 +378,7 @@ async def logs_download(
         return ResponseMulti[str](result=result, count=len(result))
     except Exception as ex:
         await service.backend_log_download(user.email_encrypted, str(ex), device_id, False)
-        raise ex
+        raise SomethingWentWrongError
 
 
 async def logs_exist_check(
@@ -398,7 +395,7 @@ async def logs_exist_check(
         return ResponseMulti[LogFileExistenceResponse](result=result, count=count)
     except Exception as ex:
         await service.backend_log_check([], False, str(ex))
-        raise ex
+        raise SomethingWentWrongError
 
 
 async def generate_presigned_media_url(
