@@ -90,12 +90,13 @@ jobs:
         with:
           authToken: ${{secrets.PAT_TOKEN}}
           context: 'Unit Test report'
-          state: 'success'
+          state: ${{ needs.run-unit-tests.outcome }}
           sha: ${{ github.event.pull_request.head.sha }}
           target_url: ${{ needs.run-unit-tests.outputs.report-url }}
       - uses: 8398a7/action-slack@v3
+        name: Send to slack
         with:
-          status: ${{ needs.run-unit-tests.outcome }}
+          status: "${{ needs.run-unit-tests.outcome }}"
           fields: pullRequest,workflow
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
