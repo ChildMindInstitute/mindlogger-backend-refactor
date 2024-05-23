@@ -8,6 +8,7 @@ jobs:
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged
     env:
       TASK_FAMILY_PREFIX: backend
       ECS_CLUSTER_NAME: cmiml-dev
@@ -16,9 +17,8 @@ jobs:
       IMAGE_PREFIX: ${{ github.ref_name }}
       COMMIT_HASH: ${{ github.sha }}
       AWS_REGION : "us-east-1"
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
+    
     steps:
-
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
