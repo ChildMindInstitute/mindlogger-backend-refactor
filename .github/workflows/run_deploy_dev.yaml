@@ -1,0 +1,38 @@
+name: deploy_to_dev
+on:
+  workflow_run:
+    workflows: ["run_build"]
+    types:
+      - completed
+jobs:
+
+  deploy_to_ecs:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    env:
+      TASK_FAMILY_PREFIX: backend
+      ECS_CLUSTER_NAME: cmiml-dev
+      ECS_SERVICE_NAME: backend
+      ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com
+      IMAGE_PREFIX: ${{ github.ref_name }}
+      COMMIT_HASH: ${{ github.sha }}
+      AWS_REGION : "us-east-1"
+    
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
+          role-session-name: OIDC-GHA-session
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: change image in the task definitions and update services
+        run: |
+          NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5) 
+
+          for app in api worker scheduler; do 
+            NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$ECR_REPO:$NEW_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+            aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEFINTIION"
+            aws ecs update-service --cluster ${{ env.ECS_CLUSTER_NAME }} --service ${{ env.ECS_SERVICE_NAME }}_${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
+          done
+          
