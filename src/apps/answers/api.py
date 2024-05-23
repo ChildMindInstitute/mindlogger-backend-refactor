@@ -52,9 +52,10 @@ from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.deps import get_i18n
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.exception import AccessDeniedError, NotFoundError
+from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 from apps.shared.locale import I18N
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
+from apps.subjects.services import SubjectsService
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -111,11 +112,10 @@ async def review_activity_list(
     query_params: QueryParams = Depends(parse_query_params(ReviewAppletItemFilter)),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[PublicReviewActivity]:
+    filters = ReviewAppletItemFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    activities = await AnswerService(session, user.id, answer_session).get_review_activities(
-        applet_id, **query_params.filters
-    )
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    activities = await AnswerService(session, user.id, answer_session).get_review_activities(applet_id, filters)
 
     return ResponseMulti(
         result=[PublicReviewActivity.from_orm(activity) for activity in activities],
@@ -147,12 +147,18 @@ async def summary_activity_list(
     query_params: QueryParams = Depends(parse_query_params(SummaryActivityFilter)),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[PublicSummaryActivity]:
+    filters = SummaryActivityFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    respondent_id = query_params.filters.get("respondent_id")
-    await CheckAccessService(session, user.id).check_summary_access(applet_id, respondent_id)
-    activities = await AnswerService(session, user.id, answer_session).get_summary_activities(
-        applet_id, query_params.filters.get("respondent_id")
-    )
+    target_subject_id = filters.target_subject_id
+    if filters.respondent_id and not target_subject_id:
+        target_subject = await SubjectsService(session, user.id).get_by_user_and_applet(
+            filters.respondent_id, applet_id
+        )
+        if not target_subject:
+            raise NotFoundError()
+        target_subject_id = target_subject.id
+    await CheckAccessService(session, user.id).check_summary_access(applet_id, target_subject_id)
+    activities = await AnswerService(session, user.id, answer_session).get_summary_activities(applet_id, filters)
     return ResponseMulti(
         result=parse_obj_as(list[PublicSummaryActivity], activities),
         count=len(activities),
@@ -167,10 +173,10 @@ async def summary_activity_flow_list(
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[PublicSummaryActivityFlow]:
     await AppletService(session, user.id).exist_by_id(applet_id)
-    respondent_id = query_params.filters.get("respondent_id")  # todo: Change to target_subject_id
-    await CheckAccessService(session, user.id).check_summary_access(applet_id, respondent_id)
+    target_subject_id = query_params.filters.get("target_subject_id")
+    await CheckAccessService(session, user.id).check_summary_access(applet_id, target_subject_id)
     activities = await AnswerService(session, user.id, answer_session).get_summary_activity_flows(
-        applet_id, respondent_id
+        applet_id, target_subject_id
     )
     return ResponseMulti(
         result=parse_obj_as(list[PublicSummaryActivityFlow], activities),
@@ -186,10 +192,11 @@ async def applet_activity_answers_list(
     query_params: QueryParams = Depends(parse_query_params(AppletSubmissionsFilter)),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[AppletActivityAnswerPublic]:
+    filters = query_params.filters
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters)
     service = AnswerService(session, user.id, answer_session)
-    answers = await service.get_activity_answers(applet_id, activity_id, query_params)
+    answers = await service.get_activity_answers(applet_id, activity_id, **filters)
 
     answers_ids = [answer.answer_id for answer in answers if answer.answer_id is not None]
     answer_reviews = await service.get_assessments_count(answers_ids)
@@ -224,15 +231,19 @@ async def applet_flow_submissions_list(
 async def summary_latest_report_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
-    respondent_id: uuid.UUID,
+    subject_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> FastApiResponse:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
+    if not subject:
+        raise NotFoundError(f"Subject {subject_id} not found.")
+
     report = await AnswerService(session, user.id, answer_session).get_summary_latest_report(
-        applet_id, activity_id, respondent_id
+        applet_id, activity_id, subject_id
     )
     if report:
         return FastApiResponse(
@@ -251,10 +262,11 @@ async def applet_submit_date_list(
     query_params: QueryParams = Depends(parse_query_params(AppletSubmitDateFilter)),
     answer_session=Depends(get_answer_session),
 ) -> Response[PublicAnswerDates]:
+    filters = AppletSubmitDateFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
     dates = await AnswerService(session, user.id, answer_session).get_applet_submit_dates(
-        applet_id, **query_params.filters
+        applet_id, AppletSubmitDateFilter(**query_params.filters)
     )
     return Response(result=PublicAnswerDates(dates=list(sorted(set(dates)))))
 
@@ -353,11 +365,10 @@ async def applet_activity_identifiers_retrieve(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[Identifier]:
+    filters = IdentifiersQueryParams(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(
-        activity_id, query_params.filters["respondent_id"]
-    )
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(activity_id, filters)
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
 
@@ -369,15 +380,15 @@ async def applet_flow_identifiers_retrieve(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[Identifier]:
+    filters = IdentifiersQueryParams(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
     flow = await FlowService(session=session).get_by_id(flow_id)
     if not flow or flow.applet_id != applet_id:
         raise NotFoundError("Flow not found")
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-
-    identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(
-        flow_id, query_params.filters["respondent_id"]
-    )
+    if not (target_subject_id := filters.target_subject_id):
+        raise ValidationError("targetSubjectId missed")
+    identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(flow_id, target_subject_id)
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
 

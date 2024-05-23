@@ -9,9 +9,12 @@ from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
+from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.exception import NotFoundError
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
+from apps.subjects.services import SubjectsService
 from apps.users.domain import User
 from apps.users.services.user import UserService
 from apps.workspaces.domain.constants import Role, UserPinRole
@@ -19,7 +22,6 @@ from apps.workspaces.domain.user_applet_access import (
     ManagerAccesses,
     PublicRespondentAppletAccess,
     RemoveManagerAccess,
-    RemoveRespondentAccess,
     RespondentInfo,
     RespondentInfoPublic,
 )
@@ -200,7 +202,15 @@ async def workspace_applet_respondent_update(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
-        await UserAppletAccessService(session, user.id, applet_id).update_meta(respondent_id, Role.RESPONDENT, schema)
+        subject_service = SubjectsService(session, user.id)
+        subject = await subject_service.get_by_user_and_applet(respondent_id, applet_id)
+        if not subject:
+            raise NotFoundError()
+        assert subject.id
+        exist = await subject_service.check_secret_id(subject.id, schema.secret_user_id, applet_id)
+        if exist:
+            raise NonUniqueValue()
+        await subject_service.update(subject.id, **schema.dict(by_alias=False))
 
 
 async def workspace_remove_manager_access(
@@ -219,18 +229,6 @@ async def workspace_remove_manager_access(
             )
             ids_to_remove = set(schema.applet_ids) - set(management_applets)
             await InvitationsService(session, ex_admin).delete_for_managers(list(ids_to_remove))
-
-
-async def applet_remove_respondent_access(
-    user: User = Depends(get_current_user),
-    schema: RemoveRespondentAccess = Body(...),
-    session=Depends(get_session),
-):
-    async with atomic(session):
-        await UserAccessService(session, user.id).remove_respondent_access(schema)
-        ex_resp = await UserService(session).get(schema.user_id)
-        if ex_resp:
-            await InvitationsService(session, ex_resp).delete_for_respondents(schema.applet_ids)
 
 
 async def workspace_respondents_list(
@@ -339,7 +337,18 @@ async def workspace_respondent_pin(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await UserAccessService(session, user.id).pin(owner_id, user_id, UserPinRole.respondent)
+        await UserAccessService(session, user.id).pin(owner_id, UserPinRole.respondent, user_id=user_id)
+
+
+async def workspace_subject_pin(
+    owner_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    async with atomic(session):
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await UserAccessService(session, user.id).pin(owner_id, UserPinRole.respondent, subject_id=subject_id)
 
 
 async def workspace_manager_pin(
@@ -350,7 +359,7 @@ async def workspace_manager_pin(
 ):
     async with atomic(session):
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await UserAccessService(session, user.id).pin(owner_id, user_id, UserPinRole.manager)
+        await UserAccessService(session, user.id).pin(owner_id, UserPinRole.manager, user_id)
 
 
 async def workspace_users_applet_access_list(
@@ -403,9 +412,9 @@ async def workspace_applet_get_respondent(
         respondent_id, applet_id, owner_id
     )
     # get last activity time
-    result = await AnswerService(session=session, arbitrary_session=answer_session).fill_last_activity_respondent_info(
-        respondent_id, applet_id
+    result = await AnswerService(session=session, arbitrary_session=answer_session).get_last_answer_dates(
+        [respondent_info.subject_id],
+        applet_id,
     )
-    respondent_info.last_seen = result.get(respondent_id)
-
+    respondent_info.last_seen = result.get(respondent_info.subject_id)
     return Response(result=respondent_info)

@@ -19,6 +19,8 @@ from apps.applets.errors import InvalidVersionError
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserWorkspaceSchema
 from infrastructure.utility import RedisCacheTest
@@ -83,7 +85,7 @@ class TestAnswerActivityItems(BaseTest):
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"
     answer_note_detail_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}"
-    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report"
+    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"
 
     arbitrary_url = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_arbitrary"
     applet_answers_completions_url = "/answers/applet/{applet_id}/completions"
@@ -99,6 +101,7 @@ class TestAnswerActivityItems(BaseTest):
         redis: RedisCacheTest,
         answer_with_alert_create: AppletAnswerCreate,
         mailbox: TestMail,
+        session: AsyncSession,
     ):
         arbitrary_client.login(tom)
         response = await arbitrary_client.post(self.answer_url, data=answer_with_alert_create)
@@ -114,10 +117,15 @@ class TestAnswerActivityItems(BaseTest):
         assert len(mailbox.mails) == 1
         assert mailbox.mails[0].subject == "Response alert"
 
+        # TODO: Fix greenlet error and use fixture instead
+        subject = await SubjectsService(session, tom.id).get_by_user_and_applet(
+            tom.id, answer_with_alert_create.applet_id
+        )
+        assert subject
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(answer_with_alert_create.applet_id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -151,7 +159,12 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.usefixtures("mock_report_server_response", "answer_arbitrary")
     async def test_get_latest_summary(
-        self, arbitrary_session: AsyncSession, arbitrary_client: TestClient, tom: User, applet: AppletFull
+        self,
+        arbitrary_session: AsyncSession,
+        arbitrary_client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        tom_applet_subject: Subject,
     ):
         arbitrary_client.login(tom)
 
@@ -159,11 +172,19 @@ class TestAnswerActivityItems(BaseTest):
             self.latest_report_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
-                respondent_id=tom.id,
+                subject_id=str(tom_applet_subject.id),
             ),
         )
         assert response.status_code == http.HTTPStatus.OK
         assert response.content == b"pdf body"
+        response = await arbitrary_client.post(
+            self.latest_report_url.format(
+                applet_id=str(applet.id),
+                activity_id=str(applet.activities[0].id),
+                subject_id=str(uuid.uuid4()),
+            ),
+        )
+        assert response.status_code == 404
 
     async def test_public_answer_activity_items_create_for_respondent(
         self, arbitrary_session: AsyncSession, arbitrary_client: TestClient, public_answer_create: AppletAnswerCreate
@@ -267,17 +288,20 @@ class TestAnswerActivityItems(BaseTest):
         arbitrary_client: TestClient,
         tom: User,
         answer_create: AppletAnswerCreate,
+        session: AsyncSession,
     ):
         arbitrary_client.login(tom)
 
         response = await arbitrary_client.post(self.answer_url, data=answer_create)
 
         assert response.status_code == http.HTTPStatus.CREATED
-
+        # TODO: Fix greenlet error and use fixture instead
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, answer_create.applet_id)
+        assert tom_subject
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(answer_create.applet_id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -302,7 +326,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(answer_create.applet_id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -434,13 +458,15 @@ class TestAnswerActivityItems(BaseTest):
         assert review["reviewer"]["firstName"] == tom.first_name
         assert review["reviewer"]["lastName"] == tom.last_name
 
-    async def test_applet_activities(self, arbitrary_client: TestClient, tom: User, answer_arbitrary: AnswerSchema):
+    async def test_applet_activities(
+        self, arbitrary_client: TestClient, tom: User, answer_arbitrary: AnswerSchema, tom_applet_subject: Subject
+    ):
         arbitrary_client.login(tom)
 
         response = await arbitrary_client.get(
             self.review_activities_url.format(applet_id=str(answer_arbitrary.applet_id)),
             dict(
-                respondentId=tom.id,
+                targetSubjectId=tom_applet_subject.id,
                 createdDate=datetime.datetime.utcnow().date(),
             ),
         )
@@ -548,7 +574,8 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime", "legacyProfileId", "migratedDate", "client",
+            "endDatetime", "legacyProfileId", "migratedDate",
+            "relation", "sourceSubjectId", "targetSubjectId", "client",
             "tzOffset", "scheduledEventId",
         }
 

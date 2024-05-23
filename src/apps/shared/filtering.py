@@ -91,3 +91,6 @@ class Filtering:
             if _clause is not None:
                 clauses.append(_clause)
         return clauses
+
+    def null(self, field, value):
+        return field.is_(None) if value else field.isnot(None)
