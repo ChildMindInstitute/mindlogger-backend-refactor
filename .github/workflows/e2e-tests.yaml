@@ -60,17 +60,6 @@ jobs:
         continue-on-error: true
         id: e2e-tests
 
-      - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-          SLACK_USERNAME: GithubActions
-          SLACK_ICON: https://github.com/github.png?size=48
-          SLACK_COLOR: ${{ steps.e2e-tests.outcome }}
-          SLACK_MESSAGE_ON_SUCCESS: "E2E tests succeeded"
-          SLACK_MESSAGE_ON_FAILURE: "E2E tests failed"
-          MSG_MINIMAL: actions url
-
 
       - name: Collect artifacts
         uses: actions/upload-artifact@v4
@@ -84,7 +73,7 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            core.setFailed('Unit/Int tests failed')
+            core.setFailed('E2E tests failed')
 
   publish-report:
     name: Publish Report
