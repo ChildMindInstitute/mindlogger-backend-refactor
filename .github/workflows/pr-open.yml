@@ -66,7 +66,7 @@ jobs:
           comment_tag: service-url
       - name: "Send Slack message on failure"
         uses: rtCamp/action-slack-notify@v2
-        if: ${{ always() && needs.create-preview-env.outcome == 'failure' }}
+        if: ${{ always() && needs.create-preview-env.result == 'failure' }}
         env:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
@@ -90,13 +90,13 @@ jobs:
         with:
           authToken: ${{secrets.PAT_TOKEN}}
           context: 'Unit Test report'
-          state: ${{ needs.run-unit-tests.outcome }}
+          state: ${{ needs.run-unit-tests.result }}
           sha: ${{ github.event.pull_request.head.sha }}
           target_url: ${{ needs.run-unit-tests.outputs.report-url }}
       - uses: 8398a7/action-slack@v3
         name: Send to slack
         with:
-          status: "${{ needs.run-unit-tests.outcome }}"
+          status: "${{ needs.run-unit-tests.result }}"
           fields: pullRequest,workflow
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
@@ -122,19 +122,19 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
           SLACK_USERNAME: GithubActions
-          SLACK_COLOR: ${{ needs.run-e2e-tests.outcome }}
+          SLACK_COLOR: ${{ needs.run-e2e-tests.result }}
           SLACK_MESSAGE_ON_SUCCESS: "E2E tests succeeded"
           SLACK_MESSAGE_ON_FAILURE: "E2E tests failed!"
           MSG_MINIMAL: actions url
       - name: Comment on PR with test success
-        if: ${{ needs.run-e2e-tests.outcome == 'success' }}
+        if: ${{ needs.run-e2e-tests.result == 'success' }}
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
             :white_check_mark: E2E tests passed!
           comment_tag: e2e-results
       - name: Comment on PR with test failure
-        if: ${{ needs.run-e2e-tests.outcome != 'success' }}
+        if: ${{ needs.run-e2e-tests.result != 'success' }}
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
@@ -147,7 +147,7 @@ jobs:
         with:
           authToken: ${{secrets.GITHUB_TOKEN}}
           context: 'E2E Test report'
-          state: ${{ needs.run-e2e-tests.outcome }}
+          state: ${{ needs.run-e2e-tests.result }}
           sha: ${{ github.event.pull_request.head.sha }}
           target_url: ${{ needs.run-e2e-tests.outputs.report-url }}
 

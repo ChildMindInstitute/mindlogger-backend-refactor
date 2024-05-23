@@ -60,7 +60,6 @@ jobs:
         continue-on-error: true
         id: e2e-tests
 
-
       - name: Collect artifacts
         uses: actions/upload-artifact@v4
         with:
