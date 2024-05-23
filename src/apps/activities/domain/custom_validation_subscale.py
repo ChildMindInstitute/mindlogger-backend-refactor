@@ -4,7 +4,7 @@ from apps.activities.errors import InvalidRawScoreSubscaleError, InvalidScoreSub
 def validate_score_subscale_table(value: str):
     # make sure it's format is "x~y" or "x"
     if "~" not in value:
-        # make sure x is float with 5 decimal points
+        # make sure value is float with 5 decimal points
         val: float
         try:
             val = float(value)  # noqa: F841
@@ -33,7 +33,7 @@ def validate_score_subscale_table(value: str):
 def validate_raw_score_subscale(value: str):
     # make sure it's format is "x~y" or "x"
     if "~" not in value:
-        # make sure x is float with 5 decimal points
+        # make sure value is float with 2 decimal points
         val: float
         try:
             val = float(value)  # noqa: F841
@@ -43,7 +43,7 @@ def validate_raw_score_subscale(value: str):
             raise InvalidRawScoreSubscaleError()
 
     if "~" in value:
-        # make sure x and y are float with 5 decimal points
+        # make sure x and y are float with 2 decimal points
         x: str | float
         y: str | float
         x, y = value.split("~")
