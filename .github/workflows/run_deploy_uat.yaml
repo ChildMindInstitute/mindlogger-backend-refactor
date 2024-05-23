@@ -1,0 +1,49 @@
+name: deploy_to_uat
+on:
+  workflow_run:
+    workflows: ["run_build"]
+    types:
+      - completed
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+
+  deploy_to_ecs:
+    runs-on: ubuntu-latest
+    if: ${{ github.ref_name == v[0-9]+.[0-9]+.[0-9]+([0-9]+)+-+rc(.+) }}
+    env:
+      TASK_FAMILY: backend_api
+      ECS_CLUSTER_NAME: cmiml-uat
+      ECS_SERVICE_NAME: backend
+      ECR_URL: 917902836630.dkr.ecr.us-east-1.amazonaws.com
+      IMAGE_PREFIX: ${{ github.ref_name }}
+      COMMIT_HASH: ${{ github.sha }}
+      AWS_REGION : "us-east-1"
+      ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
+    steps:
+
+      - name: Git clone the repository
+        uses: actions/checkout@v4
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::641513112151:role/cmiml-devops-oidc-github-role
+          role-session-name: OIDC-GHA-session
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: change image in the task definition
+        run: |
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${{ env.TASK_FAMILY }} --region ${{ env.AWS_REGION }})
+          COMMIT_HASH_SHORT=$(echo $COMMIT_HASH | cut -c1-5) 
+          NEW_IMAGE=${IMAGE_PREFIX/\//-}-$COMMIT_HASH_SHORT
+          echo $NEW_IMAGE
+          NEW_TASK_DEFINTIION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$ECR_REPO:$NEW_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+          aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEFINTIION"
+
+      - name: update ECS service
+        run: |
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER_NAME }} --service ${{ env.ECS_SERVICE_NAME }} --task-definition ${{ env.TASK_FAMILY }}

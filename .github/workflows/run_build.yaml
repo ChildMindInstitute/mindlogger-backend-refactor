@@ -1,9 +1,5 @@
-name: run_build_deploy
+name: run_build
 on: [push, pull_request]
-
-env:
-  AWS_REGION : "us-east-1"
-  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
 
 permissions:
   id-token: write
@@ -23,6 +19,8 @@ jobs:
         ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
         TEST_COMMAND: sleep 1
         OUT_DIR: ./out
+        AWS_REGION : "us-east-1"
+        ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
 
     steps:
       - name: Git clone the repository
@@ -53,35 +51,4 @@ jobs:
           env-vars-for-codebuild: |
            GITHUB_ORGANIZATION, GITHUB_REPO_NAME, GITHUB_BRANCH_OR_TAG, GITHUB_REF, BUILD_NAME, BUILD_NUMBER, ECR_ADDRESS, TEST_COMMAND, ECR_REPO, OUT_DIR, DOCKER_USER, DOCKER_PASSWORD, REPORT_SERVER_PUBLIC_KEY
 
-  deploy_to_ecs:
-    needs: run_codebuild_project
-    runs-on: ubuntu-latest
-    env:
-      TASK_FAMILY: backend_api
-      ECS_CLUSTER_NAME: cmiml-dev
-      ECS_SERVICE_NAME: backend
-      IMAGE_PREFIX: ${{ github.ref_name }}
-      COMMIT_HASH: ${{ github.sha }}
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' }}
-    steps:
-
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
-          role-session-name: OIDC-GHA-session
-          aws-region: ${{ env.AWS_REGION }}
-      
-      - name: change image in the task definition
-        run: |
-          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${{ env.TASK_FAMILY }} --region ${{ env.AWS_REGION }})
-          COMMIT_HASH_SHORT=$(echo $COMMIT_HASH | cut -c1-5) 
-          NEW_IMAGE=${IMAGE_PREFIX/\//-}-$COMMIT_HASH_SHORT
-          NEW_TASK_DEFINTIION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$ECR_REPO:$NEW_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
-          aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEFINTIION"
-
-      - name: update ECS service
-        run: |
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER_NAME }} --service ${{ env.ECS_SERVICE_NAME }} --task-definition ${{ env.TASK_FAMILY }}
-
-
+ 
