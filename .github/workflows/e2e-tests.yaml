@@ -96,11 +96,10 @@ jobs:
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
-          allure_results: test-results/api
-          gh_pages: gh-pages
+          allure_results: allure-results
           allure_history: allure-history
           keep_reports: 20
-          subfolder: unit
+          subfolder: e2e
 
       - name: Deploy report to Github Pages
         if: always()
