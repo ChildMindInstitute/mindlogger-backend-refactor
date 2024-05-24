@@ -107,6 +107,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: allure-history
+
       - name: Generate Report URL
         if: always()
         id: report-url
