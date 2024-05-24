@@ -98,7 +98,7 @@ jobs:
         with:
           allure_results: test-results/api
           gh_pages: gh-pages
-          allure_history: allure-history-e2e
+          allure_history: allure-history
           keep_reports: 20
 
       - name: Deploy report to Github Pages
