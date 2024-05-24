@@ -22,7 +22,7 @@ jobs:
     steps:
     - name: Drop Database
       run: |
-        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ secrets.DATABASE_NAME }}" -c "DROP DATABASE <DATABASE_NAME>;"
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -c "DROP DATABASE ${{ inputs.db-name }}" postgres
 
 #  on-failure:
 #    runs-on: ubuntu-latest

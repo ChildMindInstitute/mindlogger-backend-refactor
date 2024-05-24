@@ -8,7 +8,7 @@ on:
 # Cancel any in progress since we are shutting down
 concurrency:
   cancel-in-progress: true
-  group: "preview-env-manage-${{ github.ref_name }}"
+  group: "preview-env-manage-${{ github.event.number }}"
 
 env:
   APP_NAME: ${{ github.event.repository.name }}
@@ -16,30 +16,58 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
-  set-env-name:
-    uses: ./.github/workflows/env-name.yaml
   destroy-preview-env:
-    name: Destroy Preview Env
-    needs: [set-env-name]
-    permissions:
-      id-token: write
-      contents: read
+    name: Destroy preview env
+    uses: ./.github/workflows/destroy-preview-env.yaml
+    with:
+      env-name: "pr-${{ github.event.number }}"
+      env-snake-name: "pr_${{ github.event.number }}"
+      app-name: ${{ github.event.repository.name }}
+      copilot-service: mindlogger-backend
+    secrets: inherit
+
+  comment-destroy-preview-env:
+    name: Comment on preview env
     runs-on: ubuntu-latest
-    env:
-      ENV_NAME: ${{ needs.set-env-name.outputs.env-name }}
-      ENV_SNAKE_NAME: ${{ needs.set-env-name.outputs.env-snake-name }}
+    needs: [ destroy-preview-env ]
+    if: ${{ always() }}
     steps:
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Comment on PR
+        uses: thollander/actions-comment-pull-request@v2
         with:
-          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
-          role-session-name: gha
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Install copilot
-        run: |
-          curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 
-          sudo mv copilot /usr/local/bin/copilot && copilot -v
-      - uses: actions/checkout@v4
-        name: Checkout
-      - name: Delete environment
-        run: scripts/env-stop.sh
+          message: |
+            :arrow_right: Preview environment failed to be destroyed
+          reactions: eyes, rocket
+          comment_tag: service-url
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        if: ${{ always() && needs.destroy-preview-env.result == 'failure' }}
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Preview Environment
+          SLACK_MESSAGE: Failed to destroy preview environment pr-${{ github.event.number }}
+          MSG_MINIMAL: actions url
+
+  destroy-database:
+    name: Destroy database
+    uses: ./.github/workflows/drop_db.yaml
+    with:
+      db-name: "mindlogger_backend_pr_${{ github.event.number }}"
+    secrets: inherit
+
+  on-db-failure:
+    name: Database destroy failed
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.destroy_database.result == 'failure' || needs.destroy_database.result == 'timed_out') }}
+    needs: [ destroy-database ]
+    steps:
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Destroy Database
+          SLACK_MESSAGE: 'Error during database destroy!'
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: actions url

@@ -25,20 +25,20 @@ jobs:
     secrets: inherit
 
   on-db-failure:
-      name: Database creation failed
-      runs-on: ubuntu-latest
-      if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
-      needs: [create-database]
-      steps:
-        - name: "Send Slack message on failure"
-          uses: rtCamp/action-slack-notify@v2
-          env:
-            SLACK_COLOR: failure
-            SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-            SLACK_TITLE: Create Database
-            SLACK_MESSAGE: 'Error during database creation!'
-            SLACK_ICON: https://github.com/github.png?size=48
-            MSG_MINIMAL: actions url
+    name: Database creation failed
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
+    needs: [create-database]
+    steps:
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Create Database
+          SLACK_MESSAGE: 'Error during database creation!'
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: actions url
 
   create-preview-env:
     needs: [create-database]
@@ -93,13 +93,63 @@ jobs:
           state: ${{ needs.run-unit-tests.result }}
           sha: ${{ github.event.pull_request.head.sha }}
           target_url: ${{ needs.run-unit-tests.outputs.report-url }}
-      - uses: 8398a7/action-slack@v3
-        name: Send to slack
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.26.0
         with:
-          status: "${{ needs.run-unit-tests.result }}"
-          fields: pullRequest,workflow
+          # Slack channel id, channel name, or user id to post message.
+          channel-id: 'C074PFF55NY'
+          payload: |
+            {
+              "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": ":rotating_light: Unit Tests Failed",
+                        "emoji": true
+                    }
+                },
+                {
+                    "type": "divider"
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": ":label: PR",
+                                "emoji": true
+                            },
+                            "value": "pr_link",
+                            "url": "${{ github.event.pull_request.html_url }}"
+                        },
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": ":chart_with_upwards_trend: Test Report",
+                                "emoji": true
+                            },
+                            "value": "click_me_123",
+                            "url": "${{ needs.run-unit-tests.outputs.report-url }}"
+                        }
+                    ]
+                }
+              ]
+            }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+#      - uses: 8398a7/action-slack@v3
+#        name: Send to slack
+#        with:
+#          status: "${{ needs.run-unit-tests.result }}"
+#          fields: pullRequest,workflow
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
 
 
   run-e2e-tests:
