@@ -51,18 +51,19 @@ jobs:
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
+          allure_report: unit
           allure_results: allure-results
-          allure_history: allure-history
+          allure_history: allure-history/unit
+          gh_pages: gh-pages
           keep_reports: 20
-          subfolder: unit
 
       - name: Deploy report to Github Pages
         if: always()
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: allure-history
-          destination_dir: unit
+          # same as allure_history above
+          publish_dir: allure-history/unit
 
       - name: Generate Report URL
         if: always()
