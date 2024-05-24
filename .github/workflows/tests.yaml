@@ -61,7 +61,8 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: unit
+          publish_dir: allure-history
+          destination_dir: unit
 
       - name: Generate Report URL
         if: always()
