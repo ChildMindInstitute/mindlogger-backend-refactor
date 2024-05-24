@@ -51,10 +51,16 @@ jobs:
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
+          # Where allure will write the generated report
           allure_report: unit
+          # Results dir
           allure_results: allure-results
-          allure_history: allure-history/unit
+          # Path to folder to be published
+          allure_history: allure-history
+          # Path to folder where gh-pages was checked out
           gh_pages: gh-pages
+          # a subfolder
+          subfolder: unit
           keep_reports: 20
 
       - name: Deploy report to Github Pages
@@ -63,7 +69,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # same as allure_history above
-          publish_dir: allure-history/unit
+          publish_dir: allure-history
 
       - name: Generate Report URL
         if: always()
