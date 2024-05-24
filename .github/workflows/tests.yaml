@@ -77,7 +77,7 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            core.setOutput('report-url', 'https://childmindinstitute.github.io/preview-app-demo/${{ github.run_number }}')
+            core.setOutput('report-url', 'https://childmindinstitute.github.io/preview-app-demo/unit/${{ github.run_number }}')
 
     outputs:
       report-url: ${{ steps.report-url.outputs.report-url }}

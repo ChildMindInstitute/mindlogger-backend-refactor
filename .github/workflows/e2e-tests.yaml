@@ -96,10 +96,17 @@ jobs:
         uses: simple-elf/allure-report-action@master
         if: always()
         with:
+          # Where allure will write the generated report
+          allure_report: e2e
+          # Results dir
           allure_results: allure-results
+          # Path to folder to be published
           allure_history: allure-history
-          keep_reports: 20
+          # Path to folder where gh-pages was checked out
+          gh_pages: gh-pages
+          # a subfolder
           subfolder: e2e
+          keep_reports: 20
 
       - name: Deploy report to Github Pages
         if: always()
@@ -114,6 +121,6 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            core.setOutput('report-url', 'https://childmindinstitute.github.io/preview-app-demo/${{ github.run_number }}')
+            core.setOutput('report-url', 'https://childmindinstitute.github.io/preview-app-demo/e2e/${{ github.run_number }}')
     outputs:
       report-url: ${{ steps.report-url.outputs.report-url }}
