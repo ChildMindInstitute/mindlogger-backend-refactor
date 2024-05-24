@@ -444,6 +444,3 @@ class ActivityService:
             activity.contains_response_types = list(set(activity_items_map.get(activity.id, list())))
             activity.item_count = len(activity_items_map.get(activity.id, list()))
         return activities
-
-    async def has_assessment(self, applet_id: uuid.UUID) -> bool:
-        return await ActivitiesCRUD(self.session).has_assessment(applet_id)

@@ -83,11 +83,3 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         query = query.where(ActivitySchema.applet_id == applet_id)
         result = await self._execute(query)
         return result.scalars().all()
-
-    async def has_assessment(self, applet_id: uuid.UUID) -> bool:
-        query: Query = select(ActivitySchema.id)
-        query = query.where(ActivitySchema.applet_id == applet_id)
-        query = query.where(ActivitySchema.is_reviewable.is_(True))
-        query = query.exists()
-        result = await self._execute(select(query))
-        return result.scalars().first()

@@ -567,7 +567,7 @@ def assessment_submission_create(
         item_ids=[(i.id) for i in assessment_activity.items],
         assessment_version_id=f"{assessment_activity.id}_{applet_with_reviewable_flow.version}",
         reviewer_public_key=str(tom.id),
-        reviewed_submit_id=last_flow_answer.submit_id,
+        reviewed_flow_submit_id=last_flow_answer.submit_id,
     )
 
 

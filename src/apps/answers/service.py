@@ -510,15 +510,11 @@ class AnswerService:
         return note_schema
 
     async def get_note_list(
-        self,
-        applet_id: uuid.UUID,
-        answer_id: uuid.UUID,
-        activity_id: uuid.UUID,
-        query_params: QueryParams,
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID, activity_id: uuid.UUID, page: int, limit: int
     ) -> list[AnswerNoteDetail]:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         notes_crud = AnswerNotesCRUD(self.session)
-        note_schemas = await notes_crud.get_by_answer_id(answer_id, activity_id, query_params)
+        note_schemas = await notes_crud.get_by_answer_id(answer_id, activity_id, page, limit)
         user_ids = set(map(lambda n: n.user_id, note_schemas))
         users_crud = UsersCRUD(self.session)
         users = await users_crud.get_by_ids(user_ids)
@@ -528,8 +524,10 @@ class AnswerService:
     async def get_notes_count(self, answer_id: uuid.UUID, activity_id: uuid.UUID) -> int:
         return await AnswerNotesCRUD(self.session).get_count_by_answer_id(answer_id, activity_id)
 
-    async def get_submission_notes_count(self, answer_id: uuid.UUID, activity_id: uuid.UUID) -> int:
-        return await AnswerNotesCRUD(self.session).get_count_by_submission_id(answer_id, activity_id)
+    async def get_submission_notes_count(
+        self, answer_id: uuid.UUID, activity_id: uuid.UUID, page: int, limit: int
+    ) -> int:
+        return await AnswerNotesCRUD(self.session).get_count_by_submission_id(answer_id, activity_id, page, limit)
 
     async def edit_answer_note(
         self,
@@ -560,6 +558,7 @@ class AnswerService:
             raise AnswerNoteAccessDeniedError()
 
     async def _get_assessment(self, applet_id: uuid.UUID, answer_id: uuid.UUID):
+        assert self.user_id
         assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id)
         items_crud = ActivityItemHistoriesCRUD(self.session)
         last = items_crud.get_applets_assessments(applet_id)
@@ -613,11 +612,11 @@ class AnswerService:
 
     async def get_assessment_by_submit_id(self, applet_id: uuid.UUID, submit_id: uuid.UUID) -> AssessmentAnswer | None:
         assert self.user_id
-        answer_id = await self.get_submission_last_answer_id(submit_id)
-        if not answer_id:
+        answer = await self.get_submission_last_answer(submit_id)
+        if not answer:
             return None
-        await self._validate_answer_access(applet_id, answer_id)
-        assessment_answer = await self._get_assessment(applet_id, answer_id)
+        await self._validate_answer_access(applet_id, answer.id)
+        assessment_answer = await self._get_assessment(applet_id, answer.id)
         return assessment_answer
 
     async def get_reviews_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> list[AnswerReview]:
@@ -689,7 +688,7 @@ class AnswerService:
                     start_datetime=datetime.datetime.utcnow(),
                     end_datetime=datetime.datetime.utcnow(),
                     assessment_activity_id=schema.assessment_version_id,
-                    reviewed_submit_id=submit_id,
+                    reviewed_flow_submit_id=submit_id,
                 )
             )
         else:
@@ -707,7 +706,7 @@ class AnswerService:
                     created_at=now,
                     updated_at=now,
                     assessment_activity_id=schema.assessment_version_id,
-                    reviewed_submit_id=submit_id,
+                    reviewed_flow_submit_id=submit_id,
                 )
             )
 
@@ -1253,11 +1252,6 @@ class AnswerService:
             return True
         return False
 
-    async def get_submission_last_answer_id(self, submit_id: uuid.UUID) -> uuid.UUID | None:
-        crud = AnswersCRUD(self.answer_session)
-        answer_id = await crud.get_last_answer_in_flow_id(submit_id)
-        return answer_id
-
     async def get_submission_last_answer(
         self, submit_id: uuid.UUID, flow_id: uuid.UUID | None = None
     ) -> AnswerSchema | None:
@@ -1285,11 +1279,12 @@ class AnswerService:
         applet_id: uuid.UUID,
         submission_id: uuid.UUID,
         flow_id: uuid.UUID,
-        query_params: QueryParams,
+        page: int,
+        limit: int,
     ) -> list[AnswerNoteDetail]:
         await self._validate_submission_access(applet_id, submission_id, flow_id)
         notes_crud = AnswerNotesCRUD(self.session)
-        note_schemas = await notes_crud.get_by_submission_id(submission_id, flow_id, query_params)
+        note_schemas = await notes_crud.get_by_submission_id(submission_id, flow_id, page, limit)
         user_ids = set(map(lambda n: n.user_id, note_schemas))
         users_crud = UsersCRUD(self.session)
         users = await users_crud.get_by_ids(user_ids)

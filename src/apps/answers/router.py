@@ -232,6 +232,7 @@ router.get(
 )(applet_answer_reviews_retrieve)
 
 router.get(
+    # TODO: Change 'assessment' to assessments
     "/applet/{applet_id}/answers/{answer_id}/assessment",
     status_code=status.HTTP_200_OK,
     responses={
@@ -242,11 +243,13 @@ router.get(
 )(applet_activity_assessment_retrieve)
 
 router.delete(
+    # TODO: Change 'assessment' to assessments
     "/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )(applet_answer_assessment_delete)
 
 router.post(
+    # TODO: Change 'assessment' to assessments
     "/applet/{applet_id}/answers/{answer_id}/assessment",
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -256,7 +259,7 @@ router.post(
 )(applet_activity_assessment_create)
 
 router.post(
-    "/applet/{applet_id}/submissions/{submission_id}/assessment",
+    "/applet/{applet_id}/submissions/{submission_id}/assessments",
     status_code=status.HTTP_201_CREATED,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
@@ -266,7 +269,7 @@ router.post(
 
 
 router.get(
-    "/applet/{applet_id}/submissions/{submission_id}/assessment",
+    "/applet/{applet_id}/submissions/{submission_id}/assessments",
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_200_OK: {"model": Response[AssessmentAnswerPublic]},
@@ -276,7 +279,7 @@ router.get(
 )(applet_submission_assessment_retrieve)
 
 router.delete(
-    "/applet/{applet_id}/submissions/{submission_id}/assessment/{assessment_id}",
+    "/applet/{applet_id}/submissions/{submission_id}/assessments/{assessment_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )(applet_answer_submission_delete)
 

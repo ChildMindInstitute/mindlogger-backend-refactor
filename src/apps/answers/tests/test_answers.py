@@ -317,15 +317,15 @@ async def submission_assessment_answer(
     applet_with_reviewable_flow: AppletFull,
 ) -> AnswerItemSchema | None:
     service = AnswerService(session, tom.id, session)
-    assert assessment_submission_create.reviewed_submit_id
-    answer_id = await service.get_submission_last_answer_id(assessment_submission_create.reviewed_submit_id)
-    assert answer_id
-    submission_id = assessment_submission_create.reviewed_submit_id
+    assert assessment_submission_create.reviewed_flow_submit_id
+    answer = await service.get_submission_last_answer(assessment_submission_create.reviewed_flow_submit_id)
+    assert answer
+    submission_id = assessment_submission_create.reviewed_flow_submit_id
     answer_service = AnswerService(session, tom.id)
     await answer_service.create_assessment_answer(
-        applet_with_reviewable_flow.id, answer_id, assessment_submission_create, submission_id
+        applet_with_reviewable_flow.id, answer.id, assessment_submission_create, submission_id
     )
-    return await AnswerItemsCRUD(session).get_assessment(answer_id, tom.id)
+    return await AnswerItemsCRUD(session).get_assessment(answer.id, tom.id)
 
 
 @pytest.fixture
@@ -368,10 +368,10 @@ class TestAnswerActivityItems(BaseTest):
     flow_submission_url = "/answers/applet/{applet_id}/flows/{flow_id}/submissions/{submit_id}"
     assessment_answers_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment"
 
-    assessment_submissions_url = "/answers/applet/{applet_id}/submissions/{submission_id}/assessment"
-    assessment_submissions_retrieve_url = "/answers/applet/{applet_id}/submissions/{submission_id}/assessment"
+    assessment_submissions_url = "/answers/applet/{applet_id}/submissions/{submission_id}/assessments"
+    assessment_submissions_retrieve_url = "/answers/applet/{applet_id}/submissions/{submission_id}/assessments"
     assessment_submission_delete_url = (
-        "/answers/applet/{applet_id}/submissions/{submission_id}/assessment/{assessment_id}"
+        "/answers/applet/{applet_id}/submissions/{submission_id}/assessments/{assessment_id}"
     )
 
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"
@@ -871,7 +871,7 @@ class TestAnswerActivityItems(BaseTest):
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate", "client",
-            "tzOffset", "scheduledEventId",
+            "tzOffset", "scheduledEventId", "reviewedSubmissionId"
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
@@ -1793,23 +1793,23 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_reviewable_flow: AppletFull,
         assessment_submission_create: AssessmentAnswerCreate,
     ):
-        assert assessment_submission_create.reviewed_submit_id
+        assert assessment_submission_create.reviewed_flow_submit_id
         client.login(tom)
         applet_id = str(applet_with_reviewable_flow.id)
         flow_id = str(applet_with_reviewable_flow.activity_flows[0].id)
-        submission_id = str(assessment_submission_create.reviewed_submit_id)
+        submission_id = str(assessment_submission_create.reviewed_flow_submit_id)
         response = await client.post(
             self.assessment_submissions_url.format(applet_id=applet_id, flow_id=flow_id, submission_id=submission_id),
             data=assessment_submission_create,
         )
         assert response.status_code == http.HTTPStatus.CREATED
-        answer_id = await AnswersCRUD(session).get_last_answer_in_flow_id(
-            assessment_submission_create.reviewed_submit_id
+        answer = await AnswersCRUD(session).get_last_answer_in_flow(
+            assessment_submission_create.reviewed_flow_submit_id
         )
-        assert answer_id
-        assessment = await AnswerItemsCRUD(session).get_assessment(answer_id, tom.id)
+        assert answer
+        assessment = await AnswerItemsCRUD(session).get_assessment(answer.id, tom.id)
         assert assessment
-        assert assessment_submission_create.reviewed_submit_id == assessment.reviewed_submit_id
+        assert assessment_submission_create.reviewed_flow_submit_id == assessment.reviewed_flow_submit_id
 
     async def test_applet_assessment_retrive_for_submission(
         self,
@@ -1821,10 +1821,10 @@ class TestAnswerActivityItems(BaseTest):
         assessment_submission_create: AssessmentAnswerCreate,
         submission_assessment_answer: AnswerItemSchema,
     ):
-        assert assessment_submission_create.reviewed_submit_id
+        assert assessment_submission_create.reviewed_flow_submit_id
         client.login(tom)
         applet_id = str(applet_with_reviewable_flow.id)
-        submission_id = str(assessment_submission_create.reviewed_submit_id)
+        submission_id = str(assessment_submission_create.reviewed_flow_submit_id)
         response = await client.get(
             self.assessment_submissions_retrieve_url.format(
                 applet_id=applet_id,
@@ -1843,10 +1843,10 @@ class TestAnswerActivityItems(BaseTest):
         assessment_submission_create: AssessmentAnswerCreate,
         submission_assessment_answer: AnswerItemSchema,
     ):
-        assert assessment_submission_create.reviewed_submit_id
+        assert assessment_submission_create.reviewed_flow_submit_id
         client.login(tom)
         applet_id = str(applet_with_reviewable_flow.id)
-        submission_id = str(assessment_submission_create.reviewed_submit_id)
+        submission_id = str(assessment_submission_create.reviewed_flow_submit_id)
         response = await client.delete(
             self.assessment_submission_delete_url.format(
                 applet_id=applet_id, submission_id=submission_id, assessment_id=submission_assessment_answer.id

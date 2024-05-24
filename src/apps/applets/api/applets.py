@@ -97,7 +97,7 @@ async def applet_retrieve(
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         applet_future = service.get_single_language_by_id(applet_id, language)
         nickname_future = UserAppletAccessService(session, user.id, applet_id).get_nickname()
-        has_assessment_future = ActivityService(session, user.id).has_assessment(applet_id)
+        has_assessment_future = AppletService(session, user.id).has_assessment(applet_id)
         futures = await asyncio.gather(applet_future, nickname_future, has_assessment_future)
     return AppletRetrieveResponse(
         result=AppletSingleLanguageDetailPublic.from_orm(futures[0]),

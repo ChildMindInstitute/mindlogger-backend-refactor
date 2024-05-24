@@ -107,7 +107,7 @@ class AssessmentAnswerCreate(InternalModel):
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
     assessment_version_id: str
-    reviewed_submit_id: uuid.UUID | None
+    reviewed_flow_submit_id: uuid.UUID | None
 
 
 class AnswerDate(InternalModel):

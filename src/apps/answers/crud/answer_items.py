@@ -78,7 +78,7 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_assessment(self, answer_id: uuid.UUID, user_id: uuid.UUID | None) -> AnswerItemSchema | None:
+    async def get_assessment(self, answer_id: uuid.UUID, user_id: uuid.UUID) -> AnswerItemSchema | None:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
         query = query.where(AnswerItemSchema.respondent_id == user_id)
@@ -209,11 +209,11 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
     async def get_reviewers_by_submission(
         self, submission_ids: list[uuid.UUID]
     ) -> list[tuple[uuid.UUID, list[uuid.UUID]]]:
-        query: Query = select(AnswerSchema.submit_id, func.array_agg(AnswerItemSchema.respondent_id))
+        query: Query = select(AnswerItemSchema.reviewed_flow_submit_id, func.array_agg(AnswerItemSchema.respondent_id))
         query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
         query = query.where(
-            AnswerItemSchema.is_assessment.is_(True), AnswerItemSchema.reviewed_submit_id.in_(submission_ids)
+            AnswerItemSchema.is_assessment.is_(True), AnswerItemSchema.reviewed_flow_submit_id.in_(submission_ids)
         )
-        query = query.group_by(AnswerSchema.submit_id)
+        query = query.group_by(AnswerItemSchema.reviewed_flow_submit_id)
         db_result = await self._execute(query)
         return db_result.all()  # noqa

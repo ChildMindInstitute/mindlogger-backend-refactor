@@ -76,7 +76,7 @@ class AnswerItemSchema(Base):
     migrated_data = Column(JSONB())
     assessment_activity_id = Column(Text(), nullable=True, index=True)
     tz_offset = Column(Integer, nullable=True, comment="Local timezone offset in minutes")
-    reviewed_submit_id = Column(UUID(as_uuid=True), nullable=True)
+    reviewed_flow_submit_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
     @hybrid_property
     def is_identifier_encrypted(self):

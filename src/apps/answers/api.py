@@ -347,10 +347,10 @@ async def applet_answer_submission_delete(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     service = AnswerService(session=session, user_id=user.id, arbitrary_session=answer_session)
-    answer_id = await service.get_submission_last_answer_id(submission_id)
-    if not answer_id:
+    answer = await service.get_submission_last_answer(submission_id)
+    if not answer:
         raise NotFoundError()
-    assessment = await service.get_answer_assessment_by_id(assessment_id, answer_id)
+    assessment = await service.get_answer_assessment_by_id(assessment_id, answer.id)
     if not assessment:
         raise NotFoundError
     elif assessment.respondent_id != user.id:
@@ -471,10 +471,10 @@ async def applet_flow_assessment_create(
         await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
         async with atomic(answer_session):
             service = AnswerService(session, user.id, answer_session)
-            answer_id = await service.get_submission_last_answer_id(submission_id)
-            if answer_id:
+            answer = await service.get_submission_last_answer(submission_id)
+            if answer:
                 answer_service = AnswerService(session, user.id, answer_session)
-                await answer_service.create_assessment_answer(applet_id, answer_id, schema, submission_id)
+                await answer_service.create_assessment_answer(applet_id, answer.id, schema, submission_id)
             else:
                 raise NotFoundError()
 
@@ -510,9 +510,11 @@ async def submission_note_list(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
     notes = await AnswerService(session, user.id, answer_session).get_submission_note_list(
-        applet_id, submission_id, flow_id, query_params
+        applet_id, submission_id, flow_id, query_params.page, query_params.limit
     )
-    count = await AnswerService(session, user.id, answer_session).get_submission_notes_count(submission_id, flow_id)
+    count = await AnswerService(session, user.id, answer_session).get_submission_notes_count(
+        submission_id, flow_id, query_params.page, query_params.limit
+    )
     return ResponseMulti(
         result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
         count=count,
@@ -589,7 +591,7 @@ async def answer_note_list(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
     notes = await AnswerService(session, user.id, answer_session).get_note_list(
-        applet_id, answer_id, activity_id, query_params
+        applet_id, answer_id, activity_id, query_params.page, query_params.limit
     )
     count = await AnswerService(session, user.id, answer_session).get_notes_count(answer_id, activity_id)
     return ResponseMulti(
