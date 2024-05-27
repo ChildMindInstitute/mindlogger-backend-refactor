@@ -1,9 +1,13 @@
 name: deploy_to_dev
 on:
-  workflow_run:
-    workflows: ["run_build"]
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      COMMIT_HASH:
+        required: true
+        type: string
+      IMAGE_PREFIX:
+        required: true
+        type: string
 
 permissions:
   id-token: write
@@ -12,20 +16,17 @@ permissions:
 jobs:
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'develop' }}
-
     env:
       TASK_FAMILY_PREFIX: backend
       ECS_CLUSTER_NAME: cmiml-dev
       ECS_SERVICE_NAME: backend
       ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com
-      IMAGE_PREFIX: ${{ github.ref_name }}
-      COMMIT_HASH: ${{ github.sha }}
+      IMAGE_PREFIX: ${{ inputs.COMMIT_HASH }}
+      COMMIT_HASH: ${{ inputs.IMAGE_PREFIX }}
       AWS_REGION : "us-east-1"
     
     steps:
       - name: configure aws credentials
-        if: ${{ github.event.workflow_run.event == 'pull_request' &&  github.event.workflow_run.payload.pull_request.merged == true }}
         uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
@@ -33,7 +34,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       
       - name: change image and register task definitions
-        if: ${{ github.event.workflow_run.event == 'pull_request' &&  github.event.workflow_run.payload.pull_request.merged == true }} 
         run: |
           NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5) 
 
@@ -43,7 +43,6 @@ jobs:
           done
 
       - name: update services
-        if: ${{ github.event.workflow_run.event == 'pull_request' &&  github.event.workflow_run.payload.pull_request.merged == true }} 
         run: |
           for app in scheduler worker; do
             aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}-${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}

@@ -51,4 +51,12 @@ jobs:
           env-vars-for-codebuild: |
            GITHUB_ORGANIZATION, GITHUB_REPO_NAME, GITHUB_BRANCH_OR_TAG, GITHUB_REF, BUILD_NAME, BUILD_NUMBER, ECR_ADDRESS, TEST_COMMAND, ECR_REPO, OUT_DIR, DOCKER_USER, DOCKER_PASSWORD, REPORT_SERVER_PUBLIC_KEY
 
- 
+  Deploy-to-development:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy into development
+        if: ${{ github.event.pull_request.merged == true }}
+        uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_dev.yaml@develop
+        with:
+          COMMIT_HASH: ${{ github.sha }}
+          IMAGE_PREFIX: ${{ github.ref_name }}
