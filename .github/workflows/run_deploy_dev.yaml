@@ -47,5 +47,5 @@ jobs:
           done
           
           #this step is separate because api sarvice and task definition names are different, need to be changed
-          aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_${app}
+          aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_api
           
