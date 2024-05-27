@@ -423,11 +423,11 @@ class AnswerService:
             pk = self._generate_history_id(answer_schema.version)
             await ActivityHistoriesCRUD(self.session).get_by_id(pk(activity_id))
 
-    async def _validate_submission_access(self, applet_id: uuid.UUID, submission_id: uuid.UUID, flow_id: uuid.UUID):
-        answer = await self.get_submission_last_answer(submission_id, flow_id)
-        if not answer:
+    async def _validate_submission_access(self, applet_id: uuid.UUID, submission_id: uuid.UUID):
+        respondent_id = await AnswersCRUD(self.answer_session).get_submission_respondent_id(submission_id)
+        if not respondent_id:
             raise AnswerNotFoundError()
-        await self._validate_applet_activity_access(applet_id, answer.respondent_id)
+        await self._validate_applet_activity_access(applet_id, respondent_id)
 
     async def get_flow_submission(
         self,
@@ -612,6 +612,7 @@ class AnswerService:
 
     async def get_assessment_by_submit_id(self, applet_id: uuid.UUID, submit_id: uuid.UUID) -> AssessmentAnswer | None:
         assert self.user_id
+        await self._validate_submission_access(applet_id, submit_id)
         answer = await self.get_submission_last_answer(submit_id)
         if answer:
             await self._validate_answer_access(applet_id, answer.id)
@@ -1286,7 +1287,7 @@ class AnswerService:
         page: int,
         limit: int,
     ) -> list[AnswerNoteDetail]:
-        await self._validate_submission_access(applet_id, submission_id, flow_id)
+        await self._validate_submission_access(applet_id, submission_id)
         notes_crud = AnswerNotesCRUD(self.session)
         note_schemas = await notes_crud.get_by_submission_id(submission_id, flow_id, page, limit)
         user_ids = set(map(lambda n: n.user_id, note_schemas))
@@ -1303,7 +1304,7 @@ class AnswerService:
         note_id: uuid.UUID,
         note: str,
     ):
-        await self._validate_submission_access(applet_id, submission_id, flow_id)
+        await self._validate_submission_access(applet_id, submission_id)
         await self._validate_note_access(note_id)
         await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
 
@@ -1314,7 +1315,7 @@ class AnswerService:
         flow_id: uuid.UUID,
         note_id: uuid.UUID,
     ):
-        await self._validate_submission_access(applet_id, submission_id, flow_id)
+        await self._validate_submission_access(applet_id, submission_id)
         await self._validate_note_access(note_id)
         await AnswerNotesCRUD(self.session).delete_note_by_id(note_id)
 

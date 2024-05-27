@@ -765,3 +765,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.flow_history_id.like(f"{flow_id}_%"))
         result = await self._execute(query)
         return result.scalar_one_or_none()
+
+    async def get_submission_respondent_id(self, submit_id: uuid.UUID) -> uuid.UUID | None:
+        query = select(AnswerSchema.respondent_id)
+        query = query.where(AnswerSchema.submit_id == submit_id)
+        query = query.limit(1)
+        result = await self._execute(query)
+        return result.scalar_one_or_none()
