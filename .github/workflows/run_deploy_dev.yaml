@@ -31,13 +31,21 @@ jobs:
           role-session-name: OIDC-GHA-session
           aws-region: ${{ env.AWS_REGION }}
       
-      - name: change image in the task definitions and update services
+      - name: change image and register task definitions
         run: |
           NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5) 
 
           for app in api worker scheduler; do 
             export NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$ECR_REPO:$NEW_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
             aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINITION"
+          done
+
+      - name: update services
+        run: |
+          for app in scheduler worker; do
             aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}_${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
           done
+          
+          #this step is separate because api sarvice and task definition names are different, need to be changed
+          aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_${app}
           
