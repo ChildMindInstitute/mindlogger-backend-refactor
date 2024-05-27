@@ -1833,6 +1833,29 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
 
+    async def test_applet_assessment_retrive_for_submission_if_no_assessment_answer(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        applet_with_reviewable_flow: AppletFull,
+        assessment_submission_create: AssessmentAnswerCreate,
+    ):
+        assert assessment_submission_create.reviewed_flow_submit_id
+        client.login(tom)
+        applet_id = str(applet_with_reviewable_flow.id)
+        submission_id = str(assessment_submission_create.reviewed_flow_submit_id)
+        response = await client.get(
+            self.assessment_submissions_retrieve_url.format(
+                applet_id=applet_id,
+                submission_id=submission_id,
+            )
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        payload = response.json()
+        assert payload["result"]["answer"] is None
+        assert payload["result"]["items"] is not None
+
     async def test_applet_assessment_delete_for_submission(
         self,
         client: TestClient,

@@ -557,12 +557,12 @@ class AnswerService:
         if note.user_id != self.user_id:
             raise AnswerNoteAccessDeniedError()
 
-    async def _get_assessment(self, applet_id: uuid.UUID, answer_id: uuid.UUID):
+    async def _get_full_assessment_info(self, applet_id: uuid.UUID, assessment_answer: AnswerItemSchema | None):
         assert self.user_id
-        assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id)
         items_crud = ActivityItemHistoriesCRUD(self.session)
         last = items_crud.get_applets_assessments(applet_id)
         if assessment_answer:
+            await self._validate_answer_access(applet_id, assessment_answer.answer_id)
             current = items_crud.get_assessment_activity_items(assessment_answer.assessment_activity_id)
             items_last, items_current = await asyncio.gather(last, current)
         else:
@@ -606,18 +606,21 @@ class AnswerService:
 
     async def get_assessment_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> AssessmentAnswer:
         assert self.user_id
-        await self._validate_answer_access(applet_id, answer_id)
-        assessment_answer = await self._get_assessment(applet_id, answer_id)
-        return assessment_answer
+        assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id)
+        assessment_answer_model = await self._get_full_assessment_info(applet_id, assessment_answer)
+        return assessment_answer_model
 
     async def get_assessment_by_submit_id(self, applet_id: uuid.UUID, submit_id: uuid.UUID) -> AssessmentAnswer | None:
         assert self.user_id
         answer = await self.get_submission_last_answer(submit_id)
-        if not answer:
-            return None
-        await self._validate_answer_access(applet_id, answer.id)
-        assessment_answer = await self._get_assessment(applet_id, answer.id)
-        return assessment_answer
+        if answer:
+            assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(answer.id, self.user_id)
+        else:
+            # Submission without answer on assessments
+            assessment_answer = None
+
+        assessment_answer_model = await self._get_full_assessment_info(applet_id, assessment_answer)
+        return assessment_answer_model
 
     async def get_reviews_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> list[AnswerReview]:
         assert self.user_id
