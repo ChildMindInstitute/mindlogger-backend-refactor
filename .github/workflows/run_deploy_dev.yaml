@@ -8,7 +8,7 @@ on:
 jobs:
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    if: ${{ github.event.event.workflow_run.event.merged == true }} 
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.pull_requests[0].merged == true }}
 
     env:
       TASK_FAMILY_PREFIX: backend
