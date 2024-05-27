@@ -4,12 +4,13 @@ on:
     workflows: ["run_build"]
     types:
       - completed
+    event: 
+      pull_request:
+        - merged
  
 jobs:
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
-
     env:
       TASK_FAMILY_PREFIX: backend
       ECS_CLUSTER_NAME: cmiml-dev
