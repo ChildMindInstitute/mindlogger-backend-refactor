@@ -4,7 +4,11 @@ on:
     workflows: ["run_build"]
     types:
       - completed
- 
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy_to_ecs:
     runs-on: ubuntu-latest
