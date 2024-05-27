@@ -25,7 +25,7 @@ jobs:
     
     steps:
       - name: configure aws credentials
-        if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.event.pull_request.merged == true }}
+        if: ${{ github.event.workflow_run.event == 'pull_request' &&  github.event.workflow_run.payload.pull_request.merged == true }}
         uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
@@ -33,7 +33,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       
       - name: change image and register task definitions
-        if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.event.pull_request.merged == true }} 
+        if: ${{ github.event.workflow_run.event == 'pull_request' &&  github.event.workflow_run.payload.pull_request.merged == true }} 
         run: |
           NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5) 
 
@@ -43,7 +43,7 @@ jobs:
           done
 
       - name: update services
-        if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.event.pull_request.merged == true }} 
+        if: ${{ github.event.workflow_run.event == 'pull_request' &&  github.event.workflow_run.payload.pull_request.merged == true }} 
         run: |
           for app in scheduler worker; do
             aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}-${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
