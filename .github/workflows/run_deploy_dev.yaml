@@ -43,8 +43,7 @@ jobs:
       - name: update services
         run: |
           for app in scheduler worker; do
-            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}_${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
-            echo "${app} deployment has been done"
+            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}-${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
           done
           
           #this step is separate because api sarvice and task definition names are different, need to be changed
