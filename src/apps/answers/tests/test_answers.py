@@ -871,7 +871,7 @@ class TestAnswerActivityItems(BaseTest):
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate", "client",
-            "tzOffset", "scheduledEventId", "reviewedSubmissionId"
+            "tzOffset", "scheduledEventId", "reviewedFlowSubmissionId"
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
@@ -2002,4 +2002,4 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data["result"]["answers"]
-        assert next(filter(lambda answer: answer["reviewedSubmissionId"], data["result"]["answers"]))
+        assert next(filter(lambda answer: answer["reviewedFlowSubmissionId"], data["result"]["answers"]))

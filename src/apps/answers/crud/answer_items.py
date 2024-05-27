@@ -210,7 +210,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         self, submission_ids: list[uuid.UUID]
     ) -> list[tuple[uuid.UUID, list[uuid.UUID]]]:
         query: Query = select(AnswerItemSchema.reviewed_flow_submit_id, func.array_agg(AnswerItemSchema.respondent_id))
-        query = query.join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
         query = query.where(
             AnswerItemSchema.is_assessment.is_(True), AnswerItemSchema.reviewed_flow_submit_id.in_(submission_ids)
         )

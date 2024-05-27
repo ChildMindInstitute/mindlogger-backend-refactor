@@ -294,7 +294,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             else_=null(),
         )
 
-        reviewed_submission_id = case(
+        reviewed_flow_submission_id = case(
             (AnswerItemSchema.is_assessment.is_(True), AnswerSchema.submit_id),
             else_=null(),
         )
@@ -341,7 +341,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
-                reviewed_submission_id.label("reviewed_submission_id"),
+                reviewed_flow_submission_id.label("reviewed_flow_submission_id"),
                 AnswerSchema.client,
                 AnswerItemSchema.tz_offset,
                 AnswerItemSchema.scheduled_event_id,
