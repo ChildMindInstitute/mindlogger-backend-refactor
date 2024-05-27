@@ -574,7 +574,6 @@ class TestActivityItems:
         assert item["isHidden"] == item_create.is_hidden
         assert not item["allowEdit"]
 
-    @pytest.mark.run
     async def test_create_applet_flow_sanitize_strings(
         self, client: TestClient, applet_minimal_data: AppletCreate, tom: User
     ) -> None:

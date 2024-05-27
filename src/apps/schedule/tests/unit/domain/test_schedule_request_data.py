@@ -469,3 +469,111 @@ def test_timer_is_required_if_timer_type_is_not_no_set(event_daily_data: EventRe
     data["timer"] = None
     with pytest.raises(errors.TimerRequiredError):
         EventRequest(**data)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, not_valid_from",
+    (
+        # For all scheduled fixtures valid start_time/end_time = 9:00/10:00
+        # So, end_time is changed so that it becomes cross-day
+        ("event_daily_data", datetime.time(7, 0)),
+        ("event_once_data", datetime.time(7, 0)),
+        ("event_weekly_data", datetime.time(7, 0)),
+        ("event_weekdays_data", datetime.time(7, 0)),
+        ("event_monthly_data", datetime.time(7, 0)),
+    ),
+)
+def test_event_cross_day_with_random_notification__from_time_not_in_between_start_time_and_end_time(
+    notification_notifications_random: Notification,
+    fixture_name: str,
+    request: FixtureRequest,
+    not_valid_from: datetime.time,
+):
+    event_request = request.getfixturevalue(fixture_name)
+    event_request.end_time = datetime.time(3, 00)
+    event_request.notification = notification_notifications_random
+    data = event_request.dict()
+    data["notification"]["notifications"][0]["from_time"] = str(not_valid_from)
+    with pytest.raises(errors.UnavailableActivityOrFlowError):
+        EventRequest(**data)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, not_valid_to",
+    (
+        # For all scheduled fixtures valid start_time/end_time = 9:00/10:00
+        # So, end_time is changed so that it becomes cross-day
+        ("event_daily_data", datetime.time(7, 0)),
+        ("event_once_data", datetime.time(7, 0)),
+        ("event_weekly_data", datetime.time(7, 0)),
+        ("event_weekdays_data", datetime.time(7, 0)),
+        ("event_monthly_data", datetime.time(7, 0)),
+    ),
+)
+def test_event_cross_day_with_random_notification__to_time_not_in_between_start_time_and_end_time(
+    notification_notifications_random: Notification,
+    fixture_name: str,
+    request: FixtureRequest,
+    not_valid_to: datetime.time,
+):
+    event_request = request.getfixturevalue(fixture_name)
+    event_request.end_time = datetime.time(3, 00)
+    event_request.notification = notification_notifications_random
+    data = event_request.dict()
+    data["notification"]["notifications"][0]["to_time"] = str(not_valid_to)
+    with pytest.raises(errors.UnavailableActivityOrFlowError):
+        EventRequest(**data)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, out_of_range_time",
+    (
+        # For all scheduled fixtures valid start_time/end_time = 9:00/10:00
+        # So, end_time is changed so that it becomes cross-day
+        ("event_daily_data", datetime.time(7, 0)),
+        ("event_once_data", datetime.time(7, 0)),
+        ("event_weekly_data", datetime.time(7, 0)),
+        ("event_weekdays_data", datetime.time(7, 0)),
+        ("event_monthly_data", datetime.time(7, 0)),
+    ),
+)
+def test_event_cross_day_with_fixed_notification__at_time_not_in_between_start_time_and_end_time(
+    notification_notifications_fixed: Notification,
+    fixture_name: str,
+    request: FixtureRequest,
+    out_of_range_time: datetime.time,
+):
+    event_request = request.getfixturevalue(fixture_name)
+    event_request.end_time = datetime.time(3, 00)
+    event_request.notification = notification_notifications_fixed
+    data = event_request.dict()
+    data["notification"]["notifications"][0]["at_time"] = str(out_of_range_time)
+    with pytest.raises(errors.UnavailableActivityOrFlowError):
+        EventRequest(**data)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, out_of_range_time",
+    (
+        # For all scheduled fixtures valid start_time/end_time = 9:00/10:00
+        # So, end_time is changed so that it becomes cross-day
+        ("event_daily_data", datetime.time(7, 0)),
+        ("event_once_data", datetime.time(7, 0)),
+        ("event_weekly_data", datetime.time(7, 0)),
+        ("event_weekdays_data", datetime.time(7, 0)),
+        ("event_monthly_data", datetime.time(7, 0)),
+    ),
+)
+def test_event_cross_day_with_reminder_notification__at_time_not_in_between_start_time_and_end_time(
+    notification_reminder: Notification,
+    fixture_name: str,
+    request: FixtureRequest,
+    out_of_range_time: datetime.time,
+):
+    event_request = request.getfixturevalue(fixture_name)
+    event_request.end_time = datetime.time(3, 00)
+    event_request.notification = notification_reminder
+    data = event_request.dict()
+    data["notification"]["reminder"]["reminder_time"] = str(out_of_range_time)
+    with pytest.raises(errors.UnavailableActivityOrFlowError):
+        EventRequest(**data)
