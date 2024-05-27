@@ -12,7 +12,7 @@ permissions:
 jobs:
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.event.pull_request.merged }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.event.pull_request.opened }}
 
     env:
       TASK_FAMILY_PREFIX: backend
@@ -37,7 +37,7 @@ jobs:
 
           for app in api worker scheduler; do 
             NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$ECR_REPO:$NEW_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
-            aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEFINTIION"
-            aws ecs update-service --cluster ${{ env.ECS_CLUSTER_NAME }} --service ${{ env.ECS_SERVICE_NAME }}_${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
+            aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINTIION"
+            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}_${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
           done
           
