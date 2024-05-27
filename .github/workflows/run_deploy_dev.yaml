@@ -4,13 +4,11 @@ on:
     workflows: ["run_build"]
     types:
       - completed
-    branches:
-      - develop
  
 jobs:
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.merged == true }} 
+    if: ${{ github.event.event.workflow_run.event.merged == true }} 
 
     env:
       TASK_FAMILY_PREFIX: backend
