@@ -10,7 +10,6 @@ from apps.activities.domain.activity import (
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
-from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.domain.flow_full import PublicFlowFull
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session

@@ -430,7 +430,9 @@ class TestActivities:
     async def test_activity_flow_detail_invalid_flow_id(self, client, applet_activity_flow: AppletFull, tom: User):
         fake_flow_id = uuid.uuid4()
         client.login(tom)
-        response = await client.get(self.applet_flow_detail.format(applet_id=applet_activity_flow.id, flow_id=fake_flow_id))
+        response = await client.get(
+            self.applet_flow_detail.format(applet_id=applet_activity_flow.id, flow_id=fake_flow_id)
+        )
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
         result = response.json()["result"]

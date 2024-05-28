@@ -5,8 +5,8 @@ from apps.activities.api.activities import (
     activity_retrieve,
     applet_activities,
     applet_activities_and_flows,
-    public_activity_retrieve,
     applet_flow,
+    public_activity_retrieve,
 )
 from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
 from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic
