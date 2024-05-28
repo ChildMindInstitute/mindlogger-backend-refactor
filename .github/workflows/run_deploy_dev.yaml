@@ -1,5 +1,8 @@
 name: deploy_to_dev
 on:
+  pull_request:
+    types:
+      - "closed"
   workflow_call:
     inputs:
       COMMIT_HASH:
@@ -15,6 +18,7 @@ permissions:
 
 jobs:
   deploy_to_ecs:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
       TASK_FAMILY_PREFIX: backend
