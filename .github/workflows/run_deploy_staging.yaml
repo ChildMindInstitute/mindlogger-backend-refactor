@@ -1,16 +1,5 @@
-name: deploy_to_uat
-on:
-  push:
-    tags:        
-      - '**'
-  workflow_call:
-    inputs:
-      COMMIT_HASH:
-        required: true
-        type: string
-      IMAGE_PREFIX:
-        required: true
-        type: string
+name: deploy_to_staging
+on: [push, pull_request, workflow_dispatch]
 
 permissions:
   id-token: write
@@ -20,15 +9,15 @@ jobs:
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    if: contains(github.ref, '-rc')
+    if: ${{ github.ref_name == 'release\/[0-9]+.[0-9]+.[0-9]+([0-9]+)' }}
     env:
       TASK_FAMILY_PREFIX: backend
-      ECS_CLUSTER_NAME: cmiml-uat
+      ECS_CLUSTER_NAME: cmiml-stage
       ECS_SERVICE_NAME: backend
-      IMAGE_PREFIX: ${{ inputs.COMMIT_HASH }}
-      COMMIT_HASH: ${{ inputs.IMAGE_PREFIX }}
+      ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com
+      IMAGE_PREFIX: ${{ github.ref_name }}
+      COMMIT_HASH: ${{ github.sha }}
       AWS_REGION : "us-east-1"
-      ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
     steps:
 
       - name: Git clone the repository
@@ -37,7 +26,7 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::641513112151:role/cmiml-uat-oidc-github-role
+          role-to-assume: arn:aws:iam::641513112151:role/cmiml-stage-oidc-github-role
           role-session-name: OIDC-GHA-session
           aws-region: ${{ env.AWS_REGION }}
 
