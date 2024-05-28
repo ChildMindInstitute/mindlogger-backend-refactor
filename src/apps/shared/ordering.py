@@ -182,6 +182,9 @@ class Ordering:
                     result = (left_value > right_value) - (left_value < right_value)
                 elif isinstance(left_value, str):
                     right_value = cast(str, right_value)
+                    # Convert to lowercase for case-insensitive ordering
+                    left_value = left_value.lower()
+                    right_value = right_value.lower()
                     result = (left_value > right_value) - (left_value < right_value)
 
                 multiplier = -1 if direction == "-" else 1
