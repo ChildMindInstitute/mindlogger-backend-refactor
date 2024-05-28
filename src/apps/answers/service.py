@@ -1266,7 +1266,7 @@ class AnswerService:
         answer = await self.get_submission_last_answer(submission_id)
         if not answer:
             raise AnswerNotFoundError()
-        await self._validate_applet_activity_access(applet_id, answer)
+        await self._validate_applet_activity_access(applet_id, answer.respondent_id)
         schema = AnswerNoteSchema(
             answer_id=answer.id, note=note, user_id=self.user_id, activity_flow_id=flow_id, submission_id=submission_id
         )
