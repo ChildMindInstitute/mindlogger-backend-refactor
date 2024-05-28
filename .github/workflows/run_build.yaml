@@ -53,7 +53,6 @@ jobs:
 
   deploy_to_dev:
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_dev.yaml@develop
-    if: github.event.pull_request.merged
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
