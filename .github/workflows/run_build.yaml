@@ -61,7 +61,6 @@ jobs:
   deploy_to_uat:
     needs: run_codebuild_project
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_uat.yaml@develop
-    if: contains(github.ref, '-rc')
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
@@ -69,7 +68,6 @@ jobs:
   deploy_to_test:
     needs: run_codebuild_project
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_test.yaml@develop
-    if: contains(github.ref, '-rc')
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
