@@ -6,6 +6,7 @@ from apps.activities.api.activities import (
     applet_activities,
     applet_activities_and_flows,
     public_activity_retrieve,
+    applet_flow,
 )
 from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
 from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic
@@ -87,3 +88,13 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(applet_activities_and_flows)
+
+router.get(
+    "/applet/{applet_id}/flows/{flow_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[AppletActivitiesAndFlowsDetailsPublic]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(applet_flow)

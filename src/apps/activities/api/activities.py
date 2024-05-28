@@ -10,6 +10,8 @@ from apps.activities.domain.activity import (
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
+from apps.activity_flows.crud import FlowsCRUD
+from apps.activity_flows.domain.flow_full import PublicFlowFull
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
 from apps.answers.service import AnswerService
@@ -42,6 +44,20 @@ async def activity_retrieve(
         activity = await ActivityService(session, user.id).get_single_language_by_id(activity_id, language)
     result = ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity)
     return Response(result=result)
+
+
+async def applet_flow(
+    applet_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[PublicFlowFull]:
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await FlowService(session).exist_by_id(flow_id)
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+        activity_flow = await FlowService(session).get_full_flow_by_applet_id_and_flow_id(applet_id, flow_id)
+    return Response(result=activity_flow)
 
 
 async def public_activity_retrieve(

@@ -1,5 +1,6 @@
 import uuid
 
+from apps.activities.errors import FlowNotFoundError
 from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD, FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.activity_flows.domain.flow import Flow, FlowBaseInfo, FlowDuplicate, FlowSingleLanguageDetail
@@ -228,6 +229,12 @@ class FlowService:
 
         return flows
 
+    async def get_full_flow_by_applet_id_and_flow_id(self, applet_id: uuid.UUID, flow_id: uuid.UUID) -> FlowFull:
+        schema = await FlowsCRUD(self.session).get_by_applet_id_and_flow_id(applet_id, flow_id)
+        flow = FlowFull.from_orm(schema)
+        flow.items = await FlowItemService(self.session).get_by_flow_ids([flow_id])
+        return flow
+
     async def get_full_flows(self, applet_id: uuid.UUID) -> list[FlowFull]:
         schemas = await FlowsCRUD(self.session).get_by_applet_id(applet_id)
         flow_map = dict()
@@ -287,3 +294,8 @@ class FlowService:
 
     async def get_versions(self, flow_id: uuid.UUID) -> list[Version]:
         return await FlowsHistoryCRUD(self.session).get_versions_data(flow_id)
+
+    async def exist_by_id(self, flow_id: uuid.UUID):
+        exists = await FlowsCRUD(self.session).exist_by_key("id", flow_id)
+        if not exists:
+            raise FlowNotFoundError(key="id", value=str(flow_id))

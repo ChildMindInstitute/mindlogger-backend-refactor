@@ -30,6 +30,7 @@ class TestActivities:
     activity_detail = "/activities/{pk}"
     activities_applet = "/activities/applet/{applet_id}"
     activities_flows_applet = "/activities/flows/applet/{applet_id}"
+    applet_flow_detail = "/activities/applet/{applet_id}/flows/{flow_id}"
     public_activity_detail = "public/activities/{pk}"
     answer_url = "/answers"
     applet_update_url = "applets/{applet_id}"
@@ -395,3 +396,43 @@ class TestActivities:
         assert len(item["responseValues"]["options"]) == 2
         option = item["responseValues"]["options"][0]
         assert option["score"] > 0
+
+    async def test_activity_flow_detail(self, client, applet_activity_flow: AppletFull, tom: User):
+        flow = applet_activity_flow.activity_flows[0]
+        client.login(tom)
+        response = await client.get(self.applet_flow_detail.format(applet_id=applet_activity_flow.id, flow_id=flow.id))
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+        assert result["id"] == str(flow.id)
+        assert result["name"] == flow.name
+        assert result["description"] == flow.description
+        assert result["isSingleReport"] == flow.is_single_report
+        assert result["hideBadge"] == flow.hide_badge
+        assert result["reportIncludedActivityName"] == flow.report_included_activity_name
+        assert result["reportIncludedItemName"] == flow.report_included_item_name
+        assert result["isHidden"] == flow.is_hidden
+        assert result["order"] == flow.order
+        assert result["createdAt"] == flow.created_at.isoformat()
+        assert len(result["items"]) == len(flow.items)
+
+    async def test_activity_flow_detail_invalid_applet_id(self, client, applet_activity_flow: AppletFull, tom: User):
+        flow_id = applet_activity_flow.activity_flows[0].id
+        fake_applet_id = uuid.uuid4()
+        client.login(tom)
+        response = await client.get(self.applet_flow_detail.format(applet_id=fake_applet_id, flow_id=flow_id))
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        result = response.json()["result"]
+        assert result[0]["type"] == "NOT_FOUND"
+        assert result[0]["message"] == "No such applets with id={applet_id}.".format(applet_id=fake_applet_id)
+
+    async def test_activity_flow_detail_invalid_flow_id(self, client, applet_activity_flow: AppletFull, tom: User):
+        fake_flow_id = uuid.uuid4()
+        client.login(tom)
+        response = await client.get(self.applet_flow_detail.format(applet_id=applet_activity_flow.id, flow_id=fake_flow_id))
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        result = response.json()["result"]
+        assert result[0]["type"] == "NOT_FOUND"
+        assert result[0]["message"] == "No such flow with id={flow_id}.".format(flow_id=fake_flow_id)

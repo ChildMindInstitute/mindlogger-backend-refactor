@@ -250,5 +250,10 @@ class FlowItemActivityKeyNotFoundError(ValidationError):
     message = _("Activity key from activity flow item is not found in activity list.")
 
 
+class FlowNotFoundError(NotFoundError):
+    message_is_template: bool = True
+    message = _("No such flow with {key}={value}.")
+
+
 class MultiSelectNoneOptionError(ValidationError):
     message = _("No more than 1 none option is not allowed for multiselect.")
