@@ -18,6 +18,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
+from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
@@ -637,34 +638,27 @@ class AnswerService:
         activity_items = await ActivityItemHistoriesCRUD(self.session).get_by_activity_id_versions(activity_versions)
 
         reviews = await AnswerItemsCRUD(self.answer_session).get_reviews_by_answer_id(answer_id, activity_items)
+        results = await self._prepare_answer_reviews(reviews, activity_items, current_role)
+        return results
 
-        user_ids = [rev.respondent_id for rev in reviews]
-        users = await UsersCRUD(self.session).get_by_ids(user_ids)
-        results = []
-        for schema in reviews:
-            user = next(filter(lambda u: u.id == schema.respondent_id, users), None)
-            current_activity_items = list(
-                filter(
-                    lambda i: i.activity_id == schema.assessment_activity_id,
-                    activity_items,
-                )
-            )
-            if not user:
-                continue
+    async def get_reviews_by_submission_id(self, applet_id: uuid.UUID, submit_id: uuid.UUID) -> list[AnswerReview]:
+        assert self.user_id
 
-            can_view = await self.can_view_current_review(user.id, current_role)
-            results.append(
-                AnswerReview(
-                    id=schema.id,
-                    reviewer_public_key=schema.user_public_key if can_view else None,
-                    answer=schema.answer if can_view else None,
-                    item_ids=schema.item_ids,
-                    items=current_activity_items,
-                    reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
-                    created_at=schema.created_at,
-                    updated_at=schema.updated_at,
-                )
-            )
+        await self._validate_submission_access(applet_id, submit_id)
+        answer = await self.get_submission_last_answer(submit_id)
+        if not answer:
+            return []
+
+        current_role = await AppletAccessCRUD(self.session).get_applets_priority_role(applet_id, self.user_id)
+        reviewer_activity_version = await AnswerItemsCRUD(self.answer_session).get_assessment_activity_id(answer.id)
+        if not reviewer_activity_version:
+            return []
+
+        activity_versions = [t[1] for t in reviewer_activity_version]
+        activity_items = await ActivityItemHistoriesCRUD(self.session).get_by_activity_id_versions(activity_versions)
+
+        reviews = await AnswerItemsCRUD(self.answer_session).get_reviews_by_submit_id(submit_id)
+        results = await self._prepare_answer_reviews(reviews, activity_items, current_role)
         return results
 
     async def create_assessment_answer(
@@ -1300,7 +1294,6 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         submission_id: uuid.UUID,
-        flow_id: uuid.UUID,
         note_id: uuid.UUID,
         note: str,
     ):
@@ -1312,12 +1305,43 @@ class AnswerService:
         self,
         applet_id: uuid.UUID,
         submission_id: uuid.UUID,
-        flow_id: uuid.UUID,
         note_id: uuid.UUID,
     ):
         await self._validate_submission_access(applet_id, submission_id)
         await self._validate_note_access(note_id)
         await AnswerNotesCRUD(self.session).delete_note_by_id(note_id)
+
+    async def _prepare_answer_reviews(
+        self, reviews: list[AnswerItemSchema], activity_items: list[ActivityItemHistorySchema], role: Role | None
+    ) -> list[AnswerReview]:
+        user_ids = [rev.respondent_id for rev in reviews]
+        users = await UsersCRUD(self.session).get_by_ids(user_ids)
+        results = []
+        for schema in reviews:
+            user = next(filter(lambda u: u.id == schema.respondent_id, users), None)
+            current_activity_items = list(
+                filter(
+                    lambda i: i.activity_id == schema.assessment_activity_id,
+                    activity_items,
+                )
+            )
+            if not user:
+                continue
+
+            can_view = await self.can_view_current_review(user.id, role)
+            results.append(
+                AnswerReview(
+                    id=schema.id,
+                    reviewer_public_key=schema.user_public_key if can_view else None,
+                    answer=schema.answer if can_view else None,
+                    item_ids=schema.item_ids,
+                    items=current_activity_items,
+                    reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
+                    created_at=schema.created_at,
+                    updated_at=schema.updated_at,
+                )
+            )
+        return results
 
 
 class ReportServerService:

@@ -373,6 +373,7 @@ class TestAnswerActivityItems(BaseTest):
     assessment_submission_delete_url = (
         "/answers/applet/{applet_id}/submissions/{submission_id}/assessments/{assessment_id}"
     )
+    submission_reviews_url = "/answers/applet/{applet_id}/submissions/{submission_id}/reviews"
 
     answer_reviews_url = "/answers/applet/{applet_id}/answers/{answer_id}/reviews"
     answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"
@@ -2026,3 +2027,25 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()
         assert data["result"]["answers"]
         assert next(filter(lambda answer: answer["reviewedFlowSubmissionId"], data["result"]["answers"]))
+
+    async def test_submission_get_reviews(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        assessment_for_submission: AssessmentAnswerCreate,
+        applet_with_reviewable_flow: AppletFull,
+        assessment_submission_create: AssessmentAnswerCreate,
+        submission_assessment_answer: AnswerItemSchema,
+    ):
+        client.login(tom)
+        result = await client.get(
+            self.submission_reviews_url.format(
+                applet_id=applet_with_reviewable_flow.id,
+                submission_id=assessment_submission_create.reviewed_flow_submit_id,
+            )
+        )
+        assert result.status_code == 200
+        payload = result.json()
+        assert payload
+        assert payload["count"] == 1

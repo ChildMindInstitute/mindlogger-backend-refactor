@@ -536,7 +536,7 @@ async def submission_note_edit(
         await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
         async with atomic(answer_session):
             await AnswerService(session, user.id, answer_session).edit_submission_note(
-                applet_id, submission_id, flow_id, note_id, schema.note
+                applet_id, submission_id, note_id, schema.note
             )
     return
 
@@ -555,7 +555,7 @@ async def submission_note_delete(
         await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
         async with atomic(answer_session):
             await AnswerService(session, user.id, answer_session).delete_submission_note(
-                applet_id, submission_id, flow_id, note_id
+                applet_id, submission_id, note_id
             )
     return
 
@@ -772,3 +772,21 @@ async def answers_existence_check(
     )
 
     return Response[AnswerExistenceResponse](result=AnswerExistenceResponse(exists=is_exist))
+
+
+async def applet_submission_reviews_retrieve(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[AnswerReviewPublic]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    reviews = await AnswerService(session, user.id, answer_session).get_reviews_by_submission_id(
+        applet_id, submission_id
+    )
+    return ResponseMulti(
+        result=[AnswerReviewPublic.from_orm(review) for review in reviews],
+        count=len(reviews),
+    )

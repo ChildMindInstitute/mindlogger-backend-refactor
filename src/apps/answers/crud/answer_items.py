@@ -105,6 +105,14 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()  # noqa
 
+    async def get_reviews_by_submit_id(self, submission_id: uuid.UUID) -> list[AnswerItemSchema]:
+        query: Query = select(AnswerItemSchema)
+        query = query.where(
+            AnswerItemSchema.reviewed_flow_submit_id == submission_id, AnswerItemSchema.is_assessment.is_(True)
+        )
+        db_result = await self._execute(query)
+        return db_result.scalars().all()  # noqa
+
     async def get_respondent_answer(self, answer_id: uuid.UUID) -> AnswerItemSchema | None:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
