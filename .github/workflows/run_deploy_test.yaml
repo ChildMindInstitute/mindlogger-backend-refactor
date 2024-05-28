@@ -23,8 +23,8 @@ jobs:
       ECS_SERVICE_NAME: backend
       AWS_REGION : "us-east-1"
       ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-      IMAGE_PREFIX: ${{ github.ref_name }}
-      COMMIT_HASH: ${{ github.sha }}
+      IMAGE_PREFIX: ${{ inputs.COMMIT_HASH }}
+      COMMIT_HASH: ${{ inputs.IMAGE_PREFIX }}
     steps:
 
       - name: Git clone the repository
