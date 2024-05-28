@@ -15,7 +15,6 @@ from apps.answers.api import (
     applet_activity_versions_retrieve,
     applet_answer_assessment_delete,
     applet_answer_reviews_retrieve,
-    applet_answer_submission_delete,
     applet_answers_export,
     applet_completed_entities,
     applet_flow_answer_retrieve,
@@ -23,6 +22,7 @@ from apps.answers.api import (
     applet_flow_identifiers_retrieve,
     applet_flow_submissions_list,
     applet_submission_assessment_retrieve,
+    applet_submission_delete,
     applet_submission_reviews_retrieve,
     applet_submit_date_list,
     applets_completed_entities,
@@ -282,7 +282,7 @@ router.get(
 router.delete(
     "/applet/{applet_id}/submissions/{submission_id}/assessments/{assessment_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-)(applet_answer_submission_delete)
+)(applet_submission_delete)
 
 
 router.get(

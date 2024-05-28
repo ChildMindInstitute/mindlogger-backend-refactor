@@ -336,7 +336,7 @@ async def applet_answer_assessment_delete(
             await service.delete_assessment(assessment_id)
 
 
-async def applet_answer_submission_delete(
+async def applet_submission_delete(
     applet_id: uuid.UUID,
     submission_id: uuid.UUID,
     assessment_id: uuid.UUID,
