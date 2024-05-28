@@ -6,12 +6,10 @@ from starlette import status
 from apps.applets.api import applet_create
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.domain.applets import public_detail
-from apps.applets.router import router as applet_router
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
 from apps.shared.response import EmptyResponse
 from apps.workspaces.api import (
-    applet_remove_respondent_access,
     managers_priority_role_retrieve,
     search_workspace_applets,
     user_workspaces,
@@ -30,6 +28,7 @@ from apps.workspaces.api import (
     workspace_respondents_list,
     workspace_retrieve,
     workspace_roles_retrieve,
+    workspace_subject_pin,
     workspace_users_applet_access_list,
 )
 from apps.workspaces.domain.constants import Role
@@ -215,6 +214,17 @@ router.post(
     response_class=EmptyResponse,
 )(workspace_respondent_pin)
 
+
+router.post(
+    "/{owner_id}/subjects/{subject_id}/pin",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+    response_class=EmptyResponse,
+)(workspace_subject_pin)
+
 router.post(
     "/{owner_id}/managers/{user_id}/pin",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -254,13 +264,3 @@ router.delete(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(workspace_remove_manager_access)
-
-# Remove respondent access from a specific user
-applet_router.delete(
-    "/respondent/removeAccess",
-    status_code=status.HTTP_200_OK,
-    responses={
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(applet_remove_respondent_access)
