@@ -1,5 +1,8 @@
 name: deploy_to_uat
 on:
+  push:
+    tags:        
+      - '**'
   workflow_call:
     inputs:
       COMMIT_HASH:
@@ -17,6 +20,7 @@ jobs:
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
+    if: contains(github.ref, '-rc')
     env:
       TASK_FAMILY: backend_api
       ECS_CLUSTER_NAME: cmiml-uat
