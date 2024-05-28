@@ -52,12 +52,14 @@ jobs:
            GITHUB_ORGANIZATION, GITHUB_REPO_NAME, GITHUB_BRANCH_OR_TAG, GITHUB_REF, BUILD_NAME, BUILD_NUMBER, ECR_ADDRESS, TEST_COMMAND, ECR_REPO, OUT_DIR, DOCKER_USER, DOCKER_PASSWORD, REPORT_SERVER_PUBLIC_KEY
 
   deploy_to_dev:
+    needs: run_codebuild_project
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_dev.yaml@develop
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
 
   deploy_to_uat:
+    needs: run_codebuild_project
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_uat.yaml@develop
     if: contains(github.ref, '-rc')
     with:
@@ -65,6 +67,7 @@ jobs:
       IMAGE_PREFIX: ${{ github.ref_name }}
 
   deploy_to_test:
+    needs: run_codebuild_project
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_test.yaml@develop
     if: contains(github.ref, '-rc')
     with:
