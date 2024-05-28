@@ -1,9 +1,13 @@
 name: deploy_to_uat
 on:
-  workflow_run:
-    workflows: ["run_build"]
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      COMMIT_HASH:
+        required: true
+        type: string
+      IMAGE_PREFIX:
+        required: true
+        type: string
 
 permissions:
   id-token: write
@@ -13,7 +17,6 @@ jobs:
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    if: contains(github.ref, '-rc')
     env:
       TASK_FAMILY: backend_api
       ECS_CLUSTER_NAME: cmiml-uat
