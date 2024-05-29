@@ -1,4 +1,4 @@
-"""Multi-informant for arbitrary
+"""empty message
 
 Revision ID: 267dd5b56abf
 Revises: 23fe6ccfb031
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "267dd5b56abf"
-down_revision = "60528d410fd1"
+down_revision = "23fe6ccfb031"
 branch_labels = None
 depends_on = None
 
