@@ -7,6 +7,11 @@ on:
         type: string
         description: Service URL endpoint
         required: true
+      e2e-tests-ref:
+        type: string
+        description: Git ref to checkout from TAF repo
+        required: false
+        default: develop
     outputs:
       report-url:
         description: URL of the test report
@@ -39,7 +44,7 @@ jobs:
           repository: ChildMindInstitute/MindLogger-TAF
           # Matching deploy key in TAF repo
           ssh-key: ${{ secrets.TAF_PRIVATE_KEY }}
-          ref: release
+          ref: ${{ inputs.e2e-tests-ref }}
       - name: Install
         run: npm install
       - name: Setup Environment
