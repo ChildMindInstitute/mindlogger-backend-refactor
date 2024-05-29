@@ -55,4 +55,36 @@ jobs:
           
           #this step is separate because api sarvice and task definition names are different, need to be changed
           aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_api
+
+      
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.deploy_to_ecs.result == 'failure' || needs.deploy_to_ecs.result == 'timed_out') }}
+    needs:
+      - deploy_to_ecs
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_CHANNEL: gha-deploy-to-dev
+          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TITLE: Run Unit Tests
+          SLACK_MESSAGE: 'Error when executing Unit tests!'
+  
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.tests.result == 'success') }}
+    needs:
+      - tests
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on success"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+          SLACK_TITLE: Run Unit Tests
+          SLACK_MESSAGE: 'Unit tests performed successfully!'
           
