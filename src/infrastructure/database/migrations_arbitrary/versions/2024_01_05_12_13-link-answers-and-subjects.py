@@ -1,4 +1,4 @@
-"""empty message
+"""Multi-informant for arbitrary
 
 Revision ID: 267dd5b56abf
 Revises: 23fe6ccfb031
