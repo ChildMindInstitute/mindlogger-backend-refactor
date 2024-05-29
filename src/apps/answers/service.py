@@ -637,7 +637,7 @@ class AnswerService:
         activity_versions = [t[1] for t in reviewer_activity_version]
         activity_items = await ActivityItemHistoriesCRUD(self.session).get_by_activity_id_versions(activity_versions)
 
-        reviews = await AnswerItemsCRUD(self.answer_session).get_reviews_by_answer_id(answer_id, activity_items)
+        reviews = await AnswerItemsCRUD(self.answer_session).get_reviews_by_answer_id(answer_id)
         results = await self._prepare_answer_reviews(reviews, activity_items, current_role)
         return results
 
@@ -671,7 +671,7 @@ class AnswerService:
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        assessment = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id)
+        assessment = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id, submit_id)
         if assessment:
             await AnswerItemsCRUD(self.answer_session).update(
                 AnswerItemSchema(

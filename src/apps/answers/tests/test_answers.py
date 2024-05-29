@@ -1808,9 +1808,15 @@ class TestAnswerActivityItems(BaseTest):
             assessment_submission_create.reviewed_flow_submit_id
         )
         assert answer
-        assessment = await AnswerItemsCRUD(session).get_assessment(answer.id, tom.id)
-        assert assessment
-        assert assessment_submission_create.reviewed_flow_submit_id == assessment.reviewed_flow_submit_id
+        assessment_for_flow = await AnswerItemsCRUD(session).get_assessment(
+            answer.id, tom.id, assessment_submission_create.reviewed_flow_submit_id
+        )
+        assert assessment_for_flow
+        assert assessment_for_flow.reviewed_flow_submit_id == assessment_submission_create.reviewed_flow_submit_id
+
+        assessment_for_act = await AnswerItemsCRUD(session).get_assessment(answer.id, tom.id)
+        assert assessment_for_act
+        assert assessment_for_act.reviewed_flow_submit_id is None
 
     async def test_applet_assessment_retrive_for_submission(
         self,

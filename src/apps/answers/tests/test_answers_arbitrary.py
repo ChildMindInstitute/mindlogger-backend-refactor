@@ -902,7 +902,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
         answer = await AnswersCRUD(arbitrary_session).get_last_answer_in_flow(submission_id)
         assert answer
-        assessment = await AnswerItemsCRUD(arbitrary_session).get_assessment(answer.id, tom.id)
+        assessment = await AnswerItemsCRUD(arbitrary_session).get_assessment(answer.id, tom.id, submission_id)
         assert assessment
         assert assessment_submission_create.reviewed_flow_submit_id == assessment.reviewed_flow_submit_id
 
