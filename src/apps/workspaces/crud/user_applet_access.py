@@ -69,6 +69,8 @@ class _WorkspaceRespondentOrdering(Ordering):
     tags = Ordering.Clause(literal_column("tags_order"))
     created_at = Ordering.Clause(func.min(UserAppletAccessSchema.created_at))
     status = Ordering.Clause(literal_column("status_order"))
+    # TODO: https://mindlogger.atlassian.net/browse/M2-6834
+    # Add support to order by last_seen
 
     # Because nickname is encrypted, we need to support manual sorting by that field as well as any
     # other field (in order to support manual sorting by multiple keys)
