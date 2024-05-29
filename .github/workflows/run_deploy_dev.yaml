@@ -70,21 +70,22 @@ jobs:
           SLACK_COLOR: failure
           SLACK_CHANNEL: gha-deploy-to-dev
           SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_TITLE: Run Unit Tests
-          SLACK_MESSAGE: 'Error when executing Unit tests!'
+          SLACK_TITLE: Deployment to DEV environment
+          SLACK_MESSAGE: 'Error when executing deployment!'
   
   on-success:
     runs-on: ubuntu-latest
-    if: ${{ always() && (needs.tests.result == 'success') }}
+    if: ${{ always() && (needs.deploy_to_ecs.result == 'success') }}
     needs:
-      - tests
+      - deploy_to_ecs
     steps:
       - uses: actions/checkout@v4
       - name: "Send Slack message on success"
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
-          SLACK_TITLE: Run Unit Tests
-          SLACK_MESSAGE: 'Unit tests performed successfully!'
+          SLACK_CHANNEL: gha-deploy-to-dev
+          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TITLE: Deployment to DEV environment
+          SLACK_MESSAGE: 'Deployment is successfull!'
           
