@@ -17,6 +17,8 @@ class _ActivityAnswerFilter(Filtering):
     identifiers = FilterField(AnswerItemSchema.identifier, method_name="filter_by_identifiers")
     versions = FilterField(AnswerSchema.version, Comparisons.IN)
 
+    target_subject_id = FilterField(AnswerSchema.target_subject_id)
+
     # TODO can be removed?
     def prepare_identifiers(self, value: str | list[str]) -> list[str] | None:
         if not value:
@@ -31,10 +33,16 @@ class _ActivityAnswerFilter(Filtering):
             return value.split(",")
         return value
 
-    def filter_by_identifiers(self, field, values: list | None):
-        if values is None:
-            return field == None  # noqa
+    def filter_by_identifiers(self, field, values: list | str):
+        if isinstance(values, str):
+            values = values.split(",")
         return field.in_(values)
+
+    def prepare_empty_identifiers(self, value: bool):
+        if not value:
+            return AnswerItemSchema.identifier.isnot(None)
+        else:
+            return AnswerItemSchema.identifier.is_(None)
 
 
 class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
@@ -139,11 +147,8 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         self,
         applet_id: uuid.UUID,
         activity_ver_ids: Collection[str],
-        filters: QueryParams,
+        **filters,
     ) -> list[tuple[AnswerSchema, AnswerItemSchema]]:
-        identifiers = filters.filters.get("identifiers")
-        empty_identifiers = filters.filters.get("empty_identifiers")
-
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
             AnswerItemSchema,
@@ -155,18 +160,10 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         )
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.activity_history_id.in_(activity_ver_ids))
-        if not identifiers and empty_identifiers:
-            if "identifiers" in filters.filters:
-                filters.filters.pop("identifiers")
-        elif not identifiers and not empty_identifiers:
-            filters.filters.pop("identifiers")
-            query = query.where(AnswerItemSchema.identifier.isnot(None))
-
         query = query.order_by(AnswerSchema.created_at.asc())
-        if filters.filters:
-            query = query.where(*_ActivityAnswerFilter().get_clauses(**filters.filters))
+        query = query.where(*_ActivityAnswerFilter().get_clauses(**filters))
         db_result = await self._execute(query)
-        return db_result.all()
+        return db_result.all()  # noqa
 
     async def get_applet_answers_by_activity_history_ids(
         self,
@@ -174,8 +171,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         activity_history_id: Union[Set[str], List[str]],
         filters: QueryParams,
     ):
-        identifiers = filters.filters.get("identifiers")
-        empty_identifiers = filters.filters.get("empty_identifiers")
         query: Query = select(AnswerSchema, AnswerItemSchema)
         query = query.join(
             AnswerItemSchema,
@@ -192,12 +187,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
             )
         )
         query = query.order_by(AnswerSchema.created_at.asc())
-
-        if not identifiers:
-            if "identifiers" in filters.filters:
-                filters.filters.pop("identifiers")
-            if empty_identifiers:
-                query = query.where(AnswerItemSchema.identifier.is_(None))
 
         if filters.filters:
             query = query.where(*_ActivityAnswerFilter().get_clauses(**filters.filters))

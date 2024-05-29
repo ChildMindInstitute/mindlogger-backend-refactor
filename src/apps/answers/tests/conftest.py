@@ -4,6 +4,7 @@ from typing import cast
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.domain.activity_create import ActivityItemCreate
@@ -21,6 +22,7 @@ from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.domain.base import AppletReportConfigurationBase
 from apps.applets.service.applet import AppletService
 from apps.shared.enums import Language
+from apps.subjects.db.schemas import SubjectSchema
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -81,6 +83,14 @@ async def applet(session: AsyncSession, tom: User, applet_data: AppletCreate) ->
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_data)
     return applet
+
+
+@pytest.fixture
+async def tom_applet_subject(session: AsyncSession, tom: User, applet: AppletFull) -> SubjectSchema:
+    query = select(SubjectSchema).where(SubjectSchema.user_id == tom.id, SubjectSchema.applet_id == applet.id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return model
 
 
 @pytest.fixture
@@ -457,6 +467,13 @@ def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity) -> A
         reviewer_public_key=f"{tom.id}",
         assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
     )
+
+
+@pytest.fixture
+async def editor_user_reviewer_applet_one(user: UserSchema, session: AsyncSession, mocker: MockerFixture):
+    applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b1")
+    srv = UserAppletAccessService(session, user.id, applet_id)
+    await srv.add_role(user.id, Role.EDITOR)
 
 
 @pytest.fixture

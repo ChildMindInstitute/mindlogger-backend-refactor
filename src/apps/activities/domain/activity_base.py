@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.domain.scores_reports import ScoresAndReports, SubscaleSetting
+from apps.shared.domain.custom_validations import sanitize_string
 from apps.shared.enums import Language
 
 
@@ -20,3 +21,16 @@ class ActivityBase(BaseModel):
     report_included_item_name: str | None = None
     performance_task_type: PerformanceTaskType | None = None
     is_performance_task: bool = False
+
+    @validator("name")
+    def validate_string(cls, value):
+        return sanitize_string(value)
+
+    @validator("description")
+    def validate_description(cls, value):
+        if isinstance(value, dict):
+            for key in value:
+                value[key] = sanitize_string(value[key])
+        elif isinstance(value, str):
+            value = sanitize_string(value)
+        return value

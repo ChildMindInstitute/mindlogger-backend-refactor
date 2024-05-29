@@ -233,6 +233,45 @@ def test_create_item_with_drawing_response_values(
     assert item.response_values.drawing_example == remote_image
 
 
+@pytest.mark.parametrize(
+    "proportion",
+    [
+        "N/A",
+        None,
+        dict(enabled=False),
+    ],
+)
+def test_create_item_with_drawing_response_values_proportion_from_json(
+    drawing_response_values: DrawingValues,
+    drawing_config: DrawingConfig,
+    base_item_data: BaseItemData,
+    proportion: dict | str | None,
+):
+    data = ActivityItemCreate(
+        response_type=ResponseType.DRAWING,
+        config=drawing_config,
+        response_values=drawing_response_values,
+        **base_item_data.dict(),
+    ).dict()
+
+    del data["response_values"]["proportion"]
+    if proportion != "N/A":
+        data["response_values"]["proportion"] = proportion
+
+    item = ActivityItemCreate(**data)
+
+    item.response_values = cast(DrawingValues, item.response_values)
+    if proportion != "N/A":
+        assert "proportion" in data["response_values"]
+        if isinstance(proportion, dict):
+            assert item.response_values.proportion.dict() == proportion  # type: ignore[union-attr]
+        else:
+            assert item.response_values.proportion == proportion
+    else:
+        assert "proportion" not in data["response_values"]
+        assert item.response_values.proportion is None
+
+
 def test_create_item_with_drawing_response_values_images_are_none(
     drawing_config: DrawingConfig,
     base_item_data: BaseItemData,
@@ -556,7 +595,6 @@ def test_create_single_multi_select_item__add_scores_is_true_with_scores_float_r
 def test_create_slider_item__add_scores_is_true_with_scores_float_rounded(slider_item_create):
     data = slider_item_create.dict()
     data["config"]["add_scores"] = True
-    print(data["response_values"])
     data["response_values"]["scores"] = [
         i + 0.343 for i in range(data["response_values"]["max_value"] - data["response_values"]["min_value"] + 1)
     ]
@@ -565,3 +603,10 @@ def test_create_slider_item__add_scores_is_true_with_scores_float_rounded(slider
 
     for score in item.response_values.scores:
         assert score in rounded_score
+
+
+def test_create_message_item__sanitize_question(message_item_create):
+    data = message_item_create.dict()
+    data["question"] = {"en": "One <script>alert('test')</script> Two"}
+    item = ActivityItemCreate(**data)
+    assert item.question["en"] == "One  Two"

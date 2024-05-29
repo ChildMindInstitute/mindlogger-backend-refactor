@@ -1,4 +1,19 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Text, Time, Unicode, and_, asc, false, text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Time,
+    Unicode,
+    and_,
+    asc,
+    false,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
@@ -22,6 +37,9 @@ class AnswerSchema(HistoryAware, Base):
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     is_flow_completed = Column(Boolean(), nullable=True)
     migrated_data = Column(JSONB())
+    target_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    source_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    relation = Column(String(length=20), nullable=True)
 
     answer_item = relationship(
         "AnswerItemSchema",
