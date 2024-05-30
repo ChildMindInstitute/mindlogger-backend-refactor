@@ -69,6 +69,7 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secret.DEV_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-uat
           SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to UAT environment
@@ -85,6 +86,7 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secret.DEV_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-uat
           SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to UAT environment
