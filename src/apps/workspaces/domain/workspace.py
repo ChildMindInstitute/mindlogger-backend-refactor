@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.domain.base import Encryption
+from apps.invitations.domain import InvitationResponse
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.encryption import get_key
 from apps.workspaces.constants import StorageType
@@ -74,6 +75,7 @@ class WorkspaceRespondentDetails(InternalModel):
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
     subject_tag: str | None
+    pending_invitation: InvitationResponse | None = None
 
     @root_validator
     def decrypt_nickname(cls, values):
@@ -168,6 +170,7 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
     subject_tag: str | None
+    pending_invitation: InvitationResponse | None = None
 
 
 class PublicWorkspaceRespondent(PublicModel):

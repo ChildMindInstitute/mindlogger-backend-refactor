@@ -56,6 +56,9 @@ class InvitationsService:
     async def fetch_all(self, query_params: QueryParams) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_invitor_id(self._user.id, query_params)
 
+    async def fetch_pending_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
+        return await self.invitations_crud.get_pending_by_emails(emails)
+
     async def fetch_all_count(self, query_params: QueryParams) -> int:
         return await self.invitations_crud.get_pending_by_invitor_id_count(self._user.id, query_params)
 

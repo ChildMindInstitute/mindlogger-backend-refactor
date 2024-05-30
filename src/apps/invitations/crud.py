@@ -130,6 +130,52 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
+    async def get_pending_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
+        """Return the list of pending invitations
+        for the provided emails.
+        """
+        query: Query = select(
+            InvitationSchema,
+            AppletSchema.display_name.label("applet_name"),
+            SubjectSchema.secret_user_id.label("user_secret_id"),
+            SubjectSchema.nickname.label("nickname"),
+            SubjectSchema.first_name.label("first_name"),
+            SubjectSchema.last_name.label("last_name"),
+        )
+        query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
+        query = query.outerjoin(
+            SubjectSchema,
+            and_(
+                InvitationSchema.meta.has_key("subject_id"),
+                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
+            ),
+        )
+        query = query.where(InvitationSchema.email.in_(emails))
+        query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
+        db_result = await self._execute(query)
+        results = []
+        for invitation, applet_name, secret_id, nickname, first_name, last_name in db_result.all():
+            results.append(
+                InvitationDetail(
+                    id=invitation.id,
+                    email=invitation.email,
+                    applet_id=invitation.applet_id,
+                    applet_name=applet_name,
+                    role=invitation.role,
+                    key=invitation.key,
+                    status=invitation.status,
+                    invitor_id=invitation.invitor_id,
+                    meta=invitation.meta,
+                    first_name=first_name if invitation.role == Role.RESPONDENT else invitation.first_name,
+                    last_name=last_name if invitation.role == Role.RESPONDENT else invitation.last_name,
+                    created_at=invitation.created_at,
+                    nickname=nickname,
+                    secret_user_id=secret_id,
+                    tag=invitation.tag,
+                )
+            )
+        return results
+
     async def get_pending_by_invitor_id_count(self, user_id: uuid.UUID, query_params: QueryParams) -> int:
         """Return the cont of pending invitations
         for the user who is invitor.

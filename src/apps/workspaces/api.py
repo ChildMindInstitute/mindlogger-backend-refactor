@@ -9,6 +9,7 @@ from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
+from apps.invitations.domain import InvitationResponse
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
@@ -247,6 +248,38 @@ async def workspace_respondents_list(
     respondents = await AnswerService(
         session=session, arbitrary_session=answer_session
     ).fill_last_activity_workspace_respondent(data)
+
+    emails = [user.email for user in data if user.email is not None]
+    pending_invitations = await InvitationsService(session, user).fetch_pending_by_emails(emails)
+
+    for respondent in respondents:
+        for detail in respondent.details:
+            pending_invitation = next(
+                (
+                    InvitationResponse(
+                        email=invitation.email,
+                        applet_id=invitation.applet_id,
+                        applet_name=invitation.applet_name,
+                        role=invitation.role,
+                        key=invitation.key,
+                        status=invitation.status,
+                        first_name=invitation.first_name,
+                        last_name=invitation.last_name,
+                        created_at=invitation.created_at,
+                        meta=invitation.meta,
+                        nickname=invitation.nickname,
+                        secret_user_id=invitation.secret_user_id,
+                        tag=invitation.tag,
+                        title=invitation.title,
+                    )
+                    for invitation in pending_invitations
+                    if invitation.email == respondent.email and invitation.applet_id == detail.applet_id
+                ),
+                None,
+            )
+            if pending_invitation is not None:
+                detail.__dict__["pending_invitation"] = pending_invitation
+
     return ResponseMulti(result=respondents, count=total)
 
 
