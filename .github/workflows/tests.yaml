@@ -65,7 +65,7 @@ jobs:
 
       - name: Deploy report to Github Pages
         if: always()
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # same as allure_history above
@@ -74,7 +74,7 @@ jobs:
       - name: Generate Report URL
         if: always()
         id: report-url
-        uses: actions/github-script@v3
+        uses: actions/github-script@v7
         with:
           script: |
             core.setOutput('report-url', 'https://childmindinstitute.github.io/preview-app-demo/unit/${{ github.run_number }}')
@@ -100,7 +100,7 @@ jobs:
           SLACK_ICON: https://github.com/github.png?size=48
           MSG_MINIMAL: actions url
       - name: Fail if tests failed
-        uses: actions/github-script@v3
+        uses: actions/github-script@v7
         with:
           script: |
             core.setFailed('Unit tests failed')
