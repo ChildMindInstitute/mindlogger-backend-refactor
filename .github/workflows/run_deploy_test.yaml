@@ -69,7 +69,7 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.DEV_SLACK_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.TEST_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-test
           SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to TEST environment
@@ -86,7 +86,7 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.DEV_SLACK_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.TEST_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-test
           SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to TEST environment
