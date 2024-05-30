@@ -60,7 +60,7 @@ jobs:
         env:
           SLACK_COLOR: failure
           SLACK_CHANNEL: gha-deploy-to-stage
-          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to STAGE environment
           SLACK_MESSAGE: 'Error when executing deployment!'
   
@@ -76,7 +76,7 @@ jobs:
         env:
           SLACK_COLOR: success
           SLACK_CHANNEL: gha-deploy-to-stage
-          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to STAGE environment
           SLACK_MESSAGE: 'Deployment is successfull!'
           
