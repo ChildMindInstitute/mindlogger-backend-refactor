@@ -39,7 +39,7 @@ class UserService:
             await UserWorkspaceCRUD(self.session).save(schema=workspace)
 
     # TODO: Remove later, keep for now for backward compatibility for tests
-    async def create_anonymous_respondent(self, test_id: uuid.UUID | None = None) -> None:
+    async def create_anonymous_respondent(self, test_id: uuid.UUID | None = None) -> UserSchema:
         crud = UsersCRUD(self.session)
         anonymous_respondent = await crud.get_anonymous_respondent()
         test_id = uuid.uuid4() if not test_id else test_id
@@ -55,7 +55,8 @@ class UserService:
                 email_encrypted=settings.anonymous_respondent.email,
                 is_anonymous_respondent=True,
             )
-            await crud.save(anonymous_respondent)
+            return await crud.save(anonymous_respondent)
+        return anonymous_respondent
 
     # TODO: remove test_id, when all JSON fixtures are deleted
     async def create_user(self, data: UserCreate, test_id: uuid.UUID | None = None) -> User:

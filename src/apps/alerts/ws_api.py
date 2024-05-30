@@ -10,6 +10,7 @@ from apps.alerts.domain import AlertHandlerResult, AlertMessage
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.authentication.deps import get_current_user_for_ws
 from apps.shared.exception import ValidationError
+from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
@@ -51,12 +52,13 @@ async def _handle_websocket(websocket, user_id, session):
                 Role.RESPONDENT,
             )
 
-            applet_history, applet, workspace = await asyncio.gather(
+            applet_history, applet, workspace, subject = await asyncio.gather(
                 AppletHistoriesCRUD(session).retrieve_by_applet_version(
                     f"{alert_message.applet_id}_{alert_message.version}"
                 ),
                 AppletsCRUD(session).get_by_id(alert_message.applet_id),
                 UserWorkspaceCRUD(session).get_by_user_id(respondent_access.owner_id),
+                SubjectsService(session, respondent_access.owner_id).get(alert_message.subject_id),
             )
         except Exception as e:
             traceback.print_tb(e.__traceback__)
@@ -67,7 +69,7 @@ async def _handle_websocket(websocket, user_id, session):
                 applet_id=str(alert_message.applet_id),
                 applet_name=applet_history.display_name,
                 version=alert_message.version,
-                secret_id=respondent_access.meta.get("secretUserId", "Anonymous"),
+                secret_id=subject.secret_user_id if subject else "Anonymous",
                 activity_id=str(alert_message.activity_id),
                 activity_item_id=str(alert_message.activity_item_id),
                 message=alert_message.message,
@@ -77,6 +79,7 @@ async def _handle_websocket(websocket, user_id, session):
                 image=applet_history.image,
                 workspace=workspace.workspace_name,
                 respondent_id=str(alert_message.respondent_id),
+                subject_id=str(alert_message.subject_id),
             )
             await websocket.send_json(applet_alert.dict())
         except ConnectionClosed:

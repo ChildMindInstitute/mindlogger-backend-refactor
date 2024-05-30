@@ -1,9 +1,11 @@
 import datetime
 import mimetypes
 import uuid
+from copy import deepcopy
 from gettext import gettext as _
 from urllib.parse import urlparse
 
+import nh3
 import requests
 from pydantic.color import Color
 
@@ -13,6 +15,7 @@ __all__ = [
     "validate_audio",
     "extract_history_version",
     "validate_uuid",
+    "lowercase",
     "lowercase_email",
 ]
 
@@ -130,6 +133,12 @@ def translate(val):
         return val.get(lang, None)
 
 
+def lowercase(value: str | None):
+    if value is not None:
+        value = value.lower()
+    return value
+
+
 def array_from_string(comma_separated: bool = False):
     def _array_from_string(val):
         if comma_separated and isinstance(val, list) and len(val) == 1:
@@ -141,3 +150,40 @@ def array_from_string(comma_separated: bool = False):
         return val
 
     return _array_from_string
+
+
+nh3_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+default_attributes = {
+    "id",
+    "data-line",
+    "class",
+}
+nh3_attributes["h1"] = default_attributes
+nh3_attributes["h2"] = default_attributes
+nh3_attributes["h3"] = default_attributes
+nh3_attributes["h4"] = default_attributes
+nh3_attributes["h5"] = default_attributes
+nh3_attributes["h6"] = default_attributes
+nh3_attributes["div"] = default_attributes
+nh3_attributes["p"] = default_attributes
+nh3_attributes["ul"] = default_attributes
+nh3_attributes["ol"] = default_attributes
+nh3_attributes["li"] = default_attributes
+nh3_attributes["details"] = default_attributes
+nh3_attributes["summary"] = default_attributes
+nh3_attributes["span"] = default_attributes
+nh3_attributes["table"] = default_attributes
+nh3_attributes["code"] = {*default_attributes, "language"}
+nh3_attributes["blockquote"] = {"data-line"}
+
+nh3_attributes["img"].add("loading")
+nh3_attributes["img"].add("class")
+nh3_attributes["img"].add("style")
+nh3_attributes["a"].add("target")
+nh3_attributes["a"].add("style")
+nh3_attributes["a"].add("class")
+
+
+def sanitize_string(value: str) -> str:
+    value = nh3.clean(value, attributes=nh3_attributes, link_rel=None)
+    return value

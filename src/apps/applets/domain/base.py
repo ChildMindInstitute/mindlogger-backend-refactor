@@ -1,9 +1,10 @@
 import datetime
 import uuid
 
-from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt
+from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, validator
 
 from apps.shared.domain import InternalModel
+from apps.shared.domain.custom_validations import sanitize_string
 from apps.shared.enums import Language
 
 
@@ -14,6 +15,10 @@ class AppletReportConfigurationBase(BaseModel):
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
+
+    @validator("report_email_body")
+    def validate_string(cls, value):
+        return sanitize_string(value)
 
 
 class Encryption(InternalModel):
@@ -39,6 +44,19 @@ class AppletBaseInfo(BaseModel):
     stream_ip_address: IPvAnyAddress | None
     stream_port: PositiveInt | None
     integrations: list[str] | None
+
+    @validator("description", "about")
+    def validate_dict(cls, value):
+        if isinstance(value, dict):
+            for key in value:
+                value[key] = sanitize_string(value[key])
+        elif isinstance(value, str):
+            value = sanitize_string(value)
+        return value
+
+    @validator("display_name")
+    def validate_string(cls, value):
+        return sanitize_string(value)
 
 
 class AppletBase(AppletBaseInfo):

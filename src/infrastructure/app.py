@@ -19,6 +19,7 @@ import apps.invitations.router as invitations
 import apps.library.router as library
 import apps.logs.router as logs
 import apps.schedule.router as schedule
+import apps.subjects.router as subject_router
 import apps.test_data.router as test_data
 import apps.themes.router as themes
 import apps.transfer_ownership.router as transfer_ownership
@@ -53,7 +54,6 @@ routers: Iterable[APIRouter] = (
     answers.router,
     answers.public_router,
     workspaces.router,
-    workspaces.applet_router,
     transfer_ownership.router,
     alerts.router,
     test_data.router,
@@ -61,6 +61,7 @@ routers: Iterable[APIRouter] = (
     library.router,
     library.applet_router,
     ws_alerts.router,
+    subject_router.router,
     loris.router,
 )
 

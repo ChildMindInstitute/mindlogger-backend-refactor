@@ -12,11 +12,13 @@ from apps.applets.crud.applets import AppletsCRUD
 from apps.applets.crud.applets_history import AppletHistoriesCRUD
 from apps.schedule.crud.events import EventCRUD
 from apps.shared.version import INITIAL_VERSION
+from apps.subjects.crud import SubjectsCrud
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 
 
 async def teardown_applet(global_session: AsyncSession, applet_id: uuid.UUID, version: str = INITIAL_VERSION) -> None:
     await UserAppletAccessCRUD(global_session)._delete(applet_id=applet_id)
+    await SubjectsCrud(global_session)._delete(applet_id=applet_id)
     await EventCRUD(global_session)._delete(applet_id=applet_id)
     await FlowItemsCRUD(global_session)._delete()
     await FlowItemHistoriesCRUD(global_session)._delete()
