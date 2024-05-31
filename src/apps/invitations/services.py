@@ -69,10 +69,7 @@ class InvitationsService:
 
         for respondent in respondents:
             for detail in respondent.details or []:
-                if f"{respondent.email}_{detail.applet_id}" in invitations:
-                    invitation = invitations[
-                        "{email}_{applet_id}".format(email=respondent.email, applet_id=detail.applet_id)
-                    ]
+                if (invitation := invitations.get(f"{respondent.email}_{detail.applet_id}")) is not None:
                     detail.__dict__["invitation"] = InvitationResponse(
                         email=invitation.email,
                         applet_id=invitation.applet_id,
