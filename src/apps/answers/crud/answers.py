@@ -302,7 +302,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         reviewed_flow_submission_id = case(
-            (AnswerItemSchema.is_assessment.is_(True), AnswerSchema.submit_id),
+            (
+                and_(AnswerItemSchema.is_assessment.is_(True), AnswerSchema.flow_history_id.isnot(None)),
+                AnswerItemSchema.reviewed_flow_submit_id,
+            ),
             else_=null(),
         )
 
@@ -371,7 +374,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         query = query.order_by(AnswerItemSchema.created_at.desc())
         query = paging(query, page, limit)
-
         coro_data, coro_count = (
             self._execute(query),
             self._execute(query_count),
