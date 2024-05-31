@@ -68,7 +68,7 @@ class InvitationsService:
         pending_invitations = await self.fetch_pending_by_emails(emails)
 
         for respondent in respondents:
-            for detail in respondent.details:
+            for detail in respondent.details or []:
                 pending_invitation = next(
                     (
                         InvitationResponse(
