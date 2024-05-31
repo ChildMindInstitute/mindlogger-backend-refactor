@@ -684,7 +684,9 @@ class AnswerService:
         await self._validate_submission_access(applet_id, submit_id)
         answer = await self.get_submission_last_answer(submit_id)
         if answer:
-            assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(answer.id, self.user_id)
+            assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(
+                answer.id, self.user_id, submit_id
+            )
         else:
             # Submission without answer on assessments
             assessment_answer = None
