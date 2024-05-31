@@ -17,6 +17,7 @@ from apps.invitations.services import InvitationsService
 from apps.shared.enums import Language
 from apps.shared.query_params import QueryParams
 from apps.shared.test import BaseTest
+from apps.shared.test.client import TestClient
 from apps.subjects.constants import SubjectStatus
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
@@ -358,7 +359,9 @@ class TestWorkspaces(BaseTest):
         response = await client.get(self.workspace_applets_url.format(owner_id="00000000-0000-0000-0000-000000000000"))
         assert response.status_code == 404
 
-    async def test_get_workspace_respondents(self, client, tom, applet_one_lucy_respondent):
+    async def test_get_workspace_respondents(
+        self, client: TestClient, tom: User, applet_one_lucy_respondent: AppletFull
+    ):
         client.login(tom)
         response = await client.get(
             self.workspace_respondents_url.format(owner_id=tom.id),
@@ -368,14 +371,30 @@ class TestWorkspaces(BaseTest):
         data = response.json()
         assert data["count"] == 2  # tom(applet1, applet2), lucy(applet1)
         assert data["count"] == len(data["result"])
-        assert data["result"][0]["nicknames"]
-        assert data["result"][0]["secretIds"]
+
+        lucy_result = data["result"][0]
+        tom_result = data["result"][1]
+
+        assert lucy_result["nicknames"]
+        assert lucy_result["secretIds"]
+        assert lucy_result["details"]
+        assert tom_result["details"]
+
+        lucy_result_details = lucy_result["details"]
+        tom_result_details = tom_result["details"]
+
+        # Lucy has a pending invitation to Applet 1
+        assert lucy_result_details[0]["pendingInvitation"] is not None  # Applet 1
+
+        # Tom has a pending invitation only to Applet 2
+        assert tom_result_details[0]["pendingInvitation"] is None  # Applet 1
+        assert tom_result_details[1]["pendingInvitation"] is not None  # Applet 2
 
         # test search
-        access_id_0 = data["result"][0]["details"][0]["accessId"]
-        access_id_1 = data["result"][1]["details"][0]["accessId"]
-        secret_user_id_0 = data["result"][0]["secretIds"][0]
-        secret_user_id_1 = data["result"][1]["secretIds"][0]
+        access_id_0 = lucy_result_details[0]["accessId"]
+        access_id_1 = tom_result_details[0]["accessId"]
+        secret_user_id_0 = lucy_result["secretIds"][0]
+        secret_user_id_1 = tom_result["secretIds"][0]
         search_params = {
             access_id_0: [secret_user_id_0[19:]],
             access_id_1: [secret_user_id_1],
@@ -396,7 +415,12 @@ class TestWorkspaces(BaseTest):
                 assert access_id in access_ids
 
     async def test_get_workspace_applet_respondents(
-        self, client, tom, applet_one, applet_one_lucy_respondent, uuid_zero
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        applet_one_lucy_respondent: AppletFull,
+        uuid_zero: uuid.UUID,
     ):
         client.login(tom)
         response = await client.get(
@@ -408,14 +432,30 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 2
-        assert data["result"][0]["nicknames"]
-        assert data["result"][0]["secretIds"]
+        assert data["count"] == 2  # lucy, tom
+        assert data["count"] == len(data["result"])
+
+        lucy_result = data["result"][0]
+        tom_result = data["result"][1]
+
+        assert lucy_result["nicknames"]
+        assert lucy_result["secretIds"]
+        assert lucy_result["details"]
+        assert tom_result["details"]
+
+        lucy_result_details = lucy_result["details"]
+        tom_result_details = tom_result["details"]
+
+        # Lucy has a pending invitation to Applet 1
+        assert lucy_result_details[0]["pendingInvitation"] is not None  # Applet 1
+
+        # Tom does not have a pending invitation to Applet 1
+        assert tom_result_details[0]["pendingInvitation"] is None  # Applet 1
 
         # test search
-        access_id = data["result"][0]["details"][0]["accessId"]
-        secret_id = data["result"][0]["secretIds"][0]
-        subject_tag = data["result"][0]["details"][0]["subjectTag"]
+        access_id = lucy_result_details[0]["accessId"]
+        secret_id = lucy_result["secretIds"][0]
+        subject_tag = lucy_result_details[0]["subjectTag"]
         response = await client.get(
             self.workspace_applet_respondents_list.format(
                 owner_id=tom.id,
