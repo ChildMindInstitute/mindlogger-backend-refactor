@@ -27,7 +27,7 @@ def upgrade() -> None:
     op.add_column(
         "answer_notes",
         sa.Column(
-            "submission_id", postgresql.UUID(as_uuid=True), nullable=True
+            "flow_submit_id", postgresql.UUID(as_uuid=True), nullable=True
         ),
     )
     op.add_column(
@@ -37,9 +37,9 @@ def upgrade() -> None:
         ),
     )
     op.create_index(
-        op.f("ix_answer_notes_submission_id"),
+        op.f("ix_answer_notes_flow_submit_id"),
         "answer_notes",
-        ["submission_id"],
+        ["flow_submit_id"],
         unique=False,
     )
 
@@ -61,8 +61,8 @@ def downgrade() -> None:
     )
     op.drop_column("answers_items", "reviewed_flow_submit_id")
     op.drop_index(
-        op.f("ix_answer_notes_submission_id"), table_name="answer_notes"
+        op.f("ix_answer_notes_flow_submit_id"), table_name="answer_notes"
     )
-    op.drop_column("answer_notes", "submission_id")
+    op.drop_column("answer_notes", "flow_submit_id")
     op.drop_column("answer_notes", "activity_flow_id")
     # ### end Alembic commands ###

@@ -346,7 +346,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
-                AnswerItemSchema.reviewed_flow_submit_id.label("reviewed_flow_submission_id"),
+                AnswerItemSchema.reviewed_flow_submit_id,
                 AnswerSchema.client,
                 AnswerItemSchema.tz_offset,
                 AnswerItemSchema.scheduled_event_id,

@@ -484,8 +484,7 @@ async def applet_flow_assessment_create(
             service = AnswerService(session, user.id, answer_session)
             answer = await service.get_submission_last_answer(submission_id)
             if answer:
-                answer_service = AnswerService(session, user.id, answer_session)
-                await answer_service.create_assessment_answer(applet_id, answer.id, schema, submission_id)
+                await service.create_assessment_answer(applet_id, answer.id, schema, submission_id)
             else:
                 raise NotFoundError()
 

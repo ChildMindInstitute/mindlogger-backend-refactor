@@ -31,9 +31,9 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()  # noqa
 
-    async def get_by_submission_id(self, submission_id: uuid.UUID, activity_flow_id: uuid.UUID, page: int, limit: int):
+    async def get_by_submission_id(self, flow_submit_id: uuid.UUID, activity_flow_id: uuid.UUID, page: int, limit: int):
         query: Query = select(AnswerNoteSchema)
-        query = query.where(AnswerNoteSchema.submission_id == submission_id)
+        query = query.where(AnswerNoteSchema.flow_submit_id == flow_submit_id)
         query = query.where(AnswerNoteSchema.activity_flow_id == activity_flow_id)
         query = query.order_by(AnswerNoteSchema.created_at.desc())
         query = paging(query, page, limit)
@@ -48,10 +48,10 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
         return db_result.scalars().first() or 0
 
     async def get_count_by_submission_id(
-        self, submission_id: uuid.UUID, activity_flow_id: uuid.UUID, page: int, limit: int
+        self, flow_submit_id: uuid.UUID, activity_flow_id: uuid.UUID, page: int, limit: int
     ) -> int:
         query: Query = select(count(AnswerNoteSchema.id))
-        query = query.where(AnswerNoteSchema.submission_id == submission_id)
+        query = query.where(AnswerNoteSchema.flow_submit_id == flow_submit_id)
         query = query.where(AnswerNoteSchema.activity_flow_id == activity_flow_id)
         query = paging(query, page, limit)
         db_result = await self._execute(query)

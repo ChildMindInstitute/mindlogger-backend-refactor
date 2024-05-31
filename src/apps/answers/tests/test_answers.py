@@ -936,7 +936,7 @@ class TestAnswerActivityItems(BaseTest):
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate",
             "relation", "sourceSubjectId", "targetSubjectId", "client",
-            "tzOffset", "scheduledEventId", "reviewedFlowSubmissionId"
+            "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
@@ -2192,7 +2192,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data["result"]["answers"]
-        assert next(filter(lambda answer: answer["reviewedFlowSubmissionId"], data["result"]["answers"]))
+        assert next(filter(lambda answer: answer["reviewedFlowSubmitId"], data["result"]["answers"]))
 
     async def test_submission_get_reviews(
         self,
