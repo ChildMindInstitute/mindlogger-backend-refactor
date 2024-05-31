@@ -20,6 +20,7 @@ from apps.invitations.domain import (
     InvitationManagersRequest,
     InvitationRespondent,
     InvitationRespondentRequest,
+    InvitationResponse,
     InvitationReviewer,
     InvitationReviewerRequest,
     PrivateInvitationDetail,
@@ -42,6 +43,7 @@ from apps.subjects.domain import Subject
 from apps.subjects.errors import AppletUserViolationError
 from apps.users import UsersCRUD
 from apps.users.domain import User
+from apps.workspaces.domain.workspace import WorkspaceRespondent
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
@@ -58,6 +60,42 @@ class InvitationsService:
 
     async def fetch_pending_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_emails(emails)
+
+    async def fill_pending_invitations_respondents(
+        self, respondents: list[WorkspaceRespondent]
+    ) -> list[WorkspaceRespondent]:
+        emails = [respondent.email for respondent in respondents if respondent.email is not None]
+        pending_invitations = await self.fetch_pending_by_emails(emails)
+
+        for respondent in respondents:
+            for detail in respondent.details:
+                pending_invitation = next(
+                    (
+                        InvitationResponse(
+                            email=invitation.email,
+                            applet_id=invitation.applet_id,
+                            applet_name=invitation.applet_name,
+                            role=invitation.role,
+                            key=invitation.key,
+                            status=invitation.status,
+                            first_name=invitation.first_name,
+                            last_name=invitation.last_name,
+                            created_at=invitation.created_at,
+                            meta=invitation.meta,
+                            nickname=invitation.nickname,
+                            secret_user_id=invitation.secret_user_id,
+                            tag=invitation.tag,
+                            title=invitation.title,
+                        )
+                        for invitation in pending_invitations
+                        if invitation.email == respondent.email and invitation.applet_id == detail.applet_id
+                    ),
+                    None,
+                )
+                if pending_invitation is not None:
+                    detail.__dict__["pending_invitation"] = pending_invitation
+
+        return respondents
 
     async def fetch_all_count(self, query_params: QueryParams) -> int:
         return await self.invitations_crud.get_pending_by_invitor_id_count(self._user.id, query_params)
