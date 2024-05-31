@@ -75,6 +75,9 @@ class WorkspaceRespondentDetails(InternalModel):
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
     subject_tag: str | None
+    subject_first_name: str
+    subject_last_name: str
+    subject_created_at: datetime.datetime
     invitation: InvitationResponse | None = None
 
     @root_validator
@@ -85,6 +88,28 @@ class WorkspaceRespondentDetails(InternalModel):
                 nickname, dialect=PGDialect_asyncpg.name
             )
             values["respondent_nickname"] = str(nickname)
+
+        return values
+
+    @root_validator
+    def decrypt_firstname(cls, values):
+        firstname = values.get("subject_first_name")
+        if firstname:
+            firstname = StringEncryptedType(Unicode, get_key).process_result_value(
+                firstname, dialect=PGDialect_asyncpg.name
+            )
+            values["subject_first_name"] = str(firstname)
+
+        return values
+
+    @root_validator
+    def decrypt_lastname(cls, values):
+        lastname = values.get("subject_last_name")
+        if lastname:
+            lastname = StringEncryptedType(Unicode, get_key).process_result_value(
+                lastname, dialect=PGDialect_asyncpg.name
+            )
+            values["subject_last_name"] = str(lastname)
 
         return values
 
@@ -170,6 +195,9 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
     subject_tag: str | None
+    subject_first_name: str
+    subject_last_name: str
+    subject_created_at: datetime.datetime
     invitation: InvitationResponse | None = None
 
 
