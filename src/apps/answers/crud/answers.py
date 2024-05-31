@@ -301,14 +301,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             else_=null(),
         )
 
-        reviewed_flow_submission_id = case(
-            (
-                and_(AnswerItemSchema.is_assessment.is_(True), AnswerSchema.flow_history_id.isnot(None)),
-                AnswerItemSchema.reviewed_flow_submit_id,
-            ),
-            else_=null(),
-        )
-
         record_id = case(
             (AnswerItemSchema.is_assessment.is_(True), AnswerItemSchema.id),
             else_=AnswerSchema.id,
@@ -354,7 +346,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
-                reviewed_flow_submission_id.label("reviewed_flow_submission_id"),
+                AnswerItemSchema.reviewed_flow_submit_id.label("reviewed_flow_submission_id"),
                 AnswerSchema.client,
                 AnswerItemSchema.tz_offset,
                 AnswerItemSchema.scheduled_event_id,
