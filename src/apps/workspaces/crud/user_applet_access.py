@@ -50,11 +50,6 @@ from infrastructure.database.crud import BaseCRUD
 __all__ = ["UserAppletAccessCRUD"]
 
 
-# Record limits for manual sorting of respondents and managers based on resource use
-RESPONDENTS_MANUAL_SORT_LIMIT = 200
-MANAGERS_MANUAL_SORT_LIMIT = 200
-
-
 class _AppletUsersFilter(Filtering):
     role = FilterField(UserAppletAccessSchema.role)
     shell = FilterField(UserSchema.id, method_name="null")
@@ -63,7 +58,6 @@ class _AppletUsersFilter(Filtering):
 
 
 class _WorkspaceRespondentOrdering(Ordering):
-    # Regular SQL ordering clauses
     is_pinned = Ordering.Clause(literal_column("is_pinned"))
     secret_ids = Ordering.Clause(literal_column("secret_ids"))
     tags = Ordering.Clause(literal_column("tags_order"))
@@ -72,15 +66,13 @@ class _WorkspaceRespondentOrdering(Ordering):
     # TODO: https://mindlogger.atlassian.net/browse/M2-6834
     # Add support to order by last_seen
 
-    # Because nickname is encrypted, we need to support manual sorting by that field as well as any
-    # other field (in order to support manual sorting by multiple keys)
-    manual_fields = {
-        "nicknames": ("nicknames", 0),
-        "is_pinned": "is_pinned",
-        "secret_ids": ("secret_ids", 0),
-        "tags": ("tags_order", 0),
-        "created_at": "created_at",
-        "status": "status_order",
+    encrypted_fields = {
+        "nicknames": Ordering.Clause(
+            func.array_remove(
+                func.array_agg(func.distinct(func.decrypt_internal(SubjectSchema.nickname, get_key()))),
+                None,
+            )
+        )
     }
 
 
@@ -98,22 +90,15 @@ class _AppletRespondentSearch(Searching):
 
 
 class _AppletManagersOrdering(Ordering):
-    # Regular SQL ordering clauses
     created_at = UserSchema.created_at
     is_pinned = Ordering.Clause(literal_column("is_pinned"))
     last_seen = Ordering.Clause(literal_column("last_seen"))
     roles = Ordering.Clause(literal_column("roles"))
 
-    # Because email, first name and last name are encrypted, we need to support manual sorting by
-    # those fields as well as any other field (in order to support manual sorting by multiple keys)
-    manual_fields = {
-        "email": "email_encrypted",
-        "first_name": "first_name",
-        "last_name": "last_name",
-        "created_at": "created_at",
-        "is_pinned": "is_pinned",
-        "last_seen": "last_seen",
-        "roles": ("roles", 0),
+    encrypted_fields = {
+        "email": Ordering.Clause(func.decrypt_internal(UserSchema.first_name, get_key())),
+        "first_name": Ordering.Clause(func.decrypt_internal(UserSchema.first_name, get_key())),
+        "last_name": Ordering.Clause(func.decrypt_internal(UserSchema.last_name, get_key())),
     }
 
 
@@ -568,35 +553,20 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         if query_params.search:
             query = query.having(_WorkspaceRespondentSearch().get_clauses(query_params.search))
 
-        # Get total count before ordering and pagination to evaluate eligibility for manual sorting
+        # Get total count before ordering to evaluate eligibility for ordering by encrypted fields
         coro_total = self._execute(select(count()).select_from(query.with_only_columns(UserSchema.id).subquery()))
         total = (await coro_total).scalar()
 
         ordering = _WorkspaceRespondentOrdering()
-        manual_order_fields = None
 
         if query_params.ordering:
-            if total < RESPONDENTS_MANUAL_SORT_LIMIT:
-                manual_order_fields = ordering.get_manual_fields(*query_params.ordering)
-            # Only perform SQL ORDER BY if all requested ordering fields can be done by SQL
-            if not manual_order_fields:
-                query = query.order_by(*ordering.get_clauses(*query_params.ordering))
+            query = query.order_by(*ordering.get_clauses(*query_params.ordering, count=total))
 
-        # If able to use SQL ordering, also use SQL-based paging; else paginate post-execute
-        if not manual_order_fields:
-            query = paging(query, query_params.page, query_params.limit)
+        query = paging(query, query_params.page, query_params.limit)
 
-        res_data = await self._execute(query)
-
-        data = res_data.all()
-
-        # If sorting manually, both sort and paginate manually
-        if manual_order_fields:
-            data = ordering.manual_sort(data, manual_order_fields)
-            data = ordering.manual_paginate(data, query_params.page, query_params.limit)
-
+        data = (await self._execute(query)).all()
         data = parse_obj_as(list[WorkspaceRespondent], data)
-        ordering_fields = ordering.get_ordering_fields(total < RESPONDENTS_MANUAL_SORT_LIMIT)
+        ordering_fields = ordering.get_ordering_fields(total)
 
         return data, total, ordering_fields
 
@@ -692,34 +662,20 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         if query_params.filters:
             query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
 
+        # Get total count before ordering to evaluate eligibility for ordering by encrypted fields
         coro_total = self._execute(select(count()).select_from(query.with_only_columns(UserSchema.id).subquery()))
         total = (await coro_total).scalar()
 
         ordering = _AppletManagersOrdering()
-        manual_order_fields = None
 
         if query_params.ordering:
-            if total < MANAGERS_MANUAL_SORT_LIMIT:
-                manual_order_fields = ordering.get_manual_fields(*query_params.ordering)
-            # Only perform SQL ORDER BY if all requested ordering fields can be done by SQL
-            if not manual_order_fields:
-                query = query.order_by(*ordering.get_clauses(*query_params.ordering))
+            query = query.order_by(*ordering.get_clauses(*query_params.ordering, count=total))
 
-        # If able to use SQL ordering, also use SQL-based paging; else paginate post-execute
-        if not manual_order_fields:
-            query = paging(query, query_params.page, query_params.limit)
+        query = paging(query, query_params.page, query_params.limit)
 
-        res_data = await self._execute(query)
-
-        data = res_data.all()
-
-        # If sorting manually, both sort and paginate manually
-        if manual_order_fields:
-            data = ordering.manual_sort(data, manual_order_fields)
-            data = ordering.manual_paginate(data, query_params.page, query_params.limit)
-
+        data = (await self._execute(query)).all()
         data = parse_obj_as(list[WorkspaceManager], data)
-        ordering_fields = ordering.get_ordering_fields(total < MANAGERS_MANUAL_SORT_LIMIT)
+        ordering_fields = ordering.get_ordering_fields(total)
 
         # TODO: Fix via class Searching
         #  using database fields - StringEncryptedType
