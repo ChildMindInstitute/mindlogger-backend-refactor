@@ -360,7 +360,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 404
 
     async def test_get_workspace_respondents(
-        self, client: TestClient, tom: User, applet_one_lucy_respondent: AppletFull
+        self, client: TestClient, tom: User, lucy: User, applet_one_lucy_respondent: AppletFull
     ):
         client.login(tom)
         response = await client.get(
@@ -387,13 +387,25 @@ class TestWorkspaces(BaseTest):
         assert lucy_result_details[0]["invitation"]  # Applet 1
         assert lucy_result_details[0]["invitation"]["status"] == "pending"
 
+        assert lucy_result_details[0]["subjectFirstName"] == lucy.first_name
+        assert lucy_result_details[0]["subjectLastName"] == lucy.last_name
+        assert lucy_result_details[0]["subjectCreatedAt"]
+
         # Tom has an approved invitation to Applet 1
         assert tom_result_details[0]["invitation"]  # Applet 1
         assert tom_result_details[0]["invitation"]["status"] == "approved"
 
+        assert tom_result_details[0]["subjectFirstName"] == tom.first_name
+        assert tom_result_details[0]["subjectLastName"] == tom.last_name
+        assert tom_result_details[0]["subjectCreatedAt"]
+
         # Tom has a pending invitation to Applet 2
         assert tom_result_details[1]["invitation"]  # Applet 2
         assert tom_result_details[1]["invitation"]["status"] == "pending"
+
+        assert tom_result_details[1]["subjectFirstName"] == tom.first_name
+        assert tom_result_details[1]["subjectLastName"] == tom.last_name
+        assert tom_result_details[1]["subjectCreatedAt"]
 
         # test search
         access_id_0 = lucy_result_details[0]["accessId"]
@@ -423,6 +435,7 @@ class TestWorkspaces(BaseTest):
         self,
         client: TestClient,
         tom: User,
+        lucy: User,
         applet_one: AppletFull,
         applet_one_lucy_respondent: AppletFull,
         uuid_zero: uuid.UUID,
@@ -455,9 +468,17 @@ class TestWorkspaces(BaseTest):
         assert lucy_result_details[0]["invitation"]  # Applet 1
         assert lucy_result_details[0]["invitation"]["status"] == "pending"
 
+        assert lucy_result_details[0]["subjectFirstName"] == lucy.first_name
+        assert lucy_result_details[0]["subjectLastName"] == lucy.last_name
+        assert lucy_result_details[0]["subjectCreatedAt"]
+
         # Tom has an approved invitation to Applet 1
         assert tom_result_details[0]["invitation"]  # Applet 1
         assert tom_result_details[0]["invitation"]["status"] == "approved"
+
+        assert tom_result_details[0]["subjectFirstName"] == tom.first_name
+        assert tom_result_details[0]["subjectLastName"] == tom.last_name
+        assert tom_result_details[0]["subjectCreatedAt"]
 
         # test search
         access_id = lucy_result_details[0]["accessId"]
