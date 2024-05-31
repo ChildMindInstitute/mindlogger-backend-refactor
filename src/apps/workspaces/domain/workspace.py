@@ -75,7 +75,7 @@ class WorkspaceRespondentDetails(InternalModel):
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
     subject_tag: str | None
-    pending_invitation: InvitationResponse | None = None
+    invitation: InvitationResponse | None = None
 
     @root_validator
     def decrypt_nickname(cls, values):
@@ -170,7 +170,7 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
     subject_tag: str | None
-    pending_invitation: InvitationResponse | None = None
+    invitation: InvitationResponse | None = None
 
 
 class PublicWorkspaceRespondent(PublicModel):

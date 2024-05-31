@@ -58,18 +58,18 @@ class InvitationsService:
     async def fetch_all(self, query_params: QueryParams) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_invitor_id(self._user.id, query_params)
 
-    async def fetch_pending_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
-        return await self.invitations_crud.get_pending_by_emails(emails)
+    async def fetch_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
+        return await self.invitations_crud.get_latest_by_emails(emails)
 
     async def fill_pending_invitations_respondents(
         self, respondents: list[WorkspaceRespondent]
     ) -> list[WorkspaceRespondent]:
         emails = [respondent.email for respondent in respondents if respondent.email is not None]
-        pending_invitations = await self.fetch_pending_by_emails(emails)
+        invitations = await self.fetch_by_emails(emails)
 
         for respondent in respondents:
             for detail in respondent.details or []:
-                pending_invitation = next(
+                invitation = next(
                     (
                         InvitationResponse(
                             email=invitation.email,
@@ -87,13 +87,13 @@ class InvitationsService:
                             tag=invitation.tag,
                             title=invitation.title,
                         )
-                        for invitation in pending_invitations
+                        for invitation in invitations
                         if invitation.email == respondent.email and invitation.applet_id == detail.applet_id
                     ),
                     None,
                 )
-                if pending_invitation is not None:
-                    detail.__dict__["pending_invitation"] = pending_invitation
+                if invitation is not None:
+                    detail.__dict__["invitation"] = invitation
 
         return respondents
 

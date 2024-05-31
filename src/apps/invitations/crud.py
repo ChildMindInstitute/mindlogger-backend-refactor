@@ -130,10 +130,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
-    async def get_pending_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
-        """Return the list of pending invitations
-        for the provided emails.
-        """
+    async def get_latest_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
+        """Return the list of "latest invitation" for the provided emails"""
         query: Query = select(
             InvitationSchema,
             AppletSchema.display_name.label("applet_name"),
@@ -151,7 +149,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             ),
         )
         query = query.where(InvitationSchema.email.in_(emails))
-        query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
+        query = query.where(InvitationSchema.status.in_([InvitationStatus.PENDING, InvitationStatus.APPROVED]))
         db_result = await self._execute(query)
         results = []
         for invitation, applet_name, secret_id, nickname, first_name, last_name in db_result.all():

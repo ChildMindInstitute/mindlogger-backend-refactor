@@ -384,11 +384,16 @@ class TestWorkspaces(BaseTest):
         tom_result_details = tom_result["details"]
 
         # Lucy has a pending invitation to Applet 1
-        assert lucy_result_details[0]["pendingInvitation"] is not None  # Applet 1
+        assert lucy_result_details[0]["invitation"]  # Applet 1
+        assert lucy_result_details[0]["invitation"]["status"] == "pending"
 
-        # Tom has a pending invitation only to Applet 2
-        assert tom_result_details[0]["pendingInvitation"] is None  # Applet 1
-        assert tom_result_details[1]["pendingInvitation"] is not None  # Applet 2
+        # Tom has an approved invitation to Applet 1
+        assert tom_result_details[0]["invitation"]  # Applet 1
+        assert tom_result_details[0]["invitation"]["status"] == "approved"
+
+        # Tom has a pending invitation to Applet 2
+        assert tom_result_details[1]["invitation"]  # Applet 2
+        assert tom_result_details[1]["invitation"]["status"] == "pending"
 
         # test search
         access_id_0 = lucy_result_details[0]["accessId"]
@@ -447,10 +452,12 @@ class TestWorkspaces(BaseTest):
         tom_result_details = tom_result["details"]
 
         # Lucy has a pending invitation to Applet 1
-        assert lucy_result_details[0]["pendingInvitation"] is not None  # Applet 1
+        assert lucy_result_details[0]["invitation"]  # Applet 1
+        assert lucy_result_details[0]["invitation"]["status"] == "pending"
 
-        # Tom does not have a pending invitation to Applet 1
-        assert tom_result_details[0]["pendingInvitation"] is None  # Applet 1
+        # Tom has an approved invitation to Applet 1
+        assert tom_result_details[0]["invitation"]  # Applet 1
+        assert tom_result_details[0]["invitation"]["status"] == "approved"
 
         # test search
         access_id = lucy_result_details[0]["accessId"]
