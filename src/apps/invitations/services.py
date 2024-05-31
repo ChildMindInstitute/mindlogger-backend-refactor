@@ -58,7 +58,7 @@ class InvitationsService:
     async def fetch_all(self, query_params: QueryParams) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_invitor_id(self._user.id, query_params)
 
-    async def fetch_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
+    async def fetch_by_emails(self, emails: list[str]) -> dict[str, InvitationDetail]:
         return await self.invitations_crud.get_latest_by_emails(emails)
 
     async def fill_pending_invitations_respondents(
@@ -69,31 +69,26 @@ class InvitationsService:
 
         for respondent in respondents:
             for detail in respondent.details or []:
-                invitation = next(
-                    (
-                        InvitationResponse(
-                            email=invitation.email,
-                            applet_id=invitation.applet_id,
-                            applet_name=invitation.applet_name,
-                            role=invitation.role,
-                            key=invitation.key,
-                            status=invitation.status,
-                            first_name=invitation.first_name,
-                            last_name=invitation.last_name,
-                            created_at=invitation.created_at,
-                            meta=invitation.meta,
-                            nickname=invitation.nickname,
-                            secret_user_id=invitation.secret_user_id,
-                            tag=invitation.tag,
-                            title=invitation.title,
-                        )
-                        for invitation in invitations
-                        if invitation.email == respondent.email and invitation.applet_id == detail.applet_id
-                    ),
-                    None,
-                )
-                if invitation is not None:
-                    detail.__dict__["invitation"] = invitation
+                if f"{respondent.email}_{detail.applet_id}" in invitations:
+                    invitation = invitations[
+                        "{email}_{applet_id}".format(email=respondent.email, applet_id=detail.applet_id)
+                    ]
+                    detail.__dict__["invitation"] = InvitationResponse(
+                        email=invitation.email,
+                        applet_id=invitation.applet_id,
+                        applet_name=invitation.applet_name,
+                        role=invitation.role,
+                        key=invitation.key,
+                        status=invitation.status,
+                        first_name=invitation.first_name,
+                        last_name=invitation.last_name,
+                        created_at=invitation.created_at,
+                        meta=invitation.meta,
+                        nickname=invitation.nickname,
+                        secret_user_id=invitation.secret_user_id,
+                        tag=invitation.tag,
+                        title=invitation.title,
+                    )
 
         return respondents
 

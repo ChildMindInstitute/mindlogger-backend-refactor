@@ -130,7 +130,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             )
         return results
 
-    async def get_latest_by_emails(self, emails: list[str]) -> list[InvitationDetail]:
+    async def get_latest_by_emails(self, emails: list[str]) -> dict[str, InvitationDetail]:
         """Return the list of "latest invitation" for the provided emails"""
         query: Query = select(
             InvitationSchema,
@@ -151,26 +151,24 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(InvitationSchema.email.in_(emails))
         query = query.where(InvitationSchema.status.in_([InvitationStatus.PENDING, InvitationStatus.APPROVED]))
         db_result = await self._execute(query)
-        results = []
+        results = {}
         for invitation, applet_name, secret_id, nickname, first_name, last_name in db_result.all():
-            results.append(
-                InvitationDetail(
-                    id=invitation.id,
-                    email=invitation.email,
-                    applet_id=invitation.applet_id,
-                    applet_name=applet_name,
-                    role=invitation.role,
-                    key=invitation.key,
-                    status=invitation.status,
-                    invitor_id=invitation.invitor_id,
-                    meta=invitation.meta,
-                    first_name=first_name if invitation.role == Role.RESPONDENT else invitation.first_name,
-                    last_name=last_name if invitation.role == Role.RESPONDENT else invitation.last_name,
-                    created_at=invitation.created_at,
-                    nickname=nickname,
-                    secret_user_id=secret_id,
-                    tag=invitation.tag,
-                )
+            results[f"{invitation.email}_{invitation.applet_id}"] = InvitationDetail(
+                id=invitation.id,
+                email=invitation.email,
+                applet_id=invitation.applet_id,
+                applet_name=applet_name,
+                role=invitation.role,
+                key=invitation.key,
+                status=invitation.status,
+                invitor_id=invitation.invitor_id,
+                meta=invitation.meta,
+                first_name=first_name if invitation.role == Role.RESPONDENT else invitation.first_name,
+                last_name=last_name if invitation.role == Role.RESPONDENT else invitation.last_name,
+                created_at=invitation.created_at,
+                nickname=nickname,
+                secret_user_id=secret_id,
+                tag=invitation.tag,
             )
         return results
 
