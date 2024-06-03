@@ -610,16 +610,21 @@ class AppletService:
         if not create_request.require_login:
             anonym = await UserService(self.session).create_anonymous_respondent()
             await UserAppletAccessService(self.session, self.user_id, applet_id).add_role_for_anonymous_respondent()
-            await SubjectsService(self.session, self.user_id).create(
-                SubjectCreate(
-                    applet_id=applet_id,
-                    creator_id=self.user_id,
-                    user_id=anonym.id,
-                    first_name=anonym.first_name,
-                    last_name=anonym.last_name,
-                    secret_user_id=settings.anonymous_respondent.secret_user_id,
+            subject_service = SubjectsService(self.session, self.user_id)
+            subject = await subject_service.get_by_user_and_applet(anonym.id, applet_id)
+            if not subject or subject.is_deleted:
+                await subject_service.create(
+                    SubjectCreate(
+                        applet_id=applet_id,
+                        creator_id=self.user_id,
+                        user_id=anonym.id,
+                        first_name=anonym.first_name,
+                        last_name=anonym.last_name,
+                        secret_user_id=settings.anonymous_respondent.secret_user_id,
+                        email=settings.anonymous_respondent.email,
+                    )
                 )
-            )
+
         return AppletLink(link=link, require_login=create_request.require_login)
 
     async def get_access_link(self, applet_id: uuid.UUID) -> AppletLink:

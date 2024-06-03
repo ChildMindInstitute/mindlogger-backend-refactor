@@ -1,7 +1,5 @@
 name: run_build
 on: [push, pull_request]
-env:
-  AWS_REGION : "us-east-1"
 
 permissions:
   id-token: write
@@ -20,8 +18,9 @@ jobs:
         BUILD_NUMBER: ${{github.run_id}}
         ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
         TEST_COMMAND: sleep 1
-        ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
         OUT_DIR: ./out
+        AWS_REGION : "us-east-1"
+        ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
 
     steps:
       - name: Git clone the repository
@@ -51,3 +50,24 @@ jobs:
           project-name: mindlogger-backend-refactor-builder
           env-vars-for-codebuild: |
            GITHUB_ORGANIZATION, GITHUB_REPO_NAME, GITHUB_BRANCH_OR_TAG, GITHUB_REF, BUILD_NAME, BUILD_NUMBER, ECR_ADDRESS, TEST_COMMAND, ECR_REPO, OUT_DIR, DOCKER_USER, DOCKER_PASSWORD, REPORT_SERVER_PUBLIC_KEY
+
+  deploy_to_dev:
+    needs: run_codebuild_project
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_dev.yaml@develop
+    with:
+      COMMIT_HASH: ${{ github.sha }}
+      IMAGE_PREFIX: ${{ github.ref_name }}
+
+  deploy_to_uat:
+    needs: run_codebuild_project
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_uat.yaml@develop
+    with:
+      COMMIT_HASH: ${{ github.sha }}
+      IMAGE_PREFIX: ${{ github.ref_name }}
+
+  deploy_to_test:
+    needs: run_codebuild_project
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_test.yaml@develop
+    with:
+      COMMIT_HASH: ${{ github.sha }}
+      IMAGE_PREFIX: ${{ github.ref_name }}
