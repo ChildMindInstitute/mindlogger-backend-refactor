@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
-from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist
+from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist, FlowDoesNotExist
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -1036,17 +1036,31 @@ class AnswerService:
             raise activity_error_exception
 
         act_versions = set(map(lambda act_hst: act_hst.id_version, activity_hsts))
-        answer = await AnswersCRUD(self.answer_session).get_latest_answer(applet_id, act_versions, subject_id)
+        answer = await AnswersCRUD(self.answer_session).get_latest_activity_answer(applet_id, act_versions, subject_id)
         if not answer:
             return None
 
         service = ReportServerService(self.session, arbitrary_session=self.answer_session)
-        is_single_flow = await service.is_flows_single_report(answer.id)
-        if is_single_flow:
-            report = await service.create_report(answer.submit_id)
-        else:
-            report = await service.create_report(answer.submit_id, answer.id)
+        report = await service.create_report(answer.submit_id, answer.id)
+        return report
 
+    async def get_flow_summary_latest_report(
+        self, applet_id: uuid.UUID, flow_id: uuid.UUID, subject_id: uuid.UUID
+    ) -> ReportServerResponse | None:
+        await self._is_report_server_configured(applet_id)
+        flow_hist_crud = FlowsHistoryCRUD(self.session)
+        flow_histories = await flow_hist_crud.get_list_by_id(flow_id)
+        if not flow_histories:
+            flow_not_exist_ex = FlowDoesNotExist()
+            flow_not_exist_ex.message = f"No such activity flow with id=${flow_id}"
+            raise flow_not_exist_ex
+        flow_versions = set(map(lambda f: f.id_version, flow_histories))
+        answer_service = AnswersCRUD(self.answer_session)
+        answer = await answer_service.get_latest_flow_answer(applet_id, flow_versions, subject_id)
+        if not answer:
+            return None
+        service = ReportServerService(self.session, arbitrary_session=self.answer_session)
+        report = await service.create_report(answer.submit_id)
         return report
 
     async def _is_report_server_configured(self, applet_id: uuid.UUID):

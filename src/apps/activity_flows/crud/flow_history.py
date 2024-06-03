@@ -112,3 +112,9 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         data = result.all()
 
         return parse_obj_as(list[Version], data)
+
+    async def get_list_by_id(self, id_: uuid.UUID) -> list[ActivityFlowHistoriesSchema]:
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.where(ActivityFlowHistoriesSchema.id == id_)
+        result = await self._execute(query)
+        return result.scalars().all()

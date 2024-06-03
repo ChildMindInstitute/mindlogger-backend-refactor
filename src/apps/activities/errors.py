@@ -252,3 +252,7 @@ class FlowItemActivityKeyNotFoundError(ValidationError):
 
 class MultiSelectNoneOptionError(ValidationError):
     message = _("No more than 1 none option is not allowed for multiselect.")
+
+
+class FlowDoesNotExist(NotFoundError):
+    message = _("Flow does not exist.")

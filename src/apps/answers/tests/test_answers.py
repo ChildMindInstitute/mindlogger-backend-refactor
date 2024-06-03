@@ -391,6 +391,13 @@ async def submission_answer(
     return next(filter(lambda a: a.is_flow_completed, answers_reviewable_submission))
 
 
+@pytest.fixture
+async def tom_applet_with_flow_subject(
+    session: AsyncSession, tom: User, applet_with_flow: AppletFull
+) -> Subject | None:
+    return await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet_with_flow.id)
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -436,7 +443,10 @@ class TestAnswerActivityItems(BaseTest):
     submission_note_detail_url = (
         "/answers/applet/{applet_id}/submissions/{submission_id}/flows/{flow_id}/notes/{note_id}"
     )
-    latest_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"
+    latest_activity_report_url = (
+        "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"
+    )
+    latest_flow_report_url = "/answers/applet/{applet_id}/flows/{flow_id}/subjects/{subject_id}/latest_report"
     check_existence_url = "/answers/check-existence"
     assessment_delete_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}"
 
@@ -512,7 +522,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
 
         response = await client.post(
-            self.latest_report_url.format(
+            self.latest_activity_report_url.format(
                 applet_id=str(applet.id),
                 activity_id=str(applet.activities[0].id),
                 subject_id=str(tom_applet_subject.id),
@@ -2215,3 +2225,25 @@ class TestAnswerActivityItems(BaseTest):
         payload = result.json()
         assert payload
         assert payload["count"] == 1
+
+    @pytest.mark.usefixtures("mock_report_server_response", "answer")
+    async def test_get_latest_flow_summary(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_with_flow: AppletFull,
+        tom_answer_activity_flow_multiple: AnswerSchema,
+        tom_applet_with_flow_subject: Subject,
+    ):
+        client.login(tom)
+        flow_id = applet_with_flow.activity_flows[0].id
+        applet_id = applet_with_flow.id
+        response = await client.post(
+            self.latest_flow_report_url.format(
+                applet_id=str(applet_id),
+                flow_id=str(flow_id),
+                subject_id=str(tom_applet_with_flow_subject.id),
+            ),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.content == b"pdf body"
