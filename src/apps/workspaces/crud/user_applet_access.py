@@ -576,6 +576,19 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         return data, total, ordering_fields
 
+    async def get_applet_respondents_total(self, applet_id: uuid.UUID) -> int:
+        query: Query = (
+            select(count(SubjectSchema.id))
+            .select_from(SubjectSchema)
+            .where(
+                SubjectSchema.applet_id == applet_id,
+                SubjectSchema.soft_exists(),
+            )
+        )
+
+        result = await self._execute(query)
+        return result.scalar()
+
     async def get_workspace_managers(
         self,
         user_id: uuid.UUID,

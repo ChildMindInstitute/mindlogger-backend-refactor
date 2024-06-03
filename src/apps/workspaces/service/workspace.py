@@ -96,6 +96,13 @@ class WorkspaceService:
         )
         return users, total, ordering_fields
 
+    async def get_workspace_applet_respondents_total(self, applet_id: uuid.UUID) -> int:
+        await CheckAccessService(self.session, self._user_id).check_applet_respondent_list_access(applet_id)
+
+        total = await UserAppletAccessCRUD(self.session).get_applet_respondents_total(applet_id)
+
+        return total
+
     async def get_workspace_managers(
         self,
         owner_id: uuid.UUID,

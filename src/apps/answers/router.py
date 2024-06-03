@@ -16,6 +16,7 @@ from apps.answers.api import (
     applet_flow_answer_retrieve,
     applet_flow_identifiers_retrieve,
     applet_flow_submissions_list,
+    applet_submissions_list,
     applet_submit_date_list,
     applet_validate_multiinformant_assessment,
     applets_completed_entities,
@@ -48,7 +49,7 @@ from apps.answers.domain import (
     PublicSummaryActivity,
     PublicSummaryActivityFlow,
 )
-from apps.answers.domain.answers import MultiinformantAssessmentValidationResponse
+from apps.answers.domain.answers import MultiinformantAssessmentValidationResponse, PublicSubmissionsResponse
 from apps.applets.api.applets import applet_flow_versions_data_retrieve
 from apps.applets.domain.applet_history import VersionPublic
 from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, Response, ResponseMulti
@@ -338,3 +339,14 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_validate_multiinformant_assessment)
+
+
+router.get(
+    "/applet/{applet_id}/submissions",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": PublicSubmissionsResponse},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_submissions_list)

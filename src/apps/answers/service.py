@@ -56,6 +56,7 @@ from apps.answers.domain import (
     SummaryActivity,
     SummaryActivityFlow,
 )
+from apps.answers.domain.answers import AppletSubmission, RespondentAnswerData
 from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
@@ -801,12 +802,9 @@ class AnswerService:
         if not schema.is_reviewable:
             raise ActivityIsNotAssessment()
 
-    async def get_export_data(  # noqa: C901
-        self,
-        applet_id: uuid.UUID,
-        query_params: QueryParams,
-        skip_activities: bool = False,
-    ) -> AnswerExport:
+    async def _get_exported_data(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[RespondentAnswerData], int]:
         assert self.user_id is not None
 
         access = await UserAppletAccessCRUD(self.session).get_by_roles(
@@ -851,6 +849,88 @@ class AnswerService:
             **filters,
         )
 
+        return answers, total
+
+    async def get_applet_submissions(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[AppletSubmission], int]:
+        answers, total = await self._get_exported_data(applet_id, query_params)
+
+        if not answers:
+            return [], total
+
+        respondent_ids: set[uuid.UUID] = set()
+        subject_ids: set[uuid.UUID] = set()
+        activity_hist_ids = set()
+        for answer in answers:
+            # collect id to resolve data
+            respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.target_subject_id:
+                subject_ids.add(answer.target_subject_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.source_subject_id:
+                subject_ids.add(answer.source_subject_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.activity_history_id:
+                activity_hist_ids.add(answer.activity_history_id)
+
+        activities_coro = ActivityHistoriesCRUD(self.session).get_by_history_ids(list(activity_hist_ids))
+        subject_map_coro = SubjectsCrud(self.session).get_by_ids(list(subject_ids))
+        user_subject_coro = SubjectsCrud(self.session).get_by_user_ids(applet_id, list(respondent_ids))
+
+        coros_result = await asyncio.gather(
+            activities_coro,
+            user_subject_coro,
+            subject_map_coro,
+            return_exceptions=True,
+        )
+
+        for res in coros_result:
+            if isinstance(res, BaseException):
+                raise res
+
+        activities, users_subjects, subjects = coros_result
+
+        activities_map = {activity.id_version: activity for activity in activities}  # type: ignore
+        subject_map = {subject.id: subject for subject in subjects}  # type: ignore
+        users_subjects_map = {subject.user_id: subject for subject in users_subjects}  # type: ignore
+
+        submissions: list[AppletSubmission] = []
+
+        for answer in answers:
+            activity = activities_map[answer.activity_history_id]
+            respondent_subject = users_subjects_map[answer.respondent_id]
+            target_subject = subject_map.get(answer.target_subject_id) or respondent_subject
+            source_subject = subject_map.get(answer.source_subject_id) or respondent_subject
+
+            submissions.append(
+                AppletSubmission(
+                    applet_id=applet_id,
+                    activity_name=activity.name,
+                    created_at=answer.created_at,
+                    updated_at=answer.end_datetime,
+                    target_secret_user_id=target_subject.secret_user_id,
+                    target_subject_tag=target_subject.tag,
+                    target_subject_id=target_subject.id,
+                    target_nickname=target_subject.nickname,
+                    source_secret_user_id=source_subject.secret_user_id,
+                    source_subject_id=source_subject.id,
+                    source_nickname=source_subject.nickname,
+                    source_subject_tag=source_subject.tag,
+                    respondent_subject_id=respondent_subject.id,
+                    respondent_secret_user_id=respondent_subject.secret_user_id,
+                    respondent_subject_tag=respondent_subject.tag,
+                    respondent_nickname=respondent_subject.nickname,
+                )
+            )
+
+        return submissions, total
+
+    async def get_export_data(  # noqa: C901
+        self,
+        applet_id: uuid.UUID,
+        query_params: QueryParams,
+        skip_activities: bool = False,
+    ) -> AnswerExport:
+        answers, total = await self._get_exported_data(applet_id, query_params)
         if not answers:
             return AnswerExport()
 
