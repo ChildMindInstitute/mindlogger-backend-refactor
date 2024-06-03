@@ -511,12 +511,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return db_result.all()  # noqa
 
     async def get_submitted_flows_with_last_date(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, target_subject_id: uuid.UUID | None
     ) -> list[tuple[str, datetime.datetime]]:
         query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
         query = query.where(AnswerSchema.applet_id == applet_id, AnswerSchema.flow_history_id.isnot(None))
-        if respondent_id:
-            query = query.where(AnswerSchema.respondent_id == respondent_id)
+        if target_subject_id:
+            query = query.where(AnswerSchema.target_subject_id == target_subject_id)
         query = query.group_by(AnswerSchema.flow_history_id)
         query = query.order_by(AnswerSchema.flow_history_id)
         db_result = await self._execute(query)
