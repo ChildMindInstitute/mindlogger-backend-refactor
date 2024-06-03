@@ -932,3 +932,11 @@ class TestApplet:
         resp = await client.get(self.history_changes_url.format(pk=applet_one.id, version=applet_one.version))
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["displayName"] == f"New applet {applet_one.display_name} added"
+
+    async def test_applet_retrieve_meta(
+        self, client: TestClient, tom: User, applet_with_reviewable_activity: AppletFull
+    ):
+        client.login(tom)
+        response = await client.get(self.applet_detail_url.format(pk=applet_with_reviewable_activity.id))
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["appletMeta"]["hasAssessment"]

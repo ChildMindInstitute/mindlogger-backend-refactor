@@ -346,7 +346,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 flow_history_id.label("flow_history_id"),
                 AnswerItemSchema.created_at,
                 reviewed_answer_id.label("reviewed_answer_id"),
-                reviewed_answer_id.label("reviewed_answer_id"),
+                AnswerItemSchema.reviewed_flow_submit_id,
                 AnswerSchema.client,
                 AnswerItemSchema.tz_offset,
                 AnswerItemSchema.scheduled_event_id,
@@ -366,7 +366,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         query = query.order_by(AnswerItemSchema.created_at.desc())
         query = paging(query, page, limit)
-
         coro_data, coro_count = (
             self._execute(query),
             self._execute(query_count),
@@ -799,3 +798,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         await self._execute(query)
+
+    async def get_last_answer_in_flow(
+        self, submit_id: uuid.UUID, flow_id: uuid.UUID | None = None
+    ) -> AnswerSchema | None:
+        query = select(AnswerSchema)
+        query = query.where(
+            AnswerSchema.submit_id == submit_id,
+            AnswerSchema.is_flow_completed.is_(True),
+        )
+        if flow_id:
+            query = query.where(AnswerSchema.flow_history_id.like(f"{flow_id}_%"))
+        result = await self._execute(query)
+        return result.scalar_one_or_none()

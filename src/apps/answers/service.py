@@ -18,6 +18,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
+from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
@@ -490,6 +491,12 @@ class AnswerService:
             pk = self._generate_history_id(answer_schema.version)
             await ActivityHistoriesCRUD(self.session).get_by_id(pk(activity_id))
 
+    async def _validate_submission_access(self, applet_id: uuid.UUID, submission_id: uuid.UUID):
+        answer_schema = await AnswersCRUD(self.answer_session).get_last_answer_in_flow(submission_id)
+        if not answer_schema:
+            raise AnswerNotFoundError()
+        await self._validate_applet_activity_access(applet_id, answer_schema.target_subject_id)
+
     async def get_flow_submission(
         self,
         applet_id: uuid.UUID,
@@ -554,7 +561,7 @@ class AnswerService:
 
         return submission
 
-    async def add_note(
+    async def add_answer_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
@@ -572,15 +579,11 @@ class AnswerService:
         return note_schema
 
     async def get_note_list(
-        self,
-        applet_id: uuid.UUID,
-        answer_id: uuid.UUID,
-        activity_id: uuid.UUID,
-        query_params: QueryParams,
+        self, applet_id: uuid.UUID, answer_id: uuid.UUID, activity_id: uuid.UUID, page: int, limit: int
     ) -> list[AnswerNoteDetail]:
         await self._validate_answer_access(applet_id, answer_id, activity_id)
         notes_crud = AnswerNotesCRUD(self.session)
-        note_schemas = await notes_crud.get_by_answer_id(answer_id, activity_id, query_params)
+        note_schemas = await notes_crud.get_by_answer_id(answer_id, activity_id, page, limit)
         user_ids = set(map(lambda n: n.user_id, note_schemas))
         users_crud = UsersCRUD(self.session)
         users = await users_crud.get_by_ids(user_ids)
@@ -590,7 +593,12 @@ class AnswerService:
     async def get_notes_count(self, answer_id: uuid.UUID, activity_id: uuid.UUID) -> int:
         return await AnswerNotesCRUD(self.session).get_count_by_answer_id(answer_id, activity_id)
 
-    async def edit_note(
+    async def get_submission_notes_count(
+        self, answer_id: uuid.UUID, activity_id: uuid.UUID, page: int, limit: int
+    ) -> int:
+        return await AnswerNotesCRUD(self.session).get_count_by_submission_id(answer_id, activity_id, page, limit)
+
+    async def edit_answer_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
@@ -602,7 +610,7 @@ class AnswerService:
         await self._validate_note_access(note_id)
         await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
 
-    async def delete_note(
+    async def delete_answer_note(
         self,
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
@@ -618,12 +626,8 @@ class AnswerService:
         if note.user_id != self.user_id:
             raise AnswerNoteAccessDeniedError()
 
-    async def get_assessment_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> AssessmentAnswer:
+    async def _get_full_assessment_info(self, applet_id: uuid.UUID, assessment_answer: AnswerItemSchema | None):
         assert self.user_id
-
-        await self._validate_answer_access(applet_id, answer_id)
-        assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id)
-
         items_crud = ActivityItemHistoriesCRUD(self.session)
         last = items_crud.get_applets_assessments(applet_id)
         if assessment_answer:
@@ -668,6 +672,28 @@ class AnswerService:
             )
         return answer
 
+    async def get_assessment_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> AssessmentAnswer:
+        assert self.user_id
+        await self._validate_answer_access(applet_id, answer_id)
+        assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id)
+        assessment_answer_model = await self._get_full_assessment_info(applet_id, assessment_answer)
+        return assessment_answer_model
+
+    async def get_assessment_by_submit_id(self, applet_id: uuid.UUID, submit_id: uuid.UUID) -> AssessmentAnswer | None:
+        assert self.user_id
+        await self._validate_submission_access(applet_id, submit_id)
+        answer = await self.get_submission_last_answer(submit_id)
+        if answer:
+            assessment_answer = await AnswerItemsCRUD(self.answer_session).get_assessment(
+                answer.id, self.user_id, submit_id
+            )
+        else:
+            # Submission without answer on assessments
+            assessment_answer = None
+
+        assessment_answer_model = await self._get_full_assessment_info(applet_id, assessment_answer)
+        return assessment_answer_model
+
     async def get_reviews_by_answer_id(self, applet_id: uuid.UUID, answer_id: uuid.UUID) -> list[AnswerReview]:
         assert self.user_id
 
@@ -680,35 +706,28 @@ class AnswerService:
         activity_versions = [t[1] for t in reviewer_activity_version]
         activity_items = await ActivityItemHistoriesCRUD(self.session).get_by_activity_id_versions(activity_versions)
 
-        reviews = await AnswerItemsCRUD(self.answer_session).get_reviews_by_answer_id(answer_id, activity_items)
+        reviews = await AnswerItemsCRUD(self.answer_session).get_reviews_by_answer_id(answer_id)
+        results = await self._prepare_answer_reviews(reviews, activity_items, current_role)
+        return results
 
-        user_ids = [rev.respondent_id for rev in reviews]
-        users = await UsersCRUD(self.session).get_by_ids(user_ids)
-        results = []
-        for schema in reviews:
-            user = next(filter(lambda u: u.id == schema.respondent_id, users), None)
-            current_activity_items = list(
-                filter(
-                    lambda i: i.activity_id == schema.assessment_activity_id,
-                    activity_items,
-                )
-            )
-            if not user:
-                continue
+    async def get_reviews_by_submission_id(self, applet_id: uuid.UUID, submit_id: uuid.UUID) -> list[AnswerReview]:
+        assert self.user_id
 
-            can_view = await self.can_view_current_review(user.id, current_role)
-            results.append(
-                AnswerReview(
-                    id=schema.id,
-                    reviewer_public_key=schema.user_public_key if can_view else None,
-                    answer=schema.answer if can_view else None,
-                    item_ids=schema.item_ids,
-                    items=current_activity_items,
-                    reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
-                    created_at=schema.created_at,
-                    updated_at=schema.updated_at,
-                )
-            )
+        await self._validate_submission_access(applet_id, submit_id)
+        answer = await self.get_submission_last_answer(submit_id)
+        if not answer:
+            return []
+
+        current_role = await AppletAccessCRUD(self.session).get_applets_priority_role(applet_id, self.user_id)
+        reviewer_activity_version = await AnswerItemsCRUD(self.answer_session).get_assessment_activity_id(answer.id)
+        if not reviewer_activity_version:
+            return []
+
+        activity_versions = [t[1] for t in reviewer_activity_version]
+        activity_items = await ActivityItemHistoriesCRUD(self.session).get_by_activity_id_versions(activity_versions)
+
+        reviews = await AnswerItemsCRUD(self.answer_session).get_reviews_by_submit_id(submit_id)
+        results = await self._prepare_answer_reviews(reviews, activity_items, current_role)
         return results
 
     async def create_assessment_answer(
@@ -716,11 +735,12 @@ class AnswerService:
         applet_id: uuid.UUID,
         answer_id: uuid.UUID,
         schema: AssessmentAnswerCreate,
+        submit_id: uuid.UUID | None = None,
     ):
         assert self.user_id
 
         await self._validate_answer_access(applet_id, answer_id)
-        assessment = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id)
+        assessment = await AnswerItemsCRUD(self.answer_session).get_assessment(answer_id, self.user_id, submit_id)
         if assessment:
             await AnswerItemsCRUD(self.answer_session).update(
                 AnswerItemSchema(
@@ -736,6 +756,7 @@ class AnswerService:
                     start_datetime=datetime.datetime.utcnow(),
                     end_datetime=datetime.datetime.utcnow(),
                     assessment_activity_id=schema.assessment_version_id,
+                    reviewed_flow_submit_id=submit_id,
                 )
             )
         else:
@@ -753,6 +774,7 @@ class AnswerService:
                     created_at=now,
                     updated_at=now,
                     assessment_activity_id=schema.assessment_version_id,
+                    reviewed_flow_submit_id=submit_id,
                 )
             )
 
@@ -982,12 +1004,20 @@ class AnswerService:
 
         return FlowSubmissionsDetails(submissions=submissions, flows=flows), total
 
-    async def get_assessments_count(self, answer_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
+    async def get_answer_assessments_count(self, answer_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
         answer_reviewers_t = await AnswerItemsCRUD(self.answer_session).get_reviewers_by_answers(answer_ids)
         answer_reviewers: dict[uuid.UUID, ReviewsCount] = {}
         for answer_id, reviewers in answer_reviewers_t:
             mine = 1 if self.user_id in reviewers else 0
             answer_reviewers[answer_id] = ReviewsCount(mine=mine, other=len(reviewers) - mine)
+        return answer_reviewers
+
+    async def get_submission_assessment_count(self, submission_ids: list[uuid.UUID]) -> dict[uuid.UUID, ReviewsCount]:
+        answer_reviewers_t = await AnswerItemsCRUD(self.answer_session).get_reviewers_by_submission(submission_ids)
+        answer_reviewers: dict[uuid.UUID, ReviewsCount] = {}
+        for submission_id, reviewers in answer_reviewers_t:
+            mine = 1 if self.user_id in reviewers else 0
+            answer_reviewers[submission_id] = ReviewsCount(mine=mine, other=len(reviewers) - mine)
         return answer_reviewers
 
     async def get_summary_latest_report(
@@ -1329,6 +1359,98 @@ class AnswerService:
 
     async def replace_answer_subject(self, sabject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
         await AnswersCRUD(self.answer_session).replace_answers_subject(sabject_id_from, subject_id_to)
+
+    async def get_submission_last_answer(
+        self, submit_id: uuid.UUID, flow_id: uuid.UUID | None = None
+    ) -> AnswerSchema | None:
+        return await AnswersCRUD(self.answer_session).get_last_answer_in_flow(submit_id, flow_id)
+
+    async def add_submission_note(
+        self,
+        applet_id: uuid.UUID,
+        submission_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        note: str,
+    ):
+        answer = await self.get_submission_last_answer(submission_id)
+        if not answer:
+            raise AnswerNotFoundError()
+        await self._validate_applet_activity_access(applet_id, answer.respondent_id)
+        schema = AnswerNoteSchema(
+            answer_id=answer.id, note=note, user_id=self.user_id, activity_flow_id=flow_id, flow_submit_id=submission_id
+        )
+        note_schema = await AnswerNotesCRUD(self.session).save(schema)
+        return note_schema
+
+    async def get_submission_note_list(
+        self,
+        applet_id: uuid.UUID,
+        submission_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        page: int,
+        limit: int,
+    ) -> list[AnswerNoteDetail]:
+        await self._validate_submission_access(applet_id, submission_id)
+        notes_crud = AnswerNotesCRUD(self.session)
+        note_schemas = await notes_crud.get_by_submission_id(submission_id, flow_id, page, limit)
+        user_ids = set(map(lambda n: n.user_id, note_schemas))
+        users_crud = UsersCRUD(self.session)
+        users = await users_crud.get_by_ids(user_ids)
+        notes = await notes_crud.map_users_and_notes(note_schemas, users)
+        return notes
+
+    async def edit_submission_note(
+        self,
+        applet_id: uuid.UUID,
+        submission_id: uuid.UUID,
+        note_id: uuid.UUID,
+        note: str,
+    ):
+        await self._validate_submission_access(applet_id, submission_id)
+        await self._validate_note_access(note_id)
+        await AnswerNotesCRUD(self.session).update_note_by_id(note_id, note)
+
+    async def delete_submission_note(
+        self,
+        applet_id: uuid.UUID,
+        submission_id: uuid.UUID,
+        note_id: uuid.UUID,
+    ):
+        await self._validate_submission_access(applet_id, submission_id)
+        await self._validate_note_access(note_id)
+        await AnswerNotesCRUD(self.session).delete_note_by_id(note_id)
+
+    async def _prepare_answer_reviews(
+        self, reviews: list[AnswerItemSchema], activity_items: list[ActivityItemHistorySchema], role: Role | None
+    ) -> list[AnswerReview]:
+        user_ids = [rev.respondent_id for rev in reviews]
+        users = await UsersCRUD(self.session).get_by_ids(user_ids)
+        results = []
+        for schema in reviews:
+            user = next(filter(lambda u: u.id == schema.respondent_id, users), None)
+            current_activity_items = list(
+                filter(
+                    lambda i: i.activity_id == schema.assessment_activity_id,
+                    activity_items,
+                )
+            )
+            if not user:
+                continue
+
+            can_view = await self.can_view_current_review(user.id, role)
+            results.append(
+                AnswerReview(
+                    id=schema.id,
+                    reviewer_public_key=schema.user_public_key if can_view else None,
+                    answer=schema.answer if can_view else None,
+                    item_ids=schema.item_ids,
+                    items=current_activity_items,
+                    reviewer=dict(id=user.id, first_name=user.first_name, last_name=user.last_name),
+                    created_at=schema.created_at,
+                    updated_at=schema.updated_at,
+                )
+            )
+        return results
 
 
 class ReportServerService:

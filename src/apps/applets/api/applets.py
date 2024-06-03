@@ -16,6 +16,7 @@ from apps.applets.domain import AppletFolder, AppletName, AppletUniqueName, Publ
 from apps.applets.domain.applet import (
     AppletActivitiesBaseInfo,
     AppletDataRetention,
+    AppletMeta,
     AppletRetrieveResponse,
     AppletSingleLanguageDetailForPublic,
     AppletSingleLanguageDetailPublic,
@@ -96,10 +97,12 @@ async def applet_retrieve(
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         applet_future = service.get_single_language_by_id(applet_id, language)
         subject_future = SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
-        applet, subject = await asyncio.gather(applet_future, subject_future)
+        has_assessment_future = AppletService(session, user.id).has_assessment(applet_id)
+        applet, subject, has_assessment = await asyncio.gather(applet_future, subject_future, has_assessment_future)
     return AppletRetrieveResponse(
         result=AppletSingleLanguageDetailPublic.from_orm(applet),
         respondent_meta={"nickname": subject.nickname if subject else None},
+        applet_meta=AppletMeta(has_assessment=has_assessment),
     )
 
 

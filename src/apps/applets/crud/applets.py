@@ -780,3 +780,11 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         query = query.subquery()
         db_result = await self._execute(select(func.count(query.c.id)))
         return db_result.scalars().first() or 0
+
+    async def has_assessment(self, applet_id: uuid.UUID) -> bool:
+        query: Query = select(ActivitySchema.id)
+        query = query.where(ActivitySchema.applet_id == applet_id)
+        query = query.where(ActivitySchema.is_reviewable.is_(True))
+        query = query.exists()
+        result = await self._execute(select(query))
+        return bool(result.scalars().first())
