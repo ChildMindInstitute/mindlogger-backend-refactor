@@ -6,7 +6,7 @@ from starlette import status
 from apps.applets.api import applet_create
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.domain.applets import public_detail
-from apps.shared.domain import Response, ResponseMulti
+from apps.shared.domain import Response, ResponseMulti, ResponseMultiOrdering
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
 from apps.shared.response import EmptyResponse
 from apps.workspaces.api import (
@@ -163,9 +163,9 @@ router.post(
 router.get(
     "/{owner_id}/respondents",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[PublicWorkspaceRespondent],
+    response_model=ResponseMultiOrdering[PublicWorkspaceRespondent],
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceRespondent]},
+        status.HTTP_200_OK: {"model": ResponseMultiOrdering[PublicWorkspaceRespondent]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -174,9 +174,9 @@ router.get(
 router.get(
     "/{owner_id}/applets/{applet_id}/respondents",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[PublicWorkspaceRespondent],
+    response_model=ResponseMultiOrdering[PublicWorkspaceRespondent],
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceRespondent]},
+        status.HTTP_200_OK: {"model": ResponseMultiOrdering[PublicWorkspaceRespondent]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -185,9 +185,9 @@ router.get(
 router.get(
     "/{owner_id}/managers",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[PublicWorkspaceManager],
+    response_model=ResponseMultiOrdering[PublicWorkspaceManager],
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceManager]},
+        status.HTTP_200_OK: {"model": ResponseMultiOrdering[PublicWorkspaceManager]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
@@ -196,9 +196,9 @@ router.get(
 router.get(
     "/{owner_id}/applets/{applet_id}/managers",
     status_code=status.HTTP_200_OK,
-    response_model=ResponseMulti[PublicWorkspaceManager],
+    response_model=ResponseMultiOrdering[PublicWorkspaceManager],
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[PublicWorkspaceManager]},
+        status.HTTP_200_OK: {"model": ResponseMultiOrdering[PublicWorkspaceManager]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

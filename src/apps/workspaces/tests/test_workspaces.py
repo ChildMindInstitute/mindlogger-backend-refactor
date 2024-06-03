@@ -358,18 +358,45 @@ class TestWorkspaces(BaseTest):
         response = await client.get(self.workspace_applets_url.format(owner_id="00000000-0000-0000-0000-000000000000"))
         assert response.status_code == 404
 
-    async def test_get_workspace_respondents(self, client, tom, applet_one_lucy_respondent):
+    async def test_get_workspace_respondents(
+        self,
+        client,
+        tom,
+        user: User,
+        lucy: User,
+        applet_one_lucy_respondent,
+        applet_one_user_respondent,
+        applet_three_tom_respondent,
+        applet_three_user_respondent,
+        applet_one_shell_account: Subject,
+    ):
         client.login(tom)
         response = await client.get(
             self.workspace_respondents_url.format(owner_id=tom.id),
+            dict(ordering="+nicknames"),
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["count"] == 2  # tom(applet1, applet2), lucy(applet1)
+        assert data["count"] == 4  # lucy, tom, shell account, user
         assert data["count"] == len(data["result"])
         assert data["result"][0]["nicknames"]
         assert data["result"][0]["secretIds"]
+
+        # test manual, case-insensitive ordering by encrypted nicknames field
+        assert set(data.keys()) == {"count", "result", "orderingFields"}
+        assert data["orderingFields"] == [
+            "isPinned",
+            "secretIds",
+            "tags",
+            "createdAt",
+            "status",
+            "nicknames",
+        ]
+        assert data["result"][0]["nicknames"] == ["Lucy Gabel"]
+        assert data["result"][1]["nicknames"] == ["shell-account-0"]
+        assert data["result"][2]["nicknames"] == ["Tom Isaak"]
+        assert data["result"][3]["nicknames"] == ["user test"]
 
         # test search
         access_id_0 = data["result"][0]["details"][0]["accessId"]
@@ -388,7 +415,7 @@ class TestWorkspaces(BaseTest):
                 )
                 assert response.status_code == 200
                 data = response.json()
-                assert set(data.keys()) == {"count", "result"}
+                assert set(data.keys()) == {"count", "result", "orderingFields"}
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
@@ -491,15 +518,26 @@ class TestWorkspaces(BaseTest):
         client.login(tom)
         response = await client.get(
             self.workspace_managers_url.format(owner_id=tom.id),
+            dict(ordering="+email"),
         )
 
         assert response.status_code == 200
-        assert response.json()["count"] == 2
+        data = response.json()
+        assert data["count"] == 2
 
-        plain_emails = [tom.email_encrypted, lucy.email_encrypted]
-
-        for result in response.json()["result"]:
-            assert result["email"] in plain_emails
+        # test manual ordering by encrypted email field
+        assert set(data.keys()) == {"count", "result", "orderingFields"}
+        assert data["orderingFields"] == [
+            "createdAt",
+            "isPinned",
+            "lastSeen",
+            "roles",
+            "email",
+            "firstName",
+            "lastName",
+        ]
+        assert data["result"][0]["email"] == lucy.email_encrypted
+        assert data["result"][1]["email"] == tom.email_encrypted
 
         # test search
         search_params = {
@@ -519,7 +557,7 @@ class TestWorkspaces(BaseTest):
 
                 assert response.status_code == 200
                 data = response.json()
-                assert set(data.keys()) == {"count", "result"}
+                assert set(data.keys()) == {"count", "result", "orderingFields"}
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
@@ -563,7 +601,7 @@ class TestWorkspaces(BaseTest):
 
                 assert response.status_code == 200
                 data = response.json()
-                assert set(data.keys()) == {"count", "result"}
+                assert set(data.keys()) == {"count", "result", "orderingFields"}
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
