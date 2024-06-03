@@ -234,7 +234,7 @@ async def applet_flow_submissions_list(
     return PublicFlowSubmissionsResponse(result=submissions, count=total)
 
 
-async def summary_latest_report_retrieve(
+async def summary_activity_latest_report_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
     subject_id: uuid.UUID,
@@ -250,6 +250,33 @@ async def summary_latest_report_retrieve(
 
     report = await AnswerService(session, user.id, answer_session).get_summary_latest_report(
         applet_id, activity_id, subject_id
+    )
+    if report:
+        return FastApiResponse(
+            base64.b64decode(report.pdf.encode()),
+            headers={
+                "Content-Disposition": f'attachment; filename="{report.email.attachment}.pdf"'  # noqa
+            },
+        )
+    return FastApiResponse()
+
+
+async def summary_flow_latest_report_retrieve(
+    applet_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> FastApiResponse:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
+    if not subject:
+        raise NotFoundError(f"Subject {subject_id} not found.")
+
+    report = await AnswerService(session, user.id, answer_session).get_flow_summary_latest_report(
+        applet_id, flow_id, subject_id
     )
     if report:
         return FastApiResponse(

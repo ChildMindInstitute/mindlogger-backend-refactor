@@ -35,8 +35,9 @@ from apps.answers.api import (
     submission_note_edit,
     submission_note_list,
     summary_activity_flow_list,
+    summary_activity_latest_report_retrieve,
     summary_activity_list,
-    summary_latest_report_retrieve,
+    summary_flow_latest_report_retrieve,
 )
 from apps.answers.domain import (
     ActivitySubmissionResponse,
@@ -190,7 +191,17 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(summary_latest_report_retrieve)
+)(summary_activity_latest_report_retrieve)
+
+
+router.post(
+    "/applet/{applet_id}/flows/{flow_id}/subjects/{subject_id}/latest_report",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(summary_flow_latest_report_retrieve)
 
 router.get(
     "/applet/{applet_id}/dates",

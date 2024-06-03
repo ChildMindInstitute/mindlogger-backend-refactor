@@ -441,19 +441,37 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return results
 
-    async def get_latest_answer(
+    async def get_latest_activity_answer(
         self,
         applet_id: uuid.UUID,
-        activity_id: Collection[str],
-        subject_id: uuid.UUID,
+        activity_history_ids: Collection[str],
+        target_subject_id: uuid.UUID,
     ) -> AnswerSchema | None:
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(AnswerSchema.activity_history_id.in_(activity_id))
-        query = query.where(AnswerSchema.target_subject_id == subject_id)
+        query = query.where(AnswerSchema.activity_history_id.in_(activity_history_ids))
+        query = query.where(AnswerSchema.target_subject_id == target_subject_id)
         query = query.order_by(AnswerSchema.created_at.desc())
         query = query.limit(1)
 
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
+
+    async def get_latest_flow_answer(
+        self,
+        applet_id: uuid.UUID,
+        flow_history_ids: Collection[str],
+        target_subject_id: uuid.UUID,
+    ) -> AnswerSchema:
+        query: Query = select(AnswerSchema)
+        query = query.where(
+            AnswerSchema.applet_id == applet_id,
+            AnswerSchema.flow_history_id.in_(flow_history_ids),
+            AnswerSchema.target_subject_id == target_subject_id,
+            AnswerSchema.is_flow_completed.is_(True),
+        )
+        query = query.order_by(AnswerSchema.created_at.desc())
+        query = query.limit(1)
         db_result = await self._execute(query)
         return db_result.scalars().first()
 
