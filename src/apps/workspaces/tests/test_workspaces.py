@@ -386,12 +386,12 @@ class TestWorkspaces(BaseTest):
         # test manual, case-insensitive ordering by encrypted nicknames field
         assert set(data.keys()) == {"count", "result", "orderingFields"}
         assert data["orderingFields"] == [
-            "nicknames",
             "isPinned",
             "secretIds",
             "tags",
             "createdAt",
             "status",
+            "nicknames",
         ]
         assert data["result"][0]["nicknames"] == ["Lucy Gabel"]
         assert data["result"][1]["nicknames"] == ["shell-account-0"]
@@ -528,13 +528,13 @@ class TestWorkspaces(BaseTest):
         # test manual ordering by encrypted email field
         assert set(data.keys()) == {"count", "result", "orderingFields"}
         assert data["orderingFields"] == [
-            "email",
-            "firstName",
-            "lastName",
             "createdAt",
             "isPinned",
             "lastSeen",
             "roles",
+            "email",
+            "firstName",
+            "lastName",
         ]
         assert data["result"][0]["email"] == lucy.email_encrypted
         assert data["result"][1]["email"] == tom.email_encrypted
