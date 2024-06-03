@@ -898,9 +898,8 @@ class AnswerService:
                 # assessment
                 respondent = user_map[answer.respondent_id]  # type: ignore
             else:
-                subject = subject_map[answer.target_subject_id]  # type: ignore
-                answer.respondent_id = subject.user_id
-                respondent = subject
+                respondent = subject_map[answer.target_subject_id]  # type: ignore
+
             answer.respondent_secret_id = respondent.secret_id
             answer.respondent_email = respondent.email
             answer.is_manager = respondent.is_manager

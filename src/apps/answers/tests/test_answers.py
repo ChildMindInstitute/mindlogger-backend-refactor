@@ -127,6 +127,59 @@ async def tom_answer_item_for_applet(tom: User, applet: AppletFull, session: Asy
 
 
 @pytest.fixture
+async def answer_shell_account_target(tom: User, applet: AppletFull, session: AsyncSession):
+    shell_account = await SubjectsService(session, tom.id).create(
+        SubjectCreate(
+            applet_id=applet.id,
+            creator_id=tom.id,
+            first_name="first_name",
+            last_name="last_name",
+            secret_user_id=f"{uuid.uuid4()}",
+            tag="Child",
+        )
+    )
+
+    answer = await AnswerService(session, tom.id).create_answer(
+        AppletAnswerCreate(
+            applet_id=applet.id,
+            version=applet.version,
+            submit_id=uuid.uuid4(),
+            activity_id=applet.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet.activities[0].items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(tom.id),
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+            target_subject_id=shell_account.id,
+            source_subject_id=shell_account.id,
+        )
+    )
+
+    tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet.id)
+    assert tom_subject
+
+    return dict(
+        answer_id=answer.id,
+        respondent_subject_id=tom_subject.id,
+        respondent_subject_tag="Team",
+        respondent_nickname=tom_subject.nickname,
+        respondent_secret_user_id=tom_subject.secret_user_id,
+        target_subject_id=shell_account.id,
+        target_subject_tag="Child",
+        target_nickname=shell_account.nickname,
+        target_secret_user_id=shell_account.secret_user_id,
+        source_subject_id=shell_account.id,
+        source_subject_tag="Child",
+        source_nickname=shell_account.nickname,
+        source_secret_user_id=shell_account.secret_user_id,
+        start_datetime=datetime.datetime.utcnow(),
+        end_datetime=datetime.datetime.utcnow(),
+    )
+
+
+@pytest.fixture
 async def tom_answer(session: AsyncSession, tom: User, applet_with_reviewable_activity: AppletFull) -> AnswerSchema:
     answer_service = AnswerService(session, tom.id)
     return await answer_service.create_answer(
@@ -861,6 +914,24 @@ class TestAnswerActivityItems(BaseTest):
             answer_for_review["respondentSecretId"],
         )
 
+    async def test_get_applet_answers_without_assessment(
+        self, client: TestClient, tom: User, applet: AppletFull, answer_shell_account_target
+    ):
+        client.login(tom)
+        response = await client.get(
+            self.applet_answers_export_url.format(
+                applet_id=str(applet.id),
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        resp_data = response.json()
+        data = resp_data["result"]
+        assert len(data["answers"]) == 1
+        assert resp_data["count"] == 1
+        assert data["answers"][0]["respondentId"] == str(tom.id)
+        assert data["answers"][0]["respondentSecretId"] == answer_shell_account_target["target_secret_user_id"]
+
     @pytest.mark.parametrize(
         "user_fixture, exp_cnt",
         (
@@ -1551,7 +1622,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert set(data["flow"].keys()) == {
             "id", "activities", "createdAt", "description", "hideBadge", "idVersion", "isHidden", "isSingleReport",
-            "name", "order", "reportIncludedActivityName","reportIncludedItemName"
+            "name", "order", "reportIncludedActivityName", "reportIncludedItemName"
         }
         assert len(data["flow"]["activities"]) == len(applet_with_flow.activity_flows[0].items)
         assert set(data["flow"]["activities"][0].keys()) == {
