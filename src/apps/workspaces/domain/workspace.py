@@ -81,35 +81,16 @@ class WorkspaceRespondentDetails(InternalModel):
     invitation: InvitationResponse | None = None
 
     @root_validator
-    def decrypt_nickname(cls, values):
-        nickname = values.get("respondent_nickname")
-        if nickname:
-            nickname = StringEncryptedType(Unicode, get_key).process_result_value(
-                nickname, dialect=PGDialect_asyncpg.name
-            )
-            values["respondent_nickname"] = str(nickname)
+    def decrypt_fields(cls, values):
+        fields_to_decrypt = ["respondent_nickname", "subject_first_name", "subject_last_name"]
 
-        return values
-
-    @root_validator
-    def decrypt_firstname(cls, values):
-        firstname = values.get("subject_first_name")
-        if firstname:
-            firstname = StringEncryptedType(Unicode, get_key).process_result_value(
-                firstname, dialect=PGDialect_asyncpg.name
-            )
-            values["subject_first_name"] = str(firstname)
-
-        return values
-
-    @root_validator
-    def decrypt_lastname(cls, values):
-        lastname = values.get("subject_last_name")
-        if lastname:
-            lastname = StringEncryptedType(Unicode, get_key).process_result_value(
-                lastname, dialect=PGDialect_asyncpg.name
-            )
-            values["subject_last_name"] = str(lastname)
+        for field in fields_to_decrypt:
+            value = values.get(field)
+            if value:
+                value = StringEncryptedType(Unicode, get_key).process_result_value(
+                    value, dialect=PGDialect_asyncpg.name
+                )
+                values[field] = str(value)
 
         return values
 
