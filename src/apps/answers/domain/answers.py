@@ -277,6 +277,25 @@ class ActivitySubmissionResponse(ActivitySubmission):
         return value
 
 
+class AppletSubmission(PublicModel):
+    applet_id: uuid.UUID
+    respondent_subject_id: uuid.UUID
+    respondent_subject_tag: str | None
+    respondent_secret_user_id: str | None
+    respondent_nickname: str | None
+    target_subject_id: uuid.UUID
+    target_subject_tag: str | None
+    target_secret_user_id: str | None
+    target_nickname: str | None
+    source_subject_id: uuid.UUID | None
+    source_subject_tag: str | None
+    source_secret_user_id: str | None
+    source_nickname: str | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    activity_name: str
+
+
 class FlowSubmission(PublicModel):
     submit_id: uuid.UUID
     flow_history_id: str
@@ -645,3 +664,9 @@ class MultiinformantAssessmentValidationResponse(PublicModel):
     valid: bool
     message: str | None = None
     code: str | None = None
+
+
+class PublicSubmissionsResponse(PublicModel):
+    submissions: list[AppletSubmission] = Field(default_factory=list)
+    submissions_count: int = 0
+    participants_count: int = 0

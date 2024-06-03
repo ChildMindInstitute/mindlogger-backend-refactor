@@ -202,6 +202,26 @@ async def tom_answer_on_reviewable_applet(
 
 
 @pytest.fixture
+async def lucy_answer(session: AsyncSession, lucy: User, applet: AppletFull) -> AnswerSchema:
+    answer_service = AnswerService(session, lucy.id)
+    return await answer_service.create_answer(
+        AppletAnswerCreate(
+            applet_id=applet.id,
+            version=applet.version,
+            submit_id=uuid.uuid4(),
+            activity_id=applet.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet.activities[0].items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(lucy.id),
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+        )
+    )
+
+
+@pytest.fixture
 async def tom_answer_activity_flow(session: AsyncSession, tom: User, applet_with_flow: AppletFull) -> AnswerSchema:
     answer_service = AnswerService(session, tom.id)
     return await answer_service.create_answer(
@@ -422,6 +442,7 @@ class TestAnswerActivityItems(BaseTest):
 
     activity_answers_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers"
     flow_submissions_url = "/answers/applet/{applet_id}/flows/{flow_id}/submissions"
+    applet_submissions_list_url = "/answers/applet/{applet_id}/submissions"
     applet_answers_export_url = "/answers/applet/{applet_id}/data"
     applet_answers_completions_url = "/answers/applet/{applet_id}/completions"
     applets_answers_completions_url = "/answers/applet/completions"
@@ -2198,3 +2219,90 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["valid"] is False
         assert response.json()["result"]["code"] == "invalid_activity_or_flow_id"
+
+    async def test_get_applet_latest_submissions(
+        self,
+        client,
+        tom: User,
+        applet: AppletFull,
+        answer_shell_account_target: dict,
+    ):
+        client.login(tom)
+
+        response = await client.get(self.applet_submissions_list_url.format(applet_id=applet.id))
+
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert data["submissionsCount"] == 1
+        assert data["participantsCount"] == 2
+        for s in data["submissions"]:
+            assert s["targetSubjectId"] == str(answer_shell_account_target["target_subject_id"])
+            assert s["targetSubjectTag"] == answer_shell_account_target["target_subject_tag"]
+            assert s["targetNickname"] == answer_shell_account_target["target_nickname"]
+            assert s["targetSecretUserId"] == str(answer_shell_account_target["target_secret_user_id"])
+            assert s["respondentSubjectId"] == str(answer_shell_account_target["respondent_subject_id"])
+            assert s["respondentSubjectTag"] == answer_shell_account_target["respondent_subject_tag"]
+            assert s["respondentNickname"] == answer_shell_account_target["respondent_nickname"]
+            assert s["respondentSecretUserId"] == str(answer_shell_account_target["respondent_secret_user_id"])
+            assert s["sourceSubjectId"] == str(answer_shell_account_target["source_subject_id"])
+            assert s["sourceSubjectTag"] == answer_shell_account_target["source_subject_tag"]
+            assert s["sourceNickname"] == answer_shell_account_target["source_nickname"]
+            assert s["sourceSecretUserId"] == str(answer_shell_account_target["source_secret_user_id"])
+            assert s["activityName"] is not None
+
+    @pytest.mark.usefixtures("applet_lucy_respondent")
+    async def test_get_applet_latest_submissions_pagination(
+        self,
+        client,
+        tom: User,
+        applet: AppletFull,
+        answer_shell_account_target: dict,
+        answer: AnswerSchema,
+        lucy_answer: AnswerSchema,
+    ):
+        client.login(tom)
+
+        url = self.applet_submissions_list_url.format(applet_id=applet.id)
+        url = f"{url}?page=1&limit=2"
+
+        response = await client.get(url)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["submissionsCount"] == 3
+        assert data["participantsCount"] == 3
+        assert len(data["submissions"]) == 2
+
+    @pytest.mark.usefixtures("applet_lucy_respondent")
+    async def test_get_applet_latest_submissions_with_flow(
+        self,
+        client,
+        tom: User,
+        applet_with_flow: AppletFull,
+        tom_answer_activity_flow,
+    ):
+        client.login(tom)
+
+        url = self.applet_submissions_list_url.format(applet_id=applet_with_flow.id)
+
+        response = await client.get(url)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["submissionsCount"] == 1
+        assert data["participantsCount"] == 1
+        assert len(data["submissions"]) == 1
+
+    async def test_get_applet_latest_submissions_permissions(
+        self,
+        client,
+        user: User,
+        applet: AppletFull,
+    ):
+        client.login(user)
+
+        url = self.applet_submissions_list_url.format(applet_id=applet.id)
+
+        response = await client.get(url)
+
+        assert response.status_code == 403
