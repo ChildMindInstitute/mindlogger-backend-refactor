@@ -1,6 +1,7 @@
+import os
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
 
@@ -59,64 +60,63 @@ LOCAL_DB_PATCH_SQL = """
 """
 
 
-async def get_answers(session: AsyncSession):
-    query: Query = select(AnswerSchema)
+async def get_answer_count(session: AsyncSession):
+    query: Query = select(func.count(AnswerSchema.id))
     db_result = await session.execute(query)
-    return db_result.scalars().all()
+    return db_result.first()[0]
+
+
+async def get_answers_applets_respondents(
+    session: AsyncSession, limit: int, offset: int
+) -> set[tuple[uuid.UUID, uuid.UUID]]:
+    query: Query = select(AnswerSchema.respondent_id, AnswerSchema.applet_id).limit(limit).offset(offset)
+    db_result = await session.execute(query)
+    answer_applet_resp = db_result.all()
+    return {(a.respondent_id, a.applet_id) for a in answer_applet_resp}
 
 
 async def get_missing_applet_respondent(
-    session: AsyncSession, owner_id: uuid.UUID, answers: list[AnswerSchema]
+    session: AsyncSession, owner_id: uuid.UUID, arbitrary_applet_respondents: set[tuple[uuid.UUID, uuid.UUID]]
 ) -> list[tuple[uuid.UUID, uuid.UUID]]:
     query: Query = select(UserAppletAccessSchema.user_id, UserAppletAccessSchema.applet_id)
     query = query.where(UserAppletAccessSchema.owner_id == owner_id, UserAppletAccessSchema.role == Role.RESPONDENT)
     db_result = await session.execute(query)
     roles_users_applets = db_result.all()
-    answer_users_applets = {(a.respondent_id, a.applet_id) for a in answers}
-    return list(answer_users_applets - set(roles_users_applets))
+    return list(arbitrary_applet_respondents - set(roles_users_applets))
 
 
 async def find_and_create_missing_roles_arbitrary(
     session: AsyncSession, arbitrary_session: AsyncSession, owner_id: uuid.UUID
 ):
-    answers = await get_answers(arbitrary_session)
-    if not answers:
-        print(f"Workspace: {owner_id}", f"answers count: {len(answers)}", "skip")
+    count = await get_answer_count(arbitrary_session)
+    if not count:
+        print(f"Workspace: {owner_id}", f"answers count: {count}", "skip")
         return
 
-    missing_users_applets = await get_missing_applet_respondent(session, owner_id, answers)
-    if not missing_users_applets:
-        print(
-            f"Workspace: {owner_id}",
-            f"answers count: {len(answers)}",
-            f"missing_roles: {len(missing_users_applets)}",
-            "skip",
-        )
-        return
-
-    print(
-        f"Workspace: {owner_id}",
-        f"answers count: {len(answers)}",
-        f"missing_roles: {len(missing_users_applets)}",
-        "in progress",
-    )
+    limit = int(os.environ.get("M2_6879_BATCH_SIZE", "200"))
+    total_missing = 0
     roles = []
-    for user_id, applet_id in missing_users_applets:
-        schema = UserAppletAccessSchema(
-            user_id=user_id,
-            applet_id=applet_id,
-            role=Role.RESPONDENT,
-            owner_id=owner_id,
-            invitor_id=owner_id,
-            meta={"secretUserId": "#deleted#"},
-            is_deleted=True,
-        )
-        roles.append(schema)
+    for offset in range(0, count, limit):
+        arbitrary_applet_respondents = await get_answers_applets_respondents(arbitrary_session, limit, offset)
+        missing_users_applets = await get_missing_applet_respondent(session, owner_id, arbitrary_applet_respondents)
+        for user_id, applet_id in missing_users_applets:
+            schema = UserAppletAccessSchema(
+                user_id=user_id,
+                applet_id=applet_id,
+                role=Role.RESPONDENT,
+                owner_id=owner_id,
+                invitor_id=owner_id,
+                meta={"secretUserId": "#deleted#"},
+                is_deleted=True,
+            )
+            roles.append(schema)
+            total_missing += len(missing_users_applets)
+
     await UserAppletAccessCRUD(session).create_many(roles)
     print(
         f"Workspace: {owner_id}",
-        f"answers count: {len(answers)}",
-        f"missing_roles: {len(missing_users_applets)}",
+        f"answers count: {count}",
+        f"missing_roles: {total_missing}",
         "done",
     )
 
