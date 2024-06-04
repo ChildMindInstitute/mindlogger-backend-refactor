@@ -41,7 +41,8 @@ LOCAL_DB_PATCH_SQL = """
     from applets a 
     join user_applet_accesses owner on owner.applet_id = a.id and role = 'owner'
     join answers on answers.applet_id = a.id
-    left join user_applet_accesses uaa on uaa.applet_id = answers.applet_id and uaa.user_id = answers.respondent_id
+    left join user_applet_accesses uaa 
+        on uaa.applet_id = answers.applet_id and uaa.user_id = answers.respondent_id and uaa."role" = 'respondent'
     where 1=1
         and uaa.id is null
     group by a.id, answers.respondent_id, owner.user_id
