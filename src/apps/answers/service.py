@@ -898,9 +898,8 @@ class AnswerService:
                 # assessment
                 respondent = user_map[answer.respondent_id]  # type: ignore
             else:
-                subject = subject_map[answer.target_subject_id]  # type: ignore
-                answer.respondent_id = subject.user_id
-                respondent = subject
+                respondent = subject_map[answer.target_subject_id]  # type: ignore
+
             answer.respondent_secret_id = respondent.secret_id
             answer.respondent_email = respondent.email
             answer.is_manager = respondent.is_manager
@@ -1099,12 +1098,12 @@ class AnswerService:
         return results
 
     async def get_summary_activity_flows(
-        self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None
+        self, applet_id: uuid.UUID, target_subject_id: uuid.UUID | None
     ) -> list[SummaryActivityFlow]:
         assert self.user_id
         flow_crud = FlowsHistoryCRUD(self.session)
         answer_crud = AnswersCRUD(self.answer_session)
-        flow_history_ids_with_date = await answer_crud.get_submitted_flows_with_last_date(applet_id, respondent_id)
+        flow_history_ids_with_date = await answer_crud.get_submitted_flows_with_last_date(applet_id, target_subject_id)
         activity_flow_histories = await flow_crud.get_last_histories_by_applet(applet_id)
 
         submitted_activity_flows: dict[str, datetime.datetime] = {}
@@ -1170,7 +1169,7 @@ class AnswerService:
                     AlertMessage(
                         id=alert.id,
                         respondent_id=self.user_id,
-                        subject_id=self.user_id,
+                        subject_id=subject_id,
                         applet_id=applet_id,
                         version=version,
                         message=alert.alert_message,

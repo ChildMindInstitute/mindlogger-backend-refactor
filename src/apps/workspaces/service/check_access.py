@@ -197,17 +197,11 @@ class CheckAccessService:
         if not has_access:
             raise AnswerCheckAccessDenied()
 
-    async def check_summary_access(self, applet_id: uuid.UUID, respondent_id: uuid.UUID | None):
-        applet_access_crud = AppletAccessCRUD(self.session)
-        user_roles = await applet_access_crud.get_user_roles_for_applet(applet_id, self.user_id)
-        if set(user_roles) & set(Role.super_reviewers()):
-            return
-        elif Role.REVIEWER in user_roles:
-            schema = await UserAppletAccessCRUD(self.session).get(self.user_id, applet_id, Role.REVIEWER)
-            respondents = schema.meta.get("respondents", []) if schema else []
-            if str(respondent_id) in respondents:
-                return
-        raise AnswerAccessDeniedError()
+    async def check_summary_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
+        try:
+            await self.check_subject_answer_access(applet_id, subject_id)
+        except AccessDeniedError:
+            raise AnswerAccessDeniedError()
 
     async def check_subject_edit_access(self, applet_id: uuid.UUID):
         has_access = await AppletAccessCRUD(self.session).can_invite_anyone(applet_id, self.user_id)
@@ -216,13 +210,13 @@ class CheckAccessService:
             raise AccessDeniedError()
 
     async def check_subject_answer_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
-        access = await AppletAccessCRUD(self.session).get_priority_access(applet_id, self.user_id)
-        if not access or access.role not in Role.reviewers():
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(self.user_id, applet_id, Role.reviewers())
+        if not access:
             raise AccessDeniedError()
 
         if access.role == Role.REVIEWER:
-            allowed_subject_ids = access.meta.get("subjects", [])
-            if str(subject_id) not in allowed_subject_ids:
+            allowed_subject_ids = access.reviewer_subjects
+            if subject_id not in allowed_subject_ids:
                 raise AccessDeniedError()
 
     async def check_answer_access(

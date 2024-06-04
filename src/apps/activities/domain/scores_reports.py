@@ -17,6 +17,7 @@ from apps.activities.errors import (
     ScoreConditionItemNameError,
 )
 from apps.shared.domain import PublicModel
+from apps.shared.domain.custom_validations import sanitize_string
 
 
 class CalculationType(str, Enum):
@@ -33,6 +34,12 @@ class ScoreConditionalLogic(PublicModel):
     items_print: list[str] | None = Field(default_factory=list)
     match: Match = Field(default=Match.ALL)
     conditions: list[ScoreCondition]
+
+    @validator("message")
+    def validate_string(cls, value):
+        if value is not None:
+            return sanitize_string(value)
+        return value
 
 
 class ReportType(str, enum.Enum):
@@ -71,6 +78,12 @@ class Score(PublicModel):
 
         return value
 
+    @validator("message")
+    def validate_string(cls, value):
+        if value is not None:
+            return sanitize_string(value)
+        return value
+
 
 class SectionConditionalLogic(PublicModel):
     match: Match = Field(default=Match.ALL)
@@ -83,6 +96,12 @@ class Section(PublicModel):
     message: str | None = None
     items_print: list[str] | None = Field(default_factory=list)
     conditional_logic: SectionConditionalLogic | None = None
+
+    @validator("message")
+    def validate_string(cls, value):
+        if value is not None:
+            return sanitize_string(value)
+        return value
 
 
 class ScoresAndReports(PublicModel):

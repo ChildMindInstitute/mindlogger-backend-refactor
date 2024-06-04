@@ -17,6 +17,7 @@ from apps.activities.errors import (
     SliderMinMaxValueError,
     SliderRowsValueError,
 )
+from apps.shared.domain.custom_validations import sanitize_string
 from apps.shared.exception import BaseError
 
 
@@ -100,6 +101,15 @@ class BaseActivityItem(BaseModel):
                     raise IncorrectResponseValueError(type=ResponseTypeValueConfig[response_type]["value"])
         elif value is not None:
             raise IncorrectResponseValueError(type=ResponseTypeValueConfig[response_type]["value"])
+        return value
+
+    @validator("question")
+    def validate_question(cls, value):
+        if isinstance(value, dict):
+            for key in value:
+                value[key] = sanitize_string(value[key])
+        elif isinstance(value, str):
+            value = sanitize_string(value)
         return value
 
     @root_validator(skip_on_failure=True)
