@@ -153,5 +153,5 @@ async def main(session: AsyncSession, *args, **kwargs):
                         raise
 
     except Exception as ex:
-        print(ex)
         await session.rollback()
+        raise ex
