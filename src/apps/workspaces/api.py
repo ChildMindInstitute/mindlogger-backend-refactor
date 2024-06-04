@@ -247,6 +247,7 @@ async def workspace_respondents_list(
     respondents = await AnswerService(
         session=session, arbitrary_session=answer_session
     ).fill_last_activity_workspace_respondent(data)
+    respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
     return ResponseMultiOrdering(result=respondents, count=total, ordering_fields=ordering_fields)
 
 
@@ -267,6 +268,7 @@ async def workspace_applet_respondents_list(
     respondents = await AnswerService(
         session=session, arbitrary_session=answer_session
     ).fill_last_activity_workspace_respondent(data, applet_id)
+    respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
     return ResponseMultiOrdering(result=respondents, count=total, ordering_fields=ordering_fields)
 
 

@@ -178,6 +178,7 @@ async def answer_shell_account_target(tom: User, applet: AppletFull, session: As
         end_datetime=datetime.datetime.utcnow(),
     )
 
+
 @pytest.fixture
 async def tom_answer_on_reviewable_applet(
     session: AsyncSession, tom: User, applet_with_reviewable_activity: AppletFull

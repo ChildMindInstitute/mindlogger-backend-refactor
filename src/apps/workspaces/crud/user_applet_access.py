@@ -519,6 +519,12 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     SubjectSchema.id,
                     text("'subject_tag'"),
                     SubjectSchema.tag,
+                    text("'subject_first_name'"),
+                    SubjectSchema.first_name,
+                    text("'subject_last_name'"),
+                    SubjectSchema.last_name,
+                    text("'subject_created_at'"),
+                    SubjectSchema.created_at,
                 )
             ).label("details"),
         )
