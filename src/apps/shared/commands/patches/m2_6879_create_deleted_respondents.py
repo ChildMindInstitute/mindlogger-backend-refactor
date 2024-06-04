@@ -13,50 +13,38 @@ from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import session_manager
 
 LOCAL_DB_PATCH_SQL = """
-        insert into user_applet_accesses (
-            id, 
-            is_deleted, 
-            "role", 
-            user_id, 
-            applet_id, 
-            owner_id, 
-            invitor_id, 
-            meta,
-            created_at,
-            updated_at,
-            migrated_date 
-        )
-        select 
-            gen_random_uuid(),
-            true,
-            'respondent',
-            mr.user_id,
-            mr.applet_id,
-            mr.owner_id,
-            mr.invitor_id,
-            '{"secretUserId": "#deleted#"}'::jsonb,
-            now() AT TIME ZONE 'UTC',
-            now() AT TIME ZONE 'UTC',
-            mr.migrated_date
-        from (
-            select distinct 
-                a.respondent_id as user_id, 
-                a.applet_id as applet_id, 
-                aa.user_id as owner_id, 
-                aa.user_id as invitor_id,
-                a.migrated_date as migrated_date
-            from answers a 
-            join user_applet_accesses aa 
-            on aa.applet_id = a.applet_id 
-            and aa."role" = 'owner'
-            where 
-                (a.respondent_id, a.applet_id)  not in (
-                    select user_id, applet_id  
-                    from user_applet_accesses uaa 
-                    where 
-                        uaa."role" = 'respondent'
-                )
-        ) as mr
+    insert into user_applet_accesses (
+        id,
+        is_deleted, 
+        "role", 
+        user_id, 
+        applet_id, 
+        owner_id, 
+        invitor_id, 
+        meta,
+        created_at,
+        updated_at,
+        migrated_date 
+    )
+    select
+        gen_random_uuid(),
+        true,
+        'respondent',
+        answers.respondent_id,
+        a.id,
+        owner.user_id,
+        owner.user_id,
+        '{"secretUserId": "#deleted#"}'::jsonb,
+        now() AT TIME ZONE 'UTC',
+        now() AT TIME ZONE 'UTC',
+        max(answers.migrated_date)
+    from applets a 
+    join user_applet_accesses owner on owner.applet_id = a.id and role = 'owner'
+    join answers on answers.applet_id = a.id
+    left join user_applet_accesses uaa on uaa.applet_id = answers.applet_id and uaa.user_id = answers.respondent_id
+    where 1=1
+        and uaa.id is null
+    group by a.id, answers.respondent_id, owner.user_id
 """
 
 
