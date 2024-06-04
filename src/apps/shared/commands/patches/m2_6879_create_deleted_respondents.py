@@ -1,0 +1,153 @@
+import uuid
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Query
+
+from apps.answers.db.schemas import AnswerSchema
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.workspace import WorkspaceService
+from infrastructure.database import session_manager
+
+LOCAL_DB_PATCH_SQL = """
+        insert into user_applet_accesses (
+            id, 
+            is_deleted, 
+            "role", 
+            user_id, 
+            applet_id, 
+            owner_id, 
+            invitor_id, 
+            meta,
+            created_at,
+            updated_at,
+            migrated_date 
+        )
+        select 
+            gen_random_uuid(),
+            true,
+            'respondent',
+            mr.user_id,
+            mr.applet_id,
+            mr.owner_id,
+            mr.invitor_id,
+            '{"secretUserId": "#deleted#"}'::jsonb,
+            now() AT TIME ZONE 'UTC',
+            now() AT TIME ZONE 'UTC',
+            mr.migrated_date
+        from (
+            select distinct 
+                a.respondent_id as user_id, 
+                a.applet_id as applet_id, 
+                aa.user_id as owner_id, 
+                aa.user_id as invitor_id,
+                a.migrated_date as migrated_date
+            from answers a 
+            join user_applet_accesses aa 
+            on aa.applet_id = a.applet_id 
+            and aa."role" = 'owner'
+            where 
+                (a.respondent_id, a.applet_id)  not in (
+                    select user_id, applet_id  
+                    from user_applet_accesses uaa 
+                    where 
+                        uaa."role" = 'respondent'
+                )
+        ) as mr
+"""
+
+
+async def get_answers(session: AsyncSession):
+    query: Query = select(AnswerSchema)
+    db_result = await session.execute(query)
+    return db_result.scalars().all()
+
+
+async def get_missing_applet_respondent(
+    session: AsyncSession, owner_id: uuid.UUID, answers: list[AnswerSchema]
+) -> list[tuple[uuid.UUID, uuid.UUID]]:
+    query: Query = select(UserAppletAccessSchema.user_id, UserAppletAccessSchema.applet_id)
+    query = query.where(UserAppletAccessSchema.owner_id == owner_id, UserAppletAccessSchema.role == Role.RESPONDENT)
+    db_result = await session.execute(query)
+    roles_users_applets = db_result.all()
+    answer_users_applets = {(a.respondent_id, a.applet_id) for a in answers}
+    return list(answer_users_applets - set(roles_users_applets))
+
+
+async def find_and_create_missing_roles_arbitrary(
+    session: AsyncSession, arbitrary_session: AsyncSession, owner_id: uuid.UUID
+):
+    answers = await get_answers(arbitrary_session)
+    if not answers:
+        print(f"Workspace: {owner_id}", f"answers count: {len(answers)}", "skip")
+        return
+
+    missing_users_applets = await get_missing_applet_respondent(session, owner_id, answers)
+    if not missing_users_applets:
+        print(
+            f"Workspace: {owner_id}",
+            f"answers count: {len(answers)}",
+            f"missing_roles: {len(missing_users_applets)}",
+            "skip",
+        )
+        return
+
+    print(
+        f"Workspace: {owner_id}",
+        f"answers count: {len(answers)}",
+        f"missing_roles: {len(missing_users_applets)}",
+        "in progress",
+    )
+    roles = []
+    for user_id, applet_id in missing_users_applets:
+        schema = UserAppletAccessSchema(
+            user_id=user_id,
+            applet_id=applet_id,
+            role=Role.RESPONDENT,
+            owner_id=owner_id,
+            invitor_id=owner_id,
+            meta={"secretUserId": "#deleted#"},
+            is_deleted=True,
+        )
+        roles.append(schema)
+    await UserAppletAccessCRUD(session).create_many(roles)
+    print(
+        f"Workspace: {owner_id}",
+        f"answers count: {len(answers)}",
+        f"missing_roles: {len(missing_users_applets)}",
+        "done",
+    )
+
+
+async def main(session: AsyncSession, *args, **kwargs):
+    try:
+        await session.execute(LOCAL_DB_PATCH_SQL)
+        await session.commit()
+
+        workspaces = await WorkspaceService(session, uuid.uuid4()).get_arbitrary_list()
+        print(f"Found {len(workspaces)} workspaces with arbitrary servers")
+
+        processed = set()
+        for i, workspace in enumerate(workspaces):
+            if arb_uri := workspace.database_uri:
+                print(f"Processing workspace#{i + 1} {workspace.id}")
+                if arb_uri in processed:
+                    print(f"Workspace#{i + 1} DB already processed, skip...")
+                    continue
+                processed.add(arb_uri)
+                session_maker = session_manager.get_session(arb_uri)
+                async with session_maker() as arb_session:
+                    try:
+                        await find_and_create_missing_roles_arbitrary(session, arb_session, workspace.user_id)
+                        await arb_session.commit()
+                        print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
+                    except Exception:
+                        await arb_session.rollback()
+                        print(f"[bold red]Workspace#{i + 1} {workspace.id} " f"processing error[/bold red]")
+                        raise
+
+    except Exception as ex:
+        print(ex)
+        await session.rollback()
