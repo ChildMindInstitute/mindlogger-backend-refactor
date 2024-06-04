@@ -69,7 +69,11 @@ async def get_answer_count(session: AsyncSession):
 async def get_answers_applets_respondents(
     session: AsyncSession, limit: int, offset: int
 ) -> set[tuple[uuid.UUID, uuid.UUID]]:
-    query: Query = select(AnswerSchema.respondent_id, AnswerSchema.applet_id).limit(limit).offset(offset)
+    query: Query = select(AnswerSchema.respondent_id, AnswerSchema.applet_id)
+    query = query.distinct(AnswerSchema.respondent_id, AnswerSchema.applet_id)
+    query = query.limit(limit)
+    query = query.offset(offset)
+    query = query.order_by(AnswerSchema.respondent_id.asc(), AnswerSchema.applet_id.asc())
     db_result = await session.execute(query)
     answer_applet_resp = db_result.all()
     return {(a.respondent_id, a.applet_id) for a in answer_applet_resp}
@@ -93,7 +97,7 @@ async def find_and_create_missing_roles_arbitrary(
         print(f"Workspace: {owner_id}", f"answers count: {count}", "skip")
         return
 
-    limit = int(os.environ.get("M2_6879_BATCH_SIZE", "200"))
+    limit = int(os.environ.get("M2_6879_BATCH_SIZE", "1000"))
     total_missing = 0
     roles = []
     for offset in range(0, count, limit):
