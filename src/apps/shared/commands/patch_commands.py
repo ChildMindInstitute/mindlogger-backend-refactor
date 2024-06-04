@@ -79,7 +79,7 @@ PatchRegister.register(
 PatchRegister.register(
     file_path="m2_6504_update_subject_tags.sql",
     task_id="M2-6504",
-    description="[Subject] Update tag fields for managers/reviewers subjects",
+    description="[MultiinformantR1] Update tag fields for managers/reviewers subjects",
 )
 
 app = typer.Typer()
