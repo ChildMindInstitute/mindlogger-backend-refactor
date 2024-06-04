@@ -20,7 +20,6 @@ from apps.invitations.domain import (
     InvitationManagersRequest,
     InvitationRespondent,
     InvitationRespondentRequest,
-    InvitationResponse,
     InvitationReviewer,
     InvitationReviewerRequest,
     PrivateInvitationDetail,
@@ -69,23 +68,7 @@ class InvitationsService:
 
         for respondent in respondents:
             for detail in respondent.details or []:
-                if (invitation := invitations.get(f"{respondent.email}_{detail.applet_id}")) is not None:
-                    detail.__dict__["invitation"] = InvitationResponse(
-                        email=invitation.email,
-                        applet_id=invitation.applet_id,
-                        applet_name=invitation.applet_name,
-                        role=invitation.role,
-                        key=invitation.key,
-                        status=invitation.status,
-                        first_name=invitation.first_name,
-                        last_name=invitation.last_name,
-                        created_at=invitation.created_at,
-                        meta=invitation.meta,
-                        nickname=invitation.nickname,
-                        secret_user_id=invitation.secret_user_id,
-                        tag=invitation.tag,
-                        title=invitation.title,
-                    )
+                detail.invitation = invitations.get(f"{respondent.email}_{detail.applet_id}")
 
         return respondents
 

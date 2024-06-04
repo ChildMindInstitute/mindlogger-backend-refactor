@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.domain.base import Encryption
-from apps.invitations.domain import InvitationResponse
+from apps.invitations.domain import InvitationDetail, InvitationResponse
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.encryption import get_key
 from apps.workspaces.constants import StorageType
@@ -78,21 +78,15 @@ class WorkspaceRespondentDetails(InternalModel):
     subject_first_name: str
     subject_last_name: str
     subject_created_at: datetime.datetime
-    invitation: InvitationResponse | None = None
+    invitation: InvitationDetail | None = None
 
-    @root_validator
-    def decrypt_fields(cls, values):
-        fields_to_decrypt = ["respondent_nickname", "subject_first_name", "subject_last_name"]
+    @validator("respondent_nickname", "subject_first_name", "subject_last_name", pre=True)
+    def decrypt_fields(cls, value):
+        if value:
+            value = StringEncryptedType(Unicode, get_key).process_result_value(value, dialect=PGDialect_asyncpg.name)
+            return str(value)
 
-        for field in fields_to_decrypt:
-            value = values.get(field)
-            if value:
-                value = StringEncryptedType(Unicode, get_key).process_result_value(
-                    value, dialect=PGDialect_asyncpg.name
-                )
-                values[field] = str(value)
-
-        return values
+        return value
 
 
 class WorkspaceRespondent(InternalModel):
