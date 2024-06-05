@@ -1087,7 +1087,7 @@ class AnswerService:
             submitted_activity_flows[flow_id] = max(submit_date, date) if date else submit_date
             submitted_activity_flows[version_id] = submit_date
 
-        flow_histories = await flow_crud.get_by_applet_version(current_applet_version)
+        flow_histories = await flow_crud.get_by_applet_id_version(current_applet_version)
         flow_histories_curr = [flow_h.id for flow_h in flow_histories]
         results = []
         for flow_history in activity_flow_histories:
