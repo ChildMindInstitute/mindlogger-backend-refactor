@@ -61,7 +61,7 @@ jobs:
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
-            :arrow_right: Preview environment created: [Click Me!](${{ needs.create-preview-env.outupts.service-url }})
+            :arrow_right: Preview environment created: [Click Me!](${{ needs.create-preview-env.outputs.service-url }})
           reactions: eyes, rocket
           comment_tag: service-url
       - name: "Send Slack message on failure"
