@@ -71,7 +71,7 @@ from apps.answers.errors import (
 )
 from apps.answers.filters import AppletSubmitDateFilter, ReviewAppletItemFilter, SummaryActivityFilter
 from apps.answers.tasks import create_report
-from apps.applets.crud import AppletsCRUD
+from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.applets.domain.applet_history import Version
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
@@ -1030,6 +1030,7 @@ class AnswerService:
         self, applet_id: uuid.UUID, filters: SummaryActivityFilter
     ) -> list[SummaryActivity]:
         assert self.user_id
+        current_applet_version = await AppletHistoriesCRUD(self.session).get_current_versions_by_applet_id(applet_id)
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_last_histories_by_applet(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
@@ -1043,11 +1044,21 @@ class AnswerService:
             submitted_activities[activity_id] = max(submit_date, date) if date else submit_date
             submitted_activities[activity_history_id] = submit_date
 
+        current_activity_histories = await act_hst_crud.retrieve_by_applet_version(current_applet_version)
+        current_activities_map = {str(ah.id): ah for ah in current_activity_histories}
         results = []
         for activity in activities:
             activity_history_answer_date = submitted_activities.get(
                 activity.id_version, submitted_activities.get(str(activity.id))
             )
+            has_answer = bool(activity_history_answer_date)
+            if not has_answer:
+                activity_curr = current_activities_map.get(str(activity.id))
+                if not activity_curr:
+                    continue
+                elif activity_curr.is_reviewable:
+                    continue
+
             results.append(
                 SummaryActivity(
                     id=activity.id,
