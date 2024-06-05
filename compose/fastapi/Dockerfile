@@ -44,6 +44,19 @@ RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
 # Select internal user
 USER code
 
+FROM base as fargate
+# Hack for Fargate
+# https://github.com/aws/containers-roadmap/issues/938
+USER root
+RUN chmod 777 /tmp && mkdir -p /app/uploads && chown -R code:code /app
+#USER code
+
+RUN touch /app/uploads/.test
+RUN touch /tmp/.test
+
+VOLUME ["/tmp"]
+VOLUME ["/app/uploads"]
+
 # worker instructions
 FROM base as worker
 
@@ -54,3 +67,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/
 
 USER code
+
+
+
+

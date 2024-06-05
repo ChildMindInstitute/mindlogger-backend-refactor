@@ -1,57 +1,55 @@
 name: Drop-RDS-Database
 
 on:
-  workflow_run:
-    workflows: ["Name-of-Your-Triggering-Workflow"]
-    types:
-      - completed
+  # TODO Delete this after testing
+  workflow_dispatch:
+    inputs:
+      db-name:
+        required: true
+        type: string
+        description: Database name to create
+  workflow_call:
+    inputs:
+      db-name:
+        required: true
+        type: string
+        description: Database name to create
 
 jobs:
   drop_database:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Install PostgreSQL client 16
-      run: |
-        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-        sudo apt-get install -y wget ca-certificates
-        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-        sudo apt-get update
-        sudo apt-get install -y postgresql-client-16
-
     - name: Drop Database
       run: |
-        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ secrets.DATABASE_NAME }}" -c "DROP DATABASE <DATABASE_NAME>;"
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -c "DROP DATABASE ${{ inputs.db-name }}" postgres
 
-  on-failure:
-    runs-on: ubuntu-latest
-    if: ${{ always() && (needs.drop_database.result == 'failure' || needs.drop_database.result == 'timed_out') }}
-    needs:
-      - drop_database
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Send Slack message on failure"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
-          SLACK_TITLE: Drop Database
-          SLACK_MESSAGE: 'Error during database deletion!'
-  
-  on-success:
-    runs-on: ubuntu-latest
-    if: ${{ always() && (needs.drop_database.result == 'success') }}
-    needs:
-      - drop_database
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Send Slack message on success"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
-          SLACK_TITLE: Drop Database
-          SLACK_MESSAGE: 'Database deleted successfully!'
+#  on-failure:
+#    runs-on: ubuntu-latest
+#    if: ${{ always() && (needs.drop_database.result == 'failure' || needs.drop_database.result == 'timed_out') }}
+#    needs:
+#      - drop_database
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: "Send Slack message on failure"
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: failure
+#          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+#          SLACK_TITLE: Drop Database
+#          SLACK_MESSAGE: 'Error during database deletion!'
+#
+#  on-success:
+#    runs-on: ubuntu-latest
+#    if: ${{ always() && (needs.drop_database.result == 'success') }}
+#    needs:
+#      - drop_database
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: "Send Slack message on success"
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: success
+#          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
+#          SLACK_TITLE: Drop Database
+#          SLACK_MESSAGE: 'Database deleted successfully!'

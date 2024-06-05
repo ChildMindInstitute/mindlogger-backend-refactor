@@ -1,57 +1,76 @@
-name: Create-RDS-Database
+name: Create RDS Database
 
 on:
-  workflow_run:
-    workflows: ["Name-of-Your-Triggering-Workflow"]
-    types:
-      - completed
+  # TODO Delete this after testing
+  workflow_dispatch:
+    inputs:
+      db-name:
+        required: true
+        type: string
+        description: Database name to create
+  workflow_call:
+    inputs:
+      db-name:
+        required: true
+        type: string
+        description: Database name to create
 
 jobs:
   create_database:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Install PostgreSQL client 16
-      run: |
-        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-        sudo apt-get install -y wget ca-certificates
-        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-        sudo apt-get update
-        sudo apt-get install -y postgresql-client-16
-
     - name: Create Database
-      run: |
-        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.USERNAME }}" -d "${{ secrets.DATABASE_NAME }}" -c "CREATE DATABASE <DATABASE_NAME>;"
+      run: >-
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -tc "SELECT 1 FROM pg_database WHERE datname = '${{ inputs.db-name }}'" postgres | grep -q 1 ||
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -c "CREATE DATABASE ${{ inputs.db-name }}" postgres
+    - name: Set Owner
+      run: >-
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
+        -c "alter database ${{ inputs.db-name }} owner to ${{ secrets.DB_BACKEND_USERNAME }};" postgres
 
-  on-failure:
-    runs-on: ubuntu-latest
-    if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
-    needs:
-      - create_database
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Send Slack message on failure"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
-          SLACK_TITLE: Create Database
-          SLACK_MESSAGE: 'Error during database creation!'
-  
-  on-success:
-    runs-on: ubuntu-latest
-    if: ${{ always() && (needs.create_database.result == 'success') }}
-    needs:
-      - create_database
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Send Slack message on success"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL_TEST_WORKFLOW }}
-          SLACK_TITLE: Create Database
-          SLACK_MESSAGE: 'The database has been successfully created!'
+    - name: Grant privileges
+      run: >-
+        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
+        -c "grant all privileges on database ${{ inputs.db-name }} to ${{ secrets.DB_BACKEND_USERNAME }};" postgres
+
+    - name: Create pg_cron schema
+      run: >-
+        PGPASSWORD="${{ secrets.DB_BACKEND_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_BACKEND_USERNAME }}"
+        -c "CREATE SCHEMA IF NOT EXISTS cron;"  ${{ inputs.db-name }}
+
+#  on-failure:
+#    name: Database creation failed
+#    runs-on: ubuntu-latest
+#    if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
+#    needs:
+#      - create_database
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: "Send Slack message on failure"
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: failure
+#          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+#          SLACK_TITLE: Create Database
+#          SLACK_MESSAGE: 'Error during database creation!'
+#          SLACK_ICON: https://github.com/github.png?size=48
+#          MSG_MINIMAL: actions url
+#
+#  on-success:
+#    name: Database creation succeeded
+#    runs-on: ubuntu-latest
+#    if: ${{ always() && (needs.create_database.result == 'success') }}
+#    needs:
+#      - create_database
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: "Send Slack message on success"
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: success
+#          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+#          SLACK_TITLE: Create Database
+#          SLACK_MESSAGE: 'The database has been successfully created!'
+#          SLACK_ICON: https://github.com/github.png?size=48
+#          MSG_MINIMAL: actions url
