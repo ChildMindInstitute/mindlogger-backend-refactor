@@ -112,3 +112,11 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         data = result.all()
 
         return parse_obj_as(list[Version], data)
+
+    async def get_by_applet_id_version(self, applet_id_version: str) -> list[ActivityFlowHistoriesSchema]:
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.where(ActivityFlowHistoriesSchema.applet_id == applet_id_version)
+        query = query.join(AppletHistorySchema, AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id)
+        query = query.order_by(AppletHistorySchema.created_at.desc())
+        result = await self._execute(query)
+        return result.scalars().all()
