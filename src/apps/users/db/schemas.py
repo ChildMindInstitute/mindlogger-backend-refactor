@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Unicode
+from sqlalchemy import Boolean, Column, ForeignKey, String, Unicode
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, UTCDateTime
 
 
 class UserSchema(Base):
@@ -15,7 +15,7 @@ class UserSchema(Base):
     first_name = Column(StringEncryptedType(Unicode, get_key))
     last_name = Column(StringEncryptedType(Unicode, get_key))
     hashed_password = Column(String(length=100))
-    last_seen_at = Column(DateTime(), default=datetime.utcnow)
+    last_seen_at = Column(UTCDateTime(), default=datetime.utcnow)
     is_super_admin = Column(Boolean(), default=False, server_default="false")
     is_anonymous_respondent = Column(Boolean(), default=False, server_default="false")
     is_legacy_deleted_respondent = Column(Boolean(), default=False, server_default="false")

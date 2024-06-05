@@ -1,8 +1,8 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, text
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils.types import IPAddressType
 
-from infrastructure.database.base import Base
+from infrastructure.database.base import Base, UTCDateTime
 from infrastructure.database.mixins import HistoryAware
 
 __all__ = ["AppletSchema", "AppletHistorySchema"]
@@ -37,7 +37,7 @@ class AppletSchema(_BaseAppletSchema, Base):
     encryption = Column(JSONB())
     link = Column(UUID(as_uuid=True), unique=True)
     require_login = Column(Boolean(), default=True)
-    pinned_at = Column(DateTime(), nullable=True)
+    pinned_at = Column(UTCDateTime(), nullable=True)
     retention_period = Column(Integer(), nullable=True)
     retention_type = Column(String(20), nullable=True)
     is_published = Column(Boolean(), default=False)

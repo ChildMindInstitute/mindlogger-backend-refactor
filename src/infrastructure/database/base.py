@@ -1,11 +1,11 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, MetaData, inspect, text
+from sqlalchemy import Column, DateTime, MetaData, TypeDecorator, inspect, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 
-__all__ = ["Base"]
+__all__ = ["Base", "UTCDateTime"]
 
 from infrastructure.database.mixins import SoftDeletable
 
@@ -23,6 +23,17 @@ meta = MetaData(
 _Base = declarative_base(metadata=meta)
 
 
+class UTCDateTime(TypeDecorator):
+    impl = DateTime
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            if value.tzinfo is None:
+                # Assume value is UTC if tzinfo is None
+                value = value.replace(tzinfo=timezone.utc)
+        return value
+
+
 class Base(SoftDeletable, _Base):  # type: ignore
     """Base class for all database models."""
 
@@ -35,25 +46,25 @@ class Base(SoftDeletable, _Base):  # type: ignore
         server_default=text("gen_random_uuid()"),
     )
     created_at = Column(
-        DateTime(),
+        UTCDateTime(),
         default=datetime.utcnow,
         server_default=text("timezone('utc', now())"),
     )
     updated_at = Column(
-        DateTime(),
+        UTCDateTime(),
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         server_default=text("timezone('utc', now())"),
         server_onupdate=text("timezone('utc', now())"),
     )
     migrated_date = Column(
-        DateTime(),
+        UTCDateTime(),
         default=None,
         server_default=None,
         nullable=True,
     )
     migrated_updated = Column(
-        DateTime(),
+        UTCDateTime(),
         default=None,
         server_default=None,
         nullable=True,

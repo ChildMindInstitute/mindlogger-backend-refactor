@@ -1,6 +1,6 @@
-from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import Column, ForeignKey, String
 
-from infrastructure.database import Base
+from infrastructure.database import Base, UTCDateTime
 
 __all__ = ["FolderSchema"]
 
@@ -18,4 +18,4 @@ class FolderAppletSchema(Base):
 
     folder_id = Column(ForeignKey("folders.id", ondelete="CASCADE"), nullable=False)
     applet_id = Column(ForeignKey("applets.id", ondelete="CASCADE"), nullable=False)
-    pinned_at = Column(DateTime(), nullable=True)
+    pinned_at = Column(UTCDateTime(), nullable=True)
