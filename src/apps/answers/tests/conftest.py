@@ -498,7 +498,6 @@ async def applet__activity_turned_into_assessment(
 
     data.activities[0].is_reviewable = True
     data.activities[0].name = "Reviewer assessment"
-    srv = AppletService(session, tom.id)
     updated_applet = await srv.update(applet.id, data)
     return updated_applet
 
@@ -522,6 +521,20 @@ async def applet__deleted_activity_without_answers(
         activity_new.items[i].id = uuid.uuid4()
     activity_new.name = "New activity"
     data.activities = [activity_new]
-    srv = AppletService(session, tom.id)
     updated_applet = await srv.update(applet.id, data)
+    return updated_applet
+
+
+@pytest.fixture
+async def applet__deleted_flow_without_answers(
+    session: AsyncSession, tom: User, applet_with_flow: AppletFull
+) -> AppletFull:
+    srv = AppletService(session, tom.id)
+    data = applet_with_flow.dict()
+    activity_flow = data["activity_flows"][0]
+    for i in range(len(activity_flow["items"])):
+        activity_flow["items"][i]["activity_key"] = data["activities"][0]["key"]
+    data["activity_flows"] = [activity_flow]
+    update_data = AppletUpdate(**data)
+    updated_applet = await srv.update(applet_with_flow.id, update_data)
     return updated_applet

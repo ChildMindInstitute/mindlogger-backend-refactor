@@ -1922,7 +1922,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["id"] == str(applet__activity_turned_into_assessment.activities[1].id)
 
     async def test_deleted_activity_without_answers_not_included_in_list(
-        self, client: TestClient, tom: User, applet__deleted_activity_without_answers
+        self, client: TestClient, tom: User, applet__deleted_activity_without_answers: AppletFull
     ):
         client.login(tom)
         response = await client.get(
@@ -1934,3 +1934,15 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["id"] == str(applet__deleted_activity_without_answers.activities[0].id)
+
+    async def test_deleted_flow_not_included_in_submission_list(
+        self, client: TestClient, tom: User, applet__deleted_flow_without_answers: AppletFull
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet__deleted_flow_without_answers.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert applet__deleted_flow_without_answers.activity_flows[0].id
+        assert payload["count"] == 1
+        assert payload["result"][0]["id"] == str(applet__deleted_flow_without_answers.activity_flows[0].id)
