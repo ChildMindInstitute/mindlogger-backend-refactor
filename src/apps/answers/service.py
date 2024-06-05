@@ -502,6 +502,7 @@ class AnswerService:
         applet_id: uuid.UUID,
         flow_id: uuid.UUID,
         submit_id: uuid.UUID,
+        is_completed: bool | None = None,
     ) -> FlowSubmissionDetails:
         allowed_subjects = await self._get_allowed_subjects(applet_id)
 
@@ -521,6 +522,7 @@ class AnswerService:
 
         answer_result: list[ActivityAnswer] = []
 
+        is_flow_completed = False
         for answer in answers:
             answer_result.append(
                 ActivityAnswer(
@@ -539,6 +541,11 @@ class AnswerService:
                 )
             )
             activity_hist_ids.add(answer.activity_history_id)
+            if answer.is_flow_completed:
+                is_flow_completed = True
+
+        if is_completed and is_completed != is_flow_completed:
+            raise AnswerNotFoundError()
 
         flow_history_id = answers[0].flow_history_id
         assert flow_history_id
@@ -555,6 +562,7 @@ class AnswerService:
                 created_at=max([a.created_at for a in answer_result]),
                 end_datetime=max([a.end_datetime for a in answer_result]),
                 answers=answer_result,
+                is_completed=is_flow_completed,
             ),
             flow=flows[0],
         )

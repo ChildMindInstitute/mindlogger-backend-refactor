@@ -6,7 +6,7 @@ from typing import Collection
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Query, contains_eager
+from sqlalchemy.orm import Query, aliased, contains_eager
 from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
 
@@ -134,6 +134,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.submit_id, AnswerSchema.flow_history_id, AnswerSchema.applet_id, AnswerSchema.version
             )
             .order_by(created_at)
+            .having(func.bool_or(AnswerSchema.is_flow_completed.is_(True)))  # completed submissions only
         )
 
         _filters = _AnswerListFilter().get_clauses(**filters)
@@ -764,6 +765,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         await self._execute(query)
 
     async def get_flow_identifiers(self, flow_id: uuid.UUID, target_subject_id: uuid.UUID) -> list[IdentifierData]:
+        completed_submission = aliased(AnswerSchema, name="completed_submission")
+        is_submission_completed = (
+            select(completed_submission.submit_id)
+            .where(
+                completed_submission.submit_id == AnswerSchema.submit_id,
+                completed_submission.is_flow_completed.is_(True),
+            )
+            .exists()
+        )
         query = (
             select(
                 AnswerItemSchema.identifier,
@@ -777,6 +787,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(flow_id),
                 AnswerSchema.target_subject_id == target_subject_id,
                 AnswerItemSchema.identifier.isnot(None),
+                is_submission_completed,
             )
             .group_by(
                 AnswerItemSchema.identifier,
