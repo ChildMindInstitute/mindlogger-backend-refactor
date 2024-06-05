@@ -1,4 +1,4 @@
-name: Preview and Test
+name: Preview and Test Feature
 
 on:
   push:
