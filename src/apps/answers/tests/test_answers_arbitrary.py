@@ -629,7 +629,9 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["identifier"] == answer_create.answer.identifier
         assert response.json()["result"][0]["userPublicKey"] == answer_create.answer.user_public_key
-        assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at
+        assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at.replace(
+            tzinfo=datetime.timezone.utc
+        )
 
     async def test_get_all_activity_versions_for_applet(
         self, arbitrary_client: TestClient, tom: User, applet: AppletFull

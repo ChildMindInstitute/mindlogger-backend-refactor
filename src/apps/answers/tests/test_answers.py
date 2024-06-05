@@ -1022,7 +1022,9 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["identifier"] == answer_create.answer.identifier
         assert response.json()["result"][0]["userPublicKey"] == answer_create.answer.user_public_key
-        assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at
+        assert datetime.datetime.fromisoformat(response.json()["result"][0]["lastAnswerDate"]) == created_at.replace(
+            tzinfo=datetime.timezone.utc
+        )
 
     async def test_get_flow_identifiers(
         self,
@@ -1689,7 +1691,7 @@ class TestAnswerActivityItems(BaseTest):
         assert data["flow"]["idVersion"] == tom_answer_activity_flow.flow_history_id
 
         assert set(data["summary"].keys()) == {"identifier", "endDatetime", "version", "createdAt"}
-        assert data["summary"]["createdAt"] == tom_answer_activity_flow.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f")
+        assert data["summary"]["createdAt"] == tom_answer_activity_flow.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
         assert data["summary"]["version"] == tom_answer_activity_flow.version
 
         assert set(data["summary"]["identifier"]) == {"lastAnswerDate", "identifier", "userPublicKey"}
