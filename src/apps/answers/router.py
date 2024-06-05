@@ -176,7 +176,7 @@ router.get(
 )(applet_flow_submissions_list)
 
 router.post(
-    "/applet/{applet_id}/activities/{activity_id}/answers/{respondent_id}/latest_report",  # noqa
+    "/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report",
     status_code=status.HTTP_200_OK,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,

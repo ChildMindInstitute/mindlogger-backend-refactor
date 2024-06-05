@@ -128,5 +128,6 @@ settings = Settings(
         "library",
         "authentication",
         "job",
+        "subjects",
     ],
 )

@@ -19,11 +19,12 @@ class TestValidateScoreSubscaleTable:
         assert score == validate_score_subscale_table(score)
         score = "1.2342~1231.12333"
         assert score == validate_score_subscale_table(score)
-
-    def test_tilda_not_in_float_value_error(self):
-        score = "1.1"
-        with pytest.raises(InvalidScoreSubscaleError):
-            validate_score_subscale_table(score)
+        score = "1.2342"
+        assert score == validate_score_subscale_table(score)
+        score = "-1.2342"
+        assert score == validate_score_subscale_table(score)
+        score = "-1"
+        assert score == validate_score_subscale_table(score)
 
     def test_not_float_value_error(self):
         score = "1.2342s~1231"
@@ -42,13 +43,23 @@ class TestValidateRawScoreSubscale:
         assert raw_score == validate_raw_score_subscale(raw_score)
         raw_score = "12342~1231"
         assert raw_score == validate_raw_score_subscale(raw_score)
+        raw_score = "12342.12~1231.12"
+        assert raw_score == validate_raw_score_subscale(raw_score)
+        raw_score = "12342.12"
+        assert raw_score == validate_raw_score_subscale(raw_score)
 
-    def test_tilda_not_in_integer_value_error(self):
-        raw_score = "1.1"
+    def test_too_long_float_value_error(self):
+        raw_score = "12342.123~1231.123"
         with pytest.raises(InvalidRawScoreSubscaleError):
             validate_raw_score_subscale(raw_score)
 
-    def test_not_integer_value_error(self):
-        raw_score = "12342.1~1231"
+    def test_not_float_value_error(self):
+        score = "1.2342s~1231"
         with pytest.raises(InvalidRawScoreSubscaleError):
-            validate_raw_score_subscale(raw_score)
+            validate_raw_score_subscale(score)
+
+    def test_successful_negative_validation(self):
+        raw_score = "-1"
+        assert raw_score == validate_raw_score_subscale(raw_score)
+        raw_score = "-12342~1231"
+        assert raw_score == validate_raw_score_subscale(raw_score)

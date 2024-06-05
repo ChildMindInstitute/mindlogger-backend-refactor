@@ -197,14 +197,15 @@ class TestApplet:
 
     async def test_set_applet_report_configuration(self, client: TestClient, tom: User, applet_one: AppletFull):
         client.login(tom)
-
+        text_with_script_inside = "One <script>alert('test')</script> Two"
+        sanitized_text = "One  Two"
         report_configuration = dict(
             report_server_ip="ipaddress",
             report_public_key="public key",
             report_recipients=["recipient1", "recipient1"],
             report_include_user_id=True,
             report_include_case_id=True,
-            report_email_body="email body",
+            report_email_body=text_with_script_inside,
         )
 
         response = await client.post(
@@ -222,7 +223,7 @@ class TestApplet:
         assert response.json()["result"]["reportRecipients"] == report_configuration["report_recipients"]
         assert response.json()["result"]["reportIncludeUserId"] == report_configuration["report_include_user_id"]
         assert response.json()["result"]["reportIncludeCaseId"] == report_configuration["report_include_case_id"]
-        assert response.json()["result"]["reportEmailBody"] == report_configuration["report_email_body"]
+        assert response.json()["result"]["reportEmailBody"] == sanitized_text
 
     async def test_publish_conceal_applet(
         self, client: TestClient, tom: User, applet_one: AppletFull, superadmin: User

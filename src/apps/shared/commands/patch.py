@@ -10,7 +10,7 @@ class PatchRegister:
         file_path: str,
         task_id: str,
         description: str,
-        manage_session: bool,
+        manage_session: bool = False,
     ):
         cls.patches = cls.patches or []
         # check if task_id already exist

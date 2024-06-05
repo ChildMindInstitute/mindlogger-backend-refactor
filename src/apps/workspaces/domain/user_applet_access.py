@@ -97,7 +97,7 @@ class RespondentAppletAccess(InternalModel):
     applet_name: str
     applet_image: str
     secret_user_id: str
-    nickname: str
+    nickname: str | None
     has_individual_schedule: bool
     encryption: Encryption | None
 
@@ -107,7 +107,7 @@ class PublicRespondentAppletAccess(PublicModel):
     applet_name: str
     applet_image: str
     secret_user_id: str
-    nickname: str
+    nickname: str | None
     has_individual_schedule: bool
     encryption: public_detail.Encryption | None
 
@@ -115,7 +115,7 @@ class PublicRespondentAppletAccess(PublicModel):
 class ManagerAccess(InternalModel):
     applet_id: uuid.UUID
     roles: list[Role]
-    respondents: list[uuid.UUID] | None
+    subjects: list[uuid.UUID] | None
 
 
 class ManagerAccesses(InternalModel):
@@ -135,7 +135,12 @@ class RespondentExportData(InternalModel):
     is_manager: bool
 
 
+class SubjectExportData(RespondentExportData):
+    user_id: uuid.UUID | None
+
+
 class RespondentInfoPublic(PublicModel):
     nickname: str | None
     secret_user_id: str
     last_seen: datetime.datetime | None
+    subject_id: uuid.UUID
