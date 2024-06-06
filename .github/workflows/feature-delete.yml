@@ -1,7 +1,9 @@
 name: Tear down preview environment
 
 on:
-  delete: {}
+  workflow_dispatch: {}
+  # Disable for now because some PRs were also using feature branch names
+#  delete: {}
 
 
 jobs:

@@ -1,9 +1,11 @@
 name: Preview and Test Feature
 
 on:
-  push:
-    branches:
-      - "feature/**"
+  workflow_dispatch: {}
+  # Disable for now because some PRs were also using feature branch names
+#  push:
+#    branches:
+#      - "feature/**"
 
 # Only run the latest.  Cancel old runs in progress.
 concurrency:
