@@ -34,15 +34,6 @@ jobs:
     
     steps:
 
-      - uses: trstringer/manual-approval@v1
-        with:
-          secret: ${{ github.TOKEN }}
-          approvers: mbarsukou, yatrashkevich-scn, rsiauko
-          minimum-approvals: 2
-          issue-title: "Deploying ${{ github.ref_name }} to dev"
-          issue-body: "Please approve or deny the deployment of version ${{ github.ref_name }}"
-          exclude-workflow-initiator-as-approver: false
-
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
