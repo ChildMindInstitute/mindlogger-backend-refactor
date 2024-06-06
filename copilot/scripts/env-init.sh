@@ -40,6 +40,13 @@ fi
 
 echo "Using profile $PROFILE"
 
+echo "Creating env with..."
+echo "App: $APP_NAME"
+echo "Env: $ENV_NAME"
+echo "VPC: $VPC_ID"
+echo "Public subnets: $PUBLIC_SUBNETS"
+echo "Private subnets: $PRIVATE_SUBNETS"
+
 # Create a new environment
 copilot env init \
   --app "$APP_NAME" \

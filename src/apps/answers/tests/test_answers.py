@@ -1889,6 +1889,23 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.get(url)
         assert response.status_code == expected
 
+    async def test_review_flows_one_answer_without_target_subject_id(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow, session
+    ):
+        client.login(tom)
+        url = self.review_flows_url.format(applet_id=applet_with_flow.id)
+
+        response = await client.get(
+            url,
+            dict(
+                createdDate=datetime.datetime.utcnow().date(),
+            ),
+        )
+        assert response.status_code == 422
+        data = response.json()
+        assert data["result"][0]["message"] == "field required"
+        assert data["result"][0]["path"] == ["query", "targetSubjectId"]
+
     async def test_get_summary_activities_no_answer_no_empty_deleted_history(
         self, client: TestClient, tom: User, applet: AppletFull
     ):
