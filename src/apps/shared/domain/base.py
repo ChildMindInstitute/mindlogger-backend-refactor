@@ -2,7 +2,8 @@ import json
 import re
 from typing import TypeVar
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel as PBaseModel
+from pydantic import Extra
 
 __all__ = [
     "InternalModel",
@@ -13,7 +14,7 @@ __all__ = [
     "model_as_camel_case",
 ]
 
-_BaseModel = TypeVar("_BaseModel", bound=BaseModel)
+_BaseModel = TypeVar("_BaseModel", bound=PBaseModel)
 
 
 def to_camelcase(payload: str) -> str:
@@ -73,6 +74,12 @@ def list_items_to_camel_case(items):
         else:
             res.append(item)
     return res
+
+
+class BaseModel(PBaseModel):
+    @classmethod
+    def field_alias(cls, field_name: str):
+        return cls.__fields__[field_name].alias
 
 
 class InternalModel(BaseModel):

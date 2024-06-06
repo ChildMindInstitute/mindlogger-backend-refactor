@@ -85,6 +85,22 @@ class TestLink(BaseTest):
         response = await client.get(self.access_link_url.format(applet_id=applet_one_with_link.id))
         assert response.status_code == 404
 
+    async def test_applet_access_link_delete_create(
+        self, client: TestClient, applet_one_with_link: AppletFull, tom: User
+    ):
+        client.login(tom)
+
+        response = await client.delete(self.access_link_url.format(applet_id=applet_one_with_link.id))
+        assert response.status_code == 204
+
+        data = {"require_login": True}
+        response = await client.post(
+            self.access_link_url.format(applet_id=applet_one_with_link.id),
+            data=data,
+        )
+
+        assert response.status_code == 201
+
     async def test_applet_access_link_create_for_anonym(self, client: TestClient, applet_one: AppletFull, tom: User):
         resp = client.login(tom)
         applet_id = applet_one.id

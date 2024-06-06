@@ -28,6 +28,7 @@ class Alert(InternalModel):
     image: str
     workspace: str
     respondent_id: uuid.UUID
+    subject_id: uuid.UUID | None
 
 
 class AlertPublic(PublicModel):
@@ -46,6 +47,7 @@ class AlertPublic(PublicModel):
     image: str
     workspace: str
     respondent_id: uuid.UUID
+    subject_id: uuid.UUID | None
 
     @validator("encryption", pre=True)
     def convert_response_values_keys(cls, response_values):
@@ -57,6 +59,7 @@ class AlertPublic(PublicModel):
 class AlertMessage(InternalModel):
     id: uuid.UUID
     respondent_id: uuid.UUID
+    subject_id: uuid.UUID | None
     applet_id: uuid.UUID
     version: str
     message: str
@@ -81,6 +84,7 @@ class AlertHandlerResult(InternalModel):
     image: str
     workspace: str
     respondent_id: str
+    subject_id: str | None
 
 
 class AlertResponseMulti(ResponseMulti[AlertPublic]):
