@@ -71,7 +71,7 @@ from apps.answers.errors import (
 )
 from apps.answers.filters import AppletSubmitDateFilter, ReviewAppletItemFilter, SummaryActivityFilter
 from apps.answers.tasks import create_report
-from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
+from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.applet_history import Version
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
@@ -1030,7 +1030,7 @@ class AnswerService:
         self, applet_id: uuid.UUID, filters: SummaryActivityFilter
     ) -> list[SummaryActivity]:
         assert self.user_id
-        current_applet_version = await AppletHistoriesCRUD(self.session).get_current_versions_by_applet_id(applet_id)
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_last_histories_by_applet(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
@@ -1044,7 +1044,7 @@ class AnswerService:
             submitted_activities[activity_id] = max(submit_date, date) if date else submit_date
             submitted_activities[activity_history_id] = submit_date
 
-        current_activity_histories = await act_hst_crud.retrieve_by_applet_version(current_applet_version)
+        current_activity_histories = await act_hst_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
         current_activities_map = {str(ah.id): ah for ah in current_activity_histories}
         results = []
         for activity in activities:
@@ -1074,7 +1074,7 @@ class AnswerService:
         self, applet_id: uuid.UUID, target_subject_id: uuid.UUID | None
     ) -> list[SummaryActivityFlow]:
         assert self.user_id
-        current_applet_version = await AppletHistoriesCRUD(self.session).get_current_versions_by_applet_id(applet_id)
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         flow_crud = FlowsHistoryCRUD(self.session)
         answer_crud = AnswersCRUD(self.answer_session)
         flow_history_ids_with_date = await answer_crud.get_submitted_flows_with_last_date(applet_id, target_subject_id)
@@ -1087,7 +1087,7 @@ class AnswerService:
             submitted_activity_flows[flow_id] = max(submit_date, date) if date else submit_date
             submitted_activity_flows[version_id] = submit_date
 
-        flow_histories = await flow_crud.get_by_applet_id_version(current_applet_version)
+        flow_histories = await flow_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
         flow_histories_curr = [flow_h.id for flow_h in flow_histories]
         results = []
         for flow_history in activity_flow_histories:

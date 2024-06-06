@@ -77,11 +77,3 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         query = query.values(**schema.dict(by_alias=False))
 
         await self._execute(query)
-
-    async def get_current_versions_by_applet_id(self, applet_id: uuid.UUID) -> str:
-        query: Query = select(AppletHistorySchema.id_version)
-        query = query.where(AppletHistorySchema.id == applet_id)
-        query = query.order_by(AppletHistorySchema.created_at.desc())
-        query = query.limit(1)
-        result = await self._execute(query)
-        return result.scalars().first()
