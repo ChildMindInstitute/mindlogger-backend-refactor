@@ -27,7 +27,7 @@ from apps.answers.domain import (
     UserAnswerItemData,
 )
 from apps.answers.errors import AnswerNotFoundError
-from apps.answers.filters import AppletSubmitDateFilter, ReviewAppletItemFilter
+from apps.answers.filters import AppletSubmitDateFilter
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import Version
 from apps.shared.filtering import Comparisons, FilterField, Filtering
@@ -221,19 +221,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         count = result_count.scalar()
 
         return parse_obj_as(list[FlowSubmission], data), count
-
-    async def get_respondents_answered_activities_by_applet_id(
-        self, applet_id: uuid.UUID, filters: ReviewAppletItemFilter
-    ) -> list[AnswerSchema]:
-        query: Query = select(AnswerSchema)
-        query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(func.date(AnswerSchema.created_at) == filters.created_date)
-        if filters.target_subject_id:
-            query = query.where(AnswerSchema.target_subject_id == filters.target_subject_id)
-        query = query.order_by(AnswerSchema.created_at.asc())
-
-        db_result = await self._execute(query)
-        return db_result.scalars().all()
 
     async def get_respondents_submit_dates(
         self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
