@@ -124,6 +124,7 @@ async def tom_answer_applet_one(session, tom: User, applet_one: AppletFull):
         client=ClientMeta(app_id="web", app_version="1.1.0", width="800", height="600"),
         target_subject_id=subject.id,
         source_subject_id=subject.id,
+        is_data_share=False,
     )
     return await AnswerService(session, tom.id).create_answer(activity_answer)
 
