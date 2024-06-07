@@ -3,8 +3,10 @@ name: Copilot Env Name
 on:
   workflow_call:
     outputs:
-      env-name: ${{ jobs.set-env-name.outputs.env-name }}
-      env-snake-name: ${{ jobs.set-env-name.outputs.env-snake-name }}
+      env-name:
+        value: ${{ jobs.set-env-name.outputs.env-name }}
+      env-snake-name:
+        value: ${{ jobs.set-env-name.outputs.env-snake-name }}
 
 
 jobs:

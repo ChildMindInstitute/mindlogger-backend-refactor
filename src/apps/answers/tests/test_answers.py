@@ -347,6 +347,31 @@ async def tom_answer(tom: User, session: AsyncSession, answer_create: AppletAnsw
     return await AnswerService(session, tom.id).create_answer(answer_create)
 
 
+@pytest.fixture
+async def tom_answer_activity_flow_not_completed(
+    session: AsyncSession, tom: User, applet_with_flow: AppletFull
+) -> AnswerSchema:
+    answer_service = AnswerService(session, tom.id)
+    return await answer_service.create_answer(
+        AppletAnswerCreate(
+            applet_id=applet_with_flow.id,
+            version=applet_with_flow.version,
+            submit_id=uuid.uuid4(),
+            flow_id=applet_with_flow.activity_flows[1].id,
+            is_flow_completed=False,
+            activity_id=applet_with_flow.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_flow.activities[0].items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(tom.id),
+                identifier="encrypted_identifier",
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+        )
+    )
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -1589,6 +1614,7 @@ class TestAnswerActivityItems(BaseTest):
         data = data["result"]
         assert set(data.keys()) == {"flow", "submission", "summary"}
 
+        assert data["submission"]["isCompleted"] is True
         assert len(data["submission"]["answers"]) == len(applet_with_flow.activity_flows[0].items)
         answer_data = data["submission"]["answers"][0]
         # fmt: off
@@ -1905,6 +1931,23 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()
         assert data["result"][0]["message"] == "field required"
         assert data["result"][0]["path"] == ["query", "targetSubjectId"]
+
+    async def test_flow_submission_not_completed(
+        self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow_not_completed
+    ):
+        client.login(tom)
+        url = self.flow_submission_url.format(
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[1].id,
+            submit_id=tom_answer_activity_flow_not_completed.submit_id,
+        )
+        response = await client.get(url)
+        assert response.status_code == 200
+        data = response.json()
+        assert "result" in data
+        data = data["result"]
+        assert set(data.keys()) == {"flow", "submission", "summary"}
+        assert data["submission"]["isCompleted"] is False
 
     async def test_get_summary_activities_no_answer_no_empty_deleted_history(
         self, client: TestClient, tom: User, applet: AppletFull

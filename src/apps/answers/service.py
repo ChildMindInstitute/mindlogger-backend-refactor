@@ -514,7 +514,10 @@ class AnswerService:
 
         answer_result: list[ActivityAnswer] = []
 
+        is_completed = False
         for answer in answers:
+            if answer.flow_history_id and answer.is_flow_completed:
+                is_completed = True
             answer_result.append(
                 ActivityAnswer(
                     **answer.dict(exclude={"migrated_data"}),
@@ -548,6 +551,7 @@ class AnswerService:
                 created_at=max([a.created_at for a in answer_result]),
                 end_datetime=max([a.end_datetime for a in answer_result]),
                 answers=answer_result,
+                is_completed=is_completed,
             ),
             flow=flows[0],
         )
