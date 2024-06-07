@@ -1080,7 +1080,7 @@ class AnswerService:
             submitted_activity_flows[version_id] = submit_date
 
         results = []
-        for flow_history in activity_flow_histories:
+        for flow_history in sorted(activity_flow_histories, key=lambda x: x.order):
             flow_history_answer_date = submitted_activity_flows.get(
                 flow_history.id_version, submitted_activity_flows.get(str(flow_history.id))
             )

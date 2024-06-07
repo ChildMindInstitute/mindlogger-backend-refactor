@@ -1948,3 +1948,29 @@ class TestAnswerActivityItems(BaseTest):
         data = data["result"]
         assert set(data.keys()) == {"flow", "submission", "summary"}
         assert data["submission"]["isCompleted"] is False
+
+    async def test_summary_flow_list_order_completed_submissions_only(
+        self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow_not_completed
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert "result" in payload
+        for flow in payload["result"]:
+            assert flow["hasAnswer"] is False
+
+    async def test_summary_flow_list_order(
+        self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow_not_completed
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+
+        assert "result" in payload
+        flows_order_expected = [str(flow.id) for flow in sorted(applet_with_flow.activity_flows, key=lambda x: x.order)]
+        flows_order_actual = [flow["id"] for flow in payload["result"]]
+        assert flows_order_actual == flows_order_expected
