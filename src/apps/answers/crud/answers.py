@@ -500,7 +500,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             subquery = subquery.where(AnswerSchema.target_subject_id == target_subject_id)
 
         query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
-        query = query.where(AnswerSchema.submit_id.in_(subquery))
+        query = query.where(
+            AnswerSchema.submit_id.in_(subquery),
+            AnswerSchema.is_flow_completed.is_(True),
+        )
         query = query.group_by(AnswerSchema.flow_history_id)
         query = query.order_by(AnswerSchema.flow_history_id)
         db_result = await self._execute(query)
