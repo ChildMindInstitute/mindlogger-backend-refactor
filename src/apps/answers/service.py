@@ -1094,7 +1094,7 @@ class AnswerService:
         flow_histories = await flow_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
         flow_histories_curr = [flow_h.id for flow_h in flow_histories]
         results = []
-        for flow_history in activity_flow_histories:
+        for flow_history in sorted(activity_flow_histories, key=lambda x: x.order):
             flow_history_answer_date = submitted_activity_flows.get(
                 flow_history.id_version, submitted_activity_flows.get(str(flow_history.id))
             )

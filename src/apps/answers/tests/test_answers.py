@@ -2006,3 +2006,29 @@ class TestAnswerActivityItems(BaseTest):
         assert applet__deleted_flow_without_answers.activity_flows[0].id
         assert payload["count"] == 1
         assert payload["result"][0]["id"] == str(applet__deleted_flow_without_answers.activity_flows[0].id)
+
+    async def test_summary_flow_list_order_completed_submissions_only(
+        self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow_not_completed
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert "result" in payload
+        for flow in payload["result"]:
+            assert flow["hasAnswer"] is False
+
+    async def test_summary_flow_list_order(
+        self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow_not_completed
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+
+        assert "result" in payload
+        flows_order_expected = [str(flow.id) for flow in sorted(applet_with_flow.activity_flows, key=lambda x: x.order)]
+        flows_order_actual = [flow["id"] for flow in payload["result"]]
+        assert flows_order_actual == flows_order_expected
