@@ -1,0 +1,21 @@
+# Delete the task role resource
+# - op: remove
+#   path: /Resources/TaskRole
+
+# Add a service connect alias
+# - op: add
+#   path: /Resources/Service/Properties/ServiceConnectConfiguration/Services/0/ClientAliases/-
+#   value:
+#     Port: !Ref TargetPort
+#     DnsName: yamlpatchiscool
+
+# Replace the task role in the task definition
+# - op: replace
+#   path: /Resources/TaskDefinition/Properties/TaskRoleArn
+#   value: arn:aws:iam::123456789012:role/MyTaskRole
+
+# Only 10 policies allowed per account.  Hard limit.
+# A shared policy is created via terraform
+# https://github.com/aws/copilot-cli/issues/5743#issuecomment-2022882367
+- op: remove
+  path: /Resources/LogResourcePolicy

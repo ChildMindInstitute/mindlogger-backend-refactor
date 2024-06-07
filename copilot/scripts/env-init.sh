@@ -3,10 +3,21 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${SCRIPT_DIR}/funcs.sh
 
+#copilot svc show -n mindlogger-backend --json | jq -r '.configurations[] | select( .environment | contains("pr-1393") ) | .environment'
+#copilot svc show -n mindlogger-backend --json | jq -r '.configurations[] | select( .environment | contains("pr-1302") ) | .environment'
+
 #Create environment only once
 if copilot env ls -a "$APP_NAME" | grep -q "$ENV_NAME"; then
-    echo "Environment already exists"
-    exit 0
+    echo "Environment already exists, checking status"
+    ENV_CHECK=$(copilot svc show -n mindlogger-backend --json | jq -r ".configurations[] | select( .environment | contains(\"$ENV_NAME\") ) | .environment")
+
+    if [ -z "${ENV_CHECK}" ]; then
+      echo "Service does not exist, rebuilding..."
+      ${SCRIPT_DIR}/env-stop.sh
+    else
+      echo "Status good, continuing..."
+      exit 0
+    fi
 else
     if [ "$ENV_NAME" == 'feature' ]; then
         echo "You must create feature from bootstrap script locally"
