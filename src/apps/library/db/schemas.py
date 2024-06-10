@@ -11,8 +11,8 @@ class LibrarySchema(Base):
         ForeignKey("applet_histories.id_version", ondelete="RESTRICT"),
         nullable=False,
     )
-    keywords = Column(ARRAY(String))
-    search_keywords = Column(ARRAY(String))
+    keywords = Column(ARRAY(String), nullable=False)
+    search_keywords = Column(ARRAY(String), nullable=False)
 
 
 class CartSchema(Base):

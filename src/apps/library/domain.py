@@ -8,7 +8,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class AppletLibrary(InternalModel):
     applet_id_version: str
-    keywords: list[str] | None = None
+    keywords: list[str] = []
 
 
 class AppletLibraryFull(AppletLibrary):
@@ -22,12 +22,12 @@ class AppletLibraryInfo(PublicModel):
 
 class AppletLibraryCreate(InternalModel):
     applet_id: uuid.UUID
-    keywords: list[str] | None = None
+    keywords: list[str] = []
     name: str
 
 
 class AppletLibraryUpdate(InternalModel):
-    keywords: list[str] | None = None
+    keywords: list[str] = []
     name: str
 
 
@@ -84,7 +84,7 @@ class _LibraryItem(BaseModel):
     about: dict[str, str] | None = None
     image: str = ""
     theme_id: uuid.UUID | None = None
-    keywords: list[str] | None = None
+    keywords: list[str] = []
     activities: list[LibraryItemActivity] | None = None
     activity_flows: list[LibraryItemFlow] | None = None
 
