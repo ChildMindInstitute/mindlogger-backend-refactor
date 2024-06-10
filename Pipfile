@@ -12,7 +12,7 @@ fastapi = "==0.110.0"
 # The latest version of the fastapi is not taken because of the issue
 # with fastapi-mail that requires 0.21 < starlette < 0.22
 # starlette version for those deps ==0.21.0
-fastapi-mail = "~=1.2.2"
+fastapi-mail = "~=1.3.1"
 httpx = "~=0.23"
 jinja2 = "~=3.1.2"
 bcrypt = "==4.0.1"
