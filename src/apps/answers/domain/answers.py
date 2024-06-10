@@ -100,6 +100,7 @@ class AppletAnswerCreate(InternalModel):
     client: ClientMeta
     target_subject_id: uuid.UUID | None
     source_subject_id: uuid.UUID | None
+    input_subject_id: uuid.UUID | None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 

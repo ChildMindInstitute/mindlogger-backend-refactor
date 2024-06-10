@@ -201,6 +201,23 @@ def answer_create(
 
 
 @pytest.fixture
+def answer_create_applet_one(
+    applet_one: AppletFull,
+    answer_item_create: ItemAnswerCreate,
+    client_meta: ClientMeta,
+) -> AppletAnswerCreate:
+    return AppletAnswerCreate(
+        applet_id=applet_one.id,
+        version=applet_one.version,
+        submit_id=uuid.uuid4(),
+        activity_id=applet_one.activities[0].id,
+        answer=answer_item_create,
+        created_at=datetime.datetime.utcnow().replace(microsecond=0),
+        client=client_meta,
+    )
+
+
+@pytest.fixture
 def answer_alert(applet: AppletFull) -> AnswerAlert:
     return AnswerAlert(activity_item_id=applet.activities[0].items[0].id, message="answer alert")
 

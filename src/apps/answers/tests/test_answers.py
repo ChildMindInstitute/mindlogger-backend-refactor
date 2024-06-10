@@ -445,6 +445,34 @@ async def tom_answer_activity_flow_not_completed(
     )
 
 
+@pytest.fixture
+async def applet_one_lucy_subject(session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User) -> Subject:
+    return await SubjectsService(session, tom.id).create(
+        SubjectCreate(
+            applet_id=applet_one.id,
+            creator_id=lucy.id,
+            first_name="Shell",
+            last_name="Account",
+            nickname="shell-account-lucy-0",
+            secret_user_id=f"{uuid.uuid4()}",
+        )
+    )
+
+
+@pytest.fixture
+async def applet_one_user_subject(session: AsyncSession, applet_one: AppletFull, tom: User, user: User) -> Subject:
+    return await SubjectsService(session, tom.id).create(
+        SubjectCreate(
+            applet_id=applet_one.id,
+            creator_id=user.id,
+            first_name="Shell",
+            last_name="Account",
+            nickname="shell-account-user-0",
+            secret_user_id=f"{uuid.uuid4()}",
+        )
+    )
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -536,6 +564,26 @@ class TestAnswerActivityItems(BaseTest):
             )
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
+
+    async def test_answer_activity_with_input_subject(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create_applet_one: AppletAnswerCreate,
+        applet_one: AppletFull,
+        applet_one_lucy_subject: Subject,
+        applet_one_user_subject: Subject,
+    ):
+        client.login(tom)
+        data = answer_create_applet_one.copy(deep=True)
+        data.input_subject_id = applet_one_lucy_subject.id
+        data.target_subject_id = applet_one_user_subject.id
+        data.source_subject_id = applet_one_user_subject.id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+        # TODO: check the response
+        #  (there is no endpoint returning target_subject_id, source_subject_id, input_subject_id for an answer)
 
     async def test_create_answer__wrong_applet_version(
         self,
