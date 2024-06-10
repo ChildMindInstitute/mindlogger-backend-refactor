@@ -1,0 +1,30 @@
+# The manifest for the "feature" environment.
+# Read the full specification for the "Environment" type at:
+#  https://aws.github.io/copilot-cli/docs/manifest/environment/
+
+# Your environment name will be used in naming your resources like VPC, cluster, etc.
+name: feature
+type: Environment
+
+# Import your own VPC and subnets or configure how they should be created.
+network:
+  vpc:
+    id: vpc-0a83201b71e854abd
+    subnets:
+      public:
+        - id: subnet-02bb97c00f46bc632
+        - id: subnet-039dfa8be6fbefef0
+        - id: subnet-00370c12b7541a59d
+      private:
+        - id: subnet-08ee4d9a7c2503f9b
+        - id: subnet-0d14f4ab78648b824
+        - id: subnet-0cd4a37140c73f2a7
+
+# Configure the load balancers in your environment, once created.
+# http:
+#   public:
+#   private:
+
+# Configure observability for your environment resources.
+observability:
+  container_insights: true

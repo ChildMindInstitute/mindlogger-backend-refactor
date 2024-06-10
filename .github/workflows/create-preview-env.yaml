@@ -1,0 +1,94 @@
+name: Create preview environment
+
+on:
+  workflow_call:
+    outputs:
+      service-url:
+        value: "${{ jobs.create-preview-env.outputs.service-url }}"
+    inputs:
+      env-name:
+        type: string
+        description: Environment name
+        required: true
+      env-snake-name:
+        type: string
+        description: Env name is snake case
+        required: true
+      copilot-service:
+        type: string
+        description: Copilot service name
+        required: true
+      app-name:
+        type: string
+        description: App Name (likely the GH repo)
+        required: true
+      vpc-id:
+        type: string
+        description: VPC ID for preview envs
+        required: true
+      aws-region:
+        type: string
+        default: us-east-1
+        required: false
+
+jobs:
+  create-preview-env:
+    runs-on: ubuntu-latest
+    name: Create Preview Env
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      discussions: write
+    env:
+      ENV_NAME: ${{ inputs.env-name }}
+      ENV_NAME_SNAKE: ${{ inputs.env-snake-name }}
+      APP_NAME: ${{ inputs.app-name }}
+      VPC_ID: ${{ inputs.vpc-id }}
+      COPILOT_SERVICE: ${{ inputs.copilot-service }}
+      AWS_REGION: us-east-1
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
+          role-session-name: gha-preview-env
+          aws-region: ${{ inputs.aws-region }}
+      - name: Install copilot
+        run: |
+          curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 
+          sudo mv copilot /usr/local/bin/copilot && copilot -v
+      - name: Install session manager plugin
+        run: |
+          curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb" &&
+          sudo dpkg -i session-manager-plugin.deb
+      - name: Create secrets for environment
+        # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
+        # is copied and tagged properly for copilot to pick it up.
+        run: |
+          COUNT=$(aws secretsmanager list-secrets --query SecretList --filters Key=name,Values=cmiml-feature-${{ inputs.env-name }} | jq length)
+          if [ "$COUNT" -ne "0" ]; then
+            echo "Secret exists, skipping..."
+            exit 0
+          fi
+          SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature --query SecretString --output text)
+          aws secretsmanager create-secret --name cmiml-feature-${{ inputs.env-name }} --secret-string "$SECRET_STRING" --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ inputs.app-name }}" "Key=copilot-environment,Value=${{ inputs.env-name }}"
+
+      - uses: actions/checkout@v4
+        name: Checkout
+      - name: Create environment
+        run: copilot/scripts/env-init.sh
+      - name: Deploy environment
+        run: copilot/scripts/env-deploy.sh
+      - name: Deploy service
+        run: copilot/scripts/svc-deploy.sh
+      - name: Run DB migration
+        run: |
+          copilot svc exec -a ${{ inputs.app-name }} -e ${{ inputs.env-name }} -n ${{ inputs.copilot-service }} --command "/fastapi-migrate"
+      - name: Get service URL
+        id: service-url
+        run: echo "SERVICE_URL=$(copilot svc show -n ${{ inputs.copilot-service }} --json | jq -r '.routes[] | select( .environment | contains("${{ inputs.env-name }}") ) | .url')" >> $GITHUB_OUTPUT
+
+       # TODO Slack notification?
+    outputs:
+      service-url: ${{ steps.service-url.outputs.SERVICE_URL }}

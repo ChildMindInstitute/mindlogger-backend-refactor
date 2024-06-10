@@ -1,0 +1,64 @@
+name: Tear down preview environment
+
+on:
+  workflow_dispatch: {}
+  # Disable for now because some PRs were also using feature branch names
+#  delete: {}
+
+
+jobs:
+  create-env-name:
+    name: Create env name
+    uses: ./.github/workflows/env-name.yaml
+    secrets: inherit
+
+  destroy-preview-env:
+    name: Destroy Preview Env
+    if: github.event.ref_type == 'branch'
+    needs: [create-env-name]
+    uses: ./.github/workflows/destroy-preview-env.yaml
+    with:
+      env-name: "${{ needs.create-env-name.outputs.env-name }}"
+      env-snake-name: "${{ needs.create-env-name.outputs.env-snake-name }}"
+      app-name: ${{ github.event.repository.name }}
+      copilot-service: mindlogger-backend
+    secrets: inherit
+
+  comment-destroy-preview-env:
+    name: Comment on preview env
+    runs-on: ubuntu-latest
+    needs: [ destroy-preview-env ]
+    if: ${{ always() }}
+    steps:
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        if: ${{ always() && needs.destroy-preview-env.result == 'failure' }}
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Preview Environment
+          SLACK_MESSAGE: Failed to destroy preview environment pr-${{ github.event.number }}
+          MSG_MINIMAL: actions url
+
+  destroy-database:
+    name: Destroy database
+    uses: ./.github/workflows/drop_db.yaml
+    with:
+      db-name: "mindlogger_backend_${{ needs.create-env-name.outputs.env-snake-name }}"
+    secrets: inherit
+
+  on-db-failure:
+    name: Database destroy failed
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.destroy_database.result == 'failure' || needs.destroy_database.result == 'timed_out') }}
+    needs: [ destroy-database ]
+    steps:
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Destroy Database
+          SLACK_MESSAGE: 'Error during database destroy!'
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: actions url

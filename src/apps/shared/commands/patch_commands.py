@@ -46,6 +46,14 @@ PatchRegister.register(
     description="Set proportion.enabled=True to Maki's applets",
     manage_session=False,
 )
+
+PatchRegister.register(
+    file_path="m2_6879_create_deleted_respondents.py",
+    task_id="M2-6879",
+    description="[Subject] Create deleted respondents roles",
+    manage_session=False,
+)
+
 PatchRegister.register(
     file_path="m2_5551_delete_invitations_of_existing_respondent.sql",
     task_id="M2-5551",

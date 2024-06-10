@@ -1,45 +1,45 @@
-name: deploy_to_test
-on:
-  push:
-    tags:        
-      - '**'  
-  workflow_call:
-    inputs:
-      COMMIT_HASH:
-        required: true
-        type: string
-      IMAGE_PREFIX:
-        required: true
-        type: string
+name: deploy_to_produc†ion
+on: [pull_request, workflow_dispatch]
 
 permissions:
   id-token: write
   contents: read
+  issues: write
 
 jobs:
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    if: contains(github.ref, '-rc')
+    if: ${{ github.ref_name == 'release\/[0-9]+.[0-9]+.[0-9]+([0-9]+)' }}
     env:
       TASK_FAMILY_PREFIX: backend
-      ECS_CLUSTER_NAME: cmiml-test
+      ECS_CLUSTER_NAME: cmiml-prod
       ECS_SERVICE_NAME: backend
-      ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-      IMAGE_PREFIX: ${{ inputs.COMMIT_HASH }}
-      COMMIT_HASH: ${{ inputs.IMAGE_PREFIX }}
+      ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com
+      IMAGE_PREFIX: ${{ github.ref_name }}
+      COMMIT_HASH: ${{ github.sha }}
+      AWS_REGION : "us-east-1"
     steps:
+
+      - uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: mbanting, natalia-muzyka, aweiland, vshvechko
+          minimum-approvals: 2
+          issue-title: "Deploying ${{ github.ref_name }} to prod"
+          issue-body: "Please approve or deny the deployment of version ${{ github.ref_name }}"
+          exclude-workflow-initiator-as-approver: false
 
       - name: Git clone the repository
         uses: actions/checkout@v4
 
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::641513112151:role/cmiml-test-oidc-github-role
+          role-to-assume: arn:aws:iam::641513112151:role/cmiml-prod-oidc-github-role
           role-session-name: OIDC-GHA-session
           aws-region: ${{ env.AWS_REGION }}
-      
+
       - name: change image and register task definitions
         run: |
           NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5) 
@@ -56,7 +56,7 @@ jobs:
           
           #this step is separate because api sarvice and task definition names are different, need to be changed
           aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_api
-          
+        
 
   on-failure:
     runs-on: ubuntu-latest
@@ -69,10 +69,10 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.TEST_SLACK_WEBHOOK }}
-          SLACK_CHANNEL: gha-deploy-to-test
+          SLACK_WEBHOOK: ${{ secrets.PROD_SLACK_WEBHOOK }}
+          SLACK_CHANNEL: gha-deploy-to-prod
           SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_TITLE: Deployment to TEST environment
+          SLACK_TITLE: Deployment to PROD environment
           SLACK_MESSAGE: 'Error when executing deployment!'
   
   on-success:
@@ -86,9 +86,9 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.TEST_SLACK_WEBHOOK }}
-          SLACK_CHANNEL: gha-deploy-to-test
+          SLACK_WEBHOOK: ${{ secrets.PROD_SLACK_WEBHOOK }}
+          SLACK_CHANNEL: gha-deploy-to-prod
           SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_TITLE: Deployment to TEST environment
+          SLACK_TITLE: Deployment to PROD environment
           SLACK_MESSAGE: 'Deployment is successfull!'
           
