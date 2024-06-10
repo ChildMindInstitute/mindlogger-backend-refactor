@@ -39,6 +39,7 @@ class AnswerSchema(HistoryAware, Base):
     migrated_data = Column(JSONB())
     target_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     source_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    input_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     relation = Column(String(length=20), nullable=True)
 
     answer_item = relationship(

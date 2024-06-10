@@ -89,6 +89,11 @@ PatchRegister.register(
     task_id="M2-6504",
     description="[MultiinformantR1] Update tag fields for managers/reviewers subjects",
 )
+PatchRegister.register(
+    file_path="m2_6733_add_answer_input_subjects.py",
+    task_id="M2-6733",
+    description="[MultiinformantR1] Add input subject ids for answers in internal and arbitrary DBs",
+)
 
 app = typer.Typer()
 

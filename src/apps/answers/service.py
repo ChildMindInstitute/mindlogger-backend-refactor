@@ -210,6 +210,17 @@ class AnswerService:
         if not respondent_subject or not respondent_subject.soft_exists():
             raise ValidationError("Respondent subject not found")
 
+        if applet_answer.input_subject_id:
+            input_subject = await subject_crud.get_by_id(applet_answer.input_subject_id)
+            if (
+                not input_subject
+                or not input_subject.soft_exists()
+                or input_subject.applet_id != applet_answer.applet_id
+            ):
+                raise ValidationError(f"Subject {applet_answer.input_subject_id} not found")
+        else:
+            input_subject = respondent_subject
+
         if applet_answer.target_subject_id:
             target_subject = await subject_crud.get_by_id(applet_answer.target_subject_id)
             if (
@@ -246,7 +257,8 @@ class AnswerService:
                 client=applet_answer.client.dict(),
                 is_flow_completed=bool(applet_answer.is_flow_completed) if applet_answer.flow_id else None,
                 target_subject_id=target_subject.id,
-                source_subject_id=source_subject.id if source_subject else None,
+                source_subject_id=source_subject.id,
+                input_subject_id=input_subject.id,
                 relation=relation,
             )
         )
