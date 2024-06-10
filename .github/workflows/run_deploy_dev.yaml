@@ -17,6 +17,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  issues: write
 
 jobs:
   deploy_to_ecs:
@@ -32,8 +33,9 @@ jobs:
       AWS_REGION : "us-east-1"
     
     steps:
+
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
           role-session-name: OIDC-GHA-session
@@ -68,8 +70,9 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.DEV_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-dev
-          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: 'Error when executing deployment!'
   
@@ -84,8 +87,9 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.DEV_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-dev
-          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: 'Deployment is successfull!'
           

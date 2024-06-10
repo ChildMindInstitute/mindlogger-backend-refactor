@@ -53,7 +53,7 @@ class EventUpdateRequest(BaseEvent, InternalModel):
     notification: Notification | None = None
 
     @root_validator
-    def validate_optional_fields(cls, values):
+    def validate_optional_fields(cls, values):  # noqa: C901
         # if periodicity is Always, one_time_completion must be set.
         if values.get("periodicity").type == PeriodicityType.ALWAYS and not isinstance(
             values.get("one_time_completion"), bool
@@ -71,22 +71,42 @@ class EventUpdateRequest(BaseEvent, InternalModel):
             if values.get("notification"):
                 if values.get("notification").notifications:
                     for notification in values.get("notification").notifications:
-                        if notification.trigger_type == NotificationTriggerType.FIXED and (
-                            notification.at_time < start_time or notification.at_time > end_time
-                        ):
-                            raise UnavailableActivityOrFlowError()
+                        # keep same logic if the event is not cross-day
+                        if start_time < end_time:
+                            if notification.trigger_type == NotificationTriggerType.FIXED and (
+                                notification.at_time < start_time or notification.at_time > end_time
+                            ):
+                                raise UnavailableActivityOrFlowError()
 
-                        if notification.trigger_type == NotificationTriggerType.RANDOM and (
-                            notification.from_time < start_time
-                            or notification.from_time > end_time
-                            or notification.to_time < start_time
-                            or notification.to_time > end_time
-                        ):
-                            raise UnavailableActivityOrFlowError()
+                            if notification.trigger_type == NotificationTriggerType.RANDOM and (
+                                notification.from_time < start_time
+                                or notification.from_time > end_time
+                                or notification.to_time < start_time
+                                or notification.to_time > end_time
+                            ):
+                                raise UnavailableActivityOrFlowError()
+                        # logic for cross-day events
+                        else:
+                            if notification.trigger_type == NotificationTriggerType.FIXED and (
+                                notification.at_time < start_time and notification.at_time > end_time
+                            ):
+                                raise UnavailableActivityOrFlowError()
+
+                            if notification.trigger_type == NotificationTriggerType.RANDOM and (
+                                (notification.from_time < start_time and notification.from_time > end_time)
+                                or (notification.to_time < start_time and notification.to_time > end_time)
+                            ):
+                                raise UnavailableActivityOrFlowError()
+
                 if values.get("notification").reminder:
                     reminder = values.get("notification").reminder
-                    if reminder.reminder_time < start_time or reminder.reminder_time > end_time:
-                        raise UnavailableActivityOrFlowError()
+                    # keep same logic if the event is not cross-day
+                    if start_time < end_time:
+                        if reminder.reminder_time < start_time or reminder.reminder_time > end_time:
+                            raise UnavailableActivityOrFlowError()
+                    else:
+                        if reminder.reminder_time < start_time and reminder.reminder_time > end_time:
+                            raise UnavailableActivityOrFlowError()
 
         if start_time == end_time:
             raise StartEndTimeEqualError()

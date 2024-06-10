@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::641513112151:role/cmiml-uat-oidc-github-role
           role-session-name: OIDC-GHA-session
@@ -69,8 +69,9 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.UAT_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-uat
-          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to UAT environment
           SLACK_MESSAGE: 'Error when executing deployment!'
   
@@ -85,7 +86,8 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.UAT_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-uat
-          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to UAT environment
           SLACK_MESSAGE: 'Deployment is successfull!'

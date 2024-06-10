@@ -59,8 +59,9 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.STAGE_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-stage
-          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to STAGE environment
           SLACK_MESSAGE: 'Error when executing deployment!'
   
@@ -75,8 +76,9 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.STAGE_SLACK_WEBHOOK }}
           SLACK_CHANNEL: gha-deploy-to-stage
-          SLACK_WEBHOOK: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to STAGE environment
           SLACK_MESSAGE: 'Deployment is successfull!'
           

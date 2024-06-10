@@ -1,0 +1,160 @@
+# The manifest for the "service-a" service.
+# Read the full specification for the "Load Balanced Web Service" type at:
+#  https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/
+
+# Your service name will be used in naming your resources like log groups, ECS services, etc.
+name: mindlogger-backend
+type: Load Balanced Web Service
+
+# Distribute traffic to your service.
+http:
+  # Requests to this path will be forwarded to your service.
+  # To match all requests you can use the "/" path.
+  path: '/'
+  # You can specify a custom health check path. The default is "/".
+  healthcheck:
+    path: '/readiness'
+    port: 80
+  port: 80
+
+# Configuration for your containers and service.
+image:
+  # Docker build arguments. For additional overrides: https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/#image-build
+  build:
+    dockerfile: compose/fastapi/Dockerfile
+    target: fargate
+    context: .
+    args:
+      PIPENV_EXTRA_ARGS: --dev
+  # Port exposed through your container to route traffic to it.
+  port: 80
+
+entrypoint: /fastapi-entrypoint
+command: /fastapi-start
+#command: tail -f /dev/null
+
+cpu: 512       # Number of CPU units for the task.
+memory: 1024    # Amount of memory in MiB used by the task.
+platform: linux/x86_64  # See https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/#platform
+count: 1       # Number of tasks that should be running in your service.
+exec: true     # Enable running commands in your container.
+network:
+  connect: false # Enable Service Connect for intra-environment traffic between services.
+  vpc:
+    security_groups:
+      - sg-0fe1e219a0c0c5afb
+
+storage:
+  readonly_fs: false
+  ephemeral: 20
+  volumes:
+    tmp-dir:
+      efs: false
+      path: /tmp
+      read_only: false
+    shared-dir-uploads:
+      efs: false
+      path: /app/uploads
+      read_only: false
+
+
+variables:
+  # Python configurations
+  ENV: testing
+
+  # PostgreSQL configurations
+  DATABASE__HOST: cmiml-feature-db.cjg844g2kgxp.us-east-1.rds.amazonaws.com
+  DATABASE__PORT: 5432
+  DATABASE__USER: feature
+  DATABASE__DB: mindlogger_backend_${ENV_NAME_SNAKE}
+  REDIS__HOST: cmiml-feature.gwo51x.ng.0001.use1.cache.amazonaws.com
+  REDIS__PORT: 6379
+  REDIS__DB: 0
+
+  RABBITMQ__USER: backendUser
+  RABBITMQ__PORT: 5671
+
+  # Application configurations
+
+  # CORS
+  CORS__ALLOW_ORIGINS: "*"
+  #CORS__ALLOW_ORIGINS_REGEX:
+  CORS__ALLOW_CREDENTIALS: true
+  CORS__ALLOW_METHODS: "*"
+  CORS__ALLOW_HEADERS: "*"
+
+  # Authentication
+  AUTHENTICATION__ACCESS_TOKEN__EXPIRATION: 30
+  AUTHENTICATION__REFRESH_TOKEN__EXPIRATION: 540
+  AUTHENTICATION__ALGORITHM: "HS256"
+  AUTHENTICATION__TOKEN_TYPE: "Bearer"
+  AUTHENTICATION__PASSWORD_RECOVER__EXPIRATION: 900
+
+  # Mailing
+  MAILING__MAIL__USERNAME: mailhog
+  MAILING__MAIL__PASSWORD: mailhog
+  MAILING__MAIL__SERVER: fcm.mail.server
+  MAILING__MAIL__PORT: 1025
+  MAILING__MAIL_STARTTLS:
+  MAILING__MAIL_SSL_TLS:
+  MAILING__MAIL__FROM_EMAIL: "no-reply@mindlogger.org"
+  MAILING__MAIL__FROM_NAME: "Mindlogger"
+  # Currently these settings are not used
+  MAILING__USE_CREDENTIALS: False
+  MAILING__VALIDATE_CERTS: False
+
+  # Third party
+
+  # FCM Notification api key
+  NOTIFICATION__API_KEY:
+
+  # CDN configs (container by default)
+  CDN__ENDPOINT_URL: http://localhost:9000
+  CDN__SECRET_KEY: miniosecret
+  CDN__ACCESS_KEY: minioaccess
+  CDN__REGION:
+  CDN__BUCKET_ANSWER: media
+  CDN__BUCKET: media
+  CDN__BUCKET_OPERATIONS: media
+  CDN__STORAGE_ADDRESS: http://localhost:9000
+  CDN__LEGACY_REGION:
+  CDN__LEGACY_BUCKET:
+  CDN__LEGACY_SECRET_KEY:
+  CDN__LEGACY_ACCESS_KEY:
+  CDN__TTL_SIGNED_URLS: 3600
+
+  # jsonld converter
+  JSONLD_CONVERTER__PROTOCOL_PASSWORD:
+
+secrets:
+  DATABASE__PASSWORD:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DATABASE__PASSWORD_BACKEND_USER::"
+  RABBITMQ__HOST:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:RABBITMQ__HOST::"
+  RABBITMQ__PASSWORD:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:RABBITMQ__PASSWORD::"
+  AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY::"
+  AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY::"
+  SECRETS__SECRET_KEY:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:SECRETS__SECRET_KEY::"
+  APPLET_EMA__ID:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:APPLET_EMA__ID::"
+  APPLET_EMA__NAME:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:APPLET_EMA__NAME::"
+
+
+# You can override any of the values defined above by environment.
+#environments:
+#  test:
+#    count: 2               # Number of tasks to run for the "test" environment.
+#    deployment:            # The deployment strategy for the "test" environment.
+#       rolling: 'recreate' # Stops existing tasks before new ones are started for faster deployments.
+
+taskdef_overrides:
+  - path: ContainerDefinitions[0].Ulimits[-]
+    value:
+      Name: "nofile"
+      SoftLimit: 1048576
+      HardLimit: 1048576
