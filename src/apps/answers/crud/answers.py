@@ -27,7 +27,7 @@ from apps.answers.domain import (
     UserAnswerItemData,
 )
 from apps.answers.errors import AnswerNotFoundError
-from apps.answers.filters import AppletSubmitDateFilter, ReviewAppletItemFilter
+from apps.answers.filters import AppletSubmitDateFilter
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import Version
 from apps.shared.filtering import Comparisons, FilterField, Filtering
@@ -221,19 +221,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         count = result_count.scalar()
 
         return parse_obj_as(list[FlowSubmission], data), count
-
-    async def get_respondents_answered_activities_by_applet_id(
-        self, applet_id: uuid.UUID, filters: ReviewAppletItemFilter
-    ) -> list[AnswerSchema]:
-        query: Query = select(AnswerSchema)
-        query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(func.date(AnswerSchema.created_at) == filters.created_date)
-        if filters.target_subject_id:
-            query = query.where(AnswerSchema.target_subject_id == filters.target_subject_id)
-        query = query.order_by(AnswerSchema.created_at.asc())
-
-        db_result = await self._execute(query)
-        return db_result.scalars().all()
 
     async def get_respondents_submit_dates(
         self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
@@ -513,10 +500,20 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_submitted_flows_with_last_date(
         self, applet_id: uuid.UUID, target_subject_id: uuid.UUID | None
     ) -> list[tuple[str, datetime.datetime]]:
-        query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
-        query = query.where(AnswerSchema.applet_id == applet_id, AnswerSchema.flow_history_id.isnot(None))
+        subquery: Query = select(AnswerSchema.submit_id)
+        subquery = subquery.where(
+            AnswerSchema.applet_id == applet_id,
+            AnswerSchema.flow_history_id.isnot(None),
+            AnswerSchema.is_flow_completed.is_(True),
+        )
         if target_subject_id:
-            query = query.where(AnswerSchema.target_subject_id == target_subject_id)
+            subquery = subquery.where(AnswerSchema.target_subject_id == target_subject_id)
+
+        query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
+        query = query.where(
+            AnswerSchema.submit_id.in_(subquery),
+            AnswerSchema.is_flow_completed.is_(True),
+        )
         query = query.group_by(AnswerSchema.flow_history_id)
         query = query.order_by(AnswerSchema.flow_history_id)
         db_result = await self._execute(query)
