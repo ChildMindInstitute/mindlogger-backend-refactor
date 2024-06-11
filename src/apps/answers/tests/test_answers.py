@@ -375,6 +375,7 @@ async def tom_answer_activity_flow_not_completed(
                 identifier="encrypted_identifier",
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+            is_data_share=False,
         )
     )
 
