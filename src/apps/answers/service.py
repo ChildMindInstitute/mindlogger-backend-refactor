@@ -909,6 +909,7 @@ class AnswerService:
                 AppletSubmission(
                     applet_id=applet_id,
                     activity_name=activity.name,
+                    activity_id=activity.id,
                     created_at=answer.created_at,
                     updated_at=answer.end_datetime,
                     target_secret_user_id=target_subject.secret_user_id,

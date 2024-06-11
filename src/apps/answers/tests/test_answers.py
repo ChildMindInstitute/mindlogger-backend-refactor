@@ -2393,6 +2393,7 @@ class TestAnswerActivityItems(BaseTest):
             assert s["sourceNickname"] == answer_shell_account_target["source_nickname"]
             assert s["sourceSecretUserId"] == str(answer_shell_account_target["source_secret_user_id"])
             assert s["activityName"] is not None
+            assert s["activityId"] is not None
 
     @pytest.mark.usefixtures("applet_lucy_respondent")
     async def test_get_applet_latest_submissions_pagination(

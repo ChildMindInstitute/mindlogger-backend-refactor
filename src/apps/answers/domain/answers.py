@@ -294,6 +294,7 @@ class AppletSubmission(PublicModel):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     activity_name: str
+    activity_id: uuid.UUID
 
 
 class FlowSubmission(PublicModel):
