@@ -1,0 +1,229 @@
+name: Preview and Test PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+#  push:
+#    branches:
+#      - "feature/**"
+
+# Only run the latest.  Cancel old runs in progress.
+concurrency:
+  cancel-in-progress: true
+  group: "preview-env-manage-${{ github.event.number }}"
+
+
+jobs:
+  create-database:
+    name: Create preview env DB
+    uses: ./.github/workflows/create_db.yaml
+    with:
+      db-name: "mindlogger_backend_pr_${{ github.event.number }}"
+    secrets: inherit
+
+  on-db-failure:
+    name: Database creation failed
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
+    needs: [create-database]
+    steps:
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Create Database
+          SLACK_MESSAGE: 'Error during database creation!'
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: actions url
+
+  create-preview-env:
+    needs: [create-database]
+    uses: ./.github/workflows/create-preview-env.yaml
+    with:
+      env-name: "pr-${{ github.event.number }}"
+      env-snake-name: "pr_${{ github.event.number }}"
+      app-name: ${{ github.event.repository.name }}
+      vpc-id: vpc-0a83201b71e854abd
+      copilot-service: mindlogger-backend
+    secrets: inherit
+
+  comment-create-preview-env:
+    name: Comment on preview env
+    runs-on: ubuntu-latest
+    needs: [create-preview-env]
+    if: ${{ always() }}
+    steps:
+      - name: Comment on PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :arrow_right: Preview environment created: [Click Me!](${{ needs.create-preview-env.outputs.service-url }})
+          reactions: eyes, rocket
+          comment_tag: service-url
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        if: ${{ always() && needs.create-preview-env.result == 'failure' }}
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Preview Environment
+          SLACK_MESSAGE: Failed to create preview environment
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: actions url
+
+  run-unit-tests:
+    uses: ./.github/workflows/tests.yaml
+    secrets: inherit
+
+  comment-unit-tests:
+    name: Comment on unit test outcome
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [run-unit-tests]
+    steps:
+      - name: Post the link to the report
+        uses: guibranco/github-status-action-v2@v1
+        with:
+          authToken: ${{secrets.PAT_TOKEN}}
+          context: 'Unit Test report'
+          state: ${{ needs.run-unit-tests.result }}
+          sha: ${{ github.event.pull_request.head.sha }}
+          target_url: ${{ needs.run-unit-tests.outputs.report-url }}
+      - name: "Send Slack message on failure"
+        if: ${{ needs.run-unit-tests.result == 'success' }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACKIFY_MARKDOWN: true
+          SLACK_TITLE: |
+            :rotating_light: Unit test suite failed
+          SLACK_MESSAGE: >-
+            Unit tests for PR-${{ github.event.pull_request.number}} failed
+            \n\n
+            :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            \n\n
+            :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }}) | :chart_with_upwards_trend: [Test Report](${{ needs.run-unit-tests.outputs.report-url }})
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: true
+#      - name: Post to a Slack channel
+#        id: slack
+#        uses: slackapi/slack-github-action@v1.26.0
+#        with:
+#          # Slack channel id, channel name, or user id to post message.
+#          channel-id: 'C074PFF55NY'
+#          payload: |
+#            {
+#              "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+#              "blocks": [
+#                {
+#                    "type": "header",
+#                    "text": {
+#                        "type": "plain_text",
+#                        "text": ":rotating_light: Unit Tests Failed",
+#                        "emoji": true
+#                    }
+#                },
+#                {
+#                    "type": "divider"
+#                },
+#                {
+#                    "type": "actions",
+#                    "elements": [
+#                        {
+#                            "type": "button",
+#                            "text": {
+#                                "type": "plain_text",
+#                                "text": ":label: PR",
+#                                "emoji": true
+#                            },
+#                            "value": "pr_link",
+#                            "url": "${{ github.event.pull_request.html_url }}"
+#                        },
+#                        {
+#                            "type": "button",
+#                            "text": {
+#                                "type": "plain_text",
+#                                "text": ":chart_with_upwards_trend: Test Report",
+#                                "emoji": true
+#                            },
+#                            "value": "click_me_123",
+#                            "url": "${{ needs.run-unit-tests.outputs.report-url }}"
+#                        }
+#                    ]
+#                }
+#              ]
+#            }
+#        env:
+#          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+#      - uses: 8398a7/action-slack@v3
+#        name: Send to slack
+#        with:
+#          status: "${{ needs.run-unit-tests.result }}"
+#          fields: pullRequest,workflow
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+
+
+  run-e2e-tests:
+    name: Run E2E Test Suite
+    needs: [ create-preview-env, run-unit-tests ]
+    if: ${{ always() && needs.run-unit-tests.result == 'success' && needs.create-preview-env.result == 'success' }}
+    uses: ./.github/workflows/e2e-tests.yaml
+    secrets: inherit
+    with:
+      service-url: ${{ needs.create-preview-env.outputs.service-url }}
+
+  comment-e2e-tests:
+    name: Comment on test outcome
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [run-e2e-tests]
+    steps:
+      - name: "Send Slack message on failure"
+        if: ${{ needs.run-e2e-tests.result != 'success' }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACKIFY_MARKDOWN: true
+          SLACK_TITLE: |
+            :rotating_light: E2E test suite failed
+          SLACK_MESSAGE: >-
+            E2E tests for PR-${{ github.event.pull_request.number}} failed
+            \n\n
+            :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            \n\n
+            :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }}) | :chart_with_upwards_trend: [Test Report](${{ needs.run-e2e-tests.outputs.report-url }})
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: true
+      - name: Comment on PR with test success
+        if: ${{ needs.run-e2e-tests.result == 'success' }}
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :white_check_mark: E2E tests passed!
+          comment_tag: e2e-results
+      - name: Comment on PR with test failure
+        if: ${{ needs.run-e2e-tests.result != 'success' }}
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :x: E2E tests failed
+          comment_tag: e2e-results
+
+      - name: Post the link to the report
+        if: always()
+        uses: guibranco/github-status-action-v2@v1
+        with:
+          authToken: ${{secrets.GITHUB_TOKEN}}
+          context: 'E2E Test report'
+          state: ${{ needs.run-e2e-tests.result }}
+          sha: ${{ github.event.pull_request.head.sha }}
+          target_url: ${{ needs.run-e2e-tests.outputs.report-url }}
+

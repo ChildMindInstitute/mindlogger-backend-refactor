@@ -15,7 +15,7 @@ class SummaryActivityFilter(BaseQueryParams):
 
 
 class ReviewAppletItemFilter(BaseQueryParams):
-    target_subject_id: uuid.UUID | None
+    target_subject_id: uuid.UUID
     created_date: datetime.date
 
 

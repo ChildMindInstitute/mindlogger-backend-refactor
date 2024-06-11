@@ -420,6 +420,31 @@ async def tom_answer(tom: User, session: AsyncSession, answer_create: AppletAnsw
     return await AnswerService(session, tom.id).create_answer(answer_create)
 
 
+@pytest.fixture
+async def tom_answer_activity_flow_not_completed(
+    session: AsyncSession, tom: User, applet_with_flow: AppletFull
+) -> AnswerSchema:
+    answer_service = AnswerService(session, tom.id)
+    return await answer_service.create_answer(
+        AppletAnswerCreate(
+            applet_id=applet_with_flow.id,
+            version=applet_with_flow.version,
+            submit_id=uuid.uuid4(),
+            flow_id=applet_with_flow.activity_flows[1].id,
+            is_flow_completed=False,
+            activity_id=applet_with_flow.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_flow.activities[0].items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(tom.id),
+                identifier="encrypted_identifier",
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+        )
+    )
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -1682,6 +1707,7 @@ class TestAnswerActivityItems(BaseTest):
         data = data["result"]
         assert set(data.keys()) == {"flow", "submission", "summary"}
 
+        assert data["submission"]["isCompleted"] is True
         assert len(data["submission"]["answers"]) == len(applet_with_flow.activity_flows[0].items)
         answer_data = data["submission"]["answers"][0]
         # fmt: off
@@ -1981,6 +2007,124 @@ class TestAnswerActivityItems(BaseTest):
         client.login(user)
         response = await client.get(url)
         assert response.status_code == expected
+
+    async def test_review_flows_one_answer_without_target_subject_id(
+        self, mock_kiq_report, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow, session
+    ):
+        client.login(tom)
+        url = self.review_flows_url.format(applet_id=applet_with_flow.id)
+
+        response = await client.get(
+            url,
+            dict(
+                createdDate=datetime.datetime.utcnow().date(),
+            ),
+        )
+        assert response.status_code == 422
+        data = response.json()
+        assert data["result"][0]["message"] == "field required"
+        assert data["result"][0]["path"] == ["query", "targetSubjectId"]
+
+    async def test_flow_submission_not_completed(
+        self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow_not_completed
+    ):
+        client.login(tom)
+        url = self.flow_submission_url.format(
+            applet_id=applet_with_flow.id,
+            flow_id=applet_with_flow.activity_flows[1].id,
+            submit_id=tom_answer_activity_flow_not_completed.submit_id,
+        )
+        response = await client.get(url)
+        assert response.status_code == 200
+        data = response.json()
+        assert "result" in data
+        data = data["result"]
+        assert set(data.keys()) == {"flow", "submission", "summary"}
+        assert data["submission"]["isCompleted"] is False
+
+    async def test_get_summary_activities_no_answer_no_empty_deleted_history(
+        self, client: TestClient, tom: User, applet: AppletFull
+    ):
+        client.login(tom)
+
+        response = await client.get(
+            self.summary_activities_url.format(
+                applet_id=str(applet.id),
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["name"] == applet.activities[0].name
+        assert response.json()["result"][0]["id"] == str(applet.activities[0].id)
+        assert not response.json()["result"][0]["isPerformanceTask"]
+        assert not response.json()["result"][0]["hasAnswer"]
+
+    async def test_activity_turned_into_assessment_not_included_in_list(
+        self, client: TestClient, tom: User, applet__activity_turned_into_assessment: AppletFull
+    ):
+        client.login(tom)
+        response = await client.get(
+            self.summary_activities_url.format(
+                applet_id=str(applet__activity_turned_into_assessment.id),
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["id"] == str(applet__activity_turned_into_assessment.activities[1].id)
+
+    async def test_deleted_activity_without_answers_not_included_in_list(
+        self, client: TestClient, tom: User, applet__deleted_activity_without_answers: AppletFull
+    ):
+        client.login(tom)
+        response = await client.get(
+            self.summary_activities_url.format(
+                applet_id=str(applet__deleted_activity_without_answers.id),
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["count"] == 1
+        assert response.json()["result"][0]["id"] == str(applet__deleted_activity_without_answers.activities[0].id)
+
+    async def test_deleted_flow_not_included_in_submission_list(
+        self, client: TestClient, tom: User, applet__deleted_flow_without_answers: AppletFull
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet__deleted_flow_without_answers.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert applet__deleted_flow_without_answers.activity_flows[0].id
+        assert payload["count"] == 1
+        assert payload["result"][0]["id"] == str(applet__deleted_flow_without_answers.activity_flows[0].id)
+
+    async def test_summary_flow_list_order_completed_submissions_only(
+        self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow_not_completed
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert "result" in payload
+        for flow in payload["result"]:
+            assert flow["hasAnswer"] is False
+
+    async def test_summary_flow_list_order(
+        self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow_not_completed
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+
+        assert "result" in payload
+        flows_order_expected = [str(flow.id) for flow in sorted(applet_with_flow.activity_flows, key=lambda x: x.order)]
+        flows_order_actual = [flow["id"] for flow in payload["result"]]
+        assert flows_order_actual == flows_order_expected
 
     async def test_validate_multiinformant_assessment_success(
         self, client, tom: User, applet_one: AppletFull, session: AsyncSession
