@@ -12,7 +12,7 @@ from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
-from apps.invitations.domain import InvitationRespondentRequest
+from apps.invitations.domain import InvitationManagersRequest, InvitationRespondentRequest
 from apps.invitations.services import InvitationsService
 from apps.shared.enums import Language
 from apps.shared.query_params import QueryParams
@@ -151,6 +151,21 @@ async def applet_one_shell_has_pending_invitation(session, tom: User, user: User
     assert subject.id
     await InvitationsService(session, tom).send_respondent_invitation(applet_one.id, schema, subject)
     return subject
+
+
+@pytest.fixture
+async def applet_one_manager_has_pending_invitation(session, tom: User, user: User, applet_one: AppletFull):
+    schema = InvitationManagersRequest(
+        email=user.email_encrypted,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language="en",
+        role=Role.MANAGER,
+        title="test",
+    )
+    result = await InvitationsService(session, tom).send_managers_invitation(applet_one.id, schema)
+
+    return result
 
 
 class TestWorkspaces(BaseTest):
@@ -600,6 +615,7 @@ class TestWorkspaces(BaseTest):
             "isPinned",
             "lastSeen",
             "roles",
+            "status",
             "email",
             "firstName",
             "lastName",
@@ -631,7 +647,9 @@ class TestWorkspaces(BaseTest):
                 assert len(result) == 1
                 assert result[0]["id"] == id_
 
-    async def test_get_workspace_applet_managers(self, client, tom, applet_one):
+    async def test_get_workspace_applet_managers_with_pending_invitation(
+        self, client, tom, applet_one, applet_one_manager_has_pending_invitation
+    ):
         client.login(tom)
         response = await client.get(
             self.workspace_applet_managers_list.format(
@@ -641,9 +659,29 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200
-        assert response.json()["count"] == 1
+        data = response.json()
+        result = data["result"]
+        assert data["count"] == 4
+        assert len(result) == 4
 
-        plain_emails = [tom.email_encrypted]
+        approved = [u for u in result if u["status"] == "approved"]
+        pending = [u for u in result if u["status"] == "pending"]
+        assert len(approved) == 1
+        assert len(pending) == 3
+
+    async def test_get_workspace_applet_managers(self, client, tom, lucy, mike, applet_one):
+        client.login(tom)
+        response = await client.get(
+            self.workspace_applet_managers_list.format(
+                owner_id=tom.id,
+                applet_id=str(applet_one.id),
+            ),
+        )
+
+        assert response.status_code == 200
+        assert response.json()["count"] == 3
+
+        plain_emails = [lucy.email_encrypted, tom.email_encrypted, mike.email_encrypted]
 
         for result in response.json()["result"]:
             assert result["email"] in plain_emails
@@ -786,8 +824,10 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
+        data = response.json()
 
-        user_id = response.json()["result"][-1]["id"]
+        approved = [u for u in data["result"] if u["status"] == "approved"]
+        user_id = approved[-1]["id"]
 
         # Pin access wrong owner
         response = await client.post(
@@ -842,7 +882,9 @@ class TestWorkspaces(BaseTest):
                 applet_id=str(applet_one.id),
             ),
         )
-        assert response.json()["result"][-1]["id"] == user_id
+        data = response.json()
+        approved = [u for u in data["result"] if u["status"] == "approved"]
+        assert approved[-1]["id"] == user_id
 
     async def test_workspace_remove_manager_access(self, client, tom, lucy, applet_one, applet_one_lucy_manager):
         client.login(tom)

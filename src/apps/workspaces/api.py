@@ -293,10 +293,13 @@ async def workspace_managers_list(
                 last_name=workspace_manager.last_name,
                 email=workspace_manager.email_encrypted,
                 roles=workspace_manager.roles,
+                created_at=workspace_manager.created_at,
                 last_seen=workspace_manager.last_seen,
                 is_pinned=workspace_manager.is_pinned,
                 applets=workspace_manager.applets,
                 title=workspace_manager.title,
+                titles=workspace_manager.titles,
+                status=workspace_manager.status,
             )
         )
     return ResponseMultiOrdering(result=workspaces_manager, count=total, ordering_fields=ordering_fields)
@@ -324,10 +327,14 @@ async def workspace_applet_managers_list(
                 last_name=workspace_manager.last_name,
                 email=workspace_manager.email_encrypted,
                 roles=workspace_manager.roles,
+                created_at=workspace_manager.created_at,
                 last_seen=workspace_manager.last_seen,
                 is_pinned=workspace_manager.is_pinned,
                 applets=workspace_manager.applets,
                 title=workspace_manager.title,
+                titles=workspace_manager.titles,
+                status=workspace_manager.status,
+                invitation_key=workspace_manager.invitation_key,
             )
         )
     return ResponseMultiOrdering(result=workspaces_manager, count=total, ordering_fields=ordering_fields)

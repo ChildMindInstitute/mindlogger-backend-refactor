@@ -89,19 +89,6 @@ class _AppletRespondentSearch(Searching):
     ]
 
 
-class _AppletManagersOrdering(Ordering):
-    created_at = UserSchema.created_at
-    is_pinned = Ordering.Clause(literal_column("is_pinned"))
-    last_seen = Ordering.Clause(literal_column("last_seen"))
-    roles = Ordering.Clause(literal_column("roles"))
-
-    encrypted_fields = {
-        "email": Ordering.Clause(func.decrypt_internal(UserSchema.first_name, get_key())),
-        "first_name": Ordering.Clause(func.decrypt_internal(UserSchema.first_name, get_key())),
-        "last_name": Ordering.Clause(func.decrypt_internal(UserSchema.last_name, get_key())),
-    }
-
-
 class _AppletUsersSearch(Searching):
     search_fields = [
         UserSchema.first_name,
@@ -618,16 +605,78 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema)
         )
 
-        query: Query = (
+        invited_users = (
+            select(
+                InvitationSchema.id,
+                InvitationSchema.first_name,
+                InvitationSchema.last_name,
+                InvitationSchema.email,
+                func.array_agg(
+                    aggregate_order_by(
+                        func.distinct(InvitationSchema.title),
+                        InvitationSchema.title,
+                    )
+                ).label("titles"),
+                func.array_agg(
+                    aggregate_order_by(
+                        func.distinct(InvitationSchema.role),
+                        InvitationSchema.role,
+                    )
+                ).label("roles"),
+                func.array_agg(
+                    aggregate_order_by(
+                        func.json_build_object(
+                            text("'applet_id'"),
+                            AppletSchema.id,
+                            text("'applet_display_name'"),
+                            AppletSchema.display_name,  # noqa: E501
+                            text("'applet_image'"),
+                            AppletSchema.image,
+                            text("'role'"),
+                            InvitationSchema.role,
+                            text("'encryption'"),
+                            AppletSchema.encryption,
+                        ),
+                        AppletSchema.id,
+                    )
+                ).label("applets"),
+                InvitationSchema.status,
+                InvitationSchema.created_at,
+                InvitationSchema.user_id,
+                InvitationSchema.key,
+            )
+            .select_from(InvitationSchema)
+            .join(
+                AppletSchema,
+                and_(
+                    AppletSchema.id == InvitationSchema.applet_id,
+                    AppletSchema.soft_exists(),
+                ),
+            )
+            .where(
+                InvitationSchema.role != Role.RESPONDENT,
+                InvitationSchema.status == InvitationStatus.PENDING,
+                InvitationSchema.applet_id == applet_id,
+                has_access,
+            )
+            .group_by(InvitationSchema.id)
+        ).cte("invited_users")
+
+        accepted_users = (
             select(
                 # fmt: off
                 UserSchema.id,
                 UserSchema.first_name,
                 UserSchema.last_name,
                 UserSchema.email_encrypted,
-                UserAppletAccessSchema.title,
+                UserSchema.created_at,
                 func.coalesce(UserSchema.last_seen_at, UserSchema.created_at).label("last_seen"),
-                is_pinned.label("is_pinned"),
+                func.array_agg(
+                    aggregate_order_by(
+                        func.distinct(UserAppletAccessSchema.title),
+                        UserAppletAccessSchema.title,
+                    )
+                ).label("titles"),
                 func.array_agg(
                     aggregate_order_by(
                         func.distinct(UserAppletAccessSchema.role),
@@ -655,6 +704,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                         AppletSchema.id,
                     )
                 ).label("applets"),
+                is_pinned.label("is_pinned"),
             )
             .select_from(UserAppletAccessSchema)
             .join(
@@ -671,19 +721,67 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .where(
                 UserAppletAccessSchema.soft_exists(),
                 UserAppletAccessSchema.owner_id == owner_id,
-                UserAppletAccessSchema.role != Role.RESPONDENT,
                 has_access,
+                UserAppletAccessSchema.role != Role.RESPONDENT,
                 UserAppletAccessSchema.applet_id == applet_id if applet_id else True,
             )
-            .group_by(UserSchema.id, UserAppletAccessSchema.title)
+            .group_by(UserSchema.id)
+        ).cte("accepted_users")
+
+        query: Query = (
+            select(
+                func.coalesce(accepted_users.c.id, invited_users.c.id).label("id"),
+                func.coalesce(accepted_users.c.first_name, invited_users.c.first_name).label("first_name"),
+                func.coalesce(accepted_users.c.last_name, invited_users.c.last_name).label("last_name"),
+                func.coalesce(accepted_users.c.email_encrypted, invited_users.c.email).label("email_encrypted"),
+                func.coalesce(accepted_users.c.created_at, invited_users.c.created_at).label("created_at"),
+                func.coalesce(accepted_users.c.last_seen, invited_users.c.created_at).label("last_seen"),
+                func.coalesce(accepted_users.c.roles, invited_users.c.roles).label("roles"),
+                func.coalesce(accepted_users.c.applets, invited_users.c.applets, []).label("applets"),
+                func.coalesce(accepted_users.c.titles, invited_users.c.titles, [])
+                .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
+                .label("titles"),
+                func.coalesce(invited_users.c.status, InvitationStatus.APPROVED).label("status"),
+                func.coalesce(accepted_users.c.is_pinned, False).label("is_pinned"),
+                invited_users.c.key.label("invitation_key"),
+            )
+            .select_from(invited_users)
+            .join(accepted_users, accepted_users.c.id == invited_users.c.user_id, isouter=True, full=True)
         )
 
         if query_params.filters:
             query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
 
         # Get total count before ordering to evaluate eligibility for ordering by encrypted fields
-        coro_total = self._execute(select(count()).select_from(query.with_only_columns(UserSchema.id).subquery()))
+        coro_total = self._execute(
+            select(count()).select_from(query.with_only_columns(literal_column("status")).subquery())
+        )
         total = (await coro_total).scalar()
+
+        class _AppletManagersOrdering(Ordering):
+            created_at = Ordering.Clause(literal_column("created_at"))
+            is_pinned = Ordering.Clause(literal_column("is_pinned"))
+            last_seen = Ordering.Clause(literal_column("last_seen"))
+            roles = Ordering.Clause(literal_column("roles"))
+            status = Ordering.Clause(literal_column("status"))
+
+            encrypted_fields = {
+                "email": Ordering.Clause(
+                    func.decrypt_internal(
+                        func.coalesce(accepted_users.c.email_encrypted, invited_users.c.email), get_key()
+                    )
+                ),
+                "first_name": Ordering.Clause(
+                    func.decrypt_internal(
+                        func.coalesce(accepted_users.c.first_name, invited_users.c.first_name), get_key()
+                    )
+                ),
+                "last_name": Ordering.Clause(
+                    func.decrypt_internal(
+                        func.coalesce(accepted_users.c.last_name, invited_users.c.last_name), get_key()
+                    )
+                ),
+            }
 
         ordering = _AppletManagersOrdering()
 
