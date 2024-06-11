@@ -1,7 +1,7 @@
 from sqlalchemy import REAL, Boolean, Column, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
-from infrastructure.database.base import Base
+from infrastructure.database import Base, MigratedMixin
 
 __all__ = ["ActivityItemSchema", "ActivityItemHistorySchema"]
 
@@ -19,13 +19,13 @@ class _BaseActivityItemSchema:
     extra_fields = Column(JSONB(), default=dict, server_default=text("'{}'::jsonb"))
 
 
-class ActivityItemSchema(_BaseActivityItemSchema, Base):
+class ActivityItemSchema(_BaseActivityItemSchema, MigratedMixin, Base):
     __tablename__ = "activity_items"
 
     activity_id = Column(ForeignKey("activities.id", ondelete="CASCADE"), nullable=False)
 
 
-class ActivityItemHistorySchema(_BaseActivityItemSchema, Base):
+class ActivityItemHistorySchema(_BaseActivityItemSchema, MigratedMixin, Base):
     __tablename__ = "activity_item_histories"
 
     id = Column(UUID(as_uuid=True))

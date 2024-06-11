@@ -5,9 +5,10 @@ from sqlalchemy import Column, DateTime, MetaData, inspect, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 
+from infrastructure.database.mixins import SoftDeletable
+
 __all__ = ["Base"]
 
-from infrastructure.database.mixins import SoftDeletable
 
 meta = MetaData(
     naming_convention={
@@ -45,18 +46,6 @@ class Base(SoftDeletable, _Base):  # type: ignore
         onupdate=datetime.utcnow,
         server_default=text("timezone('utc', now())"),
         server_onupdate=text("timezone('utc', now())"),
-    )
-    migrated_date = Column(
-        DateTime(),
-        default=None,
-        server_default=None,
-        nullable=True,
-    )
-    migrated_updated = Column(
-        DateTime(),
-        default=None,
-        server_default=None,
-        nullable=True,
     )
 
     def __iter__(self):

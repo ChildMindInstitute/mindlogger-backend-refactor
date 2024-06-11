@@ -21,12 +21,12 @@ from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
 from apps.workspaces.domain.constants import UserPinRole
-from infrastructure.database.base import Base
+from infrastructure.database import Base, MigratedMixin
 
 __all__ = ["UserAppletAccessSchema"]
 
 
-class UserAppletAccessSchema(Base):
+class UserAppletAccessSchema(MigratedMixin, Base):
     __tablename__ = "user_applet_accesses"
 
     user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
@@ -96,7 +96,7 @@ class UserAppletAccessSchema(Base):
         ).cast(ARRAY(UUID))
 
 
-class UserPinSchema(Base):
+class UserPinSchema(MigratedMixin, Base):
     __tablename__ = "user_pins"
     __table_args__ = (
         UniqueConstraint(
