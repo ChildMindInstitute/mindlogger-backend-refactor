@@ -225,7 +225,6 @@ class WorkspaceApplet(InternalModel):
     folders_applet_count: int
     description: dict | None
     activity_count: int | None
-    owner_id: uuid.UUID
 
 
 class WorkspaceSearchApplet(InternalModel):
@@ -241,7 +240,6 @@ class WorkspaceSearchApplet(InternalModel):
     type: str
     folder_id: uuid.UUID | None
     folder_name: str | None
-    owner_id: uuid.UUID
 
 
 class WorkspaceAppletPublic(PublicModel):
@@ -258,7 +256,6 @@ class WorkspaceAppletPublic(PublicModel):
     folders_applet_count: int
     description: dict | None
     activity_count: int | None
-    owner_id: uuid.UUID
 
 
 class WorkspaceSearchAppletPublic(PublicModel):
@@ -274,7 +271,6 @@ class WorkspaceSearchAppletPublic(PublicModel):
     type: str
     folder_id: uuid.UUID | None
     folder_name: str | None
-    owner_id: uuid.UUID
 
 
 class WorkspacePrioritizedRole(PublicModel):
