@@ -406,6 +406,7 @@ class AppletService:
 
         for schema in schemas:
             theme = theme_map.get(schema.theme_id)
+            applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(schema.id)
             applets.append(
                 AppletSingleLanguageInfo(
                     id=schema.id,
@@ -429,6 +430,7 @@ class AppletService:
                     stream_enabled=schema.stream_enabled,
                     stream_ip_address=schema.stream_ip_address,
                     stream_port=schema.stream_port,
+                    owner_id=applet_owner.owner_id,
                 )
             )
         return applets
@@ -677,6 +679,9 @@ class AppletService:
         applet = AppletFull.from_orm(schema)
         applet.activities = await ActivityService(self.session, self.user_id).get_full_activities(applet_id)
         applet.activity_flows = await FlowService(self.session).get_full_flows(applet_id)
+        applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
+        applet.owner_id = applet_owner.owner_id
+
         return applet
 
     async def publish(self, applet_id: uuid.UUID):

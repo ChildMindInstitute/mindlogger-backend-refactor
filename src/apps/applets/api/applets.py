@@ -97,6 +97,8 @@ async def applet_retrieve(
         applet_future = service.get_single_language_by_id(applet_id, language)
         subject_future = SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
         applet, subject = await asyncio.gather(applet_future, subject_future)
+        applet_owner = await UserAppletAccessCRUD(session).get_applet_owner(applet_id)
+        applet.owner_id = applet_owner.owner_id
     return AppletRetrieveResponse(
         result=AppletSingleLanguageDetailPublic.from_orm(applet),
         respondent_meta={"nickname": subject.nickname if subject else None, "tag": subject.tag if subject else None},

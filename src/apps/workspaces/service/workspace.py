@@ -145,6 +145,7 @@ class WorkspaceService:
                     folders_applet_count=folder_or_applet[10],
                     description=folder_or_applet[12],
                     activity_count=folder_or_applet[13],
+                    owner_id=owner_id,
                 )
             )
         return folder_or_applets
@@ -175,6 +176,7 @@ class WorkspaceService:
                     role=folder_or_applet[7],
                     folder_id=folder_or_applet[8],
                     folder_name=folder_or_applet[9],
+                    owner_id=owner_id,
                 )
             )
         return folder_or_applets
@@ -215,6 +217,7 @@ class WorkspaceService:
                     version=schema.version,
                     type="applet",
                     folders_applet_count=0,
+                    owner_id=owner_id,
                 )
             )
 
