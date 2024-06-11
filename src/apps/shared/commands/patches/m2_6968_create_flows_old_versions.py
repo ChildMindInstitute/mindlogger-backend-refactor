@@ -86,10 +86,7 @@ SQL_FLOW_ITEM_HISTORY_CREATE = """
     cross join applet_versions av;
 """
 
-applet_versions = (
-    ("62b21984-b90b-7f2b-a9e1-c51a00000000", "10.00.00"),
-    ("7bb7b30e-0d8a-4b13-bc1c-6a733ccc689a", "02.00.00"),
-)
+applet_versions = (("a8c5f782-c3c7-4056-a4ab-d7e7954fb03f", "01.00.00"),)
 
 
 async def main(session: AsyncSession, *args, **kwargs):
