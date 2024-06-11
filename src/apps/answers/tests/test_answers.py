@@ -955,8 +955,8 @@ class TestAnswerActivityItems(BaseTest):
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate",
-            "relation", "sourceSubjectId", "targetSubjectId", "client",
-            "tzOffset", "scheduledEventId",
+            "relation", "sourceSubjectId", "sourceSecretId", "targetSubjectId",
+            "targetSecretId", "client", "tzOffset", "scheduledEventId",
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time

@@ -981,6 +981,12 @@ class AnswerService:
                 respondent = subject_map[answer.target_subject_id]  # type: ignore
 
             answer.respondent_secret_id = respondent.secret_id
+            answer.source_secret_id = (
+                subject_map.get(answer.source_subject_id).secret_id if answer.source_subject_id else None  # type: ignore
+            )
+            answer.target_secret_id = (
+                subject_map.get(answer.target_subject_id).secret_id if answer.target_subject_id else None  # type: ignore
+            )
             answer.respondent_email = respondent.email
             answer.is_manager = respondent.is_manager
             answer.legacy_profile_id = respondent.legacy_profile_id
