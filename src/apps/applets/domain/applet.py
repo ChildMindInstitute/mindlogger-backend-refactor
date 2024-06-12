@@ -90,6 +90,7 @@ class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
     activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
     theme: PublicTheme
     encryption: Encryption | None
+    owner_id: uuid.UUID | None
 
 
 class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):
