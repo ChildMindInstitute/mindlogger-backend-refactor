@@ -894,6 +894,7 @@ class TestAnswerActivityItems(BaseTest):
         assert note["note"] == note_create_data.note
         assert note["user"]["firstName"] == tom.first_name
         assert note["user"]["lastName"] == tom.last_name
+        assert note["user"]["id"] == str(tom.id)
         # Just check that other columns in place
         assert note["id"]
         assert note["createdAt"]
