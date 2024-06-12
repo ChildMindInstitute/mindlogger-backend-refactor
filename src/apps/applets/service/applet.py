@@ -487,6 +487,7 @@ class AppletService:
         schema = await AppletsCRUD(self.session).get_by_link(key)
         if not schema:
             raise AppletNotFoundError(key="key", value=str(key))
+        applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(schema.id)
         theme = None
         if schema.theme_id:
             theme = await ThemeService(self.session, self.user_id).get_by_id(schema.theme_id)
@@ -511,6 +512,7 @@ class AppletService:
             updated_at=schema.updated_at,
             retention_period=schema.retention_period,
             retention_type=schema.retention_type,
+            owner_id=applet_owner.owner_id,
         )
 
         applet.activities = await ActivityService(self.session, self.user_id).get_single_language_by_applet_id(
