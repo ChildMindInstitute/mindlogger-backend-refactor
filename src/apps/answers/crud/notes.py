@@ -80,6 +80,7 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
                 AnswerNoteDetail(
                     id=note.id,
                     user=dict(
+                        id=note_user.id,
                         first_name=note_user.first_name,
                         last_name=note_user.last_name,
                     ),

@@ -464,6 +464,7 @@ class AnswerNote(InternalModel):
 
 
 class NoteOwner(InternalModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
@@ -476,6 +477,7 @@ class AnswerNoteDetail(InternalModel):
 
 
 class NoteOwnerPublic(PublicModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
