@@ -243,7 +243,7 @@ class AnswerService:
                 target_subject_id=target_subject.id,
                 source_subject_id=source_subject.id if source_subject else None,
                 relation=relation,
-                is_data_share=applet_answer.is_data_share,
+                consent_to_share=applet_answer.consent_to_share,
             )
         )
         item_answer = applet_answer.answer

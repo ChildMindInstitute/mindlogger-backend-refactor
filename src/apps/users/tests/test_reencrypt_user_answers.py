@@ -111,7 +111,7 @@ async def answer(
         answer=answer_item_create,
         created_at=datetime.datetime.utcnow(),
         client=client_meta,
-        is_data_share=False,
+        consent_to_share=False,
     )
     srv = AnswerService(session, user.id)
     answer = await srv.create_answer(answer_create)
@@ -134,7 +134,7 @@ async def answer_second(
         answer=answer_item_create,
         created_at=datetime.datetime.utcnow(),
         client=client_meta,
-        is_data_share=False,
+        consent_to_share=False,
     )
     srv = AnswerService(session, user.id)
     answer = await srv.create_answer(answer_create)
@@ -158,7 +158,7 @@ async def answer_arbitrary(
         answer=answer_item_create,
         created_at=datetime.datetime.utcnow(),
         client=client_meta,
-        is_data_share=False,
+        consent_to_share=False,
     )
     srv = AnswerService(session, user.id, arbitrary_session=arbitrary_session)
     answer = await srv.create_answer(answer_create)

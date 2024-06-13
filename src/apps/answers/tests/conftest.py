@@ -197,7 +197,7 @@ def answer_create(
         answer=answer_item_create,
         created_at=datetime.datetime.utcnow().replace(microsecond=0),
         client=client_meta,
-        is_data_share=False,
+        consent_to_share=False,
     )
 
 
@@ -222,7 +222,7 @@ def answer_with_alert_create(
         created_at=datetime.datetime.utcnow().replace(microsecond=0),
         client=client_meta,
         alerts=[answer_alert],
-        is_data_share=False,
+        consent_to_share=False,
     )
 
 
@@ -247,7 +247,7 @@ def public_answer_create(
         answer=item_create,
         created_at=datetime.datetime.utcnow().replace(microsecond=0),
         client=client_meta,
-        is_data_share=False,
+        consent_to_share=False,
     )
 
 
@@ -267,7 +267,7 @@ def answer_with_flow_create(
         client=client_meta,
         flow_id=applet.activity_flows[0].id,
         is_flow_completed=True,
-        is_data_share=False,
+        consent_to_share=False,
     )
 
 
@@ -298,7 +298,7 @@ def answer_reviewable_activity_create(
         answer=item_create,
         created_at=datetime.datetime.utcnow().replace(microsecond=0),
         client=client_meta,
-        is_data_share=False,
+        consent_to_share=False,
     )
 
 
@@ -460,7 +460,7 @@ def tom_answer_create_data(tom, applet_with_reviewable_activity) -> AppletAnswer
             user_public_key=str(tom.id),
         ),
         client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
-        is_data_share=False,
+        consent_to_share=False,
     )
 
 

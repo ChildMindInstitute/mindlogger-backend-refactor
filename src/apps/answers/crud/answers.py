@@ -803,7 +803,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.respondent_id == respondent_id)
-        query = query.where(AnswerSchema.is_data_share.is_(True))
+        query = query.where(AnswerSchema.consent_to_share.is_(True))
         query = query.order_by(AnswerSchema.created_at.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
@@ -813,7 +813,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     ) -> list[AnswerSchema] | None:
         query: Query = select(AnswerSchema.respondent_id)
         query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(AnswerSchema.is_data_share.is_(True))
+        query = query.where(AnswerSchema.consent_to_share.is_(True))
         query = query.order_by(AnswerSchema.created_at.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
