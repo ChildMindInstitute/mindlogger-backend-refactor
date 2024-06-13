@@ -1,15 +1,15 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.integrations.loris.api import start_transmit_process
+from apps.integrations.loris.api import start_transmit_process, visits_list
 from apps.integrations.loris.api.consent import (
     consent_create,
     consent_get_by_id,
     consent_get_by_user_id,
     consent_update,
 )
-from apps.integrations.loris.domain import PublicConsent
-from apps.shared.domain import Response
+from apps.integrations.loris.domain import PublicConsent, PublicListOfVisits
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
@@ -81,3 +81,16 @@ router.put(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(consent_update)
+
+
+router.get(
+    "/visits",
+    response_model=ResponseMulti[PublicListOfVisits],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[PublicListOfVisits]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+        **NO_CONTENT_ERROR_RESPONSES,
+    },
+)(visits_list)

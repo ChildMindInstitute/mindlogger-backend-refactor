@@ -14,3 +14,4 @@ class LorisSettings(BaseSettings):
     instrument_data_url = "https://loris.cmiml.net/api/v0.0.3/candidates/{}/{}/instruments/{}"
     ml_schema_existing_versions_url = "https://loris.cmiml.net/mindlogger/v1/applet/{}/versions"
     ml_schema_existing_answers_url = "https://loris.cmiml.net/mindlogger/v1/applet/{}/answers"
+    get_visits_list_url = "https://loris.cmiml.net/api/v0.0.3/projects/{}/visits"

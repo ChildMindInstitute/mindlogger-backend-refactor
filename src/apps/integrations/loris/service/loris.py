@@ -81,7 +81,22 @@ class LorisIntegrationService:
                 logger.info(f"Error during request to report server: {e}")
                 return
 
-        token: str = await self._login_to_loris()
+        applet_crud = AppletsCRUD(self.session)
+        applet = await applet_crud.get_by_id(self.applet_id)
+        loris_data = {
+            "id": self.applet_id,
+            "displayName": applet.display_name,
+            "description": list(applet.description.values())[0],
+            "activities": None,
+        }
+
+        answers_for_loris_by_respondent: dict
+        activities: list
+        activities, answers_for_loris_by_respondent = await self._prepare_activities_and_answers(users_answers)
+        loris_data["activities"] = activities
+        activities_ids: list = [str(activitie["id"]) for activitie in activities]
+
+        token: str = await LorisIntegrationService._login_to_loris()
         headers = {
             "Authorization": f"Bearer: {token}",
             "Content-Type": "application/json",
@@ -299,7 +314,8 @@ class LorisIntegrationService:
 
         return loris_answers
 
-    async def _login_to_loris(self) -> str:
+    @staticmethod
+    async def _login_to_loris() -> str:
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             logger.info(f"Sending LOGIN request to the loris server {settings.loris.login_url}")
@@ -532,3 +548,37 @@ class LorisIntegrationService:
                             error_message = await resp.text()
                             logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
                             raise LorisServerError(message=error_message)
+
+    @staticmethod
+    async def get_visits_list() -> list[str]:
+        try:
+            token: str = await LorisIntegrationService._login_to_loris()
+        except LorisServerError as e:
+            logger.info(f"I can't connect to the LORIS server {e}.")
+
+        headers = {
+            "Authorization": f"Bearer: {token}",
+            "Content-Type": "application/json",
+            "accept": "*/*",
+        }
+
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            logger.info(
+                f"Sending GET VISITS LIST request to the loris server "
+                f"{settings.loris.get_visits_list_url.format('loris')}"
+            )
+            start = time.time()
+            async with session.get(
+                settings.loris.get_visits_list_url.format("loris"),
+                headers=headers,
+            ) as resp:
+                duration = time.time() - start
+                if resp.status == 200:
+                    logger.info(f"Successful request in {duration:.1f} seconds.")
+                    visits_data = await resp.json()
+                    return visits_data["Visits"]
+                else:
+                    logger.info(f"Failed request in {duration:.1f} seconds.")
+                    error_message = await resp.text()
+                    raise LorisServerError(message=error_message)
