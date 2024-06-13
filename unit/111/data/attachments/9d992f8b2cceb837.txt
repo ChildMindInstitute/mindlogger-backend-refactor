@@ -1,0 +1,1 @@
+ERROR    root:services.py:279 LOGFILE - logs-upload-check: {'userId': '7484f34a-3acc-4ee6-8a94-fd7299502fa1', 'deviceId': 'deviceid', 'success': 'false', 'email': 'tom@mindlogger.com', 'details': 'An error occurred (Unknown) when calling the Unknown operation: Unknown'}
