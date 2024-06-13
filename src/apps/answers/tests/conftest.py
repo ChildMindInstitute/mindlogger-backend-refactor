@@ -634,3 +634,67 @@ async def submission_note(
         uuid.UUID(last_flow_answer.flow_history_id.split("_")[0]),
         note=note_create_data.note,
     )
+
+
+@pytest.fixture
+async def applet__activity_turned_into_assessment(
+    session: AsyncSession, tom: User, applet_data: AppletCreate
+) -> AppletFull:
+    """
+    Applet with one Activity0 updated into applet with Activity0(is_reviewable=True) and Activity1
+    All activities has no answers
+    """
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_data)
+    data = AppletUpdate(**applet.dict())
+
+    activity_new = data.activities[0].copy(deep=True)
+    activity_new.id = uuid.uuid4()
+    activity_new.key = uuid.uuid4()
+    for i in range(len(activity_new.items)):
+        activity_new.items[i].id = uuid.uuid4()
+    activity_new.name = "New activity"
+    data.activities.append(activity_new)
+
+    data.activities[0].is_reviewable = True
+    data.activities[0].name = "Reviewer assessment"
+    updated_applet = await srv.update(applet.id, data)
+    return updated_applet
+
+
+@pytest.fixture
+async def applet__deleted_activity_without_answers(
+    session: AsyncSession, tom: User, applet_data: AppletCreate
+) -> AppletFull:
+    """
+    Applet with one Activity0 updated into applet with Activity1 and deleted Activity1
+    All activities has no answers
+    """
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_data)
+    data = AppletUpdate(**applet.dict())
+
+    activity_new = data.activities[0].copy(deep=True)
+    activity_new.id = uuid.uuid4()
+    activity_new.key = uuid.uuid4()
+    for i in range(len(activity_new.items)):
+        activity_new.items[i].id = uuid.uuid4()
+    activity_new.name = "New activity"
+    data.activities = [activity_new]
+    updated_applet = await srv.update(applet.id, data)
+    return updated_applet
+
+
+@pytest.fixture
+async def applet__deleted_flow_without_answers(
+    session: AsyncSession, tom: User, applet_with_flow: AppletFull
+) -> AppletFull:
+    srv = AppletService(session, tom.id)
+    data = applet_with_flow.dict()
+    activity_flow = data["activity_flows"][0]
+    for i in range(len(activity_flow["items"])):
+        activity_flow["items"][i]["activity_key"] = data["activities"][0]["key"]
+    data["activity_flows"] = [activity_flow]
+    update_data = AppletUpdate(**data)
+    updated_applet = await srv.update(applet_with_flow.id, update_data)
+    return updated_applet
