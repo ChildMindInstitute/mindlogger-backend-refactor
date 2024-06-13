@@ -22,10 +22,6 @@ on:
         type: string
         description: App Name (likely the GH repo)
         required: true
-      vpc-id:
-        type: string
-        description: VPC ID for preview envs
-        required: true
       aws-region:
         type: string
         default: us-east-1
@@ -44,7 +40,6 @@ jobs:
       ENV_NAME: ${{ inputs.env-name }}
       ENV_NAME_SNAKE: ${{ inputs.env-snake-name }}
       APP_NAME: ${{ inputs.app-name }}
-      VPC_ID: ${{ inputs.vpc-id }}
       COPILOT_SERVICE: ${{ inputs.copilot-service }}
       AWS_REGION: us-east-1
     steps:
