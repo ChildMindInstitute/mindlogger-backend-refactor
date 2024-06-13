@@ -8,7 +8,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class AppletLibrary(InternalModel):
     applet_id_version: str
-    keywords: list[str] = []
+    keywords: list[str]
 
 
 class AppletLibraryFull(AppletLibrary):
@@ -22,11 +22,11 @@ class AppletLibraryInfo(PublicModel):
 
 class AppletLibraryCreate(InternalModel):
     applet_id: uuid.UUID
-    keywords: list[str] | None = []
+    keywords: list[str] = Field(default_factory=list)
     name: str
 
     @validator("keywords", pre=True)
-    def set_keywords(cls, keywords: list[str] | None):
+    def validate_keywords(cls, keywords: list[str] | None):
         return keywords if keywords is not None else []
 
 
@@ -88,13 +88,9 @@ class _LibraryItem(BaseModel):
     about: dict[str, str] | None = None
     image: str = ""
     theme_id: uuid.UUID | None = None
-    keywords: list[str] = []
+    keywords: list[str] = Field(default_factory=list)
     activities: list[LibraryItemActivity] | None = None
     activity_flows: list[LibraryItemFlow] | None = None
-
-    @validator("keywords", pre=True)
-    def validate_keywords(cls, keywords: list[str] | None) -> list[str]:
-        return keywords if keywords is not None else []
 
 
 class LibraryItem(InternalModel, _LibraryItem):
