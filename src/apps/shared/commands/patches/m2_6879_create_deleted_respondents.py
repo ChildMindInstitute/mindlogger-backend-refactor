@@ -1,6 +1,8 @@
+import asyncio
 import os
 import uuid
 
+from rich import print
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
@@ -130,17 +132,19 @@ async def main(session: AsyncSession, *args, **kwargs):
                     print(f"Workspace#{i + 1} DB already processed, skip...")
                     continue
                 processed.add(arb_uri)
-                session_maker = session_manager.get_session(arb_uri)
-                async with session_maker() as arb_session:
-                    try:
-                        await find_and_create_missing_roles_arbitrary(session, arb_session, workspace.user_id)
-                        await arb_session.commit()
-                        print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
-                    except Exception:
-                        await arb_session.rollback()
-                        print(f"[bold red]Workspace#{i + 1} {workspace.id} " f"processing error[/bold red]")
-                        raise
-
+                try:
+                    session_maker = session_manager.get_session(arb_uri)
+                    async with session_maker() as arb_session:
+                        try:
+                            await find_and_create_missing_roles_arbitrary(session, arb_session, workspace.user_id)
+                            await arb_session.commit()
+                            print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
+                        except Exception:
+                            await arb_session.rollback()
+                            print(f"[bold red]Error: Workspace#{i + 1} {workspace.id} processing error[/bold red]")
+                            raise
+                except asyncio.TimeoutError:
+                    print(f"[bold red]Error: Workspace#{i + 1} {workspace.id} Timeout error, skipping...[/bold red]")
     except Exception as ex:
         await session.rollback()
         raise ex
