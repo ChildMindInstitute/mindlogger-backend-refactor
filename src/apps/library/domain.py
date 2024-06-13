@@ -31,7 +31,7 @@ class AppletLibraryCreate(InternalModel):
 
 
 class AppletLibraryUpdate(InternalModel):
-    keywords: list[str] = []
+    keywords: list[str] = Field(default_factory=list)
     name: str
 
 
