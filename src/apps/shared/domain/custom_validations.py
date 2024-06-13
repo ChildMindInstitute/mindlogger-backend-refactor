@@ -153,6 +153,7 @@ def array_from_string(comma_separated: bool = False):
 
 
 nh3_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+nh3_rollback = {"&amp;": "&"}
 default_attributes = {
     "id",
     "data-line",
@@ -186,4 +187,6 @@ nh3_attributes["a"].add("class")
 
 def sanitize_string(value: str) -> str:
     value = nh3.clean(value, attributes=nh3_attributes, link_rel=None)
+    for key in nh3_rollback:
+        value = value.replace(key, nh3_rollback[key])
     return value
