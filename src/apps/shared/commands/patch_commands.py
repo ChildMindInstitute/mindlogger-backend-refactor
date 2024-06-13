@@ -46,6 +46,14 @@ PatchRegister.register(
     description="Set proportion.enabled=True to Maki's applets",
     manage_session=False,
 )
+
+PatchRegister.register(
+    file_path="m2_6879_create_deleted_respondents.py",
+    task_id="M2-6879",
+    description="[Subject] Create deleted respondents roles",
+    manage_session=False,
+)
+
 PatchRegister.register(
     file_path="m2_5551_delete_invitations_of_existing_respondent.sql",
     task_id="M2-5551",
@@ -75,6 +83,11 @@ PatchRegister.register(
     file_path="m2_5116_add_alert_subjects.sql",
     task_id="M2-5116",
     description="[Subject] Populate alerts with subject ids",
+)
+PatchRegister.register(
+    file_path="m2_6757_replace_amp_sanitizer.py",
+    task_id="M2-6757",
+    description="Change ampersand sanitizer to symbol '&'",
 )
 
 app = typer.Typer()

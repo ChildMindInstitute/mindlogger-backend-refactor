@@ -524,6 +524,8 @@ class AnswerService:
 
         is_flow_completed = False
         for answer in answers:
+            if answer.flow_history_id and answer.is_flow_completed:
+                is_completed = True
             answer_result.append(
                 ActivityAnswer(
                     **answer.dict(exclude={"migrated_data"}),
@@ -1082,6 +1084,7 @@ class AnswerService:
         self, applet_id: uuid.UUID, filters: SummaryActivityFilter
     ) -> list[SummaryActivity]:
         assert self.user_id
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         act_hst_crud = ActivityHistoriesCRUD(self.session)
         activities = await act_hst_crud.get_last_histories_by_applet(applet_id=applet_id)
         activity_ver_ids = [activity.id_version for activity in activities]
@@ -1095,11 +1098,21 @@ class AnswerService:
             submitted_activities[activity_id] = max(submit_date, date) if date else submit_date
             submitted_activities[activity_history_id] = submit_date
 
+        current_activity_histories = await act_hst_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
+        current_activities_map = {str(ah.id): ah for ah in current_activity_histories}
         results = []
         for activity in activities:
             activity_history_answer_date = submitted_activities.get(
                 activity.id_version, submitted_activities.get(str(activity.id))
             )
+            has_answer = bool(activity_history_answer_date)
+            if not has_answer:
+                activity_curr = current_activities_map.get(str(activity.id))
+                if not activity_curr:
+                    continue
+                elif activity_curr.is_reviewable:
+                    continue
+
             results.append(
                 SummaryActivity(
                     id=activity.id,
@@ -1115,6 +1128,7 @@ class AnswerService:
         self, applet_id: uuid.UUID, target_subject_id: uuid.UUID | None
     ) -> list[SummaryActivityFlow]:
         assert self.user_id
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         flow_crud = FlowsHistoryCRUD(self.session)
         answer_crud = AnswersCRUD(self.answer_session)
         flow_history_ids_with_date = await answer_crud.get_submitted_flows_with_last_date(applet_id, target_subject_id)
@@ -1127,11 +1141,17 @@ class AnswerService:
             submitted_activity_flows[flow_id] = max(submit_date, date) if date else submit_date
             submitted_activity_flows[version_id] = submit_date
 
+        flow_histories = await flow_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
+        flow_histories_curr = [flow_h.id for flow_h in flow_histories]
         results = []
-        for flow_history in activity_flow_histories:
+        for flow_history in sorted(activity_flow_histories, key=lambda x: x.order):
             flow_history_answer_date = submitted_activity_flows.get(
                 flow_history.id_version, submitted_activity_flows.get(str(flow_history.id))
             )
+            has_answer = bool(flow_history_answer_date)
+            if not has_answer and flow_history.id not in flow_histories_curr:
+                continue
+
             results.append(
                 SummaryActivityFlow(
                     id=flow_history.id,

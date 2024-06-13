@@ -1,0 +1,158 @@
+name: Preview and Test Feature
+
+on:
+  workflow_dispatch: {}
+  # Disable for now because some PRs were also using feature branch names
+#  push:
+#    branches:
+#      - "feature/**"
+
+# Only run the latest.  Cancel old runs in progress.
+concurrency:
+  cancel-in-progress: true
+  group: "preview-env-manage-${{ github.ref_name }}"
+
+
+jobs:
+  create-env-name:
+    name: Create env name
+    uses: ./.github/workflows/env-name.yaml
+    secrets: inherit
+
+  create-database:
+    name: Create preview env DB
+    needs: [create-env-name]
+    uses: ./.github/workflows/create_db.yaml
+    with:
+      db-name: "mindlogger_backend_${{ needs.create-env-name.outputs.env-snake-name }}"
+    secrets: inherit
+
+  on-db-failure:
+    name: Database creation failed
+    runs-on: ubuntu-latest
+    if: ${{ always() && (needs.create_database.result == 'failure' || needs.create_database.result == 'timed_out') }}
+    needs: [create-database]
+    steps:
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Create Database
+          SLACK_MESSAGE: 'Error during database creation!'
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: actions url
+
+  create-preview-env:
+    needs: [create-database, create-env-name]
+    uses: ./.github/workflows/create-preview-env.yaml
+    with:
+      env-name: "${{ needs.create-env-name.outputs.env-name }}"
+      env-snake-name: "${{ needs.create-env-name.outputs.env-snake-name }}"
+      app-name: ${{ github.event.repository.name }}
+      vpc-id: vpc-0a83201b71e854abd
+      copilot-service: mindlogger-backend
+    secrets: inherit
+
+  comment-create-preview-env:
+    name: Comment on preview env
+    runs-on: ubuntu-latest
+    needs: [create-preview-env]
+    if: ${{ always() }}
+    steps:
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        if: ${{ always() && needs.create-preview-env.result == 'failure' }}
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_TITLE: Preview Environment
+          SLACK_MESSAGE: Failed to create preview environment
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: actions url
+
+  run-unit-tests:
+    uses: ./.github/workflows/tests.yaml
+    secrets: inherit
+
+  comment-unit-tests:
+    name: Comment on unit test outcome
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [run-unit-tests]
+    steps:
+      - name: Post to a Slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          # Slack channel id, channel name, or user id to post message.
+          channel-id: 'C074PFF55NY'
+          payload: |
+            {
+              "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": ":rotating_light: Unit Tests Failed",
+                        "emoji": true
+                    }
+                },
+                {
+                    "type": "divider"
+                },
+                {
+                    "type": "actions",
+                    "elements": [
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": ":label: PR",
+                                "emoji": true
+                            },
+                            "value": "pr_link",
+                            "url": "${{ github.event.pull_request.html_url }}"
+                        },
+                        {
+                            "type": "button",
+                            "text": {
+                                "type": "plain_text",
+                                "text": ":chart_with_upwards_trend: Test Report",
+                                "emoji": true
+                            },
+                            "value": "click_me_123",
+                            "url": "${{ needs.run-unit-tests.outputs.report-url }}"
+                        }
+                    ]
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  run-e2e-tests:
+    name: Run E2E Test Suite
+    needs: [ create-preview-env, run-unit-tests ]
+    if: ${{ always() && needs.run-unit-tests.result == 'success' && needs.create-preview-env.result == 'success' }}
+    uses: ./.github/workflows/e2e-tests.yaml
+    secrets: inherit
+    with:
+      service-url: ${{ needs.create-preview-env.outputs.service-url }}
+
+  comment-e2e-tests:
+    name: Comment on test outcome
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [run-e2e-tests]
+    steps:
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACK_USERNAME: GithubActions
+          SLACK_COLOR: ${{ needs.run-e2e-tests.result }}
+          SLACK_MESSAGE_ON_SUCCESS: "E2E tests succeeded"
+          SLACK_MESSAGE_ON_FAILURE: "E2E tests failed!"
+          MSG_MINIMAL: actions url
