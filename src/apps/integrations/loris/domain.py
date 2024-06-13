@@ -6,6 +6,7 @@ from pydantic import BaseModel, Extra
 from apps.activities.domain.conditional_logic import ConditionalLogic
 
 __all__ = [
+    "UnencryptedAppletVersion",
     "UnencryptedApplet",
     "Consent",
     "ConsentUpdate",
@@ -29,7 +30,7 @@ class Item(BaseModel):
 
 
 class Activitie(BaseModel):
-    id: uuid.UUID
+    id: str
     name: str
     description: str
     splash_screen: str = ""
@@ -44,6 +45,11 @@ class UnencryptedApplet(BaseModel):
     displayName: str
     description: str
     activities: list[Activitie]
+
+
+class UnencryptedAppletVersion(BaseModel):
+    version: str
+    applet: UnencryptedApplet
 
 
 class LorisServerResponse(BaseModel):

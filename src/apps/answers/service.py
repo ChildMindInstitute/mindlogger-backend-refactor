@@ -1530,7 +1530,22 @@ class ReportServerService:
             responses.append(dict(activityId=activity_id, answer=answer_item.answer))
         return responses, [ai.user_public_key for ai in answer_items]
 
-    async def decrypt_data_for_loris(self, applet_id: uuid.UUID, respondent_id: uuid.UUID) -> dict | None:
+    async def _prepare_loris_responses(
+        self, answers_map: dict[uuid.UUID, AnswerSchema]
+    ) -> tuple[list[dict], list[str]]:
+        answer_items = await AnswerItemsCRUD(self.answers_session).get_respondent_submits_by_answer_ids(
+            list(answers_map.keys())
+        )
+
+        responses = list()
+        for answer_item in answer_items:
+            answer = answers_map[answer_item.answer_id]
+            activity_id_version = str(answer.activity_history_id).replace("_", "__")
+            activity_answer_id = f"{activity_id_version}__{answer_item.answer_id}"
+            responses.append(dict(activityId=activity_answer_id, answer=answer_item.answer))
+        return responses, [ai.user_public_key for ai in answer_items]
+
+    async def decrypt_data_for_loris(self, applet_id: uuid.UUID, respondent_id: uuid.UUID) -> tuple[dict, list] | None:
         answers = await AnswersCRUD(self.answers_session).get_by_applet_id_and_readiness_to_share_data(
             applet_id=applet_id, respondent_id=respondent_id
         )
@@ -1538,9 +1553,10 @@ class ReportServerService:
             return None
 
         answer_map = dict((answer.id, answer) for answer in answers)
+        answer_versions = [a.version for a in answers]
 
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
-        responses, user_public_keys = await self._prepare_responses(answer_map)
+        responses, user_public_keys = await self._prepare_loris_responses(answer_map)
 
         data = dict(
             responses=responses,
@@ -1568,7 +1584,7 @@ class ReportServerService:
                     logger.info(f"Successful request (for LORIS) in {duration:.1f}" "  seconds.")
                     response_data = await resp.json()
                     # return ReportServerResponse(**response_data)
-                    return response_data
+                    return response_data, answer_versions
                 else:
                     logger.error(f"Failed request (for LORIS) in {duration:.1f}" "  seconds.")
                     error_message = await resp.text()
