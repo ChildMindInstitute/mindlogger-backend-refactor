@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import traceback
 import uuid
 from logging import getLogger
 from logging.config import fileConfig
@@ -38,6 +39,7 @@ async def get_all_servers(connection):
             SELECT uw.database_uri, uw.user_id
             FROM users_workspaces as uw
             WHERE uw.database_uri is not null and uw.database_uri <> ''
+            ORDER BY uw.created_at
         """
         )
         rows = await connection.execute(query)
@@ -84,9 +86,19 @@ async def migrate_arbitrary():
                 future=True,
             )
         )
-        async with connectable.connect() as connection:
-            await connection.run_sync(do_run_migrations, arbitrary_meta, config)
-        await connectable.dispose()
+        try:
+            async with connectable.connect() as connection:
+                await connection.run_sync(do_run_migrations, arbitrary_meta, config)
+            migration_log.info(f"Success: {owner_id} successfully migrated")
+        except asyncio.TimeoutError:
+            migration_log.error(f"!!! Error during migration of {owner_id}")
+            migration_log.error("Connection timeout")
+        except Exception as e:
+            migration_log.error(f"!!! Error during migration of {owner_id}")
+            migration_log.error(e)
+            traceback.print_exception(e)
+        finally:
+            await connectable.dispose()
 
 
 def run_migrations_offline() -> None:
