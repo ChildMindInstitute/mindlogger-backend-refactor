@@ -312,6 +312,37 @@ async def tom_answer_activity_no_flow(session: AsyncSession, tom: User, applet_w
 
 
 @pytest.fixture
+async def tom_answer_performance_flow(
+    session: AsyncSession, tom: User, applet_with_performance_flow: AppletFull
+) -> list[AnswerSchema]:
+    answer_service = AnswerService(session, tom.id)
+    answers = []
+    for flow in applet_with_performance_flow.activity_flows:
+        submit_id = uuid.uuid4()
+        for i, flow_item in enumerate(flow.items):
+            # activity = next(a for a in applet_with_performance_flow.activities if a.id == flow_item.activity_id)
+            answer = await answer_service.create_answer(
+                AppletAnswerCreate(
+                    applet_id=applet_with_performance_flow.id,
+                    version=applet_with_performance_flow.version,
+                    submit_id=submit_id,
+                    flow_id=applet_with_performance_flow.activity_flows[0].id,
+                    is_flow_completed=len(flow.items) == i + 1,
+                    activity_id=flow_item.activity_id,
+                    answer=ItemAnswerCreate(
+                        item_ids=[],
+                        start_time=datetime.datetime.utcnow(),
+                        end_time=datetime.datetime.utcnow(),
+                        user_public_key=str(tom.id),
+                    ),
+                    client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+                )
+            )
+            answers.append(answer)
+    return answers
+
+
+@pytest.fixture
 async def tom_review_answer(
     session: AsyncSession,
     tom: User,
@@ -1825,6 +1856,24 @@ class TestAnswerActivityItems(BaseTest):
         assert flow_data
         assert flow_data["name"] == applet_with_flow.activity_flows[0].name
         assert flow_data["hasAnswer"] is True
+        assert flow_data["isPerformanceFlow"] is False
+
+    async def test_summary_performance_flag_for_performance_flow(
+        self, client, tom: User, applet_with_performance_flow: AppletFull, tom_answer_performance_flow
+    ):
+        client.login(tom)
+        url = self.summary_activity_flows_url.format(applet_id=applet_with_performance_flow.id)
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+
+        for row in payload["result"]:
+            flow = next(f for f in applet_with_performance_flow.activity_flows if str(f.id) == row["id"])
+            activity_ids = [ai.activity_id for ai in flow.items]
+            flow_activities = [a for a in applet_with_performance_flow.activities if a.id in activity_ids]
+            is_performance = all(a.is_performance_task for a in flow_activities)
+            assert row["isPerformanceFlow"] is is_performance
 
     async def test_summary_for_activity_flow_without_answer(
         self, client, tom: User, applet_with_flow: AppletFull, tom_answer_on_reviewable_applet

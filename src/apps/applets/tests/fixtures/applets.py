@@ -279,16 +279,14 @@ async def applet_one_lucy_reviewer(
 
 
 @pytest.fixture
-async def applet_with_all_performance_tasks(
+async def applet_with_all_performance_tasks_data(
     applet_minimal_data: AppletCreate,
-    session: AsyncSession,
-    tom: User,
     activity_ab_trails_ipad_create: ActivityCreate,
     activity_ab_trails_mobile_create: ActivityCreate,
     activity_flanker_create: ActivityCreate,
     actvitiy_cst_gyroscope_create: ActivityCreate,
     actvitiy_cst_touch_create: ActivityCreate,
-) -> AppletFull:
+) -> AppletCreate:
     data = applet_minimal_data.copy(deep=True)
     data.activities = [
         activity_ab_trails_ipad_create,
@@ -297,5 +295,15 @@ async def applet_with_all_performance_tasks(
         actvitiy_cst_gyroscope_create,
         actvitiy_cst_touch_create,
     ]
+    return data
+
+
+@pytest.fixture
+async def applet_with_all_performance_tasks(
+    applet_with_all_performance_tasks_data: AppletCreate,
+    session: AsyncSession,
+    tom: User,
+) -> AppletFull:
+    data = applet_with_all_performance_tasks_data.copy(deep=True)
     applet = await AppletService(session, tom.id).create(data)
     return applet

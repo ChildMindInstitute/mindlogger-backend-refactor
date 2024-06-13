@@ -124,14 +124,18 @@ class ReviewActivity(InternalModel):
     answer_dates: list[AnswerDate] = Field(default_factory=list)
 
 
-class SummaryActivityFlow(InternalModel):
+class _SummaryActivity(InternalModel):
     id: uuid.UUID
     name: str
     has_answer: bool
     last_answer_date: datetime.datetime | None
 
 
-class SummaryActivity(SummaryActivityFlow):
+class SummaryActivityFlow(_SummaryActivity):
+    is_performance_flow: bool
+
+
+class SummaryActivity(_SummaryActivity):
     is_performance_task: bool
 
 
@@ -191,14 +195,18 @@ class FlowSubmissionInfo(PublicModel):
     end_datetime: datetime.datetime
 
 
-class PublicSummaryActivityFlow(InternalModel):
+class _PublicSummaryActivity(PublicModel):
     id: uuid.UUID
     name: str
     has_answer: bool
     last_answer_date: datetime.datetime | None
 
 
-class PublicSummaryActivity(PublicSummaryActivityFlow):
+class PublicSummaryActivityFlow(_PublicSummaryActivity):
+    is_performance_flow: bool
+
+
+class PublicSummaryActivity(_PublicSummaryActivity):
     is_performance_task: bool
 
 

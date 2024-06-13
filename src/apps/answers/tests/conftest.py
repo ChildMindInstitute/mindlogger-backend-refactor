@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.activities.domain.activity_create import ActivityItemCreate
+from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.domain.response_type_config import SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.activities.domain.scores_reports import ReportType, ScoresAndReports, Section
@@ -150,6 +150,46 @@ async def applet_with_flow(
             items=[
                 FlowItemCreate(activity_key=data.activities[0].key),
                 FlowItemCreate(activity_key=data.activities[1].key),
+            ],
+        ),
+    ]
+    data.report_server_ip = applet_report_configuration_data.report_server_ip
+    data.report_public_key = applet_report_configuration_data.report_public_key
+    data.report_recipients = applet_report_configuration_data.report_recipients
+    applet_create = AppletCreate(**data.dict())
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_create, applet_id=uuid.uuid4())
+
+    return applet
+
+
+@pytest.fixture
+async def applet_with_performance_flow(
+    session: AsyncSession,
+    applet_with_all_performance_tasks_data: AppletCreate,
+    activity_create_session: ActivityCreate,
+    tom: User,
+    applet_report_configuration_data: AppletReportConfigurationBase,
+) -> AppletFull:
+    data = applet_with_all_performance_tasks_data.copy(deep=True)
+    data.display_name = "applet with performance flow"
+    data.activities.append(activity_create_session.copy(deep=True))
+
+    data.activity_flows = [
+        FlowCreate(
+            name="performance flow",
+            description={Language.ENGLISH: "description"},
+            items=[
+                FlowItemCreate(activity_key=data.activities[0].key),
+                FlowItemCreate(activity_key=data.activities[1].key),
+            ],
+        ),
+        FlowCreate(
+            name="mixed flow",
+            description={Language.ENGLISH: "description2"},
+            items=[
+                FlowItemCreate(activity_key=data.activities[0].key),
+                FlowItemCreate(activity_key=activity_create_session.key),
             ],
         ),
     ]

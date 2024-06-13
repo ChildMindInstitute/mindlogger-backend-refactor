@@ -1,8 +1,9 @@
 import uuid
 
 from pydantic import parse_obj_as
-from sqlalchemy import any_, select
+from sqlalchemy import any_, func, select
 from sqlalchemy.orm import Query, joinedload
+from sqlalchemy.sql.operators import is_
 
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, ActivityFlowItemHistorySchema
@@ -83,6 +84,9 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         return db_result.scalars().all()
 
     async def get_last_histories_by_applet(self, applet_id: uuid.UUID) -> list[ActivityFlowHistoriesSchema]:
+        """
+        Get last versions including deleted from the applet
+        """
         query: Query = select(ActivityFlowHistoriesSchema)
         query = query.join(
             AppletHistorySchema,
@@ -116,5 +120,23 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
     async def get_list_by_id(self, id_: uuid.UUID) -> list[ActivityFlowHistoriesSchema]:
         query: Query = select(ActivityFlowHistoriesSchema)
         query = query.where(ActivityFlowHistoriesSchema.id == id_)
+        result = await self._execute(query)
+        return result.scalars().all()
+
+    async def reduce_flow_versions_to_performance_flow_ids(self, id_versions: list[str]) -> list[uuid.UUID]:
+        """
+        Get flow ids with the list of all activities of performance type for flow versions
+        """
+        query: Query = (
+            select(ActivityFlowHistoriesSchema.id)
+            .join(ActivityFlowHistoriesSchema.items)
+            .join(ActivityFlowItemHistorySchema.activity)
+            .where(
+                ActivityFlowHistoriesSchema.id_version.in_(id_versions),
+                ActivityHistorySchema.is_reviewable.isnot(True),
+            )
+            .group_by(ActivityFlowHistoriesSchema.id)
+            .having(func.bool_and(is_(ActivityHistorySchema.is_performance_task, True)))
+        )
         result = await self._execute(query)
         return result.scalars().all()

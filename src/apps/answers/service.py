@@ -1121,11 +1121,15 @@ class AnswerService:
         activity_flow_histories = await flow_crud.get_last_histories_by_applet(applet_id)
 
         submitted_activity_flows: dict[str, datetime.datetime] = {}
+        flow_id_versions: set[str] = set()
         for version_id, submit_date in flow_history_ids_with_date:
             flow_id = version_id.split("_")[0]
             date = submitted_activity_flows.get(flow_id)
             submitted_activity_flows[flow_id] = max(submit_date, date) if date else submit_date
             submitted_activity_flows[version_id] = submit_date
+            flow_id_versions.add(version_id)
+
+        performance_flow_ids = await flow_crud.reduce_flow_versions_to_performance_flow_ids(list(flow_id_versions))
 
         results = []
         for flow_history in activity_flow_histories:
@@ -1138,6 +1142,7 @@ class AnswerService:
                     name=flow_history.name,
                     has_answer=bool(flow_history_answer_date),
                     last_answer_date=flow_history_answer_date,
+                    is_performance_flow=(flow_history.id in performance_flow_ids),
                 )
             )
         return results
