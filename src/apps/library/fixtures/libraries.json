@@ -7,8 +7,8 @@
             "is_deleted": false,
             "id": "68aadd6c-eb20-4666-85aa-fd6264825c01",
             "applet_id_version": "92917a56-d586-4613-b7aa-991f2c4b15b2_1.1.0",
-            "keywords": {},
-            "search_keywords": {}
+            "keywords": null,
+            "search_keywords": null
         }
     }
 ]

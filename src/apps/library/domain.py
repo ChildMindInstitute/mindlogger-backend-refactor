@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.shared.domain import InternalModel, PublicModel
@@ -22,8 +22,12 @@ class AppletLibraryInfo(PublicModel):
 
 class AppletLibraryCreate(InternalModel):
     applet_id: uuid.UUID
-    keywords: list[str] = []
+    keywords: list[str] | None = []
     name: str
+
+    @validator("keywords", pre=True)
+    def set_keywords(cls, keywords: list[str] | None):
+        return keywords if keywords is not None else []
 
 
 class AppletLibraryUpdate(InternalModel):
@@ -87,6 +91,10 @@ class _LibraryItem(BaseModel):
     keywords: list[str] = []
     activities: list[LibraryItemActivity] | None = None
     activity_flows: list[LibraryItemFlow] | None = None
+
+    @validator("keywords", pre=True)
+    def validate_keywords(cls, keywords: list[str] | None) -> list[str]:
+        return keywords if keywords is not None else []
 
 
 class LibraryItem(InternalModel, _LibraryItem):

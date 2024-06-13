@@ -468,7 +468,7 @@ class TestLibrary(BaseTest):
             (["test", "test2"], ["test", "test2"], http.HTTPStatus.CREATED, True),
             ([], [], http.HTTPStatus.CREATED, True),
             (None, [], http.HTTPStatus.CREATED, False),
-            (None, [], http.HTTPStatus.UNPROCESSABLE_ENTITY, True),
+            (None, [], http.HTTPStatus.CREATED, True),
         ),
     )
     async def test_library_share_with_empty_kw(
