@@ -13,6 +13,9 @@ on:
       IMAGE_PREFIX:
         required: true
         type: string
+      IMAGE_TAG:
+        required: true
+        type: string
 
 permissions:
   id-token: write
@@ -20,9 +23,48 @@ permissions:
   issues: write
 
 jobs:
+
+  run_migration:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      TASK_DEFINITION: migration
+      ECS_CLUSTER_NAME: cmiml-dev
+      ECS_SERVICE_NAME: migration
+      AWS_REGION : "us-east-1"
+      IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+    
+    steps:
+
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
+        role-session-name: OIDC-GHA-session
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Download task definition
+      run: |
+        aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }} > task-definition.json
+
+    - name: Render Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition.json
+        image: $IMAGE_TAG
+    
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        cluster: ${{ env.ECS_CLUSTER_NAME }}
+        
+
   deploy_to_ecs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    needs: run_migration
     env:
       TASK_FAMILY_PREFIX: backend
       ECS_CLUSTER_NAME: cmiml-dev
