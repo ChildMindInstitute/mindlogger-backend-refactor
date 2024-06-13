@@ -490,10 +490,20 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_submitted_flows_with_last_date(
         self, applet_id: uuid.UUID, target_subject_id: uuid.UUID | None
     ) -> list[tuple[str, datetime.datetime]]:
-        query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
-        query = query.where(AnswerSchema.applet_id == applet_id, AnswerSchema.flow_history_id.isnot(None))
+        subquery: Query = select(AnswerSchema.submit_id)
+        subquery = subquery.where(
+            AnswerSchema.applet_id == applet_id,
+            AnswerSchema.flow_history_id.isnot(None),
+            AnswerSchema.is_flow_completed.is_(True),
+        )
         if target_subject_id:
-            query = query.where(AnswerSchema.target_subject_id == target_subject_id)
+            subquery = subquery.where(AnswerSchema.target_subject_id == target_subject_id)
+
+        query: Query = select(AnswerSchema.flow_history_id, func.max(AnswerSchema.created_at))
+        query = query.where(
+            AnswerSchema.submit_id.in_(subquery),
+            AnswerSchema.is_flow_completed.is_(True),
+        )
         query = query.group_by(AnswerSchema.flow_history_id)
         query = query.order_by(AnswerSchema.flow_history_id)
         db_result = await self._execute(query)
