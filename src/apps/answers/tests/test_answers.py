@@ -144,6 +144,7 @@ async def tom_answer_on_reviewable_applet(
                 user_public_key=str(tom.id),
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+            consent_to_share=False,
         )
     )
 
@@ -167,6 +168,7 @@ async def tom_answer_activity_flow(session: AsyncSession, tom: User, applet_with
                 identifier="encrypted_identifier",
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+            consent_to_share=False,
         )
     )
 
@@ -197,6 +199,7 @@ def applet_with_flow_answer_create(applet_with_flow: AppletFull) -> list[AppletA
                 **answer_item_data,
             ),
             **answer_data,
+            consent_to_share=False,
         ),
         # flow#2 submission#1
         AppletAnswerCreate(
@@ -210,6 +213,7 @@ def applet_with_flow_answer_create(applet_with_flow: AppletFull) -> list[AppletA
                 **answer_item_data,
             ),
             **answer_data,
+            consent_to_share=False,
         ),
         AppletAnswerCreate(
             submit_id=submit_id,
@@ -218,6 +222,7 @@ def applet_with_flow_answer_create(applet_with_flow: AppletFull) -> list[AppletA
             activity_id=applet_with_flow.activities[1].id,
             answer=ItemAnswerCreate(item_ids=[applet_with_flow.activities[1].items[0].id], **answer_item_data),
             **answer_data,
+            consent_to_share=False,
         ),
         # flow#1 submission#2
         AppletAnswerCreate(
@@ -231,6 +236,7 @@ def applet_with_flow_answer_create(applet_with_flow: AppletFull) -> list[AppletA
                 **answer_item_data,
             ),
             **answer_data,
+            consent_to_share=False,
         ),
     ]
     return answers
@@ -266,6 +272,7 @@ async def tom_answer_activity_no_flow(session: AsyncSession, tom: User, applet_w
                 user_public_key=str(tom.id),
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+            consent_to_share=False,
         )
     )
 
@@ -368,6 +375,7 @@ async def tom_answer_activity_flow_not_completed(
                 identifier="encrypted_identifier",
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+            consent_to_share=False,
         )
     )
 
@@ -1400,6 +1408,7 @@ class TestAnswerActivityItems(BaseTest):
                         user_public_key=str(tom.id),
                     ),
                     client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+                    consent_to_share=False,
                 )
             )
             submit_dates.append(answer.created_at)

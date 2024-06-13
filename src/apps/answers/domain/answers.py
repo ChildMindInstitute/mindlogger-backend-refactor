@@ -100,7 +100,7 @@ class AppletAnswerCreate(InternalModel):
     client: ClientMeta
     target_subject_id: uuid.UUID | None
     source_subject_id: uuid.UUID | None
-    is_data_share: bool
+    consent_to_share: bool
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
