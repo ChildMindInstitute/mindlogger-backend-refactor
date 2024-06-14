@@ -11,6 +11,7 @@ from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service import AppletService
 from apps.authentication.errors import PermissionsError
+from apps.invitations.constants import InvitationStatus
 from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
@@ -356,7 +357,8 @@ class TestTransfer(BaseTest):
         result = response.json()["result"]
         email_role_map = dict()
         for res in result:
-            email_role_map[res["email"]] = res["roles"]
+            if res["status"] == InvitationStatus.APPROVED:
+                email_role_map[res["email"]] = res["roles"]
         emails = list(email_role_map.keys())
 
         assert mike.email_encrypted in emails

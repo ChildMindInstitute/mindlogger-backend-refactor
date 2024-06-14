@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.domain.base import Encryption
+from apps.invitations.constants import InvitationStatus
 from apps.invitations.domain import InvitationDetail, InvitationResponse
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.encryption import get_key
@@ -104,7 +105,7 @@ class WorkspaceRespondent(InternalModel):
 
 
 class AppletRole(InternalModel):
-    access_id: uuid.UUID
+    access_id: uuid.UUID | None
     role: Role
     reviewer_subjects: list[str] | None = None
 
@@ -123,10 +124,28 @@ class WorkspaceManager(InternalModel):
     last_name: str
     email_encrypted: str | None
     roles: list[Role]
+    created_at: datetime.datetime
     last_seen: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
+    titles: list[str] | None
     title: str | None
+    status: InvitationStatus
+    invitation_key: uuid.UUID | None
+
+    @validator("titles", pre=True)
+    def get_titles(cls, value):
+        if len(value) > 0:
+            value = [v for v in value if v is not None]
+
+        return value
+
+    @validator("title", always=True)
+    def get_title(cls, value, values):
+        if len(values.get("titles")) > 0:
+            value = next(iter([v for v in values.get("titles") if v is not None]))
+
+        return value
 
     @validator("applets", pre=True)
     def group_applets(cls, value):
@@ -145,11 +164,11 @@ class WorkspaceManager(InternalModel):
 
             subjects = []
             if applet_role["role"] == Role.REVIEWER:
-                subjects = applet_role["reviewer_subjects"]
+                subjects = applet_role.get("reviewer_subjects")
 
             applet["roles"].append(
                 dict(
-                    access_id=applet_role["access_id"],
+                    access_id=applet_role.get("access_id"),
                     role=applet_role["role"],
                     reviewer_subjects=subjects,
                 )
@@ -196,9 +215,13 @@ class PublicWorkspaceManager(PublicModel):
     email: str | None
     roles: list[Role]
     last_seen: datetime.datetime
+    created_at: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
     title: str | None
+    titles: list[str] | None
+    status: InvitationStatus
+    invitation_key: uuid.UUID | None
 
 
 class WorkspaceInfo(InternalModel):
