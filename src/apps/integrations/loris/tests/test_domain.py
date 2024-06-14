@@ -43,7 +43,7 @@ def test_item_model(uuid_zero: uuid.UUID):
 
 
 def test_activitie_model(uuid_zero: uuid.UUID):
-    activitie_id = uuid_zero
+    activitie_id = str(uuid_zero)
     item_id = uuid_zero
     created_at = datetime.datetime.now()
     activitie_data = {
@@ -82,7 +82,7 @@ def test_activitie_model(uuid_zero: uuid.UUID):
 
 def test_unencrypted_applet_model(uuid_zero: uuid.UUID):
     applet_id = uuid_zero
-    activitie_id = uuid_zero
+    activitie_id = str(uuid_zero)
     item_id = uuid_zero
     created_at = datetime.datetime.now()
     applet_data = {
