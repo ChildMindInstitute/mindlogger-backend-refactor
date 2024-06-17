@@ -29,14 +29,14 @@ from apps.shared.domain.custom_validations import InvalidImageError
 
 
 def test_create_activity_item_conditional_logic_not_valid_response_type_config(
-    base_item_data, date_config, conditional_logic
+    base_item_data, photo_config, conditional_logic_equal
 ) -> None:
     with pytest.raises(errors.IncorrectConditionLogicItemTypeError):
         ActivityItemCreate(
             **base_item_data.dict(),
-            config=date_config,
-            response_type=ResponseType.DATE,
-            conditional_logic=conditional_logic,
+            config=photo_config,
+            response_type=ResponseType.PHOTO,
+            conditional_logic=conditional_logic_equal,
             response_values=None,
         )
 
@@ -44,7 +44,7 @@ def test_create_activity_item_conditional_logic_not_valid_response_type_config(
 def test_create_activity_item_conditional_logic_can_not_be_hidden(
     base_item_data,
     single_select_config,
-    conditional_logic,
+    conditional_logic_equal,
     single_select_response_values,
 ) -> None:
     base_item_data.is_hidden = True
@@ -52,7 +52,7 @@ def test_create_activity_item_conditional_logic_can_not_be_hidden(
         ActivityItemCreate(
             **base_item_data.dict(),
             config=single_select_config,
-            conditional_logic=conditional_logic,
+            conditional_logic=conditional_logic_equal,
             response_values=single_select_response_values,
             response_type=ResponseType.SINGLESELECT,
         )
@@ -610,3 +610,56 @@ def test_create_message_item__sanitize_question(message_item_create):
     data["question"] = {"en": "One <script>alert('test')</script> Two"}
     item = ActivityItemCreate(**data)
     assert item.question["en"] == "One  Two"
+
+
+@pytest.mark.parametrize(
+    "response_type, config_fixture, cnd_logic_fixture, response_values_fixture",
+    (
+        (ResponseType.SINGLESELECT, "single_select_config", "conditional_logic_equal", "single_select_response_values"),
+        (ResponseType.MULTISELECT, "multi_select_config", "conditional_logic_equal", "multi_select_response_values"),
+        (ResponseType.SLIDER, "slider_config", "conditional_logic_between", "slider_response_values"),
+        (ResponseType.TIME, "time_config", "conditional_logic_between", None),
+        (ResponseType.TIMERANGE, "time_range_config", "conditional_logic_between", None),
+        (
+            ResponseType.NUMBERSELECT,
+            "number_selection_config",
+            "conditional_logic_between",
+            "number_selection_response_values",
+        ),
+        (ResponseType.DATE, "date_config", "conditional_logic_equal", None),
+        (
+            ResponseType.SINGLESELECTROWS,
+            "single_select_row_config",
+            "conditional_logic_equal",
+            "single_select_row_response_values",
+        ),
+        (
+            ResponseType.MULTISELECTROWS,
+            "multi_select_row_config",
+            "conditional_logic_equal",
+            "multi_select_row_response_values",
+        ),
+        (
+            ResponseType.SLIDERROWS,
+            "slider_rows_config",
+            "conditional_logic_rows_outside_of",
+            "slider_rows_response_values",
+        ),
+    ),
+)
+def test_create_activity_item_conditional_logic(
+    base_item_data, request, response_type, config_fixture, cnd_logic_fixture, response_values_fixture
+) -> None:
+    config = request.getfixturevalue(config_fixture)
+    cnd_logic = request.getfixturevalue(cnd_logic_fixture)
+    if response_values_fixture:
+        response_values = request.getfixturevalue(response_values_fixture)
+    else:
+        response_values = None
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=response_type,
+        conditional_logic=cnd_logic,
+        response_values=response_values,
+    )

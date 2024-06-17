@@ -157,14 +157,7 @@ class BaseActivityItem(BaseModel):
     @validator("conditional_logic")
     def validate_conditional_logic(cls, value, values):
         response_type = values.get("response_type")
-        if value is not None and response_type not in [
-            ResponseType.SINGLESELECT,
-            ResponseType.MULTISELECT,
-            ResponseType.SLIDER,
-            ResponseType.TEXT,
-            ResponseType.TIME,
-            ResponseType.TIMERANGE,
-        ]:
+        if value is not None and response_type not in ResponseType.conditional_logic_types():
             raise IncorrectConditionLogicItemTypeError()
 
         return value

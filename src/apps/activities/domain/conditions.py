@@ -107,6 +107,10 @@ class NotEqualCondition(BaseCondition):
     payload: ValuePayload
 
 
+class MinMaxRowPayload(MinMaxPayload):
+    row_index: int
+
+
 class BetweenCondition(BaseCondition):
     type: str = Field(ConditionType.BETWEEN, const=True)
     payload: MinMaxPayload
@@ -114,7 +118,7 @@ class BetweenCondition(BaseCondition):
 
 class OutsideOfCondition(BaseCondition):
     type: str = Field(ConditionType.OUTSIDE_OF, const=True)
-    payload: MinMaxPayload
+    payload: MinMaxPayload | MinMaxRowPayload
 
 
 class ScoreBoolCondition(BaseCondition):

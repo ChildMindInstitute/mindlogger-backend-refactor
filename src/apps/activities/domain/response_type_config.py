@@ -70,6 +70,22 @@ class ResponseType(str, Enum):
             cls.ABTRAILS,
         )
 
+    @classmethod
+    def conditional_logic_types(cls):
+        return (
+            cls.SINGLESELECT,
+            cls.MULTISELECT,
+            cls.SLIDER,
+            cls.TEXT,
+            cls.TIME,
+            cls.TIMERANGE,
+            cls.NUMBERSELECT,
+            cls.DATE,
+            cls.SINGLESELECTROWS,
+            cls.MULTISELECTROWS,
+            cls.SLIDERROWS,
+        )
+
 
 class AdditionalResponseOption(PublicModel):
     text_input_option: bool
