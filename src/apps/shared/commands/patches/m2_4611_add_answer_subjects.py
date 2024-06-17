@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from rich import print
@@ -39,13 +40,16 @@ async def main(
                 print(f"Workspace#{i + 1} DB already processed, skip...")
                 continue
             processed.add(arb_uri)
-            session_maker = session_manager.get_session(arb_uri)
-            async with session_maker() as arb_session:
-                try:
-                    await update_answers(arb_session)
-                    await arb_session.commit()
-                    print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
-                except Exception:
-                    await arb_session.rollback()
-                    print(f"[bold red]Workspace#{i + 1} {workspace.id} " f"processing error[/bold red]")
-                    raise
+            try:
+                session_maker = session_manager.get_session(arb_uri)
+                async with session_maker() as arb_session:
+                    try:
+                        await update_answers(arb_session)
+                        await arb_session.commit()
+                        print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
+                    except Exception:
+                        await arb_session.rollback()
+                        print(f"[bold red]Error: Workspace#{i + 1} {workspace.id} processing error[/bold red]")
+                        raise
+            except asyncio.TimeoutError:
+                print(f"[bold red]Error: Workspace#{i + 1} {workspace.id} Timeout error, skipping...[/bold red]")
