@@ -35,5 +35,4 @@ def downgrade() -> None:
             nullable=True,
         ),
     )
-    # op.alter_column("users_workspaces", "integrations", type_=sa.ARRAY(sa.String(length=32)), postgresql_using=" json_to_array(integrations);")
     # ### end Alembic commands ###
