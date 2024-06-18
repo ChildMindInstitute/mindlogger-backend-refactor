@@ -1,3 +1,4 @@
+import datetime
 from enum import Enum
 
 from pydantic import Field, validator
@@ -50,6 +51,20 @@ class ValuePayload(PublicModel):
         return round(value, 2)
 
 
+class DatePayload(PublicModel):
+    value: str  # iso string
+
+    @validator("value", pre=True)
+    def validate_value(cls, value):
+        # check only
+        datetime.date.fromisoformat(value)
+        return value
+
+
+# time hh:mm
+# timerange hh:mm
+
+
 class MinMaxPayload(PublicModel):
     min_value: float
     max_value: float
@@ -89,22 +104,22 @@ class NotEqualToOptionCondition(BaseCondition):
 
 class GreaterThanCondition(BaseCondition):
     type: str = Field(ConditionType.GREATER_THAN, const=True)
-    payload: ValuePayload
+    payload: ValuePayload | DatePayload
 
 
 class LessThanCondition(BaseCondition):
     type: str = Field(ConditionType.LESS_THAN, const=True)
-    payload: ValuePayload
+    payload: ValuePayload | DatePayload
 
 
 class EqualCondition(BaseCondition):
     type: str = Field(ConditionType.EQUAL, const=True)
-    payload: ValuePayload
+    payload: ValuePayload | DatePayload
 
 
 class NotEqualCondition(BaseCondition):
     type: str = Field(ConditionType.NOT_EQUAL, const=True)
-    payload: ValuePayload
+    payload: ValuePayload | DatePayload
 
 
 class MinMaxRowPayload(MinMaxPayload):

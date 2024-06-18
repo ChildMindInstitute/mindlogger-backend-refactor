@@ -1,4 +1,4 @@
-from apps.activities.domain.conditions import MultiSelectConditionType, SingleSelectConditionType
+from apps.activities.domain.conditions import ConditionType
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
 from apps.activities.errors import (
@@ -40,22 +40,18 @@ def validate_item_flow(values: dict):
                         raise IncorrectConditionItemIndexError()
 
                     # check if condition item type is correct
-                    if items[condition_item_index].response_type not in [
-                        ResponseType.SINGLESELECT,
-                        ResponseType.MULTISELECT,
-                        ResponseType.SLIDER,
-                    ]:
+                    if items[condition_item_index].response_type not in ResponseType.conditional_logic_types():
                         raise IncorrectConditionLogicItemTypeError()
 
                     # check if condition option ids are correct
-                    if condition.type in list(SingleSelectConditionType) or condition.type in list(
-                        MultiSelectConditionType
-                    ):
-                        option_values = [
-                            str(option.value) for option in items[condition_item_index].response_values.options
-                        ]
-                        if str(condition.payload.option_value) not in option_values:
-                            raise IncorrectConditionOptionError()
+                    if condition.type in list(ConditionType):
+                        response_values = items[condition_item_index].response_values
+                        if hasattr(response_values, "options"):
+                            option_values = []
+                            for option in response_values.options:
+                                option_values = [str(option.value)]
+                            if str(condition.payload.option_value) not in option_values:
+                                raise IncorrectConditionOptionError()
     return values
 
 
