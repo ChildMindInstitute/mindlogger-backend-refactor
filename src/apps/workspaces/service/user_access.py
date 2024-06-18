@@ -55,7 +55,9 @@ class UserAccessService:
             UserWorkspace(
                 user_id=workspace.user_id,
                 workspace_name=workspace.workspace_name,
-                integrations=[Integration.parse_obj(integration) for integration in json.loads(workspace.integrations)],
+                integrations=[Integration.parse_obj(integration) for integration in json.loads(workspace.integrations)]
+                if workspace.integrations
+                else None,
             )
             for workspace in workspaces
         ]
@@ -70,7 +72,9 @@ class UserAccessService:
             UserWorkspace(
                 user_id=workspace.user_id,
                 workspace_name=workspace.workspace_name,
-                integrations=[Integration.parse_obj(integration) for integration in json.loads(workspace.integrations)],
+                integrations=[Integration.parse_obj(integration) for integration in json.loads(workspace.integrations)]
+                if workspace.integrations
+                else None,
             )
             for workspace in workspaces
         ]
