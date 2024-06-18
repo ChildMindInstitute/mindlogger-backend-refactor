@@ -1,9 +1,11 @@
+import json
 import uuid
 from gettext import gettext as _
 
 import config
 from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import UserAppletAccessCRUD
+from apps.integrations.domain import Integration
 from apps.invitations.domain import ReviewerMeta
 from apps.invitations.errors import RespondentsNotSet
 from apps.shared.exception import AccessDeniedError, ValidationError
@@ -49,7 +51,14 @@ class UserAccessService:
         user_ids.append(self._user_id)
 
         workspaces = await UserWorkspaceCRUD(self.session).get_by_ids(user_ids)
-        return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
+        return [
+            UserWorkspace(
+                user_id=workspace.user_id,
+                workspace_name=workspace.workspace_name,
+                integrations=[Integration.parse_obj(integration) for integration in json.loads(workspace.integrations)],
+            )
+            for workspace in workspaces
+        ]
 
     async def get_super_admin_workspaces(self) -> list[UserWorkspace]:
         """
@@ -57,7 +66,14 @@ class UserAccessService:
         """
 
         workspaces = await UserWorkspaceCRUD(self.session).get_all()
-        return [UserWorkspace.from_orm(workspace) for workspace in workspaces]
+        return [
+            UserWorkspace(
+                user_id=workspace.user_id,
+                workspace_name=workspace.workspace_name,
+                integrations=[Integration.parse_obj(integration) for integration in json.loads(workspace.integrations)],
+            )
+            for workspace in workspaces
+        ]
 
     async def remove_manager_access(self, schema: RemoveManagerAccess):
         """Remove manager access from a specific user."""

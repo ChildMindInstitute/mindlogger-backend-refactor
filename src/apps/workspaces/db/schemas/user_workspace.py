@@ -1,4 +1,5 @@
-from sqlalchemy import ARRAY, Boolean, Column, ForeignKey, String, Unicode
+from sqlalchemy import Boolean, Column, ForeignKey, Unicode
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
@@ -24,4 +25,4 @@ class UserWorkspaceSchema(Base):
     storage_url = Column(StringEncryptedType(Unicode, get_key))
     storage_bucket = Column(StringEncryptedType(Unicode, get_key))
     use_arbitrary = Column(Boolean(), default=False)
-    integrations = Column(ARRAY(String(32)))
+    integrations = Column(JSONB(), default=dict())
