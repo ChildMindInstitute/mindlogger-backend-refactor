@@ -2521,3 +2521,34 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert response.content == b"pdf body"
+
+    @pytest.mark.parametrize(
+        "query,exp_count",
+        (
+            ({"emptyIdentifiers": True, "identifiers": ""}, 3),
+            ({"emptyIdentifiers": False, "identifiers": ""}, 2),
+            ({"emptyIdentifiers": False, "identifiers": "Ident1,Ident2"}, 2),
+            ({"emptyIdentifiers": False, "identifiers": "Ident1"}, 1),
+        ),
+    )
+    async def test_applet_activity_answers_empty_identifiers_filter(
+        self,
+        client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        answer_ident_series: list[AnswerSchema],
+        query,
+        exp_count,
+    ):
+        client.login(tom)
+        activity_id = answer_ident_series[0].activity_history_id.split("_")[0]
+        response = await client.get(
+            self.activity_answers_url.format(
+                applet_id=str(applet.id),
+                activity_id=activity_id,
+            ),
+            query=query,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        res = response.json()
+        assert res["count"] == exp_count

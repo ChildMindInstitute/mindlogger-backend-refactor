@@ -18,14 +18,7 @@ class _ActivityAnswerFilter(Filtering):
     versions = FilterField(AnswerSchema.version, Comparisons.IN)
 
     target_subject_id = FilterField(AnswerSchema.target_subject_id)
-
-    # TODO can be removed?
-    def prepare_identifiers(self, value: str | list[str]) -> list[str] | None:
-        if not value:
-            return None
-        if isinstance(value, str):
-            return value.split(",")
-        return value
+    empty_identifiers = FilterField(AnswerItemSchema.identifier, method_name="filter_empty_identifiers")
 
     # TODO can be removed?
     def prepare_versions(self, value: str | list[str]) -> list[str]:
@@ -36,13 +29,15 @@ class _ActivityAnswerFilter(Filtering):
     def filter_by_identifiers(self, field, values: list | str):
         if isinstance(values, str):
             values = values.split(",")
-        return field.in_(values)
 
-    def prepare_empty_identifiers(self, value: bool):
+        if isinstance(values, list):
+            values = list(filter(None.__ne__, values))
+            if values:
+                return field.in_(values)
+
+    def filter_empty_identifiers(self, field, value: bool):
         if not value:
             return AnswerItemSchema.identifier.isnot(None)
-        else:
-            return AnswerItemSchema.identifier.is_(None)
 
 
 class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):

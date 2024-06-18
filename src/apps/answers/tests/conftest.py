@@ -698,3 +698,16 @@ async def applet__deleted_flow_without_answers(
     update_data = AppletUpdate(**data)
     updated_applet = await srv.update(applet_with_flow.id, update_data)
     return updated_applet
+
+
+@pytest.fixture
+async def answer_ident_series(
+    session: AsyncSession, tom: User, answer_create: AppletAnswerCreate
+) -> list[AnswerSchema]:
+    srv = AnswerService(session, tom.id)
+    answers = []
+    for ident in ("Ident1", "Ident2", None):
+        answer_create.answer.identifier = ident
+        answer = await srv.create_answer(answer_create)
+        answers.append(answer)
+    return answers
