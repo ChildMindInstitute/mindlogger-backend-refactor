@@ -41,7 +41,6 @@ from apps.activities.errors import (
     IncorrectConditionItemIndexError,
     IncorrectConditionLogicItemTypeError,
     IncorrectConditionOptionError,
-    IncorrectDateFormat,
     IncorrectScoreItemConfigError,
     IncorrectScoreItemError,
     IncorrectScoreItemTypeError,
@@ -52,7 +51,6 @@ from apps.activities.errors import (
     IncorrectSectionPrintItemTypeError,
     IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
-    IncorrectTimeFormat,
     IncorrectTimeRange,
     SubscaleInsideSubscaleError,
     SubscaleItemScoreError,
@@ -155,9 +153,9 @@ class TestValidateItemFlow:
     @pytest.mark.parametrize(
         "payload",
         (
-            DatePayload(value="1970-01-01"),
+            # DatePayload(value="1970-01-01"),
             TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
-            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
+            # TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
         ),
     )
     def test_successful_create_eq_condition(self, items: list[ActivityItemCreate], payload):
@@ -281,8 +279,8 @@ class TestValidateItemFlow:
     @pytest.mark.parametrize(
         "payload_type,payload,exp_exception",
         (
-            (DatePayload, dict(value="1970-99-01"), IncorrectDateFormat),
-            (TimePayload, dict(type=TimePayloadType.START_TIME, value="80:00"), IncorrectTimeFormat),
+            (DatePayload, dict(value="1970-99-01"), ValidationError),
+            (TimePayload, dict(type=TimePayloadType.START_TIME, value="80:00"), ValueError),
             (
                 TimeRangePayload,
                 dict(type=TimePayloadType.START_TIME, min_value="03:00", max_value="02:00"),

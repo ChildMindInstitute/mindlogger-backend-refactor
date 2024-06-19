@@ -3,7 +3,7 @@ from enum import Enum
 
 from pydantic import Field, root_validator, validator
 
-from apps.activities.errors import IncorrectDateFormat, IncorrectTimeFormat, IncorrectTimeRange
+from apps.activities.errors import IncorrectTimeRange
 from apps.shared.domain import PublicModel
 
 
@@ -53,21 +53,6 @@ OPTION_BASED_CONDITIONS = [
 ]
 
 
-def _parse_time(time_s: str) -> datetime.time:
-    try:
-        date_time = datetime.datetime.strptime(time_s, "%H:%M")
-        return date_time.time()
-    except ValueError:
-        raise IncorrectTimeFormat()
-
-
-def _parse_date(date_s: str) -> datetime.date:
-    try:
-        return datetime.datetime.fromisoformat(date_s)
-    except ValueError:
-        raise IncorrectDateFormat()
-
-
 class OptionPayload(PublicModel):
     option_value: str
 
@@ -81,38 +66,36 @@ class ValuePayload(PublicModel):
 
 
 class DatePayload(PublicModel):
-    value: str  # iso string
+    value: datetime.date
 
-    @validator("value", pre=True)
-    def validate_value(cls, value):
-        # for check only
-        _parse_date(value)
-        return value
+    def dict(self, *args, **kwargs):
+        d = super().dict(*args, **kwargs)
+        d["value"] = self.value.isoformat()
+        return d
 
 
 class TimePayload(PublicModel):
+    value: datetime.time
     type: TimePayloadType
-    value: str
 
-    @validator("value", pre=True)
-    def validate_value(cls, value):
-        _parse_time(value)
-        return value
+    def dict(self, *args, **kwargs):
+        d = super().dict(*args, **kwargs)
+        d["value"] = self.value.strftime("%H:%M")
+        return d
 
 
 class TimeRangePayload(PublicModel):
-    type: TimePayloadType
-    min_value: str
-    max_value: str
+    type: str = Field(TimePayloadType.START_TIME, const=True)
+    min_value: datetime.time
+    max_value: datetime.time
 
     @root_validator
     def validate_time_range(cls, values):
-        min_value_s = values.get("min_value")
-        max_value_s = values.get("max_value")
-        min_time = _parse_time(min_value_s)
-        max_value = _parse_time(max_value_s)
-        if min_time > max_value:
-            raise IncorrectTimeRange()
+        max_value = values.get("max_value")
+        min_value = values.get("min_value")
+        if max_value and min_value:
+            if min_value > max_value:
+                raise IncorrectTimeRange()
         return values
 
 
