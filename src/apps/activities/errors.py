@@ -252,3 +252,15 @@ class FlowItemActivityKeyNotFoundError(ValidationError):
 
 class MultiSelectNoneOptionError(ValidationError):
     message = _("No more than 1 none option is not allowed for multiselect.")
+
+
+class IncorrectTimeFormat(ValidationError):
+    message = _("Incorrect time format")
+
+
+class IncorrectDateFormat(ValidationError):
+    message = _("Incorrect date format")
+
+
+class IncorrectTimeRange(ValidationError):
+    message = _("Incorrect timerange")

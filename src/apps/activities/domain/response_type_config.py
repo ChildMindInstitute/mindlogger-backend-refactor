@@ -73,17 +73,16 @@ class ResponseType(str, Enum):
     @classmethod
     def conditional_logic_types(cls):
         return (
-            cls.SINGLESELECT,
-            cls.MULTISELECT,
-            cls.SLIDER,
-            cls.TEXT,
+            cls.DATE,
+            cls.NUMBERSELECT,
             cls.TIME,
             cls.TIMERANGE,
-            cls.NUMBERSELECT,
-            cls.DATE,
             cls.SINGLESELECTROWS,
             cls.MULTISELECTROWS,
             cls.SLIDERROWS,
+            cls.SINGLESELECT,
+            cls.MULTISELECT,
+            cls.SLIDER,
         )
 
 

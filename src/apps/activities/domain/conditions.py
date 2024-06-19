@@ -1,8 +1,9 @@
 import datetime
 from enum import Enum
 
-from pydantic import Field, validator
+from pydantic import Field, root_validator, validator
 
+from apps.activities.errors import IncorrectDateFormat, IncorrectTimeFormat, IncorrectTimeRange
 from apps.shared.domain import PublicModel
 
 
@@ -39,6 +40,34 @@ class SliderConditionType(str, Enum):
     OUTSIDE_OF = "OUTSIDE_OF"
 
 
+class TimePayloadType(str, Enum):
+    START_TIME = "startTime"
+    END_TIME = "endTime"
+
+
+OPTION_BASED_CONDITIONS = [
+    MultiSelectConditionType.INCLUDES_OPTION,
+    MultiSelectConditionType.NOT_INCLUDES_OPTION,
+    SingleSelectConditionType.EQUAL_TO_OPTION,
+    SingleSelectConditionType.NOT_EQUAL_TO_OPTION,
+]
+
+
+def _parse_time(time_s: str) -> datetime.time:
+    try:
+        date_time = datetime.datetime.strptime(time_s, "%H:%M")
+        return date_time.time()
+    except ValueError:
+        raise IncorrectTimeFormat()
+
+
+def _parse_date(date_s: str) -> datetime.date:
+    try:
+        return datetime.datetime.fromisoformat(date_s)
+    except ValueError:
+        raise IncorrectDateFormat()
+
+
 class OptionPayload(PublicModel):
     option_value: str
 
@@ -56,13 +85,35 @@ class DatePayload(PublicModel):
 
     @validator("value", pre=True)
     def validate_value(cls, value):
-        # check only
-        datetime.date.fromisoformat(value)
+        # for check only
+        _parse_date(value)
         return value
 
 
-# time hh:mm
-# timerange hh:mm
+class TimePayload(PublicModel):
+    type: TimePayloadType
+    value: str
+
+    @validator("value", pre=True)
+    def validate_value(cls, value):
+        _parse_time(value)
+        return value
+
+
+class TimeRangePayload(PublicModel):
+    type: TimePayloadType
+    min_value: str
+    max_value: str
+
+    @root_validator
+    def validate_time_range(cls, values):
+        min_value_s = values.get("min_value")
+        max_value_s = values.get("max_value")
+        min_time = _parse_time(min_value_s)
+        max_value = _parse_time(max_value_s)
+        if min_time > max_value:
+            raise IncorrectTimeRange()
+        return values
 
 
 class MinMaxPayload(PublicModel):
@@ -104,22 +155,22 @@ class NotEqualToOptionCondition(BaseCondition):
 
 class GreaterThanCondition(BaseCondition):
     type: str = Field(ConditionType.GREATER_THAN, const=True)
-    payload: ValuePayload | DatePayload
+    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class LessThanCondition(BaseCondition):
     type: str = Field(ConditionType.LESS_THAN, const=True)
-    payload: ValuePayload | DatePayload
+    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class EqualCondition(BaseCondition):
     type: str = Field(ConditionType.EQUAL, const=True)
-    payload: ValuePayload | DatePayload
+    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class NotEqualCondition(BaseCondition):
     type: str = Field(ConditionType.NOT_EQUAL, const=True)
-    payload: ValuePayload | DatePayload
+    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class MinMaxRowPayload(MinMaxPayload):
@@ -128,12 +179,12 @@ class MinMaxRowPayload(MinMaxPayload):
 
 class BetweenCondition(BaseCondition):
     type: str = Field(ConditionType.BETWEEN, const=True)
-    payload: MinMaxPayload
+    payload: MinMaxPayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class OutsideOfCondition(BaseCondition):
     type: str = Field(ConditionType.OUTSIDE_OF, const=True)
-    payload: MinMaxPayload | MinMaxRowPayload
+    payload: MinMaxPayload | MinMaxRowPayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class ScoreBoolCondition(BaseCondition):

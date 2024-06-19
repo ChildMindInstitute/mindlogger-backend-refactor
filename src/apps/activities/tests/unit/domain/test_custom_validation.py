@@ -1,15 +1,25 @@
 from typing import cast
 
 import pytest
+from pydantic import ValidationError
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.conditions import (
+    BetweenCondition,
     Condition,
     ConditionType,
+    DatePayload,
     EqualCondition,
     EqualToOptionCondition,
+    GreaterThanCondition,
+    LessThanCondition,
+    NotEqualCondition,
     OptionPayload,
+    OutsideOfCondition,
+    TimePayload,
+    TimePayloadType,
+    TimeRangePayload,
     ValuePayload,
 )
 from apps.activities.domain.custom_validation import validate_item_flow, validate_score_and_sections, validate_subscales
@@ -31,6 +41,7 @@ from apps.activities.errors import (
     IncorrectConditionItemIndexError,
     IncorrectConditionLogicItemTypeError,
     IncorrectConditionOptionError,
+    IncorrectDateFormat,
     IncorrectScoreItemConfigError,
     IncorrectScoreItemError,
     IncorrectScoreItemTypeError,
@@ -41,6 +52,8 @@ from apps.activities.errors import (
     IncorrectSectionPrintItemTypeError,
     IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
+    IncorrectTimeFormat,
+    IncorrectTimeRange,
     SubscaleInsideSubscaleError,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
@@ -138,6 +151,153 @@ class TestValidateItemFlow:
             items[0].conditional_logic.conditions = conditions
         with pytest.raises(IncorrectConditionOptionError):
             validate_item_flow(values)
+
+    @pytest.mark.parametrize(
+        "payload",
+        (
+            DatePayload(value="1970-01-01"),
+            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
+            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
+        ),
+    )
+    def test_successful_create_eq_condition(self, items: list[ActivityItemCreate], payload):
+        values = {"items": items}
+        conditions: list[Condition] = [
+            EqualCondition(
+                item_name=items[0].name,
+                type=ConditionType.EQUAL,
+                payload=payload,
+            )
+        ]
+        if items[0].conditional_logic:
+            items[0].conditional_logic.conditions = conditions
+        validate_item_flow(values)
+
+    @pytest.mark.parametrize(
+        "payload",
+        (
+            DatePayload(value="1970-01-01"),
+            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
+            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
+        ),
+    )
+    def test_successful_create_ne_condition(self, items: list[ActivityItemCreate], payload):
+        values = {"items": items}
+        conditions: list[Condition] = [
+            NotEqualCondition(
+                item_name=items[0].name,
+                type=ConditionType.NOT_EQUAL,
+                payload=payload,
+            )
+        ]
+        if items[0].conditional_logic:
+            items[0].conditional_logic.conditions = conditions
+        validate_item_flow(values)
+
+    @pytest.mark.parametrize(
+        "payload",
+        (
+            DatePayload(value="1970-01-01"),
+            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
+            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
+        ),
+    )
+    def test_successful_create_lt_condition(self, items: list[ActivityItemCreate], payload):
+        values = {"items": items}
+        conditions: list[Condition] = [
+            LessThanCondition(
+                item_name=items[0].name,
+                type=ConditionType.LESS_THAN,
+                payload=payload,
+            )
+        ]
+        if items[0].conditional_logic:
+            items[0].conditional_logic.conditions = conditions
+        validate_item_flow(values)
+
+    @pytest.mark.parametrize(
+        "payload",
+        (
+            DatePayload(value="1970-01-01"),
+            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
+            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
+        ),
+    )
+    def test_successful_create_gt_condition(self, items: list[ActivityItemCreate], payload):
+        values = {"items": items}
+        conditions: list[Condition] = [
+            GreaterThanCondition(
+                item_name=items[0].name,
+                type=ConditionType.GREATER_THAN,
+                payload=payload,
+            )
+        ]
+        if items[0].conditional_logic:
+            items[0].conditional_logic.conditions = conditions
+        validate_item_flow(values)
+
+    @pytest.mark.parametrize(
+        "payload",
+        (
+            DatePayload(value="1970-01-01"),
+            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
+            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
+        ),
+    )
+    def test_successful_create_between_condition(self, items: list[ActivityItemCreate], payload):
+        values = {"items": items}
+        conditions: list[Condition] = [
+            BetweenCondition(
+                item_name=items[0].name,
+                type=ConditionType.BETWEEN,
+                payload=payload,
+            )
+        ]
+        if items[0].conditional_logic:
+            items[0].conditional_logic.conditions = conditions
+        validate_item_flow(values)
+
+    @pytest.mark.parametrize(
+        "payload",
+        (
+            DatePayload(value="1970-01-01"),
+            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
+            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
+        ),
+    )
+    def test_successful_create_outside_condition(self, items: list[ActivityItemCreate], payload):
+        values = {"items": items}
+        conditions: list[Condition] = [
+            OutsideOfCondition(
+                item_name=items[0].name,
+                type=ConditionType.OUTSIDE_OF,
+                payload=payload,
+            )
+        ]
+        if items[0].conditional_logic:
+            items[0].conditional_logic.conditions = conditions
+        validate_item_flow(values)
+
+    @pytest.mark.parametrize(
+        "payload_type,payload,exp_exception",
+        (
+            (DatePayload, dict(value="1970-99-01"), IncorrectDateFormat),
+            (TimePayload, dict(type=TimePayloadType.START_TIME, value="80:00"), IncorrectTimeFormat),
+            (
+                TimeRangePayload,
+                dict(type=TimePayloadType.START_TIME, min_value="03:00", max_value="02:00"),
+                IncorrectTimeRange,
+            ),
+            (TimeRangePayload, dict(type=TimePayloadType.START_TIME, min_value="03:00"), ValidationError),
+            (TimeRangePayload, dict(type="unknown_item_type", min_value="01:00", max_value="02:00"), ValidationError),
+            (TimePayload, dict(type="unknown_item_type", value="10:00"), ValidationError),
+        ),
+    )
+    def test_fails_create_outside_condition(
+        self, items: list[ActivityItemCreate], payload_type, payload, exp_exception
+    ):
+        with pytest.raises(exp_exception):
+            payload_type(**payload)
 
 
 class TestValidateScoreAndSections:

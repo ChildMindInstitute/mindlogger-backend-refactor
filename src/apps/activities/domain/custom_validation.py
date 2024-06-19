@@ -1,4 +1,4 @@
-from apps.activities.domain.conditions import ConditionType
+from apps.activities.domain.conditions import OPTION_BASED_CONDITIONS
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
 from apps.activities.errors import (
@@ -44,14 +44,13 @@ def validate_item_flow(values: dict):
                         raise IncorrectConditionLogicItemTypeError()
 
                     # check if condition option ids are correct
-                    if condition.type in list(ConditionType):
+                    if condition.type in OPTION_BASED_CONDITIONS:
                         response_values = items[condition_item_index].response_values
-                        if hasattr(response_values, "options"):
-                            option_values = []
-                            for option in response_values.options:
-                                option_values = [str(option.value)]
-                            if str(condition.payload.option_value) not in option_values:
-                                raise IncorrectConditionOptionError()
+                        option_values = []
+                        for option in response_values.options:
+                            option_values = [str(option.value)]
+                        if str(condition.payload.option_value) not in option_values:
+                            raise IncorrectConditionOptionError()
     return values
 
 

@@ -5,7 +5,7 @@ from typing import TypeVar
 from apps.activities.domain.activity_history import ActivityHistoryFull, ActivityItemHistoryFull
 from apps.activities.domain.activity_item_history import ActivityItemHistoryChange
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.conditions import Condition, MinMaxPayload, OptionPayload, ValuePayload
+from apps.activities.domain.conditions import Condition, MinMaxPayload, OptionPayload, TimeRangePayload, ValuePayload
 from apps.activities.domain.response_type_config import AdditionalResponseOption, ResponseType
 from apps.shared.changes_generator import BaseChangeGenerator
 
@@ -259,7 +259,7 @@ class ConditionalLogicChangeService(BaseChangeGenerator):
             return condition.payload.option_value
         elif isinstance(condition.payload, ValuePayload):
             return str(condition.payload.value)
-        elif isinstance(condition.payload, MinMaxPayload):
+        elif isinstance(condition.payload, MinMaxPayload) or isinstance(condition.payload, TimeRangePayload):
             min_value = condition.payload.min_value
             max_value = condition.payload.max_value
             return f"{min_value} and {max_value}"
