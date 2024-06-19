@@ -313,6 +313,7 @@ def answer_reviewable_activity_with_tz_offset_create(
     answer_reviewable_activity_create: AppletAnswerCreate,
 ) -> AppletAnswerCreate:
     data = answer_reviewable_activity_create.copy(deep=True)
+    data.submit_id = uuid.uuid4()
     # US/Pacific
     tz_offset = -420
     # To minutes like in api
