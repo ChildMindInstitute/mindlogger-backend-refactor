@@ -18,7 +18,7 @@ async def enable_integration(
 ) -> ResponseMulti[Integration]:
     async with atomic(session):
         integrations = await IntegrationService(session, user).enable_integration(integrations)
-    return ResponseMulti(result=integrations)
+    return ResponseMulti(result=integrations, count=len(integrations))
 
 
 async def disable_integration(
