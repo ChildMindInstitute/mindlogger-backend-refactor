@@ -109,7 +109,8 @@ class LibraryService:
     async def get_all_applets(self, query_params: QueryParams) -> list[PublicLibraryItem]:
         """Get all applets for library."""
 
-        library_items = await LibraryCRUD(self.session).get_all_library_items(query_params)
+        library_schemas = await LibraryCRUD(self.session).get_all_library_items(query_params)
+        library_items = parse_obj_as(list[LibraryItem], library_schemas)
 
         for library_item in library_items:
             library_item = await self._get_full_library_item(library_item)

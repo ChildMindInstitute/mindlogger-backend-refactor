@@ -1,6 +1,8 @@
+import asyncio
 import os
 import uuid
 
+from rich import print
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
@@ -69,10 +71,12 @@ async def get_answers_applets_respondents(
 
 
 async def get_missing_applet_respondent(
-    session: AsyncSession, owner_id: uuid.UUID, arbitrary_applet_respondents: set[tuple[uuid.UUID, uuid.UUID]]
+    session: AsyncSession, applet_ids: list[uuid.UUID], arbitrary_applet_respondents: set[tuple[uuid.UUID, uuid.UUID]]
 ) -> list[tuple[uuid.UUID, uuid.UUID]]:
     query: Query = select(UserAppletAccessSchema.user_id, UserAppletAccessSchema.applet_id)
-    query = query.where(UserAppletAccessSchema.owner_id == owner_id, UserAppletAccessSchema.role == Role.RESPONDENT)
+    query = query.where(
+        UserAppletAccessSchema.applet_id.in_(applet_ids), UserAppletAccessSchema.role == Role.RESPONDENT
+    )
     db_result = await session.execute(query)
     roles_users_applets = db_result.all()
     return list(arbitrary_applet_respondents - set(roles_users_applets))
@@ -91,7 +95,12 @@ async def find_and_create_missing_roles_arbitrary(
     roles = []
     for offset in range(0, count, limit):
         arbitrary_applet_respondents = await get_answers_applets_respondents(arbitrary_session, limit, offset)
-        missing_users_applets = await get_missing_applet_respondent(session, owner_id, arbitrary_applet_respondents)
+
+        applet_ids = {x[1] for x in arbitrary_applet_respondents}
+
+        missing_users_applets = await get_missing_applet_respondent(
+            session, list(applet_ids), arbitrary_applet_respondents
+        )
         for user_id, applet_id in missing_users_applets:
             schema = UserAppletAccessSchema(
                 user_id=user_id,
@@ -130,17 +139,19 @@ async def main(session: AsyncSession, *args, **kwargs):
                     print(f"Workspace#{i + 1} DB already processed, skip...")
                     continue
                 processed.add(arb_uri)
-                session_maker = session_manager.get_session(arb_uri)
-                async with session_maker() as arb_session:
-                    try:
-                        await find_and_create_missing_roles_arbitrary(session, arb_session, workspace.user_id)
-                        await arb_session.commit()
-                        print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
-                    except Exception:
-                        await arb_session.rollback()
-                        print(f"[bold red]Workspace#{i + 1} {workspace.id} " f"processing error[/bold red]")
-                        raise
-
+                try:
+                    session_maker = session_manager.get_session(arb_uri)
+                    async with session_maker() as arb_session:
+                        try:
+                            await find_and_create_missing_roles_arbitrary(session, arb_session, workspace.user_id)
+                            await session.commit()
+                            print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
+                        except Exception:
+                            await session.rollback()
+                            print(f"[bold red]Error: Workspace#{i + 1} {workspace.id} processing error[/bold red]")
+                            raise
+                except asyncio.TimeoutError:
+                    print(f"[bold red]Error: Workspace#{i + 1} {workspace.id} Timeout error, skipping...[/bold red]")
     except Exception as ex:
         await session.rollback()
         raise ex
