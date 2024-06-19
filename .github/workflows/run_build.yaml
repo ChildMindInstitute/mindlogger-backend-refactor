@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -82,7 +82,7 @@ jobs:
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
-      IMAGE_TAG: ${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
+      IMAGE_TAG: ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
 
   deploy_to_uat:
     needs: build_job
