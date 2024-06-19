@@ -47,6 +47,7 @@ jobs:
       run: |
         aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }} > task-definition.json
 
+
     - name: Render Amazon ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
