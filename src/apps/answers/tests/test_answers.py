@@ -598,6 +598,120 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == InvalidVersionError.message
 
+    async def test_create_activity_answers__submit_duplicate(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+    ):
+        client.login(tom)
+        data = answer_create.copy(deep=True)
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
+        data.submit_id = uuid.uuid4()
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+    async def test_create_activity_answer_flow_answer__submit_duplicate(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        client.login(tom)
+        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data.submit_id = uuid.uuid4()
+        data.applet_id = applet_with_flow.id
+        data.activity_id = applet_with_flow.activities[0].id
+        data.flow_id = None
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        data.flow_id = applet_with_flow.activity_flows[0].id
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
+        data.submit_id = uuid.uuid4()
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+    async def test_create_flow_answer__submit_duplicate(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        client.login(tom)
+        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data.submit_id = uuid.uuid4()
+        data.applet_id = applet_with_flow.id
+        data.flow_id = applet_with_flow.activity_flows[0].id
+        data.activity_id = applet_with_flow.activity_flows[0].items[0].activity_id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
+    async def test_create_flow_answer__correct_order(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        client.login(tom)
+        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data.submit_id = uuid.uuid4()
+        data.applet_id = applet_with_flow.id
+        data.flow_id = applet_with_flow.activity_flows[1].id
+        data.activity_id = applet_with_flow.activity_flows[1].items[0].activity_id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        data.activity_id = applet_with_flow.activity_flows[1].items[1].activity_id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+    async def test_create_flow_answer__wrong_order(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        client.login(tom)
+        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data.submit_id = uuid.uuid4()
+        data.applet_id = applet_with_flow.id
+        data.flow_id = applet_with_flow.activity_flows[1].id
+        data.activity_id = applet_with_flow.activity_flows[1].items[1].activity_id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
+        # different submit_id for second activity
+        data.activity_id = applet_with_flow.activity_flows[1].items[0].activity_id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        data.submit_id = uuid.uuid4()
+        data.activity_id = applet_with_flow.activity_flows[1].items[1].activity_id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
     @pytest.mark.usefixtures("mock_report_server_response", "answer")
     async def test_get_latest_summary(
         self, client: TestClient, tom: User, applet: AppletFull, tom_applet_subject: Subject
