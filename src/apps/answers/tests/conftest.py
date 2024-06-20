@@ -546,7 +546,7 @@ async def applet__with_ordered_activities(session: AsyncSession, tom: User, appl
     applet = await srv.create(applet_data)
     data = AppletUpdate(**applet.dict())
     activities = []
-    for i in range(3):
+    for i in range(4):
         activity_new = data.activities[0].copy(deep=True)
         activity_new.id = uuid.uuid4()
         activity_new.key = uuid.uuid4()
@@ -555,6 +555,7 @@ async def applet__with_ordered_activities(session: AsyncSession, tom: User, appl
         activity_new.name = f"ordered_activity_{i}"
         activities.append(activity_new)
 
+    # create version with all activities
     data.activities = activities
     updated_applet = await srv.update(applet.id, data)
     return updated_applet

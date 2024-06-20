@@ -1051,18 +1051,39 @@ class AnswerService:
         current_activity_histories = await act_hst_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
         current_activities_map = {str(ah.id): ah for ah in current_activity_histories}
         results = []
+        deleted = []
+
+        # Actual activities sorted by order
         for activity in sorted(activities, key=lambda a: a.order):
             activity_history_answer_date = submitted_activities.get(
                 activity.id_version, submitted_activities.get(str(activity.id))
             )
             has_answer = bool(activity_history_answer_date)
+            activity_curr = current_activities_map.get(str(activity.id))
             if not has_answer:
-                activity_curr = current_activities_map.get(str(activity.id))
                 if not activity_curr:
                     continue
                 elif activity_curr.is_reviewable:
                     continue
 
+            elif has_answer and not activity_curr:
+                deleted.append(activity)
+                continue
+            results.append(
+                SummaryActivity(
+                    id=activity.id,
+                    name=activity.name,
+                    is_performance_task=activity.is_performance_task,
+                    has_answer=bool(activity_history_answer_date),
+                    last_answer_date=activity_history_answer_date,
+                )
+            )
+
+        # Deleted activities with answers sorted by name
+        for activity in sorted(deleted, key=lambda x: x.name):
+            activity_history_answer_date = submitted_activities.get(
+                activity.id_version, submitted_activities.get(str(activity.id))
+            )
             results.append(
                 SummaryActivity(
                     id=activity.id,
@@ -1094,6 +1115,7 @@ class AnswerService:
         flow_histories = await flow_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
         flow_histories_curr = [flow_h.id for flow_h in flow_histories]
         results = []
+        deleted = []
         for flow_history in sorted(activity_flow_histories, key=lambda x: x.order):
             flow_history_answer_date = submitted_activity_flows.get(
                 flow_history.id_version, submitted_activity_flows.get(str(flow_history.id))
@@ -1101,7 +1123,22 @@ class AnswerService:
             has_answer = bool(flow_history_answer_date)
             if not has_answer and flow_history.id not in flow_histories_curr:
                 continue
+            elif flow_history.id not in flow_histories_curr:
+                deleted.append(flow_history)
+                continue
 
+            results.append(
+                SummaryActivityFlow(
+                    id=flow_history.id,
+                    name=flow_history.name,
+                    has_answer=bool(flow_history_answer_date),
+                    last_answer_date=flow_history_answer_date,
+                )
+            )
+        for flow_history in sorted(deleted, key=lambda x: x.name):
+            flow_history_answer_date = submitted_activity_flows.get(
+                flow_history.id_version, submitted_activity_flows.get(str(flow_history.id))
+            )
             results.append(
                 SummaryActivityFlow(
                     id=flow_history.id,
