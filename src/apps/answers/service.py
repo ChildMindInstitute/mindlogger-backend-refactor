@@ -1051,7 +1051,7 @@ class AnswerService:
         current_activity_histories = await act_hst_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
         current_activities_map = {str(ah.id): ah for ah in current_activity_histories}
         results = []
-        for activity in activities:
+        for activity in sorted(activities, key=lambda a: current_activities_map[str(a.id)].order):
             activity_history_answer_date = submitted_activities.get(
                 activity.id_version, submitted_activities.get(str(activity.id))
             )
