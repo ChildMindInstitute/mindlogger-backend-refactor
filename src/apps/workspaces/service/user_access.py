@@ -1,6 +1,8 @@
-import json
 import uuid
 from gettext import gettext as _
+from typing import List
+
+import pydantic
 
 import config
 from apps.answers.crud.answers import AnswersCRUD
@@ -55,7 +57,7 @@ class UserAccessService:
             UserWorkspace(
                 user_id=workspace.user_id,
                 workspace_name=workspace.workspace_name,
-                integrations=[Integration.parse_obj(integration) for integration in json.loads(workspace.integrations)]
+                integrations=pydantic.parse_obj_as(List[Integration], workspace.integrations)
                 if workspace.integrations
                 else None,
             )
@@ -72,7 +74,7 @@ class UserAccessService:
             UserWorkspace(
                 user_id=workspace.user_id,
                 workspace_name=workspace.workspace_name,
-                integrations=[Integration.parse_obj(integration) for integration in json.loads(workspace.integrations)]
+                integrations=pydantic.parse_obj_as(List[Integration], workspace.integrations)
                 if workspace.integrations
                 else None,
             )

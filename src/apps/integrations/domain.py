@@ -9,3 +9,7 @@ class AvailableIntegrations(str, Enum):
 
 class Integration(InternalModel):
     integration_type: AvailableIntegrations
+
+
+class IntegrationFilter(InternalModel):
+    integration_types: list[AvailableIntegrations] | None
