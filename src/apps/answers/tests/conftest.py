@@ -538,3 +538,23 @@ async def applet__deleted_flow_without_answers(
     update_data = AppletUpdate(**data)
     updated_applet = await srv.update(applet_with_flow.id, update_data)
     return updated_applet
+
+
+@pytest.fixture
+async def applet__with_ordered_activities(session: AsyncSession, tom: User, applet_data: AppletCreate) -> AppletFull:
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_data)
+    data = AppletUpdate(**applet.dict())
+    activities = []
+    for i in range(3):
+        activity_new = data.activities[0].copy(deep=True)
+        activity_new.id = uuid.uuid4()
+        activity_new.key = uuid.uuid4()
+        for j in range(len(activity_new.items)):
+            activity_new.items[j].id = uuid.uuid4()
+        activity_new.name = f"ordered_activity_{i}"
+        activities.append(activity_new)
+
+    data.activities = activities
+    updated_applet = await srv.update(applet.id, data)
+    return updated_applet

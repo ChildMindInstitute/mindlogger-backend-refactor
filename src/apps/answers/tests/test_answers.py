@@ -2032,3 +2032,17 @@ class TestAnswerActivityItems(BaseTest):
         flows_order_expected = [str(flow.id) for flow in sorted(applet_with_flow.activity_flows, key=lambda x: x.order)]
         flows_order_actual = [flow["id"] for flow in payload["result"]]
         assert flows_order_actual == flows_order_expected
+
+    async def test_summary_activity_order(self, client, tom: User, applet__with_ordered_activities: AppletFull):
+        client.login(tom)
+        applet_id = str(applet__with_ordered_activities.id)
+        activities = applet__with_ordered_activities.activities
+        response = await client.get(self.summary_activities_url.format(applet_id=applet_id))
+        assert response.status_code == 200
+        payload = response.json()
+        expected_order_map = {str(a.id): a.order for a in activities}
+        activity_ids = list(map(lambda x: x["id"], payload["result"]))
+        assert payload
+        for i in range(len(activity_ids)):
+            activity_id = activity_ids[i]
+            assert expected_order_map[activity_id] == i + 1
