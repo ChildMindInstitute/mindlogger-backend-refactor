@@ -85,6 +85,15 @@ class ResponseType(str, Enum):
             cls.SLIDER,
         )
 
+    @classmethod
+    def options_based(cls):
+        return (
+            cls.SINGLESELECTROWS,
+            cls.MULTISELECTROWS,
+            cls.SINGLESELECT,
+            cls.MULTISELECT,
+        )
+
 
 class AdditionalResponseOption(PublicModel):
     text_input_option: bool

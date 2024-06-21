@@ -1,4 +1,3 @@
-from apps.activities.domain.conditions import OPTION_BASED_CONDITIONS
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
 from apps.activities.errors import (
@@ -36,19 +35,19 @@ def validate_item_flow(values: dict):
                 else:
                     # check if condition item order is less than current item order  # noqa: E501
                     condition_item_index = item_names.index(condition.item_name)
+                    condition_source_item = items[condition_item_index]
                     if condition_item_index > index:
                         raise IncorrectConditionItemIndexError()
 
                     # check if condition item type is correct
-                    if items[condition_item_index].response_type not in ResponseType.conditional_logic_types():
+                    if condition_source_item.response_type not in ResponseType.conditional_logic_types():
                         raise IncorrectConditionLogicItemTypeError()
 
                     # check if condition option ids are correct
-                    if condition.type in OPTION_BASED_CONDITIONS:
-                        response_values = items[condition_item_index].response_values
-                        option_values = []
-                        for option in response_values.options:
-                            option_values = [str(option.value)]
+                    if condition_source_item.config.type in ResponseType.options_based():
+                        option_values = [
+                            str(option.value) for option in items[condition_item_index].response_values.options
+                        ]
                         if str(condition.payload.option_value) not in option_values:
                             raise IncorrectConditionOptionError()
     return values

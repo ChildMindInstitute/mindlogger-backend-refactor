@@ -2,7 +2,6 @@ import pytest
 
 from apps.activities.domain import conditions as cnd
 from apps.activities.domain.conditional_logic import ConditionalLogic, Match
-from apps.activities.domain.conditions import MinMaxRowPayload
 from apps.activities.tests.utils import DEFAULT_ITEM_NAME
 
 
@@ -25,7 +24,7 @@ def condition_between() -> cnd.BetweenCondition:
 @pytest.fixture
 def condition_rows_outside_of() -> cnd.OutsideOfCondition:
     return cnd.OutsideOfCondition(
-        item_name=DEFAULT_ITEM_NAME, payload=MinMaxRowPayload(min_value=0, max_value=10, row_index=0)
+        item_name=DEFAULT_ITEM_NAME, payload=cnd.MinMaxPayload(min_value=0, max_value=10, row_index=0)
     )
 
 

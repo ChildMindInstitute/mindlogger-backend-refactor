@@ -59,6 +59,7 @@ class OptionPayload(PublicModel):
 
 class ValuePayload(PublicModel):
     value: float
+    row_index: int | None = None
 
     @validator("value")
     def validate_score(cls, value):
@@ -102,6 +103,7 @@ class TimeRangePayload(PublicModel):
 class MinMaxPayload(PublicModel):
     min_value: float
     max_value: float
+    row_index: int | None = None
 
     @validator("min_value", "max_value")
     def validate_score(cls, value):
@@ -156,10 +158,6 @@ class NotEqualCondition(BaseCondition):
     payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
-class MinMaxRowPayload(MinMaxPayload):
-    row_index: int
-
-
 class BetweenCondition(BaseCondition):
     type: str = Field(ConditionType.BETWEEN, const=True)
     payload: MinMaxPayload | DatePayload | TimePayload | TimeRangePayload
@@ -167,7 +165,7 @@ class BetweenCondition(BaseCondition):
 
 class OutsideOfCondition(BaseCondition):
     type: str = Field(ConditionType.OUTSIDE_OF, const=True)
-    payload: MinMaxPayload | MinMaxRowPayload | DatePayload | TimePayload | TimeRangePayload
+    payload: MinMaxPayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class ScoreBoolCondition(BaseCondition):
