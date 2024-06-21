@@ -98,7 +98,7 @@ jobs:
           path: test-results/api
 
       - name: debug
-        run: ls
+        run: ls test-results/api
 
       - name: Build test report
         uses: simple-elf/allure-report-action@master
