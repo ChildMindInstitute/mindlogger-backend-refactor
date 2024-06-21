@@ -321,6 +321,7 @@ def answer_reviewable_activity_with_tz_offset_create(
     answer_reviewable_activity_create: AppletAnswerCreate,
 ) -> AppletAnswerCreate:
     data = answer_reviewable_activity_create.copy(deep=True)
+    data.submit_id = uuid.uuid4()
     # US/Pacific
     tz_offset = -420
     # To minutes like in api
@@ -525,15 +526,16 @@ def answers_reviewable_submission_create(
 ) -> list[AppletAnswerCreate]:
     item_create = answer_item_create.copy(deep=True)
     activities = []
-    for activity in applet_with_reviewable_flow.activities:
-        if activity.is_reviewable:
-            continue
-
+    flow_items = applet_with_reviewable_flow.activity_flows[0].items
+    flow_activity_ids = list(map(lambda x: x.activity_id, flow_items))
+    submit_id = uuid.uuid4()
+    for activity_id in flow_activity_ids:
+        activity = next(filter(lambda x: x.id == activity_id, applet_with_reviewable_flow.activities))
         item_create.item_ids = [i.id for i in activity.items]
         answer_create_data = AppletAnswerCreate(
             applet_id=applet_with_reviewable_flow.id,
             version=applet_with_reviewable_flow.version,
-            submit_id=uuid.uuid4(),
+            submit_id=submit_id,
             activity_id=activity.id,
             answer=item_create,
             created_at=datetime.datetime.utcnow().replace(microsecond=0),
@@ -701,12 +703,34 @@ async def applet__deleted_flow_without_answers(
 
 
 @pytest.fixture
+async def applet__with_ordered_activities(session: AsyncSession, tom: User, applet_data: AppletCreate) -> AppletFull:
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_data)
+    data = AppletUpdate(**applet.dict())
+    activities = []
+    for i in range(4):
+        activity_new = data.activities[0].copy(deep=True)
+        activity_new.id = uuid.uuid4()
+        activity_new.key = uuid.uuid4()
+        for j in range(len(activity_new.items)):
+            activity_new.items[j].id = uuid.uuid4()
+        activity_new.name = f"ordered_activity_{i}"
+        activities.append(activity_new)
+
+    # create version with all activities
+    data.activities = activities
+    updated_applet = await srv.update(applet.id, data)
+    return updated_applet
+
+
+@pytest.fixture
 async def answer_ident_series(
     session: AsyncSession, tom: User, answer_create: AppletAnswerCreate
 ) -> list[AnswerSchema]:
     srv = AnswerService(session, tom.id)
     answers = []
     for ident in ("Ident1", "Ident2", None):
+        answer_create.submit_id = uuid.uuid4()
         answer_create.answer.identifier = ident
         answer = await srv.create_answer(answer_create)
         answers.append(answer)

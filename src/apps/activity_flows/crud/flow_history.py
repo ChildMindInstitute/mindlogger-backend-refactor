@@ -39,17 +39,20 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def load_full(self, id_versions: list[str]) -> list[FlowHistoryWithActivityFull]:
+    async def load_full(
+        self, id_versions: list[str], *, load_activities: bool = True, load_activity_items: bool = True
+    ) -> list[FlowHistoryWithActivityFull]:
         if not id_versions:
             return []
+        opts = joinedload(ActivityFlowHistoriesSchema.items, innerjoin=True)
+        if load_activities:
+            opts = opts.joinedload(ActivityFlowItemHistorySchema.activity, innerjoin=True)
+            if load_activity_items:
+                opts = opts.joinedload(ActivityHistorySchema.items, innerjoin=True)
 
         query = (
             select(ActivityFlowHistoriesSchema)
-            .options(
-                joinedload(ActivityFlowHistoriesSchema.items, innerjoin=True)
-                .joinedload(ActivityFlowItemHistorySchema.activity, innerjoin=True)
-                .joinedload(ActivityHistorySchema.items, innerjoin=True)
-            )
+            .options(opts)
             .where(ActivityFlowHistoriesSchema.id_version.in_(id_versions))
         )
         res = await self._execute(query)
