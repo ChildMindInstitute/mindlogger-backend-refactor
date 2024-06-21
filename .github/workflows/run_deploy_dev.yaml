@@ -31,7 +31,7 @@ jobs:
       TASK_DEFINITION: migration
       ECS_CLUSTER_NAME: cmiml-dev
       ECS_SERVICE_NAME: migration
-      AWS_REGION : "us-east-1"
+      AWS_REGION : us-east-1
       IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
     
     steps:
