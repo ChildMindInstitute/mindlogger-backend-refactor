@@ -138,10 +138,35 @@ class AnswerService:
         await self._validate_applet_for_anonymous_response(activity_answer.applet_id, activity_answer.version)
         await self._validate_answer(activity_answer)
 
-    async def _validate_answer(self, applet_answer: AppletAnswerCreate) -> None:
-        existed_answers = await AnswersCRUD(self.session).get_by_submit_id(applet_answer.submit_id)
+    async def _validate_answer(self, applet_answer: AppletAnswerCreate) -> None:  # noqa: C901
+        pk = self._generate_history_id(applet_answer.version)
+        existed_answers = await AnswersCRUD(self.answer_session).get_by_submit_id(applet_answer.submit_id)
+
+        activity_history_id = pk(applet_answer.activity_id)
+        flow_history_id = pk(applet_answer.flow_id) if applet_answer.flow_id else None
+
+        activity_index = None
+        if flow_history_id:
+            flow_histories = await FlowsHistoryCRUD(self.session).load_full(
+                [pk(applet_answer.flow_id)], load_activities=False
+            )
+            if not flow_histories:
+                raise ValidationError("Flow not found")
+            flow_history = next(iter(flow_histories))
+
+            # check activity in the flow
+            for i, item in enumerate(flow_history.items):
+                if item.activity_id == activity_history_id:
+                    activity_index = i
+                    break
+            if activity_index is None:
+                raise ValidationError("Activity not found in the flow")
 
         if existed_answers:
+            # check uniqueness for activities (duplicated for flow submission only)
+            if not flow_history_id:
+                raise ValidationError("Submit id duplicate error")
+
             existed_answer = existed_answers[0]
             if existed_answer.applet_id != applet_answer.applet_id:
                 raise WrongAnswerGroupAppletId()
@@ -150,8 +175,23 @@ class AnswerService:
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
 
-        pk = self._generate_history_id(applet_answer.version)
-        activity_history = await ActivityHistoriesCRUD(self.session).get_by_id(pk(applet_answer.activity_id))
+            # check uniqueness in flow submisssions
+            if flow_history_id != existed_answer.flow_history_id:
+                raise ValidationError("Submit id duplicate error")
+
+            # check current answer is provided in right order in the flow, so prev activities already answered
+            prev_answers_count = len(existed_answers)
+            if prev_answers_count != activity_index:
+                assert activity_index is not None
+                if prev_answers_count < activity_index:
+                    raise ValidationError("Wrong activity order in the flow")
+                raise ValidationError("Wrong activity order in the flow: previous activity answer missed")
+
+        elif flow_history_id and activity_index != 0:
+            # check first flow answer
+            raise ValidationError("Wrong activity order in the flow")
+
+        activity_history = await ActivityHistoriesCRUD(self.session).get_by_id(activity_history_id)
 
         if not activity_history.applet_id.startswith(f"{applet_answer.applet_id}"):
             raise ActivityHistoryDoeNotExist()
@@ -1188,18 +1228,39 @@ class AnswerService:
         current_activity_histories = await act_hst_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
         current_activities_map = {str(ah.id): ah for ah in current_activity_histories}
         results = []
-        for activity in activities:
+        deleted = []
+
+        # Actual activities sorted by order
+        for activity in sorted(activities, key=lambda a: a.order):
             activity_history_answer_date = submitted_activities.get(
                 activity.id_version, submitted_activities.get(str(activity.id))
             )
             has_answer = bool(activity_history_answer_date)
+            activity_curr = current_activities_map.get(str(activity.id))
             if not has_answer:
-                activity_curr = current_activities_map.get(str(activity.id))
                 if not activity_curr:
                     continue
                 elif activity_curr.is_reviewable:
                     continue
 
+            elif has_answer and not activity_curr:
+                deleted.append(activity)
+                continue
+            results.append(
+                SummaryActivity(
+                    id=activity.id,
+                    name=activity.name,
+                    is_performance_task=activity.is_performance_task,
+                    has_answer=bool(activity_history_answer_date),
+                    last_answer_date=activity_history_answer_date,
+                )
+            )
+
+        # Deleted activities with answers sorted by name
+        for activity in sorted(deleted, key=lambda x: x.name):
+            activity_history_answer_date = submitted_activities.get(
+                activity.id_version, submitted_activities.get(str(activity.id))
+            )
             results.append(
                 SummaryActivity(
                     id=activity.id,
@@ -1231,6 +1292,7 @@ class AnswerService:
         flow_histories = await flow_crud.retrieve_by_applet_version(f"{applet.id}_{applet.version}")
         flow_histories_curr = [flow_h.id for flow_h in flow_histories]
         results = []
+        deleted = []
         for flow_history in sorted(activity_flow_histories, key=lambda x: x.order):
             flow_history_answer_date = submitted_activity_flows.get(
                 flow_history.id_version, submitted_activity_flows.get(str(flow_history.id))
@@ -1238,7 +1300,22 @@ class AnswerService:
             has_answer = bool(flow_history_answer_date)
             if not has_answer and flow_history.id not in flow_histories_curr:
                 continue
+            elif flow_history.id not in flow_histories_curr:
+                deleted.append(flow_history)
+                continue
 
+            results.append(
+                SummaryActivityFlow(
+                    id=flow_history.id,
+                    name=flow_history.name,
+                    has_answer=bool(flow_history_answer_date),
+                    last_answer_date=flow_history_answer_date,
+                )
+            )
+        for flow_history in sorted(deleted, key=lambda x: x.name):
+            flow_history_answer_date = submitted_activity_flows.get(
+                flow_history.id_version, submitted_activity_flows.get(str(flow_history.id))
+            )
             results.append(
                 SummaryActivityFlow(
                     id=flow_history.id,

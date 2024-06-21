@@ -9,7 +9,7 @@ if copilot env ls | grep -q "$ENV_NAME"; then
     echo "Deleting $COPILOT_SERVICE in env $ENV_NAME:"
     copilot svc delete --name $COPILOT_SERVICE --env $ENV_NAME --yes
 
-    echo "Deleting environment $ENV"
+    echo "Deleting environment $ENV_NAME"
     copilot env delete \
         --name "$ENV_NAME" \
         --yes
