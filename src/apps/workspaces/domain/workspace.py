@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.domain.base import Encryption
+from apps.integrations.domain import Integration
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.encryption import get_key
 from apps.workspaces.constants import StorageType
@@ -39,7 +40,7 @@ class PublicWorkspace(PublicModel):
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
     )
-    integrations: list[str] | None = Field(
+    integrations: list[Integration] | None = Field(
         description="This field represents the list of integrations in which the workspace participates"
     )
 
@@ -57,7 +58,7 @@ class UserWorkspace(InternalModel):
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
     )
-    integrations: list[str] | None = Field(
+    integrations: list[Integration] | None = Field(
         description="This field represents the list of integrations in which the workspace participates"
     )
 
