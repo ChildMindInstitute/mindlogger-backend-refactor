@@ -53,8 +53,8 @@ jobs:
         with:
           # Where allure will write the generated report
           allure_report: unit
-          # Results dir -- allure-results
-          allure_results: test-results/api
+          # Results dir
+          allure_results: allure-results
           # Path to folder to be published
           allure_history: allure-history
           # Path to folder where gh-pages was checked out
