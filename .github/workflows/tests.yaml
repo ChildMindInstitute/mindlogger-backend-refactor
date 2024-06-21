@@ -82,43 +82,44 @@ jobs:
     outputs:
       report-url: ${{ steps.report-url.outputs.report-url }}
 
-  on-failure:
-    name: Unit tests failed
-    runs-on: ubuntu-latest
-    if: ${{ always() && (needs.tests.result == 'failure' || needs.tests.result == 'timed_out') }}
-    needs:
-      - tests
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Send Slack message on failure"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-          SLACK_TITLE: Run Unit Tests
-          SLACK_MESSAGE: 'Error when executing Unit tests!'
-          SLACK_ICON: https://github.com/github.png?size=48
-          MSG_MINIMAL: actions url
-      - name: Fail if tests failed
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.setFailed('Unit tests failed')
-  
-  on-success:
-    name: Unit tests succeeded
-    runs-on: ubuntu-latest
-    if: ${{ always() && (needs.tests.result == 'success') }}
-    needs:
-      - tests
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Send Slack message on success"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-          SLACK_TITLE: Run Unit Tests
-          SLACK_MESSAGE: 'Unit tests performed successfully!'
-          SLACK_ICON: https://github.com/github.png?size=48
-          MSG_MINIMAL: actions url
+# Notifications moved to parent workflow
+#  on-failure:
+#    name: Unit tests failed
+#    runs-on: ubuntu-latest
+#    if: ${{ always() && (needs.tests.result == 'failure' || needs.tests.result == 'timed_out') }}
+#    needs:
+#      - tests
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: "Send Slack message on failure"
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: failure
+#          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+#          SLACK_TITLE: Run Unit Tests
+#          SLACK_MESSAGE: 'Error when executing Unit tests!'
+#          SLACK_ICON: https://github.com/github.png?size=48
+#          MSG_MINIMAL: actions url
+#      - name: Fail if tests failed
+#        uses: actions/github-script@v7
+#        with:
+#          script: |
+#            core.setFailed('Unit tests failed')
+#
+#  on-success:
+#    name: Unit tests succeeded
+#    runs-on: ubuntu-latest
+#    if: ${{ always() && (needs.tests.result == 'success') }}
+#    needs:
+#      - tests
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: "Send Slack message on success"
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: success
+#          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+#          SLACK_TITLE: Run Unit Tests
+#          SLACK_MESSAGE: 'Unit tests performed successfully!'
+#          SLACK_ICON: https://github.com/github.png?size=48
+#          MSG_MINIMAL: actions url

@@ -1,3 +1,4 @@
+import asyncio
 import http
 import io
 import uuid
@@ -53,8 +54,12 @@ def print_data_table(data: WorkspaceArbitraryFields) -> None:
     print(table)
 
 
+def error_msg(msg: str):
+    print(f"[bold red]Error: {msg}[/bold red]")
+
+
 def error(msg: str):
-    print(f"[bold red]Error: \n{msg}[/bold red]")
+    error_msg(msg)
     raise typer.Abort()
 
 
@@ -180,8 +185,14 @@ async def show(
                 if not data:
                     print(f"[bold green]Arbitrary settings are not configured for {owner_email}[/bold green]")
                     return
-                alembic_version = await get_version(data.database_uri)
                 arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
+                try:
+                    alembic_version = await get_version(data.database_uri)
+                except asyncio.TimeoutError:
+                    alembic_version = "[bold red]ERROR: Timeout[/bold red]"
+                except Exception as e:
+                    alembic_version = f"[bold red]ERROR: {e}[/bold red]"
+
                 output = WorkSpaceArbitraryConsoleOutput(
                     **arbitrary_fields.dict(), email=owner_email, user_id=owner.id, alembic_version=alembic_version
                 )
@@ -191,8 +202,13 @@ async def show(
             user_crud = UsersCRUD(session)
             for data in workspaces:
                 user = await user_crud.get_by_id(data.user_id)
-                alembic_version = await get_version(data.database_uri)
                 arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
+                try:
+                    alembic_version = await get_version(data.database_uri)
+                except asyncio.TimeoutError:
+                    alembic_version = "[bold red]ERROR: Timeout[/bold red]"
+                except Exception as e:
+                    alembic_version = f"[bold red]ERROR: {e}[/bold red]"
                 output = WorkSpaceArbitraryConsoleOutput(
                     **arbitrary_fields.dict(),
                     email=user.email_encrypted,
@@ -243,7 +259,9 @@ async def ping(owner_email: str = typer.Argument(..., help="Workspace owner emai
     async with session_maker() as session:
         try:
             owner = await UsersCRUD(session).get_by_email(owner_email)
-            data = await WorkspaceService(session, owner.id).get_arbitrary_info_by_owner_id_if_use_arbitrary(owner.id)
+            data = await WorkspaceService(session, owner.id).get_arbitrary_info_by_owner_id_if_use_arbitrary(
+                owner.id, in_use_only=False
+            )
         except (UserNotFound, UserIsDeletedError):
             error(f"User with email {owner_email} not found")
         except WorkspaceNotFoundError as e:
@@ -256,9 +274,11 @@ async def ping(owner_email: str = typer.Argument(..., help="Workspace owner emai
                 print("Check database availability.")
                 await arb_session.execute("select current_date")
                 print(f"[green]Database for user [bold]{owner_email}[/bold] is available.[/green]")
+            except asyncio.TimeoutError:
+                error_msg("Timeout error")
             except Exception as e:
-                error(str(e))
-        print(f"Check bucket {data.storage_bucket} availability.")
+                error_msg(str(e))
+        print(f'Check bucket "{data.storage_bucket}" availability.')
         storage = await select_storage(owner_id=owner.id, session=session)
         key = "mindlogger.txt"
         presigned_data = storage.generate_presigned_post(data.storage_bucket, key)
@@ -272,8 +292,8 @@ async def ping(owner_email: str = typer.Argument(..., help="Workspace owner emai
                 if response.status_code == http.HTTPStatus.NO_CONTENT:
                     print(f"[green]Bucket {data.storage_bucket} for user {owner_email} is available.[/green]")
                 else:
-                    print(f"Can not upload test file to bucket {data.storage_bucket} for user {owner_email}")
+                    error_msg("File upload error")
                     print(response.content)
             except httpx.HTTPError as e:
-                print(f"Can not upload test file to bucket {data.storage_bucket} for user {owner_email}")
+                error_msg("File upload error")
                 error(str(e))

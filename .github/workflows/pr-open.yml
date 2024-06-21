@@ -94,7 +94,7 @@ jobs:
           sha: ${{ github.event.pull_request.head.sha }}
           target_url: ${{ needs.run-unit-tests.outputs.report-url }}
       - name: "Send Slack message on failure"
-        if: ${{ needs.run-unit-tests.result == 'success' }}
+        if: ${{ needs.run-unit-tests.result != 'success' }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
@@ -103,72 +103,13 @@ jobs:
           SLACK_TITLE: |
             :rotating_light: Unit test suite failed
           SLACK_MESSAGE: >-
-            Unit tests for PR-${{ github.event.pull_request.number}} failed
+            Unit tests for PR-${{ github.event.pull_request.number}} failed in ${{ github.repository }}
             \n\n
             :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             \n\n
             :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }}) | :chart_with_upwards_trend: [Test Report](${{ needs.run-unit-tests.outputs.report-url }})
           SLACK_ICON: https://github.com/github.png?size=48
           MSG_MINIMAL: true
-#      - name: Post to a Slack channel
-#        id: slack
-#        uses: slackapi/slack-github-action@v1.26.0
-#        with:
-#          # Slack channel id, channel name, or user id to post message.
-#          channel-id: 'C074PFF55NY'
-#          payload: |
-#            {
-#              "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
-#              "blocks": [
-#                {
-#                    "type": "header",
-#                    "text": {
-#                        "type": "plain_text",
-#                        "text": ":rotating_light: Unit Tests Failed",
-#                        "emoji": true
-#                    }
-#                },
-#                {
-#                    "type": "divider"
-#                },
-#                {
-#                    "type": "actions",
-#                    "elements": [
-#                        {
-#                            "type": "button",
-#                            "text": {
-#                                "type": "plain_text",
-#                                "text": ":label: PR",
-#                                "emoji": true
-#                            },
-#                            "value": "pr_link",
-#                            "url": "${{ github.event.pull_request.html_url }}"
-#                        },
-#                        {
-#                            "type": "button",
-#                            "text": {
-#                                "type": "plain_text",
-#                                "text": ":chart_with_upwards_trend: Test Report",
-#                                "emoji": true
-#                            },
-#                            "value": "click_me_123",
-#                            "url": "${{ needs.run-unit-tests.outputs.report-url }}"
-#                        }
-#                    ]
-#                }
-#              ]
-#            }
-#        env:
-#          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-#      - uses: 8398a7/action-slack@v3
-#        name: Send to slack
-#        with:
-#          status: "${{ needs.run-unit-tests.result }}"
-#          fields: pullRequest,workflow
-#        env:
-#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-
 
   run-e2e-tests:
     name: Run E2E Test Suite
@@ -195,7 +136,7 @@ jobs:
           SLACK_TITLE: |
             :rotating_light: E2E test suite failed
           SLACK_MESSAGE: >-
-            E2E tests for PR-${{ github.event.pull_request.number}} failed
+            E2E tests for PR-${{ github.event.pull_request.number}} failed in ${{ github.repository }}
             \n\n
             :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             \n\n
