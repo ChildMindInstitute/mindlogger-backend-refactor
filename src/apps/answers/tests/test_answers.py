@@ -3,7 +3,7 @@ import http
 import re
 import uuid
 from collections import defaultdict
-from typing import Any, cast
+from typing import Any, Tuple, cast
 from unittest.mock import AsyncMock
 
 import pytest
@@ -11,13 +11,16 @@ from pytest import FixtureRequest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.activities.domain.activity_update import ActivityUpdate
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
 from apps.answers.domain import AnswerNote, AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
+from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
+from apps.applets.service import AppletService
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
@@ -370,6 +373,74 @@ async def tom_answer_activity_flow_not_completed(
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
         )
     )
+
+
+@pytest.fixture
+async def applet__with_deleted_activities_and_answers(
+    session: AsyncSession, tom: User, applet__with_ordered_activities: AppletFull
+):
+    data = AppletUpdate(**applet__with_ordered_activities.dict())
+    applet_service = AppletService(session, tom.id)
+    answer_service = AnswerService(session, tom.id)
+    applet_id = applet__with_ordered_activities.id
+    version = applet__with_ordered_activities.version
+    for activity in applet__with_ordered_activities.activities:
+        create_data = AppletAnswerCreate(
+            applet_id=applet_id,
+            version=version,
+            submit_id=uuid.uuid4(),
+            activity_id=activity.id,
+            answer=ItemAnswerCreate(
+                item_ids=[activity.items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(tom.id),
+                identifier="encrypted_identifier",
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+        )
+        await answer_service.create_answer(create_data)
+    # delete first two activities
+    data.activities = [ActivityUpdate(**a.dict()) for a in applet__with_ordered_activities.activities[2:]]
+    return await applet_service.update(applet_id, data)
+
+
+@pytest.fixture
+async def applet__with_deleted_and_order(
+    session: AsyncSession, tom: User, applet_with_flow: AppletFull
+) -> Tuple[AppletFull, list[uuid.UUID]]:
+    applet_service = AppletService(session, tom.id)
+    answer_service = AnswerService(session, tom.id)
+    applet_id = applet_with_flow.id
+    version = applet_with_flow.version
+    flows = applet_with_flow.activity_flows.copy()
+    for flow_item in applet_with_flow.activity_flows[0].items:
+        activity = next(filter(lambda x: x.id == flow_item.activity_id, applet_with_flow.activities))
+        create_data = AppletAnswerCreate(
+            applet_id=applet_id,
+            version=version,
+            submit_id=uuid.uuid4(),
+            activity_id=activity.id,
+            flow_id=applet_with_flow.activity_flows[0].id,
+            is_flow_completed=True,
+            answer=ItemAnswerCreate(
+                item_ids=[activity.items[0].id],
+                start_time=datetime.datetime.utcnow(),
+                end_time=datetime.datetime.utcnow(),
+                user_public_key=str(tom.id),
+                identifier="encrypted_identifier",
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+        )
+        await answer_service.create_answer(create_data)
+    applet_with_flow.activity_flows = [applet_with_flow.activity_flows[1]]
+    data = applet_with_flow.dict()
+    for i in range(len(data["activity_flows"])):
+        activity_flow = data["activity_flows"][i]
+        for j in range(len(activity_flow["items"])):
+            activity_flow["items"][j]["activity_key"] = data["activities"][j]["key"]
+    data_update = AppletUpdate(**data)
+    return await applet_service.update(applet_id, data_update), [flows[1].id, flows[0].id]
 
 
 @pytest.mark.usefixtures("mock_kiq_report")
@@ -2146,3 +2217,54 @@ class TestAnswerActivityItems(BaseTest):
         flows_order_expected = [str(flow.id) for flow in sorted(applet_with_flow.activity_flows, key=lambda x: x.order)]
         flows_order_actual = [flow["id"] for flow in payload["result"]]
         assert flows_order_actual == flows_order_expected
+
+    async def test_summary_activity_flow_order_with_deleted_flows(
+        self, client, tom: User, applet__with_deleted_and_order: tuple[AppletFull, list[uuid.UUID]]
+    ):
+        client.login(tom)
+        applet_id = applet__with_deleted_and_order[0].id
+        flow_order_expected = applet__with_deleted_and_order[1]
+        url = self.summary_activity_flows_url.format(applet_id=str(applet_id))
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        assert len(payload["result"]) == 2
+        flow_order_actual = [uuid.UUID(flow["id"]) for flow in payload["result"]]
+        assert flow_order_expected == flow_order_actual
+
+    async def test_summary_activity_order(self, client, tom: User, applet__with_ordered_activities: AppletFull):
+        client.login(tom)
+        applet_id = str(applet__with_ordered_activities.id)
+        activities = applet__with_ordered_activities.activities
+        response = await client.get(self.summary_activities_url.format(applet_id=applet_id))
+        assert response.status_code == 200
+        payload = response.json()
+        expected_order_map = {str(a.id): a.order for a in activities}
+        activity_ids = list(map(lambda x: x["id"], payload["result"]))
+        assert payload
+        for i in range(len(activity_ids)):
+            activity_id = activity_ids[i]
+            assert expected_order_map[activity_id] == i + 1
+
+    async def test_summary_activity_order_with_deleted(
+        self, client, tom: User, applet__with_deleted_activities_and_answers: AppletFull
+    ):
+        client.login(tom)
+        applet_id = str(applet__with_deleted_activities_and_answers.id)
+        activities = applet__with_deleted_activities_and_answers.activities
+        response = await client.get(self.summary_activities_url.format(applet_id=applet_id))
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        activities_applet = sorted(activities, key=lambda x: x.order)
+        activities_payload = payload["result"]
+        # Validation actual activities sorted by activity.order
+        for i in range(len(activities_applet)):
+            activity_exp = activities[i]
+            activity = activities_payload[i]
+            assert str(activity_exp.id) == activity["id"]
+
+        not_deleted_ids = [str(a.id) for a in activities_applet]
+        deleted_activities = list(filter(lambda a: a["id"] not in not_deleted_ids, activities_payload))
+        assert sorted(deleted_activities, key=lambda x: x["name"]) == deleted_activities
