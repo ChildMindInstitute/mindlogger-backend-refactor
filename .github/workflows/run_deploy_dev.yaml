@@ -58,16 +58,8 @@ jobs:
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: migrator
         cluster: ${{ env.ECS_CLUSTER_NAME }}
-
-    - name: Run Task on Amazon ECS
-      uses: smitp/amazon-ecs-run-task@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        cluster: ${{ env.ECS_CLUSTER_NAME }}
-        count: 1
-        started-by: github-actions-${{ github.actor }}
-        wait-for-finish: true
         
 
   deploy_to_ecs:
