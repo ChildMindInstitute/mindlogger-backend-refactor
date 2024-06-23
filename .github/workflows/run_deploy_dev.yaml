@@ -30,6 +30,10 @@ jobs:
     
     steps:
 
+    - name: echo IMAGE_NAME
+      run: |
+        echo $IMAGE_NAME
+
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@v3
       with:
