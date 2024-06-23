@@ -1,6 +1,10 @@
 
 name: run_build
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+    types:
+      - closed
 
 
 permissions:
