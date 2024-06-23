@@ -23,7 +23,6 @@ env:
   OUT_DIR: ./out
   AWS_REGION : "us-east-1"
   ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-  IMAGE_NAME: ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
 
 
 jobs:
@@ -88,7 +87,7 @@ jobs:
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
-      IMAGE_NAME: ${{ env.IMAGE_NAME }}
+      IMAGE_NAME: "${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}"
 
   deploy_to_uat:
     needs: build_job
