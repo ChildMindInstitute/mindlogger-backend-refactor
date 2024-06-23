@@ -8,7 +8,7 @@ on:
       IMAGE_PREFIX:
         required: true
         type: string
-      IMAGE_TAG:
+      IMAGE_NAME:
         required: true
         type: string
 
@@ -25,8 +25,8 @@ jobs:
       TASK_DEFINITION: migration
       ECS_CLUSTER_NAME: cmiml-dev
       ECS_SERVICE_NAME: migration
-      AWS_REGION : us-east-1
-      IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+      AWS_REGION: us-east-1
+      IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
     
     steps:
 
@@ -48,7 +48,7 @@ jobs:
       with:
         task-definition: task-definition.json
         container-name: mind_logger
-        image: $IMAGE_TAG
+        image: $IMAGE_NAME
     
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
