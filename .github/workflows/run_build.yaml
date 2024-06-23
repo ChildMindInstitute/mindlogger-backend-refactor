@@ -78,6 +78,7 @@ jobs:
 
   deploy_to_dev:
     needs: build_job
+    if: github.event.pull_request.merged == true
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_dev.yaml@develop
     with:
       COMMIT_HASH: ${{ github.sha }}
