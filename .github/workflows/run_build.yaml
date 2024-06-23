@@ -28,6 +28,8 @@ env:
 jobs:
   build_job:
     runs-on: ubuntu-latest
+    outputs:
+      IMAGE_NAME: ${{ steps.build_step.outputs.IMAGE_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -63,7 +65,9 @@ jobs:
           fi
 
       - name: Build image for ECR
+        id: build_step
         run: |
+          echo "IMAGE_NAME=${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}" >> "$GITHUB_OUTPUT"
           docker build -t ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5} -f ./compose/fastapi/Dockerfile .
           docker tag ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5} ${ECR_ADDRESS}/${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
 
@@ -87,7 +91,7 @@ jobs:
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
-      IMAGE_NAME: ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
+      IMAGE_NAME: ${{needs.build_job.outputs.IMAGE_NAME}}
 
   deploy_to_uat:
     needs: build_job
