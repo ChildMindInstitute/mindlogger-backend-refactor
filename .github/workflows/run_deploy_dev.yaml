@@ -52,7 +52,7 @@ jobs:
       with:
         task-definition: task-definition.json
         container-name: mind_logger
-        image: $IMAGE_NAME
+        image: ${{ env.IMAGE_NAME }}
     
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
