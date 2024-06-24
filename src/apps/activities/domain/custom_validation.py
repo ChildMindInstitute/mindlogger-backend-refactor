@@ -44,7 +44,7 @@ def validate_item_flow(values: dict):
                         raise IncorrectConditionLogicItemTypeError()
 
                     # check if condition option ids are correct
-                    if condition_source_item.config.type in ResponseType.options_based():
+                    if condition_source_item.config.type in ResponseType.options_based_with_value():
                         option_values = [
                             str(option.value) for option in items[condition_item_index].response_values.options
                         ]

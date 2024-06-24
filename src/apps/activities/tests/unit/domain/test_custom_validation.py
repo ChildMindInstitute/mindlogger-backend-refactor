@@ -253,7 +253,6 @@ class TestValidateItemFlow:
             ),
             (TimeRangePayload, dict(type=TimePayloadType.START_TIME, min_value="03:00"), ValidationError),
             (TimeRangePayload, dict(type="unknown_item_type", min_value="01:00", max_value="02:00"), ValidationError),
-            (TimePayload, dict(type="unknown_item_type", value="10:00"), ValidationError),
         ),
     )
     def test_fails_create_outside_condition(self, payload_type, payload, exp_exception):

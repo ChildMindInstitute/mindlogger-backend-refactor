@@ -86,10 +86,10 @@ class ResponseType(str, Enum):
         )
 
     @classmethod
-    def options_based(cls):
+    def options_based_with_value(cls):
         return (
-            cls.SINGLESELECTROWS,
-            cls.MULTISELECTROWS,
+            # cls.SINGLESELECTROWS,
+            # cls.MULTISELECTROWS,
             cls.SINGLESELECT,
             cls.MULTISELECT,
         )

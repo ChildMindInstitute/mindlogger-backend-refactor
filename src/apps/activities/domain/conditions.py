@@ -77,7 +77,6 @@ class DatePayload(PublicModel):
 
 class TimePayload(PublicModel):
     value: datetime.time
-    type: TimePayloadType
 
     def dict(self, *args, **kwargs):
         d = super().dict(*args, **kwargs)
@@ -86,7 +85,7 @@ class TimePayload(PublicModel):
 
 
 class TimeRangePayload(PublicModel):
-    type: str = Field(TimePayloadType.START_TIME, const=True)
+    type: TimePayloadType
     min_value: datetime.time
     max_value: datetime.time
 
@@ -98,6 +97,12 @@ class TimeRangePayload(PublicModel):
             if min_value > max_value:
                 raise IncorrectTimeRange()
         return values
+
+    def dict(self, *args, **kwargs):
+        d = super().dict(*args, **kwargs)
+        d["min_value"] = self.min_value.strftime("%H:%M")
+        d["max_value"] = self.min_value.strftime("%H:%M")
+        return d
 
 
 class MinMaxPayload(PublicModel):
