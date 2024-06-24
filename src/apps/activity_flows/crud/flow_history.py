@@ -111,7 +111,7 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
                 AppletHistorySchema,
                 and_(
                     AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id,
-                    ActivityFlowHistoriesSchema.applet_id.like(f"{applet_id}_%"),
+                    AppletHistorySchema.id == applet_id,
                 ),
             )
             .where(ActivityFlowHistoriesSchema.id == flow_id)
