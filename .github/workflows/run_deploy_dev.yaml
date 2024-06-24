@@ -53,8 +53,7 @@ jobs:
         task-definition: task-definition.json
         container-name: mind_logger
         image: ${{ env.IMAGE_NAME }}
-        command: /fastapi-migrate,all
-    
+  
     - name: Run migration container
       id: run-task
       uses: geekcell/github-action-aws-ecs-run-task@v3.0.0
