@@ -2788,3 +2788,66 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         res = response.json()
         assert res["count"] == exp_count
+
+    async def test_summary_get_identifiers_deleted_from_flow(
+        self, client, session, tom: User, applet__with_deleted_and_order: tuple[AppletFull, list[uuid.UUID]]
+    ):
+        client.login(tom)
+        applet_id = applet__with_deleted_and_order[0].id
+        url = self.summary_activity_flows_url.format(applet_id=str(applet_id))
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        assert len(payload["result"]) == 2
+        flow_ids = [uuid.UUID(flow["id"]) for flow in payload["result"]]
+        deleted_flow_id = flow_ids[-1:][0]
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet_id)
+        assert tom_subject
+        identifier_url = self.flow_identifiers_url.format(applet_id=(applet_id), flow_id=str(deleted_flow_id))
+        response = await client.get(identifier_url, dict(targetSubjectId=tom_subject.id))
+        assert response.json()
+        assert response.status_code == http.HTTPStatus.OK
+
+    async def test_summary_get_versions_deleted_from_flow(
+        self, client, session, tom: User, applet__with_deleted_and_order: tuple[AppletFull, list[uuid.UUID]]
+    ):
+        client.login(tom)
+        applet_id = applet__with_deleted_and_order[0].id
+        url = self.summary_activity_flows_url.format(applet_id=str(applet_id))
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        assert len(payload["result"]) == 2
+        flow_ids = [uuid.UUID(flow["id"]) for flow in payload["result"]]
+        deleted_flow_id = flow_ids[-1:][0]
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet_id)
+        assert tom_subject
+        response = await client.get(
+            self.flow_versions_url.format(
+                applet_id=applet_id,
+                flow_id=deleted_flow_id,
+            )
+        )
+        assert response.json()
+        assert response.status_code == http.HTTPStatus.OK
+
+    async def test_summary_submissions_fow_deleted_flow_with_answers(
+        self, client, session, tom: User, applet__with_deleted_and_order: tuple[AppletFull, list[uuid.UUID]]
+    ):
+        client.login(tom)
+        applet_id = applet__with_deleted_and_order[0].id
+        url = self.summary_activity_flows_url.format(applet_id=str(applet_id))
+        response = await client.get(url)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload
+        assert len(payload["result"]) == 2
+        flow_ids = [uuid.UUID(flow["id"]) for flow in payload["result"]]
+        deleted_flow_id = flow_ids[-1:][0]
+        tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet_id)
+        assert tom_subject
+        response = await client.get(self.flow_submissions_url.format(applet_id=str(applet_id), flow_id=deleted_flow_id))
+        assert response.json()
+        assert response.status_code == http.HTTPStatus.OK

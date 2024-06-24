@@ -8,7 +8,6 @@ from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
 from apps.activities.services import ActivityHistoryService
-from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
 from apps.answers.domain import (
     ActivitySubmissionResponse,
@@ -216,13 +215,9 @@ async def applet_flow_submissions_list(
     answer_session=Depends(get_answer_session),
 ) -> PublicFlowSubmissionsResponse:
     await AppletService(session, user.id).exist_by_id(applet_id)
-    flow = await FlowService(session=session).get_by_id(flow_id)
-    if not flow or flow.applet_id != applet_id:
-        raise NotFoundError("Flow not found")
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-
     submissions, total = await AnswerService(session, user.id, answer_session).get_flow_submissions(
-        flow_id, query_params
+        applet_id, flow_id, query_params
     )
 
     answer_service = AnswerService(session, user.id, answer_session)
@@ -455,14 +450,14 @@ async def applet_flow_identifiers_retrieve(
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[Identifier]:
     filters = IdentifiersQueryParams(**query_params.filters)
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    flow = await FlowService(session=session).get_by_id(flow_id)
-    if not flow or flow.applet_id != applet_id:
-        raise NotFoundError("Flow not found")
+    applet_service = AppletService(session, user.id)
+    await applet_service.exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     if not (target_subject_id := filters.target_subject_id):
         raise ValidationError("targetSubjectId missed")
-    identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(flow_id, target_subject_id)
+    identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(
+        applet_id, flow_id, target_subject_id
+    )
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
 
