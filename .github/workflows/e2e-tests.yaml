@@ -97,9 +97,6 @@ jobs:
           name: e2e-results
           path: test-results/api
 
-      - name: debug
-        run: ls test-results/api
-
       - name: Build test report
         uses: simple-elf/allure-report-action@master
         if: always()
