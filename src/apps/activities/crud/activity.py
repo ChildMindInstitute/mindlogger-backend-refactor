@@ -58,6 +58,8 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.response_is_editable,
             ActivitySchema.order,
             ActivitySchema.scores_and_reports,
+            ActivitySchema.performance_task_type,
+            ActivitySchema.is_performance_task,
         )
 
         query = query.where(ActivitySchema.applet_id == applet_id)
