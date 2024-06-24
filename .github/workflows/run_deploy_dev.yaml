@@ -64,7 +64,7 @@ jobs:
         override-container-command: |
           /bin/sh
           -c
-          ./fastapi-migrate all
+          /fastapi-migrate all
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
