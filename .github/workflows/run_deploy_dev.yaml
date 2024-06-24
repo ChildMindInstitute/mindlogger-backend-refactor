@@ -54,14 +54,12 @@ jobs:
         container-name: mind_logger
         image: ${{ env.IMAGE_NAME }}
     
-    - name: Run Task on Amazon ECS
-      uses: smitp/amazon-ecs-run-task@v1
+    - name: Run migration container
+      id: run-task
+      uses: geekcell/github-action-aws-ecs-run-task@v3.0.0
       with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
         cluster: ${{ env.ECS_CLUSTER_NAME }}
-        count: 1
-        started-by: github-actions-${{ github.actor }}
-        wait-for-finish: true
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
         
 
   deploy_to_ecs:
