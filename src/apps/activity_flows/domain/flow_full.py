@@ -24,7 +24,7 @@ class FlowItemHistoryFull(InternalModel):
 
 
 class FlowItemHistoryWithActivityFull(FlowItemHistoryFull):
-    activity: ActivityHistoryFull
+    activity: ActivityHistoryFull | None = None
 
 
 class FlowFull(FlowBase, InternalModel):
