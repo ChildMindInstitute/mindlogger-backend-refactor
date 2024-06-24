@@ -62,7 +62,10 @@ jobs:
         task-definition: migration
         subnet-ids: subnet-02b7cfd48947b31ef
         security-group-ids: sg-0976f7b2b2b5bf411
-        
+        override-container-command: |
+          /bin/sh
+          -c
+          fastapi-migrate all
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
