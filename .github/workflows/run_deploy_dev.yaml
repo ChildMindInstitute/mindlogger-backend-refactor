@@ -59,7 +59,7 @@ jobs:
       uses: geekcell/github-action-aws-ecs-run-task@v3.0.0
       with:
         cluster: ${{ env.ECS_CLUSTER_NAME }}
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        task-definition: migration
         subnet-ids: subnet-02b7cfd48947b31ef
         security-group-ids: sg-0976f7b2b2b5bf411
         
