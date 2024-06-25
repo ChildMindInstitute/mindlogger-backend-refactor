@@ -20,16 +20,20 @@ async def applet_data_with_flow(applet_minimal_data: AppletCreate) -> AppletCrea
     data = applet_minimal_data.copy(deep=True)
     data.display_name = "schedule"
     # By some reasons for test need ActivityFlow
+    second_activity = data.activities[0].copy(deep=True)
+    second_activity.name = data.activities[0].name + " second"
+    second_activity.key = uuid.uuid4()
+    data.activities.append(second_activity)
     data.activity_flows = [
         FlowCreate(
             name="flow",
             description={Language.ENGLISH: "description"},
-            items=[FlowItemCreate(activity_key=data.activities[0].key)],
+            items=[
+                FlowItemCreate(activity_key=data.activities[0].key),
+                FlowItemCreate(activity_key=data.activities[1].key),
+            ],
         )
     ]
-    second_activity = data.activities[0].copy(deep=True)
-    second_activity.name = data.activities[0].name + " second"
-    data.activities.append(second_activity)
     return AppletCreate(**data.dict())
 
 

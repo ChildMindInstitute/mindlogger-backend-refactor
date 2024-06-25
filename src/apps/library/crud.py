@@ -45,7 +45,7 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
     async def get_all_library_items(
         self,
         query_params: QueryParams,
-    ) -> list[LibraryItem]:
+    ) -> list[LibrarySchema]:
         query: Query = select(
             LibrarySchema.id,
             LibrarySchema.keywords,
@@ -70,8 +70,7 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
         query = paging(query, query_params.page, query_params.limit)
 
         results = await self._execute(query)
-
-        return [LibraryItem.from_orm(result) for result in results.all()]
+        return results.all()  # noqa
 
     async def get_library_item_by_id(self, id_: uuid.UUID) -> LibraryItem:
         query: Query = select(

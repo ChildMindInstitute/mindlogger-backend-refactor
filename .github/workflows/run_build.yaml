@@ -1,34 +1,41 @@
-name: run_build_deploy
-on: [push]
+
+name: run_build
+on: 
+  push:
+  pull_request:
+    types:
+      - closed
 
 
 permissions:
   id-token: write
   contents: read
+  issues: write
+
+env:
+  GITHUB_ORGANIZATION: ${{ github.repository_owner }}
+  GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+  GITHUB_BRANCH_OR_TAG: ${{ github.ref_name }}
+  GITHUB_REF: ${{ github.ref }}
+  BUILD_NAME: ${{github.event_name}}
+  BUILD_NUMBER: ${{github.run_id}}
+  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
+  OUT_DIR: ./out
+  AWS_REGION : "us-east-1"
+  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
+
 
 jobs:
-
-  run_codebuild_project:
+  build_job:
     runs-on: ubuntu-latest
-    env:
-        GITHUB_ORGANIZATION: ${{ github.repository_owner }}
-        GITHUB_REPO_NAME: ${{ github.event.repository.name }}
-        GITHUB_BRANCH_OR_TAG: ${{ github.ref_name }}
-        GITHUB_REF: ${{ github.ref }}
-        BUILD_NAME: ${{github.event_name}}
-        BUILD_NUMBER: ${{github.run_id}}
-        ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
-        TEST_COMMAND: sleep 1
-        OUT_DIR: ./out
-        AWS_REGION : "us-east-1"
-        ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-
+    outputs:
+      IMAGE_NAME: ${{ steps.build_step.outputs.IMAGE_NAME }}
     steps:
-      - name: Git clone the repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
           role-session-name: OIDC-GHA-session
@@ -40,34 +47,61 @@ jobs:
           parse-json-secrets: true
           secret-ids: |
             ,cmiml-devops
-      
-      - name: Run CodeBuild
-        uses: aws-actions/aws-codebuild-run-build@v1
-        env:
-          DOCKER_USER: ${{ env.DOCKER_USER }}
-          DOCKER_PASSWORD: ${{ env.DOCKER_PASSWORD }}
-          REPORT_SERVER_PUBLIC_KEY: ${{ env.REPORT_SERVER_PUBLIC_KEY }}
+
+      - name: Extract Jira ticket numbers from commit message
+        run: |
+          tickets=$(git log -1 --pretty=%B | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
+          if [ -z "$tickets" ]; then
+              echo "No Jira tickets found in the latest commit message."
+          else
+              echo "Jira ticket numbers found: ${tickets}"
+              if [ "${GITHUB_BRANCH_OR_TAG}" != "develop" ]; then
+                  echo "Skipping saving Jira ticket numbers to a file because the branch is not develop"
+              else
+                file="jira-tickets.json"
+                echo "{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }" > "${file}"
+                echo "Jira ticket numbers saved to ${file}"
+              fi
+          fi
+
+      - name: Build image for ECR
+        id: build_step
+        run: |
+          echo "IMAGE_NAME=${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}" >> "$GITHUB_OUTPUT"
+          docker build -t ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5} -f ./compose/fastapi/Dockerfile .
+          docker tag ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5} ${ECR_ADDRESS}/${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
+
+      - name: Push image to ECR
+        run: |
+          aws ecr get-login-password | docker login --username AWS --password-stdin ${ECR_ADDRESS}
+          docker push ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
         with:
-          project-name: mindlogger-backend-refactor-builder
-          env-vars-for-codebuild: |
-           GITHUB_ORGANIZATION, GITHUB_REPO_NAME, GITHUB_BRANCH_OR_TAG, GITHUB_REF, BUILD_NAME, BUILD_NUMBER, ECR_ADDRESS, TEST_COMMAND, ECR_REPO, OUT_DIR, DOCKER_USER, DOCKER_PASSWORD, REPORT_SERVER_PUBLIC_KEY
+          name: build-artifacts
+          path: |
+            ${GITHUB_REPO_NAME}/${OUT_DIR}/build.yml
+            ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
 
   deploy_to_dev:
-    needs: run_codebuild_project
-    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_dev.yaml@develop
+    needs: build_job
+    if: ${{ github.event.pull_request.merged }}
+    uses: ./.github/workflows/run_deploy_dev.yaml
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
+      IMAGE_NAME: ${{needs.build_job.outputs.IMAGE_NAME}}
 
   deploy_to_uat:
-    needs: run_codebuild_project
+    needs: build_job
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_uat.yaml@develop
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
 
   deploy_to_test:
-    needs: run_codebuild_project
+    needs: build_job
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_test.yaml@develop
     with:
       COMMIT_HASH: ${{ github.sha }}
