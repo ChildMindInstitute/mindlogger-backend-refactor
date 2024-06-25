@@ -5,7 +5,7 @@ from starlette import status
 from starlette.responses import Response as HTTPResponse
 
 from apps.authentication.deps import get_current_user
-from apps.integrations.loris.domain import PublicListOfVisits
+from apps.integrations.loris.domain import PublicListMultipleVisits, PublicListOfVisits
 from apps.integrations.loris.service.loris import LorisIntegrationService
 from apps.shared.domain import ResponseMulti
 from apps.users.domain import User
@@ -14,6 +14,7 @@ from infrastructure.database.deps import get_session
 __all__ = [
     "start_transmit_process",
     "visits_list",
+    "users_info_with_visits",
 ]
 
 
@@ -41,3 +42,13 @@ async def visits_list(
         result=[PublicListOfVisits(visits=visits)],
         count=len(visits),
     )
+
+
+async def users_info_with_visits(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[PublicListMultipleVisits]:
+    loris_service = LorisIntegrationService(applet_id, session, user)
+    info = await loris_service.get_information_about_users_and_visits()
+    return ResponseMulti(result=[PublicListMultipleVisits(info=info)], count=len(info))

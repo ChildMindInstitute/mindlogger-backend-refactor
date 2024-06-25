@@ -15,6 +15,7 @@ __all__ = [
     "ConsentRequest",
     "ConsentUpdateRequest",
     "PublicListOfVisits",
+    "PublicListMultipleVisits",
 ]
 
 
@@ -116,3 +117,7 @@ class MlLorisUserRelationship(MlLorisUserRelationshipBase):
 
 class PublicListOfVisits(BaseModel):
     visits: list[str]
+
+
+class PublicListMultipleVisits(BaseModel):
+    info: list[dict]
