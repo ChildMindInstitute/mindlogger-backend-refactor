@@ -16,6 +16,7 @@ from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
+from apps.subjects.constants import SubjectTag
 from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.errors import TransferEmailError
@@ -160,6 +161,7 @@ class TestTransfer(BaseTest):
         assert lucy_subject
         assert lucy_subject.email == lucy.email_encrypted
         assert lucy_subject.nickname == f"{lucy.first_name} {lucy.last_name}"
+        assert lucy_subject.tag == SubjectTag.TEAM
 
     async def test_accept_transfer_if_subject_already_exists(
         self,
