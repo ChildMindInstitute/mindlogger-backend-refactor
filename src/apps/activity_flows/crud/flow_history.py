@@ -1,7 +1,7 @@
 import uuid
 
 from pydantic import parse_obj_as
-from sqlalchemy import any_, select
+from sqlalchemy import and_, any_, select
 from sqlalchemy.orm import Query, joinedload
 
 from apps.activities.db.schemas import ActivityHistorySchema
@@ -100,14 +100,20 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_versions_data(self, flow_id: uuid.UUID) -> list[Version]:
+    async def get_versions_data(self, applet_id: uuid.UUID, flow_id: uuid.UUID) -> list[Version]:
         query: Query = (
             select(
                 AppletHistorySchema.version,
                 AppletHistorySchema.created_at,
             )
             .select_from(ActivityFlowHistoriesSchema)
-            .join(AppletHistorySchema, AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id)
+            .join(
+                AppletHistorySchema,
+                and_(
+                    AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id,
+                    AppletHistorySchema.id == applet_id,
+                ),
+            )
             .where(ActivityFlowHistoriesSchema.id == flow_id)
             .order_by(AppletHistorySchema.created_at)
         )

@@ -980,8 +980,12 @@ class AnswerService:
                 results.append(Identifier(identifier=identifier, user_public_key=key, last_answer_date=answer_date))
         return results
 
-    async def get_flow_identifiers(self, flow_id: uuid.UUID, target_subject_id: uuid.UUID) -> list[Identifier]:
-        identifier_data = await AnswersCRUD(self.answer_session).get_flow_identifiers(flow_id, target_subject_id)
+    async def get_flow_identifiers(
+        self, applet_id: uuid.UUID, flow_id: uuid.UUID, target_subject_id: uuid.UUID
+    ) -> list[Identifier]:
+        identifier_data = await AnswersCRUD(self.answer_session).get_flow_identifiers(
+            applet_id, flow_id, target_subject_id
+        )
         result = [
             Identifier(
                 identifier=row.identifier,
@@ -1041,11 +1045,12 @@ class AnswerService:
 
     async def get_flow_submissions(
         self,
+        applet_id: uuid.UUID,
         flow_id: uuid.UUID,
         filters: QueryParams,
     ) -> tuple[FlowSubmissionsDetails, int]:
         submissions, total = await AnswersCRUD(self.answer_session).get_flow_submissions(
-            flow_id, page=filters.page, limit=filters.limit, is_completed=True, **filters.filters
+            applet_id, flow_id, page=filters.page, limit=filters.limit, is_completed=True, **filters.filters
         )
         flow_history_ids = {s.flow_history_id for s in submissions}
         flows = []

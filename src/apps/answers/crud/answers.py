@@ -149,7 +149,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return parse_obj_as(list[FlowSubmissionInfo], data)
 
     async def get_flow_submissions(
-        self, flow_id: uuid.UUID, *, page=None, limit=None, **filters
+        self, applet_id: uuid.UUID, flow_id: uuid.UUID, *, page=None, limit=None, **filters
     ) -> tuple[list[FlowSubmission], int]:
         created_at = func.max(AnswerItemSchema.created_at)
         query = (
@@ -195,7 +195,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 # fmt: on
             )
             .join(AnswerSchema.answer_item)
-            .where(AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(flow_id))
+            .where(
+                AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(flow_id),
+                AnswerSchema.applet_id == applet_id,
+            )
             .group_by(
                 AnswerSchema.submit_id, AnswerSchema.flow_history_id, AnswerSchema.applet_id, AnswerSchema.version
             )
@@ -761,7 +764,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         await self._execute(query)
 
-    async def get_flow_identifiers(self, flow_id: uuid.UUID, target_subject_id: uuid.UUID) -> list[IdentifierData]:
+    async def get_flow_identifiers(
+        self, applet_id: uuid.UUID, flow_id: uuid.UUID, target_subject_id: uuid.UUID
+    ) -> list[IdentifierData]:
         completed_submission = aliased(AnswerSchema, name="completed_submission")
         is_submission_completed = (
             select(completed_submission.submit_id)
@@ -781,6 +786,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .select_from(AnswerSchema)
             .join(AnswerSchema.answer_item)
             .where(
+                AnswerSchema.applet_id == applet_id,
                 AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(flow_id),
                 AnswerSchema.target_subject_id == target_subject_id,
                 AnswerItemSchema.identifier.isnot(None),

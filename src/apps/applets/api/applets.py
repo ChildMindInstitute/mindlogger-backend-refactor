@@ -289,13 +289,9 @@ async def applet_flow_versions_data_retrieve(
     session=Depends(get_session),
 ) -> ResponseMulti[VersionPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
-    service = FlowService(session=session)
-    flow = await service.get_by_id(flow_id)
-    if not flow or flow.applet_id != applet_id:
-        raise NotFoundError("Flow not found")
     await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
-
-    versions = await service.get_versions(flow.id)
+    service = FlowService(session=session)
+    versions = await service.get_versions(applet_id, flow_id)
     return ResponseMulti(
         result=versions,
         count=len(versions),
