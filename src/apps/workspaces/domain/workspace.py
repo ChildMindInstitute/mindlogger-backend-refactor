@@ -309,6 +309,12 @@ class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
     email: str
     alembic_version: str | None
 
+    @validator("use_arbitrary")
+    def format_arbitrary_usage(cls, value):
+        if value:
+            return "[green]True[/green]"
+        return "[red]False[/red]"
+
 
 class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
     database_uri: str

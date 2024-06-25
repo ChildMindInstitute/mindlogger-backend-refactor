@@ -1,0 +1,27 @@
+name: Copilot Env Name
+
+on:
+  workflow_call:
+    outputs:
+      env-name:
+        value: ${{ jobs.set-env-name.outputs.env-name }}
+      env-snake-name:
+        value: ${{ jobs.set-env-name.outputs.env-snake-name }}
+
+
+jobs:
+  set-env-name:
+    name: Set copilot environment name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create env name
+        id: env-name
+        run: |
+          echo "ENV_NAME=$(echo '${{ github.ref_name }}' | sed -E 's/([0-9]+)\/merge/pr\-\1/' | sed 's/\//\-/g')" >> $GITHUB_OUTPUT
+      - name: Snake case env name
+        id: env-snake-name
+        run: |
+          echo "ENV_NAME_SNAKE=$(echo ${{ env.ENV_NAME }} | sed 's/\-/\_/g')" >> $GITHUB_OUTPUT
+    outputs:
+      env-name: steps.env-name.outputs.ENV_NAME
+      env-snake-name: steps.env-snake-name.outputs.ENV_NAME_SNAKE

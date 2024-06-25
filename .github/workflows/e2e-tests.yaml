@@ -1,0 +1,131 @@
+name: E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      service-url:
+        type: string
+        description: Service URL endpoint
+        required: true
+      e2e-tests-ref:
+        type: string
+        description: Git ref to checkout from TAF repo
+        required: false
+        default: dev
+    outputs:
+      report-url:
+        description: URL of the test report
+        value: ${{ jobs.publish-report.outputs.report-url }}
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  run-e2e-tests:
+    name: Run E2E Test Suite
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      discussions: write
+
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
+          role-session-name: OIDC-GHA-session
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: actions/checkout@v4
+        name: Checkout
+        with:
+          repository: ChildMindInstitute/MindLogger-TAF
+          # Matching deploy key in TAF repo
+          ssh-key: ${{ secrets.TAF_PRIVATE_KEY }}
+          ref: ${{ inputs.e2e-tests-ref }}
+      - name: Install
+        run: npm install
+      - name: Setup Environment
+        run: |
+          sed -i 's/API_DOMAIN.*//' .env ;
+          echo 'API_DOMAIN=${{ inputs.service-url }}' >> .env
+      - name: Validate Environment
+        run: cat .env
+      - name: Get Secrets by Name and by ARN
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            taf/dev
+          parse-json-secrets: true
+
+      - name: Run tests
+        run: npm run test:api
+        continue-on-error: true
+        id: e2e-tests
+
+      - name: Collect artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: test-results/api
+          if-no-files-found: error
+
+      - name: Fail if tests failed
+        if: steps.e2e-tests.outcome != 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.setFailed('E2E tests failed')
+
+  publish-report:
+    name: Publish Report
+    needs: [ run-e2e-tests ]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Fetch results
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-results
+          path: test-results/api
+
+      - name: Build test report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          # Where allure will write the generated report
+          allure_report: e2e
+          # Results dir
+          allure_results: allure-results
+          # Path to folder to be published
+          allure_history: allure-history
+          # Path to folder where gh-pages was checked out
+          gh_pages: gh-pages
+          # a subfolder
+          subfolder: e2e
+          keep_reports: 20
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-history
+
+      - name: Generate Report URL
+        if: always()
+        id: report-url
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.setOutput('report-url', 'https://childmindinstitute.github.io/mindlogger-backend-refactor/e2e/${{ github.run_number }}')
+    outputs:
+      report-url: ${{ steps.report-url.outputs.report-url }}

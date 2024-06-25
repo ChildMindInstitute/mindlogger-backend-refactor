@@ -90,6 +90,11 @@ PatchRegister.register(
     task_id="M2-5116",
     description="[Subject] Populate alerts with subject ids",
 )
+PatchRegister.register(
+    file_path="m2_6757_replace_amp_sanitizer.py",
+    task_id="M2-6757",
+    description="Change ampersand sanitizer to symbol '&'",
+)
 
 app = typer.Typer()
 

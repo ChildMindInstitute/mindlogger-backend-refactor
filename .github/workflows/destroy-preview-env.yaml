@@ -1,0 +1,64 @@
+name: Destroy preview environment
+
+on:
+  workflow_call:
+    outputs:
+      service-url:
+        value: "${{ jobs.create-preview-env.outputs.service-url }}"
+    inputs:
+      env-name:
+        type: string
+        description: Environment name
+        required: true
+      env-snake-name:
+        type: string
+        description: Env name is snake case
+        required: true
+      copilot-service:
+        type: string
+        description: Copilot service name
+        required: true
+      app-name:
+        type: string
+        description: App Name (likely the GH repo)
+        required: true
+      aws-region:
+        type: string
+        default: us-east-1
+        required: false
+
+jobs:
+  destroy-preview-env:
+    runs-on: ubuntu-latest
+    name: Destroy Preview Env
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      discussions: write
+    env:
+      ENV_NAME: ${{ inputs.env-name }}
+      ENV_NAME_SNAKE: ${{ inputs.env-snake-name }}
+      APP_NAME: ${{ inputs.app-name }}
+      COPILOT_SERVICE: ${{ inputs.copilot-service }}
+      AWS_REGION: us-east-1
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
+          role-session-name: gha-preview-env
+          aws-region: ${{ inputs.aws-region }}
+      - name: Install copilot
+        run: |
+          curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 
+          sudo mv copilot /usr/local/bin/copilot && copilot -v
+      - uses: actions/checkout@v4
+        name: Checkout
+      - name: Delete environment
+        run: copilot/scripts/env-stop.sh
+      - name: Cleanup secrets for environment
+        # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
+        # is copied and tagged properly for copilot to pick it up.
+        run: |
+          aws secretsmanager delete-secret --name cmiml-feature-${{ inputs.env-name }} --force-delete-without-recovery
