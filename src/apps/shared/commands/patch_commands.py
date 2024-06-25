@@ -46,6 +46,12 @@ PatchRegister.register(
     description="Set proportion.enabled=True to Maki's applets",
     manage_session=False,
 )
+PatchRegister.register(
+    file_path="m2_6968_create_flows_old_versions.py",
+    task_id="M2-6968",
+    description="Create flow history records for particular applets",
+    manage_session=False,
+)
 
 PatchRegister.register(
     file_path="m2_6879_create_deleted_respondents.py",
@@ -83,6 +89,11 @@ PatchRegister.register(
     file_path="m2_5116_add_alert_subjects.sql",
     task_id="M2-5116",
     description="[Subject] Populate alerts with subject ids",
+)
+PatchRegister.register(
+    file_path="m2_6757_replace_amp_sanitizer.py",
+    task_id="M2-6757",
+    description="Change ampersand sanitizer to symbol '&'",
 )
 
 app = typer.Typer()
