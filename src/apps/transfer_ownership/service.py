@@ -8,6 +8,7 @@ from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.subjects.constants import SubjectTag
 from apps.subjects.domain import SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.constants import TransferOwnershipStatus
@@ -129,6 +130,7 @@ class TransferService:
                 first_name=self._user.first_name,
                 email=EmailStr(self._user.email_encrypted),
                 is_deleted=False,
+                tag=SubjectTag.TEAM,
             )
         else:
             await subject_service.create(
@@ -141,6 +143,7 @@ class TransferService:
                     last_name=self._user.last_name,
                     secret_user_id=f"{uuid.uuid4()}",
                     nickname=self._user.get_full_name(),
+                    tag=SubjectTag.TEAM,
                 )
             )
 
