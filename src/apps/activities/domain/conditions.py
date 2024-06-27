@@ -57,13 +57,20 @@ class OptionPayload(PublicModel):
     option_value: str
 
 
+class OptionIndexPayload(OptionPayload):
+    row_index: int
+
+
 class ValuePayload(PublicModel):
     value: float
-    row_index: int | None = None
 
     @validator("value")
     def validate_score(cls, value):
         return round(value, 2)
+
+
+class ValueIndexPayload(ValuePayload):
+    row_index: int
 
 
 class DatePayload(PublicModel):
@@ -76,6 +83,7 @@ class DatePayload(PublicModel):
 
 
 class TimePayload(PublicModel):
+    type: str | None = None
     value: datetime.time
 
     def dict(self, *args, **kwargs):
@@ -108,11 +116,14 @@ class TimeRangePayload(PublicModel):
 class MinMaxPayload(PublicModel):
     min_value: float
     max_value: float
-    row_index: int | None = None
 
     @validator("min_value", "max_value")
     def validate_score(cls, value):
         return round(value, 2)
+
+
+class MinMaxPayloadRow(MinMaxPayload):
+    row_index: int
 
 
 class ScoreConditionPayload(PublicModel):
@@ -123,59 +134,129 @@ class BaseCondition(PublicModel):
     item_name: str
 
 
-class IncludesOptionCondition(BaseCondition):
+class _IncludesOptionCondition(BaseCondition):
     type: str = Field(ConditionType.INCLUDES_OPTION, const=True)
-    payload: OptionPayload
 
 
-class NotIncludesOptionCondition(BaseCondition):
+class _NotIncludesOptionCondition(BaseCondition):
     type: str = Field(ConditionType.NOT_INCLUDES_OPTION, const=True)
-    payload: OptionPayload
 
 
-class EqualToOptionCondition(BaseCondition):
+class _EqualToOptionCondition(BaseCondition):
     type: str = Field(ConditionType.EQUAL_TO_OPTION, const=True)
-    payload: OptionPayload
 
 
-class NotEqualToOptionCondition(BaseCondition):
+class _NotEqualToOptionCondition(BaseCondition):
     type: str = Field(ConditionType.NOT_EQUAL_TO_OPTION, const=True)
-    payload: OptionPayload
 
 
-class GreaterThanCondition(BaseCondition):
+class _GreaterThanCondition(BaseCondition):
     type: str = Field(ConditionType.GREATER_THAN, const=True)
-    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
-class LessThanCondition(BaseCondition):
+class _LessThanCondition(BaseCondition):
     type: str = Field(ConditionType.LESS_THAN, const=True)
-    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
-class EqualCondition(BaseCondition):
+class _EqualCondition(BaseCondition):
     type: str = Field(ConditionType.EQUAL, const=True)
-    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
-class NotEqualCondition(BaseCondition):
+class _NotEqualCondition(BaseCondition):
     type: str = Field(ConditionType.NOT_EQUAL, const=True)
+
+
+class _BetweenCondition(BaseCondition):
+    type: str = Field(ConditionType.BETWEEN, const=True)
+
+
+class _OutsideOfCondition(BaseCondition):
+    type: str = Field(ConditionType.OUTSIDE_OF, const=True)
+
+
+class IncludesOptionCondition(_IncludesOptionCondition):
+    payload: OptionPayload | OptionIndexPayload
+
+
+class NotIncludesOptionCondition(_NotIncludesOptionCondition):
+    payload: OptionPayload | OptionIndexPayload
+
+
+class EqualToOptionCondition(_EqualToOptionCondition):
+    payload: OptionPayload | OptionIndexPayload
+
+
+class NotEqualToOptionCondition(_NotEqualToOptionCondition):
+    payload: OptionPayload | OptionIndexPayload
+
+
+class GreaterThanCondition(_GreaterThanCondition):
     payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
-class BetweenCondition(BaseCondition):
-    type: str = Field(ConditionType.BETWEEN, const=True)
-    payload: MinMaxPayload | DatePayload | TimePayload | TimeRangePayload
+class LessThanCondition(_LessThanCondition):
+    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
 
 
-class OutsideOfCondition(BaseCondition):
-    type: str = Field(ConditionType.OUTSIDE_OF, const=True)
-    payload: MinMaxPayload | DatePayload | TimePayload | TimeRangePayload
+class EqualCondition(_EqualCondition):
+    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
+
+
+class NotEqualCondition(_NotEqualCondition):
+    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
+
+
+class BetweenCondition(_BetweenCondition):
+    payload: MinMaxPayload | MinMaxPayloadRow | DatePayload | TimePayload | TimeRangePayload
+
+
+class OutsideOfCondition(_OutsideOfCondition):
+    payload: MinMaxPayload | MinMaxPayloadRow | DatePayload | TimePayload | TimeRangePayload
 
 
 class ScoreBoolCondition(BaseCondition):
     type: str = Field(ConditionType.EQUAL_TO_SCORE, const=True)
     payload: ScoreConditionPayload
+
+
+class ScoreGraterThanCondition(_GreaterThanCondition):
+    payload: ValuePayload
+
+
+class ScoreLessThanCondition(_LessThanCondition):
+    payload: ValuePayload
+
+
+class ScoreEqualCondition(_EqualCondition):
+    payload: ValuePayload
+
+
+class ScoreNotEqualCondition(_NotEqualCondition):
+    payload: ValuePayload
+
+
+class ScoreBetweenCondition(_BetweenCondition):
+    payload: MinMaxPayload
+
+
+class ScoreOutsideOfCondition(_OutsideOfCondition):
+    payload: MinMaxPayload
+
+
+class ScoreNotIncludesOptionCondition(_NotIncludesOptionCondition):
+    payload: OptionPayload
+
+
+class ScoreIncludesOptionCondition(_IncludesOptionCondition):
+    payload: OptionPayload
+
+
+class ScoreEqualToOptionCondition(_EqualToOptionCondition):
+    payload: OptionPayload
+
+
+class ScoreNotEqualToOptionCondition(_NotEqualToOptionCondition):
+    payload: OptionPayload
 
 
 Condition = (
@@ -192,36 +273,36 @@ Condition = (
 )
 
 ScoreCondition = (
-    GreaterThanCondition
-    | LessThanCondition
-    | EqualCondition
-    | NotEqualCondition
-    | BetweenCondition
-    | OutsideOfCondition
+    ScoreGraterThanCondition
+    | ScoreLessThanCondition
+    | ScoreEqualCondition
+    | ScoreNotEqualCondition
+    | ScoreBetweenCondition
+    | ScoreOutsideOfCondition
 )
 SectionCondition = (
-    IncludesOptionCondition
-    | NotIncludesOptionCondition
-    | EqualToOptionCondition
-    | NotEqualToOptionCondition
-    | GreaterThanCondition
-    | LessThanCondition
-    | EqualCondition
-    | NotEqualCondition
-    | BetweenCondition
-    | OutsideOfCondition
+    ScoreIncludesOptionCondition
+    | ScoreNotIncludesOptionCondition
+    | ScoreEqualToOptionCondition
+    | ScoreNotEqualToOptionCondition
+    | ScoreGraterThanCondition
+    | ScoreGraterThanCondition
+    | ScoreEqualCondition
+    | ScoreNotEqualCondition
+    | ScoreBetweenCondition
+    | ScoreOutsideOfCondition
     | ScoreBoolCondition
 )
 AnyCondition = (
-    IncludesOptionCondition
-    | NotIncludesOptionCondition
-    | EqualToOptionCondition
-    | NotEqualToOptionCondition
-    | GreaterThanCondition
-    | LessThanCondition
-    | EqualCondition
-    | NotEqualCondition
-    | BetweenCondition
-    | OutsideOfCondition
+    ScoreIncludesOptionCondition
+    | ScoreNotIncludesOptionCondition
+    | ScoreEqualToOptionCondition
+    | ScoreNotEqualToOptionCondition
+    | ScoreGraterThanCondition
+    | ScoreGraterThanCondition
+    | ScoreEqualCondition
+    | ScoreNotEqualCondition
+    | ScoreBetweenCondition
+    | ScoreOutsideOfCondition
     | ScoreBoolCondition
 )

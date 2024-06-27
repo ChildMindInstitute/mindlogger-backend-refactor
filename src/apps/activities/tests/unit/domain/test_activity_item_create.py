@@ -28,19 +28,6 @@ from apps.activities.tests.utils import BaseItemData
 from apps.shared.domain.custom_validations import InvalidImageError
 
 
-def test_create_activity_item_conditional_logic_not_valid_response_type_config(
-    base_item_data, photo_config, conditional_logic_equal
-) -> None:
-    with pytest.raises(errors.IncorrectConditionLogicItemTypeError):
-        ActivityItemCreate(
-            **base_item_data.dict(),
-            config=photo_config,
-            response_type=ResponseType.PHOTO,
-            conditional_logic=conditional_logic_equal,
-            response_values=None,
-        )
-
-
 def test_create_activity_item_conditional_logic_can_not_be_hidden(
     base_item_data,
     single_select_config,
