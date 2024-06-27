@@ -31,8 +31,6 @@ __all__ = [
 ]
 
 
-VISIT = "V1"
-
 LORIS_LOGIN_DATA = {
     "username": settings.loris.username,
     "password": settings.loris.password,
@@ -45,7 +43,7 @@ class LorisIntegrationService:
         self.session = session
         self.user = user
 
-    async def integration(self):
+    async def integration(self, users_and_visits):
         respondents = await AnswersCRUD(self.session).get_respondents_by_applet_id_and_readiness_to_share_data(
             applet_id=self.applet_id
         )
@@ -128,6 +126,8 @@ class LorisIntegrationService:
         }
 
         answers_for_loris_by_respondent = await self._prepare_answers(users_answers, activities_map)
+        users_and_visits = await self._transform_users_and_visits(users_and_visits, answers_for_loris_by_respondent)
+        activities_map = await self._clear_activities_map(activities_map, users_and_visits)
 
         activities_ids: list = list(activities_map.keys())
         if loris_data:
@@ -144,17 +144,30 @@ class LorisIntegrationService:
                 candidate_id = relationship.loris_user_id
             except MlLorisUserRelationshipNotFoundError as e:
                 logger.info(f"{e}. Need to create new candidate")
-                candidate_id = await self._create_candidate_and_visit(headers, relationship_crud, uuid.UUID(user))
+                candidate_id = await self._create_candidate(headers, relationship_crud, uuid.UUID(user))
+
+            _visits_for_user: list[str] = list(users_and_visits[user].values())
+            await self._create_and_start_visits(headers, candidate_id, _visits_for_user)
             filtered_answers = {
                 key: value for key, value in answer.items() if key.split("__")[2] not in existing_answers
             }
             if filtered_answers:
-                await self._add_instrument_to_loris(headers, candidate_id, activities_ids)
-                await self._add_instrument_data_to_loris(headers, candidate_id, filtered_answers, activities_ids)
+                await self._add_instrument_to_loris(headers, candidate_id, activities_ids, users_and_visits[user])
+                await self._add_instrument_data_to_loris(
+                    headers, candidate_id, filtered_answers, activities_ids, users_and_visits[user]
+                )
 
             logger.info(f"Successfully send data for user: {user}," f" with loris id: {candidate_id}")
 
         logger.info("All finished")
+
+    async def _clear_activities_map(self, activities_map, users_and_visits) -> dict:
+        _keys = set()
+        for inner_dict in users_and_visits.values():
+            _keys.update(["__".join(key.split("__", 2)[:2]) for key in inner_dict.keys()])
+
+        activities_map_filtered = {key: value for key, value in activities_map.items() if key in _keys}
+        return activities_map_filtered
 
     async def _prepare_activities(self, versions: list) -> dict:
         activity_history_crud = ActivityHistoriesCRUD(self.session)
@@ -381,7 +394,7 @@ class LorisIntegrationService:
                     error_message = await resp.text()
                     raise LorisServerError(message=error_message)
 
-    async def _create_candidate_and_visit(
+    async def _create_candidate(
         self, headers: dict, relationship_crud: MlLorisUserRelationshipCRUD, ml_user_id: uuid.UUID
     ) -> str:
         timeout = aiohttp.ClientTimeout(total=60)
@@ -419,124 +432,136 @@ class LorisIntegrationService:
                     )
                 )
 
-            create_visit_url: str = settings.loris.create_visit_url.format(candidate_id, VISIT)
-            logger.info(f"Sending CREATE VISIT request to the loris server {create_visit_url}")
-            start = time.time()
-            _data_create_visit = {
-                "CandID": candidate_id,
-                "Visit": VISIT,
-                "Site": "Mindlogger Integration Center",
-                "Battery": "Control",
-                "Project": "loris",
-            }
-            async with session.put(
-                settings.loris.create_visit_url.format(candidate_id, VISIT),
-                data=json.dumps(_data_create_visit),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 201:
-                    logger.info(f"Successful request in {duration:.1f} seconds.")
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    raise LorisServerError(message=error_message)
-
-            start_visit_url: str = settings.loris.start_visit_url.format(candidate_id, VISIT)
-            logger.info(f"Sending START VISIT request to the loris server {start_visit_url}")
-            start = time.time()
-            _data_start_visit = {
-                "CandID": candidate_id,
-                "Visit": VISIT,
-                "Site": "Mindlogger Integration Center",
-                "Battery": "Control",
-                "Project": "loris",
-                "Cohort": "Control",
-                "Stages": {
-                    "Visit": {
-                        "Date": str(datetime.date.today()),
-                        "Status": "In Progress",
-                    }
-                },
-            }
-            async with session.patch(
-                settings.loris.start_visit_url.format(candidate_id, VISIT),
-                data=json.dumps(_data_start_visit),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 204:
-                    logger.info(f"Successful request in {duration:.1f} seconds.")
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    raise LorisServerError(message=error_message)
-
         return candidate_id
 
-    async def _add_instrument_to_loris(self, headers: dict, candidate_id: str, activities_ids: list):
+    async def _create_and_start_visits(self, headers: dict, candidate_id: str, visits: list[str]):
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(
-                f"Sending ADD INSTRUMENTS request to the loris server "
-                f"{settings.loris.add_instruments_url.format(candidate_id, VISIT)}"
-            )
-            start = time.time()
-            _data_add_instruments = {
-                "Meta": {
-                    "Candidate": candidate_id,
-                    "Visit": VISIT,
-                },
-                "Instruments": activities_ids,
-            }
-            async with session.post(
-                settings.loris.add_instruments_url.format(candidate_id, VISIT),
-                data=json.dumps(_data_add_instruments),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 200:
-                    logger.info(f"Successful request in {duration:.1f} seconds.")
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
-                    raise LorisServerError(message=error_message)
+            for visit in visits:
+                create_visit_url: str = settings.loris.create_visit_url.format(candidate_id, visit)
+                logger.info(f"Sending CREATE VISIT request to the loris server {create_visit_url}")
+                start = time.time()
+                _data_create_visit = {
+                    "CandID": candidate_id,
+                    "Visit": visit,
+                    "Site": "Mindlogger Integration Center",
+                    "Battery": "Control",
+                    "Project": "loris",
+                }
+                async with session.put(
+                    settings.loris.create_visit_url.format(candidate_id, visit),
+                    data=json.dumps(_data_create_visit),
+                    headers=headers,
+                ) as resp:
+                    duration = time.time() - start
+                    if resp.status == 201:
+                        logger.info(f"Successful request in {duration:.1f} seconds.")
+                    else:
+                        logger.info(f"Failed request in {duration:.1f} seconds.")
+                        error_message = await resp.text()
+                        raise LorisServerError(message=error_message)
 
-    async def _add_instrument_data_to_loris(self, headers: dict, candidate_id: str, answer: dict, activities_ids: list):
+                start_visit_url: str = settings.loris.start_visit_url.format(candidate_id, visit)
+                logger.info(f"Sending START VISIT request to the loris server {start_visit_url}")
+                start = time.time()
+                _data_start_visit = {
+                    "CandID": candidate_id,
+                    "Visit": visit,
+                    "Site": "Mindlogger Integration Center",
+                    "Battery": "Control",
+                    "Project": "loris",
+                    "Cohort": "Control",
+                    "Stages": {
+                        "Visit": {
+                            "Date": str(datetime.date.today()),
+                            "Status": "In Progress",
+                        }
+                    },
+                }
+                async with session.patch(
+                    settings.loris.start_visit_url.format(candidate_id, visit),
+                    data=json.dumps(_data_start_visit),
+                    headers=headers,
+                ) as resp:
+                    duration = time.time() - start
+                    if resp.status == 204:
+                        logger.info(f"Successful request in {duration:.1f} seconds.")
+                    else:
+                        logger.info(f"Failed request in {duration:.1f} seconds.")
+                        error_message = await resp.text()
+                        raise LorisServerError(message=error_message)
+
+    async def _add_instrument_to_loris(
+        self, headers: dict, candidate_id: str, activities_ids: list, user_and_visits: dict
+    ):
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            for activity_id in activities_ids:
+                for key, visit in user_and_visits.items():
+                    if key.startswith(activity_id):
+                        logger.info(
+                            f"Sending ADD INSTRUMENTS request to the loris server "
+                            f"{settings.loris.add_instruments_url.format(candidate_id, visit)}"
+                        )
+                        start = time.time()
+                        _data_add_instruments = {
+                            "Meta": {
+                                "Candidate": candidate_id,
+                                "Visit": visit,
+                            },
+                            "Instruments": [activity_id],
+                        }
+                        async with session.post(
+                            settings.loris.add_instruments_url.format(candidate_id, visit),
+                            data=json.dumps(_data_add_instruments),
+                            headers=headers,
+                        ) as resp:
+                            duration = time.time() - start
+                            if resp.status == 200:
+                                logger.info(f"Successful request in {duration:.1f} seconds.")
+                            else:
+                                logger.info(f"Failed request in {duration:.1f} seconds.")
+                                error_message = await resp.text()
+                                logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
+                                raise LorisServerError(message=error_message)
+
+    async def _add_instrument_data_to_loris(
+        self, headers: dict, candidate_id: str, answer: dict, activities_ids: list, user_and_visits: dict
+    ):
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             for activity_id in activities_ids:
                 answer_by_activity_id = {key: value for key, value in answer.items() if activity_id in key}
-                if answer_by_activity_id:
-                    logger.info(
-                        f"Sending SEND INSTUMENT DATA request to the loris server "
-                        f"{settings.loris.instrument_data_url.format(candidate_id, VISIT, activity_id)}"
-                    )
-                    start = time.time()
-                    _data_instrument_data = {
-                        "Meta": {
-                            "Instrument": activity_id,
-                            "Visit": VISIT,
-                            "Candidate": candidate_id,
-                            "DDE": True,
-                        },
-                        activity_id: answer_by_activity_id,
-                    }
-                    logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)} ")
-                    async with session.put(
-                        settings.loris.instrument_data_url.format(candidate_id, VISIT, activity_id),
-                        data=json.dumps(_data_instrument_data),
-                        headers=headers,
-                    ) as resp:
-                        duration = time.time() - start
-                        if resp.status == 204:
-                            logger.info(f"Successful request in {duration:.1f} seconds.")
-                        else:
-                            logger.info(f"Failed request in {duration:.1f} seconds.")
-                            error_message = await resp.text()
-                            logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
-                            raise LorisServerError(message=error_message)
+                for key, visit in user_and_visits.items():
+                    if answer_by_activity_id and key.startswith(activity_id):
+                        logger.info(
+                            f"Sending SEND INSTUMENT DATA request to the loris server "
+                            f"{settings.loris.instrument_data_url.format(candidate_id, visit, activity_id)}"
+                        )
+                        start = time.time()
+                        _data_instrument_data = {
+                            "Meta": {
+                                "Instrument": activity_id,
+                                "Visit": visit,
+                                "Candidate": candidate_id,
+                                "DDE": True,
+                            },
+                            activity_id: answer_by_activity_id,
+                        }
+                        logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)} ")
+                        async with session.put(
+                            settings.loris.instrument_data_url.format(candidate_id, visit, activity_id),
+                            data=json.dumps(_data_instrument_data),
+                            headers=headers,
+                        ) as resp:
+                            duration = time.time() - start
+                            if resp.status == 204:
+                                logger.info(f"Successful request in {duration:.1f} seconds.")
+                            else:
+                                logger.info(f"Failed request in {duration:.1f} seconds.")
+                                error_message = await resp.text()
+                                logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
+                                raise LorisServerError(message=error_message)
 
     @staticmethod
     async def get_visits_list() -> list[str]:
@@ -660,7 +685,7 @@ class LorisIntegrationService:
                             visits = visit_info["Visits"]
                             break
 
-                _activit_data = {
+                _activity_data = {
                     "activity_id": activity_id,
                     "activity_name": _activity.name,
                     "answer_id": answer_id,
@@ -668,8 +693,23 @@ class LorisIntegrationService:
                     "completed_date": _completed_date,
                     "visits": visits,
                 }
-                _data["activities"].append(_activit_data)
+                _data["activities"].append(_activity_data)
 
             result.append(_data)
 
         return result
+
+    async def _transform_users_and_visits(self, users_and_visits: list, data: dict) -> dict:
+        _data: dict = {}
+        for uv in users_and_visits:
+            user_id_str = str(uv.user_id)
+            if user_id_str in data:
+                _activity_data: dict = {}
+                for activity in uv.activities:
+                    key = f"{activity.activity_id}__{activity.version}__{activity.answer_id}"
+                    for data_key in data[user_id_str]:
+                        if data_key.startswith(key):
+                            _activity_data[key] = activity.visit
+                if _activity_data:
+                    _data[user_id_str] = _activity_data
+        return _data
