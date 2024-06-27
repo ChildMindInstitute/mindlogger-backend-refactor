@@ -13,7 +13,7 @@ async def test_start_transmit_process(client: TestClient, user: User, uuid_zero:
     activity_with_visits = ActivitiesAndVisits(
         activity_id=uuid_zero, answer_id=uuid_zero, version="0.1.2", visit="test"
     )
-    vist_for_user = VisitsForUsers(user_id=uuid_zero, activities=activity_with_visits)
+    vist_for_user = VisitsForUsers(user_id=uuid_zero, activities=[activity_with_visits])
     with patch("apps.authentication.deps.get_current_user", return_value=user):
         with patch("infrastructure.database.deps.get_session", return_value=session):
             with patch("apps.integrations.loris.api.applets.integration", new_callable=AsyncMock) as mock_integration:
@@ -31,4 +31,4 @@ async def test_start_transmit_process(client: TestClient, user: User, uuid_zero:
                     await task()
 
                 assert response.status_code == 202
-                mock_integration.assert_called_once_with(uuid_zero, session, user)
+                mock_integration.assert_called_once_with(uuid_zero, session, user, [vist_for_user])
