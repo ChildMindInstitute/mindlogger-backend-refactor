@@ -96,6 +96,12 @@ PatchRegister.register(
     description="Change ampersand sanitizer to symbol '&'",
 )
 
+PatchRegister.register(
+    file_path="m2_6641_alerts_type_default.py",
+    task_id="M2-6641",
+    description="Set alert type to default value 'answer'",
+)
+
 app = typer.Typer()
 
 

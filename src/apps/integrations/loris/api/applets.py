@@ -37,7 +37,9 @@ async def visits_list(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> PublicListOfVisits:
-    visits = await LorisIntegrationService.get_visits_list()
+    visits = await LorisIntegrationService(
+        uuid.UUID("00000000-0000-0000-0000-000000000000"), session, user
+    ).get_visits_list()
     return PublicListOfVisits(visits=visits, count=len(visits))
 
 

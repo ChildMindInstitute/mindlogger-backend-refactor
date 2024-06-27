@@ -80,6 +80,7 @@ async def _handle_websocket(websocket, user_id, session):
                 workspace=workspace.workspace_name,
                 respondent_id=str(alert_message.respondent_id),
                 subject_id=str(alert_message.subject_id),
+                type=alert_message.type,
             )
             await websocket.send_json(applet_alert.dict())
         except ConnectionClosed:

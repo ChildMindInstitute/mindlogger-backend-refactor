@@ -6,11 +6,15 @@ import time
 import uuid
 
 import aiohttp
+import sentry_sdk
 from pydantic.json import pydantic_encoder
 
 from apps.activities.crud.activity import ActivitiesCRUD
 from apps.activities.crud.activity_history import ActivityHistoriesCRUD
 from apps.activities.crud.activity_item_history import ActivityItemHistoriesCRUD
+from apps.alerts.crud.alert import AlertCRUD
+from apps.alerts.db.schemas import AlertSchema
+from apps.alerts.domain import AlertMessage, AlertTypes
 from apps.answers.crud.answer_items import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.errors import ReportServerError
@@ -18,13 +22,19 @@ from apps.answers.service import ReportServerService
 from apps.applets.crud.applets_history import AppletHistoriesCRUD
 from apps.integrations.loris.crud.user_relationship import MlLorisUserRelationshipCRUD
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
-from apps.integrations.loris.domain import MlLorisUserRelationship, UnencryptedAppletVersion
+from apps.integrations.loris.domain import (
+    LorisIntegrationAlertMessages,
+    MlLorisUserRelationship,
+    UnencryptedAppletVersion,
+)
 from apps.integrations.loris.errors import LorisServerError, MlLorisUserRelationshipNotFoundError
 from apps.subjects.crud import SubjectsCrud
 from apps.users.domain import User
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from config import settings
 from infrastructure.database.core import atomic
 from infrastructure.logger import logger
+from infrastructure.utility import RedisCache
 
 __all__ = [
     "LorisIntegrationService",
@@ -48,6 +58,9 @@ class LorisIntegrationService:
             applet_id=self.applet_id
         )
         if not respondents:
+            await self._create_integration_alerts(
+                self.applet_id, message=LorisIntegrationAlertMessages.NO_RESPONDENT.value
+            )
             logger.info(
                 f"No respondents found for given applet: \
                     {str(self.applet_id)}. End of the synchronization."
@@ -63,6 +76,9 @@ class LorisIntegrationService:
                     self.applet_id, respondent
                 )
                 if not decrypted_answers_and_versions:
+                    await self._create_integration_alerts(
+                        self.applet_id, message=LorisIntegrationAlertMessages.REPORT_SERVER.value
+                    )
                     logger.info("Error during request to report server, no answers")
                     return
                 decrypted_answers: dict[str, list] = decrypted_answers_and_versions[0]
@@ -80,10 +96,20 @@ class LorisIntegrationService:
                 # logger.info(f"Decrypted_answers for {respondent}: \
                 #             {json.dumps(decrypted_answers)}")
             except ReportServerError as e:
+                await self._create_integration_alerts(
+                    self.applet_id, message=LorisIntegrationAlertMessages.REPORT_SERVER.value
+                )
                 logger.info(f"Error during request to report server: {e}")
                 return
 
-        token: str = await LorisIntegrationService._login_to_loris()
+        try:
+            token: str = await self._login_to_loris()
+        except Exception as e:
+            await self._create_integration_alerts(
+                self.applet_id, message=LorisIntegrationAlertMessages.LORIS_LOGIN_ERROR.value
+            )
+            raise e
+
         headers = {
             "Authorization": f"Bearer: {token}",
             "Content-Type": "application/json",
@@ -91,7 +117,8 @@ class LorisIntegrationService:
         }
 
         # check loris for already existing versions of the applet
-        existing_versions = await self._get_existing_versions_from_loris(self.applet_id, headers)
+        existing_versions = await self._get_existing_versions_from_loris(headers)
+
         answer_versions = list(set(answer_versions))
 
         missing_applet_versions = list(set(answer_versions) - set(existing_versions))
@@ -159,6 +186,7 @@ class LorisIntegrationService:
 
             logger.info(f"Successfully send data for user: {user}," f" with loris id: {candidate_id}")
 
+        await self._create_integration_alerts(self.applet_id, message=LorisIntegrationAlertMessages.SUCCESS.value)
         logger.info("All finished")
 
     async def _clear_activities_map(self, activities_map, users_and_visits) -> dict:
@@ -316,8 +344,7 @@ class LorisIntegrationService:
 
         return loris_answers
 
-    @staticmethod
-    async def _login_to_loris() -> str:
+    async def _login_to_loris(self) -> str:
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             logger.info(f"Sending LOGIN request to the loris server {settings.loris.login_url}")
@@ -336,7 +363,7 @@ class LorisIntegrationService:
                     error_message = await resp.text()
                     raise LorisServerError(message=error_message)
 
-    async def _get_existing_versions_from_loris(self, applet_id: str, headers: dict) -> str:
+    async def _get_existing_versions_from_loris(self, headers: dict) -> str:
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             url = settings.loris.ml_schema_existing_versions_url.format(self.applet_id)
@@ -354,6 +381,9 @@ class LorisIntegrationService:
                 else:
                     logger.error(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
+                    await self._create_integration_alerts(
+                        self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+                    )
                     raise LorisServerError(message=error_message)
 
     async def _get_existing_answers_from_loris(self, applet_id: str, headers: dict) -> str:
@@ -374,6 +404,9 @@ class LorisIntegrationService:
                 else:
                     logger.error(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
+                    await self._create_integration_alerts(
+                        self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+                    )
                     raise LorisServerError(message=error_message)
 
     async def _upload_applet_schema_to_loris(self, schemas: list, headers: dict):
@@ -392,6 +425,9 @@ class LorisIntegrationService:
                 else:
                     logger.error(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
+                    await self._create_integration_alerts(
+                        self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+                    )
                     raise LorisServerError(message=error_message)
 
     async def _create_candidate(
@@ -422,6 +458,10 @@ class LorisIntegrationService:
                 else:
                     logger.info(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
+
+                    await self._create_integration_alerts(
+                        self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+                    )
                     raise LorisServerError(message=error_message)
 
             async with atomic(relationship_crud.session):
@@ -459,6 +499,9 @@ class LorisIntegrationService:
                     else:
                         logger.info(f"Failed request in {duration:.1f} seconds.")
                         error_message = await resp.text()
+                        await self._create_integration_alerts(
+                            self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+                        )
                         raise LorisServerError(message=error_message)
 
                 start_visit_url: str = settings.loris.start_visit_url.format(candidate_id, visit)
@@ -523,6 +566,9 @@ class LorisIntegrationService:
                                 logger.info(f"Failed request in {duration:.1f} seconds.")
                                 error_message = await resp.text()
                                 logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
+                                await self._create_integration_alerts(
+                                    self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+                                )
                                 raise LorisServerError(message=error_message)
 
     async def _add_instrument_data_to_loris(
@@ -561,12 +607,14 @@ class LorisIntegrationService:
                                 logger.info(f"Failed request in {duration:.1f} seconds.")
                                 error_message = await resp.text()
                                 logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
+                                await self._create_integration_alerts(
+                                    self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+                                )
                                 raise LorisServerError(message=error_message)
 
-    @staticmethod
-    async def get_visits_list() -> list[str]:
+    async def get_visits_list(self) -> list[str]:
         try:
-            token: str = await LorisIntegrationService._login_to_loris()
+            token: str = await self._login_to_loris()
         except LorisServerError as e:
             logger.info(f"I can't connect to the LORIS server {e}.")
 
@@ -599,7 +647,7 @@ class LorisIntegrationService:
 
     async def get_visits_for_applet(self) -> dict:
         try:
-            token: str = await LorisIntegrationService._login_to_loris()
+            token: str = await self._login_to_loris()
         except LorisServerError as e:
             logger.info(f"I can't connect to the LORIS server {e}.")
 
@@ -713,3 +761,50 @@ class LorisIntegrationService:
                 if _activity_data:
                     _data[user_id_str] = _activity_data
         return _data
+
+    async def _create_integration_alerts(self, applet_id: uuid.UUID, message: str):
+        latest_versions = await AppletHistoriesCRUD(self.session).get_versions_by_applet_id(self.applet_id)
+        version = latest_versions[-1]
+        cache = RedisCache()
+        user_applet_access = UserAppletAccessCRUD(self.session)
+        persons = await user_applet_access.get_responsible_persons(applet_id=applet_id, subject_id=None)
+        alert_schemas = []
+
+        for person in persons:
+            alert_schemas.append(
+                AlertSchema(
+                    user_id=person.id,
+                    respondent_id=self.user.id,
+                    is_watched=False,
+                    applet_id=applet_id,
+                    alert_message=message,
+                    type=AlertTypes.INTEGRATION_ALERT.value,
+                    version=version,
+                )
+            )
+        alert_crud = AlertCRUD(self.session)
+        async with atomic(alert_crud.session):
+            alerts = await alert_crud.create_many(alert_schemas)
+
+        for alert in alerts:
+            channel_id = f"channel_{alert.user_id}"
+
+            try:
+                await cache.publish(
+                    channel_id,
+                    AlertMessage(
+                        id=alert.id,
+                        respondent_id=self.user.id,
+                        applet_id=applet_id,
+                        version=version,
+                        message=alert.alert_message,
+                        created_at=alert.created_at,
+                        activity_id=alert.activity_id,
+                        activity_item_id=alert.activity_item_id,
+                        type=alert.type,
+                    ).dict(),
+                )
+
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
+                break

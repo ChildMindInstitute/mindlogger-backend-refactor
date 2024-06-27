@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from enum import Enum
 
 from pydantic import BaseModel, Extra
 
@@ -115,23 +116,32 @@ class MlLorisUserRelationship(MlLorisUserRelationshipBase):
     pass
 
 
-class PublicListOfVisits(BaseModel):
+class PublicListOfVisits(InternalModel):
     visits: list[str]
     count: int
 
 
-class PublicListMultipleVisits(BaseModel):
+class PublicListMultipleVisits(InternalModel):
     info: list[dict]
     count: int
 
 
-class ActivitiesAndVisits(BaseModel):
+class ActivitiesAndVisits(InternalModel):
     activity_id: uuid.UUID
     answer_id: uuid.UUID
     version: str
     visit: str
 
 
-class VisitsForUsers(BaseModel):
+class VisitsForUsers(InternalModel):
     user_id: uuid.UUID
     activities: list[ActivitiesAndVisits]
+
+
+class LorisIntegrationAlertMessages(str, Enum):
+    LORIS_INTEGRATION = "Loris Integration: "
+    NO_RESPONDENT = LORIS_INTEGRATION + "No respondent found."
+    REPORT_SERVER = LORIS_INTEGRATION + "Error during request to report server."
+    SUCCESS = LORIS_INTEGRATION + "Successful synchronization."
+    LORIS_SERVER_ERROR = LORIS_INTEGRATION + "Loris server error."
+    LORIS_LOGIN_ERROR = LORIS_INTEGRATION + "Incorrect credentials for Loris server."

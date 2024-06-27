@@ -23,7 +23,7 @@ from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExi
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
-from apps.alerts.domain import AlertMessage
+from apps.alerts.domain import AlertMessage, AlertTypes
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.crud.notes import AnswerNotesCRUD
@@ -1219,6 +1219,7 @@ class AnswerService:
                         activity_item_id=raw_alert.activity_item_id,
                         alert_message=raw_alert.message,
                         answer_id=answer_id,
+                        type=AlertTypes.ANSWER_ALERT.value,
                     )
                 )
         alerts = await AlertCRUD(self.session).create_many(alert_schemas)
@@ -1239,6 +1240,7 @@ class AnswerService:
                         activity_id=alert.activity_id,
                         activity_item_id=alert.activity_item_id,
                         answer_id=answer_id,
+                        type=alert.type,
                     ).dict(),
                 )
             except Exception as e:
