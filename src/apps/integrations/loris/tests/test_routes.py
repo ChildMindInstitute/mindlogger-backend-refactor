@@ -17,8 +17,12 @@ class TestLorisRouter:
 
     async def test_start_transmit_process(self, client: TestClient, user: User, uuid_zero: uuid.UUID):
         applet_data = {"applet_id": str(uuid_zero)}
+        _data = {
+            "user_id": uuid_zero,
+            "activities": [{"activity_id": uuid_zero, "answer_id": uuid_zero, "version": "0.1.2", "visit": "test"}],
+        }
         client.login(user)
-        response = await client.post(self.start_transmit_process_url, query=applet_data)
+        response = await client.post(self.start_transmit_process_url, data=[_data], query=applet_data)
         assert response.status_code == 202
 
     # async def test_consent_create(self, client: TestClient, user: User, uuid_zero: uuid.UUID):
