@@ -1,7 +1,7 @@
 import uuid
 
 from apps.alerts.crud.alert import AlertCRUD
-from apps.alerts.domain import Alert
+from apps.alerts.domain import Alert, AlertTypes
 from apps.shared.query_params import QueryParams
 
 
@@ -32,6 +32,7 @@ class AlertService:
                     workspace=workspace.workspace_name,
                     respondent_id=alert.respondent_id,
                     subject_id=alert.subject_id,
+                    type=alert.type if alert.type else AlertTypes.ANSWER_ALERT,
                 )
             )
         return alerts
