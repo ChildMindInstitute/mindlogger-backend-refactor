@@ -4,7 +4,7 @@ from enum import Enum
 from pydantic import Field, root_validator, validator
 
 from apps.activities.errors import IncorrectTimeRange
-from apps.shared.domain import PublicModel
+from apps.shared.domain import PublicModel, PublicModelNoExtra
 
 
 class ConditionType(str, Enum):
@@ -53,7 +53,7 @@ OPTION_BASED_CONDITIONS = [
 ]
 
 
-class OptionPayload(PublicModel):
+class OptionPayload(PublicModelNoExtra):
     option_value: str
 
 
@@ -61,7 +61,7 @@ class OptionIndexPayload(OptionPayload):
     row_index: int
 
 
-class ValuePayload(PublicModel):
+class ValuePayload(PublicModelNoExtra):
     value: float
 
     @validator("value")
@@ -113,7 +113,7 @@ class TimeRangePayload(PublicModel):
         return d
 
 
-class MinMaxPayload(PublicModel):
+class MinMaxPayload(PublicModelNoExtra):
     min_value: float
     max_value: float
 
@@ -195,15 +195,15 @@ class GreaterThanCondition(_GreaterThanCondition):
 
 
 class LessThanCondition(_LessThanCondition):
-    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
+    payload: ValuePayload | ValueIndexPayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class EqualCondition(_EqualCondition):
-    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
+    payload: ValuePayload | ValueIndexPayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class NotEqualCondition(_NotEqualCondition):
-    payload: ValuePayload | DatePayload | TimePayload | TimeRangePayload
+    payload: ValuePayload | ValueIndexPayload | DatePayload | TimePayload | TimeRangePayload
 
 
 class BetweenCondition(_BetweenCondition):

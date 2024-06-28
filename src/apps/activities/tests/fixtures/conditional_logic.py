@@ -24,7 +24,7 @@ def condition_between() -> cnd.BetweenCondition:
 @pytest.fixture
 def condition_rows_outside_of() -> cnd.OutsideOfCondition:
     return cnd.OutsideOfCondition(
-        item_name=DEFAULT_ITEM_NAME, payload=cnd.MinMaxPayload(min_value=0, max_value=10, row_index=0)
+        item_name=DEFAULT_ITEM_NAME, payload=cnd.MinMaxPayloadRow(min_value=0, max_value=10, row_index=0)
     )
 
 
