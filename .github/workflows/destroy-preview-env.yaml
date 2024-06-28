@@ -2,9 +2,6 @@ name: Destroy preview environment
 
 on:
   workflow_call:
-    outputs:
-      service-url:
-        value: "${{ jobs.create-preview-env.outputs.service-url }}"
     inputs:
       env-name:
         type: string
@@ -21,10 +18,6 @@ on:
       app-name:
         type: string
         description: App Name (likely the GH repo)
-        required: true
-      vpc-id:
-        type: string
-        description: VPC ID for preview envs
         required: true
       aws-region:
         type: string
@@ -44,7 +37,6 @@ jobs:
       ENV_NAME: ${{ inputs.env-name }}
       ENV_NAME_SNAKE: ${{ inputs.env-snake-name }}
       APP_NAME: ${{ inputs.app-name }}
-      VPC_ID: ${{ inputs.vpc-id }}
       COPILOT_SERVICE: ${{ inputs.copilot-service }}
       AWS_REGION: us-east-1
     steps:
@@ -66,4 +58,4 @@ jobs:
         # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
         # is copied and tagged properly for copilot to pick it up.
         run: |
-          aws secretsmanager delete-secret --name cmiml-feature-${{ inputs.env-name }} --force-delete-without-recovery
+          aws secretsmanager delete-secret --secret-id cmiml-feature-${{ inputs.env-name }} --force-delete-without-recovery

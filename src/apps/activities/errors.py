@@ -256,3 +256,6 @@ class MultiSelectNoneOptionError(ValidationError):
 
 class IncorrectTimeRange(ValidationError):
     message = _("Incorrect timerange")
+
+class FlowDoesNotExist(NotFoundError):
+    message = _("Flow does not exist.")

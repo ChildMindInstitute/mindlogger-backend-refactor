@@ -2,6 +2,10 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.answers.api import (
+    answer_note_add,
+    answer_note_delete,
+    answer_note_edit,
+    answer_note_list,
     answers_existence_check,
     applet_activity_answer_retrieve,
     applet_activity_answers_list,
@@ -14,21 +18,26 @@ from apps.answers.api import (
     applet_answers_export,
     applet_completed_entities,
     applet_flow_answer_retrieve,
+    applet_flow_assessment_create,
     applet_flow_identifiers_retrieve,
     applet_flow_submissions_list,
+    applet_submission_assessment_retrieve,
+    applet_submission_delete,
+    applet_submission_reviews_retrieve,
     applet_submit_date_list,
     applets_completed_entities,
     create_anonymous_answer,
     create_answer,
-    note_add,
-    note_delete,
-    note_edit,
-    note_list,
     review_activity_list,
     review_flow_list,
+    submission_note_add,
+    submission_note_delete,
+    submission_note_edit,
+    submission_note_list,
     summary_activity_flow_list,
+    summary_activity_latest_report_retrieve,
     summary_activity_list,
-    summary_latest_report_retrieve,
+    summary_flow_latest_report_retrieve,
 )
 from apps.answers.domain import (
     ActivitySubmissionResponse,
@@ -182,7 +191,17 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(summary_latest_report_retrieve)
+)(summary_activity_latest_report_retrieve)
+
+
+router.post(
+    "/applet/{applet_id}/flows/{flow_id}/subjects/{subject_id}/latest_report",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(summary_flow_latest_report_retrieve)
 
 router.get(
     "/applet/{applet_id}/dates",
@@ -225,6 +244,7 @@ router.get(
 )(applet_answer_reviews_retrieve)
 
 router.get(
+    # TODO: Change 'assessment' to assessments
     "/applet/{applet_id}/answers/{answer_id}/assessment",
     status_code=status.HTTP_200_OK,
     responses={
@@ -235,11 +255,13 @@ router.get(
 )(applet_activity_assessment_retrieve)
 
 router.delete(
+    # TODO: Change 'assessment' to assessments
     "/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )(applet_answer_assessment_delete)
 
 router.post(
+    # TODO: Change 'assessment' to assessments
     "/applet/{applet_id}/answers/{answer_id}/assessment",
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -249,13 +271,50 @@ router.post(
 )(applet_activity_assessment_create)
 
 router.post(
+    "/applet/{applet_id}/submissions/{submission_id}/assessments",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_flow_assessment_create)
+
+
+router.get(
+    "/applet/{applet_id}/submissions/{submission_id}/assessments",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[AssessmentAnswerPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_submission_assessment_retrieve)
+
+router.delete(
+    "/applet/{applet_id}/submissions/{submission_id}/assessments/{assessment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)(applet_submission_delete)
+
+
+router.get(
+    "/applet/{applet_id}/submissions/{submission_id}/reviews",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[AnswerReviewPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_submission_reviews_retrieve)
+
+
+router.post(
     "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",
     status_code=status.HTTP_201_CREATED,
     responses={
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(note_add)
+)(answer_note_add)
 
 router.get(
     "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes",
@@ -265,7 +324,7 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(note_list)
+)(answer_note_list)
 
 router.put(
     "/applet/{applet_id}/answers/{answer_id}/activities/" "{activity_id}/notes/{note_id}",
@@ -275,7 +334,7 @@ router.put(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(note_edit)
+)(answer_note_edit)
 
 router.delete(
     "/applet/{applet_id}/answers/{answer_id}/activities/" "{activity_id}/notes/{note_id}",
@@ -285,7 +344,47 @@ router.delete(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(note_delete)
+)(answer_note_delete)
+
+
+router.post(
+    "/applet/{applet_id}/submissions/{submission_id}/flows/{flow_id}/notes",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(submission_note_add)
+
+router.get(
+    "/applet/{applet_id}/submissions/{submission_id}/flows/{flow_id}/notes",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[AnswerNoteDetailPublic]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(submission_note_list)
+
+router.put(
+    "/applet/{applet_id}/submissions/{submission_id}/flows/{flow_id}/notes/{note_id}",
+    # noqa: E501
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(submission_note_edit)
+
+router.delete(
+    "/applet/{applet_id}/submissions/{submission_id}/flows/{flow_id}/notes/{note_id}",
+    # noqa: E501
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(submission_note_delete)
 
 router.get(
     "/applet/{applet_id}/data",

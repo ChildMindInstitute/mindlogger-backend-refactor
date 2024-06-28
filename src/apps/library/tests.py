@@ -461,3 +461,26 @@ class TestLibrary(BaseTest):
         res = resp.json()["result"]
         assert len(res) == 1
         assert res[0]["message"] == AppletVersionDoesNotExistError.message
+
+    @pytest.mark.parametrize(
+        "kw, exp_kw, exp_status, include_kw",
+        (
+            (["test", "test2"], ["test", "test2"], http.HTTPStatus.CREATED, True),
+            ([], [], http.HTTPStatus.CREATED, True),
+            (None, [], http.HTTPStatus.CREATED, False),
+            (None, [], http.HTTPStatus.CREATED, True),
+        ),
+    )
+    async def test_library_share_with_empty_kw(
+        self, client: TestClient, applet_one: AppletFull, tom: User, kw, exp_kw, exp_status, include_kw
+    ):
+        client.login(tom)
+        data = dict(applet_id=applet_one.id, name="PHQ2")
+        if include_kw:
+            data["keywords"] = kw
+
+        response = await client.post(self.library_url, data=data)
+        assert response.status_code == exp_status
+        if exp_status == http.HTTPStatus.CREATED:
+            result = response.json()["result"]
+            assert result["keywords"] == exp_kw

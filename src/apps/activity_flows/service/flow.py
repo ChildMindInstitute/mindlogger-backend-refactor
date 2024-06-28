@@ -285,5 +285,5 @@ class FlowService:
             flow_map[schema.activity_flow_id].activity_ids.append(schema.activity_id)
         return flows
 
-    async def get_versions(self, flow_id: uuid.UUID) -> list[Version]:
-        return await FlowsHistoryCRUD(self.session).get_versions_data(flow_id)
+    async def get_versions(self, applet_id: uuid.UUID, flow_id: uuid.UUID) -> list[Version]:
+        return await FlowsHistoryCRUD(self.session).get_versions_data(applet_id, flow_id)

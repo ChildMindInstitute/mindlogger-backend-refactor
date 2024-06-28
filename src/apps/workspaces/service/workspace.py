@@ -249,12 +249,14 @@ class WorkspaceService:
         except ValidationError:
             return None
 
-    async def get_arbitrary_info_by_owner_id_if_use_arbitrary(self, owner_id: uuid.UUID) -> WorkspaceArbitrary | None:
+    async def get_arbitrary_info_by_owner_id_if_use_arbitrary(
+        self, owner_id: uuid.UUID, *, in_use_only=True
+    ) -> WorkspaceArbitrary | None:
         schema = await UserWorkspaceCRUD(self.session).get_by_user_id(owner_id)
-        if not schema or not schema.use_arbitrary or not schema.database_uri:
+        if not schema or (in_use_only and not schema.use_arbitrary) or not schema.database_uri:
             return None
         try:
-            return WorkspaceArbitrary.from_orm(schema) if schema else None
+            return WorkspaceArbitrary.from_orm(schema)
         except ValidationError:
             return None
 
