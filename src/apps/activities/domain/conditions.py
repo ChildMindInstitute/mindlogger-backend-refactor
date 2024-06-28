@@ -45,14 +45,6 @@ class TimePayloadType(str, Enum):
     END_TIME = "endTime"
 
 
-OPTION_BASED_CONDITIONS = [
-    MultiSelectConditionType.INCLUDES_OPTION,
-    MultiSelectConditionType.NOT_INCLUDES_OPTION,
-    SingleSelectConditionType.EQUAL_TO_OPTION,
-    SingleSelectConditionType.NOT_EQUAL_TO_OPTION,
-]
-
-
 class OptionPayload(PublicModelNoExtra):
     option_value: str
 
