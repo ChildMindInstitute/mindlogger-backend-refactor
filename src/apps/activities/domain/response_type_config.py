@@ -86,13 +86,22 @@ class ResponseType(str, Enum):
         )
 
     @classmethod
-    def options_based_with_value(cls):
-        return (
-            # cls.SINGLESELECTROWS,
-            # cls.MULTISELECTROWS,
+    def options_mapped_on_value(cls) -> list[str]:
+        return [
             cls.SINGLESELECT,
             cls.MULTISELECT,
-        )
+        ]
+
+    @classmethod
+    def options_mapped_on_id(cls) -> list[str]:
+        return [
+            cls.SINGLESELECTROWS,
+            cls.MULTISELECTROWS,
+        ]
+
+    @classmethod
+    def option_based(cls) -> list[str]:
+        return cls.options_mapped_on_id() + cls.options_mapped_on_value()
 
 
 class AdditionalResponseOption(PublicModel):

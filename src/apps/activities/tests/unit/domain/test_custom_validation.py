@@ -86,10 +86,10 @@ def items() -> list[ActivityItemCreate]:
                 is_hidden=False,
                 conditional_logic=ConditionalLogic(
                     conditions=[
-                        EqualCondition(
+                        EqualToOptionCondition(
                             item_name=item_name,
-                            type=ConditionType.EQUAL,
-                            payload=ValuePayload(value=1),
+                            type=ConditionType.EQUAL_TO_OPTION,
+                            payload=OptionPayload(option_value=1),
                         )
                     ]
                 ),
@@ -100,7 +100,6 @@ def items() -> list[ActivityItemCreate]:
 
 
 class TestValidateItemFlow:
-    @pytest.mark.skip()  # Will be fixed in M2-7111
     def test_successful_validation(self, items: list[ActivityItemCreate]):
         values = {"items": items}
         assert values == validate_item_flow(values)
