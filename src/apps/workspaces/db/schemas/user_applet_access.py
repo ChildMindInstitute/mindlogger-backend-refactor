@@ -40,6 +40,7 @@ class UserAppletAccessSchema(Base):
     invitor_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     meta = Column(JSONB())
     nickname = Column(StringEncryptedType(Unicode, get_key))
+    title = Column(StringEncryptedType(Unicode, get_key))
 
     is_pinned = Column(Boolean(), default=False)
     __table_args__ = (

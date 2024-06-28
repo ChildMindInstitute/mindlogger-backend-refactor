@@ -448,6 +448,18 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().first()
 
+    async def get_latest_answer_by_activity_id(
+        self, applet_id: uuid.UUID, activity_id: uuid.UUID
+    ) -> AnswerSchema | None:
+        query: Query = select(AnswerSchema)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(func.split_part(AnswerSchema.activity_history_id, "_", 1) == str(activity_id))
+        query = query.order_by(AnswerSchema.created_at.desc())
+        query = query.limit(1)
+
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
+
     async def get_latest_flow_answer(
         self,
         applet_id: uuid.UUID,

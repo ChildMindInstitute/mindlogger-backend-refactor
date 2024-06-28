@@ -8,6 +8,7 @@ from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.subjects.constants import SubjectTag
 from apps.subjects.domain import SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.constants import TransferOwnershipStatus
@@ -95,6 +96,12 @@ class TransferService:
                 Role.OWNER,
             ],
         )
+        subject_service = SubjectsService(self.session, self._user.id)
+        previous_owner_subject = await subject_service.get_by_user_and_applet(
+            previous_owner.user_id, transfer.applet_id
+        )
+        if previous_owner_subject and previous_owner_subject.id:
+            await subject_service.update(previous_owner_subject.id, tag=None)
 
         await TransferCRUD(self.session).approve_by_key(key, self._user.id)
         await TransferCRUD(self.session).decline_all_pending_by_applet_id(applet_id=transfer.applet_id)
@@ -119,7 +126,7 @@ class TransferService:
                 **roles_data,
             ),
         ]
-        subject_service = SubjectsService(self.session, self._user.id)
+
         await UserAppletAccessCRUD(self.session).upsert_user_applet_access_list(roles_to_add)
         subject = await subject_service.get_by_user_and_applet(self._user.id, transfer.applet_id)
         if subject and subject.id:
@@ -129,6 +136,7 @@ class TransferService:
                 first_name=self._user.first_name,
                 email=EmailStr(self._user.email_encrypted),
                 is_deleted=False,
+                tag=SubjectTag.TEAM,
             )
         else:
             await subject_service.create(
@@ -141,6 +149,7 @@ class TransferService:
                     last_name=self._user.last_name,
                     secret_user_id=f"{uuid.uuid4()}",
                     nickname=self._user.get_full_name(),
+                    tag=SubjectTag.TEAM,
                 )
             )
 
