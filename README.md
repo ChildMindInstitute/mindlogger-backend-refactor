@@ -109,6 +109,12 @@ pipenv --python /opt/homebrew/bin/python3.10
 >
 > As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
 
+> 💡 **TIP:** If you're using pipenv, be sure to reactivate your virtual environment after changing your environment variables.
+> ```bash
+> exit
+> pipenv shell
+> ```
+
 ## Installation
 
 ### Create `.env` file for future needs
@@ -199,6 +205,12 @@ Install all dependencies
 # to install venv to current directory use `export PIPENV_VENV_IN_PROJECT=1`
 pipenv sync --dev
 ```
+
+> 💡 **TIP:** Be sure to run reactivate your virtual environment after changing your environment variables.
+> ```bash
+> exit
+> pipenv shell
+> ```
 
 > 🛑 **NOTE:** if you don't use `pipenv` for some reason remember that you will not have automatically exported variables from your `.env` file.
 >
