@@ -58,7 +58,7 @@ class OptionPayload(PublicModelNoExtra):
 
 
 class OptionIndexPayload(OptionPayload):
-    row_index: int
+    row_index: str
 
 
 class ValuePayload(PublicModelNoExtra):
@@ -70,7 +70,7 @@ class ValuePayload(PublicModelNoExtra):
 
 
 class ValueIndexPayload(ValuePayload):
-    row_index: int
+    row_index: str
 
 
 class DatePayload(PublicModel):
@@ -123,7 +123,7 @@ class MinMaxPayload(PublicModelNoExtra):
 
 
 class MinMaxPayloadRow(MinMaxPayload):
-    row_index: int
+    row_index: str
 
 
 class ScoreConditionPayload(PublicModel):
