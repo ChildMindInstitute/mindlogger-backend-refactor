@@ -69,3 +69,4 @@ class AppletFetchBase(AppletReportConfigurationBase, AppletBaseInfo):
     created_at: datetime.datetime | None
     updated_at: datetime.datetime | None
     is_published: bool = False
+    owner_id: uuid.UUID | None

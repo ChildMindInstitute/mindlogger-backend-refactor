@@ -100,6 +100,7 @@ class AppletAnswerCreate(InternalModel):
     client: ClientMeta
     target_subject_id: uuid.UUID | None
     source_subject_id: uuid.UUID | None
+    input_subject_id: uuid.UUID | None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
@@ -281,6 +282,26 @@ class ActivitySubmissionResponse(ActivitySubmission):
 class ReviewsCount(PublicModel):
     mine: int = 0
     other: int = 0
+
+
+class AppletSubmission(PublicModel):
+    applet_id: uuid.UUID
+    respondent_subject_id: uuid.UUID
+    respondent_subject_tag: str | None
+    respondent_secret_user_id: str | None
+    respondent_nickname: str | None
+    target_subject_id: uuid.UUID
+    target_subject_tag: str | None
+    target_secret_user_id: str | None
+    target_nickname: str | None
+    source_subject_id: uuid.UUID | None
+    source_subject_tag: str | None
+    source_secret_user_id: str | None
+    source_nickname: str | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    activity_name: str
+    activity_id: uuid.UUID
 
 
 class FlowSubmission(PublicModel):
@@ -495,7 +516,9 @@ class UserAnswerDataBase(BaseModel):
     version: str
     respondent_id: uuid.UUID | str | None = None
     target_subject_id: uuid.UUID | str | None = None
+    target_secret_id: uuid.UUID | str | None = None
     source_subject_id: uuid.UUID | str | None = None
+    source_secret_id: uuid.UUID | str | None = None
     relation: str | None = None
     respondent_secret_id: str | None = None
     legacy_profile_id: str | None = None
@@ -644,3 +667,15 @@ class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
     target_subject_id: uuid.UUID | None = None
     answer_id: uuid.UUID | None = None
+
+
+class MultiinformantAssessmentValidationResponse(PublicModel):
+    valid: bool
+    message: str | None = None
+    code: str | None = None
+
+
+class PublicSubmissionsResponse(PublicModel):
+    submissions: list[AppletSubmission] = Field(default_factory=list)
+    submissions_count: int = 0
+    participants_count: int = 0

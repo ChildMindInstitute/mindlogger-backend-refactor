@@ -40,6 +40,7 @@ class ValidationError(BaseError):
     message = _("Bad request.")
     status_code = status.HTTP_400_BAD_REQUEST
     type = ExceptionTypes.BAD_REQUEST
+    code: str | None = None
 
 
 class FieldError(BaseError):

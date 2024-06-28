@@ -36,11 +36,13 @@ from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.exception import ValidationError
 from apps.shared.query_params import QueryParams
+from apps.subjects.constants import SubjectTag
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import Subject
 from apps.subjects.errors import AppletUserViolationError
 from apps.users import UsersCRUD
 from apps.users.domain import User
+from apps.workspaces.domain.workspace import WorkspaceRespondent
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
@@ -54,6 +56,21 @@ class InvitationsService:
 
     async def fetch_all(self, query_params: QueryParams) -> list[InvitationDetail]:
         return await self.invitations_crud.get_pending_by_invitor_id(self._user.id, query_params)
+
+    async def fetch_by_emails(self, emails: list[str]) -> dict[str, InvitationDetail]:
+        return await self.invitations_crud.get_latest_by_emails(emails)
+
+    async def fill_pending_invitations_respondents(
+        self, respondents: list[WorkspaceRespondent]
+    ) -> list[WorkspaceRespondent]:
+        emails = [respondent.email for respondent in respondents if respondent.email is not None]
+        invitations = await self.fetch_by_emails(emails)
+
+        for respondent in respondents:
+            for detail in respondent.details or []:
+                detail.invitation = invitations.get(f"{respondent.email}_{detail.applet_id}")
+
+        return respondents
 
     async def fetch_all_count(self, query_params: QueryParams) -> int:
         return await self.invitations_crud.get_pending_by_invitor_id_count(self._user.id, query_params)
@@ -99,6 +116,7 @@ class InvitationsService:
             "status": InvitationStatus.PENDING,
             "user_id": invited_user_id,
             "meta": meta.dict(),
+            "tag": schema.tag,
         }
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
         if pending_invitation:
@@ -140,8 +158,11 @@ class InvitationsService:
             applet_name=applet.display_name,
             role=invitation_internal.role,
             status=invitation_internal.status,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
             key=invitation_internal.key,
             user_id=invitation_internal.user_id,
+            tag=invitation_internal.tag,
         )
 
     async def send_reviewer_invitation(
@@ -168,6 +189,8 @@ class InvitationsService:
             "user_id": invited_user_id,
             "nickname": None,
             "meta": meta.dict(),
+            "tag": SubjectTag.TEAM,
+            "title": schema.title,
         }
 
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -213,9 +236,13 @@ class InvitationsService:
             applet_name=applet.display_name,
             role=invitation_internal.role,
             status=invitation_internal.status,
+            first_name=invitation_internal.first_name,
+            last_name=invitation_internal.last_name,
             key=invitation_internal.key,
             subjects=schema.subjects,
             user_id=invitation_internal.user_id,
+            tag=invitation_internal.tag,
+            title=invitation_internal.title,
         )
 
     async def send_managers_invitation(
@@ -239,6 +266,8 @@ class InvitationsService:
             "last_name": schema.last_name,
             "user_id": invited_user_id,
             "meta": {},
+            "tag": SubjectTag.TEAM,
+            "title": schema.title,
         }
 
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -281,8 +310,12 @@ class InvitationsService:
             applet_name=applet.display_name,
             role=invitation_internal.role,
             status=invitation_internal.status,
+            first_name=invitation_internal.first_name,
+            last_name=invitation_internal.last_name,
             key=invitation_internal.key,
             user_id=invitation_internal.user_id,
+            tag=invitation_internal.tag,
+            title=invitation_internal.title,
         )
 
     def _get_invitation_url_by_role(self, role: Role):

@@ -9,7 +9,7 @@ from apps.activities.domain.activity_item import (
     ActivityItemSingleLanguageDetail,
     ActivityItemSingleLanguageDetailPublic,
 )
-from apps.activities.domain.response_type_config import ResponseType
+from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.scores_reports import ScoresAndReports
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -92,6 +92,8 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
     order: int
     items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)
     scores_and_reports: ScoresAndReports | None = None
+    performance_task_type: PerformanceTaskType | None = None
+    is_performance_task: bool = False
 
 
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):

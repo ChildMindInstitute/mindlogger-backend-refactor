@@ -120,7 +120,16 @@ async def update_subject(
         subject.secret_user_id = schema.secret_user_id
         subject.nickname = schema.nickname
         subject = await subject_srv.update(subject.id, **schema.dict(by_alias=False))
-        return Response(result=SubjectReadResponse(secret_user_id=subject.secret_user_id, nickname=subject.nickname))
+        return Response(
+            result=SubjectReadResponse(
+                secret_user_id=subject.secret_user_id,
+                nickname=subject.nickname,
+                id=subject.id,
+                tag=subject.tag,
+                applet_id=subject.applet_id,
+                user_id=subject.user_id,
+            )
+        )
 
 
 async def delete_subject(
@@ -176,6 +185,12 @@ async def get_subject(
 
     return Response(
         result=SubjectReadResponse(
-            secret_user_id=subject.secret_user_id, nickname=subject.nickname, last_seen=answer_dates.get(subject.id)
+            id=subject.id,
+            secret_user_id=subject.secret_user_id,
+            nickname=subject.nickname,
+            last_seen=answer_dates.get(subject.id),
+            tag=subject.tag,
+            applet_id=subject.applet_id,
+            user_id=subject.user_id,
         )
     )

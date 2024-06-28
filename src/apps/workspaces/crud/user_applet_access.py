@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 from datetime import datetime
 from typing import Tuple
@@ -61,10 +60,20 @@ class _AppletUsersFilter(Filtering):
 class _WorkspaceRespondentOrdering(Ordering):
     is_pinned = Ordering.Clause(literal_column("is_pinned"))
     secret_ids = Ordering.Clause(literal_column("secret_ids"))
+    tags = Ordering.Clause(literal_column("tags_order"))
     created_at = Ordering.Clause(func.min(UserAppletAccessSchema.created_at))
-    # last_seen = Ordering.Clause(
-    #     func.coalesce(UserSchema.last_seen_at, UserSchema.created_at)
-    # )
+    status = Ordering.Clause(literal_column("status_order"))
+    # TODO: https://mindlogger.atlassian.net/browse/M2-6834
+    # Add support to order by last_seen
+
+    encrypted_fields = {
+        "nicknames": Ordering.Clause(
+            func.array_remove(
+                func.array_agg(func.distinct(func.decrypt_internal(SubjectSchema.nickname, get_key()))),
+                None,
+            )
+        )
+    }
 
 
 class _WorkspaceRespondentSearch(Searching):
@@ -78,15 +87,6 @@ class _AppletRespondentSearch(Searching):
     search_fields = [
         UserAppletAccessSchema.meta["secretUserId"].astext,
     ]
-
-
-class _AppletManagersOrdering(Ordering):
-    email = UserSchema.email
-    first_name = UserSchema.first_name
-    last_name = UserSchema.last_name
-    created_at = UserSchema.created_at
-    is_pinned = Ordering.Clause(literal_column("is_pinned"))
-    roles = Ordering.Clause(literal_column("roles"))
 
 
 class _AppletUsersSearch(Searching):
@@ -195,6 +195,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             "is_deleted": schema.is_deleted,
             "meta": schema.meta,
             "nickname": schema.nickname,
+            "title": schema.title,
         }
         stmt = insert(UserAppletAccessSchema).values(values)
         stmt = stmt.on_conflict_do_update(
@@ -214,6 +215,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "updated_at": datetime.utcnow(),
                 "meta": stmt.excluded.meta,
                 "nickname": stmt.excluded.nickname,
+                "title": stmt.excluded.title,
             },
             where=where,
         ).returning(UserAppletAccessSchema)
@@ -235,6 +237,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "is_deleted": schema.is_deleted,
                 "meta": schema.meta,
                 "nickname": schema.nickname,
+                "title": schema.title,
             }
             for schema in schemas
         ]
@@ -255,6 +258,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "is_deleted": stmt.excluded.is_deleted,
                 "meta": stmt.excluded.meta,
                 "nickname": stmt.excluded.nickname,
+                "title": stmt.excluded.title,
             },
         )
 
@@ -372,7 +376,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         owner_id: uuid.UUID,
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
-    ) -> Tuple[list[WorkspaceRespondent], int]:
+    ) -> Tuple[list[WorkspaceRespondent], int, list[str]]:
         field_nickname = SubjectSchema.nickname
         field_secret_user_id = SubjectSchema.secret_user_id
         workspace_applets_sq = self.workspace_applets_subquery(owner_id, applet_id)
@@ -434,6 +438,19 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema, SubjectSchema)
         )
 
+        status_invited = UserSchema.id.isnot(None)
+        status_pending = (
+            select(InvitationSchema.id)
+            .where(
+                InvitationSchema.status == InvitationStatus.PENDING,
+                InvitationSchema.applet_id.in_(workspace_applets_sq),
+                InvitationSchema.meta.has_key("subject_id"),
+                func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True))
+                == any_(func.array_agg(SubjectSchema.id)),
+            )
+            .exists()
+        )
+
         query: Query = select(
             # fmt: off
             UserSchema.id,
@@ -444,24 +461,19 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "is_anonymous_respondent"
             ),
             case(
-                (UserSchema.id.isnot(None), SubjectStatus.INVITED),
-                (
-                    (
-                        select(InvitationSchema.id)
-                        .where(
-                            InvitationSchema.status == InvitationStatus.PENDING,
-                            InvitationSchema.applet_id.in_(workspace_applets_sq),
-                            InvitationSchema.meta.has_key("subject_id"),
-                            func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True))
-                            == any_(func.array_agg(SubjectSchema.id)),
-                        )
-                        .exists()
-                    ),
-                    SubjectStatus.PENDING,
-                ),
+                (status_invited, SubjectStatus.INVITED),
+                (status_pending, SubjectStatus.PENDING),
                 else_=SubjectStatus.NOT_INVITED,
             ).label("status"),
+            # Add special ordering for status column (used only in order_by)
+            case(
+                (status_pending, 0),  # Pending full accounts
+                (status_invited, 1),  # Full accounts
+                else_=2,  # Limited accounts
+            ).label("status_order"),
             func.array_agg(SubjectSchema.id).label("subjects"),
+            # Add tag column for ordering
+            func.array_agg(SubjectSchema.tag).label("tags_order"),
             is_pinned.label("is_pinned"),
             func.array_remove(func.array_agg(func.distinct(field_nickname)), None)
             .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
@@ -492,6 +504,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     AppletSchema.encryption,
                     text("'subject_id'"),
                     SubjectSchema.id,
+                    text("'subject_tag'"),
+                    SubjectSchema.tag,
+                    text("'subject_first_name'"),
+                    SubjectSchema.first_name,
+                    text("'subject_last_name'"),
+                    SubjectSchema.last_name,
+                    text("'subject_created_at'"),
+                    SubjectSchema.created_at,
                 )
             ).label("details"),
         )
@@ -526,16 +546,35 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         if query_params.search:
             query = query.having(_WorkspaceRespondentSearch().get_clauses(query_params.search))
 
+        # Get total count before ordering to evaluate eligibility for ordering by encrypted fields
         coro_total = self._execute(select(count()).select_from(query.with_only_columns(UserSchema.id).subquery()))
+        total = (await coro_total).scalar()
+
+        ordering = _WorkspaceRespondentOrdering()
 
         if query_params.ordering:
-            query = query.order_by(*_WorkspaceRespondentOrdering().get_clauses(*query_params.ordering))
+            query = query.order_by(*ordering.get_clauses(*query_params.ordering, count=total))
+
         query = paging(query, query_params.page, query_params.limit)
-        coro_data = self._execute(query)
-        res_data, res_total = await asyncio.gather(coro_data, coro_total)
-        data = parse_obj_as(list[WorkspaceRespondent], res_data.all())
-        total = res_total.scalar()
-        return data, total
+
+        data = (await self._execute(query)).all()
+        data = parse_obj_as(list[WorkspaceRespondent], data)
+        ordering_fields = ordering.get_ordering_fields(total)
+
+        return data, total, ordering_fields
+
+    async def get_applet_respondents_total(self, applet_id: uuid.UUID) -> int:
+        query: Query = (
+            select(count(SubjectSchema.id))
+            .select_from(SubjectSchema)
+            .where(
+                SubjectSchema.applet_id == applet_id,
+                SubjectSchema.soft_exists(),
+            )
+        )
+
+        result = await self._execute(query)
+        return result.scalar()
 
     async def get_workspace_managers(
         self,
@@ -543,7 +582,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         owner_id: uuid.UUID,
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
-    ) -> Tuple[list[WorkspaceManager], int]:
+    ) -> Tuple[list[WorkspaceManager], int, list[str]]:
         is_pinned = (
             exists()
             .where(
@@ -566,15 +605,78 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema)
         )
 
-        query: Query = (
+        invited_users = (
+            select(
+                InvitationSchema.id,
+                InvitationSchema.first_name,
+                InvitationSchema.last_name,
+                InvitationSchema.email,
+                func.array_agg(
+                    aggregate_order_by(
+                        func.distinct(InvitationSchema.title),
+                        InvitationSchema.title,
+                    )
+                ).label("titles"),
+                func.array_agg(
+                    aggregate_order_by(
+                        func.distinct(InvitationSchema.role),
+                        InvitationSchema.role,
+                    )
+                ).label("roles"),
+                func.array_agg(
+                    aggregate_order_by(
+                        func.json_build_object(
+                            text("'applet_id'"),
+                            AppletSchema.id,
+                            text("'applet_display_name'"),
+                            AppletSchema.display_name,  # noqa: E501
+                            text("'applet_image'"),
+                            AppletSchema.image,
+                            text("'role'"),
+                            InvitationSchema.role,
+                            text("'encryption'"),
+                            AppletSchema.encryption,
+                        ),
+                        AppletSchema.id,
+                    )
+                ).label("applets"),
+                InvitationSchema.status,
+                InvitationSchema.created_at,
+                InvitationSchema.user_id,
+                InvitationSchema.key,
+            )
+            .select_from(InvitationSchema)
+            .join(
+                AppletSchema,
+                and_(
+                    AppletSchema.id == InvitationSchema.applet_id,
+                    AppletSchema.soft_exists(),
+                ),
+            )
+            .where(
+                InvitationSchema.role != Role.RESPONDENT,
+                InvitationSchema.status == InvitationStatus.PENDING,
+                InvitationSchema.applet_id == applet_id,
+                has_access,
+            )
+            .group_by(InvitationSchema.id)
+        ).cte("invited_users")
+
+        accepted_users = (
             select(
                 # fmt: off
                 UserSchema.id,
                 UserSchema.first_name,
                 UserSchema.last_name,
                 UserSchema.email_encrypted,
+                UserSchema.created_at,
                 func.coalesce(UserSchema.last_seen_at, UserSchema.created_at).label("last_seen"),
-                is_pinned.label("is_pinned"),
+                func.array_agg(
+                    aggregate_order_by(
+                        func.distinct(UserAppletAccessSchema.title),
+                        UserAppletAccessSchema.title,
+                    )
+                ).label("titles"),
                 func.array_agg(
                     aggregate_order_by(
                         func.distinct(UserAppletAccessSchema.role),
@@ -602,6 +704,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                         AppletSchema.id,
                     )
                 ).label("applets"),
+                is_pinned.label("is_pinned"),
             )
             .select_from(UserAppletAccessSchema)
             .join(
@@ -618,28 +721,78 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .where(
                 UserAppletAccessSchema.soft_exists(),
                 UserAppletAccessSchema.owner_id == owner_id,
-                UserAppletAccessSchema.role != Role.RESPONDENT,
                 has_access,
+                UserAppletAccessSchema.role != Role.RESPONDENT,
                 UserAppletAccessSchema.applet_id == applet_id if applet_id else True,
             )
             .group_by(UserSchema.id)
+        ).cte("accepted_users")
+
+        query: Query = (
+            select(
+                func.coalesce(accepted_users.c.id, invited_users.c.id).label("id"),
+                func.coalesce(accepted_users.c.first_name, invited_users.c.first_name).label("first_name"),
+                func.coalesce(accepted_users.c.last_name, invited_users.c.last_name).label("last_name"),
+                func.coalesce(accepted_users.c.email_encrypted, invited_users.c.email).label("email_encrypted"),
+                func.coalesce(accepted_users.c.created_at, invited_users.c.created_at).label("created_at"),
+                func.coalesce(accepted_users.c.last_seen, invited_users.c.created_at).label("last_seen"),
+                func.coalesce(accepted_users.c.roles, invited_users.c.roles).label("roles"),
+                func.coalesce(accepted_users.c.applets, invited_users.c.applets, []).label("applets"),
+                func.coalesce(accepted_users.c.titles, invited_users.c.titles, [])
+                .cast(ARRAY(StringEncryptedType(Unicode, get_key)))
+                .label("titles"),
+                func.coalesce(invited_users.c.status, InvitationStatus.APPROVED).label("status"),
+                func.coalesce(accepted_users.c.is_pinned, False).label("is_pinned"),
+                invited_users.c.key.label("invitation_key"),
+            )
+            .select_from(invited_users)
+            .join(accepted_users, accepted_users.c.id == invited_users.c.user_id, isouter=True, full=True)
         )
 
         if query_params.filters:
             query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
 
-        coro_total = self._execute(select(count()).select_from(query.with_only_columns(UserSchema.id).subquery()))
+        # Get total count before ordering to evaluate eligibility for ordering by encrypted fields
+        coro_total = self._execute(
+            select(count()).select_from(query.with_only_columns(literal_column("status")).subquery())
+        )
+        total = (await coro_total).scalar()
+
+        class _AppletManagersOrdering(Ordering):
+            created_at = Ordering.Clause(literal_column("created_at"))
+            is_pinned = Ordering.Clause(literal_column("is_pinned"))
+            last_seen = Ordering.Clause(literal_column("last_seen"))
+            roles = Ordering.Clause(literal_column("roles"))
+            status = Ordering.Clause(literal_column("status"))
+
+            encrypted_fields = {
+                "email": Ordering.Clause(
+                    func.decrypt_internal(
+                        func.coalesce(accepted_users.c.email_encrypted, invited_users.c.email), get_key()
+                    )
+                ),
+                "first_name": Ordering.Clause(
+                    func.decrypt_internal(
+                        func.coalesce(accepted_users.c.first_name, invited_users.c.first_name), get_key()
+                    )
+                ),
+                "last_name": Ordering.Clause(
+                    func.decrypt_internal(
+                        func.coalesce(accepted_users.c.last_name, invited_users.c.last_name), get_key()
+                    )
+                ),
+            }
+
+        ordering = _AppletManagersOrdering()
 
         if query_params.ordering:
-            query = query.order_by(*_AppletManagersOrdering().get_clauses(*query_params.ordering))
+            query = query.order_by(*ordering.get_clauses(*query_params.ordering, count=total))
+
         query = paging(query, query_params.page, query_params.limit)
 
-        coro_data = self._execute(query)
-
-        res_data, res_total = await asyncio.gather(coro_data, coro_total)
-
-        data = parse_obj_as(list[WorkspaceManager], res_data.all())
-        total = res_total.scalar()
+        data = (await self._execute(query)).all()
+        data = parse_obj_as(list[WorkspaceManager], data)
+        ordering_fields = ordering.get_ordering_fields(total)
 
         # TODO: Fix via class Searching
         #  using database fields - StringEncryptedType
@@ -667,9 +820,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 ):
                     data_search.append(manager)
                     total_search += 1
-            return data_search, total_search
+            return data_search, total_search, ordering_fields
 
-        return data, total
+        return data, total, ordering_fields
 
     async def get_all_by_user_id_and_roles(self, user_id_: uuid.UUID, roles: list[Role]) -> list[UserAppletAccess]:
         query: Query = select(self.schema_class).filter(
@@ -1083,7 +1236,13 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             UserAppletAccessSchema.role == Role.RESPONDENT,
             UserAppletAccessSchema.soft_exists(),
         )
-        query = query.join(SubjectSchema, SubjectSchema.user_id == UserAppletAccessSchema.user_id)
+        query = query.join(
+            SubjectSchema,
+            and_(
+                SubjectSchema.user_id == UserAppletAccessSchema.user_id,
+                SubjectSchema.applet_id == UserAppletAccessSchema.applet_id,
+            ),
+        )
         db_result = await self._execute(query)
         db_result = db_result.all()  # noqa
         return db_result[0] if db_result else None

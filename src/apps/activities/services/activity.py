@@ -274,6 +274,8 @@ class ActivityService:
                 response_is_editable=schema.response_is_editable,
                 order=schema.order,
                 scores_and_reports=schema.scores_and_reports,
+                performance_task_type=schema.performance_task_type,
+                is_performance_task=schema.is_performance_task,
             )
 
             activities.append(activity)

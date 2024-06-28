@@ -42,7 +42,7 @@ migrate-arbitrary:
 # NOTE: cq == "Code quality"
 .PHONY: cq
 cq:
-	${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
+	${RUFF_COMMAND} . && ${RUFF_COMMAND} format . && ${ISORT_COMMAND} . && ${MYPY_COMMAND} .
 
 # ###############
 # Docker

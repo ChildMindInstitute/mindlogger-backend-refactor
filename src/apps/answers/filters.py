@@ -4,6 +4,7 @@ import uuid
 from fastapi import Query
 from pydantic import Field, root_validator, validator
 
+from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import array_from_string
 from apps.shared.query_params import BaseQueryParams
 
@@ -57,3 +58,9 @@ class AnswerExportFilters(BaseQueryParams):
 class AnswerIdentifierVersionFilter(BaseQueryParams):
     from_datetime: datetime.datetime | None
     to_datetime: datetime.datetime | None
+
+
+class AppletMultiinformantAssessmentParams(InternalModel):
+    target_subject_id: uuid.UUID | None
+    source_subject_id: uuid.UUID | None
+    activity_or_flow_id: uuid.UUID | None

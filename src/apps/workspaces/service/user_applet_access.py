@@ -9,6 +9,7 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric, RespondentMeta
 from apps.shared.exception import NotFoundError
+from apps.subjects.constants import SubjectTag
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import SubjectCreate
@@ -73,6 +74,7 @@ class UserAppletAccessService:
                 secret_user_id=str(uuid.uuid4()),
                 user_id=user_id,
                 nickname=nickname,
+                tag=SubjectTag.TEAM,
             )
             await SubjectsCrud(self.session).create(subject)
 
@@ -141,6 +143,7 @@ class UserAppletAccessService:
                 invitor_id=invitation.invitor_id,
                 meta=meta,
                 is_deleted=False,
+                title=invitation.title,
             ),
             where=UserAppletAccessSchema.soft_exists(exists=False),
         )
@@ -174,6 +177,7 @@ class UserAppletAccessService:
                         last_name=invitation.last_name,
                         secret_user_id=secret_id,
                         nickname=user.get_full_name(),
+                        tag=invitation.tag,
                     )
                 )
         else:

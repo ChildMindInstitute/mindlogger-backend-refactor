@@ -16,6 +16,7 @@ class SubjectSchema(Base):
     first_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
     last_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
     nickname = Column(StringEncryptedType(Unicode, get_key), default=None, nullable=True)
+    tag = Column(String, default=None, nullable=True)
     secret_user_id = Column(String, nullable=False)
     language = Column(String(length=5))
     __table_args__ = (

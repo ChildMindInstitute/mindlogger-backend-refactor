@@ -67,6 +67,7 @@ class InvitationRespondentRequest(_InvitationRequest):
         "representativeness but preserve confidentiality",
         default_factory=str,
     )
+    tag: str | None = Field(description="This field represents the tag/label of invited user")
 
 
 class InvitationReviewerRequest(_InvitationRequest):
@@ -84,6 +85,7 @@ class InvitationReviewerRequest(_InvitationRequest):
         "this name can not be changed anymore.",
         default=None,
     )
+    title: str | None = Field(description="This field represents the team member title")
 
 
 class InvitationManagersRequest(_InvitationRequest):
@@ -101,6 +103,8 @@ class InvitationManagersRequest(_InvitationRequest):
         "this name can not be changed anymore.",
         default=None,
     )
+
+    title: str | None = Field(description="This field represents the team member title")
 
 
 class RespondentMeta(InternalModel):
@@ -141,6 +145,8 @@ class _Invitation(InternalModel):
     created_at: datetime
     user_id: uuid.UUID | None
     is_deleted: bool
+    tag: str | None
+    title: str | None
 
 
 class Invitation(_Invitation):
@@ -184,6 +190,8 @@ class InvitationDetailBase(InternalModel):
     last_name: str
     created_at: datetime
     user_id: uuid.UUID | None
+    tag: str | None
+    title: str | None
 
 
 class InvitationDetail(InvitationDetailBase):
@@ -224,7 +232,10 @@ class _InvitationDetail(InternalModel):
     applet_name: str
     status: str
     key: uuid.UUID
+    first_name: str
+    last_name: str
     user_id: uuid.UUID | None
+    tag: str | None
 
 
 class InvitationDetailForRespondent(_InvitationDetail):
@@ -245,6 +256,7 @@ class InvitationDetailForReviewer(_InvitationDetail):
     email: EmailStr
     role: Role = Role.REVIEWER
     subjects: list[uuid.UUID]
+    title: str | None
 
 
 class InvitationDetailForManagers(_InvitationDetail):
@@ -254,6 +266,7 @@ class InvitationDetailForManagers(_InvitationDetail):
 
     email: EmailStr
     role: ManagersRole
+    title: str | None
 
 
 class PrivateInvitationDetail(InternalModel):
@@ -280,6 +293,8 @@ class InvitationResponse(PublicModel):
     meta: dict
     nickname: str | None
     secret_user_id: str | None
+    tag: str | None
+    title: str | None
 
 
 class _InvitationResponse(PublicModel):
@@ -300,10 +315,17 @@ class _InvitationResponse(PublicModel):
     status: InvitationStatus = Field(
         description="This field represents the status for invitation",
     )
+    first_name: str = Field(
+        description="This field represents the first name of invited user",
+    )
+    last_name: str = Field(
+        description="This field represents the last name of invited user",
+    )
     user_id: uuid.UUID | None = Field(
         None,
         description="This field respresents registered user or not. " "Used for tests",
     )
+    tag: str | None = Field(None, description="This field represents subject tag")
 
 
 class InvitationRespondentResponse(_InvitationResponse):
@@ -332,8 +354,12 @@ class InvitationReviewerResponse(_InvitationResponse):
     for reviewer role.
     """
 
+    email: EmailStr = Field(
+        description="This field represents the email of invited reviewer",
+    )
     subjects: list[uuid.UUID] = Field(description="This field represents the list of subject id's")
     role: Role = Role.REVIEWER
+    title: str | None = Field(description="This field represents the team member title")
 
 
 class InvitationManagersResponse(_InvitationResponse):
@@ -347,6 +373,7 @@ class InvitationManagersResponse(_InvitationResponse):
     role: ManagersRole = Field(
         description="This field represents the managers role",
     )
+    title: str | None = Field(description="This field represents the team member title")
 
 
 class PrivateInvitationResponse(PublicModel):
@@ -367,12 +394,14 @@ class ShellAccountCreateRequest(PublicModel):
     secret_user_id: str
     nickname: str | None
     email: str | None
+    tag: str | None
 
     _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
 
 
-class ShallAccountInvitation(PublicModel):
-    email: EmailStr
-    subject_id: uuid.UUID
+class ShellAccountInvitation(PublicModel):
+    email: EmailStr = Field(description="This field represents the email of invited subject")
+    subject_id: uuid.UUID = Field(description="This field represents the subject id")
+    language: InvitationLanguage | None = Field(description="This field represents the language of invitation")
 
     _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
