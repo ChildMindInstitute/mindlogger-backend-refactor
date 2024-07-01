@@ -121,8 +121,23 @@ class PublicListOfVisits(InternalModel):
     count: int
 
 
+class ActivitiesAndVisitsInternal(InternalModel):
+    activity_id: str
+    activity_name: str
+    answer_id: str
+    version: str
+    completed_date: datetime.datetime
+    visits: list[str]
+
+
+class UsersAndVisits(InternalModel):
+    user_id: str
+    secret_user_id: str
+    activities: list[ActivitiesAndVisitsInternal]
+
+
 class PublicListMultipleVisits(InternalModel):
-    info: list[dict]
+    info: list[UsersAndVisits]
     count: int
 
 
