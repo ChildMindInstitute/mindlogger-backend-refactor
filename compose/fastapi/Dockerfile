@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bookworm as base
+FROM python:3.10-slim-bookworm AS base
 
 ARG PIPENV_EXTRA_ARGS
 
@@ -44,7 +44,7 @@ RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
 # Select internal user
 USER code
 
-FROM base as fargate
+FROM base AS fargate
 # Hack for Fargate
 # https://github.com/aws/containers-roadmap/issues/938
 USER root
@@ -58,7 +58,7 @@ VOLUME ["/tmp"]
 VOLUME ["/app/uploads"]
 
 # worker instructions
-FROM base as worker
+FROM base AS worker
 
 USER root
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
