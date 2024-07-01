@@ -8,7 +8,7 @@ ENV PYTHONPATH="src/"
 WORKDIR /app/
 
 RUN apt-get -y update && apt-get -y upgrade \
-    && apt-get install --no-install-recommends -y build-essential=12.9 curl=7.88* \
+    && apt-get install --no-install-recommends -y build-essential=12.9 curl=7.88* libffi-dev \
     && rm -rf /var/lib/apt/lists/
 
 # Add local non-root user to avoid issue with files
