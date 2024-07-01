@@ -7,6 +7,9 @@ on:
     types:
       - closed
 
+concurrency:
+  cancel-in-progress: true
+  group: api-build
 
 permissions:
   id-token: write
@@ -66,6 +69,10 @@ jobs:
                 echo "Jira ticket numbers saved to ${file}"
               fi
           fi
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
       - name: Generate short sha
         id: sha
