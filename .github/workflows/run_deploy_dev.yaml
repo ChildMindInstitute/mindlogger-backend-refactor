@@ -17,19 +17,19 @@ permissions:
   contents: read
   issues: write
 
-jobs:
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER_NAME: cmiml-dev
+  IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
 
+jobs:
   run_migration:
     runs-on: ubuntu-latest
     env:
       TASK_DEFINITION: migration
-      ECS_CLUSTER_NAME: cmiml-dev
       ECS_SERVICE_NAME: migration
-      AWS_REGION: us-east-1
-      IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
-    
-    steps:
 
+    steps:
     - name: echo IMAGE_NAME
       run: |
         echo $IMAGE_NAME
@@ -51,7 +51,7 @@ jobs:
       with:
         task-definition: task-definition.json
         container-name: mind_logger
-        image: ${{ env.IMAGE_NAME }}
+        image: ${{ inputs.IMAGE_NAME }}
   
     - name: Run migration container
       id: run-task
@@ -71,15 +71,12 @@ jobs:
     needs: run_migration
     env:
       TASK_FAMILY_PREFIX: backend
-      ECS_CLUSTER_NAME: cmiml-dev
       ECS_SERVICE_NAME: backend
       ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com
       IMAGE_PREFIX: ${{ inputs.COMMIT_HASH }}
       COMMIT_HASH: ${{ inputs.IMAGE_PREFIX }}
-      AWS_REGION : "us-east-1"
-    
-    steps:
 
+    steps:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -89,9 +86,9 @@ jobs:
       
       - name: change image and register task definitions
         run: |
-          NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5) 
+#          NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5)
           for app in api worker scheduler; do 
-            export NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$ECR_REPO:$NEW_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+            export NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$IMAGE_NAME" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
             aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINITION"
           done
 
@@ -101,7 +98,7 @@ jobs:
             aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}-${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
           done
           
-          #this step is separate because api sarvice and task definition names are different, need to be changed
+          #this step is separate because api service and task definition names are different, need to be changed
           aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_api
 
       
