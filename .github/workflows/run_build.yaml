@@ -33,7 +33,7 @@ jobs:
   build_job:
     runs-on: ubuntu-latest
     outputs:
-      IMAGE_NAME: ${{ steps.build_step.outputs.IMAGE_NAME }}
+      IMAGE_NAME: ${{ steps.sha.outputs.IMAGE_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -120,7 +120,7 @@ jobs:
     with:
       COMMIT_HASH: ${{ github.sha }}
       IMAGE_PREFIX: ${{ github.ref_name }}
-      IMAGE_NAME: ${{needs.build_job.outputs.IMAGE_NAME}}
+      IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
 
 #  deploy_to_uat:
 #    needs: build_job
