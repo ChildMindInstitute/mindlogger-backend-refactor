@@ -143,13 +143,16 @@ class PublicListMultipleVisits(InternalModel):
 
 class ActivitiesAndVisits(InternalModel):
     activity_id: uuid.UUID
+    activity_name: str
     answer_id: uuid.UUID
     version: str
     visit: str
+    completed_date: datetime.datetime
 
 
 class VisitsForUsers(InternalModel):
     user_id: uuid.UUID
+    secret_user_id: str
     activities: list[ActivitiesAndVisits]
 
 

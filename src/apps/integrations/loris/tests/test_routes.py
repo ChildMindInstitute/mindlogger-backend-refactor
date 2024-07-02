@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 import pytest
@@ -19,7 +20,17 @@ class TestLorisRouter:
         applet_data = {"applet_id": str(uuid_zero)}
         _data = {
             "user_id": uuid_zero,
-            "activities": [{"activity_id": uuid_zero, "answer_id": uuid_zero, "version": "0.1.2", "visit": "test"}],
+            "secret_user_id": "test",
+            "activities": [
+                {
+                    "activity_id": uuid_zero,
+                    "answer_id": uuid_zero,
+                    "version": "0.1.2",
+                    "visit": "test",
+                    "activity_name": "test",
+                    "completed_date": datetime.datetime.now(),
+                }
+            ],
         }
         client.login(user)
         response = await client.post(self.start_transmit_process_url, data=[_data], query=applet_data)
