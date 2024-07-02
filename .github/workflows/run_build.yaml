@@ -31,6 +31,7 @@ env:
 
 jobs:
   build_job:
+    name: Docker Build and Push
     runs-on: ubuntu-latest
     outputs:
       IMAGE_NAME: ${{ steps.sha.outputs.IMAGE_NAME }}
@@ -115,6 +116,7 @@ jobs:
             ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
 
   deploy_to_dev:
+    name: Deploy to Dev
     needs: build_job
     #if: ${{ github.event.pull_request.merged }}
     uses: ./.github/workflows/run_deploy_dev.yaml
