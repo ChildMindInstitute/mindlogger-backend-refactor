@@ -57,6 +57,12 @@ class _AppletUsersFilter(Filtering):
     respondent_secret_id = FilterField(SubjectSchema.secret_user_id)
 
 
+class _AppletInvitationFilter(Filtering):
+    role = FilterField(InvitationSchema.role)
+    shell = FilterField(InvitationSchema.user_id, method_name="null")
+    user_id = FilterField(InvitationSchema.user_id)
+
+
 class _WorkspaceRespondentOrdering(Ordering):
     is_pinned = Ordering.Clause(literal_column("is_pinned"))
     secret_ids = Ordering.Clause(literal_column("secret_ids"))
@@ -605,7 +611,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .correlate(AppletSchema)
         )
 
-        invited_users = (
+        invited_users_query = (
             select(
                 InvitationSchema.id,
                 InvitationSchema.first_name,
@@ -660,9 +666,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 has_access,
             )
             .group_by(InvitationSchema.id)
-        ).cte("invited_users")
+        )
 
-        accepted_users = (
+        accepted_users_query = (
             select(
                 # fmt: off
                 UserSchema.id,
@@ -726,7 +732,16 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserAppletAccessSchema.applet_id == applet_id if applet_id else True,
             )
             .group_by(UserSchema.id)
-        ).cte("accepted_users")
+        )
+
+        if query_params.filters:
+            invited_users_query = invited_users_query.where(
+                *_AppletInvitationFilter().get_clauses(**query_params.filters)
+            )
+            accepted_users_query = accepted_users_query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
+
+        invited_users = invited_users_query.cte("invited_users")
+        accepted_users = accepted_users_query.cte("accepted_users")
 
         query: Query = (
             select(
@@ -748,9 +763,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .select_from(invited_users)
             .join(accepted_users, accepted_users.c.id == invited_users.c.user_id, isouter=True, full=True)
         )
-
-        if query_params.filters:
-            query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
 
         # Get total count before ordering to evaluate eligibility for ordering by encrypted fields
         coro_total = self._execute(
