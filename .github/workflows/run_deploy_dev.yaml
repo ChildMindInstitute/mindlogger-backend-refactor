@@ -85,7 +85,7 @@ jobs:
         apps:
           - { name: api, task-def: backend_api, service: backend, container: mind_logger }
           - { name: worker, task-def: backend_worker, service: backend-worker, container: mind_logger_worker }
-          - { name: scheduler, task-dev: scheduler, service: backend-scheduler, container: mind_logger_scheduler }
+          - { name: scheduler, task-def: scheduler, service: backend-scheduler, container: mind_logger_scheduler }
 
     steps:
       - name: configure aws credentials
