@@ -92,3 +92,19 @@ def applet_one_with_flow_update_data(applet_one_with_flow: AppletFull) -> Applet
     dct = applet_one_with_flow.dict()
     dct["activity_flows"][0]["items"][0]["activity_key"] = applet_one_with_flow.activities[0].key
     return AppletUpdate(**dct)
+
+
+@pytest.fixture
+async def applet_with_reviewable_activity(
+    session: AsyncSession, applet_minimal_data: AppletCreate, tom: User
+) -> AppletFull:
+    data = applet_minimal_data.copy(deep=True)
+    data.display_name = "applet with reviewable activity"
+    reviewable_activity = data.activities[0].copy(deep=True)
+    reviewable_activity.name = data.activities[0].name + " review"
+    reviewable_activity.is_reviewable = True
+    data.activities.append(reviewable_activity)
+    applet_create = AppletCreate(**data.dict())
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_create)
+    return applet

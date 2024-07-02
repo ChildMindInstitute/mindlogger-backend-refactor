@@ -109,6 +109,7 @@ class AssessmentAnswerCreate(InternalModel):
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
     assessment_version_id: str
+    reviewed_flow_submit_id: uuid.UUID | None
 
 
 class AnswerDate(InternalModel):
@@ -277,6 +278,11 @@ class ActivitySubmissionResponse(ActivitySubmission):
         return value
 
 
+class ReviewsCount(PublicModel):
+    mine: int = 0
+    other: int = 0
+
+
 class FlowSubmission(PublicModel):
     submit_id: uuid.UUID
     flow_history_id: str
@@ -286,6 +292,7 @@ class FlowSubmission(PublicModel):
     end_datetime: datetime.datetime | None = None
     is_completed: bool | None = None
     answers: list[ActivityAnswer]
+    review_count: ReviewsCount = ReviewsCount()
 
 
 class FlowSubmissionsDetails(PublicModel):
@@ -370,11 +377,6 @@ class FlowSubmissionResponse(PublicModel):
                         break
 
         return value
-
-
-class ReviewsCount(PublicModel):
-    mine: int = 0
-    other: int = 0
 
 
 class AppletActivityAnswer(InternalModel):
@@ -462,6 +464,7 @@ class AnswerNote(InternalModel):
 
 
 class NoteOwner(InternalModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
@@ -474,6 +477,7 @@ class AnswerNoteDetail(InternalModel):
 
 
 class NoteOwnerPublic(PublicModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
@@ -510,6 +514,7 @@ class UserAnswerDataBase(BaseModel):
     flow_history_id: str | None
     flow_name: str | None
     reviewed_answer_id: uuid.UUID | str | None
+    reviewed_flow_submit_id: uuid.UUID | str | None
     created_at: datetime.datetime
     migrated_data: dict | None = None
     client: ClientMeta | None = None
