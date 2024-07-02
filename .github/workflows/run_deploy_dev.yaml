@@ -1,4 +1,4 @@
-name: deploy_to_dev
+name: Deploy to Dev
 on:
   workflow_call:
     inputs:
@@ -83,7 +83,6 @@ jobs:
           role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
           role-session-name: OIDC-GHA-session
           aws-region: ${{ env.AWS_REGION }}
-      
       - name: change image and register task definitions
         run: |
 #          NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5)

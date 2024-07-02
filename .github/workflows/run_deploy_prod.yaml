@@ -1,4 +1,4 @@
-name: deploy_to_produc†ion
+name: Deploy to Production
 on: [ workflow_dispatch]
 
 permissions:
