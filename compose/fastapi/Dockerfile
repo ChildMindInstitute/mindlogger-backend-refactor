@@ -1,7 +1,5 @@
 FROM python:3.10-slim-bookworm AS base
 
-ARG PIPENV_EXTRA_ARGS
-
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="src/"
 
@@ -23,6 +21,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 RUN pip install --no-cache-dir pipenv==2023.11.15
 
 COPY Pipfile Pipfile.lock ./
+ARG PIPENV_EXTRA_ARGS
 RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
 
 

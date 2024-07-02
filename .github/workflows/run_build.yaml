@@ -78,7 +78,7 @@ jobs:
         id: sha
         run: |
           echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "IMAGE_NAME=${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_NAME=${ECR_REPO}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -86,8 +86,8 @@ jobs:
           context: .
           file: ./compose/fastapi/Dockerfile
           push: true
-#          build-args: |
-#            BUILD_VERSION=${{ steps.sha.outputs.SHORT_SHA }}
+          build-args: |
+            PIPENV_EXTRA_ARGS=--dev
           cache-to: mode=max,image-manifest=true,oci-mediatypes=true,type=registry,ref=${{ env.ECR_REPO }}:cache
           cache-from: type=registry,ref=${{ env.ECR_REPO }}:cache
           tags: ${{ steps.sha.outputs.IMAGE_NAME }},${{ env.ECR_REPO }}:latest
