@@ -2,9 +2,6 @@ name: Destroy preview environment
 
 on:
   workflow_call:
-    outputs:
-      service-url:
-        value: "${{ jobs.create-preview-env.outputs.service-url }}"
     inputs:
       env-name:
         type: string
@@ -61,4 +58,4 @@ jobs:
         # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
         # is copied and tagged properly for copilot to pick it up.
         run: |
-          aws secretsmanager delete-secret --name cmiml-feature-${{ inputs.env-name }} --force-delete-without-recovery
+          aws secretsmanager delete-secret --secret-id cmiml-feature-${{ inputs.env-name }} --force-delete-without-recovery

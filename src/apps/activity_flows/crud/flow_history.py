@@ -1,7 +1,7 @@
 import uuid
 
 from pydantic import parse_obj_as
-from sqlalchemy import any_, select
+from sqlalchemy import and_, any_, select
 from sqlalchemy.orm import Query, joinedload
 
 from apps.activities.db.schemas import ActivityHistorySchema
@@ -39,17 +39,20 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def load_full(self, id_versions: list[str]) -> list[FlowHistoryWithActivityFull]:
+    async def load_full(
+        self, id_versions: list[str], *, load_activities: bool = True, load_activity_items: bool = True
+    ) -> list[FlowHistoryWithActivityFull]:
         if not id_versions:
             return []
+        opts = joinedload(ActivityFlowHistoriesSchema.items, innerjoin=True)
+        if load_activities:
+            opts = opts.joinedload(ActivityFlowItemHistorySchema.activity, innerjoin=True)
+            if load_activity_items:
+                opts = opts.joinedload(ActivityHistorySchema.items, innerjoin=True)
 
         query = (
             select(ActivityFlowHistoriesSchema)
-            .options(
-                joinedload(ActivityFlowHistoriesSchema.items, innerjoin=True)
-                .joinedload(ActivityFlowItemHistorySchema.activity, innerjoin=True)
-                .joinedload(ActivityHistorySchema.items, innerjoin=True)
-            )
+            .options(opts)
             .where(ActivityFlowHistoriesSchema.id_version.in_(id_versions))
         )
         res = await self._execute(query)
@@ -97,14 +100,20 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_versions_data(self, flow_id: uuid.UUID) -> list[Version]:
+    async def get_versions_data(self, applet_id: uuid.UUID, flow_id: uuid.UUID) -> list[Version]:
         query: Query = (
             select(
                 AppletHistorySchema.version,
                 AppletHistorySchema.created_at,
             )
             .select_from(ActivityFlowHistoriesSchema)
-            .join(AppletHistorySchema, AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id)
+            .join(
+                AppletHistorySchema,
+                and_(
+                    AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id,
+                    AppletHistorySchema.id == applet_id,
+                ),
+            )
             .where(ActivityFlowHistoriesSchema.id == flow_id)
             .order_by(AppletHistorySchema.created_at)
         )
@@ -112,3 +121,9 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         data = result.all()
 
         return parse_obj_as(list[Version], data)
+
+    async def get_list_by_id(self, id_: uuid.UUID) -> list[ActivityFlowHistoriesSchema]:
+        query: Query = select(ActivityFlowHistoriesSchema)
+        query = query.where(ActivityFlowHistoriesSchema.id == id_)
+        result = await self._execute(query)
+        return result.scalars().all()
