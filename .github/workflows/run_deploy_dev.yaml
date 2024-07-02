@@ -75,14 +75,9 @@ jobs:
   deploy_to_ecs:
     runs-on: ubuntu-latest
     needs: run_migration
-    env:
-      TASK_FAMILY_PREFIX: backend
-      ECS_SERVICE_NAME: backend
-      ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com
-      IMAGE_PREFIX: ${{ inputs.COMMIT_HASH }}
-      COMMIT_HASH: ${{ inputs.IMAGE_PREFIX }}
 
     environment: dev
+    name: Deploy ${{ matrix.apps.name }}
     strategy:
       fail-fast: true
 
