@@ -100,16 +100,13 @@ def subject_ids(tom, tom_applet_one_subject) -> list[str]:
 @pytest.fixture
 def invitation_base_data(user_create: UserCreate) -> dict[str, str | EmailStr]:
     return dict(
-        email=user_create.email,
-        first_name=user_create.first_name,
-        last_name=user_create.last_name,
-        language="en",
+        email=user_create.email, first_name=user_create.first_name, last_name=user_create.last_name, language="en"
     )
 
 
 @pytest.fixture
 def invitation_manager_data(invitation_base_data: dict[str, str | EmailStr]) -> InvitationManagersRequest:
-    return InvitationManagersRequest(**invitation_base_data, role=ManagersRole.MANAGER)
+    return InvitationManagersRequest(**invitation_base_data, role=ManagersRole.MANAGER, title="PHD")
 
 
 @pytest.fixture
@@ -129,9 +126,7 @@ def invitation_respondent_data(
     invitation_base_data: dict[str, str | EmailStr],
 ) -> InvitationRespondentRequest:
     return InvitationRespondentRequest(
-        **invitation_base_data,
-        secret_user_id=str(uuid.uuid4()),
-        nickname=str(uuid.uuid4()),
+        **invitation_base_data, secret_user_id=str(uuid.uuid4()), nickname=str(uuid.uuid4()), tag="respondentTag"
     )
 
 
@@ -148,6 +143,7 @@ def shell_create_data():
         lastName="lastName",
         secretUserId="secretUserId",
         nickname="nickname",
+        tag="tag",
     )
 
 
@@ -160,6 +156,7 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
             first_name="Shell",
             last_name="Account",
             nickname="shell-account-0",
+            tag="shell-account-0-tag",
             secret_user_id=f"{uuid.uuid4()}",
         )
     )
@@ -225,6 +222,10 @@ class TestInvite(BaseTest):
 
         assert response.json()["result"]["appletId"] == str(applet_one.id)
         assert response.json()["result"]["role"] == Role.MANAGER
+        assert response.json()["result"]["firstName"] == "first_name"
+        assert response.json()["result"]["lastName"] == "last_name"
+        assert response.json()["result"]["tag"] is not None
+        assert response.json()["result"]["title"] == "PHD"
 
     async def test_private_invitation_retrieve(self, client, applet_one_with_link, lucy):
         client.login(lucy)
@@ -272,6 +273,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["userId"] == str(user.id)
+        assert response.json()["result"]["tag"] == "Team"
         assert len(mailbox.mails) == 1
         assert mailbox.mails[0].recipients == [invitation_editor_data.email]
 
@@ -285,6 +287,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
         assert response.json()["result"]["userId"] == str(user.id)
+        assert response.json()["result"]["tag"] == "Team"
         assert len(mailbox.mails) == 1
         assert mailbox.mails[0].recipients == [invitation_reviewer_data.email]
         assert mailbox.mails[0].subject == "Applet 1 invitation"
@@ -299,6 +302,8 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["userId"] == str(user.id)
+        assert response.json()["result"]["tag"] == invitation_respondent_data.tag
+        assert response.json()["result"]["tag"] is not None
         assert len(mailbox.mails) == 1
         assert mailbox.mails[0].recipients == [invitation_respondent_data.email]
         assert mailbox.mails[0].subject == "Applet 1 invitation"
@@ -867,6 +872,7 @@ class TestInvite(BaseTest):
         assert payload["result"]["appletId"] == applet_id
         assert payload["result"]["creatorId"] == creator_id
         assert payload["result"]["language"] == shell_create_data["language"]
+        assert payload["result"]["tag"] == shell_create_data["tag"]
 
     @pytest.mark.parametrize(
         "shell_create",
@@ -895,12 +901,32 @@ class TestInvite(BaseTest):
         subject = response.json()["result"]
 
         url = self.shell_acc_invite_url.format(applet_id=applet_id)
+        response = await client.post(url, dict(subjectId=subject["id"], email=email, language="fr"))
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(TestMail.mails) == 1
+        subject_model = await SubjectsCrud(session).get_by_id(subject["id"])
+        assert subject_model
+        assert subject_model.email == email
+        assert subject_model.language == "fr"
+
+    async def test_shell_invite_no_language(
+        self, client, session, shell_create_data, bob: User, applet_four: AppletFull
+    ):
+        client.login(bob)
+        email = "mm_english@mail.com"
+        applet_id = str(applet_four.id)
+        url = self.shell_acc_create_url.format(applet_id=applet_id)
+        response = await client.post(url, shell_create_data)
+        subject = response.json()["result"]
+
+        url = self.shell_acc_invite_url.format(applet_id=applet_id)
         response = await client.post(url, dict(subjectId=subject["id"], email=email))
         assert response.status_code == http.HTTPStatus.OK
         assert len(TestMail.mails) == 1
         subject_model = await SubjectsCrud(session).get_by_id(subject["id"])
         assert subject_model
         assert subject_model.email == email
+        assert subject_model.language == shell_create_data["language"]
 
     async def test_invite_and_accept_invitation_as_respondent(
         self, client, session, invitation_respondent_data, tom: User, applet_one: AppletFull, bill_bronson: User
