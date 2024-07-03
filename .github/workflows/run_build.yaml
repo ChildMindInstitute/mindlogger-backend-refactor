@@ -118,19 +118,18 @@ jobs:
   deploy_to_dev:
     name: Deploy to Dev
     needs: build_job
+    environment: dev
     #if: ${{ github.event.pull_request.merged }}
     uses: ./.github/workflows/run_deploy_dev.yaml
     with:
-      COMMIT_HASH: ${{ github.sha }}
-      IMAGE_PREFIX: ${{ github.ref_name }}
       IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
 
 #  deploy_to_uat:
 #    needs: build_job
-#    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_uat.yaml@develop
+#    uses: ./.github/workflows/run_deploy_uat.yaml
 #    with:
 #      COMMIT_HASH: ${{ github.sha }}
-#      IMAGE_PREFIX: ${{ github.ref_name }}
+#      IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
 #
 #  deploy_to_test:
 #    needs: build_job
