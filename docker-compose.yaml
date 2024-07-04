@@ -28,6 +28,7 @@ services:
 
   redis:
     image: redis
+    container_name: mindlogger_redis
     ports:
       - 6379:6379
 
