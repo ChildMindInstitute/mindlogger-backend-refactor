@@ -164,6 +164,36 @@ async def applet_with_flow(
 
 
 @pytest.fixture
+async def applet_with_flow_duplicated_activities(
+    session: AsyncSession,
+    applet_minimal_data: AppletCreate,
+    tom: User,
+    applet_report_configuration_data: AppletReportConfigurationBase,
+) -> AppletFull:
+    data = applet_minimal_data.copy(deep=True)
+    data.display_name = "applet with flow"
+
+    data.activity_flows = [
+        FlowCreate(
+            name="flow",
+            description={Language.ENGLISH: "description"},
+            items=[
+                FlowItemCreate(activity_key=data.activities[0].key),
+                FlowItemCreate(activity_key=data.activities[0].key),
+            ],
+        ),
+    ]
+    data.report_server_ip = applet_report_configuration_data.report_server_ip
+    data.report_public_key = applet_report_configuration_data.report_public_key
+    data.report_recipients = applet_report_configuration_data.report_recipients
+    applet_create = AppletCreate(**data.dict())
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_create, applet_id=uuid.uuid4())
+
+    return applet
+
+
+@pytest.fixture
 def answer_item_create(
     applet: AppletFull,
     single_select_item_create: ActivityItemCreate,

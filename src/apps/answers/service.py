@@ -146,7 +146,7 @@ class AnswerService:
         activity_history_id = pk(applet_answer.activity_id)
         flow_history_id = pk(applet_answer.flow_id) if applet_answer.flow_id else None
 
-        activity_index = None
+        activity_indexes = set()  # same activity is allowed multiple times in flow
         if flow_history_id:
             flow_histories = await FlowsHistoryCRUD(self.session).load_full(
                 [pk(applet_answer.flow_id)], load_activities=False
@@ -158,9 +158,8 @@ class AnswerService:
             # check activity in the flow
             for i, item in enumerate(flow_history.items):
                 if item.activity_id == activity_history_id:
-                    activity_index = i
-                    break
-            if activity_index is None:
+                    activity_indexes.add(i)
+            if not activity_indexes:
                 raise ValidationError("Activity not found in the flow")
 
         if existed_answers:
@@ -182,13 +181,12 @@ class AnswerService:
 
             # check current answer is provided in right order in the flow, so prev activities already answered
             prev_answers_count = len(existed_answers)
-            if prev_answers_count != activity_index:
-                assert activity_index is not None
-                if prev_answers_count < activity_index:
-                    raise ValidationError("Wrong activity order in the flow")
-                raise ValidationError("Wrong activity order in the flow: previous activity answer missed")
+            if prev_answers_count not in activity_indexes:
+                if prev_answers_count > max(activity_indexes):
+                    raise ValidationError("Wrong activity order in the flow: previous activity answer missed")
+                raise ValidationError("Wrong activity order in the flow")
 
-        elif flow_history_id and activity_index != 0:
+        elif flow_history_id and 0 not in activity_indexes:
             # check first flow answer
             raise ValidationError("Wrong activity order in the flow")
 
