@@ -8,7 +8,6 @@ from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
 from apps.activities.services import ActivityHistoryService
-from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
 from apps.answers.domain import (
     ActivitySubmissionResponse,
@@ -36,8 +35,10 @@ from apps.answers.domain import (
     PublicSummaryActivityFlow,
     ReviewsCount,
 )
+from apps.answers.domain.answers import MultiinformantAssessmentValidationResponse, PublicSubmissionsResponse
 from apps.answers.filters import (
     AnswerExportFilters,
+    AppletMultiinformantAssessmentParams,
     AppletSubmissionsFilter,
     AppletSubmitDateFilter,
     ReviewAppletItemFilter,
@@ -60,6 +61,7 @@ from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
+from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_tz_utc_offset
@@ -199,7 +201,7 @@ async def applet_activity_answers_list(
     answers = await service.get_activity_answers(applet_id, activity_id, **filters)
 
     answers_ids = [answer.answer_id for answer in answers if answer.answer_id is not None]
-    answer_reviews = await service.get_assessments_count(answers_ids)
+    answer_reviews = await service.get_answer_assessments_count(answers_ids)
     result = []
     for answer in answers:
         review_count = answer_reviews.get(answer.answer_id, ReviewsCount())
@@ -216,19 +218,21 @@ async def applet_flow_submissions_list(
     answer_session=Depends(get_answer_session),
 ) -> PublicFlowSubmissionsResponse:
     await AppletService(session, user.id).exist_by_id(applet_id)
-    flow = await FlowService(session=session).get_by_id(flow_id)
-    if not flow or flow.applet_id != applet_id:
-        raise NotFoundError("Flow not found")
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-
     submissions, total = await AnswerService(session, user.id, answer_session).get_flow_submissions(
-        flow_id, query_params
+        applet_id, flow_id, query_params
     )
 
+    answer_service = AnswerService(session, user.id, answer_session)
+    submission_ids = [s.submit_id for s in submissions.submissions]
+    submission_reviews = await answer_service.get_submission_assessment_count(submission_ids)
+    for submission in submissions.submissions:
+        review_count = submission_reviews.get(submission.submit_id, ReviewsCount())
+        submission.review_count = review_count
     return PublicFlowSubmissionsResponse(result=submissions, count=total)
 
 
-async def summary_latest_report_retrieve(
+async def summary_activity_latest_report_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
     subject_id: uuid.UUID,
@@ -244,6 +248,33 @@ async def summary_latest_report_retrieve(
 
     report = await AnswerService(session, user.id, answer_session).get_summary_latest_report(
         applet_id, activity_id, subject_id
+    )
+    if report:
+        return FastApiResponse(
+            base64.b64decode(report.pdf.encode()),
+            headers={
+                "Content-Disposition": f'attachment; filename="{report.email.attachment}.pdf"'  # noqa
+            },
+        )
+    return FastApiResponse()
+
+
+async def summary_flow_latest_report_retrieve(
+    applet_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> FastApiResponse:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
+    if not subject:
+        raise NotFoundError(f"Subject {subject_id} not found.")
+
+    report = await AnswerService(session, user.id, answer_session).get_flow_summary_latest_report(
+        applet_id, flow_id, subject_id
     )
     if report:
         return FastApiResponse(
@@ -342,6 +373,30 @@ async def applet_answer_assessment_delete(
             await service.delete_assessment(assessment_id)
 
 
+async def applet_submission_delete(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    assessment_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> None:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    service = AnswerService(session=session, user_id=user.id, arbitrary_session=answer_session)
+    answer = await service.get_submission_last_answer(submission_id)
+    if not answer:
+        raise NotFoundError()
+    assessment = await service.get_answer_assessment_by_id(assessment_id, answer.id)
+    if not assessment:
+        raise NotFoundError
+    elif assessment.respondent_id != user.id:
+        raise AccessDeniedError
+    async with atomic(session):
+        async with atomic(answer_session):
+            await service.delete_assessment(assessment_id)
+
+
 async def applet_activity_assessment_retrieve(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
@@ -352,6 +407,23 @@ async def applet_activity_assessment_retrieve(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     answer = await AnswerService(session, user.id, answer_session).get_assessment_by_answer_id(applet_id, answer_id)
+    return Response(
+        result=AssessmentAnswerPublic.from_orm(answer),
+    )
+
+
+async def applet_submission_assessment_retrieve(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> Response[AssessmentAnswerPublic]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    answer = await AnswerService(session, user.id, answer_session).get_assessment_by_submit_id(applet_id, submission_id)
+    if not answer:
+        raise NotFoundError()
     return Response(
         result=AssessmentAnswerPublic.from_orm(answer),
     )
@@ -381,14 +453,14 @@ async def applet_flow_identifiers_retrieve(
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[Identifier]:
     filters = IdentifiersQueryParams(**query_params.filters)
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    flow = await FlowService(session=session).get_by_id(flow_id)
-    if not flow or flow.applet_id != applet_id:
-        raise NotFoundError("Flow not found")
+    applet_service = AppletService(session, user.id)
+    await applet_service.exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     if not (target_subject_id := filters.target_subject_id):
         raise ValidationError("targetSubjectId missed")
-    identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(flow_id, target_subject_id)
+    identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(
+        applet_id, flow_id, target_subject_id
+    )
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
 
@@ -422,7 +494,108 @@ async def applet_activity_assessment_create(
             await AnswerService(session, user.id, answer_session).create_assessment_answer(applet_id, answer_id, schema)
 
 
-async def note_add(
+async def applet_flow_assessment_create(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    schema: AssessmentAnswerCreate = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        async with atomic(answer_session):
+            service = AnswerService(session, user.id, answer_session)
+            answer = await service.get_submission_last_answer(submission_id)
+            if answer:
+                await service.create_assessment_answer(applet_id, answer.id, schema, submission_id)
+            else:
+                raise NotFoundError()
+
+
+async def submission_note_add(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    schema: AnswerNote = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+        async with atomic(answer_session):
+            await AnswerService(session, user.id, answer_session).add_submission_note(
+                applet_id, submission_id, flow_id, schema.note
+            )
+    return
+
+
+async def submission_note_list(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[AnswerNoteDetailPublic]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+    notes = await AnswerService(session, user.id, answer_session).get_submission_note_list(
+        applet_id, submission_id, flow_id, query_params.page, query_params.limit
+    )
+    count = await AnswerService(session, user.id, answer_session).get_submission_notes_count(
+        submission_id, flow_id, query_params.page, query_params.limit
+    )
+    return ResponseMulti(
+        result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
+        count=count,
+    )
+
+
+async def submission_note_edit(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    note_id: uuid.UUID,
+    schema: AnswerNote = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+        async with atomic(answer_session):
+            await AnswerService(session, user.id, answer_session).edit_submission_note(
+                applet_id, submission_id, note_id, schema.note
+            )
+    return
+
+
+async def submission_note_delete(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    note_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+        async with atomic(answer_session):
+            await AnswerService(session, user.id, answer_session).delete_submission_note(
+                applet_id, submission_id, note_id
+            )
+    return
+
+
+async def answer_note_add(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -435,13 +608,13 @@ async def note_add(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
         async with atomic(answer_session):
-            await AnswerService(session, user.id, answer_session).add_note(
+            await AnswerService(session, user.id, answer_session).add_answer_note(
                 applet_id, answer_id, activity_id, schema.note
             )
     return
 
 
-async def note_list(
+async def answer_note_list(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -453,7 +626,7 @@ async def note_list(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
     notes = await AnswerService(session, user.id, answer_session).get_note_list(
-        applet_id, answer_id, activity_id, query_params
+        applet_id, answer_id, activity_id, query_params.page, query_params.limit
     )
     count = await AnswerService(session, user.id, answer_session).get_notes_count(answer_id, activity_id)
     return ResponseMulti(
@@ -462,7 +635,7 @@ async def note_list(
     )
 
 
-async def note_edit(
+async def answer_note_edit(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -476,13 +649,13 @@ async def note_edit(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
         async with atomic(answer_session):
-            await AnswerService(session, user.id, answer_session).edit_note(
+            await AnswerService(session, user.id, answer_session).edit_answer_note(
                 applet_id, answer_id, activity_id, note_id, schema.note
             )
     return
 
 
-async def note_delete(
+async def answer_note_delete(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -495,7 +668,7 @@ async def note_delete(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
         async with atomic(answer_session):
-            await AnswerService(session, user.id, answer_session).delete_note(
+            await AnswerService(session, user.id, answer_session).delete_answer_note(
                 applet_id, answer_id, activity_id, note_id
             )
     return
@@ -634,3 +807,70 @@ async def answers_existence_check(
     )
 
     return Response[AnswerExistenceResponse](result=AnswerExistenceResponse(exists=is_exist))
+
+
+async def applet_submission_reviews_retrieve(
+    applet_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[AnswerReviewPublic]:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+    reviews = await AnswerService(session, user.id, answer_session).get_reviews_by_submission_id(
+        applet_id, submission_id
+    )
+    return ResponseMulti(
+        result=[AnswerReviewPublic.from_orm(review) for review in reviews],
+        count=len(reviews),
+    )
+
+
+async def applet_validate_multiinformant_assessment(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(parse_query_params(AppletMultiinformantAssessmentParams)),
+    answer_session=Depends(get_answer_session),
+) -> Response[MultiinformantAssessmentValidationResponse]:
+    is_valid = True
+    message = None
+    code = None
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_manager_list_access(applet_id)
+
+        await AnswerService(session, user.id, answer_session).validate_multiinformant_assessment(
+            applet_id, **query_params.filters
+        )
+
+        is_valid = True
+    except ValidationError as ex:
+        message = ex.error
+        is_valid = False
+        code = ex.code
+
+    return Response[MultiinformantAssessmentValidationResponse](
+        result=MultiinformantAssessmentValidationResponse(valid=is_valid, message=message, code=code)
+    )
+
+
+async def applet_submissions_list(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(parse_query_params(AnswerExportFilters)),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> PublicSubmissionsResponse:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_access(applet_id)
+    submissions, submissions_count = await AnswerService(session, user.id, answer_session).get_applet_submissions(
+        applet_id, query_params
+    )
+
+    participants_count = await WorkspaceService(session, user.id).get_workspace_applet_respondents_total(applet_id)
+
+    return PublicSubmissionsResponse(
+        submissions=submissions, submissions_count=submissions_count, participants_count=participants_count
+    )

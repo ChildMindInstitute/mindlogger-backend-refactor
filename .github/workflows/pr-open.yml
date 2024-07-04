@@ -70,10 +70,15 @@ jobs:
         env:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-          SLACK_TITLE: Preview Environment
-          SLACK_MESSAGE: Failed to create preview environment
-          SLACK_ICON: https://github.com/github.png?size=48
-          MSG_MINIMAL: actions url
+          SLACK_TITLE: |
+            :rotating_light: Preview Environment Failed
+          SLACK_MESSAGE: >-
+            Failed to create a preview env for PR-${{ github.event.pull_request.number}} in ${{ github.repository }}
+            \n\n
+            :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            \n\n
+            :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }})
+          MSG_MINIMAL: true
 
   run-unit-tests:
     uses: ./.github/workflows/tests.yaml

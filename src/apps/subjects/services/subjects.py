@@ -31,6 +31,7 @@ class SubjectsService:
             first_name=schema.first_name,
             last_name=schema.last_name,
             secret_user_id=schema.secret_user_id,
+            tag=schema.tag,
         )
 
     async def create(self, schema: SubjectCreate) -> Subject:

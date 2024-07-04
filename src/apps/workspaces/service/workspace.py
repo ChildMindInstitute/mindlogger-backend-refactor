@@ -90,28 +90,35 @@ class WorkspaceService:
         owner_id: uuid.UUID,
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
-    ) -> Tuple[list[WorkspaceRespondent], int]:
-        users, total = await UserAppletAccessCRUD(self.session).get_workspace_respondents(
+    ) -> Tuple[list[WorkspaceRespondent], int, list[str]]:
+        users, total, ordering_fields = await UserAppletAccessCRUD(self.session).get_workspace_respondents(
             self._user_id, owner_id, applet_id, query_params
         )
-        return users, total
+        return users, total, ordering_fields
+
+    async def get_workspace_applet_respondents_total(self, applet_id: uuid.UUID) -> int:
+        await CheckAccessService(self.session, self._user_id).check_applet_respondent_list_access(applet_id)
+
+        total = await UserAppletAccessCRUD(self.session).get_applet_respondents_total(applet_id)
+
+        return total
 
     async def get_workspace_managers(
         self,
         owner_id: uuid.UUID,
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
-    ) -> Tuple[list[WorkspaceManager], int]:
+    ) -> Tuple[list[WorkspaceManager], int, list[str]]:
         # TODO: Investigate if we do need the search by email
         # hash the email is exist in the search
         # if query_params.search and EMAIL_REGEX.match(query_params.search):
         #     query_params.search = hash_sha224(query_params.search)
 
-        users, total = await UserAppletAccessCRUD(self.session).get_workspace_managers(
+        users, total, ordering_fields = await UserAppletAccessCRUD(self.session).get_workspace_managers(
             self._user_id, owner_id, applet_id, query_params
         )
 
-        return users, total
+        return users, total, ordering_fields
 
     async def get_workspace_applets(
         self, owner_id: uuid.UUID, language: str, query_params: QueryParams
@@ -311,8 +318,8 @@ class WorkspaceService:
         owner_id: uuid.UUID,
         applet_id: uuid.UUID | None,
         query_params: QueryParams,
-    ) -> Tuple[list[WorkspaceRespondent], int]:
-        users, total = await UserAppletAccessCRUD(self.session).get_workspace_respondents(
+    ) -> Tuple[list[WorkspaceRespondent], int, list[str]]:
+        users, total, sortable_fields = await UserAppletAccessCRUD(self.session).get_workspace_respondents(
             self._user_id, owner_id, applet_id, query_params
         )
-        return users, total
+        return users, total, sortable_fields

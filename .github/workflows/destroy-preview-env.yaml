@@ -2,9 +2,6 @@ name: Destroy preview environment
 
 on:
   workflow_call:
-    outputs:
-      service-url:
-        value: "${{ jobs.create-preview-env.outputs.service-url }}"
     inputs:
       env-name:
         type: string

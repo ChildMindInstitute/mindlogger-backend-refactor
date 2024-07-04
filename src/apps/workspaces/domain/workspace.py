@@ -8,6 +8,8 @@ from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.domain.base import Encryption
 from apps.integrations.domain import Integration
+from apps.invitations.constants import InvitationStatus
+from apps.invitations.domain import InvitationDetail, InvitationResponse
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.encryption import get_key
 from apps.workspaces.constants import StorageType
@@ -80,17 +82,19 @@ class WorkspaceRespondentDetails(InternalModel):
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
+    subject_tag: str | None
+    subject_first_name: str
+    subject_last_name: str
+    subject_created_at: datetime.datetime
+    invitation: InvitationDetail | None = None
 
-    @root_validator
-    def decrypt_nickname(cls, values):
-        nickname = values.get("respondent_nickname")
-        if nickname:
-            nickname = StringEncryptedType(Unicode, get_key).process_result_value(
-                nickname, dialect=PGDialect_asyncpg.name
-            )
-            values["respondent_nickname"] = str(nickname)
+    @validator("respondent_nickname", "subject_first_name", "subject_last_name", pre=True)
+    def decrypt_fields(cls, value):
+        if value:
+            value = StringEncryptedType(Unicode, get_key).process_result_value(value, dialect=PGDialect_asyncpg.name)
+            return str(value)
 
-        return values
+        return value
 
 
 class WorkspaceRespondent(InternalModel):
@@ -108,7 +112,7 @@ class WorkspaceRespondent(InternalModel):
 
 
 class AppletRole(InternalModel):
-    access_id: uuid.UUID
+    access_id: uuid.UUID | None
     role: Role
     reviewer_subjects: list[str] | None = None
 
@@ -127,9 +131,28 @@ class WorkspaceManager(InternalModel):
     last_name: str
     email_encrypted: str | None
     roles: list[Role]
+    created_at: datetime.datetime
     last_seen: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
+    titles: list[str] | None
+    title: str | None
+    status: InvitationStatus
+    invitation_key: uuid.UUID | None
+
+    @validator("titles", pre=True)
+    def get_titles(cls, value):
+        if len(value) > 0:
+            value = [v for v in value if v is not None]
+
+        return value
+
+    @validator("title", always=True)
+    def get_title(cls, value, values):
+        if len(values.get("titles")) > 0:
+            value = next(iter([v for v in values.get("titles") if v is not None]))
+
+        return value
 
     @validator("applets", pre=True)
     def group_applets(cls, value):
@@ -148,11 +171,11 @@ class WorkspaceManager(InternalModel):
 
             subjects = []
             if applet_role["role"] == Role.REVIEWER:
-                subjects = applet_role["reviewer_subjects"]
+                subjects = applet_role.get("reviewer_subjects")
 
             applet["roles"].append(
                 dict(
-                    access_id=applet_role["access_id"],
+                    access_id=applet_role.get("access_id"),
                     role=applet_role["role"],
                     reviewer_subjects=subjects,
                 )
@@ -172,6 +195,11 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
+    subject_tag: str | None
+    subject_first_name: str
+    subject_last_name: str
+    subject_created_at: datetime.datetime
+    invitation: InvitationResponse | None = None
 
 
 class PublicWorkspaceRespondent(PublicModel):
@@ -194,8 +222,13 @@ class PublicWorkspaceManager(PublicModel):
     email: str | None
     roles: list[Role]
     last_seen: datetime.datetime
+    created_at: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
+    title: str | None
+    titles: list[str] | None
+    status: InvitationStatus
+    invitation_key: uuid.UUID | None
 
 
 class WorkspaceInfo(InternalModel):

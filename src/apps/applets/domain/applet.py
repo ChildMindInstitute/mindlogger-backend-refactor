@@ -19,6 +19,7 @@ from apps.activity_flows.domain.flow import (
     FlowSingleLanguageDetailPublic,
     FlowSingleLanguageMobileDetailPublic,
 )
+from apps.activity_flows.domain.flow_full import PublicFlowFull
 from apps.applets.domain.base import AppletBaseInfo, AppletFetchBase, Encryption
 from apps.shared.domain import InternalModel, PublicModel, _BaseModel
 from apps.themes.domain import PublicTheme, PublicThemeMobile, Theme
@@ -90,6 +91,7 @@ class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
     activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
     theme: PublicTheme
     encryption: Encryption | None
+    owner_id: uuid.UUID | None
 
 
 class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):
@@ -129,15 +131,33 @@ class AppletDataRetention(InternalModel):
         return values
 
 
+class AppletMeta(PublicModel):
+    has_assessment: bool = False
+
+
 class AppletRetrieveResponse(PublicModel, GenericModel, Generic[_BaseModel]):
     result: _BaseModel
     respondent_meta: dict | None = None
+    applet_meta: AppletMeta | None = None
 
 
 class AppletActivitiesDetailsPublic(PublicModel):
     activities_details: list[ActivityLanguageWithItemsMobileDetailPublic] = Field(default_factory=list)
     applet_detail: AppletSingleLanguageDetailMobilePublic
     respondent_meta: dict | None = None
+
+
+class ActivityLanguageWithItemsMobileDetailPublicType(ActivityLanguageWithItemsMobileDetailPublic):
+    type = "activity"
+
+
+class PublicFlowFullType(PublicFlowFull):
+    type = "activityFlow"
+
+
+# Returns a combination of activity and activity flows
+class AppletActivitiesAndFlowsDetailsPublic(PublicModel):
+    details: list[ActivityLanguageWithItemsMobileDetailPublicType | PublicFlowFullType] = Field(default_factory=list)
 
 
 class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):

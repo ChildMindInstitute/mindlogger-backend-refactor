@@ -12,11 +12,12 @@ from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
-from apps.invitations.domain import InvitationRespondentRequest
+from apps.invitations.domain import InvitationManagersRequest, InvitationRespondentRequest
 from apps.invitations.services import InvitationsService
 from apps.shared.enums import Language
 from apps.shared.query_params import QueryParams
 from apps.shared.test import BaseTest
+from apps.shared.test.client import TestClient
 from apps.subjects.constants import SubjectStatus
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
@@ -151,6 +152,21 @@ async def applet_one_shell_has_pending_invitation(session, tom: User, user: User
     assert subject.id
     await InvitationsService(session, tom).send_respondent_invitation(applet_one.id, schema, subject)
     return subject
+
+
+@pytest.fixture
+async def applet_one_manager_has_pending_invitation(session, tom: User, user: User, applet_one: AppletFull):
+    schema = InvitationManagersRequest(
+        email=user.email_encrypted,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        language="en",
+        role=Role.MANAGER,
+        title="test",
+    )
+    result = await InvitationsService(session, tom).send_managers_invitation(applet_one.id, schema)
+
+    return result
 
 
 class TestWorkspaces(BaseTest):
@@ -359,24 +375,86 @@ class TestWorkspaces(BaseTest):
         response = await client.get(self.workspace_applets_url.format(owner_id="00000000-0000-0000-0000-000000000000"))
         assert response.status_code == 404
 
-    async def test_get_workspace_respondents(self, client, tom, applet_one_lucy_respondent):
+    async def test_get_workspace_respondents(
+        self,
+        client: TestClient,
+        tom: User,
+        user: User,
+        lucy: User,
+        applet_one_lucy_respondent: AppletFull,
+        applet_one_user_respondent: AppletFull,
+        applet_three_tom_respondent: AppletFull,
+        applet_three_user_respondent: AppletFull,
+        applet_one_shell_account: Subject,
+    ):
         client.login(tom)
         response = await client.get(
             self.workspace_respondents_url.format(owner_id=tom.id),
+            dict(ordering="+nicknames"),
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["count"] == 2  # tom(applet1, applet2), lucy(applet1)
+        assert data["count"] == 4  # lucy, tom, shell account, user
         assert data["count"] == len(data["result"])
-        assert data["result"][0]["nicknames"]
-        assert data["result"][0]["secretIds"]
+
+        lucy_result = data["result"][0]
+        shell_account_result = data["result"][1]
+        tom_result = data["result"][2]
+        user_result = data["result"][3]
+
+        assert lucy_result["nicknames"]
+        assert lucy_result["secretIds"]
+        assert lucy_result["details"]
+        assert tom_result["details"]
+
+        lucy_result_details = lucy_result["details"]
+        tom_result_details = sorted(tom_result["details"], key=lambda x: x["appletDisplayName"])
+
+        # Lucy has a pending invitation to Applet 1
+        assert lucy_result_details[0]["invitation"]  # Applet 1
+        assert lucy_result_details[0]["invitation"]["status"] == "pending"
+
+        assert lucy_result_details[0]["subjectFirstName"] == lucy.first_name
+        assert lucy_result_details[0]["subjectLastName"] == lucy.last_name
+        assert lucy_result_details[0]["subjectCreatedAt"]
+
+        # Tom has an approved invitation to Applet 1
+        assert tom_result_details[0]["invitation"]  # Applet 1
+        assert tom_result_details[0]["invitation"]["status"] == "approved"
+
+        assert tom_result_details[0]["subjectFirstName"] == tom.first_name
+        assert tom_result_details[0]["subjectLastName"] == tom.last_name
+        assert tom_result_details[0]["subjectCreatedAt"]
+
+        # Tom has a pending invitation to Applet 2
+        assert tom_result_details[1]["invitation"]  # Applet 2
+        assert tom_result_details[1]["invitation"]["status"] == "pending"
+
+        assert tom_result_details[1]["subjectFirstName"] == tom.first_name
+        assert tom_result_details[1]["subjectLastName"] == tom.last_name
+        assert tom_result_details[1]["subjectCreatedAt"]
+
+        # test manual, case-insensitive ordering by encrypted nicknames field
+        assert set(data.keys()) == {"count", "result", "orderingFields"}
+        assert data["orderingFields"] == [
+            "isPinned",
+            "secretIds",
+            "tags",
+            "createdAt",
+            "status",
+            "nicknames",
+        ]
+        assert lucy_result["nicknames"] == ["Lucy Gabel"]
+        assert shell_account_result["nicknames"] == ["shell-account-0"]
+        assert tom_result["nicknames"] == ["Tom Isaak"]
+        assert user_result["nicknames"] == ["user test"]
 
         # test search
-        access_id_0 = data["result"][0]["details"][0]["accessId"]
-        access_id_1 = data["result"][1]["details"][0]["accessId"]
-        secret_user_id_0 = data["result"][0]["secretIds"][0]
-        secret_user_id_1 = data["result"][1]["secretIds"][0]
+        access_id_0 = lucy_result_details[0]["accessId"]
+        access_id_1 = tom_result_details[0]["accessId"]
+        secret_user_id_0 = lucy_result["secretIds"][0]
+        secret_user_id_1 = tom_result["secretIds"][0]
         search_params = {
             access_id_0: [secret_user_id_0[19:]],
             access_id_1: [secret_user_id_1],
@@ -389,7 +467,7 @@ class TestWorkspaces(BaseTest):
                 )
                 assert response.status_code == 200
                 data = response.json()
-                assert set(data.keys()) == {"count", "result"}
+                assert set(data.keys()) == {"count", "result", "orderingFields"}
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
@@ -397,7 +475,13 @@ class TestWorkspaces(BaseTest):
                 assert access_id in access_ids
 
     async def test_get_workspace_applet_respondents(
-        self, client, tom, applet_one, applet_one_lucy_respondent, uuid_zero
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_one_lucy_respondent: AppletFull,
+        uuid_zero: uuid.UUID,
     ):
         client.login(tom)
         response = await client.get(
@@ -409,13 +493,40 @@ class TestWorkspaces(BaseTest):
 
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["count"] == 2
-        assert data["result"][0]["nicknames"]
-        assert data["result"][0]["secretIds"]
+        assert data["count"] == 2  # lucy, tom
+        assert data["count"] == len(data["result"])
+
+        lucy_result = data["result"][0]
+        tom_result = data["result"][1]
+
+        assert lucy_result["nicknames"]
+        assert lucy_result["secretIds"]
+        assert lucy_result["details"]
+        assert tom_result["details"]
+
+        lucy_result_details = lucy_result["details"]
+        tom_result_details = tom_result["details"]
+
+        # Lucy has a pending invitation to Applet 1
+        assert lucy_result_details[0]["invitation"]  # Applet 1
+        assert lucy_result_details[0]["invitation"]["status"] == "pending"
+
+        assert lucy_result_details[0]["subjectFirstName"] == lucy.first_name
+        assert lucy_result_details[0]["subjectLastName"] == lucy.last_name
+        assert lucy_result_details[0]["subjectCreatedAt"]
+
+        # Tom has an approved invitation to Applet 1
+        assert tom_result_details[0]["invitation"]  # Applet 1
+        assert tom_result_details[0]["invitation"]["status"] == "approved"
+
+        assert tom_result_details[0]["subjectFirstName"] == tom.first_name
+        assert tom_result_details[0]["subjectLastName"] == tom.last_name
+        assert tom_result_details[0]["subjectCreatedAt"]
 
         # test search
-        access_id = data["result"][0]["details"][0]["accessId"]
-        secret_id = data["result"][0]["secretIds"][0]
+        access_id = lucy_result_details[0]["accessId"]
+        secret_id = lucy_result["secretIds"][0]
+        subject_tag = lucy_result_details[0]["subjectTag"]
         response = await client.get(
             self.workspace_applet_respondents_list.format(
                 owner_id=tom.id,
@@ -429,6 +540,8 @@ class TestWorkspaces(BaseTest):
         result = data["result"]
         assert len(result) == 1
         assert access_id == data["result"][0]["details"][0]["accessId"]
+        assert subject_tag == data["result"][0]["details"][0]["subjectTag"]
+        assert data["result"][0]["details"][0]["subjectTag"] == "Team"
 
         # test search - there is no respondent
 
@@ -489,15 +602,27 @@ class TestWorkspaces(BaseTest):
         client.login(tom)
         response = await client.get(
             self.workspace_managers_url.format(owner_id=tom.id),
+            dict(ordering="+email"),
         )
 
         assert response.status_code == 200
-        assert response.json()["count"] == 2
+        data = response.json()
+        assert data["count"] == 2
 
-        plain_emails = [tom.email_encrypted, lucy.email_encrypted]
-
-        for result in response.json()["result"]:
-            assert result["email"] in plain_emails
+        # test manual ordering by encrypted email field
+        assert set(data.keys()) == {"count", "result", "orderingFields"}
+        assert data["orderingFields"] == [
+            "createdAt",
+            "isPinned",
+            "lastSeen",
+            "roles",
+            "status",
+            "email",
+            "firstName",
+            "lastName",
+        ]
+        assert data["result"][0]["email"] == lucy.email_encrypted
+        assert data["result"][1]["email"] == tom.email_encrypted
 
         # test search
         search_params = {
@@ -517,13 +642,15 @@ class TestWorkspaces(BaseTest):
 
                 assert response.status_code == 200
                 data = response.json()
-                assert set(data.keys()) == {"count", "result"}
+                assert set(data.keys()) == {"count", "result", "orderingFields"}
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
                 assert result[0]["id"] == id_
 
-    async def test_get_workspace_applet_managers(self, client, tom, applet_one):
+    async def test_get_workspace_applet_managers_with_pending_invitation(
+        self, client, tom, applet_one, applet_one_manager_has_pending_invitation
+    ):
         client.login(tom)
         response = await client.get(
             self.workspace_applet_managers_list.format(
@@ -533,9 +660,29 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200
-        assert response.json()["count"] == 1
+        data = response.json()
+        result = data["result"]
+        assert data["count"] == 4
+        assert len(result) == 4
 
-        plain_emails = [tom.email_encrypted]
+        approved = [u for u in result if u["status"] == "approved"]
+        pending = [u for u in result if u["status"] == "pending"]
+        assert len(approved) == 1
+        assert len(pending) == 3
+
+    async def test_get_workspace_applet_managers(self, client, tom, lucy, mike, applet_one):
+        client.login(tom)
+        response = await client.get(
+            self.workspace_applet_managers_list.format(
+                owner_id=tom.id,
+                applet_id=str(applet_one.id),
+            ),
+        )
+
+        assert response.status_code == 200
+        assert response.json()["count"] == 3
+
+        plain_emails = [lucy.email_encrypted, tom.email_encrypted, mike.email_encrypted]
 
         for result in response.json()["result"]:
             assert result["email"] in plain_emails
@@ -561,7 +708,7 @@ class TestWorkspaces(BaseTest):
 
                 assert response.status_code == 200
                 data = response.json()
-                assert set(data.keys()) == {"count", "result"}
+                assert set(data.keys()) == {"count", "result", "orderingFields"}
                 assert data["count"] == 1
                 result = data["result"]
                 assert len(result) == 1
@@ -678,8 +825,10 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == 200, response.json()
+        data = response.json()
 
-        user_id = response.json()["result"][-1]["id"]
+        approved = [u for u in data["result"] if u["status"] == "approved"]
+        user_id = approved[-1]["id"]
 
         # Pin access wrong owner
         response = await client.post(
@@ -734,7 +883,9 @@ class TestWorkspaces(BaseTest):
                 applet_id=str(applet_one.id),
             ),
         )
-        assert response.json()["result"][-1]["id"] == user_id
+        data = response.json()
+        approved = [u for u in data["result"] if u["status"] == "approved"]
+        assert approved[-1]["id"] == user_id
 
     async def test_workspace_remove_manager_access(self, client, tom, lucy, applet_one, applet_one_lucy_manager):
         client.login(tom)
@@ -811,7 +962,7 @@ class TestWorkspaces(BaseTest):
         assert response.json()["count"] == 1
         assert response.json()["result"][0]["type"] == "applet"
 
-    async def test_applet_get_respondent_success(self, client, tom, applet_one):
+    async def test_applet_get_respondent_success(self, client, tom, applet_one, tom_applet_one_subject: Subject):
         client.login(tom)
         url = self.workspace_get_applet_respondent.format(
             owner_id=tom.id,
@@ -826,6 +977,24 @@ class TestWorkspaces(BaseTest):
         # Secret User id is random uuid, so just check that secretUserId exists
         assert respondent["secretUserId"]
         assert respondent["lastSeen"] is None
+        assert uuid.UUID(respondent["subjectId"]) == tom_applet_one_subject.id
+
+    async def test_applet_two_get_respondent_success(self, client, tom, applet_two, tom_applet_two_subject: Subject):
+        client.login(tom)
+        url = self.workspace_get_applet_respondent.format(
+            owner_id=tom.id,
+            applet_id=str(applet_two.id),
+            respondent_id=tom.id,
+        )
+        res = await client.get(url)
+        assert res.status_code == 200
+        body = res.json()
+        respondent = body.get("result")
+        assert respondent["nickname"] == f"{tom.first_name} {tom.last_name}"
+        # Secret User id is random uuid, so just check that secretUserId exists
+        assert respondent["secretUserId"]
+        assert respondent["lastSeen"] is None
+        assert uuid.UUID(respondent["subjectId"]) == tom_applet_two_subject.id
 
     async def test_applet_get_respondent_not_found(self, client, tom, applet_two):
         client.login(tom)
@@ -1029,7 +1198,7 @@ class TestWorkspaces(BaseTest):
         assert result.json()["count"] == 4
         respondents = result.json()["result"]
 
-        full_accounts_actual = list(filter(None.__ne__, map(lambda r: r["id"], respondents)))
+        full_accounts_actual: list[dict] = list(filter(None, map(lambda r: r["id"], respondents)))
         for full_account_expected in [lucy.id, user.id, tom.id]:
             assert str(full_account_expected) in full_accounts_actual
 
