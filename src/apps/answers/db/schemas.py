@@ -39,6 +39,7 @@ class AnswerSchema(HistoryAware, Base):
     migrated_data = Column(JSONB())
     target_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     source_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    input_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     relation = Column(String(length=20), nullable=True)
     consent_to_share = Column(Boolean(), default=False)
 
@@ -66,7 +67,9 @@ class AnswerNoteSchema(Base):
     __tablename__ = "answer_notes"
 
     answer_id = Column(UUID(as_uuid=True), index=True)
-    activity_id = Column(UUID(as_uuid=True))
+    flow_submit_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    activity_id = Column(UUID(as_uuid=True), nullable=True)
+    activity_flow_id = Column(UUID(as_uuid=True), nullable=True)
     note = Column(StringEncryptedType(Unicode, get_key))
     user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
@@ -93,6 +96,7 @@ class AnswerItemSchema(Base):
     migrated_data = Column(JSONB())
     assessment_activity_id = Column(Text(), nullable=True, index=True)
     tz_offset = Column(Integer, nullable=True, comment="Local timezone offset in minutes")
+    reviewed_flow_submit_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
     @hybrid_property
     def is_identifier_encrypted(self):

@@ -408,6 +408,7 @@ class AppletService:
 
         for schema in schemas:
             theme = theme_map.get(schema.theme_id)
+            applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(schema.id)
             applets.append(
                 AppletSingleLanguageInfo(
                     id=schema.id,
@@ -431,6 +432,7 @@ class AppletService:
                     stream_enabled=schema.stream_enabled,
                     stream_ip_address=schema.stream_ip_address,
                     stream_port=schema.stream_port,
+                    owner_id=applet_owner.owner_id,
                     # integrations=schema.integrations,
                 )
             )
@@ -489,6 +491,7 @@ class AppletService:
         schema = await AppletsCRUD(self.session).get_by_link(key)
         if not schema:
             raise AppletNotFoundError(key="key", value=str(key))
+        applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(schema.id)
         theme = None
         if schema.theme_id:
             theme = await ThemeService(self.session, self.user_id).get_by_id(schema.theme_id)
@@ -513,6 +516,7 @@ class AppletService:
             updated_at=schema.updated_at,
             retention_period=schema.retention_period,
             retention_type=schema.retention_type,
+            owner_id=applet_owner.owner_id,
         )
 
         applet.activities = await ActivityService(self.session, self.user_id).get_single_language_by_applet_id(
@@ -681,6 +685,9 @@ class AppletService:
         applet = AppletFull.from_orm(schema)
         applet.activities = await ActivityService(self.session, self.user_id).get_full_activities(applet_id)
         applet.activity_flows = await FlowService(self.session).get_full_flows(applet_id)
+        applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
+        applet.owner_id = applet_owner.owner_id
+
         return applet
 
     async def publish(self, applet_id: uuid.UUID):
@@ -752,6 +759,9 @@ class AppletService:
         applet.activities = futures[0]
         applet.activity_flows = futures[1]
         return applet
+
+    async def has_assessment(self, applet_id: uuid.UUID) -> bool:
+        return await AppletsCRUD(self.session).has_assessment(applet_id)
 
 
 class PublicAppletService:

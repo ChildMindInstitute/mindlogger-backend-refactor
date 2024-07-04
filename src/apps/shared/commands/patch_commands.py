@@ -95,6 +95,16 @@ PatchRegister.register(
     task_id="M2-6757",
     description="Change ampersand sanitizer to symbol '&'",
 )
+PatchRegister.register(
+    file_path="m2_6504_update_subject_tags.sql",
+    task_id="M2-6504",
+    description="[MultiinformantR1] Update tag fields for managers/reviewers subjects",
+)
+PatchRegister.register(
+    file_path="m2_6733_add_answer_input_subjects.py",
+    task_id="M2-6733",
+    description="[MultiinformantR1] Add input subject ids for answers in internal and arbitrary DBs",
+)
 
 PatchRegister.register(
     file_path="m2_6641_alerts_type_default.py",

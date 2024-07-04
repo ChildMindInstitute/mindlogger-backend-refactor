@@ -345,6 +345,7 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
         assert result["displayName"] == applet_one_with_flow.display_name
+        assert result["ownerId"] == str(tom.id)
         assert len(result["activities"]) == 1
         assert len(result["activityFlows"]) == 1
         assert response.json()["respondentMeta"]["nickname"] == tom.get_full_name()
@@ -354,6 +355,7 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
         assert result["displayName"] == applet_one_with_public_link.display_name
+        assert result["ownerId"] == "7484f34a-3acc-4ee6-8a94-fd7299502fa1"
         assert len(result["activities"]) == 1
 
     async def test_create_applet__initial_version_is_created_in_applet_history(
@@ -932,3 +934,11 @@ class TestApplet:
         resp = await client.get(self.history_changes_url.format(pk=applet_one.id, version=applet_one.version))
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["displayName"] == f"New applet {applet_one.display_name} added"
+
+    async def test_applet_retrieve_meta(
+        self, client: TestClient, tom: User, applet_with_reviewable_activity: AppletFull
+    ):
+        client.login(tom)
+        response = await client.get(self.applet_detail_url.format(pk=applet_with_reviewable_activity.id))
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["appletMeta"]["hasAssessment"]

@@ -16,6 +16,7 @@ class BaseTest:
     @pytest.fixture(scope="class", autouse=True)
     async def initialize(self):
         try:
+            await self.initialize_db()
             await self.populate_db()
             yield
         finally:
@@ -24,6 +25,13 @@ class BaseTest:
     @pytest.fixture(autouse=True)
     async def clear_mails(self):
         TestMail.clear_mails()
+
+    async def initialize_db(self):
+        AsyncSession = session_manager.get_session()
+        async with AsyncSession() as session:
+            query = text("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+            await session.execute(query)
+            await session.commit()
 
     async def populate_db(self):
         for fixture in self.fixtures:

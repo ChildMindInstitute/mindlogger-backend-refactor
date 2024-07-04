@@ -100,6 +100,7 @@ class AppletAnswerCreate(InternalModel):
     client: ClientMeta
     target_subject_id: uuid.UUID | None
     source_subject_id: uuid.UUID | None
+    input_subject_id: uuid.UUID | None
     consent_to_share: bool | None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
@@ -110,6 +111,7 @@ class AssessmentAnswerCreate(InternalModel):
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
     assessment_version_id: str
+    reviewed_flow_submit_id: uuid.UUID | None
 
 
 class AnswerDate(InternalModel):
@@ -278,6 +280,31 @@ class ActivitySubmissionResponse(ActivitySubmission):
         return value
 
 
+class ReviewsCount(PublicModel):
+    mine: int = 0
+    other: int = 0
+
+
+class AppletSubmission(PublicModel):
+    applet_id: uuid.UUID
+    respondent_subject_id: uuid.UUID
+    respondent_subject_tag: str | None
+    respondent_secret_user_id: str | None
+    respondent_nickname: str | None
+    target_subject_id: uuid.UUID
+    target_subject_tag: str | None
+    target_secret_user_id: str | None
+    target_nickname: str | None
+    source_subject_id: uuid.UUID | None
+    source_subject_tag: str | None
+    source_secret_user_id: str | None
+    source_nickname: str | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    activity_name: str
+    activity_id: uuid.UUID
+
+
 class FlowSubmission(PublicModel):
     submit_id: uuid.UUID
     flow_history_id: str
@@ -287,6 +314,7 @@ class FlowSubmission(PublicModel):
     end_datetime: datetime.datetime | None = None
     is_completed: bool | None = None
     answers: list[ActivityAnswer]
+    review_count: ReviewsCount = ReviewsCount()
 
 
 class FlowSubmissionsDetails(PublicModel):
@@ -371,11 +399,6 @@ class FlowSubmissionResponse(PublicModel):
                         break
 
         return value
-
-
-class ReviewsCount(PublicModel):
-    mine: int = 0
-    other: int = 0
 
 
 class AppletActivityAnswer(InternalModel):
@@ -463,6 +486,7 @@ class AnswerNote(InternalModel):
 
 
 class NoteOwner(InternalModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
@@ -475,6 +499,7 @@ class AnswerNoteDetail(InternalModel):
 
 
 class NoteOwnerPublic(PublicModel):
+    id: uuid.UUID
     first_name: str
     last_name: str
 
@@ -492,7 +517,9 @@ class UserAnswerDataBase(BaseModel):
     version: str
     respondent_id: uuid.UUID | str | None = None
     target_subject_id: uuid.UUID | str | None = None
+    target_secret_id: uuid.UUID | str | None = None
     source_subject_id: uuid.UUID | str | None = None
+    source_secret_id: uuid.UUID | str | None = None
     relation: str | None = None
     respondent_secret_id: str | None = None
     legacy_profile_id: str | None = None
@@ -511,6 +538,7 @@ class UserAnswerDataBase(BaseModel):
     flow_history_id: str | None
     flow_name: str | None
     reviewed_answer_id: uuid.UUID | str | None
+    reviewed_flow_submit_id: uuid.UUID | str | None
     created_at: datetime.datetime
     migrated_data: dict | None = None
     client: ClientMeta | None = None
@@ -640,3 +668,15 @@ class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
     target_subject_id: uuid.UUID | None = None
     answer_id: uuid.UUID | None = None
+
+
+class MultiinformantAssessmentValidationResponse(PublicModel):
+    valid: bool
+    message: str | None = None
+    code: str | None = None
+
+
+class PublicSubmissionsResponse(PublicModel):
+    submissions: list[AppletSubmission] = Field(default_factory=list)
+    submissions_count: int = 0
+    participants_count: int = 0
