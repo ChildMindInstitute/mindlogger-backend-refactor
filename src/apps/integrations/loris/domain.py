@@ -158,8 +158,8 @@ class VisitsForUsers(InternalModel):
 
 class LorisIntegrationAlertMessages(str, Enum):
     LORIS_INTEGRATION = "Loris Integration: "
-    NO_RESPONDENT = LORIS_INTEGRATION + "No respondent found."
-    REPORT_SERVER = LORIS_INTEGRATION + "Error during request to report server."
-    SUCCESS = LORIS_INTEGRATION + "Successful synchronization."
-    LORIS_SERVER_ERROR = LORIS_INTEGRATION + "Loris server error."
-    LORIS_LOGIN_ERROR = LORIS_INTEGRATION + "Incorrect credentials for Loris server."
+    NO_RESPONDENT = "No respondent found."
+    REPORT_SERVER = "Error during request to report server."
+    SUCCESS = "Successful synchronization."
+    LORIS_SERVER_ERROR = "Loris server error."
+    LORIS_LOGIN_ERROR = "Incorrect credentials for Loris server."
