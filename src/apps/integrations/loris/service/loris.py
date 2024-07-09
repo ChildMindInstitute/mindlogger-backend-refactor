@@ -496,6 +496,13 @@ class LorisIntegrationService:
                     duration = time.time() - start
                     if resp.status == 201:
                         logger.info(f"Successful request in {duration:.1f} seconds.")
+                    elif resp.status == 409:
+                        logger.info(f"Failed request in {duration:.1f} seconds.")
+                        error_message = await resp.text()
+                        logger.info(
+                            f"Сannot create visit {visit} for the user {candidate_id} because of: {error_message}"
+                        )
+                        continue
                     else:
                         logger.info(f"Failed request in {duration:.1f} seconds.")
                         error_message = await resp.text()
@@ -529,6 +536,13 @@ class LorisIntegrationService:
                     duration = time.time() - start
                     if resp.status == 204:
                         logger.info(f"Successful request in {duration:.1f} seconds.")
+                    elif resp.status == 409:
+                        logger.info(f"Failed request in {duration:.1f} seconds.")
+                        error_message = await resp.text()
+                        logger.info(
+                            f"Сannot start visit {visit} for the user {candidate_id} because of: {error_message}"
+                        )
+                        continue
                     else:
                         logger.info(f"Failed request in {duration:.1f} seconds.")
                         error_message = await resp.text()
