@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0f8e2de77a1f9048359043c09667dcaf633200eef07e8fe12f97bdb9e87e7888"
+            "sha256": "85e2166246f375d693d3572d34e03166666bf8fb93293578c6d740d61f4d4264"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -2030,11 +2030,12 @@
                 "reload"
             ],
             "hashes": [
-                "sha256:a0ce2e28f76b87e2504693eca8dcd174013198a880fc209f831829dcf7fa6075",
-                "sha256:a3c4fab8959ac4bf3e8a7e372a677169de41128a2c756546555ece9f9669d3c9"
+                "sha256:6a994aa1d44cd2bc683e8e5b8376b9ac12d2288a0e2825efe9b977d27f3023b0",
+                "sha256:97826018bd6ccd46ca7e41549d22d054f7fe9c069c15803586b027407adb6ec4"
             ],
+            "index": "pypi",
             "markers": "python_full_version >= '3.8.1' and python_full_version < '4.0.0'",
-            "version": "==0.9.1"
+            "version": "==0.11.6"
         },
         "taskiq-aio-pika": {
             "hashes": [
@@ -2087,7 +2088,7 @@
                 "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d",
                 "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"
             ],
-            "markers": "python_version < '3.11'",
+            "markers": "python_version >= '3.8'",
             "version": "==4.12.2"
         },
         "uritemplate": {
