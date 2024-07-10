@@ -96,6 +96,12 @@ PatchRegister.register(
     description="Change ampersand sanitizer to symbol '&'",
 )
 
+PatchRegister.register(
+    file_path="m2_7203_migrate_secret_ids.py",
+    task_id="M2-7203",
+    description="[Migration] Migrate missed secret ids",
+)
+
 app = typer.Typer()
 
 
