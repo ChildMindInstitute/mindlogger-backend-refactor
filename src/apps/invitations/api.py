@@ -22,7 +22,7 @@ from apps.invitations.domain import (
     InvitationReviewerRequest,
     InvitationReviewerResponse,
     PrivateInvitationResponse,
-    ShallAccountInvitation,
+    ShellAccountInvitation,
 )
 from apps.invitations.errors import (
     InvitationSubjectAcceptError,
@@ -245,7 +245,7 @@ async def invitation_decline(
 async def invitation_subject_send(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    schema: ShallAccountInvitation = Body(...),
+    schema: ShellAccountInvitation = Body(...),
     session=Depends(get_session),
 ) -> Response[InvitationRespondentResponse]:
     async with atomic(session):
@@ -273,12 +273,12 @@ async def invitation_subject_send(
             email=schema.email,
             first_name=subject.first_name,
             last_name=subject.last_name,
-            language=subject.language,
+            language=schema.language or subject.language,
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
         )
         invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
         if subject.email != schema.email:
-            await subject_service.update(subject.id, email=schema.email)
+            await subject_service.update(subject.id, email=schema.email, language=schema.language or subject.language)
 
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))

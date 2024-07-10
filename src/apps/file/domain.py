@@ -1,6 +1,6 @@
 import enum
 
-from pydantic import HttpUrl
+from pydantic import AnyHttpUrl
 
 from apps.shared.domain import PublicModel
 
@@ -52,7 +52,7 @@ class FileIdRequest(PublicModel):
 
 
 class PresignedUrl(PublicModel):
-    upload_url: HttpUrl
+    upload_url: AnyHttpUrl
     url: str
     # Use dict because fields can be different depend storage (AWS S3, Minio, GCS)
     fields: dict[str, str]

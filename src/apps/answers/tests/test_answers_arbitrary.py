@@ -620,8 +620,8 @@ class TestAnswerActivityItems(BaseTest):
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate",
-            "relation", "sourceSubjectId", "targetSubjectId", "client",
-            "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
+            "relation", "sourceSubjectId", "sourceSecretId", "targetSubjectId",
+            "targetSecretId", "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
         }
 
         assert set(assessment.keys()) == expected_keys

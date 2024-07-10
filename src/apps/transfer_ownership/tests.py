@@ -11,10 +11,12 @@ from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service import AppletService
 from apps.authentication.errors import PermissionsError
+from apps.invitations.constants import InvitationStatus
 from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
+from apps.subjects.constants import SubjectTag
 from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.errors import TransferEmailError
@@ -141,8 +143,18 @@ class TestTransfer(BaseTest):
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_accept_transfer(
-        self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, lucy: User, session: AsyncSession
+        self,
+        client: TestClient,
+        mocker: MockerFixture,
+        applet_one: AppletFull,
+        lucy: User,
+        tom: User,
+        session: AsyncSession,
     ):
+        prev_owner_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet_one.id)
+        assert prev_owner_subject
+        assert prev_owner_subject.tag == SubjectTag.TEAM
+
         client.login(lucy)
         mock = mocker.patch("apps.transfer_ownership.crud.TransferCRUD.approve_by_key")
         key = "6a3ab8e6-f2fa-49ae-b2db-197136677da7"
@@ -159,6 +171,11 @@ class TestTransfer(BaseTest):
         assert lucy_subject
         assert lucy_subject.email == lucy.email_encrypted
         assert lucy_subject.nickname == f"{lucy.first_name} {lucy.last_name}"
+        assert lucy_subject.tag == SubjectTag.TEAM
+        tom_subject = await SubjectsService(session, lucy.id).get_by_user_and_applet(tom.id, applet_one.id)
+        assert tom_subject
+        assert tom_subject.id == prev_owner_subject.id
+        assert tom_subject.tag is None
 
     async def test_accept_transfer_if_subject_already_exists(
         self,
@@ -356,7 +373,8 @@ class TestTransfer(BaseTest):
         result = response.json()["result"]
         email_role_map = dict()
         for res in result:
-            email_role_map[res["email"]] = res["roles"]
+            if res["status"] == InvitationStatus.APPROVED:
+                email_role_map[res["email"]] = res["roles"]
         emails = list(email_role_map.keys())
 
         assert mike.email_encrypted in emails
