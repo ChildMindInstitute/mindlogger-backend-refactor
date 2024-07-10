@@ -52,14 +52,12 @@ PatchRegister.register(
     description="Create flow history records for particular applets",
     manage_session=False,
 )
-
 PatchRegister.register(
     file_path="m2_6879_create_deleted_respondents.py",
     task_id="M2-6879",
     description="[Subject] Create deleted respondents roles",
     manage_session=False,
 )
-
 PatchRegister.register(
     file_path="m2_5551_delete_invitations_of_existing_respondent.sql",
     task_id="M2-5551",
@@ -105,13 +103,6 @@ PatchRegister.register(
     task_id="M2-6733",
     description="[MultiinformantR1] Add input subject ids for answers in internal and arbitrary DBs",
 )
-
-PatchRegister.register(
-    file_path="m2_7203_migrate_secret_ids.py",
-    task_id="M2-7203",
-    description="[Migration] Migrate missed secret ids",
-)
-
 PatchRegister.register(
     file_path="m2_7203_migrate_secret_ids.py",
     task_id="M2-7203",
