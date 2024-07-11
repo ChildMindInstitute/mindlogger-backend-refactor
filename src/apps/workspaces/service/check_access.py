@@ -30,6 +30,21 @@ class CheckAccessService:
         self.user_id = user_id
         self.is_super_admin = is_super_admin
 
+    async def _check_applet_roles_with_limited_account_access(
+        self,
+        applet_id: uuid.UUID,
+        roles: list[Role] | None = None,
+        *,
+        exception=None,
+    ):
+        has_access = await AppletAccessCRUD(self.session).has_any_roles_for_applet(applet_id, self.user_id, roles)
+
+        # if not has_access:
+        #     has_access = await Subject
+
+        if not has_access:
+            raise exception or AppletAccessDenied()
+
     async def _check_workspace_roles(
         self,
         owner_id: uuid.UUID,
@@ -84,6 +99,9 @@ class CheckAccessService:
 
     async def check_applet_manager_list_access(self, applet_id: uuid.UUID):
         await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER])
+
+    async def check_applet_manager_and_limited_list_access(self, applet_id: uuid.UUID):
+        await self._check_applet_roles_with_limited_account_access(applet_id, [Role.OWNER, Role.MANAGER, Role.RESPONDENT])
 
     async def check_workspace_respondent_list_access(self, owner_id: uuid.UUID):
         roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.REVIEWER]

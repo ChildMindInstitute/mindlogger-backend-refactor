@@ -375,6 +375,18 @@ class AnswerService:
             activity, flow = await asyncio.gather(activity_future, flow_future)
             if not activity and not flow:
                 raise MultiinformantAssessmentInvalidActivityOrFlow()
+            
+        is_admin = await AppletAccessCRUD(self.session).has_any_roles_for_applet(
+            applet_id,
+            respondent_subject.user_id,
+            [Role.OWNER],
+        )
+
+        if not is_admin:
+            if not target_subject or not source_subject:
+                raise MultiinformantAssessmentNoAccessApplet()
+            
+            await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
 
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)
@@ -577,6 +589,40 @@ class AnswerService:
         )
 
         return submission
+    
+    async def _validate_relation_between_subjects_in_applet(
+            self,
+            respondent_subject: SubjectSchema,
+            target_subject: SubjectSchema,
+            source_subject: SubjectSchema
+    ) -> None:
+        
+        """
+            add a new relation check in here, 
+            1. check if there is an actual relation (logged-in user (respondent_subject) and targetSubject)
+            2. another relation between respondent_subject and the subject it self
+            - respondent is the one who is inputting the answers in the activity
+            - targetSubject: the one the responses about
+            - sourceSubject: who will be providing the responses
+        """
+
+        if respondent_subject.id == target_subject.id:
+            return None
+
+        relation_respondent_target_subjects_call = SubjectsCrud(self.session).get_relation(respondent_subject.id, target_subject.id)
+        relation_source_target_subjects_call = SubjectsCrud(self.session).get_relation(source_subject.id, target_subject.id)
+
+        relation_respondent_target_subjects, relation_source_target_subjects = await asyncio.gather(
+            relation_respondent_target_subjects_call,
+            relation_source_target_subjects_call
+        )
+        
+        if not relation_respondent_target_subjects and not relation_source_target_subjects:
+            raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
+
+        # TODO: Add more validation with the expire_at field when the PR is merged | https://mindlogger.atlassian.net/browse/M2-6531
+
+        return None
 
     async def _validate_answer_access(
         self,
