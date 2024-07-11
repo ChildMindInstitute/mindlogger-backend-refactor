@@ -3292,6 +3292,45 @@ class TestAnswerActivityItems(BaseTest):
         data = response.json()
         assert data["submissionsCount"] == 1
         assert data["participantsCount"] == 2
+        assert len(data["submissions"]) == data["submissionsCount"]
+        for s in data["submissions"]:
+            assert s["targetSubjectId"] == str(answer_shell_account_target["target_subject_id"])
+            assert s["targetSubjectTag"] == answer_shell_account_target["target_subject_tag"]
+            assert s["targetNickname"] == answer_shell_account_target["target_nickname"]
+            assert s["targetSecretUserId"] == str(answer_shell_account_target["target_secret_user_id"])
+            assert s["respondentSubjectId"] == str(answer_shell_account_target["respondent_subject_id"])
+            assert s["respondentSubjectTag"] == answer_shell_account_target["respondent_subject_tag"]
+            assert s["respondentNickname"] == answer_shell_account_target["respondent_nickname"]
+            assert s["respondentSecretUserId"] == str(answer_shell_account_target["respondent_secret_user_id"])
+            assert s["sourceSubjectId"] == str(answer_shell_account_target["source_subject_id"])
+            assert s["sourceSubjectTag"] == answer_shell_account_target["source_subject_tag"]
+            assert s["sourceNickname"] == answer_shell_account_target["source_nickname"]
+            assert s["sourceSecretUserId"] == str(answer_shell_account_target["source_secret_user_id"])
+            assert s["activityName"] is not None
+            assert s["activityId"] is not None
+
+    async def test_get_applet_latest_submissions_with_deleted_subjects(
+        self,
+        client,
+        tom: User,
+        applet: AppletFull,
+        answer_shell_account_target: dict,
+        session: AsyncSession,
+    ):
+        service = SubjectsService(session, tom.id)
+        await service.delete(answer_shell_account_target["target_subject_id"])
+        await service.delete(answer_shell_account_target["respondent_subject_id"])
+        await service.delete(answer_shell_account_target["source_subject_id"])
+
+        client.login(tom)
+
+        response = await client.get(self.applet_submissions_list_url.format(applet_id=applet.id))
+
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert data["submissionsCount"] == 1
+        assert len(data["submissions"]) == data["submissionsCount"]
+        assert data["participantsCount"] == 2
         for s in data["submissions"]:
             assert s["targetSubjectId"] == str(answer_shell_account_target["target_subject_id"])
             assert s["targetSubjectTag"] == answer_shell_account_target["target_subject_tag"]
