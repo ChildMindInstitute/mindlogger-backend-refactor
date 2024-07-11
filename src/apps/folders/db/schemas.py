@@ -1,11 +1,11 @@
 from sqlalchemy import Column, DateTime, ForeignKey, String
 
-from infrastructure.database import Base
+from infrastructure.database import Base, MigratedMixin
 
 __all__ = ["FolderSchema"]
 
 
-class FolderSchema(Base):
+class FolderSchema(MigratedMixin, Base):
     __tablename__ = "folders"
 
     workspace_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
@@ -13,7 +13,7 @@ class FolderSchema(Base):
     name = Column(String(255))
 
 
-class FolderAppletSchema(Base):
+class FolderAppletSchema(MigratedMixin, Base):
     __tablename__ = "folder_applets"
 
     folder_id = Column(ForeignKey("folders.id", ondelete="CASCADE"), nullable=False)

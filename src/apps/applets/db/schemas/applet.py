@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy_utils.types import IPAddressType
 
 from infrastructure.database.base import Base
-from infrastructure.database.mixins import HistoryAware
+from infrastructure.database.mixins import HistoryAware, MigratedMixin
 
 __all__ = ["AppletSchema", "AppletHistorySchema"]
 
@@ -31,7 +31,7 @@ class _BaseAppletSchema:
     stream_port = Column(Integer())
 
 
-class AppletSchema(_BaseAppletSchema, Base):
+class AppletSchema(_BaseAppletSchema, Base, MigratedMixin):
     __tablename__ = "applets"
 
     encryption = Column(JSONB())
@@ -44,7 +44,7 @@ class AppletSchema(_BaseAppletSchema, Base):
     creator_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
 
 
-class AppletHistorySchema(_BaseAppletSchema, HistoryAware, Base):
+class AppletHistorySchema(_BaseAppletSchema, HistoryAware, Base, MigratedMixin):
     __tablename__ = "applet_histories"
 
     id_version = Column(String(), primary_key=True)

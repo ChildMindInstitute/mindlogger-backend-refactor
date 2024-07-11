@@ -1,8 +1,11 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, func, text
+from sqlalchemy import Boolean, Column, DateTime, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy.orm import declarative_mixin
+
+__all__ = ("SoftDeletable", "HistoryAware", "MigratedMixin")
 
 
 class SoftDeletable:
@@ -53,3 +56,8 @@ class HistoryAware:
     @version_from_history_id.expression  # type: ignore[no-redef]
     def version_from_history_id(self, field):
         return func.split_part(field, text("'_'"), text("2"))
+
+
+@declarative_mixin
+class MigratedMixin:
+    migrated_date = Column(DateTime(), default=None, server_default=None, nullable=True)

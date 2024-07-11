@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, Request
 from jose import JWTError, jwt
 from pydantic import ValidationError
 
@@ -18,6 +18,8 @@ from apps.authentication.domain.token import (
 )
 from apps.authentication.errors import AuthenticationError, InvalidCredentials, InvalidRefreshToken
 from apps.authentication.services.security import AuthenticationService
+from apps.logs.domain.constants import UserActivityEvent, UserActivityEventType
+from apps.logs.services import UserActivityLogService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
@@ -27,11 +29,14 @@ from apps.users.services.user_device import UserDeviceService
 from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.http.deps import get_mindlogger_content_source
 
 
 async def get_token(
+    request: Request,
     user_login_schema: UserLoginRequest = Body(...),
     session=Depends(get_session),
+    mindlogger_content=Depends(get_mindlogger_content_source),
 ) -> Response[UserLogin]:
     """Generate the JWT access token."""
     async with atomic(session):
@@ -42,8 +47,19 @@ async def get_token(
         except UserNotFound:
             raise InvalidCredentials(email=user_login_schema.email)
 
+        if user_login_schema.device_id:
+            await UserDeviceService(session, user.id).add_device(user_login_schema.device_id)
         if user.email_encrypted != user_login_schema.email:
             user = await UsersCRUD(session).update_encrypted_email(user, user_login_schema.email)
+
+        await UserActivityLogService(session).create_log(
+            user.id,
+            user_login_schema.device_id,
+            UserActivityEventType.LOGIN,
+            UserActivityEvent.LOGIN,
+            request.headers.get("user-agent"),
+            mindlogger_content,
+        )
 
     rjti = str(uuid.uuid4())
     refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})

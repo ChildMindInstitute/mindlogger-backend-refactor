@@ -2,6 +2,7 @@ import datetime
 import http
 import uuid
 from unittest import mock
+from unittest.mock import ANY, AsyncMock
 
 import pytest
 from jose import jwt
@@ -19,12 +20,13 @@ from apps.shared.test.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from config import settings
+from infrastructure.http.domain import MindloggerContentSource
 
 TEST_PASSWORD = "Test1234!"
 
 
 class TestAuthentication(BaseTest):
-    get_token_url = auth_router.url_path_for("get_token")
+    login_url = auth_router.url_path_for("get_token")
     delete_token_url = auth_router.url_path_for("delete_access_token")
     refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
     delete_refresh_token_url = auth_router.url_path_for("delete_refresh_token")
@@ -39,7 +41,7 @@ class TestAuthentication(BaseTest):
 
     async def test_get_token(self, client: TestClient, user: User):
         response = await client.post(
-            url=self.get_token_url,
+            url=self.login_url,
             data=dict(email=user.email_encrypted, password=TEST_PASSWORD),
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -68,7 +70,7 @@ class TestAuthentication(BaseTest):
         device_id = str(uuid.uuid4())
 
         response = await client.post(
-            url=self.get_token_url,
+            url=self.login_url,
             data=dict(device_id=device_id, email=user.email_encrypted, password=TEST_PASSWORD),
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -95,7 +97,7 @@ class TestAuthentication(BaseTest):
 
         login_request_user: UserLoginRequest = UserLoginRequest(email=tom_create.email, password=tom_create.password)
         response = await client.post(
-            url=self.get_token_url,
+            url=self.login_url,
             data=login_request_user.dict(),
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -168,7 +170,7 @@ class TestAuthentication(BaseTest):
     ):
         data = dict(email=user.email_encrypted, password=TEST_PASSWORD)
         data[field_name] = value
-        resp = await client.post(self.get_token_url, data=data)
+        resp = await client.post(self.login_url, data=data)
         assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
         result = resp.json()["result"]
         assert len(result) == 1
@@ -181,12 +183,12 @@ class TestAuthentication(BaseTest):
         updated = await UsersCRUD(session).update_encrypted_email(user, None)  # type: ignore[arg-type]
         assert updated.email_encrypted is None
         data = dict(email=email, password=TEST_PASSWORD)
-        resp = await client.post(self.get_token_url, data=data)
+        resp = await client.post(self.login_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
         assert email == (await UsersCRUD(session).get_by_id(user.id)).email_encrypted
 
     async def test_logout2(self, client: TestClient, user: User):
-        resp = await client.post(self.get_token_url, data={"email": user.email_encrypted, "password": TEST_PASSWORD})
+        resp = await client.post(self.login_url, data={"email": user.email_encrypted, "password": TEST_PASSWORD})
         assert resp.status_code == http.HTTPStatus.OK
         refresh_token = resp.json()["result"]["token"]["refreshToken"]
         # To revoke refresh_token need to send it in header
@@ -204,7 +206,7 @@ class TestAuthentication(BaseTest):
     async def test_logout2_device_removed(self, client: TestClient, user: User, mocker: MockerFixture):
         device_id = "device_id"
         resp = await client.post(
-            self.get_token_url, data={"email": user.email_encrypted, "password": TEST_PASSWORD, "device_id": device_id}
+            self.login_url, data={"email": user.email_encrypted, "password": TEST_PASSWORD, "device_id": device_id}
         )
         assert resp.status_code == http.HTTPStatus.OK
         refresh_token = resp.json()["result"]["token"]["refreshToken"]
@@ -219,7 +221,7 @@ class TestAuthentication(BaseTest):
 
     async def test_refresh_access_token__refresh_token_is_expired(self, client: TestClient, user: User):
         settings.authentication.refresh_token.expiration = -1
-        resp = await client.post(self.get_token_url, data={"email": user.email_encrypted, "password": TEST_PASSWORD})
+        resp = await client.post(self.login_url, data={"email": user.email_encrypted, "password": TEST_PASSWORD})
         assert resp.status_code == http.HTTPStatus.OK
         refresh_token = resp.json()["result"]["token"]["refreshToken"]
         resp = await client.post(self.refresh_access_token_url, data={"refresh_token": refresh_token})
@@ -228,3 +230,40 @@ class TestAuthentication(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == InvalidRefreshToken.message
         settings.authentication.refresh_token.expiration = 540
+
+    async def test_login_event_log_is_created_after_login(
+        self, mock_activity_log: AsyncMock, client: TestClient, user: User
+    ):
+        login_request_user: UserLoginRequest = UserLoginRequest(email=user.email_encrypted, password=TEST_PASSWORD)
+        response = await client.post(
+            url=self.login_url,
+            data=login_request_user.dict(),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        mock_activity_log.assert_awaited_once()
+
+    @pytest.mark.parametrize(
+        "header_value,dest_value",
+        (
+            (MindloggerContentSource.admin, MindloggerContentSource.admin),
+            (MindloggerContentSource.mobile, MindloggerContentSource.mobile),
+            (MindloggerContentSource.web, MindloggerContentSource.web),
+            (
+                MindloggerContentSource.undefined,
+                MindloggerContentSource.undefined,
+            ),
+            ("test", MindloggerContentSource.undefined),
+        ),
+    )
+    async def test_login_if_default_mindollger_content_source_header_is_undefined(
+        self, mock_activity_log: AsyncMock, client: TestClient, header_value: str, dest_value: str, user: User
+    ):
+        login_request_user: UserLoginRequest = UserLoginRequest(email=user.email_encrypted, password=TEST_PASSWORD)
+        response = await client.post(
+            url=self.login_url,
+            data=login_request_user.dict(),
+            headers={"Mindlogger-Content-Source": header_value},
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        user_id = uuid.UUID(response.json()["result"]["user"]["id"])
+        mock_activity_log.assert_awaited_once_with(user_id, None, ANY, ANY, ANY, dest_value)

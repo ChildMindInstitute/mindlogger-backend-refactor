@@ -21,10 +21,10 @@ from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
 from infrastructure.database.base import Base
-from infrastructure.database.mixins import HistoryAware
+from infrastructure.database.mixins import HistoryAware, MigratedMixin
 
 
-class AnswerSchema(HistoryAware, Base):
+class AnswerSchema(HistoryAware, MigratedMixin, Base):
     __tablename__ = "answers"
 
     applet_id = Column(UUID(as_uuid=True), index=True)
@@ -62,7 +62,7 @@ class AnswerSchema(HistoryAware, Base):
     )
 
 
-class AnswerNoteSchema(Base):
+class AnswerNoteSchema(MigratedMixin, Base):
     __tablename__ = "answer_notes"
 
     answer_id = Column(UUID(as_uuid=True), index=True)
@@ -73,7 +73,7 @@ class AnswerNoteSchema(Base):
     user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
 
-class AnswerItemSchema(Base):
+class AnswerItemSchema(MigratedMixin, Base):
     __tablename__ = "answers_items"
 
     answer_id = Column(

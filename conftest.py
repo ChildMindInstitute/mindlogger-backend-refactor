@@ -307,3 +307,9 @@ def mailbox() -> TestMail:
     box = TestMail(connection)
     box.clear_mails()
     return box
+
+
+@pytest.fixture
+def mock_activity_log(mocker: MockerFixture) -> Generator:
+    mock = mocker.patch("apps.logs.services.UserActivityLogService.create_log")
+    yield mock

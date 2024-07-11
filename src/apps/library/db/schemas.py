@@ -1,10 +1,10 @@
 from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
-from infrastructure.database import Base
+from infrastructure.database import Base, MigratedMixin
 
 
-class LibrarySchema(Base):
+class LibrarySchema(MigratedMixin, Base):
     __tablename__ = "library"
 
     applet_id_version = Column(
