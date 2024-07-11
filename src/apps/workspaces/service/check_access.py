@@ -39,9 +39,6 @@ class CheckAccessService:
     ):
         has_access = await AppletAccessCRUD(self.session).has_any_roles_for_applet(applet_id, self.user_id, roles)
 
-        # if not has_access:
-        #     has_access = await Subject
-
         if not has_access:
             raise exception or AppletAccessDenied()
 
