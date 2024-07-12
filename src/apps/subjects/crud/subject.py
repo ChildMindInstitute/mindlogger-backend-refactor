@@ -39,21 +39,23 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
     async def get_by_id(self, _id: uuid.UUID) -> SubjectSchema | None:
         return await self._get("id", _id)
 
-    async def get_by_ids(self, ids: list[uuid.UUID]) -> list[SubjectSchema]:
+    async def get_by_ids(self, ids: list[uuid.UUID], include_deleted=False) -> list[SubjectSchema]:
         query: Query = select(SubjectSchema)
         query = query.where(
             SubjectSchema.id.in_(ids),
-            SubjectSchema.soft_exists(),
+            SubjectSchema.soft_exists() if not include_deleted else True,
         )
         res = await self._execute(query)
         return res.scalars().all()
 
-    async def get_by_user_ids(self, applet_id: uuid.UUID, user_ids: list[uuid.UUID]) -> list[SubjectSchema]:
+    async def get_by_user_ids(
+        self, applet_id: uuid.UUID, user_ids: list[uuid.UUID], include_deleted=False
+    ) -> list[SubjectSchema]:
         query: Query = select(SubjectSchema)
         query = query.where(
             SubjectSchema.user_id.in_(user_ids),
             SubjectSchema.applet_id == applet_id,
-            SubjectSchema.soft_exists(),
+            SubjectSchema.soft_exists() if not include_deleted else True,
         )
         res = await self._execute(query)
         return res.scalars().all()

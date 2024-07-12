@@ -107,6 +107,7 @@ class TestActivities:
         assert config["addTooltip"] == activity_item.config.add_tooltip
         assert config["setPalette"] == activity_item.config.set_palette
         assert config["addTokens"] == activity_item.config.add_tokens
+        assert config["portraitLayout"] == activity_item.config.portrait_layout
         assert (
             config["additionalResponseOption"]["textInputOption"]
             == activity_item.config.additional_response_option.text_input_option

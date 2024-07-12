@@ -575,7 +575,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .select_from(SubjectSchema)
             .where(
                 SubjectSchema.applet_id == applet_id,
-                SubjectSchema.soft_exists(),
             )
         )
 
