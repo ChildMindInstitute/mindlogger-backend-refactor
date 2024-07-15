@@ -95,11 +95,11 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import WorkspaceRespondent
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from apps.workspaces.service.check_access import CheckAccessService
+from apps.workspaces.errors import AppletAccessDenied
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
-from apps.workspaces.errors import AppletAccessDenied
-from apps.workspaces.service.check_access import CheckAccessService
 
 class AnswerService:
     def __init__(self, session, user_id: uuid.UUID | None = None, arbitrary_session=None):
