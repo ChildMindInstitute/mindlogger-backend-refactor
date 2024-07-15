@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta
 
 from fastapi import Body, Depends
 from fastapi.exceptions import RequestValidationError
@@ -80,6 +81,44 @@ async def create_relation(
             source_subject_id,
             schema.relation,
         )
+        return EmptyResponse()
+
+
+async def create_temporary_multiinformant_relation(
+    subject_id: uuid.UUID,
+    source_subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    service = SubjectsService(session, user.id)
+    source_subject = await service.get_if_soft_exist(source_subject_id)
+    target_subject = await service.get_if_soft_exist(subject_id)
+    if not source_subject:
+        raise NotFoundError(f"Subject {source_subject_id} not found")
+    if not target_subject:
+        raise NotFoundError(f"Subject {subject_id} not found")
+    if source_subject.applet_id != target_subject.applet_id:
+        raise ValidationError("applet_id doesn't match")
+
+    check_access_service = CheckAccessService(session, user.id)
+
+    # Only owners and managers can initiate take now from the admin panel
+    await check_access_service.check_applet_manager_list_access(target_subject.applet_id)
+
+    existing_relation = await service.get_relation(source_subject_id, subject_id)
+    if existing_relation:
+        if existing_relation.relation != "take-now" or existing_relation.meta is None:
+            return EmptyResponse()
+
+        expires_at = datetime.fromisoformat(existing_relation.meta["expiresAt"])
+        if expires_at > datetime.now():
+            return EmptyResponse()
+
+        await service.delete_relation(subject_id, source_subject_id)
+
+    async with atomic(session):
+        expires_at = datetime.now() + timedelta(days=1)
+        await service.create_relation(subject_id, source_subject_id, "take-now", {"expiresAt": expires_at.isoformat()})
         return EmptyResponse()
 
 
