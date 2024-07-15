@@ -98,7 +98,8 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
-
+from apps.workspaces.errors import AppletAccessDenied
+from apps.workspaces.service.check_access import CheckAccessService
 
 class AnswerService:
     def __init__(self, session, user_id: uuid.UUID | None = None, arbitrary_session=None):
@@ -367,18 +368,18 @@ class AnswerService:
             if not activity and not flow:
                 raise MultiinformantAssessmentInvalidActivityOrFlow()
             
-        is_admin = await AppletAccessCRUD(self.session).has_any_roles_for_applet(
-            applet_id,
-            respondent_subject.user_id,
-            [Role.OWNER],
-        )
+        try:
+            await CheckAccessService(self.session, self.user_id).check_applet_manager_list_access(applet_id)
+            is_admin = True
+        except AppletAccessDenied:
+            is_admin = False
 
         if not is_admin:
             if not target_subject or not source_subject:
-                raise MultiinformantAssessmentNoAccessApplet()
+                raise MultiinformantAssessmentNoAccessApplet("Missing target subject or source subject")
             
-            await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
-
+        await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
+            
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)
         # First check is flow single report or not, flow single report has
@@ -589,12 +590,16 @@ class AnswerService:
     ) -> None:
         
         """
-            add a new relation check in here, 
-            1. check if there is an actual relation (logged-in user (respondent_subject) and targetSubject)
-            2. another relation between respondent_subject and the subject it self
-            - respondent is the one who is inputting the answers in the activity
-            - targetSubject: the one the responses about
-            - sourceSubject: who will be providing the responses
+            Validate the relationship between subjects in an applet.
+            - respondent_subject: the subject inputting the answers.
+            - target_subject: the subject about whom the responses are.
+            - source_subject: the subject providing the responses.
+            
+            This method checks:
+            1. If there is a relationship between the logged-in user (respondent_subject) and target_subject.
+            2. If there is a relationship between the respondent_subject and the source_subject.
+            Raises:
+                MultiinformantAssessmentNoAccessApplet: If no valid relationship is found.
         """
 
         if respondent_subject.id == target_subject.id:
