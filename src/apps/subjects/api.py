@@ -113,10 +113,12 @@ async def create_temporary_multiinformant_relation(
     existing_relation = await service.get_relation(source_subject_id, subject_id)
     if existing_relation:
         if existing_relation.relation != "take-now" or existing_relation.meta is None:
+            # There is already a non-temporary relation. Do nothing
             return EmptyResponse()
 
         expires_at = datetime.fromisoformat(existing_relation.meta["expiresAt"])
         if expires_at > datetime.now():
+            # The current temporary relation is still valid. Do nothing
             return EmptyResponse()
 
         await service.delete_relation(subject_id, source_subject_id)
