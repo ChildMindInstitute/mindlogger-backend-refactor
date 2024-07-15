@@ -75,6 +75,11 @@ async def create_relation(
         raise ValidationError("applet_id doesn't match")
 
     await CheckAccessService(session, user.id).check_applet_invite_access(target_subject.applet_id)
+
+    existing_relation = await service.get_relation(source_subject_id, subject_id)
+    if existing_relation and existing_relation.relation == "take-now" and existing_relation.meta is not None:
+        await service.delete_relation(subject_id, source_subject_id)
+
     async with atomic(session):
         await service.create_relation(
             subject_id,
