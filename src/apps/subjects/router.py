@@ -10,6 +10,7 @@ from apps.subjects.api import (
     create_subject,
     delete_relation,
     delete_subject,
+    get_my_subject,
     get_subject,
     update_subject,
 )
@@ -18,6 +19,7 @@ from apps.users import User
 from infrastructure.database.deps import get_session
 
 router = APIRouter(prefix="/subjects", tags=["Subjects"])
+user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.post(
@@ -92,3 +94,14 @@ router.delete(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(delete_relation)
+
+user_router.get(
+    "/me/subjects/{applet_id}",
+    response_model=Response[SubjectReadResponse],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[SubjectReadResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(get_my_subject)
