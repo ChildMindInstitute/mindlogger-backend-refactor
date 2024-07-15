@@ -221,10 +221,25 @@ async def get_subject(
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
 ) -> Response[SubjectReadResponse]:
-    subject = await SubjectsService(session, user.id).get(subject_id)
+    subjects_service = SubjectsService(session, user.id)
+    subject = await subjects_service.get(subject_id)
     if not subject:
         raise NotFoundError()
-    await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
+
+    user_subject = await subjects_service.get_by_user_and_applet(user.id, subject.applet_id)
+    has_relation = False
+    if user_subject:
+        relation = await subjects_service.get_relation(user_subject.id, subject_id)
+        if relation and relation.relation != "take-now":
+            has_relation = True
+        elif relation and relation.relation == "take-now" and relation.meta is not None:
+            expires_at = datetime.fromisoformat(relation.meta["expiresAt"])
+            if expires_at > datetime.now():
+                has_relation = True
+
+    if not has_relation:
+        await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
+
     answer_dates = await AnswerService(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
