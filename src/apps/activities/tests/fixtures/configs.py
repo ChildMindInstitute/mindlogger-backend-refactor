@@ -13,6 +13,7 @@ from apps.activities.domain.response_type_config import (
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
     PhotoConfig,
+    PhrasalTemplateConfig,
     ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
@@ -163,3 +164,8 @@ def message_config(default_config: DefaultConfig) -> MessageConfig:
 @pytest.fixture
 def audio_player_config(default_config: DefaultConfig) -> AudioPlayerConfig:
     return AudioPlayerConfig(**default_config.dict(), play_once=False, type=ResponseType.AUDIOPLAYER)
+
+
+@pytest.fixture
+def phrasal_template_config(default_config: DefaultConfig) -> PhrasalTemplateConfig:
+    return PhrasalTemplateConfig(**default_config.dict(), type=ResponseType.PHRASAL_TEMPLATE)

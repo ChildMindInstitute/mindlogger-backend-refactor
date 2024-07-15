@@ -12,6 +12,7 @@ from apps.activities.domain.response_type_config import (
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
     PhotoConfig,
+    PhrasalTemplateConfig,
     ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
@@ -29,6 +30,7 @@ from apps.activities.domain.response_values import (
     MultiSelectionRowsValues,
     MultiSelectionValues,
     NumberSelectionValues,
+    PhrasalTemplateValues,
     SingleSelectionRowsValues,
     SingleSelectionValues,
     SliderRowsValues,
@@ -248,3 +250,39 @@ def audio_player_item_create(
         config=audio_player_config,
         response_values=audio_player_response_values,
     )
+
+
+@pytest.fixture()
+def phrasal_template_with_text_create(
+    phrasal_template_config: PhrasalTemplateConfig,
+    phrasal_template_with_text_response_values: PhrasalTemplateValues,
+    base_item_data: BaseItemData,
+    text_item_create,
+):
+    phrasal_item = ActivityItemCreate(
+        **base_item_data.dict(exclude={"name"}),
+        name="phrasal_template_text_test",
+        response_type=ResponseType.PHRASAL_TEMPLATE,
+        config=phrasal_template_config,
+        response_values=phrasal_template_with_text_response_values,
+    )
+
+    return [text_item_create, phrasal_item]
+
+
+@pytest.fixture
+def phrasal_template_with_slider_rows_create(
+    phrasal_template_config: PhrasalTemplateConfig,
+    phrasal_template_with_slider_rows_response_values: PhrasalTemplateValues,
+    base_item_data: BaseItemData,
+    slider_rows_item_create,
+):
+    phrasal_item = ActivityItemCreate(
+        **base_item_data.dict(exclude={"name"}),
+        name="phrasal_template_slider_test",
+        response_type=ResponseType.PHRASAL_TEMPLATE,
+        config=phrasal_template_config,
+        response_values=phrasal_template_with_slider_rows_response_values,
+    )
+
+    return [slider_rows_item_create, phrasal_item]

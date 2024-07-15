@@ -1,11 +1,15 @@
 from apps.activities.domain.conditions import MultiSelectConditionType, SingleSelectConditionType
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
+from apps.activities.domain.response_values import PhrasalTemplateFieldType
 from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
 from apps.activities.errors import (
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
     IncorrectConditionLogicItemTypeError,
     IncorrectConditionOptionError,
+    IncorrectPhrasalTemplateItemError,
+    IncorrectPhrasalTemplateItemIndexError,
+    IncorrectPhrasalTemplateItemTypeError,
     IncorrectScoreItemConfigError,
     IncorrectScoreItemError,
     IncorrectScoreItemTypeError,
@@ -198,4 +202,37 @@ def validate_performance_task_type(values: dict):
             ResponseType.ABTRAILS,
         ):
             values["performance_task_type"] = item.response_type
+    return values
+
+
+def validate_phrasal_templates(values: dict):
+    items = values.get("items", [])
+    for item in items:
+        if item.response_type == ResponseType.PHRASAL_TEMPLATE:
+            phrases = item.response_values.phrases or []
+            for phrase in phrases:
+                fields = phrase.fields or []
+                for field in fields:
+                    if field.type == PhrasalTemplateFieldType.ITEM_RESPONSE:
+                        referenced_item = next((item for item in items if item.name == field.item_name), None)
+                        if referenced_item is None:
+                            raise IncorrectPhrasalTemplateItemError()
+
+                        if referenced_item.response_type not in [
+                            ResponseType.TEXT,
+                            ResponseType.SINGLESELECT,
+                            ResponseType.MULTISELECT,
+                            ResponseType.SLIDER,
+                            ResponseType.NUMBERSELECT,
+                            ResponseType.TIMERANGE,
+                            ResponseType.DATE,
+                            ResponseType.SLIDERROWS,
+                            ResponseType.SINGLESELECTROWS,
+                            ResponseType.MULTISELECTROWS,
+                        ]:
+                            raise IncorrectPhrasalTemplateItemTypeError()
+
+                        if referenced_item.response_type in [ResponseType.SLIDERROWS] and field.item_index is None:
+                            raise IncorrectPhrasalTemplateItemIndexError()
+
     return values

@@ -53,6 +53,7 @@ class ResponseType(str, Enum):
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
     ABTRAILS = "ABTrails"
+    PHRASAL_TEMPLATE = "phrasalTemplate"
 
     @classmethod
     def get_non_response_types(cls):
@@ -211,6 +212,11 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
     type: Literal[ResponseType.AUDIOPLAYER] | None
     additional_response_option: AdditionalResponseOption
     play_once: bool
+
+
+class PhrasalTemplateConfig(PublicModel):
+    type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
+    remove_back_button: bool
 
 
 class InputType(str, Enum):
@@ -412,4 +418,5 @@ ResponseTypeConfig = (
     | FlankerConfig
     | StabilityTrackerConfig
     | ABTrailsConfig
+    | PhrasalTemplateConfig
 )
