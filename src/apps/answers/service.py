@@ -614,8 +614,12 @@ class AnswerService:
         if respondent_subject.id == target_subject.id:
             return None
 
-        relation_respondent_target_subjects_call = SubjectsCrud(self.session).get_relation(respondent_subject.id, target_subject.id)
-        relation_source_target_subjects_call = SubjectsCrud(self.session).get_relation(source_subject.id, target_subject.id)
+        relation_respondent_target_subjects_call = SubjectsCrud(self.session).get_relation(
+            respondent_subject.id, target_subject.id
+        )
+        relation_source_target_subjects_call = SubjectsCrud(self.session).get_relation(
+            source_subject.id, target_subject.id
+        )
 
         relation_respondent_target_subjects, relation_source_target_subjects = await asyncio.gather(
             relation_respondent_target_subjects_call,
