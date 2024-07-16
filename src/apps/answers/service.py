@@ -377,11 +377,12 @@ class AnswerService:
             if not activity and not flow:
                 raise MultiinformantAssessmentInvalidActivityOrFlow()
             
-        try:
-            await CheckAccessService(self.session, self.user_id).check_applet_manager_list_access(applet_id)
-            is_admin = True
-        except AppletAccessDenied:
-            is_admin = False
+
+        is_admin = await AppletAccessCRUD(self.session).has_any_roles_for_applet(
+            respondent_subject.applet_id,
+            respondent_subject.user_id,
+            Role.managers(),
+        )
 
         if not is_admin:
             if not target_subject or not source_subject:
@@ -636,19 +637,19 @@ class AnswerService:
         if respondent_subject.id == target_subject.id or respondent_subject.id == source_subject.id:
             return None
 
-        relation_respondent_target_subjects_call = SubjectsCrud(self.session).get_relation(
+        relation_respondent_target_subjects_coro_call = SubjectsCrud(self.session).get_relation(
             respondent_subject.id, target_subject.id
         )
-        relation_respondent_source_subjects_call = SubjectsCrud(self.session).get_relation(
+        relation_respondent_source_subjects_coro_call = SubjectsCrud(self.session).get_relation(
             respondent_subject.id, source_subject.id
         )
 
-        relation_respondent_target_subjects, relation_respondent_source_subjects = await asyncio.gather(
-            relation_respondent_target_subjects_call,
-            relation_respondent_source_subjects_call
+        relation_respondent_target_subjects_coro, relation_respondent_source_subjects_coro = await asyncio.gather(
+            relation_respondent_target_subjects_coro_call,
+            relation_respondent_source_subjects_coro_call
         )
         
-        if not relation_respondent_target_subjects and not relation_respondent_source_subjects:
+        if not relation_respondent_target_subjects_coro and not relation_respondent_source_subjects_coro:
             raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
         # TODO: Add more validation with the expire_at field when the PR is merged | https://mindlogger.atlassian.net/browse/M2-6531
