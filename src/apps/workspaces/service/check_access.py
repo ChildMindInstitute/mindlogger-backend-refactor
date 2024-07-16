@@ -86,7 +86,8 @@ class CheckAccessService:
         await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER])
 
     async def check_applet_manager_and_limited_list_access(self, applet_id: uuid.UUID):
-        await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER, Role.RESPONDENT])
+        roles = [Role.OWNER, Role.MANAGER, Role.RESPONDENT]
+        await self._check_applet_roles(applet_id, roles)
 
     async def check_workspace_respondent_list_access(self, owner_id: uuid.UUID):
         roles = [Role.OWNER, Role.MANAGER, Role.COORDINATOR, Role.REVIEWER]

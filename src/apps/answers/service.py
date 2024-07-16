@@ -386,8 +386,11 @@ class AnswerService:
         if not is_admin:
             if not target_subject or not source_subject:
                 raise MultiinformantAssessmentNoAccessApplet("Missing target subject or source subject")
-            
-        await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
+
+        await asyncio.gather(
+            self._validate_user_role_for_take_now(applet_id, respondent_subject),
+            self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
+        )
             
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)
@@ -590,6 +593,25 @@ class AnswerService:
         )
 
         return submission
+    
+    async def _validate_user_role_for_take_now(
+            self, 
+            applet_id: uuid.UUID, 
+            respondent: SubjectSchema
+    ) -> None:
+        is_user_role_restrictive = await UserAppletAccessCRUD(self.session).get_by_roles(
+            respondent.user_id,
+            applet_id,
+            # Define a list of roles prohibited from accessing the applet            
+            [Role.SUPER_ADMIN, Role.EDITOR, Role.COORDINATOR, Role.REVIEWER]
+        )
+
+        if is_user_role_restrictive:
+            raise MultiinformantAssessmentNoAccessApplet(
+                "Access denied: User lacks the required ownership or managerial role for this operation."
+            )
+
+        return None
     
     async def _validate_relation_between_subjects_in_applet(
             self,
