@@ -1,6 +1,7 @@
 import uuid
 from datetime import date
 
+from infrastructure.logger import logger
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import and_, delete, distinct, func, or_, select
@@ -22,6 +23,7 @@ from apps.schedule.domain.schedule.internal import (
     EventCreate,
     EventFull,
     EventUpdate,
+    EventWithActivityOrFlowId,
     FlowEvent,
     FlowEventCreate,
     Periodicity,
@@ -711,27 +713,40 @@ class EventCRUD(BaseCRUD[EventSchema]):
         applet_id: uuid.UUID,
         activity_ids: list[uuid.UUID],
         is_activity: bool,
-    ) -> list[EventSchema]:
+    ) -> list[EventWithActivityOrFlowId]:
         """Return events for given activity ids."""
-        query: Query = select(self.schema_class)
+        query: Query = select(self.schema_class, ActivityEventsSchema.activity_id, ActivityEventsSchema.event_id)
         query = query.where(self.schema_class.applet_id == applet_id)
+        try: 
 
-        if is_activity:
-            query = query.join(
-                ActivityEventsSchema,
-                ActivityEventsSchema.event_id == self.schema_class.id,
-            )
-            query = query.where(ActivityEventsSchema.activity_id.in_(activity_ids))
-        else:
-            query = query.join(
-                FlowEventsSchema,
-                FlowEventsSchema.event_id == self.schema_class.id,
-            )
-            query = query.where(FlowEventsSchema.flow_id.in_(activity_ids))
+            if is_activity:
+                query = query.join(
+                    ActivityEventsSchema,
+                    ActivityEventsSchema.event_id == self.schema_class.id,
+                )
+                query = query.where(ActivityEventsSchema.activity_id.in_(activity_ids))
+            else:
+                query = query.join(
+                    FlowEventsSchema,
+                    FlowEventsSchema.event_id == self.schema_class.id,
+                )
+                query = query.where(FlowEventsSchema.flow_id.in_(activity_ids))
 
-        result = await self._execute(query)
-        events = result.scalars().all()
-        return events
+            result = await self._execute(query)
+
+            events = []
+            for row in result:
+                logger.info(row)
+                events.append(
+                    EventWithActivityOrFlowId(
+                        **dict(row.EventSchema),
+                        activity_id= row.activity_id,
+                    )
+                )
+
+            return events
+        except Exception as e:
+            logger.error(f"eror on get_all_by_activity_flow_ids {e}")
 
     async def get_default_schedule_user_ids_by_applet_id(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
         """Return user ids for default schedule."""
