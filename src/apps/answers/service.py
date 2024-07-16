@@ -611,22 +611,22 @@ class AnswerService:
                 MultiinformantAssessmentNoAccessApplet: If no valid relationship is found.
         """
 
-        if respondent_subject.id == target_subject.id:
+        if respondent_subject.id == target_subject.id or respondent_subject.id == source_subject.id:
             return None
 
         relation_respondent_target_subjects_call = SubjectsCrud(self.session).get_relation(
             respondent_subject.id, target_subject.id
         )
-        relation_source_target_subjects_call = SubjectsCrud(self.session).get_relation(
-            source_subject.id, target_subject.id
+        relation_respondent_source_subjects_call = SubjectsCrud(self.session).get_relation(
+            respondent_subject.id, source_subject.id
         )
 
-        relation_respondent_target_subjects, relation_source_target_subjects = await asyncio.gather(
+        relation_respondent_target_subjects, relation_respondent_source_subjects = await asyncio.gather(
             relation_respondent_target_subjects_call,
-            relation_source_target_subjects_call
+            relation_respondent_source_subjects_call
         )
         
-        if not relation_respondent_target_subjects and not relation_source_target_subjects:
+        if not relation_respondent_target_subjects and not relation_respondent_source_subjects:
             raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
         # TODO: Add more validation with the expire_at field when the PR is merged | https://mindlogger.atlassian.net/browse/M2-6531
