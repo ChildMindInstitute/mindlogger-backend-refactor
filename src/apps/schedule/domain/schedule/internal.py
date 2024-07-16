@@ -1,5 +1,6 @@
 import uuid
 
+from apps.schedule.db.schemas import EventSchema
 from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
 from apps.shared.domain import InternalModel
 
@@ -26,6 +27,9 @@ class EventCreate(BaseEvent, InternalModel):
     periodicity_id: uuid.UUID
     applet_id: uuid.UUID
 
+class EventWithActivityOrFlowId(EventSchema):
+    activity_id: uuid.UUID | None = None
+    flow_id: uuid.UUID | None = None
 
 class EventUpdate(EventCreate):
     pass
