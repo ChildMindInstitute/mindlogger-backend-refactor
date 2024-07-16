@@ -159,12 +159,16 @@ async def delete_subject(
             # Delete subject (soft)
             await SubjectsService(session, user.id).delete(subject.id)
 
+        uaa_repository = UserAppletAccessService(session, user.id, subject.applet_id)
+        # remove pinned subject
+        await uaa_repository.unpin(pinned_user_id=subject.user_id, pinned_subject_id=subject.id)
+
         if subject.user_id:
             ex_resp = await UserService(session).get(subject.user_id)
             if ex_resp:
                 await InvitationsService(session, ex_resp).delete_for_respondents([subject.applet_id])
             # Remove respondent role for user
-            await UserAppletAccessService(session, user.id, subject.applet_id).remove_access_by_user_and_applet_to_role(
+            await uaa_repository.remove_access_by_user_and_applet_to_role(
                 subject.user_id, subject.applet_id, Role.RESPONDENT
             )
 
