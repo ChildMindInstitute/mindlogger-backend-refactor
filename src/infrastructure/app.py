@@ -61,6 +61,7 @@ routers: Iterable[APIRouter] = (
     library.applet_router,
     ws_alerts.router,
     subject_router.router,
+    subject_router.user_router,
 )
 
 # Declare your middlewares here
