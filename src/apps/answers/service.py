@@ -381,7 +381,7 @@ class AnswerService:
         is_admin = await AppletAccessCRUD(self.session).has_any_roles_for_applet(
             respondent_subject.applet_id,
             respondent_subject.user_id,
-            Role.managers(),
+            [Role.OWNER, Role.MANAGER],
         )
 
         if not is_admin:
@@ -604,7 +604,7 @@ class AnswerService:
             respondent.user_id,
             applet_id,
             # Define a list of roles prohibited from accessing the applet            
-            [Role.SUPER_ADMIN, Role.EDITOR, Role.COORDINATOR, Role.REVIEWER]
+            [Role.EDITOR, Role.COORDINATOR, Role.REVIEWER]   
         )
 
         if is_user_role_restrictive:

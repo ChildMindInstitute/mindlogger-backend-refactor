@@ -839,8 +839,8 @@ async def applet_validate_multiinformant_assessment(
     code = None
     try:
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).validate_respondent_access_level(applet_id)
-  
+        await CheckAccessService(session, user.id).check_answer_check_access(applet_id)
+   
         await AnswerService(session, user.id, answer_session).validate_multiinformant_assessment(
             applet_id, **query_params.filters
         )
