@@ -125,7 +125,12 @@ class AnswerService:
             return await self._create_anonymous_answer(activity_answer)
 
     async def _create_respondent_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
+        # add validation to make sure that the respondent have a relation with the target subject
+        # relation checks:
+        # 1. respondent id and the subject id is the same
+        # 2. call the get_relation function to validation there is a relation between them
         await self._validate_respondent_answer(activity_answer)
+        # TODO: ADD THE DELETION OF THE TEM RELATION IN HERE AFTER THE RETURN AND RETURN THE CREATED_ANSWER
         return await self._create_answer(activity_answer)
 
     async def _create_anonymous_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
@@ -133,7 +138,11 @@ class AnswerService:
         return await self._create_answer(activity_answer)
 
     async def _validate_respondent_answer(self, activity_answer: AppletAnswerCreate) -> None:
+        # create the validation in here
+        await self.create_validation_step()
+        # validate the answers that are provided in the applet submission
         await self._validate_answer(activity_answer)
+        # validate that the applet and the user have a relation
         await self._validate_applet_for_user_response(activity_answer.applet_id)
 
     async def _validate_anonymous_answer(self, activity_answer: AppletAnswerCreate) -> None:
@@ -241,6 +250,16 @@ class AnswerService:
 
         relation = await SubjectsCrud(self.session).get_relation(source_subject.id, target_subject.id)
         if not relation:
+            if is_admin:
+                return Relation.admin
+            raise ValidationError("Subject relation not found")
+        
+        # TODO: let us add a relation check here for respondent and target
+        relation = await SubjectsCrud(self.session).get_relation(respondent_subject.id, target_subject.id)
+        if relation:
+            # TODO: CHECK FOR THE TEMPORARY OF THIS RELATION
+            pass
+        else:
             if is_admin:
                 return Relation.admin
             raise ValidationError("Subject relation not found")
