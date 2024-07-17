@@ -40,7 +40,7 @@ class TestAuthentication(BaseTest):
     async def test_get_token(self, client: TestClient, user: User):
         response = await client.post(
             url=self.get_token_url,
-            data=dict(email=user.email_encrypted, password=TEST_PASSWORD),
+            data=dict(email=user.email_encrypted, password=TEST_PASSWORD, deviceId="test#device"),
         )
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()["result"]

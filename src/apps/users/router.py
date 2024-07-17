@@ -17,9 +17,10 @@ from apps.users.api import (
     user_create,
     user_delete,
     user_retrieve,
+    user_save_device,
     user_update,
 )
-from apps.users.domain import PublicUser
+from apps.users.domain import PublicUser, UserDevice
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -113,3 +114,13 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(get_my_subject)
+
+router.post(
+    "/me/devices",
+    response_model=Response[UserDevice],
+    responses={
+        status.HTTP_200_OK: {"model": Response[UserDevice]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_save_device)
