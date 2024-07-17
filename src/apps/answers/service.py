@@ -634,9 +634,28 @@ class AnswerService:
                 MultiinformantAssessmentNoAccessApplet: If no valid relationship is found.
         """
 
-        if respondent_subject.id == target_subject.id or respondent_subject.id == source_subject.id:
+        # if respondent and target are the same, no need to check the relationship
+        if respondent_subject.id == target_subject.id:
             return None
 
+        """
+            if the respondent and the source are the same, then we need to check for a relation between 
+            the respondent and the target
+        """ 
+        if respondent_subject.id == source_subject.id:
+            relation_respondent_target_subjects_coro = await SubjectsCrud(self.session).get_relation(
+                respondent_subject.id, target_subject.id
+            )
+            if not relation_respondent_target_subjects_coro:
+                raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
+            else:
+                return None
+
+        """
+            if the respondent and the source are different, then we need to check for a relation between
+            1. respondent --> target
+            2. respondent --> source
+        """
         relation_respondent_target_subjects_coro_call = SubjectsCrud(self.session).get_relation(
             respondent_subject.id, target_subject.id
         )
@@ -652,7 +671,10 @@ class AnswerService:
         if not relation_respondent_target_subjects_coro and not relation_respondent_source_subjects_coro:
             raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
-        # TODO: Add more validation with the expire_at field when the PR is merged | https://mindlogger.atlassian.net/browse/M2-6531
+        """
+         TODO: Add more validation to check that we have a field called "meta" and the "expire_at" 
+         when the PR is merged | https://mindlogger.atlassian.net/browse/M2-6531
+        """
 
         return None
 
