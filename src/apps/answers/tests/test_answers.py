@@ -822,6 +822,31 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
+    async def test_create_flow_answer__submit_autocomplete(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        client.login(tom)
+        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data.submit_id = uuid.uuid4()
+        data.applet_id = applet_with_flow.id
+        data.flow_id = applet_with_flow.activity_flows[1].id
+        data.activity_id = applet_with_flow.activity_flows[1].items[0].activity_id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        data.activity_id = applet_with_flow.activity_flows[1].items[2].activity_id
+        data.is_flow_completed = True
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
     async def test_create_flow_duplicate_activities_answer__submit(
         self,
         client: TestClient,

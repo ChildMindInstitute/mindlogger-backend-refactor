@@ -147,6 +147,7 @@ class AnswerService:
         flow_history_id = pk(applet_answer.flow_id) if applet_answer.flow_id else None
 
         activity_indexes = set()  # same activity is allowed multiple times in flow
+        latest_activity_index = None
         if flow_history_id:
             flow_histories = await FlowsHistoryCRUD(self.session).load_full(
                 [pk(applet_answer.flow_id)], load_activities=False
@@ -159,6 +160,7 @@ class AnswerService:
             for i, item in enumerate(flow_history.items):
                 if item.activity_id == activity_history_id:
                     activity_indexes.add(i)
+            latest_activity_index = len(flow_history.items) - 1
             if not activity_indexes:
                 raise ValidationError("Activity not found in the flow")
 
@@ -167,7 +169,7 @@ class AnswerService:
             if not flow_history_id:
                 raise ValidationError("Submit id duplicate error")
 
-            existed_answer = existed_answers[0]
+            existed_answer = existed_answers[-1]
             if existed_answer.applet_id != applet_answer.applet_id:
                 raise WrongAnswerGroupAppletId()
             elif existed_answer.version != applet_answer.version:
@@ -175,16 +177,23 @@ class AnswerService:
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
 
-            # check uniqueness in flow submisssions
             if flow_history_id != existed_answer.flow_history_id:
                 raise ValidationError("Submit id duplicate error")
 
             # check current answer is provided in right order in the flow, so prev activities already answered
             prev_answers_count = len(existed_answers)
+            is_flow_completed = any(answer.is_flow_completed for answer in existed_answers)
+            if is_flow_completed:
+                raise ValidationError("Flow is already completed")
             if prev_answers_count not in activity_indexes:
-                if prev_answers_count > max(activity_indexes):
-                    raise ValidationError("Wrong activity order in the flow: previous activity answer missed")
-                raise ValidationError("Wrong activity order in the flow")
+                assert latest_activity_index is not None
+                # allow latest activity for flow autocompletion FE logic
+                if not (
+                    prev_answers_count < latest_activity_index + 1
+                    and max(activity_indexes) == latest_activity_index
+                    and applet_answer.is_flow_completed
+                ):
+                    raise ValidationError("Wrong activity order in the flow")
 
         elif flow_history_id and 0 not in activity_indexes:
             # check first flow answer
