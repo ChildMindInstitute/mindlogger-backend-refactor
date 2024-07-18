@@ -99,6 +99,7 @@ from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
 
+
 class AnswerService:
     def __init__(self, session, user_id: uuid.UUID | None = None, arbitrary_session=None):
         self.user_id = user_id
@@ -374,7 +375,6 @@ class AnswerService:
             activity, flow = await asyncio.gather(activity_future, flow_future)
             if not activity and not flow:
                 raise MultiinformantAssessmentInvalidActivityOrFlow()
-            
 
         is_admin = await AppletAccessCRUD(self.session).has_any_roles_for_applet(
             respondent_subject.applet_id,
@@ -388,9 +388,9 @@ class AnswerService:
 
         await asyncio.gather(
             self._validate_user_role_for_take_now(applet_id, respondent_subject),
-            self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
+            self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject),
         )
-            
+
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)
         # First check is flow single report or not, flow single report has
@@ -592,17 +592,13 @@ class AnswerService:
         )
 
         return submission
-    
-    async def _validate_user_role_for_take_now(
-            self, 
-            applet_id: uuid.UUID, 
-            respondent: SubjectSchema
-    ) -> None:
+
+    async def _validate_user_role_for_take_now(self, applet_id: uuid.UUID, respondent: SubjectSchema) -> None:
         is_user_role_restrictive = await UserAppletAccessCRUD(self.session).get_by_roles(
             respondent.user_id,
             applet_id,
-            # Define a list of roles prohibited from accessing the applet            
-            [Role.EDITOR, Role.COORDINATOR, Role.REVIEWER]   
+            # Define a list of roles prohibited from accessing the applet
+            [Role.EDITOR, Role.COORDINATOR, Role.REVIEWER],
         )
 
         if is_user_role_restrictive:
@@ -611,25 +607,21 @@ class AnswerService:
             )
 
         return None
-    
+
     async def _validate_relation_between_subjects_in_applet(
-            self,
-            respondent_subject: SubjectSchema,
-            target_subject: SubjectSchema,
-            source_subject: SubjectSchema
+        self, respondent_subject: SubjectSchema, target_subject: SubjectSchema, source_subject: SubjectSchema
     ) -> None:
-        
         """
-            Validate the relationship between subjects in an applet.
-            - respondent_subject: the subject inputting the answers.
-            - target_subject: the subject about whom the responses are.
-            - source_subject: the subject providing the responses.
-            
-            This method checks:
-            1. If there is a relationship between the logged-in user (respondent_subject) and target_subject.
-            2. If there is a relationship between the respondent_subject and the source_subject.
-            Raises:
-                MultiinformantAssessmentNoAccessApplet: If no valid relationship is found.
+        Validate the relationship between subjects in an applet.
+        - respondent_subject: the subject inputting the answers.
+        - target_subject: the subject about whom the responses are.
+        - source_subject: the subject providing the responses.
+
+        This method checks:
+        1. If there is a relationship between the logged-in user (respondent_subject) and target_subject.
+        2. If there is a relationship between the respondent_subject and the source_subject.
+        Raises:
+            MultiinformantAssessmentNoAccessApplet: If no valid relationship is found.
         """
 
         if respondent_subject.id == target_subject.id:
@@ -638,7 +630,7 @@ class AnswerService:
         """
             if the respondent and the source are the same, then we need to check for a relation between 
             the respondent and the target
-        """ 
+        """
         if respondent_subject.id == source_subject.id:
             relation_respondent_target_subjects_coro = await SubjectsCrud(self.session).get_relation(
                 respondent_subject.id, target_subject.id
@@ -661,10 +653,9 @@ class AnswerService:
         )
 
         relation_respondent_target_subjects_coro, relation_respondent_source_subjects_coro = await asyncio.gather(
-            relation_respondent_target_subjects_coro_call,
-            relation_respondent_source_subjects_coro_call
+            relation_respondent_target_subjects_coro_call, relation_respondent_source_subjects_coro_call
         )
-        
+
         if not relation_respondent_target_subjects_coro or not relation_respondent_source_subjects_coro:
             raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
