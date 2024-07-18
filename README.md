@@ -12,7 +12,7 @@ This repository is used for the backend of the [MindLogger](https://mindlogger.o
 * MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
 * MindLogger Backend - **This Repo**
 * MindLogger Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
-* MindLogger Web App - [GitHub Repo](https://github.com/**ChildMindInstitute**/mindlogger-web-refactor)
+* MindLogger Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
 
 
 ## Contents
@@ -226,7 +226,7 @@ set -o allexport; source .env; set +o allexport
 ```bash
 pipenv install greenlet
 ```
-> 🛑 **NOTE 4:** If the application can't find the `RabbitMQ` service even thouhg it's running normally, change your `RABBITMQ__URL` to your local ip address instead of `localhost`
+> 🛑 **NOTE 4:** If the application can't find the `RabbitMQ` service even though it's running normally, change your `RABBITMQ__URL` to your local ip address instead of `localhost`
 
 ## Run the migrations
 ```bash
