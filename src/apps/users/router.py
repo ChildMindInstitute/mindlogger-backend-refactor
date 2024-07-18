@@ -7,6 +7,8 @@ from apps.shared.domain.response import (
     DEFAULT_OPENAPI_RESPONSE,
     NO_CONTENT_ERROR_RESPONSES,
 )
+from apps.subjects.api import get_my_subject
+from apps.subjects.domain import SubjectReadResponse
 from apps.users.api import (
     password_recovery,
     password_recovery_approve,
@@ -100,3 +102,14 @@ router.post(
 router.get(
     "/me/password/recover/healthcheck",
 )(password_recovery_healthcheck)
+
+router.get(
+    "/me/subjects/{applet_id}",
+    response_model=Response[SubjectReadResponse],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[SubjectReadResponse]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(get_my_subject)
