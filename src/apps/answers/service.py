@@ -634,7 +634,6 @@ class AnswerService:
                 MultiinformantAssessmentNoAccessApplet: If no valid relationship is found.
         """
 
-        # if respondent and target are the same, no need to check the relationship
         if respondent_subject.id == target_subject.id:
             return None
 
@@ -668,7 +667,7 @@ class AnswerService:
             relation_respondent_source_subjects_coro_call
         )
         
-        if not relation_respondent_target_subjects_coro and not relation_respondent_source_subjects_coro:
+        if not relation_respondent_target_subjects_coro or not relation_respondent_source_subjects_coro:
             raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
         """
