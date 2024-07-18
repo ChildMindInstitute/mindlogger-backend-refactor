@@ -16,6 +16,7 @@ from apps.activities.domain.response_type_config import (
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
+    ParagraphTextConfig,
     PhotoConfig,
     PhrasalTemplateConfig,
     ResponseType,
@@ -56,6 +57,10 @@ class PhrasalTemplateDisplayMode(str, Enum):
 
 class TextValues(PublicModel):
     type: Literal[ResponseType.TEXT] | None
+
+
+class ParagraphTextValues(PublicModel):
+    type: Literal[ResponseType.PARAGRAPHTEXT] | None
 
 
 class MessageValues(PublicModel):
@@ -380,6 +385,7 @@ class PhrasalTemplateValues(PublicModel):
 
 ResponseValueConfigOptions = [
     TextValues,
+    ParagraphTextValues,
     SingleSelectionValues,
     MultiSelectionValues,
     SliderValues,
@@ -450,6 +456,7 @@ def validate_none_option_flag(options):
 
 ResponseTypeConfigOptions = [
     TextConfig,
+    ParagraphTextConfig,
     SingleSelectionConfig,
     MultiSelectionConfig,
     SliderConfig,

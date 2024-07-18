@@ -11,6 +11,7 @@ from apps.activities.domain.response_type_config import (
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
+    ParagraphTextConfig,
     PhotoConfig,
     PhrasalTemplateConfig,
     ResponseType,
@@ -175,6 +176,17 @@ def text_item_create(text_config: TextConfig, base_item_data: BaseItemData) -> A
         **base_item_data.dict(),
         response_type=ResponseType.TEXT,
         config=text_config,
+    )
+
+
+@pytest.fixture
+def paragraph_text_item_create(
+    paragraph_text_config: ParagraphTextConfig, base_item_data: BaseItemData
+) -> ActivityItemCreate:
+    return ActivityItemCreate(
+        **base_item_data.dict(),
+        response_type=ResponseType.PARAGRAPHTEXT,
+        config=paragraph_text_config,
     )
 
 

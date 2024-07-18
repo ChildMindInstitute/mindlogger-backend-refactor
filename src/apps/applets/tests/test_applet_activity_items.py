@@ -91,6 +91,7 @@ class TestActivityItems:
             "audio_item_create",
             "message_item_create",
             "audio_player_item_create",
+            "paragraph_text_item_create",
         ),
     )
     async def test_create_applet_with_each_activity_item(
