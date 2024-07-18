@@ -106,6 +106,11 @@ class InvitationsService:
         # by user_id in this case
         invited_user = await UsersCRUD(self.session).get_user_or_none_by_email(email=schema.email)
         invited_user_id = invited_user.id if invited_user is not None else None
+        if invited_user_id:
+            await UserAppletAccessService(self.session, self._user.id, applet_id).unpin(
+                pinned_user_id=invited_user_id, pinned_subject_id=None
+            )
+
         meta = RespondentMeta(subject_id=str(subject.id))
         payload = {
             "email": schema.email,
