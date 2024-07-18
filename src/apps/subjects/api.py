@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta
 
 from fastapi import Body, Depends
 from fastapi.exceptions import RequestValidationError
@@ -14,6 +15,7 @@ from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response
 from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.response import EmptyResponse
+from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relation
 from apps.subjects.domain import (
     Subject,
     SubjectCreate,
@@ -74,12 +76,57 @@ async def create_relation(
         raise ValidationError("applet_id doesn't match")
 
     await CheckAccessService(session, user.id).check_applet_invite_access(target_subject.applet_id)
+
+    existing_relation = await service.get_relation(source_subject_id, subject_id)
+    if is_take_now_relation(existing_relation):
+        await service.delete_relation(subject_id, source_subject_id)
+
     async with atomic(session):
         await service.create_relation(
             subject_id,
             source_subject_id,
             schema.relation,
         )
+        return EmptyResponse()
+
+
+async def create_temporary_multiinformant_relation(
+    subject_id: uuid.UUID,
+    source_subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    service = SubjectsService(session, user.id)
+    source_subject = await service.get_if_soft_exist(source_subject_id)
+    target_subject = await service.get_if_soft_exist(subject_id)
+    if not source_subject:
+        raise NotFoundError(f"Subject {source_subject_id} not found")
+    if not target_subject:
+        raise NotFoundError(f"Subject {subject_id} not found")
+    if source_subject.applet_id != target_subject.applet_id:
+        raise ValidationError("applet_id doesn't match")
+
+    check_access_service = CheckAccessService(session, user.id)
+
+    # Only owners and managers can initiate take now from the admin panel
+    await check_access_service.check_applet_manager_list_access(target_subject.applet_id)
+
+    existing_relation = await service.get_relation(source_subject_id, subject_id)
+    if existing_relation:
+        if existing_relation.relation != "take-now" or existing_relation.meta is None:
+            # There is already a non-temporary relation. Do nothing
+            return EmptyResponse()
+
+        expires_at = datetime.fromisoformat(existing_relation.meta["expiresAt"])
+        if expires_at > datetime.now():
+            # The current temporary relation is still valid. Do nothing
+            return EmptyResponse()
+
+        await service.delete_relation(subject_id, source_subject_id)
+
+    async with atomic(session):
+        expires_at = datetime.now() + timedelta(days=1)
+        await service.create_relation(subject_id, source_subject_id, "take-now", {"expiresAt": expires_at.isoformat()})
         return EmptyResponse()
 
 
@@ -179,10 +226,20 @@ async def get_subject(
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
 ) -> Response[SubjectReadResponse]:
-    subject = await SubjectsService(session, user.id).get(subject_id)
+    subjects_service = SubjectsService(session, user.id)
+    subject = await subjects_service.get(subject_id)
     if not subject:
         raise NotFoundError()
-    await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
+
+    user_subject = await subjects_service.get_by_user_and_applet(user.id, subject.applet_id)
+    if user_subject:
+        relation = await subjects_service.get_relation(user_subject.id, subject_id)
+        has_relation = relation is not None and (
+            relation.relation != "take-now" or is_valid_take_now_relation(relation)
+        )
+        if not has_relation:
+            await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
+
     answer_dates = await AnswerService(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
