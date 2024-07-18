@@ -349,6 +349,9 @@ class AnswerService:
             applet_answer.alerts,
         )
 
+        # TODO: VALIDATE THAT THIS IS ONLY A TEAMP RELATION BEFORE WE DELETE IT
+        # DELETE THE RESPONDENT AND TARGET RELATION
+        # DELETE THE RESPONDENT AND SOURCE RELATION
         await SubjectsService(self.session, self.user_id).delete_relation(respondent_subject.id, target_subject.id)
 
         return answer
