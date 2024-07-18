@@ -247,6 +247,7 @@ class TestSubjects(BaseTest):
 
     login_url = "/auth/login"
     subject_list_url = "/subjects"
+    my_subject_url = "/users/me/subjects/{applet_id}"
     subject_detail_url = "/subjects/{subject_id}"
     subject_relation_url = "/subjects/{subject_id}/relations/{source_subject_id}"
     answer_url = "/answers"
@@ -475,6 +476,26 @@ class TestSubjects(BaseTest):
         client.login(lucy)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_get_my_subject(self, client, tom: User, tom_applet_one_subject: Subject):
+        client.login(tom)
+        response = await client.get(self.my_subject_url.format(applet_id=tom_applet_one_subject.applet_id))
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()
+        assert data
+        res = data["result"]
+        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
+        assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
+        assert res["nickname"] == tom_applet_one_subject.nickname
+        assert res["tag"] == tom_applet_one_subject.tag
+        assert uuid.UUID(res["appletId"]) == tom_applet_one_subject.applet_id
+        assert uuid.UUID(res["userId"]) == tom.id
+
+    async def test_get_my_subject_invalid_applet_id(self, client, tom: User):
+        client.login(tom)
+        response = await client.get(self.my_subject_url.format(applet_id=uuid.uuid4()))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_get_subject_limited(
         self,

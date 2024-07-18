@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from pydantic.error_wrappers import ErrorWrapper
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.answers.deps.preprocess_arbitrary import get_answer_session_by_subject
+from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_answer_session_by_subject
 from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
@@ -187,6 +187,38 @@ async def get_subject(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
 
+    return Response(
+        result=SubjectReadResponse(
+            id=subject.id,
+            secret_user_id=subject.secret_user_id,
+            nickname=subject.nickname,
+            last_seen=answer_dates.get(subject.id),
+            tag=subject.tag,
+            applet_id=subject.applet_id,
+            user_id=subject.user_id,
+        )
+    )
+
+
+async def get_my_subject(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    arbitrary_session: AsyncSession | None = Depends(get_answer_session),
+) -> Response[SubjectReadResponse]:
+    # Check if applet exists
+    await AppletService(session, user.id).exist_by_id(applet_id)
+
+    # Check if user has access to applet
+    await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+
+    subject = await SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
+    if not subject:
+        raise NotFoundError()
+
+    answer_dates = await AnswerService(
+        user_id=user.id, session=session, arbitrary_session=arbitrary_session
+    ).get_last_answer_dates([subject.id], subject.applet_id)
     return Response(
         result=SubjectReadResponse(
             id=subject.id,
