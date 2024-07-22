@@ -20,9 +20,13 @@ jobs:
     runs-on: [self-hosted]
 
     steps:
-    - name: Drop Database
-      run: |
-          PGPASSWORD="${{ secrets.DB_PASSWORD }}" dropdb -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" ${{ inputs.db-name }}
+      - name: Set Owner
+        run: >-
+          PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
+          -c "alter database ${{ inputs.db-name }} owner to ${{ secrets.DB_ROOT_USERNAME }};" postgres
+      - name: Drop Database
+        run: |
+            PGPASSWORD="${{ secrets.DB_PASSWORD }}" dropdb -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" ${{ inputs.db-name }}
 #      run: |
 #        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -c "DROP DATABASE ${{ inputs.db-name }}" postgres
 
