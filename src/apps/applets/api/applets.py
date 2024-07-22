@@ -16,6 +16,7 @@ from apps.applets.domain import AppletFolder, AppletName, AppletUniqueName, Publ
 from apps.applets.domain.applet import (
     AppletActivitiesBaseInfo,
     AppletDataRetention,
+    AppletMeta,
     AppletRetrieveResponse,
     AppletSingleLanguageDetailForPublic,
     AppletSingleLanguageDetailPublic,
@@ -96,12 +97,14 @@ async def applet_retrieve(
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         applet_future = service.get_single_language_by_id(applet_id, language)
         subject_future = SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
-        applet, subject = await asyncio.gather(applet_future, subject_future)
+        has_assessment_future = AppletService(session, user.id).has_assessment(applet_id)
+        applet, subject, has_assessment = await asyncio.gather(applet_future, subject_future, has_assessment_future)
         applet_owner = await UserAppletAccessCRUD(session).get_applet_owner(applet_id)
         applet.owner_id = applet_owner.owner_id
     return AppletRetrieveResponse(
         result=AppletSingleLanguageDetailPublic.from_orm(applet),
         respondent_meta={"nickname": subject.nickname if subject else None, "tag": subject.tag if subject else None},
+        applet_meta=AppletMeta(has_assessment=has_assessment),
     )
 
 
@@ -288,13 +291,9 @@ async def applet_flow_versions_data_retrieve(
     session=Depends(get_session),
 ) -> ResponseMulti[VersionPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
-    service = FlowService(session=session)
-    flow = await service.get_by_id(flow_id)
-    if not flow or flow.applet_id != applet_id:
-        raise NotFoundError("Flow not found")
     await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
-
-    versions = await service.get_versions(flow.id)
+    service = FlowService(session=session)
+    versions = await service.get_versions(applet_id, flow_id)
     return ResponseMulti(
         result=versions,
         count=len(versions),

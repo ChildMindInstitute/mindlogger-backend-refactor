@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.websockets import WebSocket
 from jose import JWTError, jwt
 from pydantic import EmailStr, ValidationError
+from starlette.requests import Request
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken, JWTClaim, TokenPayload, TokenPurpose
@@ -98,6 +99,14 @@ async def get_current_user(
         await UsersCRUD(session).update_last_seen_by_id(token.payload.sub)
 
     return user
+
+
+async def get_optional_current_user(request: Request, session=Depends(get_session)) -> User | None:
+    try:
+        user = await get_current_user(await get_current_token()(await oauth2_oauth(request)), session)
+        return user
+    except Exception:
+        return None
 
 
 async def openapi_auth(

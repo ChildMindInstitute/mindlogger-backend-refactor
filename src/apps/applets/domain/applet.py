@@ -130,9 +130,14 @@ class AppletDataRetention(InternalModel):
         return values
 
 
+class AppletMeta(PublicModel):
+    has_assessment: bool = False
+
+
 class AppletRetrieveResponse(PublicModel, GenericModel, Generic[_BaseModel]):
     result: _BaseModel
     respondent_meta: dict | None = None
+    applet_meta: AppletMeta | None = None
 
 
 class AppletActivitiesDetailsPublic(PublicModel):

@@ -1,10 +1,5 @@
 name: deploy_to_dev
 on:
-  pull_request:
-    branches: 
-      - develop
-    types:
-      - "closed"
   workflow_call:
     inputs:
       COMMIT_HASH:
@@ -13,7 +8,7 @@ on:
       IMAGE_PREFIX:
         required: true
         type: string
-      IMAGE_TAG:
+      IMAGE_NAME:
         required: true
         type: string
 
@@ -25,16 +20,19 @@ permissions:
 jobs:
 
   run_migration:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
       TASK_DEFINITION: migration
       ECS_CLUSTER_NAME: cmiml-dev
       ECS_SERVICE_NAME: migration
-      AWS_REGION : us-east-1
-      IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+      AWS_REGION: us-east-1
+      IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
     
     steps:
+
+    - name: echo IMAGE_NAME
+      run: |
+        echo $IMAGE_NAME
 
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@v3
@@ -47,24 +45,28 @@ jobs:
       run: |
         aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }} --query taskDefinition > task-definition.json
 
-
     - name: Render Amazon ECS task definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition.json
         container-name: mind_logger
-        image: $IMAGE_TAG
-    
-    - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        image: ${{ env.IMAGE_NAME }}
+  
+    - name: Run migration container
+      id: run-task
+      uses: geekcell/github-action-aws-ecs-run-task@v3.0.0
       with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
         cluster: ${{ env.ECS_CLUSTER_NAME }}
-        
+        task-definition: migration
+        subnet-ids: subnet-02b7cfd48947b31ef
+        security-group-ids: sg-0976f7b2b2b5bf411
+        override-container-command: |
+          /bin/sh
+          -c
+          /fastapi-migrate all
 
   deploy_to_ecs:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     needs: run_migration
     env:

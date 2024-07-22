@@ -755,6 +755,9 @@ class AppletService:
         applet.activity_flows = futures[1]
         return applet
 
+    async def has_assessment(self, applet_id: uuid.UUID) -> bool:
+        return await AppletsCRUD(self.session).has_assessment(applet_id)
+
 
 class PublicAppletService:
     def __init__(self, session):

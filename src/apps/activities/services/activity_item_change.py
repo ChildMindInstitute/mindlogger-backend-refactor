@@ -66,6 +66,7 @@ class ConfigChangeService(BaseChangeGenerator):
         # Additional options
         "text_input_option": "Add Text Input Option",
         "text_input_required": "Input Required",
+        "portrait_layout": "Portrait Layout",
     }
 
     def check_changes(self, value, changes: list[str]) -> None:

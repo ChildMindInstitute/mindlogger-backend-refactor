@@ -17,6 +17,7 @@ from apps.subjects.errors import AppletUserViolationError
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import UserPinRole
 from apps.workspaces.domain.user_applet_access import RespondentInfoPublic
 from apps.workspaces.errors import UserSecretIdAlreadyExists, UserSecretIdAlreadyExistsInInvitation
 
@@ -401,6 +402,17 @@ class UserAppletAccessService:
 
     async def remove_access_by_user_and_applet_to_role(self, user_id: uuid.UUID, applet_id: uuid.UUID, role: Role):
         await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(user_id, [applet_id], [role])
+
+    async def unpin(self, pinned_user_id: uuid.UUID | None, pinned_subject_id: uuid.UUID | None):
+        owner = await self.get_owner()
+        await UserAppletAccessCRUD(self.session).pin(
+            pin_role=UserPinRole.respondent,
+            user_id=self._user_id,
+            owner_id=owner.owner_id,
+            pinned_user_id=pinned_user_id,
+            pinned_subject_id=pinned_subject_id,
+            force_unpin=True,
+        )
 
     async def set_subjects_for_review(
         self, reviewer_id: uuid.UUID, applet_id: uuid.UUID, subjects: list[uuid.UUID]

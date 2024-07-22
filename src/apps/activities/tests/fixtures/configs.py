@@ -43,6 +43,7 @@ def single_select_config(default_config: DefaultConfig) -> SingleSelectionConfig
         randomize_options=False,
         add_scores=False,
         add_tokens=False,
+        portrait_layout=False,
         set_alerts=False,
         add_tooltip=False,
         set_palette=False,

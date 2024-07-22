@@ -247,8 +247,12 @@ class TestSubjects(BaseTest):
 
     login_url = "/auth/login"
     subject_list_url = "/subjects"
+    my_subject_url = "/users/me/subjects/{applet_id}"
     subject_detail_url = "/subjects/{subject_id}"
     subject_relation_url = "/subjects/{subject_id}/relations/{source_subject_id}"
+    subject_temporary_multiinformant_relation_url = (
+        "/subjects/{subject_id}/relations/{source_subject_id}/multiinformant-assessment"
+    )
     answer_url = "/answers"
 
     async def test_create_subject(self, client, tom: User, applet_one: AppletFull, create_shell_body):
@@ -280,6 +284,69 @@ class TestSubjects(BaseTest):
         )
         url = self.subject_relation_url.format(subject_id=target_subject_id, source_subject_id=source_subject_id)
         res = await client.post(url, body)
+        assert res.status_code == http.HTTPStatus.OK
+
+    async def test_create_temporary_multiinformant_relation(
+        self, client, tom: User, create_shell_body, tom_applet_one_subject
+    ):
+        subject_id = tom_applet_one_subject.id
+        client.login(tom)
+        response = await client.post(self.subject_list_url, data=create_shell_body)
+        subject = response.json()
+
+        source_subject_id = str(subject_id)
+        target_subject_id = subject["result"]["id"]
+
+        url = self.subject_temporary_multiinformant_relation_url.format(
+            subject_id=target_subject_id, source_subject_id=source_subject_id
+        )
+        res = await client.post(url)
+        assert res.status_code == http.HTTPStatus.OK
+
+    async def test_recreate_temporary_multiinformant_relation(
+        self, client, tom: User, create_shell_body, tom_applet_one_subject
+    ):
+        subject_id = tom_applet_one_subject.id
+        client.login(tom)
+        response = await client.post(self.subject_list_url, data=create_shell_body)
+        subject = response.json()
+
+        source_subject_id = str(subject_id)
+        target_subject_id = subject["result"]["id"]
+
+        url = self.subject_temporary_multiinformant_relation_url.format(
+            subject_id=target_subject_id, source_subject_id=source_subject_id
+        )
+        res = await client.post(url)
+        assert res.status_code == http.HTTPStatus.OK
+
+        # This endpoint should be idempotent
+        res = await client.post(url)
+        assert res.status_code == http.HTTPStatus.OK
+
+    async def test_create_temporary_multiinformant_relation_no_op(
+        self, client, tom: User, create_shell_body, tom_applet_one_subject
+    ):
+        subject_id = tom_applet_one_subject.id
+        client.login(tom)
+        response = await client.post(self.subject_list_url, data=create_shell_body)
+        subject = response.json()
+
+        source_subject_id = str(subject_id)
+        target_subject_id = subject["result"]["id"]
+
+        body = SubjectRelationCreate(
+            relation="father",
+        )
+        url = self.subject_relation_url.format(subject_id=target_subject_id, source_subject_id=source_subject_id)
+        res = await client.post(url, body)
+        assert res.status_code == http.HTTPStatus.OK
+
+        # Creating a temporary relation at this point should be a no-op
+        url = self.subject_temporary_multiinformant_relation_url.format(
+            subject_id=target_subject_id, source_subject_id=source_subject_id
+        )
+        res = await client.post(url)
         assert res.status_code == http.HTTPStatus.OK
 
     @pytest.mark.parametrize(
@@ -475,6 +542,26 @@ class TestSubjects(BaseTest):
         client.login(lucy)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_get_my_subject(self, client, tom: User, tom_applet_one_subject: Subject):
+        client.login(tom)
+        response = await client.get(self.my_subject_url.format(applet_id=tom_applet_one_subject.applet_id))
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()
+        assert data
+        res = data["result"]
+        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
+        assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
+        assert res["nickname"] == tom_applet_one_subject.nickname
+        assert res["tag"] == tom_applet_one_subject.tag
+        assert uuid.UUID(res["appletId"]) == tom_applet_one_subject.applet_id
+        assert uuid.UUID(res["userId"]) == tom.id
+
+    async def test_get_my_subject_invalid_applet_id(self, client, tom: User):
+        client.login(tom)
+        response = await client.get(self.my_subject_url.format(applet_id=uuid.uuid4()))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     async def test_get_subject_limited(
         self,

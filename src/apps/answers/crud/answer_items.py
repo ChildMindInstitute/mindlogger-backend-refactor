@@ -18,14 +18,7 @@ class _ActivityAnswerFilter(Filtering):
     versions = FilterField(AnswerSchema.version, Comparisons.IN)
 
     target_subject_id = FilterField(AnswerSchema.target_subject_id)
-
-    # TODO can be removed?
-    def prepare_identifiers(self, value: str | list[str]) -> list[str] | None:
-        if not value:
-            return None
-        if isinstance(value, str):
-            return value.split(",")
-        return value
+    empty_identifiers = FilterField(AnswerItemSchema.identifier, method_name="filter_empty_identifiers")
 
     # TODO can be removed?
     def prepare_versions(self, value: str | list[str]) -> list[str]:
@@ -36,13 +29,15 @@ class _ActivityAnswerFilter(Filtering):
     def filter_by_identifiers(self, field, values: list | str):
         if isinstance(values, str):
             values = values.split(",")
-        return field.in_(values)
 
-    def prepare_empty_identifiers(self, value: bool):
+        if isinstance(values, list):
+            values = list(filter(None.__ne__, values))
+            if values:
+                return field.in_(values)
+
+    def filter_empty_identifiers(self, field, value: bool):
         if not value:
             return AnswerItemSchema.identifier.isnot(None)
-        else:
-            return AnswerItemSchema.identifier.is_(None)
 
 
 class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
@@ -86,11 +81,23 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_assessment(self, answer_id: uuid.UUID, user_id: uuid.UUID) -> AnswerItemSchema | None:
+    async def get_assessment(
+        self, answer_id: uuid.UUID, user_id: uuid.UUID, submit_id: uuid.UUID | None = None
+    ) -> AnswerItemSchema | None:
+        """
+        Return assessment for activity if not passed `submit_id`
+        Otherwise returns assessment for submissions
+        """
         query: Query = select(AnswerItemSchema)
-        query = query.where(AnswerItemSchema.answer_id == answer_id)
-        query = query.where(AnswerItemSchema.respondent_id == user_id)
-        query = query.where(AnswerItemSchema.is_assessment.is_(True))
+        query = query.where(
+            AnswerItemSchema.answer_id == answer_id,
+            AnswerItemSchema.respondent_id == user_id,
+            AnswerItemSchema.is_assessment.is_(True),
+        )
+        if submit_id:
+            query = query.where(AnswerItemSchema.reviewed_flow_submit_id == submit_id)
+        else:
+            query = query.where(AnswerItemSchema.reviewed_flow_submit_id.is_(None))
         db_result = await self._execute(query)
         return db_result.scalars().first()
 
@@ -105,11 +112,21 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
     async def assessment_hard_delete(self, answer_item_id: uuid.UUID):
         await super()._delete(id=answer_item_id, is_assessment=True)
 
-    async def get_reviews_by_answer_id(self, answer_id: uuid.UUID, activity_items: list) -> list[AnswerItemSchema]:
+    async def get_reviews_by_answer_id(self, answer_id: uuid.UUID) -> list[AnswerItemSchema]:
         query: Query = select(AnswerItemSchema)
         query = query.where(AnswerItemSchema.answer_id == answer_id)
-        query = query.where(AnswerItemSchema.is_assessment.is_(True))
+        query = query.where(
+            AnswerItemSchema.is_assessment.is_(True), AnswerItemSchema.reviewed_flow_submit_id.is_(None)
+        )
 
+        db_result = await self._execute(query)
+        return db_result.scalars().all()  # noqa
+
+    async def get_reviews_by_submit_id(self, submission_id: uuid.UUID) -> list[AnswerItemSchema]:
+        query: Query = select(AnswerItemSchema)
+        query = query.where(
+            AnswerItemSchema.reviewed_flow_submit_id == submission_id, AnswerItemSchema.is_assessment.is_(True)
+        )
         db_result = await self._execute(query)
         return db_result.scalars().all()  # noqa
 
@@ -190,7 +207,22 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
 
     async def get_reviewers_by_answers(self, answer_ids: list[uuid.UUID]) -> list[tuple[uuid.UUID, list[uuid.UUID]]]:
         query: Query = select(AnswerItemSchema.answer_id, func.array_agg(AnswerItemSchema.respondent_id))
-        query = query.where(AnswerItemSchema.answer_id.in_(answer_ids), AnswerItemSchema.is_assessment.is_(True))
+        query = query.where(
+            AnswerItemSchema.answer_id.in_(answer_ids),
+            AnswerItemSchema.is_assessment.is_(True),
+            AnswerItemSchema.reviewed_flow_submit_id.is_(None),
+        )
         query = query.group_by(AnswerItemSchema.answer_id)
+        db_result = await self._execute(query)
+        return db_result.all()  # noqa
+
+    async def get_reviewers_by_submission(
+        self, submission_ids: list[uuid.UUID]
+    ) -> list[tuple[uuid.UUID, list[uuid.UUID]]]:
+        query: Query = select(AnswerItemSchema.reviewed_flow_submit_id, func.array_agg(AnswerItemSchema.respondent_id))
+        query = query.where(
+            AnswerItemSchema.is_assessment.is_(True), AnswerItemSchema.reviewed_flow_submit_id.in_(submission_ids)
+        )
+        query = query.group_by(AnswerItemSchema.reviewed_flow_submit_id)
         db_result = await self._execute(query)
         return db_result.all()  # noqa

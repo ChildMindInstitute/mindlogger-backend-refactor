@@ -408,7 +408,7 @@ class TestWorkspaces(BaseTest):
         assert tom_result["details"]
 
         lucy_result_details = lucy_result["details"]
-        tom_result_details = tom_result["details"]
+        tom_result_details = sorted(tom_result["details"], key=lambda x: x["appletDisplayName"])
 
         # Lucy has a pending invitation to Applet 1
         assert lucy_result_details[0]["invitation"]  # Applet 1
