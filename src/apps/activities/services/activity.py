@@ -260,10 +260,9 @@ class ActivityService:
         self, applet_id: uuid.UUID, language: str
     ) -> list[ActivityLanguageWithItemsMobileDetailPublic]:
         schemas = await ActivitiesCRUD(self.session).get_mobile_with_items_by_applet_id(applet_id, is_reviewable=False)
-        activities = []
-        periodicities = []
-        activity_ids = []
 
+        activities = []
+        activity_ids = []
         for schema in schemas:
             activity = ActivityLanguageWithItemsMobileDetailPublic(
                 id=schema.id,
@@ -285,21 +284,11 @@ class ActivityService:
             activities.append(activity)
             activity_ids.append(activity.id)
 
-        activityEvent = await EventCRUD(self.session).get_all_by_activity_flow_ids(applet_id, activity_ids, True)
-
-        for event in activityEvent:
-            periodicity: Periodicity = await PeriodicityCRUD(self.session).get_by_id(event.periodicity_id)
-            periodicities.append({**periodicity.dict(),'start_time': event.start_time, 'end_time': event.end_time, 'access_before_schedule': event.access_before_schedule, 'one_time_completion': event.one_time_completion, 'timer': event.timer, 'timer_type': event.timer_type, 'event_id': event.id, 'activity_id': event.activity_id })
-
         activity_items_map = await ActivityItemService(self.session).get_single_language_by_activity_ids(
             activity_ids=activity_ids, language=language
         )
-        
+
         for activity in activities:
-            for periodicity in periodicities:
-                if activity.id == periodicity['activity_id']:
-                    activity.periodicity = periodicity
-                    break
             activity.items = activity_items_map.get(activity.id, [])
 
         return activities

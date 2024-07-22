@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-from apps.schedule.domain.schedule.base import BaseEvent, BasePeriodicity
 from pydantic import Field
 
 from apps.activities.domain.activity_base import ActivityBase
@@ -78,10 +77,6 @@ class ActivitySingleLanguageWithItemsDetailPublic(ActivityBase, PublicModel):
     items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)
     created_at: datetime
 
-
-class PeriodicityAndEvent(BaseEvent, BasePeriodicity):
-    pass
-
 class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
     id: uuid.UUID
     name: str
@@ -98,8 +93,6 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
     scores_and_reports: ScoresAndReports | None = None
     performance_task_type: PerformanceTaskType | None = None
     is_performance_task: bool = False
-    periodicity: PeriodicityAndEvent | None = None
-
 
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):
     contains_response_types: list[ResponseType]

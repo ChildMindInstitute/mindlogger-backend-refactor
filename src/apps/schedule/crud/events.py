@@ -715,7 +715,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         is_activity: bool,
     ) -> list[EventWithActivityOrFlowId]:
         """Return events for given activity ids."""
-        query: Query = select(self.schema_class, ActivityEventsSchema.activity_id, ActivityEventsSchema.event_id)
+        query: Query = select(self.schema_class)
         query = query.where(self.schema_class.applet_id == applet_id)
 
         if is_activity:
@@ -732,17 +732,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
             query = query.where(FlowEventsSchema.flow_id.in_(activity_ids))
 
         result = await self._execute(query)
-
-        events = []
-        for row in result:
-            logger.info(row)
-            events.append(
-                EventWithActivityOrFlowId(
-                    **dict(row.EventSchema),
-                    activity_id= row.activity_id,
-                )
-            )
-
+        events = result.scalars().all()
         return events
 
     async def get_default_schedule_user_ids_by_applet_id(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
