@@ -1,12 +1,13 @@
 import uuid
 
+from pydantic import parse_obj_as
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import select
 
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
 from apps.integrations.loris.domain import MlLorisUserRelationship
-from apps.integrations.loris.errors import MlLorisUserRelationshipError, MlLorisUserRelationshipNotFoundError
+from apps.integrations.loris.errors import MlLorisUserRelationshipError
 from infrastructure.database import BaseCRUD
 
 __all__ = [
@@ -28,35 +29,27 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
         relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
         return relationship
 
-    async def get_by_ml_user_id(self, ml_user_id: uuid.UUID) -> MlLorisUserRelationship:
+    async def get_by_ml_user_ids(self, ml_user_ids: list[uuid.UUID]) -> list[MlLorisUserRelationship]:
         """Return relationship instance by ml user id."""
 
         query: Query = select(self.schema_class)
-        query = query.where(self.schema_class.ml_user_uuid == ml_user_id)
+        query = query.where(self.schema_class.ml_user_uuid.in_(ml_user_ids))
 
         result = await self._execute(query)
-        instance = result.scalars().one_or_none()
+        instances = result.scalars().all()
 
-        if not instance:
-            raise MlLorisUserRelationshipNotFoundError(key="ml_user_uuid", value=str(ml_user_id))
+        return parse_obj_as(list[MlLorisUserRelationship], instances)
 
-        relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
-        return relationship
-
-    async def get_by_loris_user_id(self, loris_user_id: str) -> MlLorisUserRelationship:
+    async def get_by_loris_user_ids(self, loris_user_ids: list[str]) -> list[MlLorisUserRelationship]:
         """Return relationship instance by loris user id."""
 
         query: Query = select(self.schema_class)
-        query = query.where(self.schema_class.loris_user_id == loris_user_id)
+        query = query.where(self.schema_class.loris_user_id.in_(loris_user_ids))
 
         result = await self._execute(query)
-        instance = result.scalars().one_or_none()
+        instances = result.scalars().all()
 
-        if not instance:
-            raise MlLorisUserRelationshipNotFoundError(key="loris_user_id", value=str(loris_user_id))
-
-        relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
-        return relationship
+        return parse_obj_as(list[MlLorisUserRelationship], instances)
 
     # async def update(self, ml_user_uuid: uuid.UUID, schema: MlLorisUserRelationshipUpdate) -> MlLorisUserRelationship:
     #     """Update relationship by ml user id."""

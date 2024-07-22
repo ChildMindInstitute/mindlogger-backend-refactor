@@ -245,3 +245,6 @@ class CheckAccessService:
                 raise AccessDeniedError()
         else:
             raise AccessDeniedError()
+
+    async def check_answer_publishing_access(self, applet_id: uuid.UUID):
+        await self._check_applet_roles(applet_id, [Role.OWNER])

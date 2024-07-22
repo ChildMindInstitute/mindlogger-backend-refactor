@@ -2,7 +2,7 @@ import datetime
 import uuid
 from enum import Enum
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, Field
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
 
@@ -18,6 +18,8 @@ __all__ = [
     "PublicListOfVisits",
     "PublicListMultipleVisits",
 ]
+
+from apps.shared.domain import Response
 
 
 class Item(BaseModel):
@@ -163,3 +165,27 @@ class LorisIntegrationAlertMessages(str, Enum):
     SUCCESS = "Successful synchronization."
     LORIS_SERVER_ERROR = "Loris server error."
     LORIS_LOGIN_ERROR = "Incorrect credentials for Loris server."
+
+
+class UserVisits(InternalModel):
+    user_id: uuid.UUID
+    visits: set[str] = Field(default_factory=set)
+
+
+class AnswerData(InternalModel):
+    activity_id: uuid.UUID | str
+    activity_name: str
+    user_id: uuid.UUID
+    secret_user_id: str
+    answer_id: uuid.UUID
+    version: str
+    completed_date: datetime.datetime
+
+
+class UploadableAnswersData(InternalModel):
+    activity_visits: dict[str, list[UserVisits]] = Field(default_factory=dict)
+    answers: list[AnswerData] = Field(default_factory=list)
+
+
+class UploadableAnswersResponse(Response[UploadableAnswersData]):
+    count: int = 0
