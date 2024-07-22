@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +8,7 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
-from apps.subjects.domain import Subject, SubjectCreate
+from apps.subjects.domain import Subject, SubjectCreate, SubjectRelation
 
 __all__ = ["SubjectsService"]
 
@@ -75,10 +76,7 @@ class SubjectsService:
         return None
 
     async def create_relation(
-        self,
-        subject_id: uuid.UUID,
-        source_subject_id: uuid.UUID,
-        relation: str,
+        self, subject_id: uuid.UUID, source_subject_id: uuid.UUID, relation: str, meta: dict[str, Any] = {}
     ):
         repository = SubjectsCrud(self.session)
         await repository.create_relation(
@@ -86,12 +84,16 @@ class SubjectsService:
                 source_subject_id=source_subject_id,
                 target_subject_id=subject_id,
                 relation=relation,
+                meta=meta,
             )
         )
 
     async def delete_relation(self, subject_id: uuid.UUID, source_subject_id: uuid.UUID):
         repository = SubjectsCrud(self.session)
         await repository.delete_relation(subject_id, source_subject_id)
+
+    async def get_relation(self, source_subject_id: uuid.UUID, target_subject_id: uuid.UUID) -> SubjectRelation | None:
+        return await SubjectsCrud(self.session).get_relation(source_subject_id, target_subject_id)
 
     async def get_by_secret_id(self, applet_id: uuid.UUID, secret_id: str) -> Subject | None:
         subject = await SubjectsCrud(self.session).get_by_secret_id(applet_id, secret_id)

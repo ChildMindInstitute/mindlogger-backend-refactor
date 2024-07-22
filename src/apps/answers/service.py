@@ -244,7 +244,7 @@ class AnswerService:
                 return Relation.admin
             raise ValidationError("Subject relation not found")
 
-        return relation
+        return relation.relation
 
     async def _create_answer(self, applet_answer: AppletAnswerCreate) -> AnswerSchema:
         assert self.user_id

@@ -8,6 +8,7 @@ from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_R
 from apps.subjects.api import (
     create_relation,
     create_subject,
+    create_temporary_multiinformant_relation,
     delete_relation,
     delete_subject,
     get_subject,
@@ -80,6 +81,17 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(create_relation)
+
+router.post(
+    "/{subject_id}/relations/{source_subject_id}/multiinformant-assessment",
+    response_model=Response[SubjectFull],
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_201_CREATED: {"model": Response[SubjectFull]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(create_temporary_multiinformant_relation)
 
 
 router.delete(
