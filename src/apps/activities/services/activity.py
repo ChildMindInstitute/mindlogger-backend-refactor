@@ -259,54 +259,52 @@ class ActivityService:
     async def get_single_language_with_items_by_applet_id(
         self, applet_id: uuid.UUID, language: str
     ) -> list[ActivityLanguageWithItemsMobileDetailPublic]:
-        try: 
-            schemas = await ActivitiesCRUD(self.session).get_mobile_with_items_by_applet_id(applet_id, is_reviewable=False)
-            activities = []
-            periodicities = []
-            activity_ids = []
+        schemas = await ActivitiesCRUD(self.session).get_mobile_with_items_by_applet_id(applet_id, is_reviewable=False)
+        activities = []
+        periodicities = []
+        activity_ids = []
 
-            for schema in schemas:
-                activity = ActivityLanguageWithItemsMobileDetailPublic(
-                    id=schema.id,
-                    name=schema.name,
-                    description=self._get_by_language(schema.description, language),
-                    splash_screen=schema.splash_screen,
-                    image=schema.image,
-                    show_all_at_once=schema.show_all_at_once,
-                    is_skippable=schema.is_skippable,
-                    is_reviewable=schema.is_reviewable,
-                    is_hidden=schema.is_hidden,
-                    response_is_editable=schema.response_is_editable,
-                    order=schema.order,
-                    scores_and_reports=schema.scores_and_reports,
-                    performance_task_type=schema.performance_task_type,
-                    is_performance_task=schema.is_performance_task,
-                )
-
-                activities.append(activity)
-                activity_ids.append(activity.id)
-
-            activityEvent = await EventCRUD(self.session).get_all_by_activity_flow_ids(applet_id, activity_ids, True)
-
-            for event in activityEvent:
-                periodicity: Periodicity = await PeriodicityCRUD(self.session).get_by_id(event.periodicity_id)
-                periodicities.append({**periodicity.dict(),'start_time': event.start_time, 'end_time': event.end_time, 'access_before_schedule': event.access_before_schedule, 'one_time_completion': event.one_time_completion, 'timer': event.timer, 'timer_type': event.timer_type, 'event_id': event.id, 'activity_id': event.activity_id })
-
-            activity_items_map = await ActivityItemService(self.session).get_single_language_by_activity_ids(
-                activity_ids=activity_ids, language=language
+        for schema in schemas:
+            activity = ActivityLanguageWithItemsMobileDetailPublic(
+                id=schema.id,
+                name=schema.name,
+                description=self._get_by_language(schema.description, language),
+                splash_screen=schema.splash_screen,
+                image=schema.image,
+                show_all_at_once=schema.show_all_at_once,
+                is_skippable=schema.is_skippable,
+                is_reviewable=schema.is_reviewable,
+                is_hidden=schema.is_hidden,
+                response_is_editable=schema.response_is_editable,
+                order=schema.order,
+                scores_and_reports=schema.scores_and_reports,
+                performance_task_type=schema.performance_task_type,
+                is_performance_task=schema.is_performance_task,
             )
-            
-            for activity in activities:
-                for periodicity in periodicities:
-                    if activity.id == periodicity['activity_id']:
-                        activity.periodicity = periodicity
-                        break
-                activity.items = activity_items_map.get(activity.id, [])
 
-            return activities
+            activities.append(activity)
+            activity_ids.append(activity.id)
 
-        except Exception as e:
-            logger.error(e)
+        activityEvent = await EventCRUD(self.session).get_all_by_activity_flow_ids(applet_id, activity_ids, True)
+
+        for event in activityEvent:
+            periodicity: Periodicity = await PeriodicityCRUD(self.session).get_by_id(event.periodicity_id)
+            periodicities.append({**periodicity.dict(),'start_time': event.start_time, 'end_time': event.end_time, 'access_before_schedule': event.access_before_schedule, 'one_time_completion': event.one_time_completion, 'timer': event.timer, 'timer_type': event.timer_type, 'event_id': event.id, 'activity_id': event.activity_id })
+
+        activity_items_map = await ActivityItemService(self.session).get_single_language_by_activity_ids(
+            activity_ids=activity_ids, language=language
+        )
+        
+        for activity in activities:
+            for periodicity in periodicities:
+                if activity.id == periodicity['activity_id']:
+                    activity.periodicity = periodicity
+                    break
+            activity.items = activity_items_map.get(activity.id, [])
+
+        return activities
+
+
 
     async def get_full_activities(self, applet_id: uuid.UUID) -> list[ActivityFull]:
         schemas = await ActivitiesCRUD(self.session).get_by_applet_id(applet_id)
