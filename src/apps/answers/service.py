@@ -83,6 +83,7 @@ from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.subjects.domain import SubjectRelation
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError, ValidationError
 from apps.shared.query_params import QueryParams
@@ -628,17 +629,33 @@ class AnswerService:
             relation_respondent_source_subjects = await SubjectsCrud(self.session).get_relation(
                 respondent_subject.id, source_subject.id
             )
-            if not relation_respondent_source_subjects: # or (relation_respondent_source_subjects is temporary and is expired):
+            if not relation_respondent_source_subjects or (
+                relation_respondent_source_subjects
+                and self._check_subject_relation_is_temporary_and_expired(relation_respondent_source_subjects)
+            ):
                 raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
         if respondent_subject.id != target_subject.id:
             relation_respondent_target_subjects = await SubjectsCrud(self.session).get_relation(
                 respondent_subject.id, target_subject.id
             )
-            if not relation_respondent_target_subjects: # or (relation_respondent_target_subjects is temporary and is expired):
+            if not relation_respondent_target_subjects or (
+                relation_respondent_target_subjects
+                and self._check_subject_relation_is_temporary_and_expired(relation_respondent_target_subjects)
+            ):
                 raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
         return None
+
+    def _check_subject_relation_is_temporary_and_expired(relation: SubjectRelation) -> bool:
+        if relation.relation != "take-now" or relation.meta is None:
+            return False
+
+        expires_at = datetime.fromisoformat(relation.meta["expiresAt"])
+        if expires_at > datetime.now():
+            return False
+
+        return True
 
     async def _validate_answer_access(
         self,
