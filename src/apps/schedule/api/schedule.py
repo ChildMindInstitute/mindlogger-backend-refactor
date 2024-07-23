@@ -384,3 +384,21 @@ async def schedule_create_individual(
         logger.exception(e)
 
     return ResponseMulti(result=schedules, count=len(schedules))
+
+
+async def schedule_get_applet_events(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[PublicEvent]:
+    """get events for an applet."""
+    applet_service = AppletService(session, user.id)
+    async with atomic(session):
+        await applet_service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
+        
+        service = ScheduleService(session)
+        
+        schedules = await service.get_schedule_individual(applet_id)
+
+    return ResponseMulti(result=schedules, count=len(schedules))

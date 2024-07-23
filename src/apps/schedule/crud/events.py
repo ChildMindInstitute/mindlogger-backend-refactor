@@ -23,7 +23,6 @@ from apps.schedule.domain.schedule.internal import (
     EventCreate,
     EventFull,
     EventUpdate,
-    EventWithActivityOrFlowId,
     FlowEvent,
     FlowEventCreate,
     Periodicity,
@@ -713,7 +712,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         applet_id: uuid.UUID,
         activity_ids: list[uuid.UUID],
         is_activity: bool,
-    ) -> list[EventWithActivityOrFlowId]:
+    ) -> list[EventSchema]:
         """Return events for given activity ids."""
         query: Query = select(self.schema_class)
         query = query.where(self.schema_class.applet_id == applet_id)

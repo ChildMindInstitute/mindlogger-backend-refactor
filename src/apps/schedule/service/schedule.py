@@ -992,6 +992,12 @@ class ScheduleService:
             QueryParams(filters={"respondent_id": respondent_id}),
         )
 
+    async def get_schedule_individual(self, applet_id: uuid.UUID) -> list[PublicEvent]:
+        """Get all schedules for individual user"""
+        return await self.get_all_schedules(
+            applet_id
+        )
+
     async def create_default_schedules_if_not_exist(
         self,
         applet_id: uuid.UUID,
