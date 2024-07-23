@@ -389,9 +389,7 @@ class AnswerService:
             if not target_subject or not source_subject:
                 raise MultiinformantAssessmentNoAccessApplet("Missing target subject or source subject")
             await self._validate_user_role_for_take_now(applet_id, respondent_subject)
-            await self._validate_relation_between_subjects_in_applet(
-                respondent_subject, target_subject, source_subject
-            )
+            await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
 
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)

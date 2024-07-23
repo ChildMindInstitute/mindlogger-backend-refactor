@@ -111,6 +111,7 @@ async def tom(tom_create: UserCreate, global_session: AsyncSession, pytestconfig
         await crud._delete(id=user.id)
         await global_session.commit()
 
+
 @pytest.fixture(scope="session", autouse=True)
 async def lucy(lucy_create: UserCreate, global_session: AsyncSession, pytestconfig: Config):
     crud = UsersCRUD(global_session)

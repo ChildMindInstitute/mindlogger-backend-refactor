@@ -84,6 +84,7 @@ async def applet_one_sam_respondent(session: AsyncSession, applet_one: AppletFul
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(sam.id, Role.RESPONDENT)
     return applet_one
 
+
 @pytest.fixture
 async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, sam: User) -> Subject:
     applet_id = applet_one.id
@@ -92,6 +93,7 @@ async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, 
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
     return Subject.from_orm(model)
+
 
 @pytest.fixture
 async def bob_reviewer_in_applet_with_reviewable_activity(session, tom, bob, applet_with_reviewable_activity) -> User:
@@ -3416,15 +3418,11 @@ class TestAnswerActivityItems(BaseTest):
 
         # create a relation between respondent and source
         await subject_service.create_relation(
-            relation="father",
-            source_subject_id=applet_one_sam_subject.id,
-            subject_id=source_subject.id
+            relation="father", source_subject_id=applet_one_sam_subject.id, subject_id=source_subject.id
         )
         # create a relation between respondent and target
         await subject_service.create_relation(
-            relation="father",
-            source_subject_id=applet_one_sam_subject.id,
-            subject_id=target_subject.id
+            relation="father", source_subject_id=applet_one_sam_subject.id, subject_id=target_subject.id
         )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
