@@ -1060,6 +1060,46 @@ class TestAnswerActivityItems(BaseTest):
             response.json()["result"]["answers"][0]["respondentSecretId"],
         )
 
+    async def test_answer_activity_items_create_alert_for_respondent_mock(
+        self,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        client: TestClient,
+        session: AsyncSession,
+        tom_applet_one_subject
+    ) -> None:
+        client.login(tom)
+        subject_service = SubjectsService(session, tom.id)
+
+        data = answer_create.copy(deep=True)
+
+        print("HELLO FROM TEST")
+
+        # create a relation between respondent and source
+        await subject_service.create_relation(
+            relation="take-now",
+            source_subject_id=answer_create.id,
+            subject_id=data.source_subject_id,
+            meta={
+                "expiresAt": (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat(),
+            },
+        )
+        # create a relation between respondent and target
+        await subject_service.create_relation(
+            relation="take-now",
+            source_subject_id=tom_applet_one_subject.id,
+            subject_id=data.source_subject_id,
+            meta={
+                "expiresAt": (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat(),
+            },
+        )
+
+        print(data)
+        response = await client.post(self.answer_url, data=data)
+        
+        print(response)
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
     async def test_answer_get_export_data__answer_from_respondent(
         self,
         client: TestClient,

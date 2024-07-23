@@ -90,6 +90,7 @@ from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relatio
 from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -99,7 +100,6 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
-from apps.subjects.services import SubjectsService
 
 
 class AnswerService:
@@ -134,7 +134,6 @@ class AnswerService:
         return await self._create_answer(activity_answer)
 
     async def _validate_respondent_answer(self, activity_answer: AppletAnswerCreate) -> None:
-        await self.create_validation_step()
         await self._validate_answer(activity_answer)
         await self._validate_applet_for_user_response(activity_answer.applet_id)
 
@@ -221,6 +220,28 @@ class AnswerService:
         if not roles:
             raise UserDoesNotHavePermissionError()
 
+    async def _validate_temp_relation_and_delete_it(
+        self, respondent_subject: SubjectSchema, target_subject: SubjectSchema, source_subject: SubjectSchema
+    ):
+        relation_respondent_target = await SubjectsCrud(self.session).get_relation(
+            source_subject_id=respondent_subject.id, target_subject_id=target_subject.id
+        )
+        relation_respondent_source = await SubjectsCrud(self.session).get_relation(
+            source_subject_id=respondent_subject.id, target_subject_id=source_subject.id
+        )
+        print("CHECKING FOR RELATION TEMP")
+        print(is_valid_take_now_relation(relation_respondent_target))
+        print(is_valid_take_now_relation(
+            relation_respondent_source
+        ))
+        if is_valid_take_now_relation(relation_respondent_target) or is_valid_take_now_relation(
+            relation_respondent_source
+        ):
+            # DELETE THE RESPONDENT AND TARGET RELATION
+            await SubjectsCrud(self.session).delete_relation(respondent_subject.id, target_subject.id)
+            # DELETE THE RESPONDENT AND SOURCE RELATION
+            await SubjectsCrud(self.session).delete_relation(respondent_subject.id, source_subject.id)
+
     async def _get_answer_relation(
         self,
         respondent_subject: SubjectSchema,
@@ -240,11 +261,15 @@ class AnswerService:
                 return Relation.self
 
             raise ValidationError("Subject relation not found")
-        
+
         respondent_target_relation = await SubjectsCrud(self.session).get_relation(
             respondent_subject.id, target_subject.id
         )
-        if not respondent_target_relation and not is_admin:
+        print("respondent_target_relation")
+        print(respondent_target_relation)
+        if not respondent_target_relation and not is_valid_take_now_relation(respondent_target_relation):
+            if is_admin:
+                return Relation.admin
             raise ValidationError("Subject relation not found")
 
         relation = await SubjectsCrud(self.session).get_relation(source_subject.id, target_subject.id)
@@ -349,10 +374,8 @@ class AnswerService:
             applet_answer.alerts,
         )
 
-        # TODO: VALIDATE THAT THIS IS ONLY A TEAMP RELATION BEFORE WE DELETE IT
-        # DELETE THE RESPONDENT AND TARGET RELATION
-        # DELETE THE RESPONDENT AND SOURCE RELATION
-        await SubjectsService(self.session, self.user_id).delete_relation(respondent_subject.id, target_subject.id)
+        if relation and relation != Relation.admin:
+            await self._validate_temp_relation_and_delete_it(respondent_subject, target_subject, source_subject)
 
         return answer
 
