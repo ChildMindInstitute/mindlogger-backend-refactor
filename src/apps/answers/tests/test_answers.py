@@ -3,11 +3,12 @@ import http
 import re
 import uuid
 from collections import defaultdict
-from typing import Any, Tuple, cast
+from typing import Any, AsyncGenerator, Tuple, cast
 from unittest.mock import AsyncMock
 
 import pytest
-from pytest import FixtureRequest
+from pydantic import EmailStr
+from pytest import Config, FixtureRequest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +29,9 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User
+from apps.users.cruds.user import UsersCRUD
+from apps.users.domain import UserCreate
+from apps.users.tests.fixtures.users import _get_or_create_user
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
@@ -52,6 +56,42 @@ def note_url_path_data(answer: AnswerSchema) -> dict[str, Any]:
         "activity_id": answer.activity_history_id.split("_")[0],
     }
 
+
+@pytest.fixture(scope="session", autouse=True)
+async def sam(sam_create: UserCreate, global_session: AsyncSession, pytestconfig: Config) -> AsyncGenerator:
+    crud = UsersCRUD(global_session)
+    user = await _get_or_create_user(
+        crud, sam_create, global_session, uuid.UUID("35c4ed0a-1a09-4c16-b555-6d6ad639ac05")
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def sam_create() -> UserCreate:
+    return UserCreate(
+        email=EmailStr("sam@mindlogger.com"),
+        password="Test1234!",
+        first_name="Sam",
+        last_name="Smith",
+    )
+
+
+@pytest.fixture
+async def applet_one_sam_respondent(session: AsyncSession, applet_one: AppletFull, tom: User, sam: User) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(sam.id, Role.RESPONDENT)
+    return applet_one
+
+@pytest.fixture
+async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, sam: User) -> Subject:
+    applet_id = applet_one.id
+    user_id = sam.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
 
 @pytest.fixture
 async def bob_reviewer_in_applet_with_reviewable_activity(session, tom, bob, applet_with_reviewable_activity) -> User:
@@ -3222,11 +3262,18 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"]["code"] == "invalid_target_subject"
 
     async def test_validate_multiinformant_assessment_fail_temporary_relation_expired(
-        self, client, tom: User, applet_one: AppletFull, session: AsyncSession, tom_applet_one_subject
+        self,
+        client,
+        sam: User,
+        tom: User,
+        applet_one: AppletFull,
+        session: AsyncSession,
+        applet_one_sam_respondent,
+        applet_one_sam_subject,
     ):
-        client.login(tom)
+        client.login(sam)
 
-        subject_service = SubjectsService(session, tom.id)
+        subject_service = SubjectsService(session, sam.id)
 
         source_subject = await subject_service.create(
             SubjectCreate(
@@ -3250,7 +3297,7 @@ class TestAnswerActivityItems(BaseTest):
         # create a relation between respondent and source
         await subject_service.create_relation(
             relation="take-now",
-            source_subject_id=tom_applet_one_subject.id,
+            source_subject_id=applet_one_sam_subject.id,
             subject_id=source_subject.id,
             meta={
                 "expiresAt": (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
@@ -3259,7 +3306,7 @@ class TestAnswerActivityItems(BaseTest):
         # create a relation between respondent and target
         await subject_service.create_relation(
             relation="take-now",
-            source_subject_id=tom_applet_one_subject.id,
+            source_subject_id=applet_one_sam_subject.id,
             subject_id=target_subject.id,
             meta={
                 "expiresAt": (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
@@ -3270,17 +3317,24 @@ class TestAnswerActivityItems(BaseTest):
         url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
 
         response = await client.get(url)
- 
+
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["valid"] is False
         assert response.json()["result"]["code"] == "no_access_to_applet"
 
     async def test_validate_multiinformant_assessment_success_temporary_relation_not_expired(
-        self, client, tom: User, applet_one: AppletFull, session: AsyncSession, tom_applet_one_subject
+        self,
+        client,
+        sam: User,
+        tom: User,
+        applet_one: AppletFull,
+        session: AsyncSession,
+        applet_one_sam_respondent,
+        applet_one_sam_subject,
     ):
-        client.login(tom)
+        client.login(sam)
 
-        subject_service = SubjectsService(session, tom.id)
+        subject_service = SubjectsService(session, sam.id)
 
         source_subject = await subject_service.create(
             SubjectCreate(
@@ -3304,7 +3358,7 @@ class TestAnswerActivityItems(BaseTest):
         # create a relation between respondent and source
         await subject_service.create_relation(
             relation="take-now",
-            source_subject_id=tom_applet_one_subject.id,
+            source_subject_id=applet_one_sam_subject.id,
             subject_id=source_subject.id,
             meta={
                 "expiresAt": (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat(),
@@ -3313,7 +3367,7 @@ class TestAnswerActivityItems(BaseTest):
         # create a relation between respondent and target
         await subject_service.create_relation(
             relation="take-now",
-            source_subject_id=tom_applet_one_subject.id,
+            source_subject_id=applet_one_sam_subject.id,
             subject_id=target_subject.id,
             meta={
                 "expiresAt": (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat(),
@@ -3324,7 +3378,6 @@ class TestAnswerActivityItems(BaseTest):
         url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
 
         response = await client.get(url)
- 
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["valid"] is True
 
