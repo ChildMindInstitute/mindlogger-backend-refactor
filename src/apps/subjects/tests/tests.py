@@ -2,15 +2,19 @@ import http
 import json
 import uuid
 from copy import copy
+from datetime import datetime, timedelta
 
 import pytest
 from asyncpg import UniqueViolationError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.domain.applet_full import AppletFull
 from apps.shared.test import BaseTest
+from apps.shared.test.client import TestClient
 from apps.subjects.crud import SubjectsCrud
+from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate, SubjectCreateRequest, SubjectRelationCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User
@@ -198,6 +202,16 @@ async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFu
 
 
 @pytest.fixture
+async def lucy_applet_one_subject(session: AsyncSession, lucy: User, applet_one_lucy_respondent: AppletFull) -> Subject:
+    applet_id = applet_one_lucy_respondent.id
+    user_id = lucy.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
 async def applet_one_lucy_reviewer_with_subject(
     session: AsyncSession, applet_one: AppletFull, tom_applet_one_subject, tom, lucy
 ) -> AppletFull:
@@ -215,13 +229,13 @@ async def tom_invitation_payload(tom: User) -> dict:
 
 
 @pytest.fixture
-async def lucy_invitation_payload(lucy: User) -> dict:
+async def lucy_participant_invitation_payload(lucy: User) -> dict:
     return dict(
         email=lucy.email_encrypted,
         first_name=lucy.first_name,
         last_name=lucy.last_name,
         language="en",
-        role=Role.MANAGER,
+        role=Role.RESPONDENT,
     )
 
 
@@ -541,6 +555,73 @@ class TestSubjects(BaseTest):
         # forbidden
         client.login(lucy)
         response = await client.get(self.subject_detail_url.format(subject_id=subject_id))
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_get_subject_related_participant(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+    ):
+        client.login(lucy)
+        response = await client.get(self.subject_detail_url.format(subject_id=applet_one_shell_account.id))
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+        await SubjectsService(session, tom.id).create_relation(
+            applet_one_shell_account.id, lucy_applet_one_subject.id, "parent"
+        )
+
+        response = await client.get(self.subject_detail_url.format(subject_id=applet_one_shell_account.id))
+        assert response.status_code == http.HTTPStatus.OK
+
+    async def test_get_subject_temp_related_participant(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+    ):
+        client.login(lucy)
+        response = await client.get(self.subject_detail_url.format(subject_id=applet_one_shell_account.id))
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+        # Expires tomorrow
+        expires_at = datetime.now() + timedelta(days=1)
+        await SubjectsService(session, tom.id).create_relation(
+            applet_one_shell_account.id, lucy_applet_one_subject.id, "take-now", {"expiresAt": expires_at.isoformat()}
+        )
+
+        response = await client.get(self.subject_detail_url.format(subject_id=applet_one_shell_account.id))
+        assert response.status_code == http.HTTPStatus.OK
+
+    async def test_get_subject_expired_temp_related_participant(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+    ):
+        client.login(lucy)
+        response = await client.get(self.subject_detail_url.format(subject_id=applet_one_shell_account.id))
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+        # Expired yesterday
+        expires_at = datetime.now() - timedelta(days=1)
+        await SubjectsService(session, tom.id).create_relation(
+            applet_one_shell_account.id, lucy_applet_one_subject.id, "take-now", {"expiresAt": expires_at.isoformat()}
+        )
+
+        response = await client.get(self.subject_detail_url.format(subject_id=applet_one_shell_account.id))
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_get_my_subject(self, client, tom: User, tom_applet_one_subject: Subject):
