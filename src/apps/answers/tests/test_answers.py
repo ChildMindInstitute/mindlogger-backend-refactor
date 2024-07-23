@@ -3381,6 +3381,59 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["valid"] is True
 
+    async def test_validate_multiinformant_assessment_success_permanent_non_take_now(
+        self,
+        client,
+        sam: User,
+        tom: User,
+        applet_one: AppletFull,
+        session: AsyncSession,
+        applet_one_sam_respondent,
+        applet_one_sam_subject,
+    ):
+        client.login(sam)
+
+        subject_service = SubjectsService(session, sam.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        # create a relation between respondent and source
+        await subject_service.create_relation(
+            relation="father",
+            source_subject_id=applet_one_sam_subject.id,
+            subject_id=source_subject.id
+        )
+        # create a relation between respondent and target
+        await subject_service.create_relation(
+            relation="father",
+            source_subject_id=applet_one_sam_subject.id,
+            subject_id=target_subject.id
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is True
+
     async def test_validate_multiinformant_assessment_fail_no_permissions(
         self,
         client,
