@@ -232,9 +232,7 @@ async def get_subject(
         raise NotFoundError()
 
     user_subject = await subjects_service.get_by_user_and_applet(user.id, subject.applet_id)
-    if not user_subject:
-        await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
-    else:
+    if user_subject:
         relation = await subjects_service.get_relation(user_subject.id, subject_id)
         has_relation = relation is not None and (
             relation.relation != "take-now" or is_valid_take_now_relation(relation)
