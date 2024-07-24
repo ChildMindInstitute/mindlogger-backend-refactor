@@ -3444,9 +3444,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
-        assert response.json()["result"]["code"] == "no_access_to_applet"
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_validate_multiinformant_assessment_fail_no_activity(
         self, client, tom: User, applet_one: AppletFull, session: AsyncSession
