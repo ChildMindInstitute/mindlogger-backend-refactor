@@ -126,6 +126,42 @@ class TestActivityItems:
             assert item["responseValues"] == item_create.response_values.dict(by_alias=True)
 
     @pytest.mark.parametrize(
+        "item_fixture", ("phrasal_template_with_text_create", "phrasal_template_with_slider_rows_create")
+    )
+    async def test_create_applet_with_phrasal_template(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_minimal_data: AppletCreate,
+        item_fixture: str,
+        request: FixtureRequest,
+    ):
+        client.login(tom)
+        items_create = request.getfixturevalue(item_fixture)
+        data = applet_minimal_data.copy(deep=True)
+        data.activities[0].items = items_create
+        phrasal_item = next(
+            item for item in data.activities[0].items if item.response_type == ResponseType.PHRASAL_TEMPLATE
+        )
+        assert phrasal_item
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        resp = await client.get(
+            self.applet_workspace_detail_url.format(owner_id=tom.id, pk=resp.json()["result"]["id"])
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+        items = result["activities"][0]["items"]
+        assert len(items) == 2
+        item = next(item for item in items if item["responseType"] == phrasal_item.response_type)
+        assert item["responseType"] == phrasal_item.response_type
+        assert item["name"] == phrasal_item.name
+        assert item["question"] == phrasal_item.question
+        assert item["isHidden"] == phrasal_item.is_hidden
+        assert not item["allowEdit"]
+        assert item["responseValues"] == phrasal_item.response_values.dict(by_alias=True)  # type: ignore
+
+    @pytest.mark.parametrize(
         "fixture_name, performance_task_type",
         (
             ("activity_ab_trails_ipad_create", PerformanceTaskType.ABTRAILS),

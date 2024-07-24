@@ -1,5 +1,5 @@
 import uuid
-from typing import cast
+from typing import List, cast
 
 import pytest
 
@@ -12,12 +12,19 @@ from apps.activities.domain.response_values import (
     MultiSelectionRowsValues,
     MultiSelectionValues,
     NumberSelectionValues,
+    PhrasalTemplateDisplayMode,
+    PhrasalTemplateField,
+    PhrasalTemplatePhrase,
+    PhrasalTemplateValues,
     SingleSelectionRowsValues,
     SingleSelectionValues,
     SliderRowsValue,
     SliderRowsValues,
     SliderValueAlert,
     SliderValues,
+    _PhrasalTemplateItemResponseField,
+    _PhrasalTemplateLineBreakField,
+    _PhrasalTemplateSentenceField,
     _SingleSelectionDataOption,
     _SingleSelectionDataRow,
     _SingleSelectionOption,
@@ -160,3 +167,47 @@ def audio_response_values() -> AudioValues:
 def audio_player_response_values() -> AudioPlayerValues:
     # TODO: Add some audio file
     return AudioPlayerValues(file=None, type=ResponseType.AUDIOPLAYER)
+
+
+@pytest.fixture()
+def phrasal_template_with_text_response_fields(text_item_create) -> List[PhrasalTemplateField]:
+    return [
+        _PhrasalTemplateSentenceField(text="test sentence"),
+        _PhrasalTemplateItemResponseField(
+            item_name=text_item_create.name, display_mode=PhrasalTemplateDisplayMode.SENTENCE
+        ),
+        _PhrasalTemplateLineBreakField(),
+        _PhrasalTemplateSentenceField(text="test sentence 2"),
+    ]
+
+
+@pytest.fixture
+def phrasal_template_with_text_response_values(phrasal_template_with_text_response_fields) -> PhrasalTemplateValues:
+    return PhrasalTemplateValues(
+        phrases=[PhrasalTemplatePhrase(image=None, fields=phrasal_template_with_text_response_fields)],
+        card_title="test card title",
+        type=ResponseType.PHRASAL_TEMPLATE,
+    )
+
+
+@pytest.fixture()
+def phrasal_template_with_slider_rows_response_fields(slider_rows_item_create) -> List[PhrasalTemplateField]:
+    return [
+        _PhrasalTemplateSentenceField(text="test sentence"),
+        _PhrasalTemplateItemResponseField(
+            item_name=slider_rows_item_create.name, display_mode=PhrasalTemplateDisplayMode.SENTENCE, item_index=0
+        ),
+        _PhrasalTemplateLineBreakField(),
+        _PhrasalTemplateSentenceField(text="test sentence 2"),
+    ]
+
+
+@pytest.fixture
+def phrasal_template_with_slider_rows_response_values(
+    phrasal_template_with_slider_rows_response_fields,
+) -> PhrasalTemplateValues:
+    return PhrasalTemplateValues(
+        phrases=[PhrasalTemplatePhrase(image=None, fields=phrasal_template_with_slider_rows_response_fields)],
+        card_title="test card title",
+        type=ResponseType.PHRASAL_TEMPLATE,
+    )
