@@ -219,7 +219,19 @@ export BASIC_AUTH__PASSWORD=1234
 set -o allexport; source .env; set +o allexport
 ```
 
-> 🛑 **NOTE:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
+
+> 🛑 **NOTE 2:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
+
+> 🛑 **NOTE 3:** If you get an error running `pipenv sync --dev` related to the dependency `greenlet`, install it by running:
+```bash
+pipenv install greenlet
+```
+> 🛑 **NOTE 4:** If the application can't find the `RabbitMQ` service even though it's running normally, change your `RABBITMQ__URL` to your local ip address instead of `localhost`
+
+## Run the migrations
+```bash
+alembic upgrade head
+```
 
 ## Running the app
 
