@@ -5,9 +5,10 @@ from fastapi.responses import Response
 from starlette import status
 
 from apps.authentication.deps import get_optional_current_user
-from apps.healthcheck.domain import AppInfo, EmergencyMessage, EmergencyMessageType
+from apps.healthcheck.domain import EmergencyMessage, EmergencyMessageType
 from apps.shared.domain import Response as ResponseModel
 from apps.users import User
+from apps.users.domain import AppInfo
 from config import settings
 
 
