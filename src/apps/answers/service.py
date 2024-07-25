@@ -90,7 +90,6 @@ from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relatio
 from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
-from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
