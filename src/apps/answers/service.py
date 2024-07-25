@@ -229,18 +229,16 @@ class AnswerService:
         relation_respondent_source = await SubjectsCrud(self.session).get_relation(
             source_subject_id=respondent_subject.id, target_subject_id=source_subject.id
         )
-        print("CHECKING FOR RELATION TEMP")
-        print(is_valid_take_now_relation(relation_respondent_target))
-        print(is_valid_take_now_relation(
-            relation_respondent_source
-        ))
-        if is_valid_take_now_relation(relation_respondent_target) or is_valid_take_now_relation(
-            relation_respondent_source
+
+        if relation_respondent_target and (
+            is_take_now_relation(relation_respondent_target) and is_valid_take_now_relation(relation_respondent_target)
         ):
-            # DELETE THE RESPONDENT AND TARGET RELATION
-            await SubjectsCrud(self.session).delete_relation(respondent_subject.id, target_subject.id)
-            # DELETE THE RESPONDENT AND SOURCE RELATION
-            await SubjectsCrud(self.session).delete_relation(respondent_subject.id, source_subject.id)
+            await SubjectsCrud(self.session).delete_relation(target_subject.id, respondent_subject.id)
+
+        if relation_respondent_source and (
+            is_take_now_relation(relation_respondent_source) and is_valid_take_now_relation(relation_respondent_source)
+        ):
+            await SubjectsCrud(self.session).delete_relation(source_subject.id, respondent_subject.id)
 
     async def _get_answer_relation(
         self,
@@ -265,9 +263,13 @@ class AnswerService:
         respondent_target_relation = await SubjectsCrud(self.session).get_relation(
             respondent_subject.id, target_subject.id
         )
-        print("respondent_target_relation")
+        print("START THE PRINTING FROM HERE")
         print(respondent_target_relation)
-        if not respondent_target_relation and not is_valid_take_now_relation(respondent_target_relation):
+        if not respondent_target_relation or (
+            is_take_now_relation(respondent_target_relation)
+            and not is_valid_take_now_relation(respondent_target_relation)
+        ):
+            print("ENTERED HERE")
             if is_admin:
                 return Relation.admin
             raise ValidationError("Subject relation not found")
