@@ -4,6 +4,7 @@ import itertools
 import json
 import time
 import uuid
+from collections import defaultdict
 
 import aiohttp
 import sentry_sdk
@@ -23,16 +24,20 @@ from apps.applets.crud.applets_history import AppletHistoriesCRUD
 from apps.integrations.loris.crud.user_relationship import MlLorisUserRelationshipCRUD
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
 from apps.integrations.loris.domain import (
+    AnswerData,
     LorisIntegrationAlertMessages,
     MlLorisUserRelationship,
     UnencryptedAppletVersion,
+    UploadableAnswersData,
+    UserVisits,
 )
-from apps.integrations.loris.errors import LorisServerError, MlLorisUserRelationshipNotFoundError
+from apps.integrations.loris.errors import LorisServerError
 from apps.subjects.crud import SubjectsCrud
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from config import settings
 from infrastructure.database.core import atomic
+from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
 from infrastructure.utility import RedisCache
 
@@ -48,10 +53,15 @@ LORIS_LOGIN_DATA = {
 
 
 class LorisIntegrationService:
-    def __init__(self, applet_id: uuid.UUID, session, user: User) -> None:
+    def __init__(self, applet_id: uuid.UUID, session, user: User, answer_session=None) -> None:
         self.applet_id = applet_id
         self.session = session
         self.user = user
+        self._answer_session = answer_session
+
+    @property
+    def answer_session(self):
+        return self._answer_session if self._answer_session else self.session
 
     async def integration(self, users_and_visits):
         respondents = await AnswersCRUD(self.session).get_respondents_by_applet_id_and_readiness_to_share_data(
@@ -166,12 +176,12 @@ class LorisIntegrationService:
         for user, answer in answers_for_loris_by_respondent.items():
             candidate_id: str
             relationship_crud = MlLorisUserRelationshipCRUD(self.session)
-            try:
-                relationship: MlLorisUserRelationship = await relationship_crud.get_by_ml_user_id(uuid.UUID(user))
-                candidate_id = relationship.loris_user_id
-            except MlLorisUserRelationshipNotFoundError as e:
-                logger.info(f"{e}. Need to create new candidate")
+            relationships: list[MlLorisUserRelationship] = await relationship_crud.get_by_ml_user_ids([uuid.UUID(user)])
+            if not relationships:
+                logger.info(f"No such user relationship with ml_user_uuid={user}. Need to create new candidate")
                 candidate_id = await self._create_candidate(headers, relationship_crud, uuid.UUID(user))
+            else:
+                candidate_id = relationships[0].loris_user_id
 
             _visits_for_user: list[str] = list(users_and_visits[user].values())
             await self._create_and_start_visits(headers, candidate_id, _visits_for_user)
@@ -386,7 +396,19 @@ class LorisIntegrationService:
                     )
                     raise LorisServerError(message=error_message)
 
-    async def _get_existing_answers_from_loris(self, applet_id: str, headers: dict) -> str:
+    async def _get_existing_answers_from_loris(self, applet_id: str, headers: dict | None = None) -> str:
+        if not headers:
+            try:
+                token: str = await self._login_to_loris()
+            except LorisServerError as e:
+                logger.info(f"I can't connect to the LORIS server {e}.")
+                raise Exception(f"I can't connect to the LORIS server {e}.")
+
+            headers = {
+                "Authorization": f"Bearer: {token}",
+                "Content-Type": "application/json",
+                "accept": "*/*",
+            }
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             url = settings.loris.ml_schema_existing_answers_url.format(self.applet_id)
@@ -715,7 +737,7 @@ class LorisIntegrationService:
             respondent_subject = await subject_crud.get_user_subject(user_id=respondent, applet_id=self.applet_id)
             _data = {"user_id": str(respondent), "secret_user_id": respondent_subject.secret_user_id, "activities": []}
             try:
-                activities_info: tuple[dict, list] | None = await report_service.decrypt_data_for_loris(
+                activities_info: tuple[dict, list] | None = await report_service.decrypt_data_for_loris(  # TODO why?
                     self.applet_id, respondent
                 )
             except ReportServerError as e:
@@ -739,10 +761,10 @@ class LorisIntegrationService:
                 visits = []
                 if activity_key in visits_data:
                     for visit_info in visits_data[activity_key]:
-                        try:
-                            relationship = await relationship_crud.get_by_loris_user_id(str(visit_info["CandID"]))
-                        except MlLorisUserRelationshipNotFoundError:
+                        relationships = await relationship_crud.get_by_loris_user_ids([str(visit_info["CandID"])])
+                        if not relationships:
                             break
+                        relationship = relationships[0]
                         if relationship.ml_user_uuid == respondent:
                             visits = visit_info["Visits"]
                             break
@@ -760,6 +782,82 @@ class LorisIntegrationService:
             result.append(_data)
 
         return result
+
+    async def get_uploadable_answers(self) -> tuple[UploadableAnswersData, int]:
+        """
+        This method is build to replace `get_information_about_users_and_visits` providing data in another structure
+        """
+        # TODO remove this method or `get_information_about_users_and_visits` after testing
+
+        uploaded_answers, applet_visits, answers = await asyncio.gather(
+            self._get_existing_answers_from_loris(str(self.applet_id)),
+            self.get_visits_for_applet(),
+            # todo pagination
+            AnswersCRUD(self.answer_session).get_shareable_answers(applet_id=self.applet_id),
+        )
+
+        uploaded_answer_ids = set(uploaded_answers)
+        del uploaded_answers
+
+        answers_to_upload, respondent_ids, activity_history_ids = [], set(), set()
+        for answer in answers:
+            if str(answer.id) in uploaded_answer_ids:
+                continue
+            answers_to_upload.append(answer)
+            respondent_ids.add(answer.respondent_id)
+            activity_history_ids.add(answer.activity_history_id)
+
+        del answers
+
+        if not answers_to_upload:
+            logger.info(
+                f"No answers found for given applet: \
+                    {str(self.applet_id)}. End of the synchronization."
+            )
+            return UploadableAnswersData(), 0
+
+        subjects, activity_histories = await asyncio.gather(
+            SubjectsCrud(self.session).get_by_user_ids(self.applet_id, list(respondent_ids)),
+            ActivityHistoriesCRUD(self.session).get_by_history_ids(list(activity_history_ids)),
+        )
+
+        respondent_map = {subj.user_id: subj for subj in subjects}
+        relationships = await MlLorisUserRelationshipCRUD(self.session).get_by_ml_user_ids(list(respondent_map.keys()))
+        relationships_map: dict[str, list[uuid.UUID]] = defaultdict(list[uuid.UUID])
+        for rel in relationships:
+            relationships_map[rel.loris_user_id].append(rel.ml_user_uuid)
+
+        activity_history_map = {hist.id_version: hist for hist in activity_histories}
+        activity_ids = {str(HistoryAware().id_from_history_id(v)) for v in activity_history_ids}
+
+        # collect affected activity visits formatted as {activity_id: {user_id: {visit1, visit2, ...}}}
+        _activity_visits: dict[str, dict[uuid.UUID, UserVisits]] = defaultdict(dict)
+        for activity_key, user_visits in (applet_visits or {}).items():
+            activity_id = activity_key.split("__")[0]
+            if activity_id in activity_ids:
+                for user_visit in user_visits:
+                    if _user_ids := relationships_map.get(str(user_visit["CandID"])):
+                        for _user_id in _user_ids:
+                            _visit = _activity_visits[activity_id].get(_user_id) or UserVisits(user_id=_user_id)
+                            _visit.visits.update(user_visit["Visits"])
+                            _activity_visits[activity_id][_user_id] = _visit
+        activity_visits: dict[str, list[UserVisits]] = {k: list(v.values()) for k, v in _activity_visits.items()}
+
+        # collect answers
+        answers_data = []
+        for _answer in answers_to_upload:
+            answers_data.append(
+                AnswerData(
+                    answer_id=_answer.id,
+                    activity_id=HistoryAware().id_from_history_id(_answer.activity_history_id),
+                    version=_answer.version,
+                    activity_name=activity_history_map[_answer.activity_history_id].name,
+                    user_id=_answer.respondent_id,
+                    secret_user_id=respondent_map[_answer.respondent_id].secret_user_id,
+                    completed_date=_answer.created_at,
+                )
+            )
+        return UploadableAnswersData(activity_visits=activity_visits, answers=answers_data), len(answers_data)
 
     async def _transform_users_and_visits(self, users_and_visits: list, data: dict) -> dict:
         _data: dict = {}

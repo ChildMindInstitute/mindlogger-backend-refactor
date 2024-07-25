@@ -4,10 +4,12 @@ from fastapi import BackgroundTasks, Depends
 from starlette import status
 from starlette.responses import Response as HTTPResponse
 
+from apps.answers.deps.preprocess_arbitrary import get_answer_session
 from apps.authentication.deps import get_current_user
-from apps.integrations.loris.domain import PublicListMultipleVisits, PublicListOfVisits, VisitsForUsers
+from apps.integrations.loris.domain import PublicListOfVisits, UploadableAnswersResponse, VisitsForUsers
 from apps.integrations.loris.service.loris import LorisIntegrationService
 from apps.users.domain import User
+from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database.deps import get_session
 
 __all__ = [
@@ -29,6 +31,9 @@ async def start_transmit_process(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
+    # TODO move to worker
+    # TODO block job in progress
+    # TODO mark answers as integrated to loris
     background_tasks.add_task(integration, applet_id, session, user, users_and_visits)
     return HTTPResponse(status_code=status.HTTP_202_ACCEPTED)
 
@@ -47,7 +52,10 @@ async def users_info_with_visits(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-) -> PublicListMultipleVisits:
-    loris_service = LorisIntegrationService(applet_id, session, user)
-    info = await loris_service.get_information_about_users_and_visits()
-    return PublicListMultipleVisits(info=info, count=len(info))
+    answer_session=Depends(get_answer_session),
+) -> UploadableAnswersResponse:
+    await CheckAccessService(session, user.id).check_answer_publishing_access(applet_id)
+    loris_service = LorisIntegrationService(applet_id, session, user, answer_session=answer_session)
+    # TODO move to worker
+    info, count = await loris_service.get_uploadable_answers()
+    return UploadableAnswersResponse(result=info, count=count)

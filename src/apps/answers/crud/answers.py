@@ -876,3 +876,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.order_by(AnswerSchema.created_at.asc())
         db_result = await self._execute(query)
         return db_result.scalars().all()
+
+    async def get_shareable_answers(self, applet_id: uuid.UUID):
+        query: Query = (
+            select(AnswerSchema)
+            .where(
+                AnswerSchema.applet_id == applet_id,
+                AnswerSchema.consent_to_share.is_(True),
+            )
+            .order_by(AnswerSchema.created_at)
+        )
+        result = await self._execute(query)
+
+        return result.scalars().all()

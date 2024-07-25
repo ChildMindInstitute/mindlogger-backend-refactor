@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from apps.integrations.loris.crud.user_relationship import MlLorisUserRelationshipCRUD
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
 from apps.integrations.loris.domain import MlLorisUserRelationship
-from apps.integrations.loris.errors import MlLorisUserRelationshipError, MlLorisUserRelationshipNotFoundError
+from apps.integrations.loris.errors import MlLorisUserRelationshipError
 
 
 @pytest.fixture
@@ -57,13 +57,13 @@ async def test_get_by_ml_user_id(crud, relationship_schema, relationship_instanc
 
     mock_execute = mocker.patch.object(crud, "_execute", return_value=MagicMock())
     mock_scalars = mock_execute.return_value.scalars.return_value
-    mock_scalars.one_or_none = MagicMock(return_value=relationship_schema)
+    mock_scalars.all = MagicMock(return_value=[relationship_schema])
 
-    result = await crud.get_by_ml_user_id(ml_user_uuid)
+    result = await crud.get_by_ml_user_ids([ml_user_uuid])
 
-    assert result == relationship_instance
+    assert result[0] == relationship_instance
     mock_execute.assert_called_once()
-    mock_scalars.one_or_none.assert_called_once()
+    mock_scalars.all.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -72,13 +72,13 @@ async def test_get_by_ml_user_id_not_found(crud, relationship_schema, mocker):
 
     mock_execute = mocker.patch.object(crud, "_execute", return_value=MagicMock())
     mock_scalars = mock_execute.return_value.scalars.return_value
-    mock_scalars.one_or_none = MagicMock(return_value=None)
+    mock_scalars.all = MagicMock(return_value=[])
 
-    with pytest.raises(MlLorisUserRelationshipNotFoundError):
-        await crud.get_by_ml_user_id(ml_user_uuid)
+    res = await crud.get_by_ml_user_ids([ml_user_uuid])
+    assert res == []
 
     mock_execute.assert_called_once()
-    mock_scalars.one_or_none.assert_called_once()
+    mock_scalars.all.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -87,13 +87,13 @@ async def test_get_by_loris_user_id(crud, relationship_schema, relationship_inst
 
     mock_execute = mocker.patch.object(crud, "_execute", return_value=MagicMock())
     mock_scalars = mock_execute.return_value.scalars.return_value
-    mock_scalars.one_or_none = MagicMock(return_value=relationship_schema)
+    mock_scalars.all = MagicMock(return_value=[relationship_schema])
 
-    result = await crud.get_by_loris_user_id(loris_user_id)
+    result = await crud.get_by_loris_user_ids([loris_user_id])
 
-    assert result == relationship_instance
+    assert result[0] == relationship_instance
     mock_execute.assert_called_once()
-    mock_scalars.one_or_none.assert_called_once()
+    mock_scalars.all.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -102,13 +102,13 @@ async def test_get_by_loris_user_id_not_found(crud, relationship_schema, mocker)
 
     mock_execute = mocker.patch.object(crud, "_execute", return_value=MagicMock())
     mock_scalars = mock_execute.return_value.scalars.return_value
-    mock_scalars.one_or_none = MagicMock(return_value=None)
+    mock_scalars.all = MagicMock(return_value=[])
 
-    with pytest.raises(MlLorisUserRelationshipNotFoundError):
-        await crud.get_by_loris_user_id(loris_user_id)
+    res = await crud.get_by_loris_user_ids([loris_user_id])
+    assert res == []
 
     mock_execute.assert_called_once()
-    mock_scalars.one_or_none.assert_called_once()
+    mock_scalars.all.assert_called_once()
 
 
 # @pytest.mark.asyncio
