@@ -263,13 +263,10 @@ class AnswerService:
         respondent_target_relation = await SubjectsCrud(self.session).get_relation(
             respondent_subject.id, target_subject.id
         )
-        print("START THE PRINTING FROM HERE")
-        print(respondent_target_relation)
         if not respondent_target_relation or (
             is_take_now_relation(respondent_target_relation)
             and not is_valid_take_now_relation(respondent_target_relation)
         ):
-            print("ENTERED HERE")
             if is_admin:
                 return Relation.admin
             raise ValidationError("Subject relation not found")
