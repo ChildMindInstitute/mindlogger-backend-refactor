@@ -33,6 +33,7 @@ from apps.shared.domain import PublicModel
 
 class ResponseType(str, Enum):
     TEXT = "text"
+    PARAGRAPHTEXT = "paragraphText"
     SINGLESELECT = "singleSelect"
     MULTISELECT = "multiSelect"
     SLIDER = "slider"
@@ -59,6 +60,7 @@ class ResponseType(str, Enum):
     def get_non_response_types(cls):
         return (
             cls.TEXT,
+            cls.PARAGRAPHTEXT,
             cls.MESSAGE,
             cls.TIMERANGE,
             cls.GEOLOCATION,
@@ -102,6 +104,12 @@ class TextConfig(_ScreenConfig, PublicModel):
         if values.get("correct_answer_required") and not value:
             raise CorrectAnswerRequiredError()
         return value
+
+
+class ParagraphTextConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.PARAGRAPHTEXT] | None
+    max_response_length: PositiveInt = 1000
+    response_required: bool
 
 
 class _SelectionConfig(_ScreenConfig, PublicModel):
@@ -398,6 +406,7 @@ class PerformanceTaskType(str, Enum):
 
 ResponseTypeConfig = (
     TextConfig
+    | ParagraphTextConfig
     | SingleSelectionConfig
     | MultiSelectionConfig
     | SliderConfig

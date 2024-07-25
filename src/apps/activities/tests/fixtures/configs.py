@@ -12,6 +12,7 @@ from apps.activities.domain.response_type_config import (
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
+    ParagraphTextConfig,
     PhotoConfig,
     PhrasalTemplateConfig,
     ResponseType,
@@ -128,6 +129,15 @@ def text_config(default_config: DefaultConfig) -> TextConfig:
         response_data_identifier=False,
         response_required=False,
         type=ResponseType.TEXT,
+    )
+
+
+@pytest.fixture
+def paragraph_text_config(default_config: DefaultConfig) -> ParagraphTextConfig:
+    return ParagraphTextConfig(
+        **default_config.dict(),
+        response_required=False,
+        type=ResponseType.PARAGRAPHTEXT,
     )
 
 

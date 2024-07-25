@@ -102,6 +102,7 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                         ResponseType.MULTISELECT,
                         ResponseType.SLIDER,
                         ResponseType.TEXT,
+                        ResponseType.PARAGRAPHTEXT,
                     ]:
                         raise IncorrectScorePrintItemTypeError()
 
@@ -117,6 +118,7 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                                 ResponseType.MULTISELECT,
                                 ResponseType.SLIDER,
                                 ResponseType.TEXT,
+                                ResponseType.PARAGRAPHTEXT,
                             ]:
                                 raise IncorrectScorePrintItemTypeError()
 
@@ -130,6 +132,7 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                         ResponseType.MULTISELECT,
                         ResponseType.SLIDER,
                         ResponseType.TEXT,
+                        ResponseType.PARAGRAPHTEXT,
                     ]:
                         raise IncorrectSectionPrintItemTypeError()
 
