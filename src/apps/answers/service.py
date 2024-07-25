@@ -244,7 +244,7 @@ class AnswerService:
                 return Relation.admin
             raise ValidationError("Subject relation not found")
 
-        return relation
+        return relation.relation
 
     async def _create_answer(self, applet_answer: AppletAnswerCreate) -> AnswerSchema:
         assert self.user_id
@@ -964,8 +964,10 @@ class AnswerService:
                 activity_hist_ids.add(answer.activity_history_id)
 
         activities_coro = ActivityHistoriesCRUD(self.session).get_by_history_ids(list(activity_hist_ids))
-        subject_map_coro = SubjectsCrud(self.session).get_by_ids(list(subject_ids))
-        user_subject_coro = SubjectsCrud(self.session).get_by_user_ids(applet_id, list(respondent_ids))
+        subject_map_coro = SubjectsCrud(self.session).get_by_ids(list(subject_ids), include_deleted=True)
+        user_subject_coro = SubjectsCrud(self.session).get_by_user_ids(
+            applet_id, list(respondent_ids), include_deleted=True
+        )
 
         coros_result = await asyncio.gather(
             activities_coro,
@@ -987,8 +989,10 @@ class AnswerService:
         submissions: list[AppletSubmission] = []
 
         for answer in answers:
-            activity = activities_map[answer.activity_history_id]
-            respondent_subject = users_subjects_map[answer.respondent_id]
+            activity = activities_map.get(answer.activity_history_id)
+            respondent_subject = users_subjects_map.get(answer.respondent_id)
+            if activity is None or respondent_subject is None:
+                continue
             target_subject = subject_map.get(answer.target_subject_id) or respondent_subject
             source_subject = subject_map.get(answer.source_subject_id) or respondent_subject
 

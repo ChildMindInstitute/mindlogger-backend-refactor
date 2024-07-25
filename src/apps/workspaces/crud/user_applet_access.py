@@ -575,7 +575,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .select_from(SubjectSchema)
             .where(
                 SubjectSchema.applet_id == applet_id,
-                SubjectSchema.soft_exists(),
             )
         )
 
@@ -932,6 +931,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         pin_role: UserPinRole,
         pinned_user_id: uuid.UUID | None,
         pinned_subject_id: uuid.UUID | None,
+        force_unpin: bool = False,
     ):
         query = select(UserPinSchema).where(
             UserPinSchema.user_id == user_id,
@@ -946,7 +946,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         res = await self._execute(query)
         if user_pin := res.scalar():
             await self.session.delete(user_pin)
-        else:
+        elif force_unpin is False:
             user_pin = UserPinSchema(
                 user_id=user_id,
                 owner_id=owner_id,
@@ -955,13 +955,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 role=pin_role,
             )
             await self._create(user_pin)
-
-    async def unpin(self, id_: uuid.UUID):
-        query: Query = update(UserAppletAccessSchema)
-        query = query.where(UserAppletAccessSchema.id == id_)
-        query = query.values(pinned_at=None)
-
-        await self._execute(query)
 
     async def get_applet_users_by_roles(self, applet_id: uuid.UUID, roles: list[Role]) -> list[uuid.UUID]:
         query: Query = select(UserAppletAccessSchema)
