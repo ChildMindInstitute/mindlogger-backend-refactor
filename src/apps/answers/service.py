@@ -86,6 +86,7 @@ from apps.mailing.services import MailingService
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError, ValidationError
 from apps.shared.query_params import QueryParams
+from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relation
 from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
@@ -350,6 +351,8 @@ class AnswerService:
     ):
         assert self.user_id
         subject_crud = SubjectsCrud(self.session)
+        target_subject = None
+        source_subject = None
 
         respondent_subject = await subject_crud.get_user_subject(user_id=self.user_id, applet_id=applet_id)
         if not respondent_subject or not respondent_subject.soft_exists():
@@ -375,6 +378,18 @@ class AnswerService:
             activity, flow = await asyncio.gather(activity_future, flow_future)
             if not activity and not flow:
                 raise MultiinformantAssessmentInvalidActivityOrFlow()
+
+        is_admin = await AppletAccessCRUD(self.session).has_any_roles_for_applet(
+            respondent_subject.applet_id,
+            respondent_subject.user_id,
+            [Role.OWNER, Role.MANAGER],
+        )
+
+        if not is_admin:
+            if not target_subject or not source_subject:
+                raise MultiinformantAssessmentNoAccessApplet("Missing target subject or source subject")
+            await self._validate_user_role_for_take_now(applet_id, respondent_subject)
+            await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
 
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)
@@ -577,6 +592,55 @@ class AnswerService:
         )
 
         return submission
+
+    async def _validate_user_role_for_take_now(self, applet_id: uuid.UUID, respondent: SubjectSchema) -> None:
+        is_user_role_restrictive = await UserAppletAccessCRUD(self.session).get_by_roles(
+            respondent.user_id,
+            applet_id,
+            # Define a list of roles prohibited from accessing the applet
+            [Role.EDITOR, Role.COORDINATOR, Role.REVIEWER],
+        )
+
+        if is_user_role_restrictive:
+            raise MultiinformantAssessmentNoAccessApplet(
+                "Access denied: User lacks the required ownership or managerial role for this operation."
+            )
+
+    async def _validate_relation_between_subjects_in_applet(
+        self, respondent_subject: SubjectSchema, target_subject: SubjectSchema, source_subject: SubjectSchema
+    ) -> None:
+        """
+        Validate the relationship between subjects in an applet.
+        - respondent_subject: the subject inputting the answers.
+        - target_subject: the subject about whom the responses are.
+        - source_subject: the subject providing the responses.
+
+        This method checks:
+        1. If there is a relationship between the logged-in user (respondent_subject) and target_subject.
+        2. If there is a relationship between the respondent_subject and the source_subject.
+        Raises:
+            MultiinformantAssessmentNoAccessApplet: If no valid relationship is found.
+        """
+
+        if respondent_subject.id != source_subject.id:
+            relation_respondent_source_subjects = await SubjectsCrud(self.session).get_relation(
+                respondent_subject.id, source_subject.id
+            )
+            if not relation_respondent_source_subjects or (
+                is_take_now_relation(relation_respondent_source_subjects)
+                and not is_valid_take_now_relation(relation_respondent_source_subjects)
+            ):
+                raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
+
+        if respondent_subject.id != target_subject.id:
+            relation_respondent_target_subjects = await SubjectsCrud(self.session).get_relation(
+                respondent_subject.id, target_subject.id
+            )
+            if not relation_respondent_target_subjects or (
+                is_take_now_relation(relation_respondent_target_subjects)
+                and not is_valid_take_now_relation(relation_respondent_target_subjects)
+            ):
+                raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
     async def _validate_answer_access(
         self,
