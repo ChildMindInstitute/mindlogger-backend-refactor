@@ -90,45 +90,6 @@ async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, 
     model = res.scalars().one()
     return Subject.from_orm(model)
 
-
-@pytest.fixture(scope="session", autouse=True)
-async def sam(sam_create: UserCreate, global_session: AsyncSession, pytestconfig: Config) -> AsyncGenerator:
-    crud = UsersCRUD(global_session)
-    user = await _get_or_create_user(
-        crud, sam_create, global_session, uuid.UUID("35c4ed0a-1a09-4c16-b555-6d6ad639ac05")
-    )
-    yield user
-    if not pytestconfig.getoption("--keepdb"):
-        await crud._delete(id=user.id)
-        await global_session.commit()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def sam_create() -> UserCreate:
-    return UserCreate(
-        email=EmailStr("sam@mindlogger.com"),
-        password="Test1234!",
-        first_name="Sam",
-        last_name="Smith",
-    )
-
-
-@pytest.fixture
-async def applet_one_sam_respondent(session: AsyncSession, applet_one: AppletFull, tom: User, sam: User) -> AppletFull:
-    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(sam.id, Role.RESPONDENT)
-    return applet_one
-
-
-@pytest.fixture
-async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, sam: User) -> Subject:
-    applet_id = applet_one.id
-    user_id = sam.id
-    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
-    res = await session.execute(query, execution_options={"synchronize_session": False})
-    model = res.scalars().one()
-    return Subject.from_orm(model)
-
-
 @pytest.fixture
 async def bob_reviewer_in_applet_with_reviewable_activity(session, tom, bob, applet_with_reviewable_activity) -> User:
     tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(
