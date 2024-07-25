@@ -56,6 +56,7 @@ def note_url_path_data(answer: AnswerSchema) -> dict[str, Any]:
         "activity_id": answer.activity_history_id.split("_")[0],
     }
 
+
 @pytest.fixture(scope="session", autouse=True)
 async def sam(sam_create: UserCreate, global_session: AsyncSession, pytestconfig: Config) -> AsyncGenerator:
     crud = UsersCRUD(global_session)
@@ -67,6 +68,7 @@ async def sam(sam_create: UserCreate, global_session: AsyncSession, pytestconfig
         await crud._delete(id=user.id)
         await global_session.commit()
 
+
 @pytest.fixture(scope="session", autouse=True)
 def sam_create() -> UserCreate:
     return UserCreate(
@@ -76,10 +78,12 @@ def sam_create() -> UserCreate:
         last_name="Smith",
     )
 
+
 @pytest.fixture
 async def applet_one_sam_respondent(session: AsyncSession, applet_one: AppletFull, tom: User, sam: User) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(sam.id, Role.RESPONDENT)
     return applet_one
+
 
 @pytest.fixture
 async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, sam: User) -> Subject:
@@ -89,6 +93,7 @@ async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, 
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
     return Subject.from_orm(model)
+
 
 @pytest.fixture
 async def bob_reviewer_in_applet_with_reviewable_activity(session, tom, bob, applet_with_reviewable_activity) -> User:
@@ -1118,7 +1123,7 @@ class TestAnswerActivityItems(BaseTest):
                 "expiresAt": (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat(),
             },
         )
- 
+
         data.source_subject_id = source_subject.id
         data.target_subject_id = target_subject.id
         data.input_subject_id = applet_one_sam_subject.id
@@ -1133,7 +1138,7 @@ class TestAnswerActivityItems(BaseTest):
         # after submitting make sure that the relation have been deleted
         relation_exists = await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
         assert not relation_exists
-    
+
     async def test_answer_activity_items_create_permanent_relation_success(
         self,
         tom: User,
@@ -1172,23 +1177,17 @@ class TestAnswerActivityItems(BaseTest):
         )
         # create a relation between respondent and source
         await subject_service.create_relation(
-            relation="parent",
-            source_subject_id=applet_one_sam_subject.id,
-            subject_id=source_subject.id
+            relation="parent", source_subject_id=applet_one_sam_subject.id, subject_id=source_subject.id
         )
         # create a relation between respondent and target
         await subject_service.create_relation(
-            relation="parent",
-            source_subject_id=applet_one_sam_subject.id,
-            subject_id=target_subject.id
+            relation="parent", source_subject_id=applet_one_sam_subject.id, subject_id=target_subject.id
         )
 
         await subject_service.create_relation(
-            relation="parent",
-            source_subject_id=source_subject.id,
-            subject_id=target_subject.id
+            relation="parent", source_subject_id=source_subject.id, subject_id=target_subject.id
         )
- 
+
         data.source_subject_id = source_subject.id
         data.target_subject_id = target_subject.id
         data.input_subject_id = applet_one_sam_subject.id
@@ -1267,7 +1266,7 @@ class TestAnswerActivityItems(BaseTest):
                 "expiresAt": (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
             },
         )
- 
+
         data.source_subject_id = source_subject.id
         data.target_subject_id = target_subject.id
         data.input_subject_id = applet_one_sam_subject.id
