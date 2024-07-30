@@ -219,7 +219,15 @@ class AnswerService:
         if not roles:
             raise UserDoesNotHavePermissionError()
 
-    async def _validate_temp_relation_and_delete_it(
+    async def _validate_temp_take_now_relation_between_subjects(
+        self, source_subject_id: uuid.UUID, target_subject_id: uuid.UUID
+    ) -> None:
+        relation = await SubjectsCrud(self.session).get_relation(source_subject_id, target_subject_id)
+
+        if is_take_now_relation(relation) and not is_valid_take_now_relation(relation):
+            raise ValidationError("Invalid temp take now relation between subjects")
+
+    async def _delete_temp_take_now_relation_if_exists(
         self, respondent_subject: SubjectSchema, target_subject: SubjectSchema, source_subject: SubjectSchema
     ):
         relation_respondent_target = await SubjectsCrud(self.session).get_relation(
@@ -254,27 +262,14 @@ class AnswerService:
             Role.managers(),
         )
         if source_subject.id == target_subject.id:
-            if is_admin:
-                return Relation.self
-
-            raise ValidationError("Subject relation not found")
-
-        respondent_target_relation = await SubjectsCrud(self.session).get_relation(
-            respondent_subject.id, target_subject.id
-        )
-        if not respondent_target_relation or (
-            is_take_now_relation(respondent_target_relation)
-            and not is_valid_take_now_relation(respondent_target_relation)
-        ):
-            if is_admin:
-                return Relation.admin
-            raise ValidationError("Subject relation not found")
+            return Relation.self
 
         relation = await SubjectsCrud(self.session).get_relation(source_subject.id, target_subject.id)
         if not relation:
             if is_admin:
                 return Relation.admin
-            raise ValidationError("Subject relation not found")
+
+            return Relation.other
 
         return relation.relation
 
@@ -322,6 +317,10 @@ class AnswerService:
                 raise ValidationError(f"Subject {applet_answer.source_subject_id} not found")
         else:
             source_subject = respondent_subject
+
+        await self._validate_temp_take_now_relation_between_subjects(
+            respondent_subject.id, target_subject.id
+        )
 
         relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
         answer = await AnswersCRUD(self.answer_session).create(
@@ -373,7 +372,7 @@ class AnswerService:
         )
 
         if relation and relation != Relation.admin:
-            await self._validate_temp_relation_and_delete_it(respondent_subject, target_subject, source_subject)
+            await self._delete_temp_take_now_relation_if_exists(respondent_subject, target_subject, source_subject)
 
         return answer
 
