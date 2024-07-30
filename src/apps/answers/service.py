@@ -1537,9 +1537,11 @@ class AnswerService:
         )
         return result
 
-    async def is_answers_uploaded(self, applet_id: uuid.UUID, activity_id: str, created_at: int) -> bool:
+    async def is_answers_uploaded(
+        self, applet_id: uuid.UUID, activity_id: str, created_at: int, submit_id: uuid.UUID | None = None
+    ) -> bool:
         answers = await AnswersCRUD(self.answer_session).get_by_applet_activity_created_at(
-            applet_id, activity_id, created_at
+            applet_id, activity_id, created_at, submit_id
         )
         if not answers:
             return False

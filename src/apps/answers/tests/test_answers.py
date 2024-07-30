@@ -1758,7 +1758,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.CREATED
 
-    async def test_check_existance_answer_exists(self, client: TestClient, tom: User, answer: AnswerSchema):
+    async def test_check_existence_answer_exists(self, client: TestClient, tom: User, answer: AnswerSchema):
         client.login(tom)
         data = {
             "applet_id": str(answer.applet_id),
@@ -1777,7 +1777,7 @@ class TestAnswerActivityItems(BaseTest):
             ("created_at", datetime.datetime.utcnow().timestamp() * 1000),
         ),
     )
-    async def test_check_existance_answer_does_not_exist(
+    async def test_check_existence_answer_does_not_exist(
         self, client: TestClient, tom: User, answer: AnswerSchema, column: str, value: str
     ):
         client.login(tom)
@@ -1791,7 +1791,7 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         assert not resp.json()["result"]["exists"]
 
-    async def test_check_existance_answer_does_not_exist__not_answer_applet(
+    async def test_check_existence_answer_does_not_exist__not_answer_applet(
         self, client: TestClient, tom: User, answer: AnswerSchema, applet_one: AppletFull
     ):
         client.login(tom)
@@ -1800,6 +1800,24 @@ class TestAnswerActivityItems(BaseTest):
             "activity_id": answer.activity_history_id.split("_")[0],
             "created_at": answer.created_at.timestamp(),
         }
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert not resp.json()["result"]["exists"]
+
+    async def test_check_existence_answer_submit_same_time(self, client: TestClient, tom: User, answer: AnswerSchema):
+        client.login(tom)
+        data = {
+            "appletId": str(answer.applet_id),
+            "activityId": answer.activity_history_id.split("_")[0],
+            # On backend we devide on 1000
+            "createdAt": answer.created_at.timestamp() * 1000,
+            "submitId": str(answer.submit_id),
+        }
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["exists"]
+
+        data["submitId"] = str(uuid.uuid4())
         resp = await client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
         assert not resp.json()["result"]["exists"]
