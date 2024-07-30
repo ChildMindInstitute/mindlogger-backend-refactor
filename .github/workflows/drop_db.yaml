@@ -1,4 +1,4 @@
-name: Drop-RDS-Database
+name: Delete Preview Env Database
 
 on:
   # TODO Delete this after testing
@@ -7,22 +7,28 @@ on:
       db-name:
         required: true
         type: string
-        description: Database name to create
+        description: Database name to delete
   workflow_call:
     inputs:
       db-name:
         required: true
         type: string
-        description: Database name to create
+        description: Database name to drop
 
 jobs:
   drop_database:
     runs-on: [self-hosted]
 
     steps:
-    - name: Drop Database
-      run: |
-        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -c "DROP DATABASE ${{ inputs.db-name }}" postgres
+      - name: Set Owner
+        run: >-
+          PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}"
+          -c 'alter database ${{ inputs.db-name }} owner to "${{ secrets.DB_ROOT_USERNAME }}";' postgres
+      - name: Drop Database
+        run: |
+            PGPASSWORD="${{ secrets.DB_PASSWORD }}" dropdb -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -f ${{ inputs.db-name }}
+#      run: |
+#        PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h "${{ secrets.RDS_ENDPOINT }}" -U "${{ secrets.DB_ROOT_USERNAME }}" -c "DROP DATABASE ${{ inputs.db-name }}" postgres
 
 #  on-failure:
 #    runs-on: ubuntu-latest

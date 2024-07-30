@@ -133,10 +133,11 @@ async def applet_with_flow(
     data = applet_minimal_data.copy(deep=True)
     data.display_name = "applet with flow"
 
-    second_activity = data.activities[0].copy(deep=True)
-    second_activity.name = data.activities[0].name + " second"
-    second_activity.key = uuid.uuid4()
-    data.activities.append(second_activity)
+    for i in range(2, 4):
+        activity = data.activities[0].copy(deep=True)
+        activity.name = data.activities[0].name + f"#{i}"
+        activity.key = uuid.uuid4()
+        data.activities.append(activity)
 
     data.activity_flows = [
         FlowCreate(
@@ -150,6 +151,7 @@ async def applet_with_flow(
             items=[
                 FlowItemCreate(activity_key=data.activities[0].key),
                 FlowItemCreate(activity_key=data.activities[1].key),
+                FlowItemCreate(activity_key=data.activities[2].key),
             ],
         ),
     ]

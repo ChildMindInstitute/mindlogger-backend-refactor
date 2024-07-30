@@ -21,7 +21,7 @@ from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
-from apps.users.domain import PublicUser, User
+from apps.users.domain import PublicUser, User, UserDeviceCreate
 from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from config import settings
@@ -38,7 +38,9 @@ async def get_token(
         try:
             user: User = await AuthenticationService(session).authenticate_user(user_login_schema)
             if user_login_schema.device_id:
-                await UserDeviceService(session, user.id).add_device(user_login_schema.device_id)
+                await UserDeviceService(session, user.id).add_device(
+                    UserDeviceCreate(device_id=user_login_schema.device_id)
+                )
         except UserNotFound:
             raise InvalidCredentials(email=user_login_schema.email)
 

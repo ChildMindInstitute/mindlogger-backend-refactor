@@ -33,6 +33,7 @@ from apps.shared.domain import PublicModel
 
 class ResponseType(str, Enum):
     TEXT = "text"
+    PARAGRAPHTEXT = "paragraphText"
     SINGLESELECT = "singleSelect"
     MULTISELECT = "multiSelect"
     SLIDER = "slider"
@@ -53,11 +54,13 @@ class ResponseType(str, Enum):
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
     ABTRAILS = "ABTrails"
+    PHRASAL_TEMPLATE = "phrasalTemplate"
 
     @classmethod
     def get_non_response_types(cls):
         return (
             cls.TEXT,
+            cls.PARAGRAPHTEXT,
             cls.MESSAGE,
             cls.TIMERANGE,
             cls.GEOLOCATION,
@@ -103,6 +106,12 @@ class TextConfig(_ScreenConfig, PublicModel):
         return value
 
 
+class ParagraphTextConfig(_ScreenConfig, PublicModel):
+    type: Literal[ResponseType.PARAGRAPHTEXT] | None
+    max_response_length: PositiveInt = 1000
+    response_required: bool
+
+
 class _SelectionConfig(_ScreenConfig, PublicModel):
     randomize_options: bool
     timer: NonNegativeInt | None
@@ -112,6 +121,7 @@ class _SelectionConfig(_ScreenConfig, PublicModel):
     set_palette: bool
     add_tokens: bool | None
     additional_response_option: AdditionalResponseOption
+    portrait_layout: bool | None
 
 
 class SingleSelectionConfig(_SelectionConfig, PublicModel):
@@ -210,6 +220,11 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
     type: Literal[ResponseType.AUDIOPLAYER] | None
     additional_response_option: AdditionalResponseOption
     play_once: bool
+
+
+class PhrasalTemplateConfig(PublicModel):
+    type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
+    remove_back_button: bool
 
 
 class InputType(str, Enum):
@@ -391,6 +406,7 @@ class PerformanceTaskType(str, Enum):
 
 ResponseTypeConfig = (
     TextConfig
+    | ParagraphTextConfig
     | SingleSelectionConfig
     | MultiSelectionConfig
     | SliderConfig
@@ -411,4 +427,5 @@ ResponseTypeConfig = (
     | FlankerConfig
     | StabilityTrackerConfig
     | ABTrailsConfig
+    | PhrasalTemplateConfig
 )

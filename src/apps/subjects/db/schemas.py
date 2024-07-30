@@ -1,4 +1,5 @@
 from sqlalchemy import Column, ForeignKey, Index, String, Unicode
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
@@ -42,6 +43,7 @@ class SubjectRelationSchema(Base):
         index=True,
     )
     relation = Column(String(length=20), nullable=False)
+    meta = Column(JSONB(), nullable=True)
 
     __table_args__ = (
         Index(

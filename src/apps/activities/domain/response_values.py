@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Literal
 
 from pydantic import Field, NonNegativeInt, root_validator, validator
@@ -15,7 +16,9 @@ from apps.activities.domain.response_type_config import (
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
+    ParagraphTextConfig,
     PhotoConfig,
+    PhrasalTemplateConfig,
     ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
@@ -37,8 +40,27 @@ from apps.activities.errors import (
 from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
 
 
+class PhrasalTemplateFieldType(str, Enum):
+    SENTENCE = "sentence"
+    ITEM_RESPONSE = "item_response"
+    LINE_BREAK = "line_break"
+
+
+class PhrasalTemplateDisplayMode(str, Enum):
+    BULLET_LIST = "bullet_list"
+    SENTENCE = "sentence"
+    BULLET_LIST_OPTION_ROW = "bullet_list_option_row"
+    BULLET_LIST_ROW_OPTION = "bullet_list_text_row"
+    SENTENCE_OPTION_ROW = "sentence_option_row"
+    SENTENCE_ROW_OPTION = "sentence_row_option"
+
+
 class TextValues(PublicModel):
     type: Literal[ResponseType.TEXT] | None
+
+
+class ParagraphTextValues(PublicModel):
+    type: Literal[ResponseType.PARAGRAPHTEXT] | None
 
 
 class MessageValues(PublicModel):
@@ -329,8 +351,41 @@ class AudioPlayerValues(PublicModel):
     file: str | None = Field(default=None)
 
 
+class _PhrasalTemplateSentenceField(PublicModel):
+    type: PhrasalTemplateFieldType = PhrasalTemplateFieldType.SENTENCE
+    text: str
+
+
+class _PhrasalTemplateItemResponseField(PublicModel):
+    type: PhrasalTemplateFieldType = PhrasalTemplateFieldType.ITEM_RESPONSE
+    item_name: str
+    display_mode: PhrasalTemplateDisplayMode
+    item_index: int | None = None
+
+
+class _PhrasalTemplateLineBreakField(PublicModel):
+    type: PhrasalTemplateFieldType = PhrasalTemplateFieldType.LINE_BREAK
+
+
+PhrasalTemplateField = (
+    _PhrasalTemplateSentenceField | _PhrasalTemplateItemResponseField | _PhrasalTemplateLineBreakField
+)
+
+
+class PhrasalTemplatePhrase(PublicModel):
+    image: str | None = Field(default=None)
+    fields: list[PhrasalTemplateField]
+
+
+class PhrasalTemplateValues(PublicModel):
+    type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
+    card_title: str
+    phrases: list[PhrasalTemplatePhrase]
+
+
 ResponseValueConfigOptions = [
     TextValues,
+    ParagraphTextValues,
     SingleSelectionValues,
     MultiSelectionValues,
     SliderValues,
@@ -351,6 +406,7 @@ ResponseValueConfigOptions = [
     FlankerValues,
     StabilityTrackerValues,
     ABTrailsValues,
+    PhrasalTemplateValues,
 ]
 
 
@@ -366,6 +422,7 @@ ResponseValueConfig = (
     | AudioValues
     | AudioPlayerValues
     | TimeValues
+    | PhrasalTemplateValues
 )
 
 
@@ -399,6 +456,7 @@ def validate_none_option_flag(options):
 
 ResponseTypeConfigOptions = [
     TextConfig,
+    ParagraphTextConfig,
     SingleSelectionConfig,
     MultiSelectionConfig,
     SliderConfig,
@@ -419,6 +477,7 @@ ResponseTypeConfigOptions = [
     FlankerConfig,
     StabilityTrackerConfig,
     ABTrailsConfig,
+    PhrasalTemplateConfig,
 ]
 
 ResponseTypeValueConfig = {}

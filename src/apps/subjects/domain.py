@@ -84,3 +84,10 @@ class SubjectReadResponse(SubjectUpdateRequest):
     last_seen: datetime.datetime | None
     applet_id: uuid.UUID
     user_id: uuid.UUID | None
+
+
+class SubjectRelation(InternalModel):
+    source_subject_id: uuid.UUID
+    target_subject_id: uuid.UUID
+    relation: str
+    meta: dict | None

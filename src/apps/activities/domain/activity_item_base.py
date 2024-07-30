@@ -162,6 +162,7 @@ class BaseActivityItem(BaseModel):
             ResponseType.MULTISELECT,
             ResponseType.SLIDER,
             ResponseType.TEXT,
+            ResponseType.PARAGRAPHTEXT,
             ResponseType.TIME,
             ResponseType.TIMERANGE,
         ]:

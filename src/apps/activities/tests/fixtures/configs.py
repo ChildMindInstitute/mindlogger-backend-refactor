@@ -12,7 +12,9 @@ from apps.activities.domain.response_type_config import (
     MultiSelectionConfig,
     MultiSelectionRowsConfig,
     NumberSelectionConfig,
+    ParagraphTextConfig,
     PhotoConfig,
+    PhrasalTemplateConfig,
     ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
@@ -43,6 +45,7 @@ def single_select_config(default_config: DefaultConfig) -> SingleSelectionConfig
         randomize_options=False,
         add_scores=False,
         add_tokens=False,
+        portrait_layout=False,
         set_alerts=False,
         add_tooltip=False,
         set_palette=False,
@@ -130,6 +133,15 @@ def text_config(default_config: DefaultConfig) -> TextConfig:
 
 
 @pytest.fixture
+def paragraph_text_config(default_config: DefaultConfig) -> ParagraphTextConfig:
+    return ParagraphTextConfig(
+        **default_config.dict(),
+        response_required=False,
+        type=ResponseType.PARAGRAPHTEXT,
+    )
+
+
+@pytest.fixture
 def drawing_config(default_config: DefaultConfig) -> DrawingConfig:
     return DrawingConfig(remove_undo_button=False, **default_config.dict(), type=ResponseType.DRAWING)
 
@@ -162,3 +174,8 @@ def message_config(default_config: DefaultConfig) -> MessageConfig:
 @pytest.fixture
 def audio_player_config(default_config: DefaultConfig) -> AudioPlayerConfig:
     return AudioPlayerConfig(**default_config.dict(), play_once=False, type=ResponseType.AUDIOPLAYER)
+
+
+@pytest.fixture
+def phrasal_template_config(default_config: DefaultConfig) -> PhrasalTemplateConfig:
+    return PhrasalTemplateConfig(**default_config.dict(), type=ResponseType.PHRASAL_TEMPLATE)
