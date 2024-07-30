@@ -318,9 +318,7 @@ class AnswerService:
         else:
             source_subject = respondent_subject
 
-        await self._validate_temp_take_now_relation_between_subjects(
-            respondent_subject.id, target_subject.id
-        )
+        await self._validate_temp_take_now_relation_between_subjects(respondent_subject.id, target_subject.id)
 
         relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
         answer = await AnswersCRUD(self.answer_session).create(
