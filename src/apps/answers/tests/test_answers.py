@@ -1804,7 +1804,10 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         assert not resp.json()["result"]["exists"]
 
-    async def test_check_existence_answer_submit_same_time(self, client: TestClient, tom: User, answer: AnswerSchema):
+    @pytest.mark.usefixtures("applet_lucy_respondent")
+    async def test_check_existence_answer_submit_same_time(
+        self, client: TestClient, tom: User, answer: AnswerSchema, lucy: User
+    ):
         client.login(tom)
         data = {
             "appletId": str(answer.applet_id),
@@ -1818,6 +1821,12 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["result"]["exists"]
 
         data["submitId"] = str(uuid.uuid4())
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert not resp.json()["result"]["exists"]
+
+        del data["submitId"]
+        client.login(lucy)
         resp = await client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
         assert not resp.json()["result"]["exists"]
