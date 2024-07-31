@@ -225,14 +225,15 @@ class AnswerService:
         relation_respondent_source = await SubjectsCrud(self.session).get_relation(
             respondent_subject_id, source_subject_id
         )
-        relation_respondent_target = await SubjectsCrud(self.session).get_relation(
-            respondent_subject_id, target_subject_id
-        )
 
         if is_take_now_relation(relation_respondent_source) and not is_valid_take_now_relation(
             relation_respondent_source
         ):
             raise ValidationError("Invalid temp take now relation between subjects")
+
+        relation_respondent_target = await SubjectsCrud(self.session).get_relation(
+            respondent_subject_id, target_subject_id
+        )
 
         if is_take_now_relation(relation_respondent_target) and not is_valid_take_now_relation(
             relation_respondent_target
