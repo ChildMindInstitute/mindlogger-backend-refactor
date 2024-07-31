@@ -220,11 +220,23 @@ class AnswerService:
             raise UserDoesNotHavePermissionError()
 
     async def _validate_temp_take_now_relation_between_subjects(
-        self, source_subject_id: uuid.UUID, target_subject_id: uuid.UUID
+        self, respondent_subject_id: uuid.UUID, source_subject_id: uuid.UUID, target_subject_id: uuid.UUID
     ) -> None:
-        relation = await SubjectsCrud(self.session).get_relation(source_subject_id, target_subject_id)
+        relation_respondent_source = await SubjectsCrud(self.session).get_relation(
+            respondent_subject_id, source_subject_id
+        )
+        relation_respondent_target = await SubjectsCrud(self.session).get_relation(
+            respondent_subject_id, target_subject_id
+        )
 
-        if is_take_now_relation(relation) and not is_valid_take_now_relation(relation):
+        if is_take_now_relation(relation_respondent_source) and not is_valid_take_now_relation(
+            relation_respondent_source
+        ):
+            raise ValidationError("Invalid temp take now relation between subjects")
+        
+        if is_take_now_relation(relation_respondent_target) and not is_valid_take_now_relation(
+            relation_respondent_target
+        ):
             raise ValidationError("Invalid temp take now relation between subjects")
 
     async def _delete_temp_take_now_relation_if_exists(
@@ -318,7 +330,9 @@ class AnswerService:
         else:
             source_subject = respondent_subject
 
-        await self._validate_temp_take_now_relation_between_subjects(respondent_subject.id, target_subject.id)
+        await self._validate_temp_take_now_relation_between_subjects(
+            respondent_subject.id, source_subject.id, target_subject.id
+        )
 
         relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
         answer = await AnswersCRUD(self.answer_session).create(
@@ -369,8 +383,7 @@ class AnswerService:
             applet_answer.alerts,
         )
 
-        if relation and relation != Relation.admin:
-            await self._delete_temp_take_now_relation_if_exists(respondent_subject, target_subject, source_subject)
+        await self._delete_temp_take_now_relation_if_exists(respondent_subject, target_subject, source_subject)
 
         return answer
 

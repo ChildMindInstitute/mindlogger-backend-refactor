@@ -1135,7 +1135,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.answer_url, data=data)
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
-        # after submitting make sure that the relation have been deleted
+        # after submitting make sure that the relation has been deleted
         relation_exists = await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
         assert not relation_exists
 
@@ -1199,11 +1199,11 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.answer_url, data=data)
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
-        # after submitting make sure that the relation have been deleted
+        # after submitting make sure that the relation has not been deleted
         relation_exists = await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
         assert relation_exists
 
-    async def test_answer_activity_items_create_temporary_relation_fail(
+    async def test_answer_activity_items_create_expired_temporary_relation_fail(
         self,
         tom: User,
         answer_create_applet_one: AppletAnswerCreate,
