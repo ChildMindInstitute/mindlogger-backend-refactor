@@ -212,6 +212,10 @@ async def invitation_accept(
         info = await preprocess_arbitrary_url(applet_id=invitation.applet_id, session=session)
         async with asynccontextmanager(get_answer_session)(info) as answer_session:
             async with atomic(session):
+                # remove existing pin of this user
+                await UserAppletAccessService(session, user.id, existing_subject.applet_id).unpin(
+                    pinned_user_id=existing_subject.user_id, pinned_subject_id=None
+                )
                 # remove user_id from deleted subject, accept invitation
                 await service.update(existing_subject.id, user_id=None)
                 await InvitationsService(session, user).accept(key)

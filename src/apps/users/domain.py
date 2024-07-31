@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from pydantic import EmailStr, Field, root_validator, validator
@@ -6,6 +7,7 @@ from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import lowercase_email
 from apps.shared.hashing import hash_sha224
 from apps.shared.passlib import get_password_hash
+from apps.users.db.schemas import UserDeviceSchema
 from apps.users.errors import PasswordHasSpacesError
 
 __all__ = [
@@ -154,3 +156,39 @@ class PasswordRecoveryApproveRequest(InternalModel):
     email: EmailStr
     key: uuid.UUID
     password: str
+
+
+class AppInfoOS(PublicModel):
+    name: str
+    version: str
+
+
+class AppInfo(PublicModel):
+    os: AppInfoOS | None = None
+    app_version: str | None = None
+
+
+class UserDeviceCreate(AppInfo):
+    device_id: str
+
+
+class UserDevice(UserDeviceCreate):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+    @classmethod
+    def from_schema(cls, schema: UserDeviceSchema):
+        user_device = cls(
+            id=schema.id,
+            user_id=schema.user_id,
+            created_at=schema.created_at,
+            updated_at=schema.updated_at,
+            device_id=schema.device_id,
+            app_version=schema.app_version,
+        )
+        if schema.os_name:
+            user_device.os = AppInfoOS(name=schema.os_name, version=schema.os_version)
+
+        return user_device

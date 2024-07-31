@@ -35,7 +35,7 @@ from apps.schedule.errors import (
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
-from apps.users.domain import User
+from apps.users.domain import User, UserDeviceCreate
 from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.domain.constants import Role
@@ -51,7 +51,7 @@ def _get_number_default_events(applet: AppletFull) -> int:
 async def device_lucy(lucy: User, session: AsyncSession) -> str:
     device_id = "lucy device"
     service = UserDeviceService(session, lucy.id)
-    await service.add_device(device_id)
+    await service.add_device(UserDeviceCreate(device_id=device_id))
     return device_id
 
 
@@ -59,7 +59,7 @@ async def device_lucy(lucy: User, session: AsyncSession) -> str:
 async def device_user(user: User, session: AsyncSession) -> str:
     device_id = "user device"
     service = UserDeviceService(session, user.id)
-    await service.add_device(device_id)
+    await service.add_device(UserDeviceCreate(device_id=device_id))
     return device_id
 
 

@@ -86,6 +86,7 @@ from apps.mailing.services import MailingService
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError, ValidationError
 from apps.shared.query_params import QueryParams
+from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relation
 from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
@@ -147,6 +148,7 @@ class AnswerService:
         flow_history_id = pk(applet_answer.flow_id) if applet_answer.flow_id else None
 
         activity_indexes = set()  # same activity is allowed multiple times in flow
+        latest_activity_index = None
         if flow_history_id:
             flow_histories = await FlowsHistoryCRUD(self.session).load_full(
                 [pk(applet_answer.flow_id)], load_activities=False
@@ -159,6 +161,7 @@ class AnswerService:
             for i, item in enumerate(flow_history.items):
                 if item.activity_id == activity_history_id:
                     activity_indexes.add(i)
+            latest_activity_index = len(flow_history.items) - 1
             if not activity_indexes:
                 raise ValidationError("Activity not found in the flow")
 
@@ -167,7 +170,7 @@ class AnswerService:
             if not flow_history_id:
                 raise ValidationError("Submit id duplicate error")
 
-            existed_answer = existed_answers[0]
+            existed_answer = existed_answers[-1]
             if existed_answer.applet_id != applet_answer.applet_id:
                 raise WrongAnswerGroupAppletId()
             elif existed_answer.version != applet_answer.version:
@@ -175,16 +178,23 @@ class AnswerService:
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
 
-            # check uniqueness in flow submisssions
             if flow_history_id != existed_answer.flow_history_id:
                 raise ValidationError("Submit id duplicate error")
 
             # check current answer is provided in right order in the flow, so prev activities already answered
             prev_answers_count = len(existed_answers)
+            is_flow_completed = any(answer.is_flow_completed for answer in existed_answers)
+            if is_flow_completed:
+                raise ValidationError("Flow is already completed")
             if prev_answers_count not in activity_indexes:
-                if prev_answers_count > max(activity_indexes):
-                    raise ValidationError("Wrong activity order in the flow: previous activity answer missed")
-                raise ValidationError("Wrong activity order in the flow")
+                assert latest_activity_index is not None
+                # allow latest activity for flow autocompletion FE logic
+                if not (
+                    prev_answers_count < latest_activity_index + 1
+                    and max(activity_indexes) == latest_activity_index
+                    and applet_answer.is_flow_completed
+                ):
+                    raise ValidationError("Wrong activity order in the flow")
 
         elif flow_history_id and 0 not in activity_indexes:
             # check first flow answer
@@ -235,7 +245,7 @@ class AnswerService:
                 return Relation.admin
             raise ValidationError("Subject relation not found")
 
-        return relation
+        return relation.relation
 
     async def _create_answer(self, applet_answer: AppletAnswerCreate) -> AnswerSchema:
         assert self.user_id
@@ -342,6 +352,8 @@ class AnswerService:
     ):
         assert self.user_id
         subject_crud = SubjectsCrud(self.session)
+        target_subject = None
+        source_subject = None
 
         respondent_subject = await subject_crud.get_user_subject(user_id=self.user_id, applet_id=applet_id)
         if not respondent_subject or not respondent_subject.soft_exists():
@@ -367,6 +379,18 @@ class AnswerService:
             activity, flow = await asyncio.gather(activity_future, flow_future)
             if not activity and not flow:
                 raise MultiinformantAssessmentInvalidActivityOrFlow()
+
+        is_admin = await AppletAccessCRUD(self.session).has_any_roles_for_applet(
+            respondent_subject.applet_id,
+            respondent_subject.user_id,
+            [Role.OWNER, Role.MANAGER],
+        )
+
+        if not is_admin:
+            if not target_subject or not source_subject:
+                raise MultiinformantAssessmentNoAccessApplet("Missing target subject or source subject")
+            await self._validate_user_role_for_take_now(applet_id, respondent_subject)
+            await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
 
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)
@@ -569,6 +593,55 @@ class AnswerService:
         )
 
         return submission
+
+    async def _validate_user_role_for_take_now(self, applet_id: uuid.UUID, respondent: SubjectSchema) -> None:
+        is_user_role_restrictive = await UserAppletAccessCRUD(self.session).get_by_roles(
+            respondent.user_id,
+            applet_id,
+            # Define a list of roles prohibited from accessing the applet
+            [Role.EDITOR, Role.COORDINATOR, Role.REVIEWER],
+        )
+
+        if is_user_role_restrictive:
+            raise MultiinformantAssessmentNoAccessApplet(
+                "Access denied: User lacks the required ownership or managerial role for this operation."
+            )
+
+    async def _validate_relation_between_subjects_in_applet(
+        self, respondent_subject: SubjectSchema, target_subject: SubjectSchema, source_subject: SubjectSchema
+    ) -> None:
+        """
+        Validate the relationship between subjects in an applet.
+        - respondent_subject: the subject inputting the answers.
+        - target_subject: the subject about whom the responses are.
+        - source_subject: the subject providing the responses.
+
+        This method checks:
+        1. If there is a relationship between the logged-in user (respondent_subject) and target_subject.
+        2. If there is a relationship between the respondent_subject and the source_subject.
+        Raises:
+            MultiinformantAssessmentNoAccessApplet: If no valid relationship is found.
+        """
+
+        if respondent_subject.id != source_subject.id:
+            relation_respondent_source_subjects = await SubjectsCrud(self.session).get_relation(
+                respondent_subject.id, source_subject.id
+            )
+            if not relation_respondent_source_subjects or (
+                is_take_now_relation(relation_respondent_source_subjects)
+                and not is_valid_take_now_relation(relation_respondent_source_subjects)
+            ):
+                raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
+
+        if respondent_subject.id != target_subject.id:
+            relation_respondent_target_subjects = await SubjectsCrud(self.session).get_relation(
+                respondent_subject.id, target_subject.id
+            )
+            if not relation_respondent_target_subjects or (
+                is_take_now_relation(relation_respondent_target_subjects)
+                and not is_valid_take_now_relation(relation_respondent_target_subjects)
+            ):
+                raise MultiinformantAssessmentNoAccessApplet("Subject relation not found")
 
     async def _validate_answer_access(
         self,
@@ -956,8 +1029,10 @@ class AnswerService:
                 activity_hist_ids.add(answer.activity_history_id)
 
         activities_coro = ActivityHistoriesCRUD(self.session).get_by_history_ids(list(activity_hist_ids))
-        subject_map_coro = SubjectsCrud(self.session).get_by_ids(list(subject_ids))
-        user_subject_coro = SubjectsCrud(self.session).get_by_user_ids(applet_id, list(respondent_ids))
+        subject_map_coro = SubjectsCrud(self.session).get_by_ids(list(subject_ids), include_deleted=True)
+        user_subject_coro = SubjectsCrud(self.session).get_by_user_ids(
+            applet_id, list(respondent_ids), include_deleted=True
+        )
 
         coros_result = await asyncio.gather(
             activities_coro,
@@ -979,8 +1054,10 @@ class AnswerService:
         submissions: list[AppletSubmission] = []
 
         for answer in answers:
-            activity = activities_map[answer.activity_history_id]
-            respondent_subject = users_subjects_map[answer.respondent_id]
+            activity = activities_map.get(answer.activity_history_id)
+            respondent_subject = users_subjects_map.get(answer.respondent_id)
+            if activity is None or respondent_subject is None:
+                continue
             target_subject = subject_map.get(answer.target_subject_id) or respondent_subject
             source_subject = subject_map.get(answer.source_subject_id) or respondent_subject
 

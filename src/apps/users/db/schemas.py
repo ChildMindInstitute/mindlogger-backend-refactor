@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Unicode
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, Unicode, UniqueConstraint
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
@@ -30,5 +30,12 @@ class UserSchema(Base):
 class UserDeviceSchema(Base):
     __tablename__ = "user_devices"
 
+    uq_constraint = "uq_user_devices_user_device"
+
+    __table_args__ = (UniqueConstraint("user_id", "device_id", name=uq_constraint),)
+
     user_id = Column(ForeignKey("users.id"))
     device_id = Column(String(255))
+    os_name = Column(Text, nullable=True)
+    os_version = Column(Text, nullable=True)
+    app_version = Column(Text, nullable=True)

@@ -485,7 +485,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.where(AnswerSchema.submit_id == submit_id)
         if answer_id:
             query = query.where(AnswerSchema.id == answer_id)
-        query = query.order_by(AnswerSchema.created_at.asc())
+        query = query.order_by(AnswerSchema.created_at.asc(), AnswerSchema.updated_at)
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
