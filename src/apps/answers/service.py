@@ -233,7 +233,7 @@ class AnswerService:
             relation_respondent_source
         ):
             raise ValidationError("Invalid temp take now relation between subjects")
-        
+
         if is_take_now_relation(relation_respondent_target) and not is_valid_take_now_relation(
             relation_respondent_target
         ):
