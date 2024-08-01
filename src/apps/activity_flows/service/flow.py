@@ -41,6 +41,7 @@ class FlowService:
                     report_included_item_name=flow_create.report_included_item_name,  # noqa: E501
                     extra_fields=flow_create.extra_fields,
                     order=index + 1,
+                    auto_assign=flow_create.auto_assign,
                 )
             )
             for flow_item_create in flow_create.items:

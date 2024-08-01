@@ -21,6 +21,7 @@ class ActivityBase(BaseModel):
     report_included_item_name: str | None = None
     performance_task_type: PerformanceTaskType | None = None
     is_performance_task: bool = False
+    auto_assign: bool = True
 
     @validator("name")
     def validate_string(cls, value):
