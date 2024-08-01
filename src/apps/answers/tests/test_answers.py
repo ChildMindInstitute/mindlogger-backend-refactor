@@ -3,11 +3,12 @@ import http
 import re
 import uuid
 from collections import defaultdict
-from typing import Any, Tuple, cast
+from typing import Any, AsyncGenerator, Tuple, cast
 from unittest.mock import AsyncMock
 
 import pytest
-from pytest import FixtureRequest
+from pydantic import EmailStr
+from pytest import Config, FixtureRequest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +29,9 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User
+from apps.users.cruds.user import UsersCRUD
+from apps.users.domain import UserCreate
+from apps.users.tests.fixtures.users import _get_or_create_user
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
@@ -51,6 +55,44 @@ def note_url_path_data(answer: AnswerSchema) -> dict[str, Any]:
         "answer_id": answer.id,
         "activity_id": answer.activity_history_id.split("_")[0],
     }
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def sam(sam_create: UserCreate, global_session: AsyncSession, pytestconfig: Config) -> AsyncGenerator:
+    crud = UsersCRUD(global_session)
+    user = await _get_or_create_user(
+        crud, sam_create, global_session, uuid.UUID("35c4ed0a-1a09-4c16-b555-6d6ad639ac05")
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def sam_create() -> UserCreate:
+    return UserCreate(
+        email=EmailStr("sam@mindlogger.com"),
+        password="Test1234!",
+        first_name="Sam",
+        last_name="Smith",
+    )
+
+
+@pytest.fixture
+async def applet_one_sam_respondent(session: AsyncSession, applet_one: AppletFull, tom: User, sam: User) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(sam.id, Role.RESPONDENT)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, sam: User) -> Subject:
+    applet_id = applet_one.id
+    user_id = sam.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
 
 
 @pytest.fixture
@@ -1716,7 +1758,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.CREATED
 
-    async def test_check_existance_answer_exists(self, client: TestClient, tom: User, answer: AnswerSchema):
+    async def test_check_existence_answer_exists(self, client: TestClient, tom: User, answer: AnswerSchema):
         client.login(tom)
         data = {
             "applet_id": str(answer.applet_id),
@@ -1735,7 +1777,7 @@ class TestAnswerActivityItems(BaseTest):
             ("created_at", datetime.datetime.utcnow().timestamp() * 1000),
         ),
     )
-    async def test_check_existance_answer_does_not_exist(
+    async def test_check_existence_answer_does_not_exist(
         self, client: TestClient, tom: User, answer: AnswerSchema, column: str, value: str
     ):
         client.login(tom)
@@ -1749,7 +1791,7 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         assert not resp.json()["result"]["exists"]
 
-    async def test_check_existance_answer_does_not_exist__not_answer_applet(
+    async def test_check_existence_answer_does_not_exist__not_answer_applet(
         self, client: TestClient, tom: User, answer: AnswerSchema, applet_one: AppletFull
     ):
         client.login(tom)
@@ -1758,6 +1800,33 @@ class TestAnswerActivityItems(BaseTest):
             "activity_id": answer.activity_history_id.split("_")[0],
             "created_at": answer.created_at.timestamp(),
         }
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert not resp.json()["result"]["exists"]
+
+    @pytest.mark.usefixtures("applet_lucy_respondent")
+    async def test_check_existence_answer_submit_same_time(
+        self, client: TestClient, tom: User, answer: AnswerSchema, lucy: User
+    ):
+        client.login(tom)
+        data = {
+            "appletId": str(answer.applet_id),
+            "activityId": answer.activity_history_id.split("_")[0],
+            # On backend we devide on 1000
+            "createdAt": answer.created_at.timestamp() * 1000,
+            "submitId": str(answer.submit_id),
+        }
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert resp.json()["result"]["exists"]
+
+        data["submitId"] = str(uuid.uuid4())
+        resp = await client.post(self.check_existence_url, data=data)
+        assert resp.status_code == http.HTTPStatus.OK
+        assert not resp.json()["result"]["exists"]
+
+        del data["submitId"]
+        client.login(lucy)
         resp = await client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
         assert not resp.json()["result"]["exists"]
@@ -3221,6 +3290,175 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"]["valid"] is False
         assert response.json()["result"]["code"] == "invalid_target_subject"
 
+    async def test_validate_multiinformant_assessment_fail_temporary_relation_expired(
+        self,
+        client,
+        sam: User,
+        tom: User,
+        applet_one: AppletFull,
+        session: AsyncSession,
+        applet_one_sam_respondent,
+        applet_one_sam_subject,
+    ):
+        client.login(sam)
+
+        subject_service = SubjectsService(session, sam.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        # create a relation between respondent and source
+        await subject_service.create_relation(
+            relation="take-now",
+            source_subject_id=applet_one_sam_subject.id,
+            subject_id=source_subject.id,
+            meta={
+                "expiresAt": (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
+            },
+        )
+        # create a relation between respondent and target
+        await subject_service.create_relation(
+            relation="take-now",
+            source_subject_id=applet_one_sam_subject.id,
+            subject_id=target_subject.id,
+            meta={
+                "expiresAt": (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
+            },
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+
+        response = await client.get(url)
+
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is False
+        assert response.json()["result"]["code"] == "no_access_to_applet"
+
+    async def test_validate_multiinformant_assessment_success_temporary_relation_not_expired(
+        self,
+        client,
+        sam: User,
+        tom: User,
+        applet_one: AppletFull,
+        session: AsyncSession,
+        applet_one_sam_respondent,
+        applet_one_sam_subject,
+    ):
+        client.login(sam)
+
+        subject_service = SubjectsService(session, sam.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        # create a relation between respondent and source
+        await subject_service.create_relation(
+            relation="take-now",
+            source_subject_id=applet_one_sam_subject.id,
+            subject_id=source_subject.id,
+            meta={
+                "expiresAt": (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat(),
+            },
+        )
+        # create a relation between respondent and target
+        await subject_service.create_relation(
+            relation="take-now",
+            source_subject_id=applet_one_sam_subject.id,
+            subject_id=target_subject.id,
+            meta={
+                "expiresAt": (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat(),
+            },
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is True
+
+    async def test_validate_multiinformant_assessment_success_permanent_non_take_now(
+        self,
+        client,
+        sam: User,
+        tom: User,
+        applet_one: AppletFull,
+        session: AsyncSession,
+        applet_one_sam_respondent,
+        applet_one_sam_subject,
+    ):
+        client.login(sam)
+
+        subject_service = SubjectsService(session, sam.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        # create a relation between respondent and source
+        await subject_service.create_relation(
+            relation="father", source_subject_id=applet_one_sam_subject.id, subject_id=source_subject.id
+        )
+        # create a relation between respondent and target
+        await subject_service.create_relation(
+            relation="father", source_subject_id=applet_one_sam_subject.id, subject_id=target_subject.id
+        )
+
+        url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
+        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["valid"] is True
+
     async def test_validate_multiinformant_assessment_fail_no_permissions(
         self,
         client,
@@ -3233,9 +3471,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
-        assert response.json()["result"]["code"] == "no_access_to_applet"
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_validate_multiinformant_assessment_fail_no_activity(
         self, client, tom: User, applet_one: AppletFull, session: AsyncSession

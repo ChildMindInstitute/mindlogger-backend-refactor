@@ -52,6 +52,11 @@ class Answer(InternalModel):
     answer_item: AnswerItem
 
 
+class ParagraphText(InternalModel):
+    value: str
+    should_identify_response: bool = False
+
+
 class Text(InternalModel):
     value: str
     should_identify_response: bool = False
@@ -72,10 +77,11 @@ class Slider(InternalModel):
     additional_text: str | None
 
 
-AnswerTypes = SingleSelection | Slider | MultipleSelection | Text
+AnswerTypes = SingleSelection | Slider | MultipleSelection | Text | ParagraphText
 
 ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
     ResponseType.TEXT: Text,
+    ResponseType.PARAGRAPHTEXT: ParagraphText,
     ResponseType.SINGLESELECT: SingleSelection,
     ResponseType.MULTISELECT: MultipleSelection,
     ResponseType.SLIDER: Slider,
@@ -647,6 +653,7 @@ class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
     created_at: int
     activity_id: str
+    submit_id: uuid.UUID | None = None
 
     @validator("created_at")
     def convert_time_to_unix_timestamp(cls, value: int):

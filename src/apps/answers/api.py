@@ -51,7 +51,7 @@ from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
-from apps.shared.deps import get_i18n
+from apps.shared.deps import get_client_ip, get_i18n
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 from apps.shared.locale import I18N
@@ -65,6 +65,7 @@ from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_tz_utc_offset
+from infrastructure.logger import logger
 
 
 async def create_answer(
@@ -798,12 +799,18 @@ async def answers_existence_check(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
+    client_ip: str = Depends(get_client_ip),
 ) -> Response[AnswerExistenceResponse]:
     """Provides information whether the answer exists"""
     await AppletService(session, user.id).exist_by_id(schema.applet_id)
     await CheckAccessService(session, user.id).check_answer_check_access(schema.applet_id)
     is_exist = await AnswerService(session, user.id, answer_session).is_answers_uploaded(
-        schema.applet_id, schema.activity_id, schema.created_at
+        schema.applet_id, schema.activity_id, schema.created_at, schema.submit_id
+    )
+
+    logger.info(
+        f"check-existence: applet_id={schema.applet_id}, activity_id={schema.activity_id}, user_id={user.id}, "
+        f"created_at={schema.created_at}, exists={is_exist}, ip={client_ip}"
     )
 
     return Response[AnswerExistenceResponse](result=AnswerExistenceResponse(exists=is_exist))
@@ -839,8 +846,7 @@ async def applet_validate_multiinformant_assessment(
     code = None
     try:
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_manager_list_access(applet_id)
-
+        await CheckAccessService(session, user.id).check_answer_check_access(applet_id)
         await AnswerService(session, user.id, answer_session).validate_multiinformant_assessment(
             applet_id, **query_params.filters
         )

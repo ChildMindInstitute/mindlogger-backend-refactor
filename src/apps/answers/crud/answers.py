@@ -490,7 +490,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         return db_result.scalars().all()
 
     async def get_by_applet_activity_created_at(
-        self, applet_id: uuid.UUID, activity_id: str, created_at: int
+        self,
+        applet_id: uuid.UUID,
+        activity_id: str,
+        created_at: int,
+        user_id: uuid.UUID | None = None,
+        submit_id: uuid.UUID | None = None,
     ) -> list[AnswerSchema]:
         # TODO: investigate this later
         created_time = datetime.datetime.fromtimestamp(created_at)
@@ -498,6 +503,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.created_at == created_time)
         query = query.filter(AnswerSchema.activity_history_id.startswith(activity_id))
+        if submit_id:
+            query = query.where(AnswerSchema.submit_id == submit_id)
+        if user_id:
+            query = query.where(AnswerSchema.respondent_id == user_id)
+
         db_result = await self._execute(query)
         return db_result.scalars().all()
 

@@ -7,6 +7,7 @@ from apps.activities.domain.activity_item_base import BaseActivityItem
 from apps.activities.domain.custom_validation import (
     validate_item_flow,
     validate_performance_task_type,
+    validate_phrasal_templates,
     validate_score_and_sections,
     validate_subscales,
 )
@@ -54,3 +55,7 @@ class ActivityCreate(ActivityBase, InternalModel):
     @root_validator()
     def validate_performance_task_type(cls, values):
         return validate_performance_task_type(values)
+
+    @root_validator()
+    def validate_phrasal_templates(cls, values):
+        return validate_phrasal_templates(values)
