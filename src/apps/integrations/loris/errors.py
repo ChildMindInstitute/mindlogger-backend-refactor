@@ -21,3 +21,19 @@ class MlLorisUserRelationshipNotFoundError(NotFoundError):
 
 class MlLorisUserRelationshipError(InternalServerError):
     message = _("MlLorisUserRelationship service error.")
+
+
+class LorisBadCredentialsError(ValidationError):
+    message = _("Provided Loris authentication details (hostname, username or password) are invalid.")
+
+
+class LorisInvalidTokenError(ValidationError):
+    message = _(
+        "Received unexpected response from Loris Server."
+        " Either the resource is invalid or the received token during"
+        " login is wrong although the authentication was correct."
+    )
+
+
+class LorisInvalidHostname(ValidationError):
+    message = _("The specified hostname `{hostname}` is not a valid URL")

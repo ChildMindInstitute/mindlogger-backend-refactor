@@ -122,6 +122,10 @@ class UserAccessAlreadyExists(ValidationError):
     message = _("User Access already exists.")
 
 
+class IntgrationsCreateAccessDenied(ValidationError):
+    message = _("Access denied to create new integrations of type `{type}` on applet `{applet_id}`")
+
+
 class WorkspaceNotFoundError(Exception):
     ...
 

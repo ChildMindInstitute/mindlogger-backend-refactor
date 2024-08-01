@@ -7,6 +7,8 @@ from pydantic import BaseModel, Extra, Field
 from apps.activities.domain.conditional_logic import ConditionalLogic
 
 __all__ = [
+    "Item",
+    "Activitie",
     "UnencryptedAppletVersion",
     "UnencryptedApplet",
     "Consent",
@@ -17,6 +19,16 @@ __all__ = [
     "ConsentUpdateRequest",
     "PublicListOfVisits",
     "PublicListMultipleVisits",
+    "MlLorisUserRelationship",
+    "MlLorisUserRelationshipBase",
+    "MlLorisUserRelationshipCreate",
+    "UploadableAnswersResponse",
+    "VisitsForUsers",
+    "AnswerData",
+    "LorisIntegrationAlertMessages",
+    "UploadableAnswersData",
+    "UserVisits",
+    "ActivitiesAndVisits",
 ]
 
 from apps.shared.domain import Response
