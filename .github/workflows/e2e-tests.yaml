@@ -59,11 +59,12 @@ jobs:
 #          echo 'API_DOMAIN=${{ inputs.service-url }}' >> .env
       - name: Validate Environment
         run: cat .env
+
       - name: Get Secrets by Name and by ARN
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            taf/dev
+            ,taf/dev
           parse-json-secrets: true
 
       - name: configure aws credentials for test run

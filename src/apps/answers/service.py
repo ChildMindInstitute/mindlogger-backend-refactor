@@ -219,6 +219,47 @@ class AnswerService:
         if not roles:
             raise UserDoesNotHavePermissionError()
 
+    async def _validate_temp_take_now_relation_between_subjects(
+        self, respondent_subject_id: uuid.UUID, source_subject_id: uuid.UUID, target_subject_id: uuid.UUID
+    ) -> None:
+        relation_respondent_source = await SubjectsCrud(self.session).get_relation(
+            respondent_subject_id, source_subject_id
+        )
+
+        if is_take_now_relation(relation_respondent_source) and not is_valid_take_now_relation(
+            relation_respondent_source
+        ):
+            raise ValidationError("Invalid temp take now relation between subjects")
+
+        relation_respondent_target = await SubjectsCrud(self.session).get_relation(
+            respondent_subject_id, target_subject_id
+        )
+
+        if is_take_now_relation(relation_respondent_target) and not is_valid_take_now_relation(
+            relation_respondent_target
+        ):
+            raise ValidationError("Invalid temp take now relation between subjects")
+
+    async def _delete_temp_take_now_relation_if_exists(
+        self, respondent_subject: SubjectSchema, target_subject: SubjectSchema, source_subject: SubjectSchema
+    ):
+        relation_respondent_target = await SubjectsCrud(self.session).get_relation(
+            source_subject_id=respondent_subject.id, target_subject_id=target_subject.id
+        )
+        relation_respondent_source = await SubjectsCrud(self.session).get_relation(
+            source_subject_id=respondent_subject.id, target_subject_id=source_subject.id
+        )
+
+        if relation_respondent_target and (
+            is_take_now_relation(relation_respondent_target) and is_valid_take_now_relation(relation_respondent_target)
+        ):
+            await SubjectsCrud(self.session).delete_relation(target_subject.id, respondent_subject.id)
+
+        if relation_respondent_source and (
+            is_take_now_relation(relation_respondent_source) and is_valid_take_now_relation(relation_respondent_source)
+        ):
+            await SubjectsCrud(self.session).delete_relation(source_subject.id, respondent_subject.id)
+
     async def _get_answer_relation(
         self,
         respondent_subject: SubjectSchema,
@@ -234,16 +275,14 @@ class AnswerService:
             Role.managers(),
         )
         if source_subject.id == target_subject.id:
-            if is_admin:
-                return Relation.self
-
-            raise ValidationError("Subject relation not found")
+            return Relation.self
 
         relation = await SubjectsCrud(self.session).get_relation(source_subject.id, target_subject.id)
         if not relation:
             if is_admin:
                 return Relation.admin
-            raise ValidationError("Subject relation not found")
+
+            return Relation.other
 
         return relation.relation
 
@@ -291,6 +330,10 @@ class AnswerService:
                 raise ValidationError(f"Subject {applet_answer.source_subject_id} not found")
         else:
             source_subject = respondent_subject
+
+        await self._validate_temp_take_now_relation_between_subjects(
+            respondent_subject.id, source_subject.id, target_subject.id
+        )
 
         relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
         answer = await AnswersCRUD(self.answer_session).create(
@@ -340,6 +383,9 @@ class AnswerService:
             answer.version,
             applet_answer.alerts,
         )
+
+        await self._delete_temp_take_now_relation_if_exists(respondent_subject, target_subject, source_subject)
+
         return answer
 
     async def validate_multiinformant_assessment(
