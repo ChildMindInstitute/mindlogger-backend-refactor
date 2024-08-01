@@ -69,7 +69,7 @@ jobs:
       - name: configure aws credentials for test run
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::992382368072:role/cmiml-devops-oidc-github-role
+          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
           role-session-name: OIDC-GHA-session
           aws-region: ${{ env.AWS_REGION }}
 
