@@ -114,6 +114,7 @@ variables:
   CDN__BUCKET_ANSWER: cmiml-feature-answer
   CDN__BUCKET: cmiml-feature-media
   CDN__BUCKET_OPERATIONS: cmiml-feature-operations
+  CDN__DOMAIN: media-feature.cmiml.net
 #  CDN__STORAGE_ADDRESS: http://localhost:9000
   CDN__LEGACY_REGION: us-east-1
   CDN__LEGACY_BUCKET: mindlogger-media-staging
