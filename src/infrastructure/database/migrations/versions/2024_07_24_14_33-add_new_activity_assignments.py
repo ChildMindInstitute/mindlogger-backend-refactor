@@ -38,9 +38,8 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("activity_flow_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("activity_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("invitation_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("respondent_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("target_subject_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("respondent_subject_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("target_subject_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.ForeignKeyConstraint(
             ["activity_flow_id"],
             ["flows.id"],
@@ -54,15 +53,9 @@ def upgrade() -> None:
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
-            ["invitation_id"],
-            ["invitations.id"],
-            name=op.f("fk_activity_assignments_invitation_id_invitations"),
-            ondelete="RESTRICT",
-        ),
-        sa.ForeignKeyConstraint(
-            ["respondent_id"],
-            ["users.id"],
-            name=op.f("fk_activity_assignments_respondent_id_users"),
+            ["respondent_subject_id"],
+            ["subjects.id"],
+            name=op.f("fk_activity_assignments_respondent_subject_id_subjects"),
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(

@@ -16,8 +16,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
     async def already_exists(self, schema: ActivityAssigmentSchema) -> bool:
         query: Query = select(ActivityAssigmentSchema)
         query = query.where(ActivityAssigmentSchema.activity_id == schema.activity_id)
-        query = query.where(ActivityAssigmentSchema.respondent_id == schema.respondent_id)
-        query = query.where(ActivityAssigmentSchema.invitation_id == schema.invitation_id)
+        query = query.where(ActivityAssigmentSchema.respondent_subject_id == schema.respondent_subject_id)
         query = query.where(ActivityAssigmentSchema.target_subject_id == schema.target_subject_id)
         query = query.where(ActivityAssigmentSchema.activity_flow_id == schema.activity_flow_id)
         query = query.where(ActivityAssigmentSchema.soft_exists())
