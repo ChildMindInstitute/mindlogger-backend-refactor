@@ -2435,7 +2435,8 @@ class TestAnswerActivityItems(BaseTest):
         assert answer_data["flowHistoryId"] == str(tom_answer_activity_flow.flow_history_id)
 
         assert set(data["flow"].keys()) == {
-            "id", "activities", "createdAt", "description", "hideBadge", "idVersion", "isHidden", "isSingleReport",
+            "id", "activities", "autoAssign", "createdAt", "description", "hideBadge", "idVersion", "isHidden",
+            "isSingleReport",
             "name", "order", "reportIncludedActivityName", "reportIncludedItemName"
         }
         assert len(data["flow"]["activities"]) == len(applet_with_flow.activity_flows[0].items)
@@ -2572,8 +2573,8 @@ class TestAnswerActivityItems(BaseTest):
         flow_data = data["flows"][0]
         # fmt: off
         assert set(flow_data.keys()) == {
-            "id", "activities", "createdAt", "description", "hideBadge", "idVersion", "isHidden", "isSingleReport",
-            "name", "order", "reportIncludedActivityName", "reportIncludedItemName"
+            "id", "activities", "autoAssign", "createdAt", "description", "hideBadge", "idVersion", "isHidden",
+            "isSingleReport", "name", "order", "reportIncludedActivityName", "reportIncludedItemName"
         }
         assert len(flow_data["activities"]) == len(applet_with_flow.activity_flows[0].items)
         assert set(flow_data["activities"][0].keys()) == {
