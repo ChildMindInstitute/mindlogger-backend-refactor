@@ -80,10 +80,16 @@ class LorisIntegrationService:
         users_answers: dict = {}
         answer_versions: list = []
         for respondent in set(respondents):
+            answer_ids = [
+                activity.answer_id
+                for user in users_and_visits
+                if user.user_id == respondent
+                for activity in user.activities
+            ]
             try:
                 report_service = ReportServerService(self.session)
                 decrypted_answers_and_versions: tuple[dict, list] | None = await report_service.decrypt_data_for_loris(
-                    self.applet_id, respondent
+                    self.applet_id, respondent, answer_ids
                 )
                 if not decrypted_answers_and_versions:
                     await self._create_integration_alerts(
