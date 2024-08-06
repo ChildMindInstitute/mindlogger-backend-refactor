@@ -51,7 +51,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
             and_(
                 UserAppletAccessSchema.role == Role.OWNER,
                 UserAppletAccessSchema.applet_id == applet_id,
-                UserAppletAccessSchema.is_deleted.is_(False),
+                UserAppletAccessSchema.soft_exists(),
             )
         )
         query: Query = select(UserWorkspaceSchema)
