@@ -95,7 +95,7 @@ variables:
   MAILING__MAIL__PORT: 2465
 #  MAILING__MAIL_STARTTLS:
   MAILING__MAIL_SSL_TLS: True
-  MAILING__MAIL__FROM_EMAIL: "no-reply@mindlogger.org"
+  MAILING__MAIL__FROM_EMAIL: "noreply@cmiml.net"
   MAILING__MAIL__FROM_NAME: "Mindlogger"
   # Currently these settings are not used
   MAILING__USE_CREDENTIALS: True
