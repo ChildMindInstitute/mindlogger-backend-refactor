@@ -286,7 +286,7 @@ class AnswerService:
 
         if is_take_now_relation(relation) and is_valid_take_now_relation(relation):
             return Relation.other
- 
+
         return relation.relation
 
     async def _create_answer(self, applet_answer: AppletAnswerCreate) -> AnswerSchema:

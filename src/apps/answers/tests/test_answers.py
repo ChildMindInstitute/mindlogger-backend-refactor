@@ -1184,11 +1184,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
-        answers, _ = await AnswersCRUD(session).get_applet_answers(
-            applet_id=applet_one.id,
-            page=1,
-            limit=5
-        )
+        answers, _ = await AnswersCRUD(session).get_applet_answers(applet_id=applet_one.id, page=1, limit=5)
 
         assert answers[0].relation == Relation.other
 
@@ -1233,11 +1229,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
-        answers, _ = await AnswersCRUD(session).get_applet_answers(
-            applet_id=applet_one.id,
-            page=1,
-            limit=5
-        )
+        answers, _ = await AnswersCRUD(session).get_applet_answers(applet_id=applet_one.id, page=1, limit=5)
 
         assert answers[0].relation == "father"
 
