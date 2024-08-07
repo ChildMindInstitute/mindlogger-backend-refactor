@@ -47,21 +47,37 @@ jobs:
           ref: ${{ inputs.e2e-tests-ref }}
       - name: Install
         run: npm install
-      - name: Setup Environment
+      - name: Cleanup Environment
         run: |
           sed -i 's/API_DOMAIN.*//' .env ;
-          echo 'API_DOMAIN=${{ inputs.service-url }}' >> .env
+          sed -i 's/MAILINATOR_TOKEN.*//' .env ;
+          sed -i 's/REGULAR_DB_CONNECTION_STRING.*//' .env ;
+          sed -i 's/ARBITRARY_DB_CONNECTION_STRING.*//' .env ;
+          sed -i 's/REPORT_SERVER_IP.*//' .env ;
+          sed -i 's/WEB_APP_BASE_URL.*//' .env ;
+          sed -i 's/ADMIN_APP_BASE_URL.*//' .env ;
+#          echo 'API_DOMAIN=${{ inputs.service-url }}' >> .env
       - name: Validate Environment
         run: cat .env
+
       - name: Get Secrets by Name and by ARN
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            taf/dev
+            ,taf/dev
           parse-json-secrets: true
+
+      - name: configure aws credentials for test run
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
+          role-session-name: OIDC-GHA-session
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Run tests
         run: npm run test:api
+        env:
+          API_DOMAIN: ${{ inputs.service-url }}
         continue-on-error: true
         id: e2e-tests
 
