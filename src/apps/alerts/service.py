@@ -14,6 +14,10 @@ class AlertService:
         alerts = []
         schemas = await AlertCRUD(self.session).get_all_for_user(self.user_id, filters.page, filters.limit)
         for alert, applet_history, access, applet, workspace, subject in schemas:
+            if applet.integrations and "loris" in applet.integrations:
+                _secret_id = "Loris Integration"
+            else:
+                _secret_id = subject.secret_user_id if subject else "Anonymous"
             alerts.append(
                 Alert(
                     id=alert.id,
@@ -21,7 +25,7 @@ class AlertService:
                     applet_id=alert.applet_id,
                     applet_name=applet_history.display_name,
                     version=alert.version,
-                    secret_id=subject.secret_user_id if subject else "Anonymous",
+                    secret_id=_secret_id,
                     activity_id=alert.activity_id,
                     activity_item_id=alert.activity_item_id,
                     message=alert.alert_message,
