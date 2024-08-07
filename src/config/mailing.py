@@ -7,7 +7,7 @@ class MailSettings(BaseModel):
     server: str = "fcm.mail.server"
     port: int = 1025
     starttls: bool = False
-    ssl_tls: bool = True
+    ssl_tls: bool = False
     from_email: EmailStr = EmailStr("no-reply@mindlogger.org")
     from_name: str = "Mindlogger"
 
