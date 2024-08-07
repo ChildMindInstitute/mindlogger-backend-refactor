@@ -61,6 +61,7 @@ class ActivityService:
                     report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
                     extra_fields=activity_data.extra_fields,
                     performance_task_type=activity_data.performance_task_type,
+                    auto_assign=activity_data.auto_assign,
                 )
             )
 

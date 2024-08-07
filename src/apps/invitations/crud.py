@@ -272,6 +272,17 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         db_result: Result = await self._execute(query)
         return db_result.scalar_one_or_none()
 
+    async def get_pending_respondent_invitation_by_ids(
+        self, applet_id: uuid.UUID, invitation_ids: list[uuid.UUID]
+    ) -> list[InvitationRespondent]:
+        query: Query = select(InvitationSchema)
+        query = query.where(InvitationSchema.role == Role.RESPONDENT)
+        query = query.where(InvitationSchema.applet_id == applet_id)
+        query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
+        query = query.where(InvitationSchema.id.in_(invitation_ids))
+        db_result: Result = await self._execute(query)
+        return db_result.scalars().all()
+
     async def get_pending_subject_invitation(self, applet_id: uuid.UUID, subject_id: uuid.UUID) -> InvitationRespondent:
         query: Query = select(InvitationSchema).where(
             InvitationSchema.applet_id == applet_id,
