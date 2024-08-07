@@ -26,7 +26,6 @@ class IntegrationService:
 
     async def disable_integration(self, query: QueryParams):
         workspace = await UserWorkspaceCRUD(self.session).get_by_user_id(user_id_=self.user.id)
-        print(query)
         if query.filters:
             workspace.integrations = (
                 [
