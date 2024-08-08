@@ -98,7 +98,7 @@ jobs:
   publish-report:
     name: Publish Report
     needs: [ run-e2e-tests ]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -115,7 +115,7 @@ jobs:
 
       - name: Build test report
         uses: simple-elf/allure-report-action@master
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           # Where allure will write the generated report
           allure_report: e2e
@@ -130,14 +130,14 @@ jobs:
           keep_reports: 20
 
       - name: Deploy report to Github Pages
-        if: always()
+        if: ${{ !cancelled() }}
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: allure-history
 
       - name: Generate Report URL
-        if: always()
+        if: ${{ !cancelled() }}
         id: report-url
         uses: actions/github-script@v7
         with:
