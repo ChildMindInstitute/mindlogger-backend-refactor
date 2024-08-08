@@ -11,7 +11,8 @@ from apps.answers.deps.preprocess_arbitrary import preprocess_arbitrary_url
 from apps.applets.service import AppletService
 from infrastructure.database import atomic, session_manager
 
-APPLET_ID = uuid.UUID("62be21d7-cd01-4b9b-975a-39750d940f59")
+# APPLET_ID = uuid.UUID("62be21d7-cd01-4b9b-975a-39750d940f59")
+APPLET_ID = uuid.UUID("bfb5ca77-e43b-46fb-a702-4f6f667b4adc")  # for testing on uat
 INSERT_BATCH_SIZE = 1000
 
 
