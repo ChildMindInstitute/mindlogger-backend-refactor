@@ -144,7 +144,6 @@ secrets:
   MAILING__MAIL__PASSWORD:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:MAILING__MAIL__PASSWORD::"
 
-
 # You can override any of the values defined above by environment.
 #environments:
 #  test:
