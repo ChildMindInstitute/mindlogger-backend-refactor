@@ -281,6 +281,9 @@ class LorisIntegrationService:
         loris_answers: dict = {}
 
         for i in range(len(items)):
+            if not data[i]:
+                continue
+
             key: str = "__".join([activity_id, version, answer_id, items[i]["name"]])
             match items[i]["responseType"]:
                 case "singleSelect":
@@ -636,7 +639,7 @@ class LorisIntegrationService:
                             },
                             activity_id: answer_by_activity_id,
                         }
-                        logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)} ")
+                        # logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)} ")
                         async with session.put(
                             settings.loris.instrument_data_url.format(candidate_id, visit, activity_id),
                             data=json.dumps(_data_instrument_data),
