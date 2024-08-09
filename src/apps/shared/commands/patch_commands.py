@@ -109,6 +109,13 @@ PatchRegister.register(
     description="[Migration] Migrate missed secret ids",
 )
 
+PatchRegister.register(
+    file_path="m2_7366_set_auto_assign_to_true_for_activities_and_flows.py",
+    task_id="M2-7366",
+    description="Set auto_assign to true for existing activities and flows",
+    manage_session=False,
+)
+
 app = typer.Typer()
 
 
