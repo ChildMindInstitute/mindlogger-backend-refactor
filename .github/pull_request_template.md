@@ -6,6 +6,7 @@
 
 - [ ] Tests for the changes have been added
 - [ ] Related documentation has been added / updated
+- [ ] For new features, QA automation engineers have been tagged
 - [ ] OSS packages added to MindLogger [open source credit page](https://mindlogger.atlassian.net/jira/servicedesk/projects/MLA/knowledge/articles/340623543?spaceKey=MLA)
 
 ### 📝 Description
