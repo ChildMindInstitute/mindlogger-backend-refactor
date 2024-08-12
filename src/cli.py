@@ -5,7 +5,7 @@ dname = os.path.dirname(os.path.dirname(abspath))
 os.chdir(dname)
 
 
-import typer  # noqa: E402
+import typer  # noqa: E402,I001
 
 from apps.activities.commands import activities  # noqa: E402
 from apps.answers.commands import convert_assessments  # noqa: E402
