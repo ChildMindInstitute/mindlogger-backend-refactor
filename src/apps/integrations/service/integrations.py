@@ -1,5 +1,5 @@
 from apps.integrations.crud.integrations import IntegrationsCRUD
-from apps.integrations.db.schemas.schemas import IntegrationsSchema
+from apps.integrations.db.schemas import IntegrationsSchema
 from apps.integrations.domain import AvailableIntegrations, Integration
 from apps.integrations.errors import UniqueIntegrationError, UnsupportedIntegrationError
 from apps.integrations.loris.domain.loris_integrations import IntegrationsCreate
@@ -55,7 +55,7 @@ class IntegrationService:
             case AvailableIntegrations.LORIS:
                 return await self._create_integration(type, params)
             case _:
-                raise UnsupportedIntegrationError
+                raise UnsupportedIntegrationError(type=type)
 
     async def _create_integration(self, type, params) -> LorisProjects:
         token = await LorisClient.login_to_loris(params.hostname, params.username, params.password)

@@ -17,7 +17,7 @@ from apps.workspaces.errors import (
     AppletEditionAccessDenied,
     AppletInviteAccessDenied,
     AppletSetScheduleAccessDenied,
-    IntgrationsCreateAccessDenied,
+    IntegrationsCreateAccessDenied,
     PublishConcealAccessDenied,
     TransferOwnershipAccessDenied,
     WorkspaceAccessDenied,
@@ -254,4 +254,4 @@ class CheckAccessService:
         roles = await UserAppletAccessCRUD(self.session).get_user_roles_to_applet(self.user_id, applet_id)
 
         if not any([Role.MANAGER in roles, Role.OWNER in roles]):
-            raise IntgrationsCreateAccessDenied(type=type, applet_id=applet_id)
+            raise IntegrationsCreateAccessDenied(type=type, applet_id=applet_id)

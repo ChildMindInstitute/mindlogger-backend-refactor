@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from apps.integrations.crud import IntegrationsCRUD
+from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.integrations.db.schemas import IntegrationsSchema
 from apps.integrations.domain import AvailableIntegrations
 
