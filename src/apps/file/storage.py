@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.workspaces.constants import StorageType
+from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.service import workspace
 from config import settings
 from infrastructure.utility.cdn_arbitrary import ArbitraryAzureCdnClient, ArbitraryGCPCdnClient, ArbitraryS3CdnClient
@@ -23,6 +24,11 @@ async def select_storage(
         info = await service.get_arbitrary_info_by_owner_id_if_use_arbitrary(owner_id)
     else:
         raise ValueError("Applet id or owner id should be specified.")
+
+    return create_client(info)
+
+
+def create_client(info: WorkspaceArbitrary | None):
     if not info:
         config_cdn = CdnConfig(
             endpoint_url=settings.cdn.endpoint_url,

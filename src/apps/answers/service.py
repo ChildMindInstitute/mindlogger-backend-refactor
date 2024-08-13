@@ -16,6 +16,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
@@ -81,6 +82,7 @@ from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.applet_history import Version
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
+from apps.file.enums import FileScopeEnum
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
@@ -96,9 +98,10 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import WorkspaceRespondent
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from infrastructure.database import atomic
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
-from infrastructure.utility import RedisCache
+from infrastructure.utility import CDNClient, RedisCache
 
 
 class AnswerService:
@@ -2081,3 +2084,136 @@ class AnswerEncryptor:
             return decrypt_cbc(self.key, data, iv).decode("utf-8")
         except Exception as e:
             raise EncryptionError("Cannot decrypt answer data") from e
+
+
+class AnswerTransferService:
+    def __init__(
+        self,
+        session: AsyncSession,
+        answer_session_source: AsyncSession,
+        answer_session_target: AsyncSession,
+        storage_source: CDNClient,
+        storage_target: CDNClient,
+    ):
+        self.session = session
+        self.answer_session_source = answer_session_source
+        self.answer_session_target = answer_session_target
+        self.storage_source = storage_source
+        self.storage_target = storage_target
+
+    @classmethod
+    async def check_db(cls, session: AsyncSession):
+        try:
+            logger.info("Check database availability.")
+            await session.execute("select current_date")
+            logger.info("Database is available.")
+        except asyncio.TimeoutError:
+            raise Exception("Timeout error")
+        except Exception as e:
+            raise e
+
+    async def copy_answers(self, applet_id: uuid.UUID, *, insert_batch_size: int = 1000):
+        logger.info("Copy answers...")
+
+        source_repo = AnswersCRUD(self.answer_session_source)
+        target_repo = AnswersCRUD(self.answer_session_target)
+
+        data, total_target = await asyncio.gather(
+            # TODO paginate
+            source_repo.get_applet_answer_rows(applet_id),
+            target_repo.get_applet_answers_total(applet_id),
+        )
+
+        logger.info(f"Total records in source DB: {len(data)}")
+        logger.info(f"Total records in target DB: {total_target}")
+
+        for i in range(0, len(data), insert_batch_size):
+            values = [dict(row) for row in data[i : i + insert_batch_size]]
+            await target_repo.insert_answers_batch(values)
+
+        total_target = await target_repo.get_applet_answers_total(applet_id)
+        logger.info(f"Total records in target DB: {total_target}")
+
+        logger.info("Copy answers - DONE")
+
+    async def copy_answer_items(self, applet_id: uuid.UUID, insert_batch_size: int = 1000):
+        logger.info("Copy answer items...")
+
+        source_repo = AnswersCRUD(self.answer_session_source)
+        target_repo = AnswersCRUD(self.answer_session_target)
+
+        data, total_target = await asyncio.gather(
+            # TODO paginate
+            source_repo.get_applet_answer_item_rows(applet_id),
+            target_repo.get_applet_answer_items_total(applet_id),
+        )
+
+        logger.info(f"Total records in source DB: {len(data)}")
+        logger.info(f"Total records in target DB: {total_target}")
+
+        for i in range(0, len(data), insert_batch_size):
+            values = [dict(row) for row in data[i : i + insert_batch_size]]
+            await target_repo.insert_answer_items_batch(values)
+
+        total_target = await target_repo.get_applet_answer_items_total(applet_id)
+        logger.info(f"Total records in target DB: {total_target}")
+
+        logger.info("Copy answer items - DONE")
+
+    async def _get_applet_files_list(self, session, storage, applet_id: uuid.UUID):
+        tasks = []
+        files = []
+        user_ids = await AnswersCRUD(session).get_answers_respondents(applet_id)
+
+        # concurrently get file list for each user/applet
+        for user_id in user_ids:
+            unique = f"{user_id}/{applet_id}"
+            prefix = storage.generate_key(FileScopeEnum.ANSWER, unique, "")
+            task = asyncio.create_task(storage.list_object(prefix))
+            tasks.append(task)
+
+        # collect total objs
+        for _task in asyncio.as_completed(tasks):
+            _files = await _task
+            files.extend(_files)
+
+        return files
+
+    async def copy_applet_files(self, applet_id: uuid.UUID):
+        logger.info("Copy applet files...")
+        files = await self._get_applet_files_list(self.answer_session_source, self.storage_source, applet_id)
+
+        tasks = []
+        # copy files concurrently
+        for file in files:
+            task = asyncio.create_task(self.storage_target.copy(file["Key"], self.storage_source))
+            tasks.append(task)
+
+        total = len(tasks)
+        logger.info(f"Total files: {total}")
+        i = 0
+        for _task in asyncio.as_completed(tasks):
+            i += 1
+            await _task
+            logger.info(f"Processed [{i} / {total}] {int(i / total * 100)}%")
+        logger.info("Copy applet files done")
+
+        size_source = sum([f["Size"] for f in files])
+        logger.info(f"Total size on source: {size_source}")
+
+        files_target = await self._get_applet_files_list(self.answer_session_target, self.storage_target, applet_id)
+        size_target = sum([f["Size"] for f in files_target])
+        logger.info(f"Total size on target: {size_target}")
+        if size_source != size_target:
+            logger.error(f"!!!Applet '{applet_id}' size doesn't match!!!")
+
+    async def transfer(self, applet_id: uuid.UUID):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        logger.info(f"Move answers for applet '{applet.display_name}'({applet.id})")
+
+        async with atomic(self.answer_session_target):
+            await self.copy_answers(applet.id)
+        async with atomic(self.answer_session_target):
+            await self.copy_answer_items(applet.id)
+
+        await self.copy_applet_files(applet_id)
