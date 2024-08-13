@@ -251,7 +251,8 @@ class CheckAccessService:
         await self._check_applet_roles(applet_id, [Role.OWNER])
 
     async def check_integrations_create_access(self, applet_id: uuid.UUID, type: str):
-        roles = await UserAppletAccessCRUD(self.session).get_user_roles_to_applet(self.user_id, applet_id)
-
-        if not any([Role.MANAGER in roles, Role.OWNER in roles]):
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
+            self.user_id, applet_id, [Role.MANAGER, Role.OWNER]
+        )
+        if not access:
             raise IntegrationsCreateAccessDenied(type=type, applet_id=applet_id)
