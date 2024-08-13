@@ -1,5 +1,3 @@
-# patches/m2_7285_set_auto_assign.py
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # SQL Queries to update existing records
