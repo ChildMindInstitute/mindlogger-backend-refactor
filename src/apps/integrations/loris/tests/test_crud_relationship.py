@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from apps.integrations.loris.crud.user_relationship import MlLorisUserRelationshipCRUD
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
-from apps.integrations.loris.domain import MlLorisUserRelationship
+from apps.integrations.loris.domain.domain import MlLorisUserRelationship
 from apps.integrations.loris.errors import MlLorisUserRelationshipError
 
 

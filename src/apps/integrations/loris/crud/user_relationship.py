@@ -6,7 +6,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.sql import select
 
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
-from apps.integrations.loris.domain import MlLorisUserRelationship
+from apps.integrations.loris.domain.domain import MlLorisUserRelationship
 from apps.integrations.loris.errors import MlLorisUserRelationshipError
 from infrastructure.database import BaseCRUD
 

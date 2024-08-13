@@ -5,7 +5,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.sql import select
 
 from apps.integrations.loris.db.schemas import ConsentSchema
-from apps.integrations.loris.domain import Consent, ConsentCreate, ConsentUpdate
+from apps.integrations.loris.domain.domain import Consent, ConsentCreate, ConsentUpdate
 from apps.integrations.loris.errors import ConsentError, ConsentNotFoundError
 from infrastructure.database import BaseCRUD
 
