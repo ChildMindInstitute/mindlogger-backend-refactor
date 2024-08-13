@@ -36,8 +36,8 @@ Resources:
               - "s3:ListBucketMultipartUploads"
             Resource:
               - "arn:aws:s3:::cmiml-feature-media/*"
-              - "arn:aws:s3:::cmiml-dev-answer/*"
-              - "arn:aws:s3:::cmiml-dev-operations/*"
+              - "arn:aws:s3:::cmiml-feature-answer/*"
+              - "arn:aws:s3:::cmiml-feature-operations/*"
 
 
 
