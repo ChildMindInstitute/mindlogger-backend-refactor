@@ -64,9 +64,7 @@ class LorisIntegrationService:
         return self._answer_session if self._answer_session else self.session
 
     async def integration(self, users_and_visits):
-        respondents = await AnswersCRUD(self.session).get_respondents_by_applet_id_and_readiness_to_share_data(
-            applet_id=self.applet_id
-        )
+        respondents: list = [user.user_id for user in users_and_visits]
         if not respondents:
             await self._create_integration_alerts(
                 self.applet_id, message=LorisIntegrationAlertMessages.NO_RESPONDENT.value
