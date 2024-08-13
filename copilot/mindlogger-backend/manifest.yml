@@ -60,7 +60,7 @@ storage:
 
 variables:
   # Python configurations
-  ENV: testing
+#  ENV: testing
 
   # PostgreSQL configurations
   DATABASE__HOST: cmiml-feature-db.cjg844g2kgxp.us-east-1.rds.amazonaws.com
