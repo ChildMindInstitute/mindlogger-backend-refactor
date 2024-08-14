@@ -22,7 +22,7 @@ class LorisClient:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             try:
                 async with session.post(
-                    f"{hostname}/api/v0.0.3/login",
+                    f"{hostname}/login",
                     data=json.dumps(loris_login_data),
                 ) as resp:
                     if resp.status == 200:
@@ -47,7 +47,7 @@ class LorisClient:
         }
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            url = f"{hostname}/api/v0.0.3/projects"
+            url = f"{hostname}/projects"
             async with session.get(
                 url=url,
                 headers=headers,
