@@ -13,6 +13,7 @@ class FrontendUrlsSettings(BaseModel):
     private_link: str = "join"
     transfer_link: str = "transferOwnership"
     create_account: str = "auth/signup"
+    applet_home: str = "protected/applets"
 
 
 class ServiceUrlsSettings(BaseModel):

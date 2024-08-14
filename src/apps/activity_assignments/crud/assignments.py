@@ -23,3 +23,10 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         query = query.exists()
         db_result = await self._execute(select(query))
         return db_result.scalars().first() or False
+
+    async def get_by_respondent_subject_id(self, respondent_subject_id) -> list[ActivityAssigmentSchema]:
+        query: Query = select(ActivityAssigmentSchema)
+        query = query.where(ActivityAssigmentSchema.respondent_subject_id == respondent_subject_id)
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
