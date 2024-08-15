@@ -40,6 +40,7 @@ class Activity(PublicModel):
     performance_task_type: PerformanceTaskType | None = None
     report_included_item_name: str | None = None
     is_performance_task: bool = False
+    auto_assign: bool | None = True
 
 
 class ActivityFlowItem(PublicModel):

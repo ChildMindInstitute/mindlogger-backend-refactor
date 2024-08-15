@@ -148,6 +148,7 @@ class ActivityService:
                     order=index + 1,
                     report_included_item_name=(activity_data.report_included_item_name),
                     performance_task_type=activity_data.performance_task_type,
+                    auto_assign=activity_data.auto_assign,
                 )
             )
 

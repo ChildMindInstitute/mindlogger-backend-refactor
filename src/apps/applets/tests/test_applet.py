@@ -84,6 +84,34 @@ class TestApplet:
         assert result["reportPublicKey"] == applet_minimal_data.report_public_key
         assert result["reportRecipients"] == applet_minimal_data.report_recipients
 
+    async def test_create_applet_with_activities_auto_assignment(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
+    ):
+        client.login(tom)
+        applet_minimal_data.activities[0].auto_assign = True
+        response = await client.post(
+            self.applet_create_url.format(owner_id=tom.id),
+            data=applet_minimal_data,
+        )
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+        result = response.json()["result"]
+        assert len(result["activities"]) == 1
+        assert result["activities"][0]["autoAssign"] is True
+
+    async def test_create_applet_with_activities_manual_assignment(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
+    ):
+        client.login(tom)
+        applet_minimal_data.activities[0].auto_assign = False
+        response = await client.post(
+            self.applet_create_url.format(owner_id=tom.id),
+            data=applet_minimal_data,
+        )
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+        result = response.json()["result"]
+        assert len(result["activities"]) == 1
+        assert result["activities"][0]["autoAssign"] is False
+
     async def test_creating_applet_failed_by_duplicate_activity_name(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
@@ -139,6 +167,34 @@ class TestApplet:
         assert len(fcm_client.notifications[device_tom]) == 1
         notification = json.loads(fcm_client.notifications[device_tom][0])
         assert notification["title"] == "Applet is updated."
+
+    async def test_update_applet_change_auto_assign(self, client: TestClient, tom: User, applet_one: AppletFull):
+        client.login(tom)
+        assert applet_one.activities[0].auto_assign is True
+        update_data = AppletUpdate(**applet_one.dict())
+        update_data.activities[0].auto_assign = False
+
+        response = await client.put(
+            self.applet_detail_url.format(pk=applet_one.id),
+            data=update_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        result = response.json()["result"]
+        assert result["activities"][0]["autoAssign"] is False
+
+    async def test_update_applet_keep_auto_assign(self, client: TestClient, tom: User, applet_one: AppletFull):
+        client.login(tom)
+        assert applet_one.activities[0].auto_assign is True
+        update_data = AppletUpdate(**applet_one.dict())
+        update_data.activities[0].auto_assign = None
+
+        response = await client.put(
+            self.applet_detail_url.format(pk=applet_one.id),
+            data=update_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        result = response.json()["result"]
+        assert result["activities"][0]["autoAssign"] is True
 
     async def test_update_applet__add_stream_settings(self, client: TestClient, applet_one: AppletFull, tom: User):
         client.login(tom)
