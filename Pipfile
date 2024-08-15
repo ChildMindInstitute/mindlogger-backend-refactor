@@ -22,7 +22,7 @@ pydantic = {extras = ["email"], version = "==1.10.15"}
 python-jose = {version = "~=3.3.0", extras = ["cryptography"]}
 python-multipart = "~=0.0.5"
 sentry-sdk = "~=2.3"
-sqlalchemy = { extras = ["asyncio"], version = "==1.4.53" }
+sqlalchemy = { extras = ["asyncio"], version = "==2.0.32" }
 uvicorn = {extras = ["standard"], version = "==0.29.0"}
 taskiq = {extras = ["reload"], version = "==0.9.1"}
 aiohttp = "==3.9.5"
