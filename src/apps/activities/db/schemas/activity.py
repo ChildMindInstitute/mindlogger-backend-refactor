@@ -25,6 +25,7 @@ class _BaseActivitySchema:
     report_included_item_name = Column(Text(), nullable=True)
     extra_fields = Column(JSONB(), default=dict, server_default=text("'{}'::jsonb"))
     performance_task_type = Column(String(255), nullable=True)
+    auto_assign = Column(Boolean(), default=True)
 
     @hybrid_property
     def is_performance_task(self) -> bool:
