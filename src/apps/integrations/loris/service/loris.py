@@ -23,7 +23,7 @@ from apps.answers.service import ReportServerService
 from apps.applets.crud.applets_history import AppletHistoriesCRUD
 from apps.integrations.loris.crud.user_relationship import MlLorisUserRelationshipCRUD
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
-from apps.integrations.loris.domain import (
+from apps.integrations.loris.domain.domain import (
     AnswerData,
     LorisIntegrationAlertMessages,
     MlLorisUserRelationship,

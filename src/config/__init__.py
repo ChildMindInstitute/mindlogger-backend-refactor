@@ -129,5 +129,6 @@ settings = Settings(
         "authentication",
         "job",
         "subjects",
+        "integrations",
     ],
 )

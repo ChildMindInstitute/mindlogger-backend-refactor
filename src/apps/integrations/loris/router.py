@@ -8,7 +8,7 @@ from apps.integrations.loris.api.consent import (
     consent_get_by_user_id,
     consent_update,
 )
-from apps.integrations.loris.domain import PublicConsent, PublicListOfVisits, UploadableAnswersResponse
+from apps.integrations.loris.domain.domain import PublicConsent, PublicListOfVisits, UploadableAnswersResponse
 from apps.shared.domain import Response
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,

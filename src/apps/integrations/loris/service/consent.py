@@ -1,7 +1,7 @@
 import uuid
 
 from apps.integrations.loris.crud.consent import ConsentCRUD
-from apps.integrations.loris.domain import (
+from apps.integrations.loris.domain.domain import (
     Consent,
     ConsentCreate,
     ConsentRequest,

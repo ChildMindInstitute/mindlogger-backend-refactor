@@ -6,7 +6,7 @@ from starlette.responses import Response as HTTPResponse
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
 from apps.authentication.deps import get_current_user
-from apps.integrations.loris.domain import PublicListOfVisits, UploadableAnswersResponse, VisitsForUsers
+from apps.integrations.loris.domain.domain import PublicListOfVisits, UploadableAnswersResponse, VisitsForUsers
 from apps.integrations.loris.service.loris import LorisIntegrationService
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService

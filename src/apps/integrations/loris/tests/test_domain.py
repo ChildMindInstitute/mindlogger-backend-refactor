@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from apps.integrations.loris.domain import (
+from apps.integrations.loris.domain.domain import (
     Activitie,
     Consent,
     ConsentCreate,
