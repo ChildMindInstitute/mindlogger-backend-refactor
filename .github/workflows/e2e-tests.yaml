@@ -75,7 +75,7 @@ jobs:
         run: |
           echo "::add-mask::$REGULAR_DB_CONNECTION_STRING"
           echo "::add-mask::$DB_HOST"
-          echo "REGULAR_DB_CONNECTION_STRING=postgres://${{ secrets.DB_BACKEND_USERNAME }}:${{ secrets.DB_BACKEND_PASSWORD }}@${DB_HOST}"5432/${{ input.db-name }}" >> "$GITHUB_ENV"
+          echo "REGULAR_DB_CONNECTION_STRING=postgres://${{ secrets.DB_BACKEND_USERNAME }}:${{ secrets.DB_BACKEND_PASSWORD }}@${DB_HOST}"5432/${{ inputs.db-name }}" >> "$GITHUB_ENV"
       - name: configure aws credentials for test run
         uses: aws-actions/configure-aws-credentials@v4
         with:
