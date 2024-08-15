@@ -12,6 +12,10 @@ on:
         description: Git ref to checkout from TAF repo
         required: false
         default: dev
+      db-name:
+        required: true
+        type: string
+        description: Database name to connect to
     outputs:
       report-url:
         description: URL of the test report
@@ -47,26 +51,31 @@ jobs:
           ref: ${{ inputs.e2e-tests-ref }}
       - name: Install
         run: npm install
-      - name: Cleanup Environment
-        run: |
-          sed -i 's/API_DOMAIN.*//' .env ;
-          sed -i 's/MAILINATOR_TOKEN.*//' .env ;
-          sed -i 's/REGULAR_DB_CONNECTION_STRING.*//' .env ;
-          sed -i 's/ARBITRARY_DB_CONNECTION_STRING.*//' .env ;
-          sed -i 's/REPORT_SERVER_IP.*//' .env ;
-          sed -i 's/WEB_APP_BASE_URL.*//' .env ;
-          sed -i 's/ADMIN_APP_BASE_URL.*//' .env ;
-#          echo 'API_DOMAIN=${{ inputs.service-url }}' >> .env
-      - name: Validate Environment
-        run: cat .env
+#      - name: Cleanup Environment
+#        run: |
+#          sed -i 's/API_DOMAIN.*//' .env ;
+#          sed -i 's/MAILINATOR_TOKEN.*//' .env ;
+#          sed -i 's/REGULAR_DB_CONNECTION_STRING.*//' .env ;
+#          sed -i 's/ARBITRARY_DB_CONNECTION_STRING.*//' .env ;
+#          sed -i 's/REPORT_SERVER_IP.*//' .env ;
+#          sed -i 's/WEB_APP_BASE_URL.*//' .env ;
+#          sed -i 's/ADMIN_APP_BASE_URL.*//' .env ;
+##          echo 'API_DOMAIN=${{ inputs.service-url }}' >> .env
+#      - name: Validate Environment
+#        run: cat .env
 
       - name: Get Secrets by Name and by ARN
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
-            ,taf/dev
+            ,taf/feature
           parse-json-secrets: true
 
+      - name: Build connection string
+        run: |
+          echo "::add-mask::$REGULAR_DB_CONNECTION_STRING"
+          echo "::add-mask::$DB_HOST"
+          echo "REGULAR_DB_CONNECTION_STRING=postgres://${{ secrets.DB_BACKEND_USERNAME }}:${{ secrets.DB_BACKEND_PASSWORD }}@${DB_HOST}"5432/${{ input.db-name }}" >> "$GITHUB_ENV"
       - name: configure aws credentials for test run
         uses: aws-actions/configure-aws-credentials@v4
         with:

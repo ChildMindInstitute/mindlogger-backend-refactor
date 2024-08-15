@@ -124,6 +124,7 @@ jobs:
     secrets: inherit
     with:
       service-url: ${{ needs.create-preview-env.outputs.service-url }}
+      db-name: "mindlogger_backend_pr_${{ github.event.number }}"
 
   comment-e2e-tests:
     name: Comment on test outcome
