@@ -144,7 +144,7 @@ secrets:
   MAILING__MAIL__PASSWORD:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:MAILING__MAIL__PASSWORD::"
   LOGS__ACCESS:
-    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:LOGS_ACCESS::"
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:LOGS__ACCESS::"
 
 # You can override any of the values defined above by environment.
 #environments:
