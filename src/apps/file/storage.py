@@ -38,7 +38,7 @@ def create_client(info: WorkspaceArbitrary | None):
             access_key=settings.cdn.access_key,
             secret_key=settings.cdn.secret_key,
         )
-        return CDNClient(config_cdn, env=settings.env)
+        return CDNClient(config_cdn, env=settings.env, max_concurrent_tasks=settings.cdn.max_concurrent_tasks)
 
     bucket_type = info.storage_type.lower()
     arbitrary_cdn_config = CdnConfig(
@@ -53,13 +53,17 @@ def create_client(info: WorkspaceArbitrary | None):
             return ArbitraryAzureCdnClient(
                 sec_key=info.storage_secret_key,
                 bucket=str(info.storage_bucket),
+                max_concurrent_tasks=settings.cdn.max_concurrent_tasks,
             )
         case StorageType.GCP:
             return ArbitraryGCPCdnClient(
                 arbitrary_cdn_config,
                 endpoint_url=settings.cdn.gcp_endpoint_url,
                 env=settings.env,
+                max_concurrent_tasks=settings.cdn.max_concurrent_tasks,
             )
         case _:
             # default is aws (logic from legacy app)
-            return ArbitraryS3CdnClient(arbitrary_cdn_config, env=settings.env)
+            return ArbitraryS3CdnClient(
+                arbitrary_cdn_config, env=settings.env, max_concurrent_tasks=settings.cdn.max_concurrent_tasks
+            )
