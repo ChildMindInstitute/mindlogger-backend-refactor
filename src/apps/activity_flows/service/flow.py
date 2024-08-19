@@ -196,6 +196,7 @@ class FlowService:
                 created_at=schema.created_at,
                 report_included_activity_name=schema.report_included_activity_name,  # noqa: E501
                 report_included_item_name=schema.report_included_item_name,
+                auto_assign=schema.auto_assign,
             )
             flow_map[flow.id] = flow
             flows.append(flow)
