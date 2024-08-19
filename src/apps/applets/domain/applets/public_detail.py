@@ -61,6 +61,7 @@ class ActivityFlow(PublicModel):
     items: list[ActivityFlowItem] = Field(default_factory=list)
     report_included_activity_name: str | None = None
     report_included_item_name: str | None = None
+    auto_assign: bool | None = True
 
 
 class Encryption(PublicModel):

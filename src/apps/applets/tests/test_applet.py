@@ -84,7 +84,7 @@ class TestApplet:
         assert result["reportPublicKey"] == applet_minimal_data.report_public_key
         assert result["reportRecipients"] == applet_minimal_data.report_recipients
 
-    async def test_create_applet_with_activities_auto_assignment(
+    async def test_create_applet_with_activities_auto_assign(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
         client.login(tom)
@@ -98,7 +98,7 @@ class TestApplet:
         assert len(result["activities"]) == 1
         assert result["activities"][0]["autoAssign"] is True
 
-    async def test_create_applet_with_activities_manual_assignment(
+    async def test_create_applet_without_activities_auto_assign(
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
         client.login(tom)
@@ -168,7 +168,9 @@ class TestApplet:
         notification = json.loads(fcm_client.notifications[device_tom][0])
         assert notification["title"] == "Applet is updated."
 
-    async def test_update_applet_change_auto_assign(self, client: TestClient, tom: User, applet_one: AppletFull):
+    async def test_update_applet_change_activities_auto_assign(
+        self, client: TestClient, tom: User, applet_one: AppletFull
+    ):
         client.login(tom)
         assert applet_one.activities[0].auto_assign is True
         update_data = AppletUpdate(**applet_one.dict())
@@ -182,7 +184,9 @@ class TestApplet:
         result = response.json()["result"]
         assert result["activities"][0]["autoAssign"] is False
 
-    async def test_update_applet_keep_auto_assign(self, client: TestClient, tom: User, applet_one: AppletFull):
+    async def test_update_applet_keep_activities_auto_assign(
+        self, client: TestClient, tom: User, applet_one: AppletFull
+    ):
         client.login(tom)
         assert applet_one.activities[0].auto_assign is True
         update_data = AppletUpdate(**applet_one.dict())
@@ -826,21 +830,79 @@ class TestApplet:
         assert len(result["activityFlows"][0]["items"]) == 1
         assert result["activityFlows"][0]["items"][0]["activityId"] == result["activities"][0]["id"]
 
-    async def test_update_applet_activity_report_config(self, client: TestClient, tom: User, applet_one: AppletFull):
+    async def test_create_applet_with_flow_auto_assign(
+        self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate
+    ):
         client.login(tom)
-        assert applet_one.activities[0].report_included_item_name is None
-        item_name = applet_one.activities[0].items[0].name
-        resp = await client.put(
-            self.activity_report_config_url.format(
-                pk=applet_one.id,
-                activity_id=applet_one.activities[0].id,
-            ),
-            data=dict(report_included_item_name=item_name),
+        applet_create_with_flow.activity_flows[0].auto_assign = True
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_create_with_flow)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        result = resp.json()["result"]
+        assert len(result["activityFlows"]) == 1
+        assert result["activityFlows"][0]["autoAssign"] is True
+
+    async def test_create_applet_without_flow_auto_assign(
+        self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate
+    ):
+        client.login(tom)
+        applet_create_with_flow.activity_flows[0].auto_assign = False
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_create_with_flow)
+        assert resp.status_code == http.HTTPStatus.CREATED
+        result = resp.json()["result"]
+        assert len(result["activityFlows"]) == 1
+        assert result["activityFlows"][0]["autoAssign"] is False
+
+    async def test_update_applet_change_flow_auto_assign(
+        self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate
+    ):
+        client.login(tom)
+        applet_create_with_flow.activity_flows[0].auto_assign = True
+        createResp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_create_with_flow)
+        assert createResp.status_code == http.HTTPStatus.CREATED
+        createResult = createResp.json()["result"]
+
+        update_data = AppletUpdate(
+            display_name=applet_create_with_flow.display_name,
+            activities=applet_create_with_flow.activities,
+            activity_flows=applet_create_with_flow.activity_flows,
+            encryption=applet_create_with_flow.encryption,
         )
-        assert resp.status_code == http.HTTPStatus.OK
-        resp = await client.get(self.applet_detail_url.format(pk=applet_one.id))
-        assert resp.status_code == http.HTTPStatus.OK
-        assert resp.json()["result"]["activities"][0]["reportIncludedItemName"] == item_name
+        update_data.activities[0].id = createResult["activities"][0]["id"]
+        update_data.activity_flows[0].id = createResult["activityFlows"][0]["id"]
+        update_data.activity_flows[0].auto_assign = False
+        updateResp = await client.put(
+            self.applet_detail_url.format(pk=createResult["id"]),
+            data=update_data,
+        )
+        assert updateResp.status_code == http.HTTPStatus.OK, updateResp.json()
+        updateResult = updateResp.json()["result"]
+        assert updateResult["activityFlows"][0]["autoAssign"] is False
+
+    async def test_update_applet_keep_flow_auto_assign(
+        self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate
+    ):
+        client.login(tom)
+        applet_create_with_flow.activity_flows[0].auto_assign = True
+        createResp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=applet_create_with_flow)
+        assert createResp.status_code == http.HTTPStatus.CREATED
+        createResult = createResp.json()["result"]
+
+        update_data = AppletUpdate(
+            display_name=applet_create_with_flow.display_name,
+            activities=applet_create_with_flow.activities,
+            activity_flows=applet_create_with_flow.activity_flows,
+            encryption=applet_create_with_flow.encryption,
+        )
+        update_data.activities[0].id = createResult["activities"][0]["id"]
+        update_data.activity_flows[0].id = createResult["activityFlows"][0]["id"]
+        update_data.activity_flows[0].auto_assign = None
+        updateResp = await client.put(
+            self.applet_detail_url.format(pk=createResult["id"]),
+            data=update_data,
+        )
+        assert updateResp.status_code == http.HTTPStatus.OK, updateResp.json()
+        updateResult = updateResp.json()["result"]
+        assert updateResult["activityFlows"][0]["autoAssign"] is True
 
     async def test_update_applet_activity_flow_report_config(
         self, client: TestClient, tom: User, applet_one_with_flow: AppletFull
