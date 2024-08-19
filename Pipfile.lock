@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cd0a04ceed7d7d1beb4dba95f07fd2c99d1544807b5eb5454f5e616ee60e6051"
+            "sha256": "8050203e5205a86efa17f2a47cd6e28c7d28b538dba768e4090a4afb56669153"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -2042,11 +2042,12 @@
                 "reload"
             ],
             "hashes": [
-                "sha256:a0ce2e28f76b87e2504693eca8dcd174013198a880fc209f831829dcf7fa6075",
-                "sha256:a3c4fab8959ac4bf3e8a7e372a677169de41128a2c756546555ece9f9669d3c9"
+                "sha256:15f741ca03e812724985333a327a2344ab720e7d54daaa932e1d3df7639558da",
+                "sha256:dcb43960de0309b10bda814ce4da3963e532d50c132687a43edffa3f60da440a"
             ],
+            "index": "pypi",
             "markers": "python_full_version >= '3.8.1' and python_full_version < '4.0.0'",
-            "version": "==0.9.1"
+            "version": "==0.11.7"
         },
         "taskiq-aio-pika": {
             "hashes": [
