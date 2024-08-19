@@ -19,6 +19,8 @@ from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.errors import ReportServerError
 from apps.answers.service import ReportServerService
 from apps.applets.crud.applets_history import AppletHistoriesCRUD
+from apps.integrations.crud.integrations import IntegrationsCRUD, IntegrationsSchema
+from apps.integrations.domain import AvailableIntegrations
 from apps.integrations.loris.crud.user_relationship import MlLorisUserRelationshipCRUD
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
 from apps.integrations.loris.domain.domain import (
@@ -29,7 +31,10 @@ from apps.integrations.loris.domain.domain import (
     UploadableAnswersData,
     UserVisits,
 )
+from apps.integrations.loris.domain.loris_integrations import LorisIntegration
+from apps.integrations.loris.domain.loris_projects import LorisProjects
 from apps.integrations.loris.errors import LorisServerError
+from apps.integrations.loris.service.loris_client import LorisClient
 from apps.subjects.crud import SubjectsCrud
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -55,6 +60,7 @@ class LorisIntegrationService:
         self.applet_id = applet_id
         self.session = session
         self.user = user
+        self.type = AvailableIntegrations.LORIS
         self._answer_session = answer_session
 
     @property
@@ -853,3 +859,24 @@ class LorisIntegrationService:
             except Exception as e:
                 sentry_sdk.capture_exception(e)
                 break
+
+    async def create_loris_integration(self, hostname, username, password, project) -> LorisIntegration:
+        integration_schema = await IntegrationsCRUD(self.session).create(
+            IntegrationsSchema(
+                applet_id=self.applet_id,
+                type=self.type,
+                configuration={
+                    "hostname": hostname,
+                    "username": username,
+                    "password": password,
+                    "project": project,
+                },
+            )
+        )
+        return LorisIntegration.from_schema(integration_schema)
+
+    async def get_loris_projects(self, hostname, username, password) -> LorisProjects:
+        token = await LorisClient.login_to_loris(hostname, username, password)
+        projects_raw = await LorisClient.list_projects(hostname, token)
+        projects = list(projects_raw["Projects"].keys())
+        return LorisProjects(projects=projects)

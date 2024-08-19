@@ -1,9 +1,9 @@
+import uuid
+
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
-from apps.integrations.domain import Integration, IntegrationFilter
-from apps.integrations.loris.domain.loris_integrations import IntegrationsCreate
-from apps.integrations.loris.domain.loris_projects import LorisProjects
+from apps.integrations.domain import Integration, IntegrationFilter, Integration
 from apps.integrations.service import IntegrationService
 from apps.shared.domain import ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
@@ -12,7 +12,7 @@ from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 
-__all__ = ["enable_integration", "disable_integration", "create_integration"]
+__all__ = ["enable_integration", "disable_integration", "create_integration", "retrieve_integration"]
 
 
 async def enable_integration(
@@ -35,11 +35,23 @@ async def disable_integration(
 
 
 async def create_integration(
-    type: str,
     session=Depends(get_session),
     user: User = Depends(get_current_user),
-    params: IntegrationsCreate = Body(...),
-) -> LorisProjects:
-    await CheckAccessService(session, user.id).check_integrations_create_access(params.applet_id, type)
+    integrationsCreate: Integration = Body(...),
+) -> Integration:
+    await CheckAccessService(session, user.id).check_integrations_create_access(
+        integrationsCreate.applet_id, integrationsCreate.integration_type
+    )
     async with atomic(session):
-        return await IntegrationService(session, user).create_integration(type, params)
+        return await IntegrationService(session, user).create_integration(integrationsCreate)
+
+
+async def retrieve_integration(
+    type: str,
+    applet_id: uuid.UUID,
+    session=Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> Integration:
+    await CheckAccessService(session, user.id).check_integrations_retrieve_access(applet_id, type)
+    async with atomic(session):
+        return await IntegrationService(session, user).retrieve_integration(applet_id, type)

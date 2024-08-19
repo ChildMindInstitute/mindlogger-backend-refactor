@@ -1,7 +1,7 @@
 import json
 
 import aiohttp
-from aiohttp.client_exceptions import ClientConnectorError
+from aiohttp.client_exceptions import ClientConnectorError, ContentTypeError
 
 from apps.integrations.loris.errors import LorisBadCredentialsError, LorisInvalidHostname, LorisInvalidTokenError
 from apps.shared.domain.custom_validations import InvalidUrlError, validate_url
@@ -22,11 +22,14 @@ class LorisClient:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             try:
                 async with session.post(
-                    f"{hostname}/login",
+                    f"{hostname}/api/v0.0.3/login",
                     data=json.dumps(loris_login_data),
                 ) as resp:
                     if resp.status == 200:
-                        response_data = await resp.json()
+                        try:
+                            response_data = await resp.json()
+                        except ContentTypeError as cce:
+                            raise LorisBadCredentialsError(message=cce.message)
                         return response_data["token"]
                     else:
                         error_message = await resp.text()
@@ -47,7 +50,7 @@ class LorisClient:
         }
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            url = f"{hostname}/projects"
+            url = f"{hostname}/api/v0.0.3/projects"
             async with session.get(
                 url=url,
                 headers=headers,

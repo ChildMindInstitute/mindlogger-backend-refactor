@@ -1,29 +1,24 @@
-import uuid
+import json
 
 from apps.integrations.db.schemas import IntegrationsSchema
-from apps.integrations.domain import AvailableIntegrations
 from apps.shared.domain import InternalModel
 
 
-class IntegrationMeta(InternalModel):
+class LorisIntegration(InternalModel):
     hostname: str
     username: str
     password: str
-    project: str | None
-
-
-class Integrations(InternalModel):
-    applet_id: uuid.UUID
-    type: AvailableIntegrations
-    configuration: IntegrationMeta
+    project: str
 
     @classmethod
     def from_schema(cls, schema: IntegrationsSchema):
-        return cls(applet_id=schema.applet_id, type=schema.type, configuration=schema.configuration)
+        new_loris_integration_dict = json.loads(schema.configuration.replace("'", '"'))
+        new_loris_integration_dict["password"] = "*****"
 
-
-class IntegrationsCreate(InternalModel):
-    applet_id: uuid.UUID
-    hostname: str
-    username: str
-    password: str
+        new_loris_integration = cls(
+            hostname=new_loris_integration_dict["hostname"],
+            username=new_loris_integration_dict["username"],
+            password=new_loris_integration_dict["password"],
+            project=new_loris_integration_dict["project"]
+        )
+        return new_loris_integration

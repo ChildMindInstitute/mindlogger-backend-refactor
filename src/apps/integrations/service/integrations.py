@@ -1,10 +1,11 @@
+from typing import cast
+
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.integrations.db.schemas import IntegrationsSchema
-from apps.integrations.domain import AvailableIntegrations, Integration
-from apps.integrations.errors import UniqueIntegrationError, UnsupportedIntegrationError
-from apps.integrations.loris.domain.loris_integrations import IntegrationsCreate
-from apps.integrations.loris.domain.loris_projects import LorisProjects
-from apps.integrations.loris.service.loris_client import LorisClient
+from apps.integrations.domain import AvailableIntegrations, FutureIntegration, Integration
+from apps.integrations.errors import UnavailableIntegrationError, UnexpectedPropertiesForIntegration, UniqueIntegrationError, UnsupportedIntegrationError
+from apps.integrations.loris.service.loris import LorisIntegration, LorisIntegrationService
+from apps.integrations.service.future_integration import FutureIntegrationService
 from apps.shared.query_params import QueryParams
 from apps.users.domain import User
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
@@ -45,30 +46,81 @@ class IntegrationService:
             workspace.integrations = None
         await UserWorkspaceCRUD(self.session).save(workspace)
 
-    async def create_integration(
-        self,
-        type: str,
-        params: IntegrationsCreate,
-    ) -> LorisProjects:
-        match type:
+    async def create_integration(self, newIntegration: Integration) -> Integration:
+        match newIntegration.integration_type:
             case AvailableIntegrations.LORIS:
-                return await self._create_integration(type, params)
+                loris_config = cast(LorisIntegration, newIntegration.configuration)
+                expected_keys = ["hostname", "username", "password", "project"]
+                config_dict = loris_config.dict()
+                if None in [config_dict.get(k, None) for k in expected_keys]:
+                    raise UnexpectedPropertiesForIntegration(
+                        provided_keys=list(config_dict.keys()),
+                        expected_keys=expected_keys,
+                        type=AvailableIntegrations.LORIS,
+                    )
+                loris_integration = await LorisIntegrationService(
+                    newIntegration.applet_id, self.session, self.user
+                ).create_loris_integration(
+                    hostname=loris_config.hostname,
+                    username=loris_config.username,
+                    password=loris_config.password,
+                    project=loris_config.project,
+                )
+                return Integration(
+                    integration_type=AvailableIntegrations.LORIS,
+                    applet_id=newIntegration.applet_id,
+                    configuration=loris_integration,
+                )
+            case AvailableIntegrations.FUTURE:
+                future_conf = cast(FutureIntegration, newIntegration.configuration)
+                expected_keys = ["endpoint", "api_key"]
+                config_dict = future_conf.dict()
+                if None in [config_dict.get(k, None) for k in expected_keys]:
+                    raise UnexpectedPropertiesForIntegration(
+                        provided_keys=list(config_dict.keys()),
+                        expected_keys=expected_keys,
+                        type=AvailableIntegrations.LORIS,
+                    )
+                future_integration = await FutureIntegrationService(
+                    newIntegration.applet_id,
+                    self.session,
+                ).create_future_integration(
+                    endpoint=future_conf.endpoint,
+                    api_key=future_conf.api_key,
+                )
+                return Integration(
+                    integration_type=AvailableIntegrations.FUTURE,
+                    applet_id=newIntegration.applet_id,
+                    configuration=future_integration,
+                )
             case _:
-                raise UnsupportedIntegrationError(type=type)
+                raise UnsupportedIntegrationError(type=newIntegration.integration_type)
 
-    async def _create_integration(self, type, params) -> LorisProjects:
-        token = await LorisClient.login_to_loris(params.hostname, params.username, params.password)
-        projects_raw = await LorisClient.list_projects(params.hostname, token)
-        await IntegrationsCRUD(self.session).create(
+    async def retrieve_integration(self, applet_id, integration_type) -> Integration:
+        integration_schema = await IntegrationsCRUD(self.session).retrieve(
             IntegrationsSchema(
-                applet_id=params.applet_id,
-                type=type,
-                configuration={
-                    "hostname": params.hostname,
-                    "username": params.username,
-                    "password": params.password,
-                },
+                applet_id=applet_id,
+                type=integration_type,
             )
         )
-        projects = list(projects_raw["Projects"].keys())
-        return LorisProjects(projects=projects)
+
+        if integration_schema is None:
+            raise UnavailableIntegrationError(applet_id=applet_id, type=integration_type)
+
+        match integration_type:
+            case AvailableIntegrations.LORIS:
+                loris_integration = LorisIntegration.from_schema(integration_schema)
+                return Integration(
+                    integration_type=AvailableIntegrations.LORIS,
+                    applet_id=applet_id,
+                    configuration=loris_integration,
+                )
+            case AvailableIntegrations.FUTURE:
+                future_integration = FutureIntegration.from_schema(integration_schema)
+                return Integration(
+                    integration_type=AvailableIntegrations.FUTURE,
+                    applet_id=applet_id,
+                    configuration=future_integration,
+                )
+            case _:
+                raise UnsupportedIntegrationError(type=integration_type)

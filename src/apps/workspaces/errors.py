@@ -126,6 +126,10 @@ class IntegrationsCreateAccessDenied(ValidationError):
     message = _("Access denied to create new integrations of type `{type}` on applet `{applet_id}`")
 
 
+class IntegrationsRetrieveAccessDenied(ValidationError):
+    message = _("Access denied to retrieve integrations of type `{type}` on applet `{applet_id}`")
+
+
 class WorkspaceNotFoundError(Exception):
     ...
 
