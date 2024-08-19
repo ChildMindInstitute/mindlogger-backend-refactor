@@ -14,6 +14,7 @@ from apps.invitations.crud import InvitationCRUD
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.exception import ValidationError
+from apps.shared.query_params import QueryParams
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from config import settings
@@ -218,6 +219,20 @@ class ActivityAssignmentService:
         }
 
         return entities
+
+    async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
+        schemas = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
+
+        return [
+            ActivityAssignment(
+                id=schema.id,
+                activity_id=schema.activity_id,
+                activity_flow_id=schema.activity_flow_id,
+                respondent_subject_id=schema.respondent_subject_id,
+                target_subject_id=schema.target_subject_id,
+            )
+            for schema in schemas
+        ]
 
     @staticmethod
     def _get_email_template_name(language: str) -> str:

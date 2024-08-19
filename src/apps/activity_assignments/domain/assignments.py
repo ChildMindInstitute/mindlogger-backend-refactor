@@ -38,3 +38,8 @@ class ActivityAssignment(PublicModel):
 class ActivitiesAssignments(PublicModel):
     applet_id: UUID
     assignments: list[ActivityAssignment]
+
+
+class ActivityAssignmentsListQueryParams(InternalModel):
+    activities: str | None
+    flows: str | None
