@@ -623,37 +623,39 @@ class LorisIntegrationService:
                 answer_by_activity_id = {key: value for key, value in answer.items() if activity_id in key}
                 for key, visit in user_and_visits.items():
                     if answer_by_activity_id and key.startswith(activity_id):
-                        logger.info(
-                            f"Sending SEND INSTUMENT DATA request to the loris server "
-                            f"{settings.loris.instrument_data_url.format(candidate_id, visit, activity_id)}"
-                        )
-                        start = time.time()
-                        _data_instrument_data = {
-                            "Meta": {
-                                "Instrument": activity_id,
-                                "Visit": visit,
-                                "Candidate": candidate_id,
-                                "DDE": True,
-                            },
-                            activity_id: answer_by_activity_id,
-                        }
-                        # logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)} ")
-                        async with session.put(
-                            settings.loris.instrument_data_url.format(candidate_id, visit, activity_id),
-                            data=json.dumps(_data_instrument_data),
-                            headers=headers,
-                        ) as resp:
-                            duration = time.time() - start
-                            if resp.status == 204:
-                                logger.info(f"Successful request in {duration:.1f} seconds.")
-                            else:
-                                logger.info(f"Failed request in {duration:.1f} seconds.")
-                                error_message = await resp.text()
-                                logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
-                                await self._create_integration_alerts(
-                                    self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
-                                )
-                                raise LorisServerError(message=error_message)
+                        specific_answers = {k: v for k, v in answer_by_activity_id.items() if k.startswith(key)}
+                        if specific_answers:
+                            logger.info(
+                                f"Sending SEND INSTUMENT DATA request to the loris server "
+                                f"{settings.loris.instrument_data_url.format(candidate_id, visit, activity_id)}"
+                            )
+                            start = time.time()
+                            _data_instrument_data = {
+                                "Meta": {
+                                    "Instrument": activity_id,
+                                    "Visit": visit,
+                                    "Candidate": candidate_id,
+                                    "DDE": True,
+                                },
+                                activity_id: specific_answers,
+                            }
+                            logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)}")
+                            async with session.put(
+                                settings.loris.instrument_data_url.format(candidate_id, visit, activity_id),
+                                data=json.dumps(_data_instrument_data),
+                                headers=headers,
+                            ) as resp:
+                                duration = time.time() - start
+                                if resp.status == 204:
+                                    logger.info(f"Successful request in {duration:.1f} seconds.")
+                                else:
+                                    logger.info(f"Failed request in {duration:.1f} seconds.")
+                                    error_message = await resp.text()
+                                    logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
+                                    await self._create_integration_alerts(
+                                        self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+                                    )
+                                    raise LorisServerError(message=error_message)
 
     async def get_visits_list(self) -> list[str]:
         try:
