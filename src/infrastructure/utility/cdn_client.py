@@ -1,10 +1,12 @@
 import asyncio
+import http
 import io
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO
 
 import boto3
+import httpx
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from apps.file.errors import FileNotFoundError
@@ -19,11 +21,15 @@ class ObjectNotFoundError(Exception):
 
 class CDNClient:
     default_container_name = "mindlogger"
+    meta_last_modified = "last_modified_orig"
 
-    def __init__(self, config: CdnConfig, env: str):
+    def __init__(self, config: CdnConfig, env: str, *, max_concurrent_tasks: int = 10):
         self.config = config
         self.env = env
         self.client = self.configure_client(config)
+
+        # semaphore for concurrent calls of urlib3 in boto3
+        self.semaphore = asyncio.Semaphore(max_concurrent_tasks)
 
     @classmethod
     def generate_key(cls, scope, unique, filename):
@@ -118,11 +124,62 @@ class CDNClient:
             await asyncio.wrap_future(future)
 
     async def list_object(self, key: str):
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(self.client.list_objects, Bucket=self.config.bucket, Prefix=key)
-            result = await asyncio.wrap_future(future)
-            return result.get("Contents", [])
+        async with self.semaphore:
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(self.client.list_objects, Bucket=self.config.bucket, Prefix=key)
+                result = await asyncio.wrap_future(future)
+                return result.get("Contents", [])
 
     def generate_presigned_post(self, bucket, key):
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
         return self.client.generate_presigned_post(bucket, key, ExpiresIn=self.config.ttl_signed_urls)
+
+    def _copy(self, key, storage_from: "CDNClient", key_from: str | None = None) -> int:
+        key_from = key_from or key
+        res = storage_from.client.get_object(Bucket=storage_from.config.bucket, Key=key_from)
+        file_obj = res["Body"]
+        metadata: dict = res["Metadata"]
+        last_modified = res["LastModified"]
+
+        metadata.setdefault(self.meta_last_modified, last_modified.strftime("%Y-%m-%dT%H:%M:%S"))
+
+        self.client.upload_fileobj(
+            file_obj,
+            self.config.bucket,
+            key,
+            ExtraArgs={
+                "Metadata": metadata,
+            },
+        )
+
+        return res["ContentLength"]
+
+    async def copy(self, key, storage_from: "CDNClient", key_from: str | None = None) -> int:
+        async with self.semaphore:
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(self._copy, key, storage_from, key_from=key_from)
+                res = await asyncio.wrap_future(future)
+                return res
+
+    async def check(self):
+        storage_bucket = self.config.bucket
+        print(f'Check bucket "{storage_bucket}" availability.')
+        key = "mindlogger.txt"
+
+        presigned_data = self.generate_presigned_post(storage_bucket, key)
+
+        logger.info(f"Presigned POST fields are following: {presigned_data['fields'].keys()}")
+        file = io.BytesIO(b"")
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    presigned_data["url"], data=presigned_data["fields"], files={"file": (key, file)}
+                )
+                if response.status_code == http.HTTPStatus.NO_CONTENT:
+                    logger.info(f"Bucket {storage_bucket} is available.")
+                else:
+                    logger.info(response.content)
+                    raise Exception("File upload error")
+            except httpx.HTTPError as e:
+                logger.info("File upload error")
+                raise e
