@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from pydantic import Field, root_validator
 
@@ -30,7 +31,7 @@ class ActivityCreate(ActivityBase, InternalModel):
     extra_fields: dict = Field(default_factory=dict)
 
     @root_validator()
-    def validate_existing_ids_for_duplicate(cls, values):
+    def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
         items: list[ActivityItemCreate] = values.get("items", [])
 
         item_names = set()

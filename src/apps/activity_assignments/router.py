@@ -1,8 +1,8 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.activity_assignments.api import applet_assignments, assignments_create
-from apps.activity_assignments.domain.assignments import ActivitiesAssignments
+from apps.activity_assignments.api import applet_assignments, applet_respondent_assignments, assignments_create
+from apps.activity_assignments.domain.assignments import ActivitiesAssignments, ActivitiesAssignmentsWithSubjects
 from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, Response
 
 router = APIRouter(prefix="/assignments", tags=["Activity assignments"])
@@ -33,3 +33,19 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_assignments)
+
+# User endpoints
+user_router = APIRouter(prefix="/users", tags=["Users"])
+
+user_router.get(
+    "/me/assignments/{applet_id}",
+    description="""
+    Get all activity assignments for logged-in respondent for an applet.
+                """,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[ActivitiesAssignmentsWithSubjects]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_respondent_assignments)
