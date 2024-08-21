@@ -176,6 +176,8 @@ async def update_subject(
                 tag=subject.tag,
                 applet_id=subject.applet_id,
                 user_id=subject.user_id,
+                first_name=subject.first_name,
+                last_name=subject.last_name,
             )
         )
 
@@ -256,6 +258,8 @@ async def get_subject(
             tag=subject.tag,
             applet_id=subject.applet_id,
             user_id=subject.user_id,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
         )
     )
 
@@ -288,5 +292,7 @@ async def get_my_subject(
             tag=subject.tag,
             applet_id=subject.applet_id,
             user_id=subject.user_id,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
         )
     )

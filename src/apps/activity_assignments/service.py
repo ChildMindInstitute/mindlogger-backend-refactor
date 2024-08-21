@@ -6,17 +6,22 @@ from apps.activities.crud import ActivitiesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_assignments.crud.assignments import ActivityAssigmentCRUD
 from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
-from apps.activity_assignments.domain.assignments import ActivityAssignment, ActivityAssignmentCreate
+from apps.activity_assignments.domain.assignments import (
+    ActivityAssignment,
+    ActivityAssignmentCreate,
+    ActivityAssignmentWithSubject,
+)
 from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.applets.crud import AppletsCRUD
 from apps.invitations.crud import InvitationCRUD
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.shared.exception import ValidationError
+from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.query_params import QueryParams
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import SubjectReadResponse
 from config import settings
 
 
@@ -221,17 +226,65 @@ class ActivityAssignmentService:
         return entities
 
     async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
-        schemas = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
+        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
 
         return [
             ActivityAssignment(
-                id=schema.id,
-                activity_id=schema.activity_id,
-                activity_flow_id=schema.activity_flow_id,
-                respondent_subject_id=schema.respondent_subject_id,
-                target_subject_id=schema.target_subject_id,
+                id=assignment.id,
+                activity_id=assignment.activity_id,
+                activity_flow_id=assignment.activity_flow_id,
+                respondent_subject_id=assignment.respondent_subject_id,
+                target_subject_id=assignment.target_subject_id,
             )
-            for schema in schemas
+            for assignment in assignments
+        ]
+
+    async def get_all_by_respondent(
+        self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID
+    ) -> list[ActivityAssignmentWithSubject]:
+        respondent_subject = await SubjectsCrud(self.session).get_by_id(respondent_subject_id)
+        if not respondent_subject:
+            raise NotFoundError(f"Respondent subject id {respondent_subject_id} not found")
+
+        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet_and_respondent(
+            applet_id, respondent_subject_id
+        )
+
+        target_subject_ids = [assignment.target_subject_id for assignment in assignments]
+
+        target_subjects = {
+            subject.id: SubjectReadResponse(
+                id=subject.id,
+                first_name=subject.first_name,
+                last_name=subject.last_name,
+                email=subject.email,
+                language=subject.language,
+                nickname=subject.nickname,
+                secret_user_id=subject.secret_user_id,
+                tag=subject.tag,
+                applet_id=subject.applet_id,
+            )
+            for subject in await SubjectsCrud(self.session).get_by_ids(target_subject_ids)
+        }
+
+        return [
+            ActivityAssignmentWithSubject(
+                activity_id=assignment.activity_id,
+                activity_flow_id=assignment.activity_flow_id,
+                respondent_subject=SubjectReadResponse(
+                    id=respondent_subject.id,
+                    first_name=respondent_subject.first_name,
+                    last_name=respondent_subject.last_name,
+                    email=respondent_subject.email,
+                    language=respondent_subject.language,
+                    nickname=respondent_subject.nickname,
+                    secret_user_id=respondent_subject.secret_user_id,
+                    tag=respondent_subject.tag,
+                    applet_id=respondent_subject.applet_id,
+                ),
+                target_subject=target_subjects[assignment.target_subject_id],
+            )
+            for assignment in assignments
         ]
 
     @staticmethod

@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import Field, root_validator
 
 from apps.activities.domain.activity_create import ActivityCreate
@@ -23,7 +25,7 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
     extra_fields: dict = Field(default_factory=dict)
 
     @root_validator()
-    def validate_existing_ids_for_duplicate(cls, values):
+    def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
         activities: list[ActivityCreate] = values.get("activities", [])
         flows: list[FlowCreate] = values.get("activity_flows", [])
 
@@ -60,7 +62,7 @@ class AppletUpdate(AppletBase, PublicModel):
     activity_flows: list[FlowUpdate]
 
     @root_validator()
-    def validate_existing_ids_for_duplicate(cls, values):
+    def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
         activities: list[ActivityUpdate] = values.get("activities", [])
         flows: list[FlowUpdate] = values.get("activity_flows", [])
 

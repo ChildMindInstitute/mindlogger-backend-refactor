@@ -437,6 +437,7 @@ class ActivityService:
                 is_hidden=schema.is_hidden,
                 contains_response_types=[],
                 item_count=0,
+                auto_assign=schema.auto_assign,
             )
 
             activities.append(activity)
