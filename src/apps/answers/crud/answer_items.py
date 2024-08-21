@@ -31,7 +31,7 @@ class _ActivityAnswerFilter(Filtering):
             values = values.split(",")
 
         if isinstance(values, list):
-            values = list(filter(None.__ne__, values))
+            values = list(filter(lambda x: x is not None, values))
             if values:
                 return field.in_(values)
 

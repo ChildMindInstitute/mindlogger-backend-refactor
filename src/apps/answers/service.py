@@ -1710,9 +1710,7 @@ class AnswerService:
                 respondent.details if respondent.details else [],
             )
             opt_dates = map(lambda x: result.get(x), respondent_subject_ids)
-            dates: list[datetime.datetime] = list(
-                filter(None.__ne__, opt_dates)  # type: ignore
-            )
+            dates: list[datetime.datetime] = list(filter(lambda x: x is not None, opt_dates))  # type: ignore
             if dates:
                 last_date = max(dates)
                 respondent.last_seen = last_date
