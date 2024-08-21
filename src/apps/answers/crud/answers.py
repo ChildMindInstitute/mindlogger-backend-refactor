@@ -5,7 +5,7 @@ from typing import Collection
 
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import Query, aliased, contains_eager
 from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
@@ -865,3 +865,64 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.flow_history_id.like(f"{flow_id}_%"))
         result = await self._execute(query)
         return result.scalar_one_or_none()
+
+    async def get_applet_answer_rows(self, applet_id: uuid.UUID):
+        query = select(AnswerSchema.__table__).where(AnswerSchema.applet_id == applet_id)
+        res = await self._execute(query)
+        return res.all()
+
+    async def get_applet_answers_total(self, applet_id: uuid.UUID):
+        query = select(func.count(AnswerSchema.id)).where(AnswerSchema.applet_id == applet_id)
+        res = await self._execute(query)
+        return res.scalar()
+
+    async def get_applet_answer_item_rows(self, applet_id: uuid.UUID):
+        query = (
+            select(AnswerItemSchema.__table__)
+            .join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+            .where(AnswerSchema.applet_id == applet_id)
+        )
+
+        res = await self._execute(query)
+        return res.all()
+
+    async def get_applet_answer_items_total(self, applet_id: uuid.UUID):
+        query = (
+            select(func.count(AnswerItemSchema.id))
+            .join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+            .where(AnswerSchema.applet_id == applet_id)
+        )
+
+        res = await self._execute(query)
+        return res.scalar()
+
+    async def insert_answers_batch(self, values):
+        insert_query = (
+            insert(AnswerSchema)
+            .values(values)
+            .on_conflict_do_nothing(
+                index_elements=[AnswerSchema.id],
+            )
+        )
+        await self._execute(insert_query)
+
+    async def insert_answer_items_batch(self, values):
+        insert_query = (
+            insert(AnswerItemSchema)
+            .values(values)
+            .on_conflict_do_nothing(
+                index_elements=[AnswerItemSchema.id],
+            )
+        )
+        await self._execute(insert_query)
+
+    async def get_answers_respondents(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
+        query = (
+            select(AnswerItemSchema.respondent_id)
+            .join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+            .where(AnswerSchema.applet_id == applet_id)
+            .distinct()
+        )
+        res = await self._execute(query)
+        user_ids = res.scalars().all()
+        return user_ids
