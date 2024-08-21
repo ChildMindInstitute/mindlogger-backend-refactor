@@ -115,13 +115,13 @@ jobs:
             ${GITHUB_REPO_NAME}/${OUT_DIR}/build.yml
             ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
 
-  deploy_to_dev:
-    name: Deploy to Dev
-    needs: build_job
-    environment: dev
-    uses: ./.github/workflows/run_deploy_dev.yaml
-    with:
-      IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
+#  deploy_to_dev:
+#    name: Deploy to Dev
+#    needs: build_job
+#    environment: dev
+#    uses: ./.github/workflows/run_deploy_dev.yaml
+#    with:
+#      IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
 
 #  deploy_to_uat:
 #    needs: build_job
