@@ -69,7 +69,7 @@ jobs:
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    needs: run_migration
+    #needs: run_migration
     env:
       TASK_FAMILY_PREFIX: backend
       ECS_CLUSTER_NAME: cmiml-dev
