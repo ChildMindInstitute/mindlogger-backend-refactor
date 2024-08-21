@@ -111,6 +111,22 @@ async def unassignments_create(
     )
 
 
+async def applet_assignments(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(parse_query_params(ActivityAssignmentsListQueryParams)),
+    session=Depends(get_session),
+) -> Response[ActivitiesAssignments]:
+    await CheckAccessService(session, user.id).check_applet_activity_assignment_access(applet_id)
+    assignments = await ActivityAssignmentService(session).get_all(applet_id, query_params)
+
+    return Response(
+        result=ActivitiesAssignments(
+            applet_id=applet_id,
+            assignments=assignments,
+        )
+    )
+
 async def applet_respondent_assignments(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),

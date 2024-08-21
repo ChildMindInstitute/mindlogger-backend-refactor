@@ -360,6 +360,36 @@ class ActivityAssignmentService:
             id_assignment = await self._get_assignment_by_activity_or_flow_and_subject_id(assignment)
             schema = ActivityAssigmentSchema(
                 id=id_assignment,
+                activity_id=assignment.activity_id,
+                activity_flow_id=assignment.activity_flow_id,
+                respondent_subject_id=assignment.respondent_subject_id,
+                target_subject_id=assignment.target_subject_id,
+                is_deleted=True,
+            )
+            
+            if entities.respondent_subjects[assignment.respondent_subject_id].user_id:
+                respondent_activities[assignment.respondent_subject_id].append(activity_or_flow_name)
+
+            schemas.append(schema)
+
+        assignment_schemas: list[ActivityAssigmentSchema] = await ActivityAssigmentCRUD(self.session).unassign_many(
+            schemas
+        )
+        
+        # Todo: send emails based on respondent_activities array
+
+        return [
+            ActivityAssignment(
+                id=assignment.id,
+                activity_id=assignment.activity_id,
+                activity_flow_id=assignment.activity_flow_id,
+                respondent_subject_id=assignment.respondent_subject_id,
+                target_subject_id=assignment.target_subject_id,
+                is_deleted=assignment.is_deleted,
+
+            )
+            for assignment in assignment_schemas
+        ]
 
     async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
         assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
