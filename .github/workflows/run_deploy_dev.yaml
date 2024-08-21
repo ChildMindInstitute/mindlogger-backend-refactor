@@ -21,6 +21,7 @@ jobs:
 
   run_migration:
     runs-on: ubuntu-latest
+    if: false # skip
     env:
       TASK_DEFINITION: migration
       ECS_CLUSTER_NAME: cmiml-dev
