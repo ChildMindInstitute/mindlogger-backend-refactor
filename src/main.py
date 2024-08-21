@@ -1,4 +1,11 @@
+import os
+
+# Inject Datadog tracer ASAP
+if os.getenv("DD_TRACE_ENABLED", "false").lower() == 'true':
+    import ddtrace.auto
+
 from infrastructure.app import create_app
+
 
 app = create_app()
 

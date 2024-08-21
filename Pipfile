@@ -57,6 +57,8 @@ opentelemetry-exporter-otlp = "==1.24.0"
 opentelemetry-sdk-extension-aws = "==2.0.1"
 nh3 = "==0.2.17"
 pymongo = "*"
+ddtrace = "*"
+json-log-formatter = "*"
 
 [dev-packages]
 # Nobody knows for what its needed
