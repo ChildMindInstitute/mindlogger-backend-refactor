@@ -42,7 +42,7 @@ class ActivityAssignmentService:
         Creates multiple activity assignments for the given applet.
 
         This method takes a list of assignment creation requests, validates them, checks for
-        existing assignments, and then creates new assignments in the database. If an assignment 
+        existing assignments, and then creates new assignments in the database. If an assignment
         already exists, it is skipped. The method returns the successfully created assignments.
 
         Parameters:
@@ -52,7 +52,7 @@ class ActivityAssignmentService:
 
         assignments_create : list[ActivityAssignmentCreate]
             A list of assignment creation objects that specify the details of each assignment.
-            Each object contains information such as `activity_id`, `activity_flow_id`, 
+            Each object contains information such as `activity_id`, `activity_flow_id`,
             `respondent_subject_id`, and `target_subject_id`.
 
         Returns:
@@ -62,13 +62,13 @@ class ActivityAssignmentService:
 
         Process:
         --------
-        1. Retrieves all relevant entities (activities, flows, subjects) using 
+        1. Retrieves all relevant entities (activities, flows, subjects) using
         `_get_assignments_entities`.
-        2. Validates each assignment and retrieves the corresponding activity or flow name 
+        2. Validates each assignment and retrieves the corresponding activity or flow name
         using `_validate_assignment_and_get_activity_or_flow_name`.
         3. Checks if the assignment already exists using `ActivityAssigmentCRUD.already_exists`.
         If it does, the assignment is skipped.
-        4. Creates a new `ActivityAssigmentSchema` for each valid assignment and collects them 
+        4. Creates a new `ActivityAssigmentSchema` for each valid assignment and collects them
         into a list.
         5. Inserts the new assignments into the database using `ActivityAssigmentCRUD.create_many`.
         6. Optionally, stores respondent activities for future processing (e.g., sending emails).
@@ -81,7 +81,11 @@ class ActivityAssignmentService:
         respondent_activities: dict[uuid.UUID, set[str]] = defaultdict(set)
         schemas = []
         for assignment in assignments_create:
-            activity_or_flow_name: str = self._validate_assignment_and_get_activity_or_flow_name(assignment, entities)
+            activity_or_flow_name: str = (
+                self._validate_assignment_and_get_activity_or_flow_name(
+                    assignment, entities
+                )
+            )
             schema = ActivityAssigmentSchema(
                 id=uuid.uuid4(),
                 activity_id=assignment.activity_id,
@@ -94,17 +98,23 @@ class ActivityAssignmentService:
 
             schemas.append(schema)
 
-            pending_invitation = await InvitationCRUD(self.session).get_pending_subject_invitation(
+            pending_invitation = await InvitationCRUD(
+                self.session
+            ).get_pending_subject_invitation(
                 applet_id, assignment.respondent_subject_id
             )
             if not pending_invitation:
-                respondent_activities[assignment.respondent_subject_id].add(activity_or_flow_name)
+                respondent_activities[assignment.respondent_subject_id].add(
+                    activity_or_flow_name
+                )
 
-        assignment_schemas: list[ActivityAssigmentSchema] = await ActivityAssigmentCRUD(self.session).create_many(
-            schemas
+        assignment_schemas: list[ActivityAssigmentSchema] = await ActivityAssigmentCRUD(
+            self.session
+        ).create_many(schemas)
+
+        await self.send_email_notification(
+            applet_id, entities.respondent_subjects, respondent_activities
         )
-
-        await self.send_email_notification(applet_id, entities.respondent_subjects, respondent_activities)
 
         return [
             ActivityAssignment(
@@ -117,8 +127,12 @@ class ActivityAssignmentService:
             for assignment in assignment_schemas
         ]
 
-    async def check_for_assignment_and_notify(self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID) -> None:
-        assignments = await ActivityAssigmentCRUD(self.session).get_by_respondent_subject_id(respondent_subject_id)
+    async def check_for_assignment_and_notify(
+        self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID
+    ) -> None:
+        assignments = await ActivityAssigmentCRUD(
+            self.session
+        ).get_by_respondent_subject_id(respondent_subject_id)
         if not assignments:
             return
 
@@ -132,26 +146,35 @@ class ActivityAssignmentService:
 
         activities = {
             activity.id: activity
-            for activity in await ActivitiesCRUD(self.session).get_by_applet_id_and_activities_ids(
-                applet_id, activity_ids
-            )
+            for activity in await ActivitiesCRUD(
+                self.session
+            ).get_by_applet_id_and_activities_ids(applet_id, activity_ids)
         }
         flows = {
-            flow.id: flow for flow in await FlowsCRUD(self.session).get_by_applet_id_and_flows_ids(applet_id, flow_ids)
+            flow.id: flow
+            for flow in await FlowsCRUD(self.session).get_by_applet_id_and_flows_ids(
+                applet_id, flow_ids
+            )
         }
 
-        respondent_subject = await SubjectsCrud(self.session).get_by_id(respondent_subject_id)
+        respondent_subject = await SubjectsCrud(self.session).get_by_id(
+            respondent_subject_id
+        )
         assert respondent_subject
 
         respondent_activities: dict[uuid.UUID, set[str]] = defaultdict(set)
         for assignment in assignments:
-            activity_or_flow = activities.get(assignment.activity_id) or flows.get(assignment.activity_flow_id)
+            activity_or_flow = activities.get(assignment.activity_id) or flows.get(
+                assignment.activity_flow_id
+            )
             if activity_or_flow:
                 respondent_activities[respondent_subject_id].add(activity_or_flow.name)
 
         if len(respondent_activities[respondent_subject_id]) > 0:
             await self.send_email_notification(
-                applet_id, {respondent_subject_id: respondent_subject}, respondent_activities
+                applet_id,
+                {respondent_subject_id: respondent_subject},
+                respondent_activities,
             )
 
     async def send_email_notification(
@@ -190,7 +213,9 @@ class ActivityAssignmentService:
             )
             _ = asyncio.create_task(service.send(message))
 
-    async def _check_for_already_existing_assignment(self, schema: ActivityAssigmentSchema) -> bool:
+    async def _check_for_already_existing_assignment(
+        self, schema: ActivityAssigmentSchema
+    ) -> bool:
         return await ActivityAssigmentCRUD(self.session).already_exists(schema)
 
     @staticmethod
@@ -200,19 +225,19 @@ class ActivityAssignmentService:
         """
         Validates the assignment request and retrieves the name of the activity or flow.
 
-        This method checks the validity of the provided `activity_id`, `activity_flow_id`, 
-        `respondent_subject_id`, and `target_subject_id` by ensuring they correspond to existing 
-        records. If validation passes, it returns the name of the activity or flow. If any validation 
+        This method checks the validity of the provided `activity_id`, `activity_flow_id`,
+        `respondent_subject_id`, and `target_subject_id` by ensuring they correspond to existing
+        records. If validation passes, it returns the name of the activity or flow. If any validation
         fails, it raises a `ValidationError`.
 
         Parameters:
         ----------
         assignment : ActivityAssignmentCreate
-            The assignment request object containing the details of the assignment, 
+            The assignment request object containing the details of the assignment,
             including `activity_id`, `activity_flow_id`, `respondent_subject_id`, and `target_subject_id`.
-        
+
         entities : _AssignmentEntities
-            A collection of entities that includes activities, flows, respondent subjects, 
+            A collection of entities that includes activities, flows, respondent subjects,
             and target subjects, used for validation.
 
         Returns:
@@ -251,7 +276,9 @@ class ActivityAssignmentService:
             )
 
         if entities.target_subjects.get(assignment.target_subject_id) is None:
-            raise ValidationError(f"Invalid target subject id {assignment.target_subject_id} {activity_flow_message}")
+            raise ValidationError(
+                f"Invalid target subject id {assignment.target_subject_id} {activity_flow_message}"
+            )
 
         return name
 
@@ -273,28 +300,35 @@ class ActivityAssignmentService:
         entities = self._AssignmentEntities()
         entities.activities = {
             activity.id: activity
-            for activity in await ActivitiesCRUD(self.session).get_by_applet_id_and_activities_ids(
-                applet_id, activity_ids
-            )
+            for activity in await ActivitiesCRUD(
+                self.session
+            ).get_by_applet_id_and_activities_ids(applet_id, activity_ids)
         }
         entities.flows = {
-            flow.id: flow for flow in await FlowsCRUD(self.session).get_by_applet_id_and_flows_ids(applet_id, flow_ids)
+            flow.id: flow
+            for flow in await FlowsCRUD(self.session).get_by_applet_id_and_flows_ids(
+                applet_id, flow_ids
+            )
         }
 
         entities.respondent_subjects = {
             subject.id: subject
-            for subject in await SubjectsCrud(self.session).get_by_ids(respondent_subject_ids)
+            for subject in await SubjectsCrud(self.session).get_by_ids(
+                respondent_subject_ids
+            )
             if subject.applet_id == applet_id and subject.email is not None
         }
 
         entities.target_subjects = {
             subject.id: subject
-            for subject in await SubjectsCrud(self.session).get_by_ids(target_subject_ids)
+            for subject in await SubjectsCrud(self.session).get_by_ids(
+                target_subject_ids
+            )
             if subject.applet_id == applet_id
         }
 
         return entities
-    
+
     async def _get_assignment_by_activity_or_flow_and_subject_id(
         self, assignment: ActivityAssignmentCreate
     ) -> uuid.UUID:
@@ -304,22 +338,23 @@ class ActivityAssignmentService:
         target_subject_id = assignment.target_subject_id
 
         search_id = flow_id if flow_id is not None else activity_id
-        assignment_id = await ActivityAssigmentCRUD(self.session).get_assignments_by_activity_or_flow_id_and_subject_id(
-                    search_id=search_id,
-                    respondent_subject_id=respondent_subject_id,
-                    target_subject_id=target_subject_id
-                )
+        assignment_id = await ActivityAssigmentCRUD(
+            self.session
+        ).get_assignments_by_activity_or_flow_id_and_subject_id(
+            search_id=search_id,
+            respondent_subject_id=respondent_subject_id,
+            target_subject_id=target_subject_id,
+        )
         return assignment_id
-    
-    
+
     async def unassign_many(
         self, applet_id: uuid.UUID, assignments_unassign: list[ActivityAssignmentCreate]
     ) -> list[ActivityAssignment]:
         """
         Unassigns multiple activity assignments by marking them as deleted.
 
-        This method takes a list of assignment requests, retrieves the corresponding 
-        assignment entities from the database, marks them as deleted, and then returns 
+        This method takes a list of assignment requests, retrieves the corresponding
+        assignment entities from the database, marks them as deleted, and then returns
         the updated assignments.
 
         Parameters:
@@ -329,7 +364,7 @@ class ActivityAssignmentService:
 
         assignments_unassign : list[ActivityAssignmentCreate]
             A list of assignment creation objects that specify which assignments to unassign.
-            Each object contains details such as `activity_id`, `activity_flow_id`, 
+            Each object contains details such as `activity_id`, `activity_flow_id`,
             `respondent_subject_id`, and `target_subject_id`.
 
         Returns:
@@ -339,9 +374,9 @@ class ActivityAssignmentService:
 
         Process:
         --------
-        1. Retrieves all relevant entities (activities, flows, subjects) using 
+        1. Retrieves all relevant entities (activities, flows, subjects) using
         `_get_assignments_entities`.
-        2. Validates each assignment and retrieves the corresponding assignment ID 
+        2. Validates each assignment and retrieves the corresponding assignment ID
         using `_get_assignment_by_activity_or_flow_and_subject_id`.
         3. Creates a schema for each assignment, marking it as deleted.
         4. Unassigns the assignments in the database using `ActivityAssigmentCRUD.unassign_many`.
@@ -354,9 +389,17 @@ class ActivityAssignmentService:
         respondent_activities: dict[uuid.UUID, list[str]] = defaultdict(list)
         schemas = []
         for assignment in assignments_unassign:
-            activity_or_flow_name: str = self._validate_assignment_and_get_activity_or_flow_name(assignment, entities)
-            
-            id_assignment = await self._get_assignment_by_activity_or_flow_and_subject_id(assignment)
+            activity_or_flow_name: str = (
+                self._validate_assignment_and_get_activity_or_flow_name(
+                    assignment, entities
+                )
+            )
+
+            id_assignment = (
+                await self._get_assignment_by_activity_or_flow_and_subject_id(
+                    assignment
+                )
+            )
             schema = ActivityAssigmentSchema(
                 id=id_assignment,
                 activity_id=assignment.activity_id,
@@ -365,16 +408,18 @@ class ActivityAssignmentService:
                 target_subject_id=assignment.target_subject_id,
                 is_deleted=True,
             )
-            
+
             if entities.respondent_subjects[assignment.respondent_subject_id].user_id:
-                respondent_activities[assignment.respondent_subject_id].append(activity_or_flow_name)
+                respondent_activities[assignment.respondent_subject_id].append(
+                    activity_or_flow_name
+                )
 
             schemas.append(schema)
 
-        assignment_schemas: list[ActivityAssigmentSchema] = await ActivityAssigmentCRUD(self.session).unassign_many(
-            schemas
-        )
-        
+        assignment_schemas: list[ActivityAssigmentSchema] = await ActivityAssigmentCRUD(
+            self.session
+        ).unassign_many(schemas)
+
         # Todo: send emails based on respondent_activities array
 
         return [
@@ -385,13 +430,16 @@ class ActivityAssignmentService:
                 respondent_subject_id=assignment.respondent_subject_id,
                 target_subject_id=assignment.target_subject_id,
                 is_deleted=assignment.is_deleted,
-
             )
             for assignment in assignment_schemas
         ]
 
-    async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
-        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
+    async def get_all(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> list[ActivityAssignment]:
+        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(
+            applet_id, query_params
+        )
 
         return [
             ActivityAssignment(
@@ -407,15 +455,21 @@ class ActivityAssignmentService:
     async def get_all_by_respondent(
         self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID
     ) -> list[ActivityAssignmentWithSubject]:
-        respondent_subject = await SubjectsCrud(self.session).get_by_id(respondent_subject_id)
-        if not respondent_subject:
-            raise NotFoundError(f"Respondent subject id {respondent_subject_id} not found")
-
-        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet_and_respondent(
-            applet_id, respondent_subject_id
+        respondent_subject = await SubjectsCrud(self.session).get_by_id(
+            respondent_subject_id
         )
+        if not respondent_subject:
+            raise NotFoundError(
+                f"Respondent subject id {respondent_subject_id} not found"
+            )
 
-        target_subject_ids = [assignment.target_subject_id for assignment in assignments]
+        assignments = await ActivityAssigmentCRUD(
+            self.session
+        ).get_by_applet_and_respondent(applet_id, respondent_subject_id)
+
+        target_subject_ids = [
+            assignment.target_subject_id for assignment in assignments
+        ]
 
         target_subjects = {
             subject.id: SubjectReadResponse(
@@ -429,7 +483,9 @@ class ActivityAssignmentService:
                 tag=subject.tag,
                 applet_id=subject.applet_id,
             )
-            for subject in await SubjectsCrud(self.session).get_by_ids(target_subject_ids)
+            for subject in await SubjectsCrud(self.session).get_by_ids(
+                target_subject_ids
+            )
         }
 
         return [
