@@ -137,6 +137,8 @@ class TestActivityUnassignments(BaseTest):
             self.activities_assignments_applet.format(applet_id=applet_one.id), data=assignments_create
         )
         
+        assert assignment_response.status_code == http.HTTPStatus.CREATED, assignment_response.json()
+        
         unassign_response = await client.delete(
             self.activities_unassignments_applet.format(applet_id=applet_one.id), data=assignments_create
         )
@@ -369,7 +371,12 @@ class TestActivityUnassignments(BaseTest):
     
 
     async def test_unassign_fail_wrong_flow(
-        self, client: TestClient, applet_one: AppletFull, tom: User, tom_applet_one_subject: SubjectFull, applet_one_with_flow: AppletFull,
+        self,
+        client: TestClient, 
+        applet_one: AppletFull, 
+        tom: User, 
+        tom_applet_one_subject: SubjectFull,
+        applet_one_with_flow: AppletFull,
 
     ):
         client.login(tom)
@@ -409,12 +416,18 @@ class TestActivityUnassignments(BaseTest):
         )
 
         # Assert that the response indicates failure due to the wrong flow ID
-        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
+        assert unassign_response.status_code == \
+            http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
         assert result["message"] == f"Invalid flow id {fake_flow_id}"
 
     async def test_unassign_with_pending_subject(
-        self, client: TestClient, applet_one_with_flow: AppletFull, tom: User, applet_one_pending_subject: Subject, session: AsyncSession,
+        self, 
+        client: TestClient, 
+        applet_one_with_flow: AppletFull, 
+        tom: User, 
+        applet_one_pending_subject: Subject, 
+        session: AsyncSession,
     ):
         client.login(tom)
 
@@ -458,7 +471,9 @@ class TestActivityUnassignments(BaseTest):
 
         # Unassign the assignment
         unassign_response = await client.delete(
-            self.activities_unassignments_applet.format(applet_id=applet_one_with_flow.id), data=unassignments_create.dict()
+            self.activities_unassignments_applet.format
+            (applet_id=applet_one_with_flow.id),
+            data=unassignments_create.dict()
         )
 
         assert unassign_response.status_code == http.HTTPStatus.CREATED, assign_response.json()
@@ -481,7 +496,12 @@ class TestActivityUnassignments(BaseTest):
             assert model.is_deleted is True
             
     async def test_unassign_fail_wrong_respondent(
-        self, client: TestClient, applet_one: AppletFull, tom: User, lucy: User, lucy_applet_two_subject: SubjectFull, tom_applet_one_subject: SubjectFull, session: AsyncSession
+        self, 
+        client: TestClient, 
+        applet_one: AppletFull, 
+        tom: User, 
+        lucy_applet_two_subject: SubjectFull, 
+        tom_applet_one_subject: SubjectFull, session: AsyncSession
     ):
         client.login(tom)
 
@@ -543,7 +563,6 @@ class TestActivityUnassignments(BaseTest):
         client: TestClient,
         applet_one: AppletFull,
         tom: User,
-        lucy: User,
         tom_applet_one_subject: SubjectFull,
         applet_one_shell_account: SubjectFull,
         session: AsyncSession
@@ -609,7 +628,6 @@ class TestActivityUnassignments(BaseTest):
         client: TestClient,
         applet_one: AppletFull,
         tom: User,
-        lucy: User,
         tom_applet_one_subject: SubjectFull,
         applet_one_shell_account,
         session: AsyncSession
@@ -682,7 +700,11 @@ class TestActivityUnassignments(BaseTest):
         
 
     async def test_unassign_fail_wrong_target(
-        self, client: TestClient, applet_one: AppletFull, tom: User, tom_applet_one_subject: SubjectFull, session: AsyncSession
+        self, 
+        client: TestClient, 
+        applet_one: AppletFull, 
+        tom: User, 
+        tom_applet_one_subject: SubjectFull, 
     ):
         client.login(tom)
 

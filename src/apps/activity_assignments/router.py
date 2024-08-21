@@ -1,6 +1,11 @@
 from fastapi.routing import APIRouter
 from starlette import status
-from apps.activity_assignments.api import applet_assignments, applet_respondent_assignments, assignments_create, unassignments_create
+from apps.activity_assignments.api import (
+    applet_assignments,
+    applet_respondent_assignments,
+    assignments_create,
+    unassignments_create,
+)
 from apps.activity_assignments.domain.assignments import ActivitiesAssignments, ActivitiesAssignmentsWithSubjects
 from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, Response
 

@@ -303,7 +303,6 @@ class ActivityAssignmentService:
         respondent_subject_id = assignment.respondent_subject_id
         target_subject_id = assignment.target_subject_id
 
-        entities = self._AssignmentEntities()
         search_id = flow_id if flow_id is not None else activity_id
         assignment_id = await ActivityAssigmentCRUD(self.session).get_assignments_by_activity_or_flow_id_and_subject_id(
                     search_id=search_id,
