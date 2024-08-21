@@ -120,7 +120,7 @@ jobs:
     needs: build_job
     environment: dev
     #if: ${{ github.event.pull_request.merged }}
-    if: github.ref == 'refs/heads/M2-7299-test-ga-build-and-deployment'
+    #if: github.ref == 'refs/heads/M2-7299-test-ga-build-and-deployment'
     uses: ./.github/workflows/run_deploy_dev.yaml
     with:
       IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
