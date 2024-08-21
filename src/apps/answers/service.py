@@ -2181,6 +2181,13 @@ class AnswerTransferService:
         logger.info("Copy applet files...")
         files = await self._get_applet_files_list(self.answer_session_source, self.storage_source, applet_id)
 
+        size_source = sum([f["Size"] for f in files])
+        logger.info(f"Total size on source: {size_source}")
+
+        files_target = await self._get_applet_files_list(self.answer_session_target, self.storage_target, applet_id)
+        size_target = sum([f["Size"] for f in files_target])
+        logger.info(f"Total size on target: {size_target}")
+
         tasks = []
         # copy files concurrently
         for file in files:
@@ -2196,22 +2203,26 @@ class AnswerTransferService:
             logger.info(f"Processed [{i} / {total}] {int(i / total * 100)}%")
         logger.info("Copy applet files done")
 
-        size_source = sum([f["Size"] for f in files])
-        logger.info(f"Total size on source: {size_source}")
-
         files_target = await self._get_applet_files_list(self.answer_session_target, self.storage_target, applet_id)
         size_target = sum([f["Size"] for f in files_target])
+        logger.info(f"Total size on source: {size_source}")
         logger.info(f"Total size on target: {size_target}")
         if size_source != size_target:
             logger.error(f"!!!Applet '{applet_id}' size doesn't match!!!")
 
-    async def transfer(self, applet_id: uuid.UUID):
+    async def transfer(self, applet_id: uuid.UUID, *, copy_db: bool = True, copy_files: bool = True):
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         logger.info(f"Move answers for applet '{applet.display_name}'({applet.id})")
 
-        async with atomic(self.answer_session_target):
-            await self.copy_answers(applet.id)
-        async with atomic(self.answer_session_target):
-            await self.copy_answer_items(applet.id)
+        if copy_db:
+            async with atomic(self.answer_session_target):
+                await self.copy_answers(applet.id)
+            async with atomic(self.answer_session_target):
+                await self.copy_answer_items(applet.id)
+        else:
+            logger.info("Skip copying database")
 
-        await self.copy_applet_files(applet_id)
+        if copy_files:
+            await self.copy_applet_files(applet_id)
+        else:
+            logger.info("Skip copying files")

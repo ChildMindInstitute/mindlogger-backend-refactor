@@ -14,17 +14,20 @@ from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from apps.file.storage import select_storage
+from apps.answers.service import AnswerTransferService
+from apps.file.storage import create_client, select_storage
 from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserIsDeletedError, UserNotFound
 from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import (
+    WorkspaceArbitrary,
     WorkSpaceArbitraryConsoleOutput,
     WorkspaceArbitraryCreate,
     WorkspaceArbitraryFields,
 )
 from apps.workspaces.errors import ArbitraryServerSettingsError, WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
+from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
@@ -297,3 +300,138 @@ async def ping(owner_email: str = typer.Argument(..., help="Workspace owner emai
             except httpx.HTTPError as e:
                 error_msg("File upload error")
                 error(str(e))
+
+
+def _s_lower(s: str | None) -> str | None:
+    return s.lower() if s else s
+
+
+def _is_db_same(source_arb_data: WorkspaceArbitrary | None, target_arb_data: WorkspaceArbitrary | None) -> bool:
+    checks = [source_arb_data is None, target_arb_data is None]
+    if all(checks):
+        return True
+    if any(checks):
+        return False
+    assert source_arb_data
+    assert target_arb_data
+    return _s_lower(source_arb_data.database_uri) == _s_lower(target_arb_data.database_uri)
+
+
+def _is_bucket_same(source_arb_data: WorkspaceArbitrary | None, target_arb_data: WorkspaceArbitrary | None) -> bool:
+    checks = [source_arb_data is None, target_arb_data is None]
+    if all(checks):
+        return True
+    if any(checks):
+        return False
+
+    to_check = (
+        "storage_type",
+        "storage_url",
+        "storage_access_key",
+        "storage_secret_key",
+        "storage_region",
+        "storage_bucket",
+    )
+
+    for attr in to_check:
+        if _s_lower(getattr(source_arb_data, attr)) != _s_lower(getattr(target_arb_data, attr)):
+            return False
+
+    return True
+
+
+@app.command(
+    short_help=(
+        "Copy answers (DB records, files) from source arbitrary (or internal) to target arbitrary (or internal) server."
+        "WARNING: ensure source and target are different!"
+    )
+)
+@coro
+async def copy_applet_answers(
+    applet_ids: list[uuid.UUID] = typer.Argument(..., help="A list of Applet IDs for data copying."),
+    source_owner_email: Optional[str] = typer.Option(
+        None,
+        "--src-owner-email",
+        "-s",
+        help="Source workspace owner email. Internal server will be used by default.",
+    ),
+    target_owner_email: Optional[str] = typer.Option(
+        None,
+        "--tgt-owner-email",
+        "-t",
+        help="Target workspace owner email. Internal server will be used by default.",
+    ),
+    skip_db: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Skip DB records copying.",
+    ),
+    skip_files: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Skip files copying.",
+    ),
+) -> None:
+    if not source_owner_email and not target_owner_email:
+        error("Source or target should be set")
+    if skip_db and skip_files:
+        error("Nothing to copy: DB and files skipped")
+
+    source_arb_data = None
+    target_arb_data = None
+
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        user_crud = UsersCRUD(session)
+
+        if source_owner_email:
+            try:
+                source_owner = await user_crud.get_by_email(source_owner_email)
+                source_arb_data = await WorkspaceService(
+                    session, source_owner.id
+                ).get_arbitrary_info_by_owner_id_if_use_arbitrary(source_owner.id, in_use_only=False)
+            except (UserNotFound, UserIsDeletedError):
+                error(f"User with email {source_owner_email} not found")
+            except WorkspaceNotFoundError as e:
+                error(str(e))
+        if target_owner_email:
+            try:
+                target_owner = await user_crud.get_by_email(target_owner_email)
+                target_arb_data = await WorkspaceService(
+                    session, target_owner.id
+                ).get_arbitrary_info_by_owner_id_if_use_arbitrary(target_owner.id, in_use_only=False)
+            except (UserNotFound, UserIsDeletedError):
+                error(f"User with email {target_owner} not found")
+            except WorkspaceNotFoundError as e:
+                error(str(e))
+
+        if source_arb_data is None and target_arb_data is None:
+            error("No arbitrary data found")
+
+        copy_db = False if skip_db else not _is_db_same(source_arb_data, target_arb_data)
+        copy_files = False if skip_files else not _is_bucket_same(source_arb_data, target_arb_data)
+
+        source_db_uri = source_arb_data.database_uri if source_arb_data else settings.database.url
+        target_db_uri = target_arb_data.database_uri if target_arb_data else settings.database.url
+        async with session_manager.get_session(source_db_uri)() as source_session:
+            await AnswerTransferService.check_db(source_session)
+            async with session_manager.get_session(target_db_uri)() as target_session:
+                await AnswerTransferService.check_db(target_session)
+
+                source_bucket = create_client(source_arb_data)
+                try:
+                    await source_bucket.check()
+                except Exception as e:
+                    error_msg(str(e))
+                    raise
+                target_bucket = create_client(target_arb_data)
+                try:
+                    await target_bucket.check()
+                except Exception as e:
+                    error_msg(str(e))
+                    raise
+
+                service = AnswerTransferService(session, source_session, target_session, source_bucket, target_bucket)
+
+                for applet_id in applet_ids:
+                    await service.transfer(applet_id, copy_db=copy_db, copy_files=copy_files)

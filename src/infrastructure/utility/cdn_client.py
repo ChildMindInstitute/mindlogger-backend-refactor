@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO
 
 import boto3
+import botocore
 import httpx
 from botocore.exceptions import ClientError, EndpointConnectionError
 
@@ -40,6 +41,9 @@ class CDNClient:
 
     def configure_client(self, config):
         assert config, "set CDN"
+        client_config = botocore.config.Config(
+            max_pool_connections=25,
+        )
 
         if config.access_key and config.secret_key:
             return boto3.client(
@@ -48,6 +52,7 @@ class CDNClient:
                 region_name=config.region,
                 aws_access_key_id=config.access_key,
                 aws_secret_access_key=config.secret_key,
+                config=client_config,
             )
         try:
             return boto3.client("s3", region_name=config.region)
