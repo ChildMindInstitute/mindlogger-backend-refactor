@@ -99,3 +99,4 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):
     contains_response_types: list[ResponseType]
     item_count: int
+    auto_assign: bool

@@ -4,6 +4,7 @@ from pydantic import BaseModel, root_validator
 
 from apps.activity_assignments.errors import ActivityAssignmentActivityOrFlowError
 from apps.shared.domain import InternalModel, PublicModel
+from apps.subjects.domain import SubjectReadResponse
 
 
 class ActivityAssignmentCreate(BaseModel):
@@ -38,3 +39,20 @@ class ActivityAssignment(PublicModel):
 class ActivitiesAssignments(PublicModel):
     applet_id: UUID
     assignments: list[ActivityAssignment]
+
+
+class ActivityAssignmentsListQueryParams(InternalModel):
+    activities: str | None
+    flows: str | None
+
+
+class ActivityAssignmentWithSubject(PublicModel):
+    activity_flow_id: UUID | None
+    activity_id: UUID | None
+    respondent_subject: SubjectReadResponse
+    target_subject: SubjectReadResponse
+
+
+class ActivitiesAssignmentsWithSubjects(PublicModel):
+    applet_id: UUID
+    assignments: list[ActivityAssignmentWithSubject]

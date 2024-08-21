@@ -22,6 +22,7 @@ class CDNSettings(BaseModel):
     gcp_endpoint_url = "https://storage.googleapis.com"
     endpoint_url: str | None = None
     storage_address: str | None = None
+    max_concurrent_tasks: int = 10
 
     @property
     def url(self):

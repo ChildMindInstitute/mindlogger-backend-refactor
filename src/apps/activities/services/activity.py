@@ -148,6 +148,7 @@ class ActivityService:
                     order=index + 1,
                     report_included_item_name=(activity_data.report_included_item_name),
                     performance_task_type=activity_data.performance_task_type,
+                    auto_assign=activity_data.auto_assign,
                 )
             )
 
@@ -250,6 +251,7 @@ class ActivityService:
                     report_included_item_name=schema.report_included_item_name,
                     performance_task_type=schema.performance_task_type,
                     is_performance_task=schema.is_performance_task,
+                    auto_assign=schema.auto_assign,
                 )
             )
         return activities
@@ -435,6 +437,7 @@ class ActivityService:
                 is_hidden=schema.is_hidden,
                 contains_response_types=[],
                 item_count=0,
+                auto_assign=schema.auto_assign,
             )
 
             activities.append(activity)

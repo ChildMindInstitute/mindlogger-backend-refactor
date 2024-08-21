@@ -20,7 +20,7 @@ class ArbitraryS3CdnClient(CDNClient):
 
 
 class ArbitraryGCPCdnClient(CDNClient):
-    def __init__(self, config: CdnConfig, endpoint_url: str, env: str):
+    def __init__(self, config: CdnConfig, endpoint_url: str, env: str, *, max_concurrent_tasks: int = 10):
         self.endpoint_url = endpoint_url
         super().__init__(config, env)
 
@@ -38,7 +38,7 @@ class ArbitraryGCPCdnClient(CDNClient):
 
 
 class ArbitraryAzureCdnClient(CDNClient):
-    def __init__(self, sec_key: str, bucket: str, env: str = ""):
+    def __init__(self, sec_key: str, bucket: str, env: str = "", *, max_concurrent_tasks: int = 10):
         self.sec_key = sec_key
         super().__init__(CdnConfig(bucket=bucket), env)
 
