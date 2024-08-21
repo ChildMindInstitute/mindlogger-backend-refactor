@@ -55,12 +55,8 @@ async def assignments_create(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_activity_assignment_access(applet_id)
-        assignments = await ActivityAssignmentService(session).create_many(
-            applet_id, schema.assignments
-        )
+        await CheckAccessService(session, user.id).check_applet_activity_assignment_access(applet_id)
+        assignments = await ActivityAssignmentService(session).create_many(applet_id, schema.assignments)
 
     return Response(
         result=ActivitiesAssignments(
@@ -104,12 +100,8 @@ async def unassignments_create(
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
-        await CheckAccessService(
-            session, user.id
-        ).check_applet_activity_assignment_access(applet_id)
-        assignments = await ActivityAssignmentService(session).unassign_many(
-            applet_id, schema.assignments
-        )
+        await CheckAccessService(session, user.id).check_applet_activity_assignment_access(applet_id)
+        assignments = await ActivityAssignmentService(session).unassign_many(applet_id, schema.assignments)
 
     return Response(
         result=ActivitiesAssignments(
@@ -122,17 +114,11 @@ async def unassignments_create(
 async def applet_assignments(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    query_params: QueryParams = Depends(
-        parse_query_params(ActivityAssignmentsListQueryParams)
-    ),
+    query_params: QueryParams = Depends(parse_query_params(ActivityAssignmentsListQueryParams)),
     session=Depends(get_session),
 ) -> Response[ActivitiesAssignments]:
-    await CheckAccessService(session, user.id).check_applet_activity_assignment_access(
-        applet_id
-    )
-    assignments = await ActivityAssignmentService(session).get_all(
-        applet_id, query_params
-    )
+    await CheckAccessService(session, user.id).check_applet_activity_assignment_access(applet_id)
+    assignments = await ActivityAssignmentService(session).get_all(applet_id, query_params)
 
     return Response(
         result=ActivitiesAssignments(
@@ -150,15 +136,11 @@ async def applet_respondent_assignments(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
 
-    respondent_subject = await SubjectsService(session, user.id).get_by_user_and_applet(
-        user.id, applet_id
-    )
+    respondent_subject = await SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
     if not respondent_subject:
         raise NotFoundError(f"User don't have subject role in applet {applet_id}")
 
-    assignments = await ActivityAssignmentService(session).get_all_by_respondent(
-        applet_id, respondent_subject.id
-    )
+    assignments = await ActivityAssignmentService(session).get_all_by_respondent(applet_id, respondent_subject.id)
 
     return Response(
         result=ActivitiesAssignmentsWithSubjects(

@@ -37,26 +37,18 @@ def invitation_respondent_data() -> InvitationRespondentRequest:
 
 
 @pytest.fixture
-async def lucy_applet_one_subject(
-    session: AsyncSession, lucy: User, applet_one_lucy_respondent: AppletFull
-) -> Subject:
+async def lucy_applet_one_subject(session: AsyncSession, lucy: User, applet_one_lucy_respondent: AppletFull) -> Subject:
     applet_id = applet_one_lucy_respondent.id
-    query = select(SubjectSchema).where(
-        SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id
-    )
+    query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
     return Subject.from_orm(model)
 
 
 @pytest.fixture
-async def lucy_applet_two_subject(
-    session: AsyncSession, lucy: User, applet_two_lucy_respondent: AppletFull
-) -> Subject:
+async def lucy_applet_two_subject(session: AsyncSession, lucy: User, applet_two_lucy_respondent: AppletFull) -> Subject:
     applet_id = applet_two_lucy_respondent.id
-    query = select(SubjectSchema).where(
-        SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id
-    )
+    query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
     return Subject.from_orm(model)
@@ -109,9 +101,7 @@ async def applet_one_with_flow(
 
 
 @pytest.fixture
-async def applet_one_shell_account(
-    session: AsyncSession, applet_one: AppletFull, tom: User
-) -> Subject:
+async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
     return await SubjectsService(session, tom.id).create(
         SubjectCreate(
             applet_id=applet_one.id,
@@ -156,18 +146,14 @@ class TestActivityUnassignments(BaseTest):
             data=assignments_create,
         )
 
-        assert (
-            assignment_response.status_code == http.HTTPStatus.CREATED
-        ), assignment_response.json()
+        assert assignment_response.status_code == http.HTTPStatus.CREATED, assignment_response.json()
 
         unassign_response = await client.delete(
             self.activities_unassignments_applet.format(applet_id=applet_one.id),
             data=assignments_create,
         )
 
-        assert (
-            unassign_response.status_code == http.HTTPStatus.CREATED
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.CREATED, unassign_response.json()
         assignments = unassign_response.json()["result"]["assignments"]
         assert len(assignments) == 1
         assignment = assignments[0]
@@ -177,12 +163,8 @@ class TestActivityUnassignments(BaseTest):
         assert assignment["activityFlowId"] is None
         assert assignment["id"] is not None
 
-        query = select(ActivityAssigmentSchema).where(
-            ActivityAssigmentSchema.id == assignment["id"]
-        )
-        res = await session.execute(
-            query, execution_options={"synchronize_session": False}
-        )
+        query = select(ActivityAssigmentSchema).where(ActivityAssigmentSchema.id == assignment["id"])
+        res = await session.execute(query, execution_options={"synchronize_session": False})
         model = res.scalars().one()
 
         assert str(model.id) == assignment["id"]
@@ -278,14 +260,9 @@ class TestActivityUnassignments(BaseTest):
             data=unassignments_create,
         )
 
-        assert (
-            unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
-        assert (
-            result["message"]
-            == "Either activity_id or activity_flow_id must be provided"
-        )
+        assert result["message"] == "Either activity_id or activity_flow_id must be provided"
 
     async def test_unassign_fail_both_activity_and_flow(
         self,
@@ -333,14 +310,9 @@ class TestActivityUnassignments(BaseTest):
             data=unassignments_create,
         )
 
-        assert (
-            unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
-        assert (
-            result["message"]
-            == "Only one of activity_id or activity_flow_id must be provided"
-        )
+        assert result["message"] == "Only one of activity_id or activity_flow_id must be provided"
 
     async def test_unassign_multiple_assignments_with_flow(
         self,
@@ -371,15 +343,11 @@ class TestActivityUnassignments(BaseTest):
 
         # Create the assignments
         assignment_response = await client.post(
-            self.activities_assignments_applet.format(
-                applet_id=applet_one_with_flow.id
-            ),
+            self.activities_assignments_applet.format(applet_id=applet_one_with_flow.id),
             data=assignments_create,
         )
 
-        assert (
-            assignment_response.status_code == http.HTTPStatus.CREATED
-        ), assignment_response.json()
+        assert assignment_response.status_code == http.HTTPStatus.CREATED, assignment_response.json()
 
         # Step 2: Unassign the previously assigned activities/flows
         unassignments_create = ActivitiesAssignmentsCreate(
@@ -398,27 +366,18 @@ class TestActivityUnassignments(BaseTest):
         )
 
         unassign_response = await client.delete(
-            self.activities_unassignments_applet.format(
-                applet_id=applet_one_with_flow.id
-            ),
+            self.activities_unassignments_applet.format(applet_id=applet_one_with_flow.id),
             data=unassignments_create,
         )
 
-        assert (
-            unassign_response.status_code == http.HTTPStatus.CREATED
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.CREATED, unassign_response.json()
         unassignments = unassign_response.json()["result"]["assignments"]
         assert len(unassignments) == 2
         print(unassignments)
         # Validate that the assignments have been unassigned
         for unassignment in unassignments:
-
-            query = select(ActivityAssigmentSchema).where(
-                ActivityAssigmentSchema.id == unassignment["id"]
-            )
-            res = await session.execute(
-                query, execution_options={"synchronize_session": False}
-            )
+            query = select(ActivityAssigmentSchema).where(ActivityAssigmentSchema.id == unassignment["id"])
+            res = await session.execute(query, execution_options={"synchronize_session": False})
             model = res.scalars().one()
             assert str(model.id) == unassignment["id"]
             assert model.is_deleted is True
@@ -449,9 +408,7 @@ class TestActivityUnassignments(BaseTest):
             self.activities_assignments_applet.format(applet_id=applet_one.id),
             data=assignments_create.dict(),
         )
-        assert (
-            assign_response.status_code == http.HTTPStatus.CREATED
-        ), assign_response.json()
+        assert assign_response.status_code == http.HTTPStatus.CREATED, assign_response.json()
 
         # Step 2: Attempt to unassign with a wrong flow_id
         fake_flow_id = uuid.uuid4()  # Generate a fake flow_id that does not exist
@@ -472,9 +429,7 @@ class TestActivityUnassignments(BaseTest):
         )
 
         # Assert that the response indicates failure due to the wrong flow ID
-        assert (
-            unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
         assert result["message"] == f"Invalid flow id {fake_flow_id}"
 
@@ -506,14 +461,10 @@ class TestActivityUnassignments(BaseTest):
 
         # Create the assignment
         assign_response = await client.post(
-            self.activities_assignments_applet.format(
-                applet_id=applet_one_with_flow.id
-            ),
+            self.activities_assignments_applet.format(applet_id=applet_one_with_flow.id),
             data=assignments_create.dict(),
         )
-        assert (
-            assign_response.status_code == http.HTTPStatus.CREATED
-        ), assign_response.json()
+        assert assign_response.status_code == http.HTTPStatus.CREATED, assign_response.json()
 
         # Step 2: Unassign the created activities and flow
         unassignments_create = ActivitiesAssignmentsCreate(
@@ -533,41 +484,24 @@ class TestActivityUnassignments(BaseTest):
 
         # Unassign the assignment
         unassign_response = await client.delete(
-            self.activities_unassignments_applet.format(
-                applet_id=applet_one_with_flow.id
-            ),
+            self.activities_unassignments_applet.format(applet_id=applet_one_with_flow.id),
             data=unassignments_create.dict(),
         )
 
-        assert (
-            unassign_response.status_code == http.HTTPStatus.CREATED
-        ), assign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.CREATED, assign_response.json()
         unassignments = unassign_response.json()["result"]["assignments"]
         assert len(unassignments) == 2
-        assert unassignments[0]["activityId"] == str(
-            applet_one_with_flow.activities[0].id
-        )
-        assert unassignments[0]["respondentSubjectId"] == str(
-            applet_one_pending_subject.id
-        )
+        assert unassignments[0]["activityId"] == str(applet_one_with_flow.activities[0].id)
+        assert unassignments[0]["respondentSubjectId"] == str(applet_one_pending_subject.id)
         assert unassignments[0]["targetSubjectId"] == str(applet_one_pending_subject.id)
 
-        assert unassignments[1]["activityFlowId"] == str(
-            applet_one_with_flow.activity_flows[0].id
-        )
-        assert unassignments[1]["respondentSubjectId"] == str(
-            applet_one_pending_subject.id
-        )
+        assert unassignments[1]["activityFlowId"] == str(applet_one_with_flow.activity_flows[0].id)
+        assert unassignments[1]["respondentSubjectId"] == str(applet_one_pending_subject.id)
         assert unassignments[1]["targetSubjectId"] == str(applet_one_pending_subject.id)
 
         for unassignment in unassignments:
-
-            query = select(ActivityAssigmentSchema).where(
-                ActivityAssigmentSchema.id == unassignment["id"]
-            )
-            res = await session.execute(
-                query, execution_options={"synchronize_session": False}
-            )
+            query = select(ActivityAssigmentSchema).where(ActivityAssigmentSchema.id == unassignment["id"])
+            res = await session.execute(query, execution_options={"synchronize_session": False})
             model = res.scalars().one()
             assert str(model.id) == unassignment["id"]
             assert model.is_deleted is True
@@ -599,9 +533,7 @@ class TestActivityUnassignments(BaseTest):
             self.activities_assignments_applet.format(applet_id=applet_one.id),
             data=assignments_create.dict(),
         )
-        assert (
-            assign_response.status_code == http.HTTPStatus.CREATED
-        ), assign_response.json()
+        assert assign_response.status_code == http.HTTPStatus.CREATED, assign_response.json()
 
         # Step 2: Attempt to unassign using a wrong respondent subject ID (lucy_applet_two_subject)
         unassignments_create = ActivitiesAssignmentsCreate(
@@ -620,9 +552,7 @@ class TestActivityUnassignments(BaseTest):
         )
 
         # Assert that the response indicates failure due to the wrong respondent subject ID
-        assert (
-            unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
         assert (
             result["message"]
@@ -637,9 +567,7 @@ class TestActivityUnassignments(BaseTest):
             ActivityAssigmentSchema.is_deleted.is_(False),
         )
 
-        res = await session.execute(
-            query, execution_options={"synchronize_session": False}
-        )
+        res = await session.execute(query, execution_options={"synchronize_session": False})
         assignment = res.scalars().one_or_none()
 
         assert assignment is not None  # Ensure the original assignment was not removed
@@ -671,9 +599,7 @@ class TestActivityUnassignments(BaseTest):
             self.activities_assignments_applet.format(applet_id=applet_one.id),
             data=assignments_create.dict(),
         )
-        assert (
-            assign_response.status_code == http.HTTPStatus.CREATED
-        ), assign_response.json()
+        assert assign_response.status_code == http.HTTPStatus.CREATED, assign_response.json()
 
         # Step 2: Attempt to unassign using a shell account as the respondent
         unassignments_create = ActivitiesAssignmentsCreate(
@@ -692,9 +618,7 @@ class TestActivityUnassignments(BaseTest):
         )
 
         # Assert that the response indicates failure due to the shell account as the respondent subject
-        assert (
-            unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
         assert (
             result["message"]
@@ -708,9 +632,7 @@ class TestActivityUnassignments(BaseTest):
             ActivityAssigmentSchema.target_subject_id == tom_applet_one_subject.id,
             ActivityAssigmentSchema.is_deleted.is_(False),
         )
-        res = await session.execute(
-            query, execution_options={"synchronize_session": False}
-        )
+        res = await session.execute(query, execution_options={"synchronize_session": False})
         assignment = res.scalars().one_or_none()
 
         assert assignment is not None  # Ensure the original assignment was not removed
@@ -742,9 +664,7 @@ class TestActivityUnassignments(BaseTest):
             self.activities_assignments_applet.format(applet_id=applet_one.id),
             data=assignments_create.dict(),
         )
-        assert (
-            assign_response.status_code == http.HTTPStatus.CREATED
-        ), assign_response.json()
+        assert assign_response.status_code == http.HTTPStatus.CREATED, assign_response.json()
 
         # Verify the assignment was created successfully
         assignments = assign_response.json()["result"]["assignments"]
@@ -773,9 +693,7 @@ class TestActivityUnassignments(BaseTest):
         )
 
         # Verify that the unassignment was successful
-        assert (
-            unassign_response.status_code == http.HTTPStatus.CREATED
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.CREATED, unassign_response.json()
         assignments = unassign_response.json()["result"]["assignments"]
         assert len(assignments) == 1
         assignment = assignments[0]
@@ -785,18 +703,14 @@ class TestActivityUnassignments(BaseTest):
         assert assignment["activityFlowId"] is None
 
         # Query the database to validate the unassignment
-        query = select(ActivityAssigmentSchema).where(
-            ActivityAssigmentSchema.id == assignment["id"]
-        )
+        query = select(ActivityAssigmentSchema).where(ActivityAssigmentSchema.id == assignment["id"])
         res = await session.execute(query)
         model = res.scalars().one()
 
         assert model.is_deleted is True
         assert str(model.id) == assignment["id"]
         assert model.activity_id == uuid.UUID(assignment["activityId"])
-        assert model.respondent_subject_id == uuid.UUID(
-            assignment["respondentSubjectId"]
-        )
+        assert model.respondent_subject_id == uuid.UUID(assignment["respondentSubjectId"])
         assert model.target_subject_id == uuid.UUID(assignment["targetSubjectId"])
 
     async def test_unassign_fail_wrong_target(
@@ -824,9 +738,7 @@ class TestActivityUnassignments(BaseTest):
             self.activities_assignments_applet.format(applet_id=applet_one.id),
             data=assignments_create.dict(),
         )
-        assert (
-            assign_response.status_code == http.HTTPStatus.CREATED
-        ), assign_response.json()
+        assert assign_response.status_code == http.HTTPStatus.CREATED, assign_response.json()
 
         # Step 2: Attempt to unassign with an invalid target subject
         unassignments_create = ActivitiesAssignmentsCreate(
@@ -834,9 +746,7 @@ class TestActivityUnassignments(BaseTest):
                 ActivityAssignmentCreate(
                     activity_id=applet_one.activities[0].id,
                     respondent_subject_id=tom_applet_one_subject.id,
-                    target_subject_id=uuid.UUID(
-                        "7db2b7fe-3eba-4c70-8d02-dcf55b74d1c3"
-                    ),  # Invalid target subject ID
+                    target_subject_id=uuid.UUID("7db2b7fe-3eba-4c70-8d02-dcf55b74d1c3"),  # Invalid target subject ID
                 )
             ]
         )
@@ -847,9 +757,7 @@ class TestActivityUnassignments(BaseTest):
         )
 
         # Validate the response indicates failure due to the wrong target subject ID
-        assert (
-            unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
-        ), unassign_response.json()
+        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
         assert (
             result["message"]

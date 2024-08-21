@@ -1,5 +1,6 @@
 from fastapi.routing import APIRouter
 from starlette import status
+
 from apps.activity_assignments.api import (
     applet_assignments,
     applet_respondent_assignments,

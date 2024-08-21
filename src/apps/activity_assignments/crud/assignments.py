@@ -15,9 +15,7 @@ __all__ = ["ActivityAssigmentCRUD"]
 
 
 class _ActivityAssignmentActivitiesFilter(Filtering):
-    activities = FilterField(
-        ActivitySchema.id, method_name="filter_by_activities_or_flows"
-    )
+    activities = FilterField(ActivitySchema.id, method_name="filter_by_activities_or_flows")
 
     def filter_by_activities_or_flows(self, field, values: list | str):
         if isinstance(values, str):
@@ -30,9 +28,7 @@ class _ActivityAssignmentActivitiesFilter(Filtering):
 
 
 class _ActivityAssignmentFlowsFilter(Filtering):
-    flows = FilterField(
-        ActivityFlowSchema.id, method_name="filter_by_activities_or_flows"
-    )
+    flows = FilterField(ActivityFlowSchema.id, method_name="filter_by_activities_or_flows")
 
     def filter_by_activities_or_flows(self, field, values: list | str):
         if isinstance(values, str):
@@ -47,9 +43,7 @@ class _ActivityAssignmentFlowsFilter(Filtering):
 class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
     schema_class = ActivityAssigmentSchema
 
-    async def create_many(
-        self, schemas: list[ActivityAssigmentSchema]
-    ) -> list[ActivityAssigmentSchema]:
+    async def create_many(self, schemas: list[ActivityAssigmentSchema]) -> list[ActivityAssigmentSchema]:
         """
         Creates multiple activity assignment records in the database.
 
@@ -100,24 +94,15 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         """
         query: Query = select(ActivityAssigmentSchema)
         query = query.where(ActivityAssigmentSchema.activity_id == schema.activity_id)
-        query = query.where(
-            ActivityAssigmentSchema.respondent_subject_id
-            == schema.respondent_subject_id
-        )
-        query = query.where(
-            ActivityAssigmentSchema.target_subject_id == schema.target_subject_id
-        )
-        query = query.where(
-            ActivityAssigmentSchema.activity_flow_id == schema.activity_flow_id
-        )
+        query = query.where(ActivityAssigmentSchema.respondent_subject_id == schema.respondent_subject_id)
+        query = query.where(ActivityAssigmentSchema.target_subject_id == schema.target_subject_id)
+        query = query.where(ActivityAssigmentSchema.activity_flow_id == schema.activity_flow_id)
         query = query.where(ActivityAssigmentSchema.soft_exists())
         query = query.exists()
         db_result = await self._execute(select(query))
         return db_result.scalars().first() or False
 
-    async def unassign_many(
-        self, schemas: list[ActivityAssigmentSchema]
-    ) -> list[ActivityAssigmentSchema]:
+    async def unassign_many(self, schemas: list[ActivityAssigmentSchema]) -> list[ActivityAssigmentSchema]:
         """
         Unassigns multiple assignments by marking them as deleted.
 
@@ -136,9 +121,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         """
         updated_schemas = []
         for schema in schemas:
-            updated_schemas.extend(
-                await self._update(lookup="id", value=schema.id, schema=schema)
-            )
+            updated_schemas.extend(await self._update(lookup="id", value=schema.id, schema=schema))
         return updated_schemas
 
     async def get_assignments_by_activity_or_flow_id_and_subject_id(
@@ -188,28 +171,20 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         assignment = result.scalars().first()
         return assignment.id if assignment else None
 
-    async def get_by_respondent_subject_id(
-        self, respondent_subject_id
-    ) -> list[ActivityAssigmentSchema]:
+    async def get_by_respondent_subject_id(self, respondent_subject_id) -> list[ActivityAssigmentSchema]:
         query: Query = select(ActivityAssigmentSchema)
-        query = query.where(
-            ActivityAssigmentSchema.respondent_subject_id == respondent_subject_id
-        )
+        query = query.where(ActivityAssigmentSchema.respondent_subject_id == respondent_subject_id)
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
 
-    async def get_by_applet(
-        self, applet_id: uuid.UUID, query_params: QueryParams
-    ) -> list[ActivityAssigmentSchema]:
+    async def get_by_applet(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssigmentSchema]:
         respondent_schema = aliased(SubjectSchema)
         target_schema = aliased(SubjectSchema)
 
         query = (
             select(ActivityAssigmentSchema)
-            .outerjoin(
-                ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id
-            )
+            .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
             .outerjoin(
                 ActivityFlowSchema,
                 ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id,
@@ -233,12 +208,8 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             )
         )
         if query_params.filters:
-            activities_clause = _ActivityAssignmentActivitiesFilter().get_clauses(
-                **query_params.filters
-            )
-            flows_clause = _ActivityAssignmentFlowsFilter().get_clauses(
-                **query_params.filters
-            )
+            activities_clause = _ActivityAssignmentActivitiesFilter().get_clauses(**query_params.filters)
+            flows_clause = _ActivityAssignmentFlowsFilter().get_clauses(**query_params.filters)
 
             query = query.where(or_(*activities_clause, *flows_clause))
 
@@ -253,9 +224,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         target_schema = aliased(SubjectSchema)
         query = (
             select(ActivityAssigmentSchema)
-            .outerjoin(
-                ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id
-            )
+            .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
             .outerjoin(
                 ActivityFlowSchema,
                 ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id,
