@@ -34,7 +34,7 @@ router.delete(
                 invite, then invitation ID), activity or activity
                 flow ID, and target subject ID.
                 """,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_201_CREATED: {"model": Response[ActivitiesAssignments]},
         **DEFAULT_OPENAPI_RESPONSE,
