@@ -126,7 +126,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
     async def get_assignments_by_activity_or_flow_id_and_subject_id(
         self,
-        search_id: uuid.UUID,
+        search_id: uuid.UUID | None,
         respondent_subject_id: uuid.UUID,
         target_subject_id: uuid.UUID,
     ) -> uuid.UUID | None:

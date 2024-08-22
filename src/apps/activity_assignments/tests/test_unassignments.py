@@ -257,7 +257,7 @@ class TestActivityUnassignments(BaseTest):
 
         unassign_response = await client.delete(
             self.activities_unassignments_applet.format(applet_id=applet_one.id),
-            data=unassignments_create.dict(),
+            data=unassignments_create,
         )
 
         assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
@@ -307,7 +307,7 @@ class TestActivityUnassignments(BaseTest):
 
         unassign_response = await client.delete(
             self.activities_unassignments_applet.format(applet_id=applet_one.id),
-            data=unassignments_create.dict(),
+            data=unassignments_create,
         )
 
         assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
@@ -367,7 +367,7 @@ class TestActivityUnassignments(BaseTest):
 
         unassign_response = await client.delete(
             self.activities_unassignments_applet.format(applet_id=applet_one_with_flow.id),
-            data=unassignments_create.dict(),
+            data=unassignments_create,
         )
 
         assert unassign_response.status_code == http.HTTPStatus.CREATED, unassign_response.json()

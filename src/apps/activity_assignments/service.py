@@ -299,7 +299,7 @@ class ActivityAssignmentService:
 
     async def _get_assignment_by_activity_or_flow_and_subject_id(
         self, assignment: ActivityAssignmentCreate
-    ) -> uuid.UUID:
+    ) -> uuid.UUID | None:
         activity_id = assignment.activity_id
         flow_id = assignment.activity_flow_id
         respondent_subject_id = assignment.respondent_subject_id
