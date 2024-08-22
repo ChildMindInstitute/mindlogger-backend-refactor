@@ -174,8 +174,7 @@ class SubmissionDate(PublicModel):
     end_datetime: datetime.datetime
 
 
-class ReviewFlow(ReviewItem[SubmissionDate]):
-    ...
+class ReviewFlow(ReviewItem[SubmissionDate]): ...
 
 
 class PublicReviewFlow(ReviewFlow):

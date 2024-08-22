@@ -171,8 +171,7 @@ class ConditionalLogicParser:
 class ConditionResolver(ABC):
     @classmethod
     @abstractmethod
-    def resolve(cls, name: str, condition: ConditionData) -> AnyCondition:
-        ...
+    def resolve(cls, name: str, condition: ConditionData) -> AnyCondition: ...
 
 
 class ConditionValueResolver:
@@ -246,9 +245,7 @@ class ResolvesConditionalLogic(ABC):
     ld_variable_name: str | None = None
 
     @abstractmethod
-    def resolve_condition_name(self):
-        ...
+    def resolve_condition_name(self): ...
 
     @abstractmethod
-    def resolve_condition(self, condition: ConditionData) -> AnyCondition:
-        ...
+    def resolve_condition(self, condition: ConditionData) -> AnyCondition: ...

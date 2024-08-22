@@ -34,12 +34,10 @@ class ActivityItemBaseExport(BaseModelExport):
 
     @classmethod
     @abstractmethod
-    def _get_supported_response_type(cls) -> ResponseType:
-        ...
+    def _get_supported_response_type(cls) -> ResponseType: ...
 
     @abstractmethod
-    def _get_input_type(self):
-        ...
+    def _get_input_type(self): ...
 
     def _build_doc(self, model: ActivityItemFull) -> dict:
         doc = {
