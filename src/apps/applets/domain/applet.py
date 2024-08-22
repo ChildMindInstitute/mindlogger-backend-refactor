@@ -154,8 +154,10 @@ class PublicFlowFullType(PublicFlowFull):
     type = "activityFlow"
 
 
-# Returns a combination of activity and activity flows
 class AppletActivitiesAndFlowsDetailsPublic(PublicModel):
+    """
+    Returns a combination of activity and activity flows
+    """
     details: list[ActivityLanguageWithItemsMobileDetailPublicType | PublicFlowFullType] = Field(default_factory=list)
 
 
