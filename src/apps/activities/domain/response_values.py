@@ -29,6 +29,7 @@ from apps.activities.domain.response_type_config import (
     TimeConfig,
     TimeRangeConfig,
     VideoConfig,
+    UnityConfig
 )
 from apps.activities.errors import (
     InvalidDataMatrixByOptionError,
@@ -101,6 +102,11 @@ class StabilityTrackerValues(PublicModel):
 
 class ABTrailsValues(PublicModel):
     type: Literal[ResponseType.ABTRAILS] | None
+
+
+class UnityValues(PublicModel):
+    type: Literal[ResponseType.UNITYFILE] | None
+    file: bytes | None = Field(default=None)
 
 
 class _SingleSelectionValue(PublicModel):
@@ -407,6 +413,7 @@ ResponseValueConfigOptions = [
     StabilityTrackerValues,
     ABTrailsValues,
     PhrasalTemplateValues,
+    UnityValues,
 ]
 
 
@@ -423,6 +430,7 @@ ResponseValueConfig = (
     | AudioPlayerValues
     | TimeValues
     | PhrasalTemplateValues
+    | UnityValues
 )
 
 
@@ -478,6 +486,7 @@ ResponseTypeConfigOptions = [
     StabilityTrackerConfig,
     ABTrailsConfig,
     PhrasalTemplateConfig,
+    UnityConfig,
 ]
 
 ResponseTypeValueConfig = {}

@@ -203,6 +203,7 @@ def validate_performance_task_type(values: dict):
         elif item.response_type in (
             ResponseType.FLANKER,
             ResponseType.ABTRAILS,
+            ResponseType.UNITYFILE,
         ):
             values["performance_task_type"] = item.response_type
     return values
