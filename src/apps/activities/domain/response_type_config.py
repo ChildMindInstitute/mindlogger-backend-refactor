@@ -54,7 +54,7 @@ class ResponseType(str, Enum):
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
     ABTRAILS = "ABTrails"
-    UNITYFILE = "unityFile"
+    UNITY = "unity"
     PHRASAL_TEMPLATE = "phrasalTemplate"
 
     @classmethod
@@ -72,7 +72,7 @@ class ResponseType(str, Enum):
             cls.FLANKER,
             cls.STABILITYTRACKER,
             cls.ABTRAILS,
-            cls.UNITYFILE,
+            cls.UNITY,
         )
 
 
@@ -229,7 +229,7 @@ class PhrasalTemplateConfig(PublicModel):
 
 
 class UnityConfig(PublicModel):
-    type: Literal[ResponseType.UNITYFILE] | None
+    type: Literal[ResponseType.UNITY] | None
     device_type: str | None
 
 
@@ -404,7 +404,7 @@ class PerformanceTaskType(str, Enum):
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
     ABTRAILS = "ABTrails"
-    UNITYFILE = "unityFile"
+    UNITY = "unity"
     
     @classmethod
     def get_values(cls) -> list[str]:

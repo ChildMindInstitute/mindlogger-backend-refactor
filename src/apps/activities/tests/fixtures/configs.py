@@ -183,4 +183,4 @@ def phrasal_template_config(default_config: DefaultConfig) -> PhrasalTemplateCon
 
 @pytest.fixture
 def unity_config(default_config: DefaultConfig) -> UnityConfig:
-    return UnityConfig(**default_config.dict(), type=ResponseType.UNITYFILE)
+    return UnityConfig(**default_config.dict(), type=ResponseType.UNITY)

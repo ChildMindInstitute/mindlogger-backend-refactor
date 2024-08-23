@@ -105,7 +105,7 @@ class ABTrailsValues(PublicModel):
 
 
 class UnityValues(PublicModel):
-    type: Literal[ResponseType.UNITYFILE] | None
+    type: Literal[ResponseType.UNITY] | None
     file: bytes | None = Field(default=None)
 
 
