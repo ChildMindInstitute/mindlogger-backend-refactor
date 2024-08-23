@@ -17,13 +17,6 @@ repos:
         types: [python]
         pass_filenames: false
 
-      - id: isort
-        name: isort
-        entry: isort --check-only .
-        language: system
-        types: [python]
-        pass_filenames: false
-
       - id: mypy
         name: mypy
         entry: mypy
