@@ -541,7 +541,17 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert set(res.keys()) == {
+            "id",
+            "secretUserId",
+            "nickname",
+            "lastSeen",
+            "tag",
+            "appletId",
+            "firstName",
+            "lastName",
+            "userId",
+        }
         assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
@@ -632,7 +642,17 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert set(res.keys()) == {
+            "id",
+            "secretUserId",
+            "nickname",
+            "lastSeen",
+            "tag",
+            "appletId",
+            "firstName",
+            "lastName",
+            "userId",
+        }
         assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
@@ -658,7 +678,17 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert set(res.keys()) == {
+            "id",
+            "secretUserId",
+            "nickname",
+            "lastSeen",
+            "tag",
+            "appletId",
+            "firstName",
+            "lastName",
+            "userId",
+        }
         assert uuid.UUID(res["id"]) == applet_one_shell_account.id
         assert res["secretUserId"] == applet_one_shell_account.secret_user_id
         assert res["nickname"] == applet_one_shell_account.nickname

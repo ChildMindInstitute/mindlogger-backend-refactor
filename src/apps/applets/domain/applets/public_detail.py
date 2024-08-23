@@ -40,6 +40,7 @@ class Activity(PublicModel):
     performance_task_type: PerformanceTaskType | None = None
     report_included_item_name: str | None = None
     is_performance_task: bool = False
+    auto_assign: bool | None = True
 
 
 class ActivityFlowItem(PublicModel):
@@ -60,6 +61,7 @@ class ActivityFlow(PublicModel):
     items: list[ActivityFlowItem] = Field(default_factory=list)
     report_included_activity_name: str | None = None
     report_included_item_name: str | None = None
+    auto_assign: bool | None = True
 
 
 class Encryption(PublicModel):

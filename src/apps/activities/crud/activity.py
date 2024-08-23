@@ -86,6 +86,17 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         result = await self._execute(query)
         return result.scalars().first()
 
+    # get by applet id and activity ids
+    async def get_by_applet_id_and_activities_ids(
+        self, applet_id: uuid.UUID, activities_ids: list[uuid.UUID]
+    ) -> list[ActivitySchema]:
+        query: Query = select(ActivitySchema)
+        query = query.where(ActivitySchema.applet_id == applet_id)
+        query = query.where(ActivitySchema.id.in_(activities_ids))
+
+        result = await self._execute(query)
+        return result.scalars().all()
+
     async def get_ids_by_applet_id(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
         query: Query = select(ActivitySchema.id)
         query = query.where(ActivitySchema.applet_id == applet_id)

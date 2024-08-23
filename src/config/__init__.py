@@ -12,6 +12,7 @@ from config.database import DatabaseSettings
 from config.integrations import LorisSettings
 from config.logs import Logs
 from config.mailing import MailingSettings
+from config.multiinformant import MultiInformantSettings
 from config.notification import FirebaseCloudMessagingSettings
 from config.opentelemetry import OpenTelemetrySettings
 from config.rabbitmq import RabbitMQSettings
@@ -91,6 +92,8 @@ class Settings(BaseSettings):
     logs: Logs = Logs()
 
     opentelemetry: OpenTelemetrySettings = OpenTelemetrySettings()
+
+    multi_informant: MultiInformantSettings = MultiInformantSettings()
 
     loris: LorisSettings = LorisSettings()
 

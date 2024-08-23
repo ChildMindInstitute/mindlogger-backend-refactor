@@ -1,5 +1,5 @@
-name: deploy_to_produc†ion
-on: [pull_request, workflow_dispatch]
+name: Deploy to Production
+on: [ workflow_dispatch]
 
 permissions:
   id-token: write

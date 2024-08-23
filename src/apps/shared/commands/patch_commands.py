@@ -108,6 +108,23 @@ PatchRegister.register(
     task_id="M2-7203",
     description="[Migration] Migrate missed secret ids",
 )
+PatchRegister.register(
+    file_path="m2_7543_move_answers_from_internal_to_arbitrary.py",
+    task_id="M2-7543",
+    description="Move applet 'NIMH Rhythms and Mood Family Study EMA' answers to related arbitrary",
+)
+PatchRegister.register(
+    file_path="m2_7571_move_answers_from_arbitrary.py",
+    task_id="M2-7571",
+    description="Move answers from arbitrary to internal (DB & storage)",
+)
+
+PatchRegister.register(
+    file_path="m2_7366_set_auto_assign_to_true_for_activities_and_flows.py",
+    task_id="M2-7366",
+    description="Set auto_assign to true for existing activities and flows",
+    manage_session=False,
+)
 
 PatchRegister.register(
     file_path="m2_6641_alerts_type_default.py",

@@ -11,8 +11,16 @@ RUFF_COMMAND = ruff
 ISORT_COMMAND = isort
 MYPY_COMMAND = mypy
 
-DOCKER_EXEC = docker-compose run --rm -u root app
-COVERAGE_DOCKER_EXEC = docker-compose run --rm -u root app
+DOCKER_COMPOSE_EXISTS := $(shell command -v docker-compose 2> /dev/null)
+
+ifeq (${DOCKER_COMPOSE_EXISTS}, 0)
+    DOCKER_COMPOSE_CMD=docker-compose
+else
+    DOCKER_COMPOSE_CMD=docker compose
+endif
+
+DOCKER_EXEC = ${DOCKER_COMPOSE_CMD} run --rm -u root app
+COVERAGE_DOCKER_EXEC = ${DOCKER_COMPOSE_CMD} run --rm -u root app
 
 # ###############
 # Local
@@ -25,7 +33,7 @@ run:
 
 .PHONY: run_local
 run_local:
-	docker-compose up -d redis postgres mailhog rabbitmq
+	${DOCKER_COMPOSE_CMD} up -d redis postgres mailhog rabbitmq
 
 .PHONY: test
 test:

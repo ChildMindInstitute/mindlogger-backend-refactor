@@ -208,7 +208,11 @@ class TestWorkspaces(BaseTest):
 
         response = await client.get(self.workspaces_list_url)
         assert response.status_code == 200, response.json()
-        assert len(response.json()["result"]) == 1
+        res = response.json()
+        assert len(res["result"]) == 1
+        assert res["count"] == 1
+        assert set(res["result"][0].keys()) == {"useArbitrary", "workspaceName", "ownerId"}
+        assert res["result"][0]["useArbitrary"] is False
 
     async def test_user_workspace_list_super_admin(self, client, superadmin):
         client.login(superadmin)
