@@ -29,7 +29,7 @@ from apps.activities.domain.response_type_config import (
     TimeConfig,
     TimeRangeConfig,
     VideoConfig,
-    UnityConfig
+    UnityConfig,
 )
 from apps.activities.errors import (
     InvalidDataMatrixByOptionError,

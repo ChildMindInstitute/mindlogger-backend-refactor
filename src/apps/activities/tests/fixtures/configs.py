@@ -24,7 +24,7 @@ from apps.activities.domain.response_type_config import (
     TimeConfig,
     TimeRangeConfig,
     UnityConfig,
-    VideoConfig
+    VideoConfig,
 )
 
 
@@ -180,6 +180,7 @@ def audio_player_config(default_config: DefaultConfig) -> AudioPlayerConfig:
 @pytest.fixture
 def phrasal_template_config(default_config: DefaultConfig) -> PhrasalTemplateConfig:
     return PhrasalTemplateConfig(**default_config.dict(), type=ResponseType.PHRASAL_TEMPLATE)
+
 
 @pytest.fixture
 def unity_config(default_config: DefaultConfig) -> UnityConfig:

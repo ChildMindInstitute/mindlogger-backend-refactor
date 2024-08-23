@@ -223,6 +223,7 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
     additional_response_option: AdditionalResponseOption
     play_once: bool
 
+
 class PhrasalTemplateConfig(PublicModel):
     type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
     remove_back_button: bool
@@ -405,7 +406,7 @@ class PerformanceTaskType(str, Enum):
     TOUCH = "touch"
     ABTRAILS = "ABTrails"
     UNITY = "unity"
-    
+
     @classmethod
     def get_values(cls) -> list[str]:
         return [i.value for i in cls]
