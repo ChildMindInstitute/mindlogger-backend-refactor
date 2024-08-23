@@ -1,8 +1,8 @@
 name: deploy_to_test
 on:
-  push:
-    tags:        
-      - '**'  
+#  push:
+#    tags:
+#      - '**'
   workflow_call:
     inputs:
       COMMIT_HASH:

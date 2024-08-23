@@ -265,7 +265,7 @@ class ActivitySubmissionResponse(ActivitySubmission):
     summary: SubmissionSummary | None = None
 
     @validator("summary", always=True)
-    def generate_summary(cls, value, values):
+    def generate_summary(cls, value, values) -> list[Any]:
         if not value:
             answer: ActivityAnswer = values["answer"]
             if answer:
@@ -383,7 +383,7 @@ class FlowSubmissionResponse(PublicModel):
         return value
 
     @validator("summary", always=True)
-    def generate_summary(cls, value, values):
+    def generate_summary(cls, value, values) -> list[Any]:
         if not value:
             answers: list[ActivityAnswer] = values["submission"].answers
             if answers:
@@ -654,6 +654,7 @@ class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
     created_at: int
     activity_id: str
+    submit_id: uuid.UUID | None = None
 
     @validator("created_at")
     def convert_time_to_unix_timestamp(cls, value: int):

@@ -33,6 +33,7 @@ from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 
@@ -125,7 +126,7 @@ async def create_temporary_multiinformant_relation(
         await service.delete_relation(subject_id, source_subject_id)
 
     async with atomic(session):
-        expires_at = datetime.now() + timedelta(days=1)
+        expires_at = datetime.now() + timedelta(seconds=settings.multi_informant.temp_relation_expiry_secs)
         await service.create_relation(subject_id, source_subject_id, "take-now", {"expiresAt": expires_at.isoformat()})
         return EmptyResponse()
 
@@ -175,6 +176,8 @@ async def update_subject(
                 tag=subject.tag,
                 applet_id=subject.applet_id,
                 user_id=subject.user_id,
+                first_name=subject.first_name,
+                last_name=subject.last_name,
             )
         )
 
@@ -255,6 +258,8 @@ async def get_subject(
             tag=subject.tag,
             applet_id=subject.applet_id,
             user_id=subject.user_id,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
         )
     )
 
@@ -287,5 +292,7 @@ async def get_my_subject(
             tag=subject.tag,
             applet_id=subject.applet_id,
             user_id=subject.user_id,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
         )
     )

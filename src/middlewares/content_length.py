@@ -1,3 +1,5 @@
+from typing import Callable
+
 from fastapi import HTTPException
 from starlette import status
 from starlette.types import ASGIApp
@@ -28,10 +30,10 @@ class ContentLengthLimitMiddleware:
             await self.app(scope, receive, send)
             return
 
-        def _receiver():
+        def _receiver() -> Callable:
             read_length: int = 0
 
-            async def _receive():
+            async def __receive():
                 nonlocal read_length, receive
 
                 message = await receive()
@@ -43,7 +45,7 @@ class ContentLengthLimitMiddleware:
                         )
                 return message
 
-            return _receive
+            return __receive
 
         _receive = _receiver()
         await self.app(scope, _receive, send)

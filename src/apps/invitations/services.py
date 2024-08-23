@@ -2,6 +2,7 @@ import asyncio
 import uuid
 from typing import cast
 
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.applets.crud import AppletsCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import ManagersRole, Role
@@ -385,6 +386,10 @@ class InvitationsService:
             if invitation.meta.subject_id:
                 await UserAccessService(self.session, self._user.id).change_subject_pins_to_user(
                     self._user.id, uuid.UUID(invitation.meta.subject_id)
+                )
+
+                await ActivityAssignmentService(self.session).check_for_assignment_and_notify(
+                    applet_id=invitation.applet_id, respondent_subject_id=uuid.UUID(invitation.meta.subject_id)
                 )
 
         await InvitationCRUD(self.session).approve_by_id(invitation.id, self._user.id)

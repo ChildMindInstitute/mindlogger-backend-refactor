@@ -59,11 +59,7 @@ async def user_workspaces(
     return ResponseMulti[PublicWorkspace](
         count=len(workspaces),
         result=[
-            PublicWorkspace(
-                owner_id=workspace.user_id,
-                workspace_name=workspace.workspace_name,
-                integrations=workspace.integrations,
-            )
+            PublicWorkspace(owner_id=workspace.user_id, **workspace.dict(exclude={"user_id"}))
             for workspace in workspaces
         ],
     )
