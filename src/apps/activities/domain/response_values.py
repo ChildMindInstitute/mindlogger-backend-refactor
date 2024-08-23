@@ -412,8 +412,8 @@ ResponseValueConfigOptions = [
     FlankerValues,
     StabilityTrackerValues,
     ABTrailsValues,
-    PhrasalTemplateValues,
     UnityValues,
+    PhrasalTemplateValues,
 ]
 
 
@@ -429,8 +429,8 @@ ResponseValueConfig = (
     | AudioValues
     | AudioPlayerValues
     | TimeValues
-    | PhrasalTemplateValues
     | UnityValues
+    | PhrasalTemplateValues
 )
 
 
@@ -485,8 +485,8 @@ ResponseTypeConfigOptions = [
     FlankerConfig,
     StabilityTrackerConfig,
     ABTrailsConfig,
-    PhrasalTemplateConfig,
     UnityConfig,
+    PhrasalTemplateConfig,
 ]
 
 ResponseTypeValueConfig = {}
