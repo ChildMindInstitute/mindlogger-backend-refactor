@@ -113,6 +113,7 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
 
 class TestActivityAssignments(BaseTest):
     activities_assignments_applet = "/assignments/applet/{applet_id}"
+    user_activities_assignments = "/users/me/assignments/{applet_id}"
 
     async def test_create_one_assignment(
         self,
@@ -826,3 +827,68 @@ class TestActivityAssignments(BaseTest):
         assert assignment["targetSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["activityFlowId"] is None
         assert assignment["id"] == assignment_activity["id"]
+
+    async def test_assignment_list_by_respondent_success(
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        tom: User,
+        lucy: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+    ):
+        client.login(tom)
+
+        assignments_create = ActivitiesAssignmentsCreate(
+            assignments=[
+                ActivityAssignmentCreate(
+                    activity_id=applet_one.activities[0].id,
+                    respondent_subject_id=tom_applet_one_subject.id,
+                    target_subject_id=lucy_applet_one_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=applet_one.activities[0].id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                ),
+            ]
+        )
+
+        response = await client.post(
+            self.activities_assignments_applet.format(applet_id=applet_one.id), data=assignments_create
+        )
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+        response = await client.get(self.user_activities_assignments.format(applet_id=applet_one.id))
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.json()["result"]["appletId"] == str(applet_one.id)
+        assignments = response.json()["result"]["assignments"]
+        assert len(assignments) == 1
+        assignment = assignments[0]
+        assert assignment["activityId"] == str(applet_one.activities[0].id)
+        assert assignment["activityFlowId"] is None
+        assert assignment["respondentSubject"]["id"] == str(tom_applet_one_subject.id)
+        assert assignment["respondentSubject"]["firstName"] == tom_applet_one_subject.first_name
+        assert assignment["respondentSubject"]["lastName"] == tom_applet_one_subject.last_name
+        assert assignment["targetSubject"]["id"] == str(lucy_applet_one_subject.id)
+        assert assignment["targetSubject"]["firstName"] == lucy_applet_one_subject.first_name
+        assert assignment["targetSubject"]["lastName"] == lucy_applet_one_subject.last_name
+
+        client.login(lucy)
+
+        response = await client.get(self.user_activities_assignments.format(applet_id=applet_one.id))
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.json()["result"]["appletId"] == str(applet_one.id)
+        assignments = response.json()["result"]["assignments"]
+        assert len(assignments) == 1
+        assignment = assignments[0]
+        assert assignment["activityId"] == str(applet_one.activities[0].id)
+        assert assignment["activityFlowId"] is None
+        assert assignment["targetSubject"]["id"] == str(tom_applet_one_subject.id)
+        assert assignment["targetSubject"]["firstName"] == tom_applet_one_subject.first_name
+        assert assignment["targetSubject"]["lastName"] == tom_applet_one_subject.last_name
+        assert assignment["respondentSubject"]["id"] == str(lucy_applet_one_subject.id)
+        assert assignment["respondentSubject"]["firstName"] == lucy_applet_one_subject.first_name
+        assert assignment["respondentSubject"]["lastName"] == lucy_applet_one_subject.last_name
