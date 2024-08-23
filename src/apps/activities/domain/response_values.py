@@ -28,8 +28,8 @@ from apps.activities.domain.response_type_config import (
     TextConfig,
     TimeConfig,
     TimeRangeConfig,
-    VideoConfig,
     UnityConfig,
+    VideoConfig,
 )
 from apps.activities.errors import (
     InvalidDataMatrixByOptionError,
