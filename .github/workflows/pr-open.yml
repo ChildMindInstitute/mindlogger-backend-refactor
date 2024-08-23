@@ -70,6 +70,7 @@ jobs:
         env:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACKIFY_MARKDOWN: true
           SLACK_TITLE: |
             :rotating_light: Preview Environment Failed
           SLACK_MESSAGE: >-
