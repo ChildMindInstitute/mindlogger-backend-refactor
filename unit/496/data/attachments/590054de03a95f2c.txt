@@ -1,0 +1,9 @@
+ERROR    root:applets.py:157 device id not found
+Traceback (most recent call last):
+  File "/app/src/apps/applets/api/applets.py", line 149, in applet_update
+    await service.send_notification_to_applet_respondents(
+  File "/app/src/apps/applets/service/applet.py", line 708, in send_notification_to_applet_respondents
+    await FCMNotification().notify(
+  File "/usr/local/lib/python3.10/unittest/mock.py", line 2234, in _execute_mock_call
+    raise effect
+firebase_admin.exceptions.NotFoundError: device id not found
