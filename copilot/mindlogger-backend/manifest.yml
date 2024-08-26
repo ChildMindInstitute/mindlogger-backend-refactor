@@ -60,7 +60,7 @@ storage:
 
 variables:
   # Python configurations
-  ENV: testing
+#  ENV: testing
 
   # PostgreSQL configurations
   DATABASE__HOST: cmiml-feature-db.cjg844g2kgxp.us-east-1.rds.amazonaws.com
@@ -91,17 +91,14 @@ variables:
   AUTHENTICATION__PASSWORD_RECOVER__EXPIRATION: 900
 
   # Mailing
-  MAILING__MAIL__USERNAME: mailhog
-  MAILING__MAIL__PASSWORD: mailhog
-  MAILING__MAIL__SERVER: fcm.mail.server
-  MAILING__MAIL__PORT: 1025
-  MAILING__MAIL_STARTTLS:
-  MAILING__MAIL_SSL_TLS:
-  MAILING__MAIL__FROM_EMAIL: "no-reply@mindlogger.org"
+  MAILING__MAIL__SERVER: email-smtp.us-east-1.amazonaws.com
+  MAILING__MAIL__PORT: 2465
+  MAILING__MAIL__SSL_TLS: True
+  MAILING__MAIL__FROM_EMAIL: "noreply@cmiml.net"
   MAILING__MAIL__FROM_NAME: "Mindlogger"
   # Currently these settings are not used
-  MAILING__USE_CREDENTIALS: False
-  MAILING__VALIDATE_CERTS: False
+  MAILING__USE_CREDENTIALS: True
+  MAILING__VALIDATE_CERTS: True
 
   # Third party
 
@@ -109,18 +106,17 @@ variables:
   NOTIFICATION__API_KEY:
 
   # CDN configs (container by default)
-  CDN__ENDPOINT_URL: http://localhost:9000
-  CDN__SECRET_KEY: miniosecret
-  CDN__ACCESS_KEY: minioaccess
+#  CDN__ENDPOINT_URL: http://localhost:9000
   CDN__REGION: us-east-1
   CDN__BUCKET_ANSWER: cmiml-feature-answer
   CDN__BUCKET: cmiml-feature-media
   CDN__BUCKET_OPERATIONS: cmiml-feature-operations
-  CDN__STORAGE_ADDRESS: http://localhost:9000
+  CDN__DOMAIN: media-feature.cmiml.net
+#  CDN__STORAGE_ADDRESS: http://localhost:9000
   CDN__LEGACY_REGION: us-east-1
   CDN__LEGACY_BUCKET: mindlogger-media-staging
-  CDN__LEGACY_SECRET_KEY:
-  CDN__LEGACY_ACCESS_KEY:
+#  CDN__LEGACY_SECRET_KEY:
+#  CDN__LEGACY_ACCESS_KEY:
   CDN__TTL_SIGNED_URLS: 3600
 
   # jsonld converter
@@ -143,7 +139,12 @@ secrets:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:APPLET_EMA__ID::"
   APPLET_EMA__NAME:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:APPLET_EMA__NAME::"
-
+  MAILING__MAIL__USERNAME:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:MAILING__MAIL__USERNAME::"
+  MAILING__MAIL__PASSWORD:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:MAILING__MAIL__PASSWORD::"
+  LOGS__ACCESS:
+    secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:LOGS__ACCESS::"
 
 # You can override any of the values defined above by environment.
 #environments:

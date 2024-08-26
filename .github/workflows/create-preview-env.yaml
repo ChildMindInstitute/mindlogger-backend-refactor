@@ -66,12 +66,15 @@ jobs:
         # Each env needs a secret.  This is a copilot limitation.  So the baseline secret
         # is copied and tagged properly for copilot to pick it up.
         run: |
+          SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature --query SecretString --output text)
           COUNT=$(aws secretsmanager list-secrets --query SecretList --filters Key=name,Values=cmiml-feature-${{ inputs.env-name }} | jq length)
           if [ "$COUNT" -ne "0" ]; then
-            echo "Secret exists, skipping..."
+            echo "Secret exists, updating..."
+            SECRET_ARN=$(aws secretsmanager list-secrets --query 'SecretList[0].ARN' --filters Key=name,Values=cmiml-feature-pr-1521 --output text)
+            aws secretsmanager update-secret --secret-id "$SECRET_ARN" --secret-string "$SECRET_STRING" 2>&1 > /dev/null
             exit 0
           fi
-          SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature --query SecretString --output text)
+          
           aws secretsmanager create-secret --name cmiml-feature-${{ inputs.env-name }} --secret-string "$SECRET_STRING" --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ inputs.app-name }}" "Key=copilot-environment,Value=${{ inputs.env-name }}"
 
       - uses: actions/checkout@v4

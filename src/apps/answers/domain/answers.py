@@ -174,8 +174,7 @@ class SubmissionDate(PublicModel):
     end_datetime: datetime.datetime
 
 
-class ReviewFlow(ReviewItem[SubmissionDate]):
-    ...
+class ReviewFlow(ReviewItem[SubmissionDate]): ...
 
 
 class PublicReviewFlow(ReviewFlow):
@@ -632,6 +631,7 @@ class CompletedEntity(PublicModel):
     id: uuid.UUID
     answer_id: uuid.UUID
     submit_id: uuid.UUID
+    target_subject_id: uuid.UUID | None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time

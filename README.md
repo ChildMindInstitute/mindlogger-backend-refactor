@@ -54,7 +54,6 @@ And
 **Code quality tools:**
 
 - ✅ [ruff](https://github.com/astral-sh/ruff)
-- ✅ [isort](https://github.com/PyCQA/isort)
 - ✅ [mypy](https://github.com/python/mypy)
 - ✅ [pytest](https://github.com/pytest-dev/pytest)
 
