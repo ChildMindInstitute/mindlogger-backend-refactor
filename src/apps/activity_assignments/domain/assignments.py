@@ -21,7 +21,7 @@ class ActivityAssignmentCreate(BaseModel):
     @root_validator
     def validate_assignments(cls, values):
         if not values.get("activity_id") and not values.get("activity_flow_id"):
-            raise ActivityAssignmentActivityOrFlowError()
+            raise ActivityAssignmentNotActivityAndFlowError()
 
         if values.get("activity_id") and values.get("activity_flow_id"):
             raise ActivityAssignmentActivityOrFlowError("Only one of activity_id or activity_flow_id must be provided")

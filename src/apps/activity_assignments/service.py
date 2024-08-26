@@ -10,6 +10,7 @@ from apps.activity_assignments.domain.assignments import (
     ActivityAssignment,
     ActivityAssignmentCreate,
     ActivityAssignmentWithSubject,
+    ActivityAssignmentDelete,
 )
 from apps.activity_assignments.errors import (
     ActivityAssignmentActivityOrFlowError,
@@ -303,7 +304,7 @@ class ActivityAssignmentService:
 
         return entities
 
-    async def unassign_many(self, assignments_unassign: list[ActivityAssignmentCreate]) -> list[ActivityAssignment]:
+    async def unassign_many(self, assignments_unassign: list[ActivityAssignmentDelete]) -> None:
         """
         Unassigns multiple activity assignments by marking them as deleted.
 
@@ -313,7 +314,7 @@ class ActivityAssignmentService:
 
         Parameters:
         -----------
-        assignments_unassign : list[ActivityAssignmentCreate]
+        assignments_unassign : list[ActivityAssignmentDelete]
             A list of assignment creation objects that specify which assignments to unassign.
             Each object contains details such as `activity_id`, `activity_flow_id`,
             `respondent_subject_id`, and `target_subject_id`.
@@ -322,24 +323,21 @@ class ActivityAssignmentService:
         --------
         list[ActivityAssignment]
             A list of `ActivityAssignment` objects that have been marked as deleted.
-
-        Process:
-        --------
-        1. Creates a list for activities or flows, respondent subjects, and target subjects.
-        2. Unassigns the assignments in the database using `ActivityAssigmentCRUD.unassign_many`.
-
         """
         self._validate_unassignment(assignments_unassign)
+        
         activity_or_flow_ids = []
         respondent_subject_ids = []
         target_subject_ids = []
 
         for assignment in assignments_unassign:
+            # Append only non-None values to the activity_or_flow_ids list
             if assignment.activity_id is not None:
                 activity_or_flow_ids.append(assignment.activity_id)
-            else:
+            elif assignment.activity_flow_id is not None:
                 activity_or_flow_ids.append(assignment.activity_flow_id)
 
+            # Append other necessary IDs
             target_subject_ids.append(assignment.target_subject_id)
             respondent_subject_ids.append(assignment.respondent_subject_id)
 
@@ -349,7 +347,7 @@ class ActivityAssignmentService:
             target_subject_ids=target_subject_ids,
         )
 
-    def _validate_unassignment(self, assignments_unassign: list[ActivityAssignmentCreate]) -> None:
+    def _validate_unassignment(self, assignments_unassign: list[ActivityAssignmentDelete]) -> None:
         """
         Validates that all mandatory parameters are filled and correct.
 
