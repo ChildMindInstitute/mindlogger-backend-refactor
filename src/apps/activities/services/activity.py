@@ -7,6 +7,7 @@ from apps.activities.domain.activity import (
     ActivityDuplicate,
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageDetail,
+    ActivitySingleLanguageDetailPublic,
     ActivitySingleLanguageWithItemsDetail,
 )
 from apps.activities.domain.activity_create import ActivityCreate, PreparedActivityItemCreate
@@ -400,6 +401,72 @@ class ActivityService:
             activity_id, language
         )
         return activity
+
+    async def get_auto_assigned_activities(
+        self, applet_id: uuid.UUID, language: str
+    ) -> list[ActivitySingleLanguageDetailPublic]:
+        schemas = await ActivitiesCRUD(self.session).get_auto_assigned_activities(applet_id)
+        activities: list[ActivitySingleLanguageDetailPublic] = []
+
+        for schema in schemas:
+            activities.append(
+                ActivitySingleLanguageDetailPublic(
+                    id=schema.id,
+                    order=schema.order,
+                    created_at=schema.created_at,
+                    name=schema.name,
+                    description=schema.description[language],
+                    splash_screen=schema.splash_screen,
+                    image=schema.image,
+                    show_all_at_once=schema.show_all_at_once,
+                    is_skippable=schema.is_skippable,
+                    is_reviewable=schema.is_reviewable,
+                    response_is_editable=schema.response_is_editable,
+                    is_hidden=schema.is_hidden,
+                    scores_and_reports=schema.scores_and_reports,
+                    subscale_setting=schema.subscale_setting,
+                    report_included_item_name=schema.report_included_item_name,
+                    performance_task_type=schema.performance_task_type,
+                    is_performance_task=schema.is_performance_task,
+                    auto_assign=schema.auto_assign,
+                )
+            )
+
+        return activities
+
+    async def get_manually_assigned_activities(
+        self, applet_id: uuid.UUID, subject_id: uuid.UUID, language: str, include_unassigned: bool = False
+    ) -> list[ActivitySingleLanguageDetailPublic]:
+        schemas = await ActivitiesCRUD(self.session).get_manually_assigned_activities(
+            applet_id, subject_id, include_unassigned
+        )
+        activities: list[ActivitySingleLanguageDetailPublic] = []
+
+        for schema in schemas:
+            activities.append(
+                ActivitySingleLanguageDetailPublic(
+                    id=schema.id,
+                    order=schema.order,
+                    created_at=schema.created_at,
+                    name=schema.name,
+                    description=schema.description[language],
+                    splash_screen=schema.splash_screen,
+                    image=schema.image,
+                    show_all_at_once=schema.show_all_at_once,
+                    is_skippable=schema.is_skippable,
+                    is_reviewable=schema.is_reviewable,
+                    response_is_editable=schema.response_is_editable,
+                    is_hidden=schema.is_hidden,
+                    scores_and_reports=schema.scores_and_reports,
+                    subscale_setting=schema.subscale_setting,
+                    report_included_item_name=schema.report_included_item_name,
+                    performance_task_type=schema.performance_task_type,
+                    is_performance_task=schema.is_performance_task,
+                    auto_assign=schema.auto_assign,
+                )
+            )
+
+        return activities
 
     @staticmethod
     def _get_by_language(values: dict, language: str):

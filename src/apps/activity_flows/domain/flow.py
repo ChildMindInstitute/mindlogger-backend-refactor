@@ -3,6 +3,7 @@ from datetime import datetime
 
 from pydantic import Field
 
+from apps.activity_assignments.domain.assignments import ActivityAssignmentWithSubject
 from apps.activity_flows.domain.base import FlowBase
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -47,6 +48,10 @@ class FlowBaseInfo(InternalModel):
 
 class FlowSingleLanguageMobileDetailPublic(FlowBaseInfo, InternalModel):
     is_single_report: bool = False
+
+
+class FlowWithAssignmentDetailsPublic(FlowSingleLanguageMobileDetailPublic):
+    assignments: list[ActivityAssignmentWithSubject] | None = None
 
 
 class FlowDuplicate(FlowBase, InternalModel):

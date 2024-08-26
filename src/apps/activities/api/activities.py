@@ -7,13 +7,17 @@ from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import (
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
+    ActivityWithAssignmentDetailsPublic,
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
+from apps.activity_assignments.service import ActivityAssignmentService
+from apps.activity_flows.domain.flow import FlowWithAssignmentDetailsPublic
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet import (
+    ActivitiesAndFlowsWithAssignmentDetailsPublic,
     AppletActivitiesAndFlowsDetailsPublic,
     AppletActivitiesDetailsPublic,
     AppletSingleLanguageDetailMobilePublic,
@@ -97,6 +101,89 @@ async def applet_activities(
         respondent_meta=respondent_meta,
     )
     return Response(result=result)
+
+
+async def applet_activities_for_subject(
+    applet_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+) -> Response[ActivitiesAndFlowsWithAssignmentDetailsPublic]:
+    async with atomic(session):
+        applet_service = AppletService(session, user.id)
+        await applet_service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+
+        auto_assigned_activities_future = ActivityService(session, user.id).get_auto_assigned_activities(
+            applet_id, language
+        )
+        manually_assigned_activities_future = ActivityService(session, user.id).get_manually_assigned_activities(
+            applet_id, subject_id, language, include_unassigned=True
+        )
+
+        activity_flows_future = FlowService(session).get_auto_assigned_flows(applet_id, language)
+        manually_assigned_activity_flows_future = FlowService(session).get_manually_assigned_flows(
+            applet_id, subject_id, language, include_unassigned=True
+        )
+
+        (
+            auto_assigned_activities,
+            manually_assigned_activities,
+            auto_assigned_activity_flows,
+            manually_assigned_flows,
+        ) = await asyncio.gather(
+            auto_assigned_activities_future,
+            manually_assigned_activities_future,
+            activity_flows_future,
+            manually_assigned_activity_flows_future,
+        )
+
+        activities: list[ActivityWithAssignmentDetailsPublic] = []
+        activity_id_map: dict[uuid.UUID, ActivityWithAssignmentDetailsPublic] = {}
+        for activity in manually_assigned_activities:
+            activity_with_assignment = ActivityWithAssignmentDetailsPublic(**activity.dict())
+            activities.append(activity_with_assignment)
+            activity_id_map[activity.id] = activity_with_assignment
+
+        for activity in auto_assigned_activities:
+            if activity.id not in activity_id_map:
+                activity_with_assignment = ActivityWithAssignmentDetailsPublic(**activity.dict())
+                activities.append(activity_with_assignment)
+                activity_id_map[activity.id] = activity_with_assignment
+
+        activity_flows: list[FlowWithAssignmentDetailsPublic] = []
+        activity_flow_id_map: dict[uuid.UUID, FlowWithAssignmentDetailsPublic] = {}
+
+        for activity_flow in manually_assigned_flows:
+            activity_flow_with_assignment = FlowWithAssignmentDetailsPublic(**activity_flow.dict())
+            activity_flows.append(activity_flow_with_assignment)
+            activity_flow_id_map[activity_flow.id] = activity_flow_with_assignment
+
+        for activity_flow in auto_assigned_activity_flows:
+            if activity_flow.id not in activity_flow_id_map:
+                activity_flow_with_assignment = FlowWithAssignmentDetailsPublic(**activity_flow.dict())
+                activity_flows.append(activity_flow_with_assignment)
+                activity_flow_id_map[activity_flow.id] = activity_flow_with_assignment
+
+        activity_assignments = await ActivityAssignmentService(session).get_all_by_respondent(applet_id, subject_id)
+        for assignment in activity_assignments:
+            if assignment.activity_id in activity_id_map:
+                activity = activity_id_map[assignment.activity_id]
+                if not activity.assignments:
+                    activity.assignments = []
+                activity.assignments.append(assignment)
+            if assignment.activity_flow_id in activity_flow_id_map:
+                activity_flow = activity_flow_id_map[assignment.activity_flow_id]
+                if not activity_flow.assignments:
+                    activity_flow.assignments = []
+                activity_flow.assignments.append(assignment)
+
+        result = ActivitiesAndFlowsWithAssignmentDetailsPublic(
+            activities=activities,
+            activity_flows=activity_flows,
+        )
+        return Response(result=result)
 
 
 async def applet_activities_and_flows(
