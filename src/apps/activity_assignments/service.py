@@ -9,8 +9,8 @@ from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
 from apps.activity_assignments.domain.assignments import (
     ActivityAssignment,
     ActivityAssignmentCreate,
-    ActivityAssignmentWithSubject,
     ActivityAssignmentDelete,
+    ActivityAssignmentWithSubject,
 )
 from apps.activity_assignments.errors import (
     ActivityAssignmentActivityOrFlowError,
