@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import or_, select, update, tuple_
+from sqlalchemy import or_, select, tuple_, update
 from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
@@ -106,18 +106,18 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         self,
         activity_or_flow_ids: list[uuid.UUID],
         respondent_subject_ids: list[uuid.UUID],
-        target_subject_ids: list[uuid.UUID]
+        target_subject_ids: list[uuid.UUID],
     ) -> None:
         """
-        Marks the `is_deleted` field as True for all matching assignments based on the provided 
-        activity or flow IDs, respondent subject IDs, and target subject IDs. The method ensures 
-        that each set of IDs corresponds to a unique record by treating the IDs in a tuple 
+        Marks the `is_deleted` field as True for all matching assignments based on the provided
+        activity or flow IDs, respondent subject IDs, and target subject IDs. The method ensures
+        that each set of IDs corresponds to a unique record by treating the IDs in a tuple
         (activity/flow ID, respondent subject ID, target subject ID) as a unique combination.
 
         Parameters:
         ----------
         activity_or_flow_ids : list[uuid.UUID]
-            List of activity or flow IDs to search for. These IDs may correspond to either 
+            List of activity or flow IDs to search for. These IDs may correspond to either
             `activity_id` or `activity_flow_id` fields.
         respondent_subject_ids : list[uuid.UUID]
             List of respondent subject IDs to match against.
@@ -156,7 +156,6 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             .values(is_deleted=True)
         )
         await self._execute(query)
-
 
     async def get_by_respondent_subject_id(self, respondent_subject_id) -> list[ActivityAssigmentSchema]:
         query: Query = select(ActivityAssigmentSchema)

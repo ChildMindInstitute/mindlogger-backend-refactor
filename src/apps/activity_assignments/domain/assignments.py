@@ -2,7 +2,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, root_validator
 
-from apps.activity_assignments.errors import ActivityAssignmentActivityOrFlowError, ActivityAssignmentNotActivityAndFlowError, ActivityAssignmentMissingRespondentError, ActivityAssignmentMissingTargetError
+from apps.activity_assignments.errors import (
+    ActivityAssignmentActivityOrFlowError,
+    ActivityAssignmentMissingRespondentError,
+    ActivityAssignmentMissingTargetError,
+    ActivityAssignmentNotActivityAndFlowError,
+)
 from apps.shared.domain import InternalModel, PublicModel
 from apps.subjects.domain import SubjectReadResponse
 
@@ -56,6 +61,7 @@ class ActivityAssignmentWithSubject(PublicModel):
 class ActivitiesAssignmentsWithSubjects(PublicModel):
     applet_id: UUID
     assignments: list[ActivityAssignmentWithSubject]
+
 
 class ActivityAssignmentDelete(BaseModel):
     activity_id: UUID | None

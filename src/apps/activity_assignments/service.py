@@ -11,6 +11,12 @@ from apps.activity_assignments.domain.assignments import (
     ActivityAssignmentCreate,
     ActivityAssignmentWithSubject,
 )
+from apps.activity_assignments.errors import (
+    ActivityAssignmentActivityOrFlowError,
+    ActivityAssignmentMissingRespondentError,
+    ActivityAssignmentMissingTargetError,
+    ActivityAssignmentNotActivityAndFlowError,
+)
 from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.applets.crud import AppletsCRUD
@@ -23,7 +29,6 @@ from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import SubjectReadResponse
 from config import settings
-from apps.activity_assignments.errors import ActivityAssignmentActivityOrFlowError, ActivityAssignmentMissingRespondentError, ActivityAssignmentMissingTargetError, ActivityAssignmentNotActivityAndFlowError
 
 
 class ActivityAssignmentService:
@@ -298,9 +303,7 @@ class ActivityAssignmentService:
 
         return entities
 
-    async def unassign_many(
-        self, assignments_unassign: list[ActivityAssignmentCreate]
-    ) -> list[ActivityAssignment]:
+    async def unassign_many(self, assignments_unassign: list[ActivityAssignmentCreate]) -> list[ActivityAssignment]:
         """
         Unassigns multiple activity assignments by marking them as deleted.
 
@@ -330,22 +333,22 @@ class ActivityAssignmentService:
         activity_or_flow_ids = []
         respondent_subject_ids = []
         target_subject_ids = []
-        
+
         for assignment in assignments_unassign:
             if assignment.activity_id is not None:
                 activity_or_flow_ids.append(assignment.activity_id)
             else:
                 activity_or_flow_ids.append(assignment.activity_flow_id)
-            
+
             target_subject_ids.append(assignment.target_subject_id)
             respondent_subject_ids.append(assignment.respondent_subject_id)
 
         await ActivityAssigmentCRUD(self.session).unassign_many(
             activity_or_flow_ids=activity_or_flow_ids,
             respondent_subject_ids=respondent_subject_ids,
-            target_subject_ids=target_subject_ids
+            target_subject_ids=target_subject_ids,
         )
-        
+
     def _validate_unassignment(self, assignments_unassign: list[ActivityAssignmentCreate]) -> None:
         """
         Validates that all mandatory parameters are filled and correct.
@@ -362,11 +365,10 @@ class ActivityAssignmentService:
 
             if not assignment.target_subject_id:
                 raise ActivityAssignmentMissingTargetError()
-            
+
             if assignment.activity_id and assignment.activity_flow_id:
                 raise ActivityAssignmentActivityOrFlowError()
 
-    
     async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
         assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
 

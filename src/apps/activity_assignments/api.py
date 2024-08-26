@@ -1,13 +1,13 @@
 import uuid
 
-from fastapi import Body, Depends, status
+from fastapi import Body, Depends
 
 from apps.activity_assignments.domain.assignments import (
     ActivitiesAssignments,
     ActivitiesAssignmentsCreate,
+    ActivitiesAssignmentsDelete,
     ActivitiesAssignmentsWithSubjects,
     ActivityAssignmentsListQueryParams,
-    ActivitiesAssignmentsDelete
 )
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.applets.service import AppletService
@@ -66,6 +66,7 @@ async def assignments_create(
         )
     )
 
+
 async def assignment_delete(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -97,6 +98,7 @@ async def assignment_delete(
         await service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_activity_assignment_access(applet_id)
         await ActivityAssignmentService(session).unassign_many(schema.assignments)
+
 
 async def applet_assignments(
     applet_id: uuid.UUID,

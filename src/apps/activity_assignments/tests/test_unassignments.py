@@ -3,14 +3,14 @@ import uuid
 
 import pytest
 from pydantic import EmailStr
-from sqlalchemy import select, or_
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
 from apps.activity_assignments.domain.assignments import (
+    ActivitiesAssignmentsCreate,
     ActivitiesAssignmentsDelete,
     ActivityAssignmentCreate,
-    ActivitiesAssignmentsCreate,
     ActivityAssignmentDelete,
 )
 from apps.activity_flows.domain.flow_update import ActivityFlowItemUpdate, FlowUpdate
@@ -25,8 +25,6 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate, SubjectFull
 from apps.subjects.services import SubjectsService
 from apps.users import User
-from apps.activity_assignments.errors import ActivityAssignmentActivityOrFlowError, ActivityAssignmentMissingRespondentError, ActivityAssignmentMissingTargetError, ActivityAssignmentNotActivityAndFlowError
-
 
 
 @pytest.fixture
@@ -105,6 +103,7 @@ async def applet_one_with_flow(
     applet = await srv.get_full_applet(applet_one.id)
     return applet
 
+
 @pytest.fixture
 async def applet_two_with_flow(
     session: AsyncSession,
@@ -124,6 +123,7 @@ async def applet_two_with_flow(
     await srv.update(applet_two.id, data)
     applet = await srv.get_full_applet(applet_two.id)
     return applet
+
 
 @pytest.fixture
 async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
@@ -185,17 +185,16 @@ class TestActivityUnassignments(BaseTest):
         query = select(ActivityAssigmentSchema).where(
             ActivityAssigmentSchema.activity_id == activity_assignment_id,
             ActivityAssigmentSchema.respondent_subject_id == subject_id,
-            ActivityAssigmentSchema.target_subject_id == target_id
+            ActivityAssigmentSchema.target_subject_id == target_id,
         )
-        
+
         res = await session.execute(query)
         model = res.scalars().one()
-        
+
         assert model.activity_id == activity_assignment_id
         assert model.respondent_subject_id == subject_id
         assert model.target_subject_id == target_id
         assert model.is_deleted is True
-
 
     async def test_unassign_no_effect_with_wrong_activity(
         self,
@@ -256,7 +255,7 @@ class TestActivityUnassignments(BaseTest):
         assignment = res.scalars().first()
 
         assert assignment is not None  # The assignment should still exist
-        assert assignment.is_deleted == False
+        assert assignment.is_deleted is False
 
     async def test_unassign_fail_missing_activity_and_flow(
         self,
@@ -356,7 +355,6 @@ class TestActivityUnassignments(BaseTest):
         assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
         assert result["message"] == "Either activity_id or activity_flow_id must be provided, but not both"
-    
 
     async def test_unassign_multiple_assignments_with_flow(
         self,
@@ -462,7 +460,7 @@ class TestActivityUnassignments(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         # Step 2: Attempt to unassign it using a wrong flow_id from a different applet
-        wrong_applet_id ="7db2b7fe-3eba-4c70-8d02-dcf55b74d1c3"
+        wrong_applet_id = "7db2b7fe-3eba-4c70-8d02-dcf55b74d1c3"
         assignment_delete = ActivitiesAssignmentsDelete(
             assignments=[
                 ActivityAssignmentDelete(
@@ -491,7 +489,7 @@ class TestActivityUnassignments(BaseTest):
         assignment = res.scalars().first()
 
         assert assignment is not None  # The assignment should still exist
-        assert assignment.is_deleted == False
+        assert assignment.is_deleted is False
 
     async def test_unassign_fail_missing_respondent(
         self,
@@ -540,7 +538,7 @@ class TestActivityUnassignments(BaseTest):
         assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
         result = unassign_response.json()["result"][0]
         assert result["message"] == "Target subject ID must be provided"
-        
+
     async def test_unassign_fail_missing_target(
         self,
         client: TestClient,
