@@ -1,12 +1,13 @@
 import uuid
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, status
 
 from apps.activity_assignments.domain.assignments import (
     ActivitiesAssignments,
     ActivitiesAssignmentsCreate,
     ActivitiesAssignmentsWithSubjects,
     ActivityAssignmentsListQueryParams,
+    ActivitiesAssignmentsDelete
 )
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.applets.service import AppletService
@@ -65,13 +66,12 @@ async def assignments_create(
         )
     )
 
-
-async def unassignments_create(
+async def assignment_delete(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    schema: ActivitiesAssignmentsCreate = Body(...),
+    schema: ActivitiesAssignmentsDelete = Body(...),
     session=Depends(get_session),
-) -> Response[ActivitiesAssignments]:
+) -> None:
     """
     Unassigns multiple activity assignments for a specified applet.
 
@@ -86,30 +86,17 @@ async def unassignments_create(
     user : User, optional
         The current user making the request (automatically injected).
 
-    schema : ActivitiesAssignmentsCreate
+    schema : ActivitiesAssignmentsDelete
         The schema containing the list of assignments to be unassigned.
 
     session : Depends, optional
         The database session (automatically injected).
-
-    Returns:
-    --------
-    Response[ActivitiesAssignments]
-        A response object containing the updated list of assignments for the applet.
     """
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_activity_assignment_access(applet_id)
-        assignments = await ActivityAssignmentService(session).unassign_many(applet_id, schema.assignments)
-
-    return Response(
-        result=ActivitiesAssignments(
-            applet_id=applet_id,
-            assignments=assignments,
-        )
-    )
-
+        await ActivityAssignmentService(session).unassign_many(schema.assignments)
 
 async def applet_assignments(
     applet_id: uuid.UUID,

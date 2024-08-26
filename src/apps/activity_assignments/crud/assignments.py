@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update, tuple_
 from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
@@ -102,74 +102,61 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         db_result = await self._execute(select(query))
         return db_result.scalars().first() or False
 
-    async def unassign_many(self, schemas: list[ActivityAssigmentSchema]) -> list[ActivityAssigmentSchema]:
-        """
-        Unassigns multiple assignments by marking them as deleted.
-
-        This method updates the `is_deleted` field for multiple assignment records
-        based on their `id`.
-
-        Parameters:
-        ----------
-        schemas : list[ActivityAssigmentSchema]
-            A list of schemas that need to be updated (unassigned).
-
-        Returns:
-        -------
-        list[ActivityAssigmentSchema]
-            A list of updated assignment schemas.
-        """
-        updated_schemas = []
-        for schema in schemas:
-            updated_schemas.extend(await self._update(lookup="id", value=schema.id, schema=schema))
-        return updated_schemas
-
-    async def get_assignments_by_activity_or_flow_id_and_subject_id(
+    async def unassign_many(
         self,
-        search_id: uuid.UUID | None,
-        respondent_subject_id: uuid.UUID,
-        target_subject_id: uuid.UUID,
-    ) -> uuid.UUID | None:
+        activity_or_flow_ids: list[uuid.UUID],
+        respondent_subject_ids: list[uuid.UUID],
+        target_subject_ids: list[uuid.UUID]
+    ) -> None:
         """
-        Retrieves the assignment ID from the activity_assignment table that matches
-        the given activity ID or flow ID and the respondent subject ID or target subject ID.
+        Marks the `is_deleted` field as True for all matching assignments based on the provided 
+        activity or flow IDs, respondent subject IDs, and target subject IDs. The method ensures 
+        that each set of IDs corresponds to a unique record by treating the IDs in a tuple 
+        (activity/flow ID, respondent subject ID, target subject ID) as a unique combination.
 
         Parameters:
         ----------
-        search_id : uuid.UUID
-            The ID to search for, either an activity ID or a flow ID.
-        respondent_subject_id : uuid.UUID
-            The ID of the respondent subject to match.
-
-        target_subject_id : uuid.UUID
-            The ID of the target subject to match.
+        activity_or_flow_ids : list[uuid.UUID]
+            List of activity or flow IDs to search for. These IDs may correspond to either 
+            `activity_id` or `activity_flow_id` fields.
+        respondent_subject_ids : list[uuid.UUID]
+            List of respondent subject IDs to match against.
+        target_subject_ids : list[uuid.UUID]
+            List of target subject IDs to match against.
 
         Returns:
         -------
-        uuid.UUID | None
-            The ID of the matching assignment, or None if no match is found.
+        None
+
+        Raises:
+        ------
+        AssertionError
+            If the lengths of the provided ID lists do not match.
         """
 
-        # Construct the query to match either activity_id or activity_flow_id and either subject ID
-        query: Query = select(ActivityAssigmentSchema)
-        query = query.where(
-            or_(
-                ActivityAssigmentSchema.activity_id == search_id,
-                ActivityAssigmentSchema.activity_flow_id == search_id,
-            )
-        )
-        query = query.where(
-            or_(
-                ActivityAssigmentSchema.respondent_subject_id == respondent_subject_id,
-                ActivityAssigmentSchema.target_subject_id == target_subject_id,
-            )
-        )
-        # Execute the query
-        result = await self._execute(query)
+        # Ensure all lists are of equal length
+        assert len(activity_or_flow_ids) == len(respondent_subject_ids) == len(target_subject_ids)
 
-        # Fetch the first matching assignment and return its ID, or None if no match is found
-        assignment = result.scalars().first()
-        return assignment.id if assignment else None
+        query: Query = (
+            update(ActivityAssigmentSchema)
+            .where(
+                or_(
+                    tuple_(
+                        ActivityAssigmentSchema.activity_id,
+                        ActivityAssigmentSchema.respondent_subject_id,
+                        ActivityAssigmentSchema.target_subject_id,
+                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
+                    tuple_(
+                        ActivityAssigmentSchema.activity_flow_id,
+                        ActivityAssigmentSchema.respondent_subject_id,
+                        ActivityAssigmentSchema.target_subject_id,
+                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
+                )
+            )
+            .values(is_deleted=True)
+        )
+        await self._execute(query)
+
 
     async def get_by_respondent_subject_id(self, respondent_subject_id) -> list[ActivityAssigmentSchema]:
         query: Query = select(ActivityAssigmentSchema)
@@ -185,23 +172,11 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         query = (
             select(ActivityAssigmentSchema)
             .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
-            .outerjoin(
-                ActivityFlowSchema,
-                ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id,
-            )
-            .join(
-                respondent_schema,
-                respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id,
-            )
-            .join(
-                target_schema,
-                target_schema.id == ActivityAssigmentSchema.target_subject_id,
-            )
+            .outerjoin(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
+            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
+            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
             .where(
-                or_(
-                    ActivityFlowSchema.applet_id == applet_id,
-                    ActivitySchema.applet_id == applet_id,
-                ),
+                or_(ActivityFlowSchema.applet_id == applet_id, ActivitySchema.applet_id == applet_id),
                 ActivityAssigmentSchema.soft_exists(),
                 respondent_schema.soft_exists(),
                 target_schema.soft_exists(),
@@ -225,18 +200,9 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         query = (
             select(ActivityAssigmentSchema)
             .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
-            .outerjoin(
-                ActivityFlowSchema,
-                ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id,
-            )
-            .join(
-                respondent_schema,
-                respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id,
-            )
-            .join(
-                target_schema,
-                target_schema.id == ActivityAssigmentSchema.target_subject_id,
-            )
+            .outerjoin(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
+            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
+            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
             .where(
                 or_(
                     ActivityFlowSchema.applet_id == applet_id,

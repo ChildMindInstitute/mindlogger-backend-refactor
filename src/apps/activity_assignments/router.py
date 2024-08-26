@@ -5,7 +5,7 @@ from apps.activity_assignments.api import (
     applet_assignments,
     applet_respondent_assignments,
     assignments_create,
-    unassignments_create,
+    assignment_delete,
 )
 from apps.activity_assignments.domain.assignments import ActivitiesAssignments, ActivitiesAssignmentsWithSubjects
 from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, Response
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/assignments", tags=["Activity assignments"])
 router.post(
     "/applet/{applet_id}",
     description="""Create a set of activity assignments. For each
-                assignment, provide subject respondent ID (full account 
+                assignment, provide respondent subject ID (full account 
                 or pending full account), target subject ID
                 and activity or activity flow ID
                 """,
@@ -28,19 +28,18 @@ router.post(
 )(assignments_create)
 
 router.delete(
-    "/applet/{applet_id}/unassigns",
+    "/applet/{applet_id}",
     description="""Unassign a set of activity assignments. For each
-                assignment, provide respondent ID (or if pending
-                invite, then invitation ID), activity or activity
-                flow ID, and target subject ID.
+                assignment, provide respondent subject ID (full account
+                or pending account), target subject ID, and activity or activity flow ID.
                 """,
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        status.HTTP_201_CREATED: {"model": Response[ActivitiesAssignments]},
+        status.HTTP_204_NO_CONTENT: {"description": "Successfully unassigned the activities or flows."},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(unassignments_create)
+)(assignment_delete)
 
 router.get(
     "/applet/{applet_id}",
