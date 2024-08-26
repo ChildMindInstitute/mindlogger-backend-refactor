@@ -570,6 +570,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.submit_id,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
@@ -585,6 +586,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
                 AnswerItemSchema.local_end_time.desc(),
@@ -592,6 +594,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .distinct(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
             )
         )
@@ -642,6 +645,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.submit_id,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
@@ -656,6 +660,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
                 AnswerItemSchema.local_end_time.desc(),
@@ -663,6 +668,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .distinct(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
             )
         )

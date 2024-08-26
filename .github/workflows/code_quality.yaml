@@ -25,6 +25,6 @@ jobs:
       - name: Install deps
         run: pipenv sync --system --dev
       - name: Check formatting
-        run: ruff check . && ruff format --check . && isort --check .
+        run: ruff check . && ruff format --check .
       - name: Check types
         run: mypy ./
