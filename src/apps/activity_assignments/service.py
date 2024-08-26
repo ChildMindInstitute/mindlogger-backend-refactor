@@ -325,7 +325,7 @@ class ActivityAssignmentService:
             A list of `ActivityAssignment` objects that have been marked as deleted.
         """
         self._validate_unassignment(assignments_unassign)
-        
+
         activity_or_flow_ids = []
         respondent_subject_ids = []
         target_subject_ids = []
