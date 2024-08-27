@@ -949,7 +949,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_shareable_answers(self, applet_id: uuid.UUID):
+    async def get_shareable_answers(self, applet_id: uuid.UUID, page: int, limit: int):
         query: Query = (
             select(AnswerSchema)
             .where(
@@ -958,6 +958,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
             .order_by(AnswerSchema.created_at)
         )
+        query = paging(query, page, limit)
         result = await self._execute(query)
 
         return result.scalars().all()

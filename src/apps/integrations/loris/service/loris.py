@@ -32,6 +32,7 @@ from apps.integrations.loris.domain.domain import (
     UserVisits,
 )
 from apps.integrations.loris.errors import LorisServerError
+from apps.shared.query_params import QueryParams
 from apps.subjects.crud import SubjectsCrud
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -792,7 +793,7 @@ class LorisIntegrationService:
 
         return result
 
-    async def get_uploadable_answers(self) -> tuple[UploadableAnswersData, int]:
+    async def get_uploadable_answers(self, filters: QueryParams) -> tuple[UploadableAnswersData, int]:
         """
         This method is build to replace `get_information_about_users_and_visits` providing data in another structure
         """
@@ -801,8 +802,7 @@ class LorisIntegrationService:
         uploaded_answers, applet_visits, answers = await asyncio.gather(
             self._get_existing_answers_from_loris(str(self.applet_id)),
             self.get_visits_for_applet(),
-            # todo pagination
-            AnswersCRUD(self.answer_session).get_shareable_answers(applet_id=self.applet_id),
+            AnswersCRUD(self.answer_session).get_shareable_answers(self.applet_id, filters.page, filters.limit),
         )
 
         uploaded_answer_ids = set(uploaded_answers)
