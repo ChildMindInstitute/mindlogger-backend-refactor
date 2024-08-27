@@ -789,7 +789,106 @@ class TestActivities:
         assert flow_result["id"] == str(manual_flow.id)
         assert flow_result["name"] == manual_flow.name
         assert flow_result["description"] == manual_flow.description[Language.ENGLISH]
-        assert flow_result["autoAssign"] == manual_flow.auto_assign
+        assert flow_result["autoAssign"] is False
+        assert len(flow_result["assignments"]) == 1
+        assert flow_result["activityIds"][0] == str(manual_flow.items[0].activity_id)
+
+        flow_assignment = flow_result["assignments"][0]
+        assert flow_assignment["activityFlowId"] == str(manual_flow.id)
+        assert flow_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
+        assert flow_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+
+    async def test_subject_assigned_activities_auto_and_manually_assigned(
+        self,
+        session,
+        client,
+        empty_applet_lucy_manager,
+        lucy,
+        user_empty_applet_subject,
+        activity_create_session: ActivityCreate,
+    ):
+        client.login(lucy)
+
+        activities = await ActivityService(session, lucy.id).update_create(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityUpdate(
+                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    name="Hybrid Activity",
+                    auto_assign=True,
+                )
+            ],
+        )
+        manual_activity = next((activity for activity in activities if activity.name == "Hybrid Activity"))
+
+        await ActivityAssignmentService(session).create_many(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_id=manual_activity.id,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                )
+            ],
+        )
+
+        flows = await FlowService(session).update_create(
+            empty_applet_lucy_manager.id,
+            [
+                FlowUpdate(
+                    name="Hybrid Flow",
+                    description={Language.ENGLISH: "Hybrid Flow"},
+                    auto_assign=True,
+                    items=[ActivityFlowItemUpdate(activity_key=manual_activity.key)],
+                )
+            ],
+            {manual_activity.key: manual_activity.id},
+        )
+
+        manual_flow = next((flow for flow in flows if flow.name == "Hybrid Flow"))
+
+        await ActivityAssignmentService(session).create_many(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_flow_id=manual_flow.id,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                )
+            ],
+        )
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert len(result["activityFlows"]) == 1
+        assert len(result["activities"]) == 1
+
+        activity_result = result["activities"][0]
+
+        assert activity_result["id"] == str(manual_activity.id)
+        assert activity_result["name"] == manual_activity.name
+        assert activity_result["description"] == manual_activity.description[Language.ENGLISH]
+        assert activity_result["autoAssign"] is True
+        assert len(activity_result["assignments"]) == 1
+
+        activity_assignment = activity_result["assignments"][0]
+        assert activity_assignment["activityId"] == str(manual_activity.id)
+        assert activity_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
+        assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+
+        flow_result = result["activityFlows"][0]
+
+        assert flow_result["id"] == str(manual_flow.id)
+        assert flow_result["name"] == manual_flow.name
+        assert flow_result["description"] == manual_flow.description[Language.ENGLISH]
+        assert flow_result["autoAssign"] is True
         assert len(flow_result["assignments"]) == 1
         assert flow_result["activityIds"][0] == str(manual_flow.items[0].activity_id)
 
