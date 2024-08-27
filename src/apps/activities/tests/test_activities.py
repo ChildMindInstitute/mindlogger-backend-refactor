@@ -252,7 +252,7 @@ class TestActivities:
         assert len(result["items"]) == len(activity.items)
         assert result["items"][0]["question"] == activity.items[0].question[Language.ENGLISH]
 
-    # Get only applet activies with submitted answers
+    # Get only applet activities with submitted answers
     async def test_activities_applet_has_submitted(
         self, client, applet_one: AppletFull, default_theme: Theme, tom: User
     ):
@@ -299,7 +299,7 @@ class TestActivities:
         assert result["activitiesDetails"][0]["id"] == str(activity.id)
         assert result["activitiesDetails"][0]["name"] == activity.name
 
-    # Get only applet activies with score
+    # Get only applet activities with score
     async def test_activities_applet_has_score(self, client, applet_one: AppletFull, default_theme: Theme, tom: User):
         client.login(tom)
 
