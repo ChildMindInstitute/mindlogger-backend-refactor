@@ -320,9 +320,10 @@ class FlowService:
             flow_map[flow.id] = flow
             flows.append(flow)
 
-        item_schemas = await FlowItemsCRUD(self.session).get_by_applet_id(applet_id)
-        for schema in item_schemas:
-            flow_map[schema.activity_flow_id].activity_ids.append(schema.activity_id)
+        if len(flows) > 0:
+            item_schemas = await FlowItemsCRUD(self.session).get_by_flow_ids([flow.id for flow in flows])
+            for schema in item_schemas:
+                flow_map[schema.activity_flow_id].activity_ids.append(schema.activity_id)
 
         return flows
 
@@ -350,8 +351,9 @@ class FlowService:
             flow_map[flow.id] = flow
             flows.append(flow)
 
-        item_schemas = await FlowItemsCRUD(self.session).get_by_applet_id(applet_id)
-        for schema in item_schemas:
-            flow_map[schema.activity_flow_id].activity_ids.append(schema.activity_id)
+        if len(flows) > 0:
+            item_schemas = await FlowItemsCRUD(self.session).get_by_flow_ids([flow.id for flow in flows])
+            for schema in item_schemas:
+                flow_map[schema.activity_flow_id].activity_ids.append(schema.activity_id)
 
         return flows
