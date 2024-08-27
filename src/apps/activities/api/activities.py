@@ -115,6 +115,9 @@ async def applet_activities_for_subject(
         await applet_service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
+        # Ensure reviewers can access the subject
+        await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
+
         auto_assigned_activities_future = ActivityService(session, user.id).get_auto_assigned_activities(
             applet_id, language
         )
