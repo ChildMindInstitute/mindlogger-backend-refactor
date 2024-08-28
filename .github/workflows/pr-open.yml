@@ -39,7 +39,7 @@ jobs:
           MSG_MINIMAL: actions url
 
   run-unit-tests:
-    uses: ./.github/workflows/tests.yaml
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/tests.yaml@develop
     secrets: inherit
 
   comment-unit-tests:
@@ -79,7 +79,7 @@ jobs:
 
   create-preview-env:
     needs: [create-database, run-unit-tests]
-    uses: ./.github/workflows/create-preview-env.yaml
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/create-preview-env.yaml@develop
     with:
       env-name: "pr-${{ github.event.number }}"
       env-snake-name: "pr_${{ github.event.number }}"
