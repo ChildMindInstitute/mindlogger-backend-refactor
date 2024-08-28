@@ -68,10 +68,10 @@ jobs:
         run: |
           SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature --query SecretString --output text)
           COUNT=$(aws secretsmanager list-secrets --query SecretList --filters Key=name,Values=cmiml-feature-${{ inputs.env-name }} | jq length)
-          echo "Found ${COUNT} existing secrets"
+          echo "Found $COUNT existing secrets"
           if [ "$COUNT" -ne "0" ]; then
             echo "Secret exists, updating..."
-            SECRET_ARN=$(aws secretsmanager list-secrets --query 'SecretList[0].ARN' --filters Key=name,Values=cmiml-feature-pr-${{ inputs.env-name }} --output text)
+            SECRET_ARN=$(aws secretsmanager list-secrets --query 'SecretList[0].ARN' --filters Key=name,Values=cmiml-feature-${{ inputs.env-name }} --output text)
             aws secretsmanager update-secret --secret-id "$SECRET_ARN" --secret-string "$SECRET_STRING" 2>&1 > /dev/null
             exit 0
           fi
