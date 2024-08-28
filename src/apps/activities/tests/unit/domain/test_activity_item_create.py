@@ -29,15 +29,15 @@ from apps.shared.domain.custom_validations import InvalidImageError
 
 
 def test_create_activity_item_conditional_logic_not_valid_response_type_config(
-    base_item_data, date_config, conditional_logic
+    base_item_data, phrasal_template_config, phrasal_template_with_text_response_values, conditional_logic
 ) -> None:
     with pytest.raises(errors.IncorrectConditionLogicItemTypeError):
         ActivityItemCreate(
             **base_item_data.dict(),
-            config=date_config,
-            response_type=ResponseType.DATE,
+            config=phrasal_template_config,
+            response_type=ResponseType.PHRASAL_TEMPLATE,
             conditional_logic=conditional_logic,
-            response_values=None,
+            response_values=phrasal_template_with_text_response_values,
         )
 
 
