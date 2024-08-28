@@ -90,7 +90,7 @@ jobs:
         # https://stackoverflow.com/questions/66066753/aws-start-session-end-with-cannot-perform-start-session-eof
         run: |
           sudo apt install -y expect
-          unbuffer copilot svc exec -a ${{ inputs.app-name }} -e ${{ inputs.env-name }} -n ${{ inputs.copilot-service }} --command "/fastapi-migrate"
+          unbuffer copilot svc exec -a ${{ inputs.app-name }} -e ${{ inputs.env-name }} -n ${{ inputs.copilot-service }} --command "ENV=testing /fastapi-migrate"
       - name: Get service URL
         id: service-url
         run: echo "SERVICE_URL=$(copilot svc show -n ${{ inputs.copilot-service }} --json | jq -r '.routes[] | select( .environment | contains("${{ inputs.env-name }}") ) | .url')" >> $GITHUB_OUTPUT
