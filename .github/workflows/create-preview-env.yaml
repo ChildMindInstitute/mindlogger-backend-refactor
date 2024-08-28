@@ -89,7 +89,7 @@ jobs:
       - name: Run DB migration
         # https://stackoverflow.com/questions/66066753/aws-start-session-end-with-cannot-perform-start-session-eof
         run: |
-          apt install expect
+          apt install -y expect
           unbuffer copilot svc exec -a ${{ inputs.app-name }} -e ${{ inputs.env-name }} -n ${{ inputs.copilot-service }} --command "/fastapi-migrate"
       - name: Get service URL
         id: service-url
