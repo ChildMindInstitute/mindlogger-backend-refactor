@@ -19,6 +19,7 @@ from apps.activities.domain.response_type_config import (
     StabilityTrackerConfig,
     StimulusConfigId,
     StimulusConfiguration,
+    UnityConfig,
 )
 from apps.shared.enums import Language
 
@@ -609,3 +610,25 @@ def actvitiy_cst_touch_create() -> ActivityCreate:
             ),
         ],
     )
+
+
+@pytest.fixture
+def activity_unity_create() -> ActivityCreate:
+    return ActivityCreate(
+        name="Unity",
+        description={Language.ENGLISH: "Unity"},
+        is_hidden=False,
+        report_included_item_name="",
+        key=uuid.uuid4(),
+        items=[
+            ActivityItemCreate(
+                question={"en": "File"},
+                response_type=ResponseType.UNITY,
+                response_values=None,
+                config=UnityConfig(),
+                name="Unity_Item",
+                is_hidden=False,
+            ),
+        ],
+    )
+
