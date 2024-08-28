@@ -15,6 +15,7 @@ from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from apps.answers.service import AnswerTransferService
+from apps.applets.crud import AppletsCRUD
 from apps.file.storage import create_client, select_storage
 from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserIsDeletedError, UserNotFound
@@ -30,6 +31,7 @@ from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
+from infrastructure.logger import logger
 
 app = typer.Typer()
 
@@ -340,10 +342,35 @@ def _is_bucket_same(source_arb_data: WorkspaceArbitrary | None, target_arb_data:
     return True
 
 
+async def _get_arbitrary_data(session, email: str | None):
+    if email:
+        try:
+            owner = await UsersCRUD(session).get_by_email(email)
+            arb_data = await WorkspaceService(session, owner.id).get_arbitrary_info_by_owner_id_if_use_arbitrary(
+                owner.id, in_use_only=False
+            )
+            return arb_data
+        except (UserNotFound, UserIsDeletedError):
+            error(f"User with email {email} not found")
+        except WorkspaceNotFoundError as e:
+            error(str(e))
+    return None
+
+
+async def _get_storage_client(arb_data: WorkspaceArbitrary | None):
+    client = create_client(arb_data)
+    try:
+        await client.check()
+    except Exception as e:
+        error_msg(str(e))
+        raise
+    return client
+
+
 @app.command(
-    short_help=(
+    help=(
         "Copy answers (DB records, files) from source arbitrary (or internal) to target arbitrary (or internal) server."
-        "WARNING: ensure source and target are different!"
+        " !WARNING!: ensure source and target are different!"
     )
 )
 @coro
@@ -377,33 +404,10 @@ async def copy_applet_answers(
     if skip_db and skip_files:
         error("Nothing to copy: DB and files skipped")
 
-    source_arb_data = None
-    target_arb_data = None
-
     session_maker = session_manager.get_session()
     async with session_maker() as session:
-        user_crud = UsersCRUD(session)
-
-        if source_owner_email:
-            try:
-                source_owner = await user_crud.get_by_email(source_owner_email)
-                source_arb_data = await WorkspaceService(
-                    session, source_owner.id
-                ).get_arbitrary_info_by_owner_id_if_use_arbitrary(source_owner.id, in_use_only=False)
-            except (UserNotFound, UserIsDeletedError):
-                error(f"User with email {source_owner_email} not found")
-            except WorkspaceNotFoundError as e:
-                error(str(e))
-        if target_owner_email:
-            try:
-                target_owner = await user_crud.get_by_email(target_owner_email)
-                target_arb_data = await WorkspaceService(
-                    session, target_owner.id
-                ).get_arbitrary_info_by_owner_id_if_use_arbitrary(target_owner.id, in_use_only=False)
-            except (UserNotFound, UserIsDeletedError):
-                error(f"User with email {target_owner} not found")
-            except WorkspaceNotFoundError as e:
-                error(str(e))
+        source_arb_data = await _get_arbitrary_data(session, source_owner_email)
+        target_arb_data = await _get_arbitrary_data(session, target_owner_email)
 
         if source_arb_data is None and target_arb_data is None:
             error("No arbitrary data found")
@@ -414,24 +418,124 @@ async def copy_applet_answers(
         source_db_uri = source_arb_data.database_uri if source_arb_data else settings.database.url
         target_db_uri = target_arb_data.database_uri if target_arb_data else settings.database.url
         async with session_manager.get_session(source_db_uri)() as source_session:
+            logger.info("Source DB:")
             await AnswerTransferService.check_db(source_session)
             async with session_manager.get_session(target_db_uri)() as target_session:
+                logger.info("Target DB:")
                 await AnswerTransferService.check_db(target_session)
 
-                source_bucket = create_client(source_arb_data)
-                try:
-                    await source_bucket.check()
-                except Exception as e:
-                    error_msg(str(e))
-                    raise
-                target_bucket = create_client(target_arb_data)
-                try:
-                    await target_bucket.check()
-                except Exception as e:
-                    error_msg(str(e))
-                    raise
+                logger.info("Source bucket:")
+                source_bucket = await _get_storage_client(source_arb_data)
+                logger.info("Target bucket:")
+                target_bucket = await _get_storage_client(target_arb_data)
 
                 service = AnswerTransferService(session, source_session, target_session, source_bucket, target_bucket)
 
                 for applet_id in applet_ids:
                     await service.transfer(applet_id, copy_db=copy_db, copy_files=copy_files)
+
+
+@app.command(
+    help=(
+        "Check copied answers (DB records, files) from source arbitrary (or internal) to target arbitrary (or internal)"
+        " server. You can delete copied data if needed. !WARNING!: ensure source and target are different "
+        "(otherwise data can be deleted on target server)!"
+    )
+)
+@coro
+async def check_copied_applet_answers(
+    applet_ids: list[uuid.UUID] = typer.Argument(..., help="A list of Applet IDs for data copying."),
+    source_owner_email: Optional[str] = typer.Option(
+        None,
+        "--src-owner-email",
+        "-s",
+        help="Source workspace owner email. Internal server will be used by default.",
+    ),
+    target_owner_email: Optional[str] = typer.Option(
+        None,
+        "--tgt-owner-email",
+        "-t",
+        help="Target workspace owner email. Internal server will be used by default.",
+    ),
+    delete: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Delete copied answers and files (promt)",
+    ),
+) -> None:
+    if not source_owner_email and not target_owner_email:
+        error("Source or target should be set")
+
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        source_arb_data = await _get_arbitrary_data(session, source_owner_email)
+        target_arb_data = await _get_arbitrary_data(session, target_owner_email)
+
+        if source_arb_data is None and target_arb_data is None:
+            error("No arbitrary data found")
+
+        check_db = not _is_db_same(source_arb_data, target_arb_data)
+        check_files = not _is_bucket_same(source_arb_data, target_arb_data)
+        if not check_db and not check_files:
+            error("DB and bucket source and target are same")
+
+        source_db_uri = source_arb_data.database_uri if source_arb_data else settings.database.url
+        target_db_uri = target_arb_data.database_uri if target_arb_data else settings.database.url
+        async with session_manager.get_session(source_db_uri)() as source_session:
+            logger.info("Source DB:")
+            await AnswerTransferService.check_db(source_session)
+            async with session_manager.get_session(target_db_uri)() as target_session:
+                logger.info("Target DB:")
+                await AnswerTransferService.check_db(target_session)
+
+                logger.info("Source bucket:")
+                source_bucket = await _get_storage_client(source_arb_data)
+                logger.info("Target bucket:")
+                target_bucket = await _get_storage_client(target_arb_data)
+
+                service = AnswerTransferService(session, source_session, target_session, source_bucket, target_bucket)
+
+                for applet_id in applet_ids:
+                    applet = await AppletsCRUD(session).get_by_id(applet_id)
+                    print(f"Check answers for applet '{applet.display_name}'({applet.id})")
+                    delete_files = True
+                    if check_files:
+                        files_data = await service.get_copied_files(applet_id)
+                        print(f"Total files: {files_data.total_files}")
+                        print(f"Files not copied: {len(files_data.not_copied_files)}")
+                        files_to_remove_total = len(files_data.files_to_remove)
+                        print(f"Can remove files total: {files_to_remove_total}")
+                        if delete and files_to_remove_total:
+                            if typer.confirm(f"[red]Do you want to delete {files_to_remove_total} files?[/red]"):
+                                await service.delete_source_files(list(files_data.files_to_remove))
+                            else:
+                                print("Files deletion skipped")
+                                delete_files = False
+                    else:
+                        print("Check Files skipped")
+                    if check_db:
+                        answers_data = await service.get_copied_answers(applet_id)
+                        print(f"Total answers: {answers_data.total_answers}")
+                        print(f"Answers not copied: {len(answers_data.not_copied_answers)}")
+                        print(f"Total answer items: {answers_data.total_answer_items}")
+                        print(f"Answers items not copied: {len(answers_data.not_copied_answer_items)}")
+                        answers_to_remove_total = len(answers_data.answers_to_remove)
+                        print(f"Can remove answers total: {answers_to_remove_total}")
+                        if delete:
+                            if (
+                                answers_to_remove_total
+                                and delete_files
+                                and typer.confirm(
+                                    f"[red]Do you want to delete {answers_to_remove_total} answers with related "
+                                    "items?[/red]"
+                                )
+                            ):
+                                async with atomic(source_session):
+                                    await service.delete_source_answers(
+                                        answers_to_delete=list(answers_data.answers_to_remove)
+                                    )
+                            else:
+                                print("Answers deletion skipped")
+                    else:
+                        print("Check DB skipped")
+                    print(f"Applet '{applet.display_name}'({applet.id}) processing finished")

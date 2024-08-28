@@ -21,6 +21,9 @@ class ObjectNotFoundError(Exception):
 
 
 class CDNClient:
+    KEY_KEY = "Key"
+    KEY_CHECKSUM = "ETag"
+
     default_container_name = "mindlogger"
     meta_last_modified = "last_modified_orig"
 
@@ -124,9 +127,10 @@ class CDNClient:
             return url
 
     async def delete_object(self, key: str | None):
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
-            await asyncio.wrap_future(future)
+        async with self.semaphore:
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
+                await asyncio.wrap_future(future)
 
     async def list_object(self, key: str):
         async with self.semaphore:
@@ -168,7 +172,7 @@ class CDNClient:
 
     async def check(self):
         storage_bucket = self.config.bucket
-        print(f'Check bucket "{storage_bucket}" availability.')
+        logger.info(f'Check bucket "{storage_bucket}" availability.')
         key = "mindlogger.txt"
 
         presigned_data = self.generate_presigned_post(storage_bucket, key)
