@@ -12,12 +12,7 @@ from apps.activity_assignments.domain.assignments import (
     ActivityAssignmentDelete,
     ActivityAssignmentWithSubject,
 )
-from apps.activity_assignments.errors import (
-    ActivityAssignmentActivityOrFlowError,
-    ActivityAssignmentMissingRespondentError,
-    ActivityAssignmentMissingTargetError,
-    ActivityAssignmentNotActivityAndFlowError,
-)
+
 from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.applets.crud import AppletsCRUD
@@ -324,7 +319,6 @@ class ActivityAssignmentService:
         list[ActivityAssignment]
             A list of `ActivityAssignment` objects that have been marked as deleted.
         """
-        self._validate_unassignment(assignments_unassign)
 
         activity_or_flow_ids = []
         respondent_subject_ids = []
@@ -346,26 +340,6 @@ class ActivityAssignmentService:
             respondent_subject_ids=respondent_subject_ids,
             target_subject_ids=target_subject_ids,
         )
-
-    def _validate_unassignment(self, assignments_unassign: list[ActivityAssignmentDelete]) -> None:
-        """
-        Validates that all mandatory parameters are filled and correct.
-
-        Raises specific validation errors for each type of validation failure.
-        """
-        for assignment in assignments_unassign:
-            # Validate that exactly one of activity_id or activity_flow_id is provided
-            if not assignment.activity_id and not assignment.activity_flow_id:
-                raise ActivityAssignmentNotActivityAndFlowError()
-
-            if not assignment.respondent_subject_id:
-                raise ActivityAssignmentMissingRespondentError()
-
-            if not assignment.target_subject_id:
-                raise ActivityAssignmentMissingTargetError()
-
-            if assignment.activity_id and assignment.activity_flow_id:
-                raise ActivityAssignmentActivityOrFlowError()
 
     async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
         assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
