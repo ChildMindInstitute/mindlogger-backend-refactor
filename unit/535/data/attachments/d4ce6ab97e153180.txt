@@ -1,0 +1,10 @@
+ERROR    root:tasks.py:85 Reencryption 1417ec68-b2d3-4813-8f17-6da97511abcf: cannot process applet 6b4a6678-358d-40a5-adda-9b6d2671f4cb, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+  File "/usr/local/lib/python3.10/unittest/mock.py", line 2234, in _execute_mock_call
+    raise effect
+Exception: ERROR
