@@ -1,6 +1,4 @@
-FROM python:3.10-slim-bookworm as base
-
-ARG PIPENV_EXTRA_ARGS
+FROM python:3.10-slim-bookworm AS base
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="src/"
@@ -8,7 +6,7 @@ ENV PYTHONPATH="src/"
 WORKDIR /app/
 
 RUN apt-get -y update && apt-get -y upgrade \
-    && apt-get install --no-install-recommends -y build-essential=12.9 curl=7.88* \
+    && apt-get install --no-install-recommends -y build-essential=12.9 curl=7.88* libffi-dev \
     && rm -rf /var/lib/apt/lists/
 
 # Add local non-root user to avoid issue with files
@@ -23,6 +21,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 RUN pip install --no-cache-dir pipenv==2023.11.15
 
 COPY Pipfile Pipfile.lock ./
+ARG PIPENV_EXTRA_ARGS
 RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
 
 
@@ -44,7 +43,7 @@ RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
 # Select internal user
 USER code
 
-FROM base as fargate
+FROM base AS fargate
 # Hack for Fargate
 # https://github.com/aws/containers-roadmap/issues/938
 USER root
@@ -58,7 +57,7 @@ VOLUME ["/tmp"]
 VOLUME ["/app/uploads"]
 
 # worker instructions
-FROM base as worker
+FROM base AS worker
 
 USER root
 RUN apt-get update -y && apt-get install -y --no-install-recommends \

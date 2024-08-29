@@ -107,6 +107,7 @@ class FlowService:
                     hide_badge=flow_update.hide_badge,
                     is_hidden=flow_update.is_hidden,
                     order=index + 1,
+                    auto_assign=flow_update.auto_assign,
                     report_included_activity_name=(flow_update.report_included_activity_name),
                     report_included_item_name=(flow_update.report_included_item_name),
                 )
@@ -195,6 +196,7 @@ class FlowService:
                 created_at=schema.created_at,
                 report_included_activity_name=schema.report_included_activity_name,  # noqa: E501
                 report_included_item_name=schema.report_included_item_name,
+                auto_assign=schema.auto_assign,
             )
             flow_map[flow.id] = flow
             flows.append(flow)
@@ -278,6 +280,7 @@ class FlowService:
                 hide_badge=schema.hide_badge,
                 order=schema.order,
                 is_hidden=schema.is_hidden,
+                auto_assign=schema.auto_assign,
             )
             flow_map[flow.id] = flow
             flows.append(flow)

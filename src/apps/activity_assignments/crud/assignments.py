@@ -65,23 +65,23 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         return db_result.scalars().all()
 
     async def get_by_applet(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssigmentSchema]:
-        respondentSchema = aliased(SubjectSchema)
-        targetSchema = aliased(SubjectSchema)
+        respondent_schema = aliased(SubjectSchema)
+        target_schema = aliased(SubjectSchema)
 
         query = (
             select(ActivityAssigmentSchema)
             .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
             .outerjoin(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
-            .join(respondentSchema, respondentSchema.id == ActivityAssigmentSchema.respondent_subject_id)
-            .join(targetSchema, targetSchema.id == ActivityAssigmentSchema.target_subject_id)
+            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
+            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
             .where(
                 or_(
                     ActivityFlowSchema.applet_id == applet_id,
                     ActivitySchema.applet_id == applet_id,
                 ),
                 ActivityAssigmentSchema.soft_exists(),
-                respondentSchema.soft_exists(),
-                targetSchema.soft_exists(),
+                respondent_schema.soft_exists(),
+                target_schema.soft_exists(),
             )
         )
         if query_params.filters:
@@ -89,6 +89,33 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             flows_clause = _ActivityAssignmentFlowsFilter().get_clauses(**query_params.filters)
 
             query = query.where(or_(*activities_clause, *flows_clause))
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
+    async def get_by_applet_and_respondent(
+        self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID
+    ) -> list[ActivityAssigmentSchema]:
+        respondent_schema = aliased(SubjectSchema)
+        target_schema = aliased(SubjectSchema)
+        query = (
+            select(ActivityAssigmentSchema)
+            .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
+            .outerjoin(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
+            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
+            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
+            .where(
+                or_(
+                    ActivityFlowSchema.applet_id == applet_id,
+                    ActivitySchema.applet_id == applet_id,
+                ),
+                ActivityAssigmentSchema.soft_exists(),
+                respondent_schema.soft_exists(),
+                target_schema.soft_exists(),
+                respondent_schema.id == respondent_subject_id,
+            )
+        )
 
         db_result = await self._execute(query)
 

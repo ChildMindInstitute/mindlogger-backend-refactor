@@ -41,6 +41,14 @@ class PublicWorkspace(PublicModel):
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
     )
+    use_arbitrary: bool | None = None
+
+    @validator("use_arbitrary")
+    def null_to_false(cls, value):
+        if value is None:
+            value = False
+
+        return value
 
 
 class UserWorkspace(InternalModel):
@@ -56,6 +64,7 @@ class UserWorkspace(InternalModel):
         "which is consists of 'first name', 'last name' of user "
         "which is applet owner and prefix",
     )
+    use_arbitrary: bool | None = None
 
 
 class WorkspaceAppletEncryption(InternalModel):
