@@ -95,4 +95,3 @@ class MultiinformantAssessmentInvalidActivityOrFlow(ValidationError):
 class MultiinformantAssessmentMissingTargetAndSource(ValidationError):
     message = _("Both target_subject_id and source_subject_id must be provided")
     code = _("missing_target_and_source")
-

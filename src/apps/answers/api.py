@@ -855,14 +855,9 @@ async def applet_validate_multiinformant_assessment(
     except ValidationError as ex:
         # Raise a 400 Bad Request when a ValidationError occurs
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "valid": False,
-                "message": ex.error, 
-                "code": ex.code  
-            }
+            status_code=status.HTTP_400_BAD_REQUEST, detail={"valid": False, "message": ex.error, "code": ex.code}
         )
-        
+
     return Response[MultiinformantAssessmentValidationResponse](
         result=MultiinformantAssessmentValidationResponse(valid=is_valid, message=message, code=code)
     )
