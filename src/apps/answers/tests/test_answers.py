@@ -3508,7 +3508,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
     async def test_validate_multiinformant_assessment_fail_no_applet(self, client, lucy: User):
         client.login(lucy)
@@ -3517,7 +3517,7 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
     async def test_validate_multiinformant_assessment_success_no_params(
         self, client, tom: User, applet_one: AppletFull
@@ -3528,8 +3528,10 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is True
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert (
+            response.json()["result"][0]["message"] == "Both target_subject_id and source_subject_id must be provided"
+        )
 
     async def test_validate_multiinformant_assessment_fail_source_subject_not_found(
         self, client, tom: User, applet_one: AppletFull, applet_two: AppletFull, session: AsyncSession
@@ -3564,9 +3566,9 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
-        assert response.json()["result"]["code"] == "invalid_source_subject"
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.json()["detail"]["message"] == "Source subject not found"
+        assert response.json()["detail"]["code"] == "invalid_source_subject"
 
     async def test_validate_multiinformant_assessment_fail_target_subject_not_found(
         self, client, tom: User, applet_one: AppletFull, applet_two: AppletFull, session: AsyncSession
@@ -3601,9 +3603,9 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
-        assert response.json()["result"]["code"] == "invalid_target_subject"
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.json()["detail"]["message"] == "Target subject not found"
+        assert response.json()["detail"]["code"] == "invalid_target_subject"
 
     async def test_validate_multiinformant_assessment_fail_temporary_relation_expired(
         self,
@@ -3662,9 +3664,9 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
-        assert response.json()["result"]["code"] == "no_access_to_applet"
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.json()["detail"]["valid"] is False
+        assert response.json()["detail"]["code"] == "no_access_to_applet"
 
     async def test_validate_multiinformant_assessment_success_temporary_relation_not_expired(
         self,
@@ -3778,11 +3780,37 @@ class TestAnswerActivityItems(BaseTest):
         self,
         client,
         lucy: User,
+        sam: User,
+        tom: User,
+        session: AsyncSession,
+        applet_one: AppletFull,
         applet_one_lucy_manager: AppletFull,
     ):
         client.login(lucy)
+        subject_service = SubjectsService(session, sam.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one_lucy_manager.id)
+
+        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
 
         response = await client.get(url)
 
@@ -3824,9 +3852,9 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
-        assert response.json()["result"]["code"] == "invalid_activity_or_flow_id"
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.json()["detail"]["valid"] is False
+        assert response.json()["detail"]["code"] == "invalid_activity_or_flow_id"
 
     async def test_get_applet_latest_submissions(
         self,

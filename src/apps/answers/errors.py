@@ -90,3 +90,9 @@ class MultiinformantAssessmentNoAccessApplet(ValidationError):
 class MultiinformantAssessmentInvalidActivityOrFlow(ValidationError):
     message = _("Activity or Flow not found")
     code = _("invalid_activity_or_flow_id")
+
+
+class MultiinformantAssessmentMissingTargetAndSource(ValidationError):
+    message = _("Both target_subject_id and source_subject_id must be provided")
+    code = _("missing_target_and_source")
+
