@@ -12,7 +12,6 @@ from apps.activity_assignments.domain.assignments import (
     ActivityAssignmentDelete,
     ActivityAssignmentWithSubject,
 )
-
 from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.applets.crud import AppletsCRUD
