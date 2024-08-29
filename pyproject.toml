@@ -23,9 +23,10 @@ exclude = [
 line-length = 120
 indent-width = 4
 target-version = "py310"
+src = ["src"]
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "C901", "E5"]
+select = ["E4", "E7", "E9", "F", "C901", "E5", "I"]
 ignore = []
 
 [tool.ruff.format]
@@ -33,18 +34,11 @@ skip-magic-trailing-comma = false
 indent-style = "space"
 line-ending = "auto"
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 15
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-line_length = 120
-skip = '.venv,venv,env'
-src_paths = ["src"]
+[tool.ruff.lint.isort]
+known-local-folder = ["src"]
 
 [tool.pytest.ini_options]
 addopts = '-s -v'

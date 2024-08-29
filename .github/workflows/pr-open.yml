@@ -54,6 +54,9 @@ jobs:
   comment-create-preview-env:
     name: Comment on preview env
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     needs: [create-preview-env]
     if: ${{ !cancelled() }}
     steps:
@@ -70,6 +73,7 @@ jobs:
         env:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACKIFY_MARKDOWN: true
           SLACK_TITLE: |
             :rotating_light: Preview Environment Failed
           SLACK_MESSAGE: >-
@@ -88,6 +92,9 @@ jobs:
     name: Comment on unit test outcome
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     needs: [run-unit-tests]
     steps:
       - name: Post the link to the report
@@ -130,6 +137,9 @@ jobs:
     name: Comment on test outcome
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     needs: [run-e2e-tests]
     steps:
       - name: "Send Slack message on failure"

@@ -211,7 +211,7 @@ class TestWorkspaces(BaseTest):
         res = response.json()
         assert len(res["result"]) == 1
         assert res["count"] == 1
-        assert set(res["result"][0].keys()) == {"useArbitrary", "workspaceName", "ownerId"}
+        assert set(res["result"][0].keys()) == {"useArbitrary", "workspaceName", "integrations", "ownerId"}
         assert res["result"][0]["useArbitrary"] is False
 
     async def test_user_workspace_list_super_admin(self, client, superadmin):

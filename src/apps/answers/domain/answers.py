@@ -633,6 +633,7 @@ class CompletedEntity(PublicModel):
     id: uuid.UUID
     answer_id: uuid.UUID
     submit_id: uuid.UUID
+    target_subject_id: uuid.UUID | None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time

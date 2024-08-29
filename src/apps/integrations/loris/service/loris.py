@@ -10,13 +10,11 @@ import aiohttp
 import sentry_sdk
 from pydantic.json import pydantic_encoder
 
-from apps.activities.crud.activity import ActivitiesCRUD
 from apps.activities.crud.activity_history import ActivityHistoriesCRUD
 from apps.activities.crud.activity_item_history import ActivityItemHistoriesCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain import AlertMessage, AlertTypes
-from apps.answers.crud.answer_items import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.errors import ReportServerError
 from apps.answers.service import ReportServerService
@@ -723,81 +721,7 @@ class LorisIntegrationService:
                     error_message = await resp.text()
                     raise LorisServerError(message=error_message)
 
-    async def get_information_about_users_and_visits(self):
-        respondents_future = AnswersCRUD(self.session).get_respondents_by_applet_id_and_readiness_to_share_data(
-            applet_id=self.applet_id
-        )
-        visits_data_future = self.get_visits_for_applet()
-        respondents, visits_data = await asyncio.gather(respondents_future, visits_data_future)
-        if not respondents:
-            logger.info(
-                f"No respondents found for given applet: \
-                    {str(self.applet_id)}. End of the synchronization."
-            )
-            return
-
-        result: list = []
-        subject_crud = SubjectsCrud(self.session)
-        activity_crud = ActivitiesCRUD(self.session)
-        answer_items_crud = AnswerItemsCRUD(self.session)
-        relationship_crud = MlLorisUserRelationshipCRUD(self.session)
-        report_service = ReportServerService(self.session)
-        for respondent in set(respondents):
-            respondent_subject = await subject_crud.get_user_subject(user_id=respondent, applet_id=self.applet_id)
-            _data = {"user_id": str(respondent), "secret_user_id": respondent_subject.secret_user_id, "activities": []}
-            try:
-                activities_info: tuple[dict, list] | None = await report_service.decrypt_data_for_loris(  # TODO why?
-                    self.applet_id, respondent
-                )
-            except ReportServerError as e:
-                logger.info(f"Error during request to report server: {e}")
-                return
-
-            if not activities_info:
-                logger.info("Error during request to report server, no information about activities")
-                return
-
-            activities: dict[str, list] = activities_info[0]
-            for item in activities["result"]:
-                activity_id, version, answer_id = item["activityId"].split("__")
-                _activity_future = activity_crud.get_by_id(uuid.UUID(activity_id))
-                _answer_item_future = answer_items_crud.get_respondent_answer(uuid.UUID(answer_id))
-                _activity, _answer_item = await asyncio.gather(_activity_future, _answer_item_future)
-
-                _completed_date = datetime.datetime.combine(_answer_item.local_end_date, _answer_item.local_end_time)
-
-                activity_key = f"{activity_id}__{version}"
-                visits = []
-                if activity_key in visits_data:
-                    for visit_info in visits_data[activity_key]:
-                        relationships = await relationship_crud.get_by_loris_user_ids([str(visit_info["CandID"])])
-                        if not relationships:
-                            break
-                        relationship = relationships[0]
-                        if relationship.ml_user_uuid == respondent:
-                            visits = visit_info["Visits"]
-                            break
-
-                _activity_data = {
-                    "activity_id": activity_id,
-                    "activity_name": _activity.name,
-                    "answer_id": answer_id,
-                    "version": version,
-                    "completed_date": _completed_date,
-                    "visits": visits,
-                }
-                _data["activities"].append(_activity_data)
-
-            result.append(_data)
-
-        return result
-
     async def get_uploadable_answers(self) -> tuple[UploadableAnswersData, int]:
-        """
-        This method is build to replace `get_information_about_users_and_visits` providing data in another structure
-        """
-        # TODO remove this method or `get_information_about_users_and_visits` after testing
-
         uploaded_answers, applet_visits, answers = await asyncio.gather(
             self._get_existing_answers_from_loris(str(self.applet_id)),
             self.get_visits_for_applet(),
