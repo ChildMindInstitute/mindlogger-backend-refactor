@@ -26,6 +26,18 @@ class TransferService:
         self._user = user
         self.session = session
 
+    async def save_transfer_request(self, applet_id: uuid.UUID, target_email: str, target_id: uuid.UUID) -> Transfer:
+        transfer = Transfer(
+            email=target_email,
+            applet_id=applet_id,
+            key=uuid.uuid4(),
+            status=TransferOwnershipStatus.PENDING,
+            from_user_id=self._user.id,
+            to_user_id=target_id,
+        )
+        await TransferCRUD(self.session).create(transfer)
+        return transfer
+
     async def initiate_transfer(self, applet_id: uuid.UUID, transfer_request: InitiateTransfer):
         """Initiate a transfer of ownership of an applet."""
         # check if user is owner of applet
@@ -44,15 +56,7 @@ class TransferService:
             receiver_name = transfer_request.email
             to_user_id = None
 
-        transfer = Transfer(
-            email=transfer_request.email,
-            applet_id=applet_id,
-            key=uuid.uuid4(),
-            status=TransferOwnershipStatus.PENDING,
-            from_user_id=self._user.id,
-            to_user_id=to_user_id,
-        )
-        await TransferCRUD(self.session).create(transfer)
+        transfer = await self.save_transfer_request(applet_id, transfer_request.email, to_user_id)
 
         url = self._generate_transfer_url()
 
