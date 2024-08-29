@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO
 
 import boto3
+import botocore
 import httpx
 from botocore.exceptions import ClientError, EndpointConnectionError
 
@@ -20,6 +21,9 @@ class ObjectNotFoundError(Exception):
 
 
 class CDNClient:
+    KEY_KEY = "Key"
+    KEY_CHECKSUM = "ETag"
+
     default_container_name = "mindlogger"
     meta_last_modified = "last_modified_orig"
 
@@ -40,6 +44,9 @@ class CDNClient:
 
     def configure_client(self, config):
         assert config, "set CDN"
+        client_config = botocore.config.Config(
+            max_pool_connections=25,
+        )
 
         if config.access_key and config.secret_key:
             return boto3.client(
@@ -48,6 +55,7 @@ class CDNClient:
                 region_name=config.region,
                 aws_access_key_id=config.access_key,
                 aws_secret_access_key=config.secret_key,
+                config=client_config,
             )
         try:
             return boto3.client("s3", region_name=config.region)
@@ -119,9 +127,10 @@ class CDNClient:
             return url
 
     async def delete_object(self, key: str | None):
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
-            await asyncio.wrap_future(future)
+        async with self.semaphore:
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
+                await asyncio.wrap_future(future)
 
     async def list_object(self, key: str):
         async with self.semaphore:
@@ -163,7 +172,7 @@ class CDNClient:
 
     async def check(self):
         storage_bucket = self.config.bucket
-        print(f'Check bucket "{storage_bucket}" availability.')
+        logger.info(f'Check bucket "{storage_bucket}" availability.')
         key = "mindlogger.txt"
 
         presigned_data = self.generate_presigned_post(storage_bucket, key)
