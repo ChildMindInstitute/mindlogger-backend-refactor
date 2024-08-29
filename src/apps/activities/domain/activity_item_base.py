@@ -160,11 +160,23 @@ class BaseActivityItem(BaseModel):
         if value is not None and response_type not in [
             ResponseType.SINGLESELECT,
             ResponseType.MULTISELECT,
+            ResponseType.SINGLESELECTROWS,
+            ResponseType.MULTISELECTROWS,
             ResponseType.SLIDER,
+            ResponseType.SLIDERROWS,
             ResponseType.TEXT,
             ResponseType.PARAGRAPHTEXT,
             ResponseType.TIME,
             ResponseType.TIMERANGE,
+            ResponseType.DATE,
+            ResponseType.NUMBERSELECT,
+            ResponseType.DRAWING,
+            ResponseType.PHOTO,
+            ResponseType.VIDEO,
+            ResponseType.GEOLOCATION,
+            ResponseType.AUDIO,
+            ResponseType.MESSAGE,
+            ResponseType.AUDIOPLAYER,
         ]:
             raise IncorrectConditionLogicItemTypeError()
 

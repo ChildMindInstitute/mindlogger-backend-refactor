@@ -32,7 +32,7 @@ for PR_NUM in $(aws ecs list-clusters  --output text | grep -E -o 'pr\-[0-9]+' |
     echo "=> Shutting down preview env"
     export ENV_NAME="pr-$PR_NUM"
     ./copilot/scripts/env-stop.sh
-    aws secretsmanager delete-secret --secret-id "cmiml-feature-pr-$PR_NUM" --force-delete-without-recovery
+    aws secretsmanager delete-secret --secret-id "cmiml-feature-pr-$PR_NUM" --force-delete-without-recovery --no-cli-pager
   else
     echo "=> No action needed"
   fi
