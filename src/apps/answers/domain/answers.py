@@ -686,3 +686,17 @@ class PublicSubmissionsResponse(PublicModel):
     submissions: list[AppletSubmission] = Field(default_factory=list)
     submissions_count: int = 0
     participants_count: int = 0
+
+
+class AnswersCopyCheckResult(InternalModel):
+    total_answers: int
+    not_copied_answers: set[uuid.UUID]
+    answers_to_remove: set[uuid.UUID]
+    total_answer_items: int
+    not_copied_answer_items: set[uuid.UUID]
+
+
+class FilesCopyCheckResult(InternalModel):
+    total_files: int
+    not_copied_files: set[str]
+    files_to_remove: set[str]

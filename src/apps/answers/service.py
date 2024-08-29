@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import datetime
+import itertools
 import json
 import os
 import time
@@ -58,7 +59,12 @@ from apps.answers.domain import (
     SummaryActivity,
     SummaryActivityFlow,
 )
-from apps.answers.domain.answers import AppletSubmission, RespondentAnswerData
+from apps.answers.domain.answers import (
+    AnswersCopyCheckResult,
+    AppletSubmission,
+    FilesCopyCheckResult,
+    RespondentAnswerData,
+)
 from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
@@ -2226,3 +2232,90 @@ class AnswerTransferService:
             await self.copy_applet_files(applet_id)
         else:
             logger.info("Skip copying files")
+
+    async def get_copied_answers(self, applet_id: uuid.UUID):
+        source_repo = AnswersCRUD(self.answer_session_source)
+        target_repo = AnswersCRUD(self.answer_session_target)
+
+        # answers
+        source_data, target_data = await asyncio.gather(
+            source_repo.get_applet_answer_rows(applet_id),
+            target_repo.get_applet_answer_rows(applet_id),
+        )
+        target_answer_ids = {row.id for row in target_data}
+        del target_data
+        source_answer_ids = {row.id for row in source_data}
+        del source_data
+
+        total_answers = len(source_answer_ids)
+        not_copied_answers = source_answer_ids - target_answer_ids
+        answers_to_remove = source_answer_ids - not_copied_answers
+        del source_answer_ids
+
+        # items
+        source_data, target_data = await asyncio.gather(
+            source_repo.get_applet_answer_item_rows(applet_id),
+            target_repo.get_applet_answer_item_rows(applet_id),
+        )
+        target_item_ids = {row.id for row in target_data}
+        del target_data
+        total_items = len(source_data)
+
+        not_copied_items = defaultdict(list)  # {answer_id: item_id}
+        for row in source_data:
+            if row.id not in target_item_ids:
+                not_copied_items[row.answer_id].append(row.id)
+        del source_data
+
+        # exclude found answers from deletion list
+        answers_to_remove = answers_to_remove.difference(not_copied_items.keys())
+        not_copied_item_ids = set(itertools.chain.from_iterable(not_copied_items.values()))
+        return AnswersCopyCheckResult(
+            total_answers=total_answers,
+            not_copied_answers=not_copied_answers,
+            answers_to_remove=answers_to_remove,
+            total_answer_items=total_items,
+            not_copied_answer_items=not_copied_item_ids,
+        )
+
+    async def delete_source_answers(self, answers_to_delete: list[uuid.UUID], *, batch_size: int = 1000):
+        for i in range(0, len(answers_to_delete), batch_size):
+            values = answers_to_delete[i : i + batch_size]
+            await AnswersCRUD(self.answer_session_source).delete_by_ids(values)
+
+    async def get_copied_files(self, applet_id: uuid.UUID):
+        files_target = await self._get_applet_files_list(self.answer_session_source, self.storage_target, applet_id)
+        target_checksum = {file[CDNClient.KEY_KEY]: file[CDNClient.KEY_CHECKSUM] for file in files_target}
+        del files_target
+        files_source = await self._get_applet_files_list(self.answer_session_source, self.storage_source, applet_id)
+        total_files = len(files_source)
+        files_not_copied = set()
+        files_to_remove = set()
+        for file in files_source:
+            key = file[CDNClient.KEY_KEY]
+            if target_checksum.get(key, None) == file[CDNClient.KEY_CHECKSUM]:
+                files_to_remove.add(key)
+            else:
+                files_not_copied.add(key)
+        return FilesCopyCheckResult(
+            total_files=total_files,
+            not_copied_files=files_not_copied,
+            files_to_remove=files_to_remove,
+        )
+
+    async def delete_source_files(self, keys: list[str]):
+        logger.info("Delete files")
+        tasks = []
+        # delete files concurrently
+        for key in keys:
+            task = asyncio.create_task(self.storage_source.delete_object(key))
+            tasks.append(task)
+
+        total = len(tasks)
+        logger.info(f"Total files: {total}")
+        i = 0
+        for _task in asyncio.as_completed(tasks):
+            i += 1
+            await _task
+            logger.info(f"Deleted [{i} / {total}] {int(i / total * 100)}%")
+        logger.info("Delete files done")

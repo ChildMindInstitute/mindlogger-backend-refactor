@@ -926,3 +926,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         res = await self._execute(query)
         user_ids = res.scalars().all()
         return user_ids
+
+    async def delete_by_ids(self, ids: list[uuid.UUID]):
+        query: Query = delete(AnswerSchema)
+        query = query.where(AnswerSchema.id.in_(ids))
+        await self._execute(query)
