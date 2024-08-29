@@ -631,4 +631,3 @@ def activity_unity_create() -> ActivityCreate:
             ),
         ],
     )
-
