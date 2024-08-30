@@ -6,9 +6,7 @@ on:
       - opened
       - reopened
       - synchronize
-#  push:
-#    branches:
-#      - "feature/**"
+
 
 # Only run the latest.  Cancel old runs in progress.
 concurrency:
@@ -19,7 +17,7 @@ concurrency:
 jobs:
   create-database:
     name: Create preview env DB
-    uses: ./.github/workflows/create_db.yaml
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/create_db.yaml@develop
     with:
       db-name: "mindlogger_backend_pr_${{ github.event.number }}"
     secrets: inherit
@@ -40,8 +38,47 @@ jobs:
           SLACK_ICON: https://github.com/github.png?size=48
           MSG_MINIMAL: actions url
 
+  run-unit-tests:
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/tests.yaml@develop
+    secrets: inherit
+
+  comment-unit-tests:
+    name: Comment on unit test outcome
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    needs: [ run-unit-tests ]
+    steps:
+      - name: Post the link to the report
+        uses: guibranco/github-status-action-v2@v1
+        with:
+          authToken: ${{secrets.PAT_TOKEN}}
+          context: 'Unit Test report'
+          state: ${{ needs.run-unit-tests.result }}
+          sha: ${{ github.event.pull_request.head.sha }}
+          target_url: ${{ needs.run-unit-tests.outputs.report-url }}
+      - name: "Send Slack message on failure"
+        if: ${{ needs.run-unit-tests.result != 'success' }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACKIFY_MARKDOWN: true
+          SLACK_TITLE: |
+            :rotating_light: Unit test suite failed
+          SLACK_MESSAGE: >-
+            Unit tests for PR-${{ github.event.pull_request.number}} failed in ${{ github.repository }}
+            \n\n
+            :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            \n\n
+            :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }}) | :chart_with_upwards_trend: [Test Report](${{ needs.run-unit-tests.outputs.report-url }})
+          SLACK_ICON: https://github.com/github.png?size=48
+          MSG_MINIMAL: true
+
   create-preview-env:
-    needs: [create-database]
+    needs: [create-database, run-unit-tests]
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/create-preview-env.yaml@develop
     with:
       env-name: "pr-${{ github.event.number }}"
@@ -84,50 +121,13 @@ jobs:
             :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }})
           MSG_MINIMAL: true
 
-  run-unit-tests:
-    uses: ./.github/workflows/tests.yaml
-    secrets: inherit
 
-  comment-unit-tests:
-    name: Comment on unit test outcome
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
-    needs: [run-unit-tests]
-    steps:
-      - name: Post the link to the report
-        uses: guibranco/github-status-action-v2@v1
-        with:
-          authToken: ${{secrets.PAT_TOKEN}}
-          context: 'Unit Test report'
-          state: ${{ needs.run-unit-tests.result }}
-          sha: ${{ github.event.pull_request.head.sha }}
-          target_url: ${{ needs.run-unit-tests.outputs.report-url }}
-      - name: "Send Slack message on failure"
-        if: ${{ needs.run-unit-tests.result != 'success' }}
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-          SLACKIFY_MARKDOWN: true
-          SLACK_TITLE: |
-            :rotating_light: Unit test suite failed
-          SLACK_MESSAGE: >-
-            Unit tests for PR-${{ github.event.pull_request.number}} failed in ${{ github.repository }}
-            \n\n
-            :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            \n\n
-            :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }}) | :chart_with_upwards_trend: [Test Report](${{ needs.run-unit-tests.outputs.report-url }})
-          SLACK_ICON: https://github.com/github.png?size=48
-          MSG_MINIMAL: true
 
   run-e2e-tests:
     name: Run E2E Test Suite
     needs: [ create-preview-env, run-unit-tests ]
     if: ${{ !cancelled() && needs.run-unit-tests.result == 'success' && needs.create-preview-env.result == 'success' }}
-    uses: ./.github/workflows/e2e-tests.yaml
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/e2e-tests.yaml@develop
     secrets: inherit
     with:
       service-url: ${{ needs.create-preview-env.outputs.service-url }}
