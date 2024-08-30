@@ -933,6 +933,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         user_ids = res.scalars().all()
         return user_ids
 
+    async def delete_by_ids(self, ids: list[uuid.UUID]):
+        query: Query = delete(AnswerSchema)
+        query = query.where(AnswerSchema.id.in_(ids))
+        await self._execute(query)
+
     async def get_by_applet_id_and_readiness_to_share_data(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID, answer_ids: list[uuid.UUID]
     ) -> list[AnswerSchema] | None:

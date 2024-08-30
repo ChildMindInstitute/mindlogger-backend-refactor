@@ -53,15 +53,6 @@ class AnswerSchema(HistoryAware, Base):
         lazy="noload",
     )
 
-    assessments = relationship(
-        "AnswerItemSchema",
-        order_by=lambda: asc(AnswerItemSchema.created_at),
-        primaryjoin=(
-            lambda: and_(AnswerSchema.id == AnswerItemSchema.answer_id, AnswerItemSchema.is_assessment.is_(True))  # type: ignore[has-type]
-        ),
-        lazy="noload",
-    )
-
 
 class AnswerNoteSchema(Base):
     __tablename__ = "answer_notes"

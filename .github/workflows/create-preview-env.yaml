@@ -68,9 +68,10 @@ jobs:
         run: |
           SECRET_STRING=$(aws secretsmanager get-secret-value --secret-id cmiml-feature-feature --query SecretString --output text)
           COUNT=$(aws secretsmanager list-secrets --query SecretList --filters Key=name,Values=cmiml-feature-${{ inputs.env-name }} | jq length)
+          echo "Found $COUNT existing secrets"
           if [ "$COUNT" -ne "0" ]; then
             echo "Secret exists, updating..."
-            SECRET_ARN=$(aws secretsmanager list-secrets --query 'SecretList[0].ARN' --filters Key=name,Values=cmiml-feature-pr-1521 --output text)
+            SECRET_ARN=$(aws secretsmanager list-secrets --query 'SecretList[0].ARN' --filters Key=name,Values=cmiml-feature-${{ inputs.env-name }} --output text)
             aws secretsmanager update-secret --secret-id "$SECRET_ARN" --secret-string "$SECRET_STRING" 2>&1 > /dev/null
             exit 0
           fi
@@ -86,8 +87,10 @@ jobs:
       - name: Deploy service
         run: copilot/scripts/svc-deploy.sh
       - name: Run DB migration
+        # https://stackoverflow.com/questions/66066753/aws-start-session-end-with-cannot-perform-start-session-eof
         run: |
-          copilot svc exec -a ${{ inputs.app-name }} -e ${{ inputs.env-name }} -n ${{ inputs.copilot-service }} --command "/fastapi-migrate"
+          sudo apt install -y expect
+          unbuffer copilot svc exec -a ${{ inputs.app-name }} -e ${{ inputs.env-name }} -n ${{ inputs.copilot-service }} --command "env ENV=testing bash -c '/fastapi-migrate'"
       - name: Get service URL
         id: service-url
         run: echo "SERVICE_URL=$(copilot svc show -n ${{ inputs.copilot-service }} --json | jq -r '.routes[] | select( .environment | contains("${{ inputs.env-name }}") ) | .url')" >> $GITHUB_OUTPUT
