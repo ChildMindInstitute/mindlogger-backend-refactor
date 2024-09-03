@@ -72,7 +72,11 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
 
     async def get_auto_assigned_flows(self, applet_id: uuid.UUID) -> list[ActivityFlowSchema]:
         query: Query = select(ActivityFlowSchema)
-        query = query.where(ActivityFlowSchema.applet_id == applet_id, ActivityFlowSchema.auto_assign.is_(True))
+        query = query.where(
+            ActivityFlowSchema.applet_id == applet_id,
+            ActivityFlowSchema.auto_assign.is_(True),
+            ActivityFlowSchema.soft_exists(),
+        )
         query = query.order_by(ActivityFlowSchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
@@ -91,10 +95,13 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
         query: Query = select(ActivityFlowSchema).distinct()
         query = query.join(ActivityAssigmentSchema, ActivityAssigmentSchema.activity_flow_id == ActivityFlowSchema.id)
         query = query.join(AppletSchema, AppletSchema.id == ActivityFlowSchema.applet_id)
-        query = query.where(AppletSchema.id == applet_id)
-        query = query.where(ActivityAssigmentSchema.respondent_subject_id == subject_id)
+        query = query.where(
+            AppletSchema.id == applet_id,
+            ActivityAssigmentSchema.respondent_subject_id == subject_id,
+            ActivityFlowSchema.soft_exists(),
+        )
         if not include_unassigned:
-            query = query.where(ActivityAssigmentSchema.is_deleted.is_(False))
+            query = query.where(ActivityAssigmentSchema.soft_exists())
         result = await self._execute(query)
 
         return result.scalars().all()

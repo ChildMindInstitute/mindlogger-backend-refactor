@@ -110,7 +110,11 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         Get activities with auto_assign = True
         """
         query: Query = select(ActivitySchema)
-        query = query.where(ActivitySchema.applet_id == applet_id, ActivitySchema.auto_assign.is_(True))
+        query = query.where(
+            ActivitySchema.applet_id == applet_id,
+            ActivitySchema.auto_assign.is_(True),
+            ActivitySchema.soft_exists(),
+        )
         query = query.order_by(ActivitySchema.order.asc())
         result = await self._execute(query)
         return result.scalars().all()
@@ -129,9 +133,13 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         query: Query = select(ActivitySchema).distinct()
         query = query.join(ActivityAssigmentSchema, ActivityAssigmentSchema.activity_id == ActivitySchema.id)
         query = query.join(AppletSchema, AppletSchema.id == ActivitySchema.applet_id)
-        query = query.where(AppletSchema.id == applet_id, ActivityAssigmentSchema.respondent_subject_id == subject_id)
+        query = query.where(
+            AppletSchema.id == applet_id,
+            ActivityAssigmentSchema.respondent_subject_id == subject_id,
+            ActivitySchema.soft_exists(),
+        )
         if not include_unassigned:
-            query = query.where(ActivityAssigmentSchema.is_deleted.is_(False))
+            query = query.where(ActivityAssigmentSchema.soft_exists())
         result = await self._execute(query)
 
         return result.scalars().all()
