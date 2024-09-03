@@ -269,6 +269,7 @@ class ActivityAssignmentService:
 
         return [
             ActivityAssignmentWithSubject(
+                id=assignment.id,
                 activity_id=assignment.activity_id,
                 activity_flow_id=assignment.activity_flow_id,
                 respondent_subject=SubjectReadResponse(

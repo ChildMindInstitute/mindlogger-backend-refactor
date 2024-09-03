@@ -2,7 +2,12 @@ import uuid
 
 from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD, FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
-from apps.activity_flows.domain.flow import Flow, FlowBaseInfo, FlowDuplicate, FlowSingleLanguageDetail
+from apps.activity_flows.domain.flow import (
+    Flow,
+    FlowBaseInfo,
+    FlowDuplicate,
+    FlowSingleLanguageDetail,
+)
 from apps.activity_flows.domain.flow_create import FlowCreate, PreparedFlowItemCreate
 from apps.activity_flows.domain.flow_full import FlowFull
 from apps.activity_flows.domain.flow_update import ActivityFlowReportConfiguration, FlowUpdate, PreparedFlowItemUpdate
