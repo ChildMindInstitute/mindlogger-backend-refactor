@@ -687,7 +687,7 @@ class TestActivities:
         assert activity_result["name"] == activity.name
         assert activity_result["description"] == activity.description[Language.ENGLISH]
         assert activity_result["autoAssign"] == activity.auto_assign
-        assert activity_result["assignments"] is None
+        assert len(activity_result["assignments"]) == 0
 
         flow = applet_activity_flow_lucy_manager.activity_flows[0]
         flow_result = result["activityFlows"][0]
@@ -696,7 +696,7 @@ class TestActivities:
         assert flow_result["name"] == flow.name
         assert flow_result["description"] == flow.description[Language.ENGLISH]
         assert flow_result["autoAssign"] == flow.auto_assign
-        assert flow_result["assignments"] is None
+        assert len(flow_result["assignments"]) == 0
         assert flow_result["activityIds"][0] == str(flow.items[0].activity_id)
 
     async def test_subject_assigned_activities_manually_assigned(
