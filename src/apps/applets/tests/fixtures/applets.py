@@ -345,6 +345,7 @@ async def applet_with_all_performance_tasks(
         activity_ab_trails_mobile_create,
         activity_flanker_create,
         actvitiy_cst_gyroscope_create,
+        actvitiy_cst_touch_create,
         actvitiy_unity,
     ]
     applet = await AppletService(session, tom.id).create(data)
