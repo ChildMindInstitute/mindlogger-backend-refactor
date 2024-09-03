@@ -129,25 +129,25 @@ async def applet_activities_for_subject(
         )
 
         for activity in activities:
-            activity_with_assignment = ActivityWithAssignmentDetailsPublic(**activity.dict(
-                exclude={"report_included_activity_name", "report_included_item_name"}
-            ))
+            activity_with_assignment = ActivityWithAssignmentDetailsPublic(
+                **activity.dict(exclude={"report_included_activity_name", "report_included_item_name"})
+            )
             activity_with_assignment.assignments = [
                 assignment for assignment in assignments if assignment.activity_id == activity.id
             ]
 
-            if activity_with_assignment.auto_assign is True or len(activity_with_assignment.assignments) > 0 :
+            if activity_with_assignment.auto_assign is True or len(activity_with_assignment.assignments) > 0:
                 result.activities.append(activity_with_assignment)
 
         for flow in flows:
-            flow_with_assignment = FlowWithAssignmentDetailsPublic(**flow.dict(
-                exclude={"created_at", "report_included_activity_name", "report_included_item_name"}
-            ))
+            flow_with_assignment = FlowWithAssignmentDetailsPublic(
+                **flow.dict(exclude={"created_at", "report_included_activity_name", "report_included_item_name"})
+            )
             flow_with_assignment.assignments = [
                 assignment for assignment in assignments if assignment.activity_flow_id == flow.id
             ]
 
-            if flow_with_assignment.auto_assign is True or len(flow_with_assignment.assignments) > 0 :
+            if flow_with_assignment.auto_assign is True or len(flow_with_assignment.assignments) > 0:
                 result.activity_flows.append(flow_with_assignment)
 
         return Response(result=result)
