@@ -5,8 +5,6 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivitySchema
-from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
-from apps.applets.db.schemas import AppletSchema
 from infrastructure.database import BaseCRUD
 
 __all__ = ["ActivitiesCRUD"]
@@ -103,43 +101,4 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         query: Query = select(ActivitySchema.id)
         query = query.where(ActivitySchema.applet_id == applet_id)
         result = await self._execute(query)
-        return result.scalars().all()
-
-    async def get_auto_assigned_activities(self, applet_id: uuid.UUID) -> list[ActivitySchema]:
-        """
-        Get activities with auto_assign = True
-        """
-        query: Query = select(ActivitySchema)
-        query = query.where(
-            ActivitySchema.applet_id == applet_id,
-            ActivitySchema.auto_assign.is_(True),
-            ActivitySchema.soft_exists(),
-        )
-        query = query.order_by(ActivitySchema.order.asc())
-        result = await self._execute(query)
-        return result.scalars().all()
-
-    async def get_manually_assigned_activities(
-        self, applet_id: uuid.UUID, subject_id: uuid.UUID, include_unassigned: bool = False
-    ) -> list[ActivitySchema]:
-        """
-        Get activities that were manually assigned to a subject
-
-        Args:
-            applet_id (uuid.UUID): Applet id
-            subject_id (uuid.UUID): Subject id
-            include_unassigned (bool, optional): Include unassigned activities. Defaults to False.
-        """
-        query: Query = select(ActivitySchema).distinct()
-        query = query.join(ActivityAssigmentSchema, ActivityAssigmentSchema.activity_id == ActivitySchema.id)
-        query = query.join(AppletSchema, AppletSchema.id == ActivitySchema.applet_id)
-        query = query.where(
-            AppletSchema.id == applet_id,
-            ActivityAssigmentSchema.respondent_subject_id == subject_id,
-            ActivitySchema.soft_exists(),
-        )
-        if not include_unassigned:
-            query = query.where(ActivityAssigmentSchema.soft_exists())
-        result = await self._execute(query)
-
         return result.scalars().all()

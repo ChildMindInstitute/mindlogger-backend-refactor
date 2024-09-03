@@ -7,7 +7,6 @@ from apps.activity_flows.domain.flow import (
     FlowBaseInfo,
     FlowDuplicate,
     FlowSingleLanguageDetail,
-    FlowSingleLanguageMobileDetailPublic,
 )
 from apps.activity_flows.domain.flow_create import FlowCreate, PreparedFlowItemCreate
 from apps.activity_flows.domain.flow_full import FlowFull
@@ -297,63 +296,3 @@ class FlowService:
 
     async def get_versions(self, applet_id: uuid.UUID, flow_id: uuid.UUID) -> list[Version]:
         return await FlowsHistoryCRUD(self.session).get_versions_data(applet_id, flow_id)
-
-    async def get_auto_assigned_flows(
-        self, applet_id: uuid.UUID, language: str
-    ) -> list[FlowSingleLanguageMobileDetailPublic]:
-        flow_schemas = await FlowsCRUD(self.session).get_auto_assigned_flows(applet_id)
-        flows: list[FlowSingleLanguageMobileDetailPublic] = []
-        flow_map = dict()
-
-        for schema in flow_schemas:
-            flow = FlowSingleLanguageMobileDetailPublic(
-                id=schema.id,
-                name=schema.name,
-                description=schema.description[language],
-                hide_badge=schema.hide_badge,
-                order=schema.order,
-                is_hidden=schema.is_hidden,
-                auto_assign=schema.auto_assign,
-                is_single_report=schema.is_single_report,
-            )
-
-            flow_map[flow.id] = flow
-            flows.append(flow)
-
-        if len(flows) > 0:
-            item_schemas = await FlowItemsCRUD(self.session).get_by_flow_ids([flow.id for flow in flows])
-            for schema in item_schemas:
-                flow_map[schema.activity_flow_id].activity_ids.append(schema.activity_id)
-
-        return flows
-
-    async def get_manually_assigned_flows(
-        self, applet_id: uuid.UUID, subject_id: uuid.UUID, language: str, include_unassigned: bool = False
-    ) -> list[FlowSingleLanguageMobileDetailPublic]:
-        flow_schemas = await FlowsCRUD(self.session).get_manually_assigned_flows(
-            applet_id, subject_id, include_unassigned
-        )
-        flows: list[FlowSingleLanguageMobileDetailPublic] = []
-        flow_map = dict()
-
-        for schema in flow_schemas:
-            flow = FlowSingleLanguageMobileDetailPublic(
-                id=schema.id,
-                name=schema.name,
-                description=schema.description[language],  # noqa
-                hide_badge=schema.hide_badge,
-                order=schema.order,
-                is_hidden=schema.is_hidden,
-                auto_assign=schema.auto_assign,
-                is_single_report=schema.is_single_report,
-            )
-
-            flow_map[flow.id] = flow
-            flows.append(flow)
-
-        if len(flows) > 0:
-            item_schemas = await FlowItemsCRUD(self.session).get_by_flow_ids([flow.id for flow in flows])
-            for schema in item_schemas:
-                flow_map[schema.activity_flow_id].activity_ids.append(schema.activity_id)
-
-        return flows

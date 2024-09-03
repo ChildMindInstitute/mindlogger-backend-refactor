@@ -118,74 +118,38 @@ async def applet_activities_for_subject(
         # Ensure reviewers can access the subject
         await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
 
-        auto_assigned_activities_future = ActivityService(session, user.id).get_auto_assigned_activities(
-            applet_id, language
-        )
-        manually_assigned_activities_future = ActivityService(session, user.id).get_manually_assigned_activities(
-            applet_id, subject_id, language, include_unassigned=True
-        )
+        activities_future = ActivityService(session, user.id).get_single_language_by_applet_id(applet_id, language)
+        flows_future = FlowService(session).get_single_language_by_applet_id(applet_id, language)
+        assignments_future = ActivityAssignmentService(session).get_all_by_respondent(applet_id, subject_id)
 
-        activity_flows_future = FlowService(session).get_auto_assigned_flows(applet_id, language)
-        manually_assigned_activity_flows_future = FlowService(session).get_manually_assigned_flows(
-            applet_id, subject_id, language, include_unassigned=True
-        )
-
-        (
-            auto_assigned_activities,
-            manually_assigned_activities,
-            auto_assigned_activity_flows,
-            manually_assigned_flows,
-        ) = await asyncio.gather(
-            auto_assigned_activities_future,
-            manually_assigned_activities_future,
-            activity_flows_future,
-            manually_assigned_activity_flows_future,
-        )
-
-        activities: list[ActivityWithAssignmentDetailsPublic] = []
-        activity_id_map: dict[uuid.UUID, ActivityWithAssignmentDetailsPublic] = {}
-        for activity in manually_assigned_activities:
-            activity_with_assignment = ActivityWithAssignmentDetailsPublic(**activity.dict())
-            activities.append(activity_with_assignment)
-            activity_id_map[activity.id] = activity_with_assignment
-
-        for activity in auto_assigned_activities:
-            if activity.id not in activity_id_map:
-                activity_with_assignment = ActivityWithAssignmentDetailsPublic(**activity.dict())
-                activities.append(activity_with_assignment)
-                activity_id_map[activity.id] = activity_with_assignment
-
-        activity_flows: list[FlowWithAssignmentDetailsPublic] = []
-        activity_flow_id_map: dict[uuid.UUID, FlowWithAssignmentDetailsPublic] = {}
-
-        for activity_flow in manually_assigned_flows:
-            activity_flow_with_assignment = FlowWithAssignmentDetailsPublic(**activity_flow.dict())
-            activity_flows.append(activity_flow_with_assignment)
-            activity_flow_id_map[activity_flow.id] = activity_flow_with_assignment
-
-        for activity_flow in auto_assigned_activity_flows:
-            if activity_flow.id not in activity_flow_id_map:
-                activity_flow_with_assignment = FlowWithAssignmentDetailsPublic(**activity_flow.dict())
-                activity_flows.append(activity_flow_with_assignment)
-                activity_flow_id_map[activity_flow.id] = activity_flow_with_assignment
-
-        activity_assignments = await ActivityAssignmentService(session).get_all_by_respondent(applet_id, subject_id)
-        for assignment in activity_assignments:
-            if assignment.activity_id in activity_id_map:
-                activity = activity_id_map[assignment.activity_id]
-                if not activity.assignments:
-                    activity.assignments = []
-                activity.assignments.append(assignment)
-            if assignment.activity_flow_id in activity_flow_id_map:
-                activity_flow = activity_flow_id_map[assignment.activity_flow_id]
-                if not activity_flow.assignments:
-                    activity_flow.assignments = []
-                activity_flow.assignments.append(assignment)
-
+        activities, flows, assignments = await asyncio.gather(activities_future, flows_future, assignments_future)
         result = ActivitiesAndFlowsWithAssignmentDetailsPublic(
-            activities=activities,
-            activity_flows=activity_flows,
+            activities=[],
+            activity_flows=[],
         )
+
+        for activity in activities:
+            activity_with_assignment = ActivityWithAssignmentDetailsPublic(**activity.dict(
+                exclude={"report_included_activity_name", "report_included_item_name"}
+            ))
+            activity_with_assignment.assignments = [
+                assignment for assignment in assignments if assignment.activity_id == activity.id
+            ]
+
+            if activity_with_assignment.auto_assign is True or len(activity_with_assignment.assignments) > 0 :
+                result.activities.append(activity_with_assignment)
+
+        for flow in flows:
+            flow_with_assignment = FlowWithAssignmentDetailsPublic(**flow.dict(
+                exclude={"created_at", "report_included_activity_name", "report_included_item_name"}
+            ))
+            flow_with_assignment.assignments = [
+                assignment for assignment in assignments if assignment.activity_flow_id == flow.id
+            ]
+
+            if flow_with_assignment.auto_assign is True or len(flow_with_assignment.assignments) > 0 :
+                result.activity_flows.append(flow_with_assignment)
+
         return Response(result=result)
 
 

@@ -98,7 +98,7 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
 
 
 class ActivityWithAssignmentDetailsPublic(ActivitySingleLanguageDetailPublic):
-    assignments: list[ActivityAssignmentWithSubject] | None = None
+    assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
 
 
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):

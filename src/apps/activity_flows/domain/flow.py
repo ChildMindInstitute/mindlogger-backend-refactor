@@ -51,7 +51,7 @@ class FlowSingleLanguageMobileDetailPublic(FlowBaseInfo, InternalModel):
 
 
 class FlowWithAssignmentDetailsPublic(FlowSingleLanguageMobileDetailPublic):
-    assignments: list[ActivityAssignmentWithSubject] | None = None
+    assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
 
 
 class FlowDuplicate(FlowBase, InternalModel):

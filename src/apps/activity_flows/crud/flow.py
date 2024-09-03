@@ -3,10 +3,8 @@ import uuid
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Query
 
-from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.activity_flows.domain.flow import Flow
-from apps.applets.db.schemas import AppletSchema
 from infrastructure.database import BaseCRUD
 
 __all__ = ["FlowsCRUD"]
@@ -68,40 +66,4 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
         query = query.where(ActivityFlowSchema.applet_id == applet_id)
 
         result = await self._execute(query)
-        return result.scalars().all()
-
-    async def get_auto_assigned_flows(self, applet_id: uuid.UUID) -> list[ActivityFlowSchema]:
-        query: Query = select(ActivityFlowSchema)
-        query = query.where(
-            ActivityFlowSchema.applet_id == applet_id,
-            ActivityFlowSchema.auto_assign.is_(True),
-            ActivityFlowSchema.soft_exists(),
-        )
-        query = query.order_by(ActivityFlowSchema.order.asc())
-        result = await self._execute(query)
-        return result.scalars().all()
-
-    async def get_manually_assigned_flows(
-        self, applet_id: uuid.UUID, subject_id: uuid.UUID, include_unassigned: bool = False
-    ) -> list[ActivityFlowSchema]:
-        """
-        Get activity flows that were manually assigned to a subject
-
-        Args:
-            applet_id (uuid.UUID): Applet id
-            subject_id (uuid.UUID): Subject id
-            include_unassigned (bool, optional): Include unassigned flows. Defaults to False.
-        """
-        query: Query = select(ActivityFlowSchema).distinct()
-        query = query.join(ActivityAssigmentSchema, ActivityAssigmentSchema.activity_flow_id == ActivityFlowSchema.id)
-        query = query.join(AppletSchema, AppletSchema.id == ActivityFlowSchema.applet_id)
-        query = query.where(
-            AppletSchema.id == applet_id,
-            ActivityAssigmentSchema.respondent_subject_id == subject_id,
-            ActivityFlowSchema.soft_exists(),
-        )
-        if not include_unassigned:
-            query = query.where(ActivityAssigmentSchema.soft_exists())
-        result = await self._execute(query)
-
         return result.scalars().all()
