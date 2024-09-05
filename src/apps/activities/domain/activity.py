@@ -95,9 +95,10 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
     scores_and_reports: ScoresAndReports | None = None
     performance_task_type: PerformanceTaskType | None = None
     is_performance_task: bool = False
+    auto_assign: bool | None = True
 
 
-class ActivityWithAssignmentDetailsPublic(ActivitySingleLanguageDetailPublic):
+class ActivityWithAssignmentDetailsPublic(ActivityLanguageWithItemsMobileDetailPublic):
     assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
 
 

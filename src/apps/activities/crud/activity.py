@@ -60,6 +60,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.scores_and_reports,
             ActivitySchema.performance_task_type,
             ActivitySchema.is_performance_task,
+            ActivitySchema.auto_assign,
         )
 
         query = query.where(ActivitySchema.applet_id == applet_id)
