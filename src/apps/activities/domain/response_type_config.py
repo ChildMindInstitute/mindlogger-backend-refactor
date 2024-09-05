@@ -232,6 +232,7 @@ class PhrasalTemplateConfig(PublicModel):
 class UnityConfig(PublicModel):
     type: Literal[ResponseType.UNITY] | None
     device_type: str | None
+    file: str | None
 
 
 class InputType(str, Enum):
