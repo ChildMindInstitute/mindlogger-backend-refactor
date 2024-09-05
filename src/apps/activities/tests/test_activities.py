@@ -687,6 +687,7 @@ class TestActivities:
         assert activity_result["name"] == activity.name
         assert activity_result["description"] == activity.description[Language.ENGLISH]
         assert activity_result["autoAssign"] == activity.auto_assign
+        assert len(activity_result["items"]) == 1
         assert len(activity_result["assignments"]) == 0
 
         flow = applet_activity_flow_lucy_manager.activity_flows[0]
@@ -777,6 +778,7 @@ class TestActivities:
         assert activity_result["name"] == manual_activity.name
         assert activity_result["description"] == manual_activity.description[Language.ENGLISH]
         assert activity_result["autoAssign"] is False
+        assert len(activity_result["items"]) == 1
         assert len(activity_result["assignments"]) == 1
 
         activity_assignment = activity_result["assignments"][0]
@@ -876,6 +878,7 @@ class TestActivities:
         assert activity_result["name"] == manual_activity.name
         assert activity_result["description"] == manual_activity.description[Language.ENGLISH]
         assert activity_result["autoAssign"] is True
+        assert len(activity_result["items"]) == 1
         assert len(activity_result["assignments"]) == 1
 
         activity_assignment = activity_result["assignments"][0]

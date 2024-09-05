@@ -118,7 +118,9 @@ async def applet_activities_for_subject(
         # Ensure reviewers can access the subject
         await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
 
-        activities_future = ActivityService(session, user.id).get_single_language_by_applet_id(applet_id, language)
+        activities_future = ActivityService(session, user.id).get_single_language_with_items_by_applet_id(
+            applet_id, language
+        )
         flows_future = FlowService(session).get_single_language_by_applet_id(applet_id, language)
         assignments_future = ActivityAssignmentService(session).get_all_by_respondent(applet_id, subject_id)
 
