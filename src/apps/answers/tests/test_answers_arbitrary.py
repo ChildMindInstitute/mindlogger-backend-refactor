@@ -794,6 +794,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
