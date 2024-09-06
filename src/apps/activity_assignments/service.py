@@ -120,7 +120,9 @@ class ActivityAssignmentService:
         ]
 
     async def check_for_assignment_and_notify(self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID) -> None:
-        assignments = await ActivityAssigmentCRUD(self.session).get_by_respondent_subject_id(respondent_subject_id)
+        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet_and_subject(
+            applet_id, respondent_subject_id, match_by="respondent"
+        )
         if not assignments:
             return
 

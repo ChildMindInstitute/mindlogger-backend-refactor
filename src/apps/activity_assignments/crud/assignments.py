@@ -158,13 +158,6 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         )
         await self._execute(query)
 
-    async def get_by_respondent_subject_id(self, respondent_subject_id) -> list[ActivityAssigmentSchema]:
-        query: Query = select(ActivityAssigmentSchema)
-        query = query.where(ActivityAssigmentSchema.respondent_subject_id == respondent_subject_id)
-        db_result = await self._execute(query)
-
-        return db_result.scalars().all()
-
     async def get_by_applet(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssigmentSchema]:
         respondent_schema = aliased(SubjectSchema)
         target_schema = aliased(SubjectSchema)
