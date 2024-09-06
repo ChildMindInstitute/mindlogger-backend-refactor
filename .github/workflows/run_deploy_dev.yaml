@@ -18,6 +18,7 @@ env:
 
 jobs:
   run_migration:
+    environment: dev
     name: Run Database Migrations
     runs-on: ubuntu-latest
     env:
