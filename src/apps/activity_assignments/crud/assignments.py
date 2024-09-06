@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal
 
 from sqlalchemy import or_, select, tuple_, update
 from sqlalchemy.orm import Query, aliased
@@ -191,11 +192,22 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
         return db_result.scalars().all()
 
-    async def get_by_applet_and_respondent(
-        self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID
+    async def get_by_applet_and_subject(
+        self,
+        applet_id: uuid.UUID,
+        subject_id: uuid.UUID,
+        match_by: Literal["respondent", "target", "respondent_or_target"],
     ) -> list[ActivityAssigmentSchema]:
         respondent_schema = aliased(SubjectSchema)
         target_schema = aliased(SubjectSchema)
+
+        if match_by == "respondent":
+            match_clause = respondent_schema.id == subject_id
+        elif match_by == "target":
+            match_clause = target_schema.id == subject_id
+        else:
+            match_clause = or_(respondent_schema.id == subject_id, target_schema.id == subject_id)
+
         query = (
             select(ActivityAssigmentSchema)
             .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
@@ -210,7 +222,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
                 ActivityAssigmentSchema.soft_exists(),
                 respondent_schema.soft_exists(),
                 target_schema.soft_exists(),
-                respondent_schema.id == respondent_subject_id,
+                match_clause,
             )
         )
 

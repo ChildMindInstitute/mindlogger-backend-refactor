@@ -1,6 +1,7 @@
 import asyncio
 import uuid
 from collections import defaultdict
+from typing import Literal
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.db.schemas import ActivitySchema
@@ -354,20 +355,26 @@ class ActivityAssignmentService:
             for assignment in assignments
         ]
 
-    async def get_all_by_respondent(
-        self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID
+    async def get_all_by_subject(
+        self,
+        applet_id: uuid.UUID,
+        subject_id: uuid.UUID,
+        match_by: Literal["respondent", "target", "respondent_or_target"],
     ) -> list[ActivityAssignmentWithSubject]:
-        respondent_subject = await SubjectsCrud(self.session).get_by_id(respondent_subject_id)
-        if not respondent_subject:
-            raise NotFoundError(f"Respondent subject id {respondent_subject_id} not found")
+        subject_exists = await SubjectsCrud(self.session).exist(subject_id, applet_id)
+        if not subject_exists:
+            raise NotFoundError(f"Subject with id {subject_id} not found")
 
-        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet_and_respondent(
-            applet_id, respondent_subject_id
+        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet_and_subject(
+            applet_id, subject_id, match_by
         )
 
-        target_subject_ids = [assignment.target_subject_id for assignment in assignments]
+        subject_ids: set[uuid] = set()
+        for assignment in assignments:
+            subject_ids.add(assignment.respondent_subject_id)
+            subject_ids.add(assignment.target_subject_id)
 
-        target_subjects = {
+        subjects = {
             subject.id: SubjectReadResponse(
                 id=subject.id,
                 first_name=subject.first_name,
@@ -379,7 +386,7 @@ class ActivityAssignmentService:
                 tag=subject.tag,
                 applet_id=subject.applet_id,
             )
-            for subject in await SubjectsCrud(self.session).get_by_ids(target_subject_ids)
+            for subject in await SubjectsCrud(self.session).get_by_ids(subject_ids)
         }
 
         return [
@@ -387,18 +394,8 @@ class ActivityAssignmentService:
                 id=assignment.id,
                 activity_id=assignment.activity_id,
                 activity_flow_id=assignment.activity_flow_id,
-                respondent_subject=SubjectReadResponse(
-                    id=respondent_subject.id,
-                    first_name=respondent_subject.first_name,
-                    last_name=respondent_subject.last_name,
-                    email=respondent_subject.email,
-                    language=respondent_subject.language,
-                    nickname=respondent_subject.nickname,
-                    secret_user_id=respondent_subject.secret_user_id,
-                    tag=respondent_subject.tag,
-                    applet_id=respondent_subject.applet_id,
-                ),
-                target_subject=target_subjects[assignment.target_subject_id],
+                respondent_subject=subjects[assignment.respondent_subject_id],
+                target_subject=subjects[assignment.target_subject_id],
             )
             for assignment in assignments
         ]

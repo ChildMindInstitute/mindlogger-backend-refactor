@@ -122,7 +122,9 @@ async def applet_activities_for_subject(
             applet_id, language
         )
         flows_future = FlowService(session).get_single_language_by_applet_id(applet_id, language)
-        assignments_future = ActivityAssignmentService(session).get_all_by_respondent(applet_id, subject_id)
+        assignments_future = ActivityAssignmentService(session).get_all_by_subject(
+            applet_id, subject_id, match_by="respondent_or_target"
+        )
 
         activities, flows, assignments = await asyncio.gather(activities_future, flows_future, assignments_future)
         result = ActivitiesAndFlowsWithAssignmentDetailsPublic(
