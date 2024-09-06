@@ -644,7 +644,7 @@ class TestActivities:
         result = response.json()["result"]
 
         assert result[0]["type"] == "NOT_FOUND"
-        assert result[0]["message"] == f"Respondent subject id {subject_id} not found"
+        assert result[0]["message"] == f"Subject with id {subject_id} not found"
 
     async def test_subject_assigned_activities_empty_applet(
         self, client, empty_applet_lucy_manager, lucy, lucy_empty_applet_subject
@@ -706,6 +706,7 @@ class TestActivities:
         client,
         empty_applet_lucy_manager,
         lucy,
+        lucy_empty_applet_subject,
         user_empty_applet_subject,
         activity_create_session: ActivityCreate,
     ):
@@ -728,9 +729,28 @@ class TestActivities:
             [
                 ActivityAssignmentCreate(
                     activity_id=manual_activity.id,
+                    activity_flow_id=None,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
-                )
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=manual_activity.id,
+                    activity_flow_id=None,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=lucy_empty_applet_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=manual_activity.id,
+                    activity_flow_id=None,
+                    respondent_subject_id=lucy_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=manual_activity.id,
+                    activity_flow_id=None,
+                    respondent_subject_id=lucy_empty_applet_subject.id,
+                    target_subject_id=lucy_empty_applet_subject.id,
+                ),
             ],
         )
 
@@ -753,10 +773,29 @@ class TestActivities:
             empty_applet_lucy_manager.id,
             [
                 ActivityAssignmentCreate(
+                    activity_id=None,
                     activity_flow_id=manual_flow.id,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
-                )
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=None,
+                    activity_flow_id=manual_flow.id,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=lucy_empty_applet_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=None,
+                    activity_flow_id=manual_flow.id,
+                    respondent_subject_id=lucy_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=None,
+                    activity_flow_id=manual_flow.id,
+                    respondent_subject_id=lucy_empty_applet_subject.id,
+                    target_subject_id=lucy_empty_applet_subject.id,
+                ),
             ],
         )
 
@@ -779,7 +818,7 @@ class TestActivities:
         assert activity_result["description"] == manual_activity.description[Language.ENGLISH]
         assert activity_result["autoAssign"] is False
         assert len(activity_result["items"]) == 1
-        assert len(activity_result["assignments"]) == 1
+        assert len(activity_result["assignments"]) == 3
 
         activity_assignment = activity_result["assignments"][0]
         assert activity_assignment["activityId"] == str(manual_activity.id)
@@ -792,7 +831,7 @@ class TestActivities:
         assert flow_result["name"] == manual_flow.name
         assert flow_result["description"] == manual_flow.description[Language.ENGLISH]
         assert flow_result["autoAssign"] is False
-        assert len(flow_result["assignments"]) == 1
+        assert len(flow_result["assignments"]) == 3
         assert flow_result["activityIds"][0] == str(manual_flow.items[0].activity_id)
 
         flow_assignment = flow_result["assignments"][0]
