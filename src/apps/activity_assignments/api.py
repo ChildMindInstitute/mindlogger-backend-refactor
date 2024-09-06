@@ -129,9 +129,8 @@ async def applet_respondent_assignments(
     if not respondent_subject:
         raise NotFoundError(f"User doesn't have subject role in applet {applet_id}")
 
-    assignments = await ActivityAssignmentService(session).get_all_by_subject(
-        applet_id, respondent_subject.id, match_by="respondent"
-    )
+    query_params = QueryParams(filters={"respondent_subject_id": respondent_subject.id})
+    assignments = await ActivityAssignmentService(session).get_all_with_subject_entities(applet_id, query_params)
 
     return Response(
         result=ActivitiesAssignmentsWithSubjects(

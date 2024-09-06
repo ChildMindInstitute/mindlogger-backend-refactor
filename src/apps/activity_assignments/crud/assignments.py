@@ -1,7 +1,6 @@
 import uuid
-from typing import Literal
 
-from sqlalchemy import or_, select, tuple_, update
+from sqlalchemy import and_, or_, select, tuple_, update
 from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
@@ -39,6 +38,11 @@ class _ActivityAssignmentFlowsFilter(Filtering):
             values = list(filter(lambda x: x is not None, values))
             if values:
                 return field.in_(values)
+
+
+class _ActivityAssignmentSubjectFilter(Filtering):
+    respondent_subject_id = FilterField(ActivityAssigmentSchema.respondent_subject_id)
+    target_subject_id = FilterField(ActivityAssigmentSchema.target_subject_id)
 
 
 class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
@@ -178,46 +182,9 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         if query_params.filters:
             activities_clause = _ActivityAssignmentActivitiesFilter().get_clauses(**query_params.filters)
             flows_clause = _ActivityAssignmentFlowsFilter().get_clauses(**query_params.filters)
+            subject_clauses = _ActivityAssignmentSubjectFilter().get_clauses(**query_params.filters)
 
-            query = query.where(or_(*activities_clause, *flows_clause))
-
-        db_result = await self._execute(query)
-
-        return db_result.scalars().all()
-
-    async def get_by_applet_and_subject(
-        self,
-        applet_id: uuid.UUID,
-        subject_id: uuid.UUID,
-        match_by: Literal["respondent", "target", "respondent_or_target"],
-    ) -> list[ActivityAssigmentSchema]:
-        respondent_schema = aliased(SubjectSchema)
-        target_schema = aliased(SubjectSchema)
-
-        if match_by == "respondent":
-            match_clause = respondent_schema.id == subject_id
-        elif match_by == "target":
-            match_clause = target_schema.id == subject_id
-        else:
-            match_clause = or_(respondent_schema.id == subject_id, target_schema.id == subject_id)
-
-        query = (
-            select(ActivityAssigmentSchema)
-            .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
-            .outerjoin(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
-            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
-            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
-            .where(
-                or_(
-                    ActivityFlowSchema.applet_id == applet_id,
-                    ActivitySchema.applet_id == applet_id,
-                ),
-                ActivityAssigmentSchema.soft_exists(),
-                respondent_schema.soft_exists(),
-                target_schema.soft_exists(),
-                match_clause,
-            )
-        )
+            query = query.where(and_(or_(*activities_clause, *flows_clause), or_(*subject_clauses)))
 
         db_result = await self._execute(query)
 

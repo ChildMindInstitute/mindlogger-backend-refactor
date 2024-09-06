@@ -1,7 +1,6 @@
 import asyncio
 import uuid
 from collections import defaultdict
-from typing import Literal
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.db.schemas import ActivitySchema
@@ -120,9 +119,8 @@ class ActivityAssignmentService:
         ]
 
     async def check_for_assignment_and_notify(self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID) -> None:
-        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet_and_subject(
-            applet_id, respondent_subject_id, match_by="respondent"
-        )
+        query_params = QueryParams(filters={"respondent_subject_id": respondent_subject_id})
+        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
         if not assignments:
             return
 
@@ -344,6 +342,9 @@ class ActivityAssignmentService:
         )
 
     async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
+        """
+        Returns assignments for given applet ID and matching any filters provided in query_params.
+        """
         assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
 
         return [
@@ -357,19 +358,21 @@ class ActivityAssignmentService:
             for assignment in assignments
         ]
 
-    async def get_all_by_subject(
+    async def get_all_with_subject_entities(
         self,
         applet_id: uuid.UUID,
-        subject_id: uuid.UUID,
-        match_by: Literal["respondent", "target", "respondent_or_target"],
+        query_params: QueryParams,
     ) -> list[ActivityAssignmentWithSubject]:
-        subject_exists = await SubjectsCrud(self.session).exist(subject_id, applet_id)
-        if not subject_exists:
-            raise NotFoundError(f"Subject with id {subject_id} not found")
+        """
+        Returns assignments for given applet ID and matching any filters provided in query_params, with
+        respondent_subject and target_subject properties containing hydrated subject entities.
+        """
+        for subject_id in set(query_params.filters.values()):
+            subject_exists = await SubjectsCrud(self.session).exist(subject_id, applet_id)
+            if not subject_exists:
+                raise NotFoundError(f"Subject with id {subject_id} not found")
 
-        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet_and_subject(
-            applet_id, subject_id, match_by
-        )
+        assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
 
         subject_ids: set[uuid.UUID] = set()
         for assignment in assignments:

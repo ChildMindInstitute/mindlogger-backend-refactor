@@ -729,18 +729,27 @@ class TestActivities:
             [
                 ActivityAssignmentCreate(
                     activity_id=manual_activity.id,
+                    activity_flow_id=None,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
                     activity_id=manual_activity.id,
+                    activity_flow_id=None,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=lucy_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
                     activity_id=manual_activity.id,
+                    activity_flow_id=None,
                     respondent_subject_id=lucy_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=manual_activity.id,
+                    activity_flow_id=None,
+                    respondent_subject_id=lucy_empty_applet_subject.id,
+                    target_subject_id=lucy_empty_applet_subject.id,
                 ),
             ],
         )
@@ -764,19 +773,28 @@ class TestActivities:
             empty_applet_lucy_manager.id,
             [
                 ActivityAssignmentCreate(
+                    activity_id=None,
                     activity_flow_id=manual_flow.id,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
+                    activity_id=None,
                     activity_flow_id=manual_flow.id,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=lucy_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
+                    activity_id=None,
                     activity_flow_id=manual_flow.id,
                     respondent_subject_id=lucy_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=None,
+                    activity_flow_id=manual_flow.id,
+                    respondent_subject_id=lucy_empty_applet_subject.id,
+                    target_subject_id=lucy_empty_applet_subject.id,
                 ),
             ],
         )
