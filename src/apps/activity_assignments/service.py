@@ -371,7 +371,7 @@ class ActivityAssignmentService:
             applet_id, subject_id, match_by
         )
 
-        subject_ids: set[uuid] = set()
+        subject_ids: set[uuid.UUID] = set()
         for assignment in assignments:
             subject_ids.add(assignment.respondent_subject_id)
             subject_ids.add(assignment.target_subject_id)
@@ -388,7 +388,7 @@ class ActivityAssignmentService:
                 tag=subject.tag,
                 applet_id=subject.applet_id,
             )
-            for subject in await SubjectsCrud(self.session).get_by_ids(subject_ids)
+            for subject in await SubjectsCrud(self.session).get_by_ids(list(subject_ids))
         }
 
         return [
