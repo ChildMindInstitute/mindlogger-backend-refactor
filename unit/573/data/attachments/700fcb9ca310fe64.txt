@@ -1,0 +1,26 @@
+ERROR    root:tasks.py:85 Reencryption d9eda70f-29cc-41da-99a9-0c6623a46c2a: cannot process applet 3ef1532e-5630-4c9c-8485-2714f5f61b0a, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+  File "/usr/local/lib/python3.10/unittest/mock.py", line 2234, in _execute_mock_call
+    raise effect
+Exception: ERROR
+ERROR    root:tasks.py:85 Reencryption d9eda70f-29cc-41da-99a9-0c6623a46c2a: cannot process applet 3ef1532e-5630-4c9c-8485-2714f5f61b0a, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+  File "/usr/local/lib/python3.10/unittest/mock.py", line 2234, in _execute_mock_call
+    raise effect
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+  File "/usr/local/lib/python3.10/unittest/mock.py", line 2234, in _execute_mock_call
+    raise effect
+Exception: ERROR
