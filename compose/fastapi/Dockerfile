@@ -40,6 +40,12 @@ RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
 COPY --chown=code:code ./compose/fastapi/migrate /fastapi-migrate
 RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
 
+COPY --chown=code:code ./compose/fastapi/ecs-start /ecs-start
+RUN sed -i 's/\r$//g' /ecs-start && chmod +x /ecs-start
+
+COPY --chown=code:code ./compose/fastapi/ecs-start-feature /ecs-start-feature
+RUN sed -i 's/\r$//g' /ecs-start-feature && chmod +x /ecs-start-feature
+
 # Select internal user
 USER code
 
