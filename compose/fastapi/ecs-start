@@ -3,5 +3,5 @@
 set -eo pipefail
 set -o nounset
 
-/fastapi-migrate
+ENV=testing /fastapi-migrate
 /fastapi-start
