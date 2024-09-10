@@ -54,6 +54,7 @@ class ResponseType(str, Enum):
     FLANKER = "flanker"
     STABILITYTRACKER = "stabilityTracker"
     ABTRAILS = "ABTrails"
+    UNITY = "unity"
     PHRASAL_TEMPLATE = "phrasalTemplate"
 
     @classmethod
@@ -71,6 +72,7 @@ class ResponseType(str, Enum):
             cls.FLANKER,
             cls.STABILITYTRACKER,
             cls.ABTRAILS,
+            cls.UNITY,
         )
 
 
@@ -225,6 +227,12 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
 class PhrasalTemplateConfig(PublicModel):
     type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
     remove_back_button: bool
+
+
+class UnityConfig(PublicModel):
+    type: Literal[ResponseType.UNITY] | None
+    device_type: str | None
+    file: str | None
 
 
 class InputType(str, Enum):
@@ -398,6 +406,7 @@ class PerformanceTaskType(str, Enum):
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
     ABTRAILS = "ABTrails"
+    UNITY = "unity"
 
     @classmethod
     def get_values(cls) -> list[str]:
@@ -428,4 +437,5 @@ ResponseTypeConfig = (
     | StabilityTrackerConfig
     | ABTrailsConfig
     | PhrasalTemplateConfig
+    | UnityConfig
 )

@@ -170,6 +170,7 @@ class TestActivityItems:
             ("activity_flanker_create", PerformanceTaskType.FLANKER),
             ("actvitiy_cst_gyroscope_create", PerformanceTaskType.GYROSCOPE),
             ("actvitiy_cst_touch_create", PerformanceTaskType.TOUCH),
+            ("activity_unity_create", PerformanceTaskType.UNITY),
         ),
     )
     async def test_create_applet_with_performance_task(

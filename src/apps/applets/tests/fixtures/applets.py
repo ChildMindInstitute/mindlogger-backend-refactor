@@ -337,6 +337,7 @@ async def applet_with_all_performance_tasks(
     activity_flanker_create: ActivityCreate,
     actvitiy_cst_gyroscope_create: ActivityCreate,
     actvitiy_cst_touch_create: ActivityCreate,
+    actvitiy_unity: ActivityCreate,
 ) -> AppletFull:
     data = applet_minimal_data.copy(deep=True)
     data.activities = [
@@ -345,6 +346,7 @@ async def applet_with_all_performance_tasks(
         activity_flanker_create,
         actvitiy_cst_gyroscope_create,
         actvitiy_cst_touch_create,
+        actvitiy_unity,
     ]
     applet = await AppletService(session, tom.id).create(data)
     return applet
