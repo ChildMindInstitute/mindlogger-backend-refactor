@@ -354,7 +354,7 @@ class TestActivityUnassignments(BaseTest):
 
         assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST, unassign_response.json()
         result = unassign_response.json()["result"][0]
-        assert result["message"] == "Either activity_id or activity_flow_id must be provided, but not both"
+        assert result["message"] == "Only one of activity_id or activity_flow_id must be provided"
 
     async def test_unassign_multiple_assignments_with_flow(
         self,
@@ -535,9 +535,7 @@ class TestActivityUnassignments(BaseTest):
         )
 
         # Expect a 400 Bad Request due to missing target_subject_id
-        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
-        result = unassign_response.json()["result"][0]
-        assert result["message"] == "Target subject ID must be provided"
+        assert unassign_response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
     async def test_unassign_fail_missing_target(
         self,
@@ -583,6 +581,4 @@ class TestActivityUnassignments(BaseTest):
         )
 
         # Expect a 400 Bad Request due to missing target_subject_id
-        assert unassign_response.status_code == http.HTTPStatus.BAD_REQUEST
-        result = unassign_response.json()["result"][0]
-        assert result["message"] == "Target subject ID must be provided"
+        assert unassign_response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY

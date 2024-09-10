@@ -437,7 +437,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     UserAppletAccessSchema.role.in_([Role.OWNER, Role.MANAGER, Role.COORDINATOR]),
                     and_(
                         UserAppletAccessSchema.role == Role.REVIEWER,
-                        SubjectSchema.id == any_(assigned_subjects),
+                        SubjectSchema.id == any_(assigned_subjects.scalar_subquery()),
                     ),
                 ),
             )
@@ -449,7 +449,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             select(InvitationSchema.id)
             .where(
                 InvitationSchema.status == InvitationStatus.PENDING,
-                InvitationSchema.applet_id.in_(workspace_applets_sq),
+                InvitationSchema.applet_id.in_(select(workspace_applets_sq)),
                 InvitationSchema.meta.has_key("subject_id"),
                 func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True))
                 == any_(func.array_agg(SubjectSchema.id)),
@@ -537,7 +537,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         query = query.where(
             has_access,
-            SubjectSchema.applet_id.in_(workspace_applets_sq),
+            SubjectSchema.applet_id.in_(select(workspace_applets_sq)),
             SubjectSchema.applet_id == applet_id if applet_id else True,
             SubjectSchema.soft_exists(),
         )

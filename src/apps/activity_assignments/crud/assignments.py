@@ -71,9 +71,12 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         bulk insertion operations.
         - Ensures that all new assignments are created in a single database transaction.
         """
+        if len(schemas) == 0:
+            return []
+
         return await self._create_many(schemas)
 
-    async def already_exists(self, schema: ActivityAssigmentSchema) -> bool:
+    async def already_exists(self, schema: ActivityAssigmentSchema) -> ActivityAssigmentSchema:
         """
         Checks if an activity assignment already exists in the database.
 
@@ -102,17 +105,52 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         query = query.where(ActivityAssigmentSchema.respondent_subject_id == schema.respondent_subject_id)
         query = query.where(ActivityAssigmentSchema.target_subject_id == schema.target_subject_id)
         query = query.where(ActivityAssigmentSchema.activity_flow_id == schema.activity_flow_id)
-        query = query.where(ActivityAssigmentSchema.soft_exists())
-        query = query.exists()
-        db_result = await self._execute(select(query))
-        return db_result.scalars().first() or False
 
-    async def unassign_many(
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
+
+    async def _update_many_with_filter(
         self,
         activity_or_flow_ids: list[uuid.UUID],
         respondent_subject_ids: list[uuid.UUID],
         target_subject_ids: list[uuid.UUID],
-    ) -> None:
+        values: dict[str, bool] | None = None,
+    ) -> list[ActivityAssigmentSchema]:
+        # Ensure all lists are of equal length
+        assert len(activity_or_flow_ids) == len(respondent_subject_ids) == len(target_subject_ids)
+
+        query: Query = (
+            update(ActivityAssigmentSchema)
+            .where(
+                or_(
+                    tuple_(
+                        ActivityAssigmentSchema.activity_id,
+                        ActivityAssigmentSchema.respondent_subject_id,
+                        ActivityAssigmentSchema.target_subject_id,
+                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
+                    tuple_(
+                        ActivityAssigmentSchema.activity_flow_id,
+                        ActivityAssigmentSchema.respondent_subject_id,
+                        ActivityAssigmentSchema.target_subject_id,
+                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
+                )
+            )
+            .values(values)
+            .returning(ActivityAssigmentSchema)
+        )
+
+        result = await self._execute(query)
+
+        data = result.mappings().all()
+
+        return [ActivityAssigmentSchema(**row) for row in data]
+
+    async def delete_many(
+        self,
+        activity_or_flow_ids: list[uuid.UUID],
+        respondent_subject_ids: list[uuid.UUID],
+        target_subject_ids: list[uuid.UUID],
+    ):
         """
         Marks the `is_deleted` field as True for all matching assignments based on the provided
         activity or flow IDs, respondent subject IDs, and target subject IDs. The method ensures
@@ -139,28 +177,19 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             If the lengths of the provided ID lists do not match.
         """
 
-        # Ensure all lists are of equal length
-        assert len(activity_or_flow_ids) == len(respondent_subject_ids) == len(target_subject_ids)
-
-        query: Query = (
-            update(ActivityAssigmentSchema)
-            .where(
-                or_(
-                    tuple_(
-                        ActivityAssigmentSchema.activity_id,
-                        ActivityAssigmentSchema.respondent_subject_id,
-                        ActivityAssigmentSchema.target_subject_id,
-                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
-                    tuple_(
-                        ActivityAssigmentSchema.activity_flow_id,
-                        ActivityAssigmentSchema.respondent_subject_id,
-                        ActivityAssigmentSchema.target_subject_id,
-                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
-                )
-            )
-            .values(is_deleted=True)
+        await self._update_many_with_filter(
+            activity_or_flow_ids, respondent_subject_ids, target_subject_ids, values=dict(is_deleted=True)
         )
-        await self._execute(query)
+
+    async def undelete_many(
+        self,
+        activity_or_flow_ids: list[uuid.UUID],
+        respondent_subject_ids: list[uuid.UUID],
+        target_subject_ids: list[uuid.UUID],
+    ) -> list[ActivityAssigmentSchema]:
+        return await self._update_many_with_filter(
+            activity_or_flow_ids, respondent_subject_ids, target_subject_ids, values=dict(is_deleted=False)
+        )
 
     async def get_by_applet(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssigmentSchema]:
         respondent_schema = aliased(SubjectSchema)
@@ -184,7 +213,14 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             flows_clause = _ActivityAssignmentFlowsFilter().get_clauses(**query_params.filters)
             subject_clauses = _ActivityAssignmentSubjectFilter().get_clauses(**query_params.filters)
 
-            query = query.where(and_(or_(*activities_clause, *flows_clause), or_(*subject_clauses)))
+            query = query.where(
+                and_(
+                    or_(*activities_clause, *flows_clause)
+                    if len(activities_clause) > 0 or len(flows_clause) > 0
+                    else True,
+                    or_(*subject_clauses) if len(subject_clauses) > 0 else True,
+                )
+            )
 
         db_result = await self._execute(query)
 

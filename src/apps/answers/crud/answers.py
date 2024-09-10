@@ -600,7 +600,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         db_result = await self._execute(query)
-        data = db_result.all()
+        data = db_result.mappings().all()
 
         activities = []
         flows = []
@@ -674,7 +674,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         db_result = await self._execute(query)
-        data = db_result.all()
+        data = db_result.mappings().all()
 
         applet_activities_flows_map: dict[uuid.UUID, dict[str, list]] = dict()
         for row in data:
