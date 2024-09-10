@@ -18,7 +18,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash
 
 # Install Python dependencies
-RUN pip install --no-cache-dir pipenv==2023.11.15
+RUN pip install --no-cache-dir pipenv
 
 COPY Pipfile Pipfile.lock ./
 ARG PIPENV_EXTRA_ARGS
@@ -72,7 +72,3 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/
 
 USER code
-
-
-
-
