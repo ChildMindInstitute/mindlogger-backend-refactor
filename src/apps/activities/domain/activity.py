@@ -11,6 +11,7 @@ from apps.activities.domain.activity_item import (
 )
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.scores_reports import ScoresAndReports
+from apps.activity_assignments.domain.assignments import ActivityAssignmentWithSubject
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -94,6 +95,11 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
     scores_and_reports: ScoresAndReports | None = None
     performance_task_type: PerformanceTaskType | None = None
     is_performance_task: bool = False
+    auto_assign: bool | None = True
+
+
+class ActivityWithAssignmentDetailsPublic(ActivityLanguageWithItemsMobileDetailPublic):
+    assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
 
 
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):

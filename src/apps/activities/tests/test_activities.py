@@ -1,19 +1,37 @@
 import http
 import json
 import uuid
-from typing import cast
+from typing import AsyncGenerator, cast
 
 import pytest
+from _pytest.config import Config
+from pytest_mock import MockerFixture
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.activities.domain.activity_create import ActivityCreate
+from apps.activities.domain.activity_update import ActivityUpdate
 from apps.activities.domain.response_type_config import SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues
+from apps.activities.services.activity import ActivityService
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
+from apps.activity_assignments.service import ActivityAssignmentService
+from apps.activity_flows.domain.flow_update import ActivityFlowItemUpdate, FlowUpdate
+from apps.activity_flows.service.flow import FlowService
+from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
+from apps.applets.domain.base import AppletBase
 from apps.applets.service.applet import AppletService
+from apps.applets.tests.fixtures.applets import _get_or_create_applet
+from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
+from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import Subject
 from apps.themes.domain import Theme
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 @pytest.fixture
@@ -25,6 +43,134 @@ async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletF
     return applet
 
 
+@pytest.fixture
+async def lucy_applet_one_subject(session: AsyncSession, lucy: User, applet_one_lucy_respondent: AppletFull) -> Subject:
+    applet_id = applet_one_lucy_respondent.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
+async def applet_one_user_respondent(session: AsyncSession, applet_one: AppletFull, tom, user) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(user.id, Role.RESPONDENT)
+    return applet_one
+
+
+@pytest.fixture
+async def user_applet_one_subject(session: AsyncSession, user: User, applet_one_user_respondent: AppletFull) -> Subject:
+    applet_id = applet_one_user_respondent.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user.id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
+async def applet_one_lucy_reviewer(
+    session: AsyncSession,
+    applet_one: AppletFull,
+    mocker: MockerFixture,
+    tom: User,
+    lucy: User,
+    user_applet_one_subject: Subject,
+) -> AppletFull:
+    mocker.patch(
+        "apps.workspaces.service.user_applet_access.UserAppletAccessService._get_default_role_meta",
+        return_value={"subjects": [str(user_applet_one_subject.id)]},
+    )
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.REVIEWER)
+    return applet_one
+
+
+@pytest.fixture
+async def empty_applet(
+    session: AsyncSession,
+    tom: User,
+    applet_base_data: AppletBase,
+    pytestconfig: Config,
+) -> AsyncGenerator[AppletFull, None]:
+    applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b0")
+    applet_name = "Empty Applet"
+    applet_minimal_data = AppletCreate(**applet_base_data.dict(), activities=[], activity_flows=[])
+    applet = await _get_or_create_applet(session, applet_name, applet_id, applet_minimal_data, tom.id)
+    yield applet
+    if not pytestconfig.getoption("--keepdb"):
+        await teardown_applet(session, applet.id)
+
+
+@pytest.fixture
+async def empty_applet_lucy_manager(
+    session: AsyncSession, empty_applet: AppletFull, tom: User, lucy: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, empty_applet.id).add_role(lucy.id, Role.MANAGER)
+    return empty_applet
+
+
+@pytest.fixture
+async def applet_activity_flow_lucy_manager(
+    session: AsyncSession, applet_activity_flow: AppletFull, tom: User, lucy: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_activity_flow.id).add_role(lucy.id, Role.MANAGER)
+    return applet_activity_flow
+
+
+@pytest.fixture
+async def empty_applet_lucy_respondent(
+    session: AsyncSession, empty_applet: AppletFull, tom: User, lucy: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, empty_applet.id).add_role(lucy.id, Role.RESPONDENT)
+    return empty_applet
+
+
+@pytest.fixture
+async def lucy_empty_applet_subject(
+    session: AsyncSession, lucy: User, empty_applet_lucy_respondent: AppletFull
+) -> Subject:
+    applet_id = empty_applet_lucy_respondent.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
+async def empty_applet_user_respondent(session: AsyncSession, empty_applet: AppletFull, tom, user) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, empty_applet.id).add_role(user.id, Role.RESPONDENT)
+    return empty_applet
+
+
+@pytest.fixture
+async def user_empty_applet_subject(
+    session: AsyncSession, user: User, empty_applet_user_respondent: AppletFull
+) -> Subject:
+    applet_id = empty_applet_user_respondent.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user.id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
+async def applet_activity_flow_lucy_respondent(
+    session: AsyncSession, applet_activity_flow: AppletFull, tom: User, lucy: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_activity_flow.id).add_role(lucy.id, Role.RESPONDENT)
+    return applet_activity_flow
+
+
+@pytest.fixture
+async def lucy_applet_activity_flow_subject(
+    session: AsyncSession, lucy: User, applet_activity_flow_lucy_respondent: AppletFull
+) -> Subject:
+    applet_id = applet_activity_flow_lucy_respondent.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
 class TestActivities:
     login_url = "/auth/login"
     activity_detail = "/activities/{pk}"
@@ -33,6 +179,7 @@ class TestActivities:
     public_activity_detail = "public/activities/{pk}"
     answer_url = "/answers"
     applet_update_url = "applets/{applet_id}"
+    subject_assigned_activities_url = "/activities/applet/{applet_id}/subject/{subject_id}"
 
     async def test_activity_detail(self, client, applet_one: AppletFull, tom: User):
         activity = applet_one.activities[0]
@@ -252,7 +399,7 @@ class TestActivities:
         assert len(result["items"]) == len(activity.items)
         assert result["items"][0]["question"] == activity.items[0].question[Language.ENGLISH]
 
-    # Get only applet activies with submitted answers
+    # Get only applet activities with submitted answers
     async def test_activities_applet_has_submitted(
         self, client, applet_one: AppletFull, default_theme: Theme, tom: User
     ):
@@ -299,7 +446,7 @@ class TestActivities:
         assert result["activitiesDetails"][0]["id"] == str(activity.id)
         assert result["activitiesDetails"][0]["name"] == activity.name
 
-    # Get only applet activies with score
+    # Get only applet activities with score
     async def test_activities_applet_has_score(self, client, applet_one: AppletFull, default_theme: Theme, tom: User):
         client.login(tom)
 
@@ -396,3 +543,359 @@ class TestActivities:
         assert len(item["responseValues"]["options"]) == 2
         option = item["responseValues"]["options"][0]
         assert option["score"] > 0
+
+    async def test_subject_assigned_activities_editor(
+        self, client, applet_one_lucy_editor, lucy, lucy_applet_one_subject
+    ):
+        client.login(lucy)
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=applet_one_lucy_editor.id, subject_id=lucy_applet_one_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        result = response.json()["result"]
+
+        assert result[0]["type"] == "ACCESS_DENIED"
+        assert result[0]["message"] == "Access denied to applet."
+
+    async def test_subject_assigned_activities_incorrect_reviewer(
+        self, client, applet_one_lucy_reviewer, lucy, lucy_applet_one_subject
+    ):
+        client.login(lucy)
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=applet_one_lucy_reviewer.id, subject_id=lucy_applet_one_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        result = response.json()["result"]
+
+        assert result[0]["type"] == "ACCESS_DENIED"
+        assert result[0]["message"] == "Access denied."
+
+    async def test_subject_assigned_activities_participant(
+        self, client, applet_one_lucy_respondent, lucy, lucy_applet_one_subject
+    ):
+        client.login(lucy)
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=applet_one_lucy_respondent.id, subject_id=lucy_applet_one_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        result = response.json()["result"]
+
+        assert result[0]["type"] == "ACCESS_DENIED"
+        assert result[0]["message"] == "Access denied to applet."
+
+    async def test_subject_assigned_activities_participant_other(
+        self, client, applet_one_lucy_respondent, lucy, applet_one_user_respondent, user_applet_one_subject
+    ):
+        client.login(lucy)
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=applet_one_lucy_respondent.id, subject_id=user_applet_one_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        result = response.json()["result"]
+
+        assert result[0]["type"] == "ACCESS_DENIED"
+        assert result[0]["message"] == "Access denied to applet."
+
+    async def test_subject_assigned_activities_invalid_applet(
+        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject
+    ):
+        client.login(lucy)
+
+        applet_id = uuid.uuid4()
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(applet_id=applet_id, subject_id=lucy_applet_one_subject.id)
+        )
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        result = response.json()["result"]
+
+        assert result[0]["type"] == "NOT_FOUND"
+        assert result[0]["message"] == f"No such applets with id={applet_id}."
+
+    async def test_subject_assigned_activities_invalid_subject(
+        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject
+    ):
+        client.login(lucy)
+
+        subject_id = uuid.uuid4()
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(applet_id=applet_one_lucy_manager.id, subject_id=subject_id)
+        )
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        result = response.json()["result"]
+
+        assert result[0]["type"] == "NOT_FOUND"
+        assert result[0]["message"] == f"Respondent subject id {subject_id} not found"
+
+    async def test_subject_assigned_activities_empty_applet(
+        self, client, empty_applet_lucy_manager, lucy, lucy_empty_applet_subject
+    ):
+        client.login(lucy)
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=empty_applet_lucy_manager.id, subject_id=lucy_empty_applet_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert result["activities"] == []
+        assert result["activityFlows"] == []
+
+    async def test_subject_assigned_activities_auto_assigned(
+        self, client, applet_activity_flow_lucy_manager, lucy, lucy_applet_activity_flow_subject
+    ):
+        client.login(lucy)
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=applet_activity_flow_lucy_manager.id, subject_id=lucy_applet_activity_flow_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert len(result["activityFlows"]) == 1
+        assert len(result["activities"]) == 1
+
+        activity = applet_activity_flow_lucy_manager.activities[0]
+        activity_result = result["activities"][0]
+
+        assert activity_result["id"] == str(activity.id)
+        assert activity_result["name"] == activity.name
+        assert activity_result["description"] == activity.description[Language.ENGLISH]
+        assert activity_result["autoAssign"] == activity.auto_assign
+        assert len(activity_result["items"]) == 1
+        assert len(activity_result["assignments"]) == 0
+
+        flow = applet_activity_flow_lucy_manager.activity_flows[0]
+        flow_result = result["activityFlows"][0]
+
+        assert flow_result["id"] == str(flow.id)
+        assert flow_result["name"] == flow.name
+        assert flow_result["description"] == flow.description[Language.ENGLISH]
+        assert flow_result["autoAssign"] == flow.auto_assign
+        assert len(flow_result["assignments"]) == 0
+        assert flow_result["activityIds"][0] == str(flow.items[0].activity_id)
+
+    async def test_subject_assigned_activities_manually_assigned(
+        self,
+        session,
+        client,
+        empty_applet_lucy_manager,
+        lucy,
+        user_empty_applet_subject,
+        activity_create_session: ActivityCreate,
+    ):
+        client.login(lucy)
+
+        activities = await ActivityService(session, lucy.id).update_create(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityUpdate(
+                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    name="Manual Activity",
+                    auto_assign=False,
+                )
+            ],
+        )
+        manual_activity = next((activity for activity in activities if activity.name == "Manual Activity"))
+
+        await ActivityAssignmentService(session).create_many(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_id=manual_activity.id,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                )
+            ],
+        )
+
+        flows = await FlowService(session).update_create(
+            empty_applet_lucy_manager.id,
+            [
+                FlowUpdate(
+                    name="Manual Flow",
+                    description={Language.ENGLISH: "Manual Flow"},
+                    auto_assign=False,
+                    items=[ActivityFlowItemUpdate(activity_key=manual_activity.key)],
+                )
+            ],
+            {manual_activity.key: manual_activity.id},
+        )
+
+        manual_flow = next((flow for flow in flows if flow.name == "Manual Flow"))
+
+        await ActivityAssignmentService(session).create_many(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_flow_id=manual_flow.id,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                )
+            ],
+        )
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert len(result["activityFlows"]) == 1
+        assert len(result["activities"]) == 1
+
+        activity_result = result["activities"][0]
+
+        assert activity_result["id"] == str(manual_activity.id)
+        assert activity_result["name"] == manual_activity.name
+        assert activity_result["description"] == manual_activity.description[Language.ENGLISH]
+        assert activity_result["autoAssign"] is False
+        assert len(activity_result["items"]) == 1
+        assert len(activity_result["assignments"]) == 1
+
+        activity_assignment = activity_result["assignments"][0]
+        assert activity_assignment["activityId"] == str(manual_activity.id)
+        assert activity_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
+        assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+
+        flow_result = result["activityFlows"][0]
+
+        assert flow_result["id"] == str(manual_flow.id)
+        assert flow_result["name"] == manual_flow.name
+        assert flow_result["description"] == manual_flow.description[Language.ENGLISH]
+        assert flow_result["autoAssign"] is False
+        assert len(flow_result["assignments"]) == 1
+        assert flow_result["activityIds"][0] == str(manual_flow.items[0].activity_id)
+
+        flow_assignment = flow_result["assignments"][0]
+        assert flow_assignment["activityFlowId"] == str(manual_flow.id)
+        assert flow_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
+        assert flow_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+
+    async def test_subject_assigned_activities_auto_and_manually_assigned(
+        self,
+        session,
+        client,
+        empty_applet_lucy_manager,
+        lucy,
+        user_empty_applet_subject,
+        activity_create_session: ActivityCreate,
+    ):
+        client.login(lucy)
+
+        activities = await ActivityService(session, lucy.id).update_create(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityUpdate(
+                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    name="Hybrid Activity",
+                    auto_assign=True,
+                )
+            ],
+        )
+        manual_activity = next((activity for activity in activities if activity.name == "Hybrid Activity"))
+
+        await ActivityAssignmentService(session).create_many(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_id=manual_activity.id,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                )
+            ],
+        )
+
+        flows = await FlowService(session).update_create(
+            empty_applet_lucy_manager.id,
+            [
+                FlowUpdate(
+                    name="Hybrid Flow",
+                    description={Language.ENGLISH: "Hybrid Flow"},
+                    auto_assign=True,
+                    items=[ActivityFlowItemUpdate(activity_key=manual_activity.key)],
+                )
+            ],
+            {manual_activity.key: manual_activity.id},
+        )
+
+        manual_flow = next((flow for flow in flows if flow.name == "Hybrid Flow"))
+
+        await ActivityAssignmentService(session).create_many(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_flow_id=manual_flow.id,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                )
+            ],
+        )
+
+        response = await client.get(
+            self.subject_assigned_activities_url.format(
+                applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert len(result["activityFlows"]) == 1
+        assert len(result["activities"]) == 1
+
+        activity_result = result["activities"][0]
+
+        assert activity_result["id"] == str(manual_activity.id)
+        assert activity_result["name"] == manual_activity.name
+        assert activity_result["description"] == manual_activity.description[Language.ENGLISH]
+        assert activity_result["autoAssign"] is True
+        assert len(activity_result["items"]) == 1
+        assert len(activity_result["assignments"]) == 1
+
+        activity_assignment = activity_result["assignments"][0]
+        assert activity_assignment["activityId"] == str(manual_activity.id)
+        assert activity_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
+        assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+
+        flow_result = result["activityFlows"][0]
+
+        assert flow_result["id"] == str(manual_flow.id)
+        assert flow_result["name"] == manual_flow.name
+        assert flow_result["description"] == manual_flow.description[Language.ENGLISH]
+        assert flow_result["autoAssign"] is True
+        assert len(flow_result["assignments"]) == 1
+        assert flow_result["activityIds"][0] == str(manual_flow.items[0].activity_id)
+
+        flow_assignment = flow_result["assignments"][0]
+        assert flow_assignment["activityFlowId"] == str(manual_flow.id)
+        assert flow_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
+        assert flow_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)

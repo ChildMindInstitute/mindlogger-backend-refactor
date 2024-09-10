@@ -279,6 +279,7 @@ class ActivityService:
                 scores_and_reports=schema.scores_and_reports,
                 performance_task_type=schema.performance_task_type,
                 is_performance_task=schema.is_performance_task,
+                auto_assign=schema.auto_assign,
             )
 
             activities.append(activity)

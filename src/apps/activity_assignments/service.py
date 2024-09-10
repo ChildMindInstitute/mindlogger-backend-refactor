@@ -9,6 +9,7 @@ from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
 from apps.activity_assignments.domain.assignments import (
     ActivityAssignment,
     ActivityAssignmentCreate,
+    ActivityAssignmentDelete,
     ActivityAssignmentWithSubject,
 )
 from apps.activity_flows.crud import FlowsCRUD
@@ -38,6 +39,44 @@ class ActivityAssignmentService:
     async def create_many(
         self, applet_id: uuid.UUID, assignments_create: list[ActivityAssignmentCreate]
     ) -> list[ActivityAssignment]:
+        """
+        Creates multiple activity assignments for the given applet.
+
+        This method takes a list of assignment creation requests, validates them, checks for
+        existing assignments, and then creates new assignments in the database. If an assignment
+        already exists, it is skipped. The method returns the successfully created assignments.
+
+        Parameters:
+        -----------
+        applet_id : uuid.UUID
+            The ID of the applet for which the assignments are being created.
+
+        assignments_create : list[ActivityAssignmentCreate]
+            A list of assignment creation objects that specify the details of each assignment.
+            Each object contains information such as `activity_id`, `activity_flow_id`,
+            `respondent_subject_id`, and `target_subject_id`.
+
+        Returns:
+        --------
+        list[ActivityAssignment]
+            A list of `ActivityAssignment` objects that have been successfully created.
+
+        Process:
+        --------
+        1. Retrieves all relevant entities (activities, flows, subjects) using
+        `_get_assignments_entities`.
+        2. Validates each assignment and retrieves the corresponding activity or flow name
+        using `_validate_assignment_and_get_activity_or_flow_name`.
+        3. Checks if the assignment already exists using `ActivityAssigmentCRUD.already_exists`.
+        If it does, the assignment is skipped.
+        4. Creates a new `ActivityAssigmentSchema` for each valid assignment and collects them
+        into a list.
+        5. Inserts the new assignments into the database using `ActivityAssigmentCRUD.create_many`.
+        6. Optionally, stores respondent activities for future processing (e.g., sending emails).
+        (This step is marked as a TODO.)
+        7. Returns the newly created `ActivityAssignment` objects.
+
+        """
         entities = await self._get_assignments_entities(applet_id, assignments_create)
 
         respondent_activities: dict[uuid.UUID, set[str]] = defaultdict(set)
@@ -113,7 +152,9 @@ class ActivityAssignmentService:
 
         if len(respondent_activities[respondent_subject_id]) > 0:
             await self.send_email_notification(
-                applet_id, {respondent_subject_id: respondent_subject}, respondent_activities
+                applet_id,
+                {respondent_subject_id: respondent_subject},
+                respondent_activities,
             )
 
     async def send_email_notification(
@@ -159,6 +200,38 @@ class ActivityAssignmentService:
     def _validate_assignment_and_get_activity_or_flow_name(
         assignment: ActivityAssignmentCreate, entities: _AssignmentEntities
     ) -> str:
+        """
+        Validates the assignment request and retrieves the name of the activity or flow.
+
+        This method checks the validity of the provided `activity_id`, `activity_flow_id`,
+        `respondent_subject_id`, and `target_subject_id` by ensuring they correspond to existing
+        records. If validation passes, it returns the name of the activity or flow. If any validation
+        fails, it raises a `ValidationError`.
+
+        Parameters:
+        ----------
+        assignment : ActivityAssignmentCreate
+            The assignment request object containing the details of the assignment,
+            including `activity_id`, `activity_flow_id`, `respondent_subject_id`, and `target_subject_id`.
+
+        entities : _AssignmentEntities
+            A collection of entities that includes activities, flows, respondent subjects,
+            and target subjects, used for validation.
+
+        Returns:
+        -------
+        str
+            The name of the activity or flow corresponding to the assignment.
+
+        Raises:
+        ------
+        ValidationError
+            If any of the following conditions are met:
+            - The `activity_id` provided does not correspond to an existing activity.
+            - The `activity_flow_id` provided does not correspond to an existing activity flow.
+            - The `respondent_subject_id` provided does not correspond to an existing respondent subject.
+            - The `target_subject_id` provided does not correspond to an existing target subject.
+        """
         name: str = ""
         activity_flow_message = ""
         if assignment.activity_id:
@@ -225,6 +298,48 @@ class ActivityAssignmentService:
 
         return entities
 
+    async def unassign_many(self, assignments_unassign: list[ActivityAssignmentDelete]) -> None:
+        """
+        Unassigns multiple activity assignments by marking them as deleted.
+
+        This method takes a list of assignment requests, retrieves the corresponding
+        assignment entities from the database, marks them as deleted, and then returns
+        the updated assignments.
+
+        Parameters:
+        -----------
+        assignments_unassign : list[ActivityAssignmentDelete]
+            A list of assignment creation objects that specify which assignments to unassign.
+            Each object contains details such as `activity_id`, `activity_flow_id`,
+            `respondent_subject_id`, and `target_subject_id`.
+
+        Returns:
+        --------
+        list[ActivityAssignment]
+            A list of `ActivityAssignment` objects that have been marked as deleted.
+        """
+
+        activity_or_flow_ids = []
+        respondent_subject_ids = []
+        target_subject_ids = []
+
+        for assignment in assignments_unassign:
+            # Append only non-None values to the activity_or_flow_ids list
+            if assignment.activity_id is not None:
+                activity_or_flow_ids.append(assignment.activity_id)
+            elif assignment.activity_flow_id is not None:
+                activity_or_flow_ids.append(assignment.activity_flow_id)
+
+            # Append other necessary IDs
+            target_subject_ids.append(assignment.target_subject_id)
+            respondent_subject_ids.append(assignment.respondent_subject_id)
+
+        await ActivityAssigmentCRUD(self.session).unassign_many(
+            activity_or_flow_ids=activity_or_flow_ids,
+            respondent_subject_ids=respondent_subject_ids,
+            target_subject_ids=target_subject_ids,
+        )
+
     async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
         assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
 
@@ -269,6 +384,7 @@ class ActivityAssignmentService:
 
         return [
             ActivityAssignmentWithSubject(
+                id=assignment.id,
                 activity_id=assignment.activity_id,
                 activity_flow_id=assignment.activity_flow_id,
                 respondent_subject=SubjectReadResponse(
