@@ -625,7 +625,7 @@ def activity_unity_create() -> ActivityCreate:
                 question={"en": "File"},
                 response_type=ResponseType.UNITY,
                 response_values=None,
-                config=UnityConfig(),
+                config=UnityConfig(type=ResponseType.UNITY),
                 name="Unity_Item",
                 is_hidden=False,
             ),
