@@ -1,6 +1,8 @@
+import datetime
 import uuid
 
 from sqlalchemy import and_, or_, select, tuple_, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
@@ -109,42 +111,6 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().first()
 
-    async def _update_many_with_filter(
-        self,
-        activity_or_flow_ids: list[uuid.UUID],
-        respondent_subject_ids: list[uuid.UUID],
-        target_subject_ids: list[uuid.UUID],
-        values: dict[str, bool] | None = None,
-    ) -> list[ActivityAssigmentSchema]:
-        # Ensure all lists are of equal length
-        assert len(activity_or_flow_ids) == len(respondent_subject_ids) == len(target_subject_ids)
-
-        query: Query = (
-            update(ActivityAssigmentSchema)
-            .where(
-                or_(
-                    tuple_(
-                        ActivityAssigmentSchema.activity_id,
-                        ActivityAssigmentSchema.respondent_subject_id,
-                        ActivityAssigmentSchema.target_subject_id,
-                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
-                    tuple_(
-                        ActivityAssigmentSchema.activity_flow_id,
-                        ActivityAssigmentSchema.respondent_subject_id,
-                        ActivityAssigmentSchema.target_subject_id,
-                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
-                )
-            )
-            .values(values)
-            .returning(ActivityAssigmentSchema)
-        )
-
-        result = await self._execute(query)
-
-        data = result.mappings().all()
-
-        return [ActivityAssigmentSchema(**row) for row in data]
-
     async def delete_many(
         self,
         activity_or_flow_ids: list[uuid.UUID],
@@ -176,20 +142,28 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         AssertionError
             If the lengths of the provided ID lists do not match.
         """
+        # Ensure all lists are of equal length
+        assert len(activity_or_flow_ids) == len(respondent_subject_ids) == len(target_subject_ids)
 
-        await self._update_many_with_filter(
-            activity_or_flow_ids, respondent_subject_ids, target_subject_ids, values=dict(is_deleted=True)
+        stmt = (
+            update(ActivityAssigmentSchema)
+            .where(
+                or_(
+                    tuple_(
+                        ActivityAssigmentSchema.activity_id,
+                        ActivityAssigmentSchema.respondent_subject_id,
+                        ActivityAssigmentSchema.target_subject_id,
+                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
+                    tuple_(
+                        ActivityAssigmentSchema.activity_flow_id,
+                        ActivityAssigmentSchema.respondent_subject_id,
+                        ActivityAssigmentSchema.target_subject_id,
+                    ).in_(zip(activity_or_flow_ids, respondent_subject_ids, target_subject_ids)),
+                )
+            )
+            .values(is_deleted=True)
         )
-
-    async def undelete_many(
-        self,
-        activity_or_flow_ids: list[uuid.UUID],
-        respondent_subject_ids: list[uuid.UUID],
-        target_subject_ids: list[uuid.UUID],
-    ) -> list[ActivityAssigmentSchema]:
-        return await self._update_many_with_filter(
-            activity_or_flow_ids, respondent_subject_ids, target_subject_ids, values=dict(is_deleted=False)
-        )
+        await self._execute(stmt)
 
     async def get_by_applet(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssigmentSchema]:
         respondent_schema = aliased(SubjectSchema)
@@ -225,3 +199,32 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
+
+    async def upsert(self, values: dict) -> ActivityAssigmentSchema | None:
+        stmt = (
+            insert(ActivityAssigmentSchema)
+            .values(values)
+            .on_conflict_do_update(
+                index_elements=[
+                    ActivityAssigmentSchema.respondent_subject_id,
+                    ActivityAssigmentSchema.target_subject_id,
+                    ActivityAssigmentSchema.activity_id
+                    if values.get("activity_id")
+                    else ActivityAssigmentSchema.activity_flow_id,
+                ],
+                set_={
+                    "updated_at": datetime.datetime.utcnow(),
+                    "is_deleted": False,
+                },
+                where=(ActivityAssigmentSchema.soft_exists(exists=False)),
+            )
+            .returning(ActivityAssigmentSchema.id)
+        )
+
+        result = await self._execute(stmt)
+        model_id = result.scalar_one_or_none()
+        updated_schema = None
+        if model_id:
+            updated_schema = await self._get("id", model_id)
+
+        return updated_schema

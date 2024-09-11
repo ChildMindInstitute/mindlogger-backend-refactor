@@ -911,7 +911,12 @@ class TestActivityAssignments(BaseTest):
                     activity_id=applet_one_with_flow.activities[0].id,
                     respondent_subject_id=tom_applet_one_subject.id,
                     target_subject_id=tom_applet_one_subject.id,
-                )
+                ),
+                dict(
+                    activity_flow_id=applet_one_with_flow.activity_flows[0].id,
+                    respondent_subject_id=tom_applet_one_subject.id,
+                    target_subject_id=lucy_applet_one_subject.id,
+                ),
             ]
         )
 
@@ -921,8 +926,13 @@ class TestActivityAssignments(BaseTest):
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
         assignments = response.json()["result"]["assignments"]
-        assert len(assignments) == 1
-        assignment_id = assignments[0]["id"]
+        assert len(assignments) == 2
+        assignment_activity_created = [
+            a for a in assignments if a["activityId"] == str(applet_one_with_flow.activities[0].id)
+        ][0]
+        assignment_flow_created = [
+            a for a in assignments if a["activityFlowId"] == str(applet_one_with_flow.activity_flows[0].id)
+        ][0]
 
         unassign_response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one_with_flow.id),
@@ -932,7 +942,12 @@ class TestActivityAssignments(BaseTest):
                         activity_id=applet_one_with_flow.activities[0].id,
                         respondent_subject_id=tom_applet_one_subject.id,
                         target_subject_id=tom_applet_one_subject.id,
-                    )
+                    ),
+                    dict(
+                        activity_flow_id=applet_one_with_flow.activity_flows[0].id,
+                        respondent_subject_id=tom_applet_one_subject.id,
+                        target_subject_id=lucy_applet_one_subject.id,
+                    ),
                 ]
             ),
         )
@@ -969,12 +984,13 @@ class TestActivityAssignments(BaseTest):
             a for a in assignments if a["activityFlowId"] == str(applet_one_with_flow.activity_flows[0].id)
         ][0]
 
-        assert assignment_activity["id"] == assignment_id
+        assert assignment_activity["id"] == assignment_activity_created["id"]
         assert assignment_activity["activityId"] == str(applet_one_with_flow.activities[0].id)
         assert assignment_activity["respondentSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment_activity["targetSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment_activity["activityFlowId"] is None
 
+        assert assignment_flow["id"] == assignment_flow_created["id"]
         assert assignment_flow["activityId"] is None
         assert assignment_flow["respondentSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment_flow["targetSubjectId"] == str(lucy_applet_one_subject.id)

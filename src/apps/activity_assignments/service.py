@@ -80,37 +80,27 @@ class ActivityAssignmentService:
         entities = await self._get_assignments_entities(applet_id, assignments_create)
 
         respondent_activities: dict[uuid.UUID, set[str]] = defaultdict(set)
-        schemas_to_create = []
-        schemas_to_update = []
+        assignment_schemas = []
         for assignment in assignments_create:
             activity_or_flow_name: str = self._validate_assignment_and_get_activity_or_flow_name(assignment, entities)
-            schema = ActivityAssigmentSchema(
-                id=uuid.uuid4(),
-                activity_id=assignment.activity_id,
+            data = dict(
                 activity_flow_id=assignment.activity_flow_id,
+                activity_id=assignment.activity_id,
                 respondent_subject_id=assignment.respondent_subject_id,
                 target_subject_id=assignment.target_subject_id,
             )
-            if existing_assignment := (await ActivityAssigmentCRUD(self.session).already_exists(schema)):
-                if existing_assignment.soft_exists(exists=False):
-                    schemas_to_update.append(existing_assignment)
+
+            schema: ActivityAssigmentSchema | None = await ActivityAssigmentCRUD(self.session).upsert(data)
+            if schema is None:
                 continue
 
-            schemas_to_create.append(schema)
+            assignment_schemas.append(schema)
 
             pending_invitation = await InvitationCRUD(self.session).get_pending_subject_invitation(
                 applet_id, assignment.respondent_subject_id
             )
             if not pending_invitation:
                 respondent_activities[assignment.respondent_subject_id].add(activity_or_flow_name)
-
-        assignment_schemas_updated: list[ActivityAssigmentSchema] = await self._undelete_many(schemas_to_update)
-
-        assignment_schemas_created: list[ActivityAssigmentSchema] = await ActivityAssigmentCRUD(
-            self.session
-        ).create_many(schemas_to_create)
-
-        assignment_schemas = assignment_schemas_created + assignment_schemas_updated
 
         await self.send_email_notification(applet_id, entities.respondent_subjects, respondent_activities)
 
@@ -417,22 +407,3 @@ class ActivityAssignmentService:
             "fr": "Notification d'attribution",
         }
         return translations.get(language, translations["en"])
-
-    async def _undelete_many(self, assignments: list[ActivityAssigmentSchema]) -> list[ActivityAssigmentSchema]:
-        if len(assignments) == 0:
-            return []
-
-        activity_or_flow_ids = []
-        respondent_subject_ids = []
-        target_subject_ids = []
-
-        for assignment in assignments:
-            activity_or_flow_ids.append(assignment.activity_id or assignment.activity_flow_id)
-            target_subject_ids.append(assignment.target_subject_id)
-            respondent_subject_ids.append(assignment.respondent_subject_id)
-
-        return await ActivityAssigmentCRUD(self.session).undelete_many(
-            activity_or_flow_ids=activity_or_flow_ids,
-            respondent_subject_ids=respondent_subject_ids,
-            target_subject_ids=target_subject_ids,
-        )
