@@ -171,6 +171,7 @@ class SubScaleLookupTable(PublicModel):
     age: PositiveInt | None = None
     sex: str | None = Field(default=None, regex="^(M|F)$", description="M or F")
     optional_text: str | None = None
+    severity: str | None = Field(default=None, regex="^(Minimal|Mild|Moderate|Severe)$")
 
     @validator("raw_score")
     def validate_raw_score_lookup(cls, value):
