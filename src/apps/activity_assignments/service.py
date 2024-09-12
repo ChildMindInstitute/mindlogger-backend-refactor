@@ -80,30 +80,27 @@ class ActivityAssignmentService:
         entities = await self._get_assignments_entities(applet_id, assignments_create)
 
         respondent_activities: dict[uuid.UUID, set[str]] = defaultdict(set)
-        schemas = []
+        assignment_schemas = []
         for assignment in assignments_create:
             activity_or_flow_name: str = self._validate_assignment_and_get_activity_or_flow_name(assignment, entities)
-            schema = ActivityAssigmentSchema(
-                id=uuid.uuid4(),
-                activity_id=assignment.activity_id,
+            data = dict(
                 activity_flow_id=assignment.activity_flow_id,
+                activity_id=assignment.activity_id,
                 respondent_subject_id=assignment.respondent_subject_id,
                 target_subject_id=assignment.target_subject_id,
             )
-            if await ActivityAssigmentCRUD(self.session).already_exists(schema):
+
+            schema: ActivityAssigmentSchema | None = await ActivityAssigmentCRUD(self.session).upsert(data)
+            if schema is None:
                 continue
 
-            schemas.append(schema)
+            assignment_schemas.append(schema)
 
             pending_invitation = await InvitationCRUD(self.session).get_pending_subject_invitation(
                 applet_id, assignment.respondent_subject_id
             )
             if not pending_invitation:
                 respondent_activities[assignment.respondent_subject_id].add(activity_or_flow_name)
-
-        assignment_schemas: list[ActivityAssigmentSchema] = await ActivityAssigmentCRUD(self.session).create_many(
-            schemas
-        )
 
         await self.send_email_notification(applet_id, entities.respondent_subjects, respondent_activities)
 
@@ -325,18 +322,12 @@ class ActivityAssignmentService:
         target_subject_ids = []
 
         for assignment in assignments_unassign:
-            # Append only non-None values to the activity_or_flow_ids list
-            if assignment.activity_id is not None:
-                activity_or_flow_ids.append(assignment.activity_id)
-            elif assignment.activity_flow_id is not None:
-                activity_or_flow_ids.append(assignment.activity_flow_id)
-
-            # Append other necessary IDs
+            activity_or_flow_ids.append(assignment.activity_id or assignment.activity_flow_id)
             target_subject_ids.append(assignment.target_subject_id)
             respondent_subject_ids.append(assignment.respondent_subject_id)
 
-        await ActivityAssigmentCRUD(self.session).unassign_many(
-            activity_or_flow_ids=activity_or_flow_ids,
+        await ActivityAssigmentCRUD(self.session).delete_many(
+            activity_or_flow_ids=activity_or_flow_ids,  # type: ignore
             respondent_subject_ids=respondent_subject_ids,
             target_subject_ids=target_subject_ids,
         )

@@ -43,12 +43,13 @@ class BaseCRUD(Generic[ConcreteSchema]):
         query = query.values(**dict(schema))
         query = query.returning(self.schema_class)
         db_result = await self._execute(query)
-        results = db_result.fetchall()
-        if len(results) == 0:
+        rows_as_dict = db_result.mappings().all()
+        if len(rows_as_dict) == 0:
             raise NoResultFound()
-        elif len(results) > 1:
+        elif len(rows_as_dict) > 1:
             raise MultipleResultsFound()
-        return self.schema_class(**dict(zip(results[0].keys(), results[0])))
+
+        return self.schema_class(**rows_as_dict[0])
 
     async def _update(
         self,
@@ -66,8 +67,8 @@ class BaseCRUD(Generic[ConcreteSchema]):
         query = query.returning(self.schema_class)
 
         db_result = await self._execute(query)
-        results = db_result.fetchall()
-        return [self.schema_class(**dict(zip(result.keys(), result))) for result in results]
+        rows_as_dict = db_result.mappings().all()
+        return [self.schema_class(**row_dict) for row_dict in rows_as_dict]
 
     async def _get(self, key: str, value: Any) -> ConcreteSchema | None:
         """Return only one result by filters"""
