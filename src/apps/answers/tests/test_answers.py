@@ -3837,8 +3837,10 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one_lucy_manager.id)
-
-        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one_lucy_manager.activities[0].id}"
+        )
 
         response = await client.get(url)
 
