@@ -4,11 +4,6 @@ import uuid
 from fastapi import Query
 from pydantic import Field, root_validator, validator
 
-from apps.answers.errors import (
-    MultiinformantAssessmentInvalidSourceSubject,
-    MultiinformantAssessmentInvalidTargetSubject,
-    MultiinformantAssessmentMissingTargetAndSource,
-)
 from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import array_from_string
 from apps.shared.query_params import BaseQueryParams
@@ -66,22 +61,6 @@ class AnswerIdentifierVersionFilter(BaseQueryParams):
 
 
 class AppletMultiinformantAssessmentParams(InternalModel):
-    target_subject_id: uuid.UUID | None
-    source_subject_id: uuid.UUID | None
-    activity_or_flow_id: uuid.UUID | None
-
-    @root_validator
-    def validate_assignments(cls, values):
-        target = values.get("target_subject_id")
-        source = values.get("source_subject_id")
-        # Target, source, and activity/flow must all be present
-        if not target and not source:
-            raise MultiinformantAssessmentMissingTargetAndSource()
-
-        if not target:
-            raise MultiinformantAssessmentInvalidTargetSubject()
-
-        if not source:
-            raise MultiinformantAssessmentInvalidSourceSubject()
-
-        return values
+    target_subject_id: uuid.UUID
+    source_subject_id: uuid.UUID
+    activity_or_flow_id: uuid.UUID

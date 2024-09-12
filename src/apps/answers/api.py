@@ -3,7 +3,7 @@ import base64
 import datetime
 import uuid
 
-from fastapi import Body, Depends, HTTPException, Query, status
+from fastapi import Body, Depends, Query
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
@@ -853,10 +853,9 @@ async def applet_validate_multiinformant_assessment(
 
         is_valid = True
     except ValidationError as ex:
-        # Raise a 400 Bad Request when a ValidationError occurs
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail={"valid": False, "message": ex.error, "code": ex.code}
-        )
+        message = ex.error
+        is_valid = False
+        code = ex.code
 
     return Response[MultiinformantAssessmentValidationResponse](
         result=MultiinformantAssessmentValidationResponse(valid=is_valid, message=message, code=code)
