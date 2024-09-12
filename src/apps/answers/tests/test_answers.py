@@ -3501,14 +3501,41 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["valid"] is True
 
-    async def test_validat_multiinformant_assessment_fail_not_manager(self, client, lucy: User, applet_one: AppletFull):
+    async def test_validat_multiinformant_assessment_fail_not_manager(
+        self, client, applet_with_flow, session: AsyncSession, lucy: User, tom: User, applet_one: AppletFull
+    ):
+        subject_service = SubjectsService(session, tom.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_with_flow.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_with_flow.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
         client.login(lucy)
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
-
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_validate_multiinformant_assessment_fail_no_applet(self, client, lucy: User):
         client.login(lucy)
