@@ -332,6 +332,9 @@ class ActivityAssignmentService:
             target_subject_ids=target_subject_ids,
         )
 
+    async def delete_by_activity_or_flow_ids(self, activity_or_flow_ids: list[uuid.UUID]) -> None:
+        await ActivityAssigmentCRUD(self.session).delete_by_activity_or_flow_ids(activity_or_flow_ids)
+
     async def get_all(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssignment]:
         """
         Returns assignments for given applet ID and matching any filters provided in query_params.

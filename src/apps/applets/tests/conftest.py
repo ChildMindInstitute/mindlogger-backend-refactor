@@ -1,6 +1,9 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.activities.domain.activity_update import ActivityUpdate
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.domain.flow_update import ActivityFlowItemUpdate, FlowUpdate
 from apps.applets.crud.applets import AppletsCRUD
@@ -10,6 +13,7 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
 from apps.shared.enums import Language
+from apps.subjects.domain import SubjectFull
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
@@ -71,8 +75,40 @@ async def applet_one_with_flow(
 
 
 @pytest.fixture
+async def applet_one_with_flow_and_assignments(
+    session: AsyncSession, applet_one_with_flow: AppletFull, tom_applet_one_subject: SubjectFull
+) -> AppletFull:
+    assignments = [
+        ActivityAssignmentCreate(
+            activity_id=applet_one_with_flow.activities[0].id,
+            respondent_subject_id=tom_applet_one_subject.id,
+            target_subject_id=tom_applet_one_subject.id,
+        ),
+        ActivityAssignmentCreate(
+            activity_flow_id=applet_one_with_flow.activity_flows[0].id,
+            respondent_subject_id=tom_applet_one_subject.id,
+            target_subject_id=tom_applet_one_subject.id,
+        ),
+    ]
+
+    await ActivityAssignmentService(session).create_many(applet_one_with_flow.id, assignments)
+
+    return applet_one_with_flow
+
+
+@pytest.fixture
 def applet_one_update_data(applet_one: AppletFull) -> AppletUpdate:
     return AppletUpdate(**applet_one.dict())
+
+
+@pytest.fixture
+def applet_one_change_activities_ids(applet_one: AppletFull) -> AppletUpdate:
+    data = applet_one.dict()
+    data["activities"] = [
+        ActivityUpdate(**activity.dict(exclude={"name", "id"}), name="New Activity")
+        for activity in applet_one.activities[1:]
+    ]
+    return AppletUpdate(**data)
 
 
 @pytest.fixture
