@@ -1,7 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.integrations.api import create_integration, retrieve_integration
+from apps.integrations.api import create_integration, retrieve_integration, delete_integration
 from apps.integrations.domain import Integration
 from apps.shared.domain import Response
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
@@ -30,3 +30,14 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(retrieve_integration)
+
+router.delete(
+    "/",
+    description="This endpoint is used to delete integrations",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[Integration]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(delete_integration)

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
 
@@ -32,3 +32,11 @@ class IntegrationsCRUD(BaseCRUD[IntegrationsSchema]):
         query = query.limit(1)
         result: Result = await self._execute(query)
         return result.scalars().first()
+
+async def delete_by_id(self, id_: uuid.UUID):
+        """Delete integrations by id."""
+
+        query = update(IntegrationsSchema)
+        query = query.where(IntegrationsSchema.id == id_)
+        query = query.values(is_deleted=True)
+        await self._execute(query)

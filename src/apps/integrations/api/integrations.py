@@ -12,7 +12,7 @@ from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 
-__all__ = ["enable_integration", "disable_integration", "create_integration", "retrieve_integration"]
+__all__ = ["enable_integration", "disable_integration", "create_integration", "retrieve_integration", "delete_integration"]
 
 
 async def enable_integration(
@@ -53,3 +53,13 @@ async def retrieve_integration(
     await CheckAccessService(session, user.id).check_integrations_access(applet_id)
     async with atomic(session):
         return await IntegrationService(session, user).retrieve_integration(applet_id, type)
+
+async def delete_integration(
+    type: str,
+    applet_id: uuid.UUID,
+    session=Depends(get_session),
+    user: User = Depends(get_current_user),
+) -> Integration:
+    await CheckAccessService(session, user.id).check_integrations_access(applet_id)
+    async with atomic(session):
+        return await IntegrationService(session, user).delete_integration(applet_id, type)
