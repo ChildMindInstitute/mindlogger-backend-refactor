@@ -130,8 +130,7 @@ class IntegrationsRetrieveAccessDenied(ValidationError):
     message = _("Access denied to retrieve integrations of type `{type}` on applet `{applet_id}`")
 
 
-class WorkspaceNotFoundError(Exception):
-    ...
+class WorkspaceNotFoundError(Exception): ...
 
 
 class ArbitraryServerSettingsError(Exception):

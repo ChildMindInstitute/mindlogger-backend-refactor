@@ -277,7 +277,7 @@ class LorisIntegrationService:
                         answers_for_loris_by_respondent[user].update(answers_for_loris)
         return answers_for_loris_by_respondent
 
-    async def _ml_answer_to_loris( # noqa: C901
+    async def _ml_answer_to_loris(  # noqa: C901
         self, answer_id: str, activity_id: str, version: str, items: list, data: list
     ) -> dict:
         loris_answers: dict = {}

@@ -28,6 +28,7 @@ class FutureIntegration(InternalModel):
         )
         return new_future_integration
 
+
 class Integration(InternalModel):
     integration_type: AvailableIntegrations
     applet_id: uuid.UUID
@@ -36,9 +37,7 @@ class Integration(InternalModel):
     @classmethod
     def from_schema(cls, schema: IntegrationsSchema):
         new_integration = cls(
-            applet_id=schema.applet_id,
-            integration_type=schema.type,
-            configuration=schema.configuration
+            applet_id=schema.applet_id, integration_type=schema.type, configuration=schema.configuration
         )
         return new_integration
 

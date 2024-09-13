@@ -95,8 +95,7 @@ class ReproFieldBase(LdDocumentBase, CommonFieldsMixin, ResolvesConditionalLogic
 
     @classmethod
     @abstractmethod
-    def _get_supported_input_types(cls) -> list[str]:
-        ...
+    def _get_supported_input_types(cls) -> list[str]: ...
 
     @classmethod
     def supports(cls, doc: dict) -> bool:

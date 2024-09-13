@@ -19,6 +19,6 @@ class LorisIntegration(InternalModel):
             hostname=new_loris_integration_dict["hostname"],
             username=new_loris_integration_dict["username"],
             password=new_loris_integration_dict["password"],
-            project=new_loris_integration_dict["project"]
+            project=new_loris_integration_dict["project"],
         )
         return new_loris_integration
