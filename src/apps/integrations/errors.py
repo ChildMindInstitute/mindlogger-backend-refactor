@@ -12,7 +12,10 @@ class IntegrationsConfigurationsTypeAlreadyAssignedToAppletError(ValidationError
 
 
 class UnexpectedPropertiesForIntegration(ValidationError):
-    message = _("Provided configurations `{provided_keys}` for Integration Type `{type}` were not expected. Expected keys are: `{expected_keys}`")
+    message = _(
+        """Provided configurations `{provided_keys}` for Integration Type `{type}` were not expected.
+ Expected keys are: `{expected_keys}`"""
+    )
 
 
 class UnsupportedIntegrationError(ValidationError):

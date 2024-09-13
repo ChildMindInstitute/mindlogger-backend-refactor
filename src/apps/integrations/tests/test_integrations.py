@@ -1,5 +1,3 @@
-from apps.integrations.errors import UniqueIntegrationError
-from apps.integrations.router import router as integration_router
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.users.domain import User

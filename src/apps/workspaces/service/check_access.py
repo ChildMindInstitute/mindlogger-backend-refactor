@@ -18,7 +18,6 @@ from apps.workspaces.errors import (
     AppletInviteAccessDenied,
     AppletSetScheduleAccessDenied,
     IntegrationsCreateAccessDenied,
-    IntegrationsRetrieveAccessDenied,
     PublishConcealAccessDenied,
     TransferOwnershipAccessDenied,
     WorkspaceAccessDenied,

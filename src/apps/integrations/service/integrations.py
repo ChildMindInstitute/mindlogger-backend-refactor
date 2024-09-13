@@ -3,7 +3,12 @@ from typing import cast
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.integrations.db.schemas import IntegrationsSchema
 from apps.integrations.domain import AvailableIntegrations, FutureIntegration, Integration
-from apps.integrations.errors import UnavailableIntegrationError, UnexpectedPropertiesForIntegration, UniqueIntegrationError, UnsupportedIntegrationError
+from apps.integrations.errors import (
+    UnavailableIntegrationError,
+    UnexpectedPropertiesForIntegration,
+    UniqueIntegrationError,
+    UnsupportedIntegrationError,
+)
 from apps.integrations.loris.service.loris import LorisIntegration, LorisIntegrationService
 from apps.integrations.service.future_integration import FutureIntegrationService
 from apps.shared.query_params import QueryParams

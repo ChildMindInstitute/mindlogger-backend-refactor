@@ -1,7 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.integrations.loris.api import start_transmit_process, users_info_with_visits, visits_list, get_loris_projects
+from apps.integrations.loris.api import get_loris_projects, start_transmit_process, users_info_with_visits, visits_list
 from apps.integrations.loris.api.consent import (
     consent_create,
     consent_get_by_id,
