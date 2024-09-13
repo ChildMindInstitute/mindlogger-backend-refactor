@@ -39,7 +39,7 @@ async def create_integration(
     user: User = Depends(get_current_user),
     integrationsCreate: Integration = Body(...),
 ) -> Integration:
-    await CheckAccessService(session, user.id).check_integrations_create_access(
+    await CheckAccessService(session, user.id).check_integrations_access(
         integrationsCreate.applet_id, integrationsCreate.integration_type
     )
     async with atomic(session):
@@ -52,6 +52,6 @@ async def retrieve_integration(
     session=Depends(get_session),
     user: User = Depends(get_current_user),
 ) -> Integration:
-    await CheckAccessService(session, user.id).check_integrations_retrieve_access(applet_id, type)
+    await CheckAccessService(session, user.id).check_integrations_access(applet_id, type)
     async with atomic(session):
         return await IntegrationService(session, user).retrieve_integration(applet_id, type)
