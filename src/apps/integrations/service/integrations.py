@@ -9,8 +9,8 @@ from apps.integrations.errors import (
     UniqueIntegrationError,
     UnsupportedIntegrationError,
 )
-from apps.integrations.loris.service.loris import LorisIntegration, LorisIntegrationService
 from apps.integrations.loris.domain.loris_integrations import LorisIntegrationPublic
+from apps.integrations.loris.service.loris import LorisIntegration, LorisIntegrationService
 from apps.integrations.service.future_integration import FutureIntegrationService
 from apps.shared.query_params import QueryParams
 from apps.users.domain import User
