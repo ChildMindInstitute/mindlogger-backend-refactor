@@ -24,10 +24,11 @@ class FutureIntegration(InternalModel):
             api_key=new_future_integration_dict["api_key"],
         )
         return new_future_integration
-    
+
     def __repr__(self):
         return "FutureIntegration()"
-    
+
+
 class FutureIntegrationPublic(PublicModel):
     endpoint: str
 
@@ -38,7 +39,7 @@ class FutureIntegrationPublic(PublicModel):
             endpoint=new_future_integration_dict["endpoint"],
         )
         return new_future_integration
-    
+
     def __repr__(self):
         return "FutureIntegrationPublic()"
 

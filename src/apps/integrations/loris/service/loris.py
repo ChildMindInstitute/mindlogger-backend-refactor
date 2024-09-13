@@ -873,7 +873,6 @@ class LorisIntegrationService:
             )
         )
         return LorisIntegrationPublic.from_schema(integration_schema)
-    
 
     async def get_loris_projects(self, hostname, username, password) -> LorisProjects:
         token = await LorisClient.login_to_loris(hostname, username, password)

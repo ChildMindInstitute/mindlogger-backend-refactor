@@ -20,9 +20,10 @@ class LorisIntegration(InternalModel):
             project=new_loris_integration_dict["project"],
         )
         return new_loris_integration
-    
+
     def __repr__(self):
         return "LorisIntegration()"
+
 
 class LorisIntegrationPublic(PublicModel):
     hostname: str
