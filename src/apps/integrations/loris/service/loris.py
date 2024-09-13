@@ -31,7 +31,7 @@ from apps.integrations.loris.domain.domain import (
     UploadableAnswersData,
     UserVisits,
 )
-from apps.integrations.loris.domain.loris_integrations import LorisIntegration
+from apps.integrations.loris.domain.loris_integrations import LorisIntegration, LorisIntegrationPublic
 from apps.integrations.loris.domain.loris_projects import LorisProjects
 from apps.integrations.loris.errors import LorisServerError
 from apps.integrations.loris.service.loris_client import LorisClient
@@ -860,7 +860,7 @@ class LorisIntegrationService:
                 sentry_sdk.capture_exception(e)
                 break
 
-    async def create_loris_integration(self, hostname, username, password, project) -> LorisIntegration:
+    async def create_loris_integration(self, hostname, username, project) -> LorisIntegration:
         integration_schema = await IntegrationsCRUD(self.session).create(
             IntegrationsSchema(
                 applet_id=self.applet_id,
@@ -868,12 +868,12 @@ class LorisIntegrationService:
                 configuration={
                     "hostname": hostname,
                     "username": username,
-                    "password": password,
                     "project": project,
                 },
             )
         )
-        return LorisIntegration.from_schema(integration_schema)
+        return LorisIntegrationPublic.from_schema(integration_schema)
+    
 
     async def get_loris_projects(self, hostname, username, password) -> LorisProjects:
         token = await LorisClient.login_to_loris(hostname, username, password)

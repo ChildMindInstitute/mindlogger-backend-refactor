@@ -2,7 +2,7 @@ from typing import cast
 
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.integrations.db.schemas import IntegrationsSchema
-from apps.integrations.domain import AvailableIntegrations, FutureIntegration, Integration
+from apps.integrations.domain import AvailableIntegrations, FutureIntegration, FutureIntegrationPublic, Integration
 from apps.integrations.errors import (
     UnavailableIntegrationError,
     UnexpectedPropertiesForIntegration,
@@ -10,6 +10,7 @@ from apps.integrations.errors import (
     UnsupportedIntegrationError,
 )
 from apps.integrations.loris.service.loris import LorisIntegration, LorisIntegrationService
+from apps.integrations.loris.domain.loris_integrations import LorisIntegrationPublic
 from apps.integrations.service.future_integration import FutureIntegrationService
 from apps.shared.query_params import QueryParams
 from apps.users.domain import User
@@ -55,7 +56,7 @@ class IntegrationService:
         match newIntegration.integration_type:
             case AvailableIntegrations.LORIS:
                 loris_config = cast(LorisIntegration, newIntegration.configuration)
-                expected_keys = ["hostname", "username", "password", "project"]
+                expected_keys = ["hostname", "username", "project"]
                 config_dict = loris_config.dict()
                 if None in [config_dict.get(k, None) for k in expected_keys]:
                     raise UnexpectedPropertiesForIntegration(
@@ -68,7 +69,6 @@ class IntegrationService:
                 ).create_loris_integration(
                     hostname=loris_config.hostname,
                     username=loris_config.username,
-                    password=loris_config.password,
                     project=loris_config.project,
                 )
                 return Integration(
@@ -78,7 +78,7 @@ class IntegrationService:
                 )
             case AvailableIntegrations.FUTURE:
                 future_conf = cast(FutureIntegration, newIntegration.configuration)
-                expected_keys = ["endpoint", "api_key"]
+                expected_keys = ["endpoint"]
                 config_dict = future_conf.dict()
                 if None in [config_dict.get(k, None) for k in expected_keys]:
                     raise UnexpectedPropertiesForIntegration(
@@ -91,7 +91,6 @@ class IntegrationService:
                     self.session,
                 ).create_future_integration(
                     endpoint=future_conf.endpoint,
-                    api_key=future_conf.api_key,
                 )
                 return Integration(
                     integration_type=AvailableIntegrations.FUTURE,
@@ -114,14 +113,14 @@ class IntegrationService:
 
         match integration_type:
             case AvailableIntegrations.LORIS:
-                loris_integration = LorisIntegration.from_schema(integration_schema)
+                loris_integration = LorisIntegrationPublic.from_schema(integration_schema)
                 return Integration(
                     integration_type=AvailableIntegrations.LORIS,
                     applet_id=applet_id,
                     configuration=loris_integration,
                 )
             case AvailableIntegrations.FUTURE:
-                future_integration = FutureIntegration.from_schema(integration_schema)
+                future_integration = FutureIntegrationPublic.from_schema(integration_schema)
                 return Integration(
                     integration_type=AvailableIntegrations.FUTURE,
                     applet_id=applet_id,

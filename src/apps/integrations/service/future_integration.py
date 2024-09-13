@@ -1,7 +1,7 @@
 import uuid
 
 from apps.integrations.crud.integrations import IntegrationsCRUD, IntegrationsSchema
-from apps.integrations.domain import AvailableIntegrations, FutureIntegration
+from apps.integrations.domain import AvailableIntegrations, FutureIntegration, FutureIntegrationPublic
 
 
 class FutureIntegrationService:
@@ -21,15 +21,14 @@ class FutureIntegrationService:
         self.session = session
         self.type = AvailableIntegrations.FUTURE
 
-    async def create_future_integration(self, endpoint, api_key) -> FutureIntegration:
+    async def create_future_integration(self, endpoint) -> FutureIntegration:
         integration_schema = await IntegrationsCRUD(self.session).create(
             IntegrationsSchema(
                 applet_id=self.applet_id,
                 type=self.type,
                 configuration={
                     "endpoint": endpoint,
-                    "api_key": api_key,
                 },
             )
         )
-        return FutureIntegration.from_schema(integration_schema)
+        return FutureIntegrationPublic.from_schema(integration_schema)

@@ -1,11 +1,10 @@
 import json
 import uuid
 from enum import Enum
-from typing import Union
 
 from apps.integrations.db.schemas import IntegrationsSchema
-from apps.integrations.loris.domain.loris_integrations import LorisIntegration
-from apps.shared.domain import InternalModel
+from apps.integrations.loris.domain.loris_integrations import LorisIntegration, LorisIntegrationPublic
+from apps.shared.domain import InternalModel, PublicModel
 
 
 class AvailableIntegrations(str, Enum):
@@ -20,19 +19,34 @@ class FutureIntegration(InternalModel):
     @classmethod
     def from_schema(cls, schema: IntegrationsSchema):
         new_future_integration_dict = json.loads(schema.configuration.replace("'", '"'))
-        new_future_integration_dict["api_key"] = "*****"
-
         new_future_integration = cls(
             endpoint=new_future_integration_dict["endpoint"],
             api_key=new_future_integration_dict["api_key"],
         )
         return new_future_integration
+    
+    def __repr__(self):
+        return "FutureIntegration()"
+    
+class FutureIntegrationPublic(PublicModel):
+    endpoint: str
+
+    @classmethod
+    def from_schema(cls, schema: IntegrationsSchema):
+        new_future_integration_dict = json.loads(schema.configuration.replace("'", '"'))
+        new_future_integration = cls(
+            endpoint=new_future_integration_dict["endpoint"],
+        )
+        return new_future_integration
+    
+    def __repr__(self):
+        return "FutureIntegrationPublic()"
 
 
 class Integration(InternalModel):
     integration_type: AvailableIntegrations
     applet_id: uuid.UUID
-    configuration: Union[LorisIntegration, FutureIntegration]
+    configuration: FutureIntegrationPublic | LorisIntegrationPublic | FutureIntegration | LorisIntegration
 
     @classmethod
     def from_schema(cls, schema: IntegrationsSchema):
