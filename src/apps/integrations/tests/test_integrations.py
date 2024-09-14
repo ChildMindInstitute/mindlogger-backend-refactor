@@ -97,5 +97,6 @@ class TestIntegrationRouter(BaseTest):
         assert dict_response["integrationType"] == "LORIS"
         assert dict_response["appletId"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
         assert dict_response["configuration"]["hostname"] == "loris.cmiml.net"
-        assert dict_response["configuration"]["hostname"] == "lorisfrontadmin"
-        assert dict_response["configuration"]["hostname"] == "loris_project"
+        assert dict_response["configuration"]["username"] == "lorisfrontadmin"
+        assert dict_response["configuration"]["project"] == "loris_project"
+        assert "password" not in dict_response.keys()
