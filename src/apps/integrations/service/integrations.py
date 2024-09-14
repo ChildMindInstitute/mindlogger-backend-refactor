@@ -139,9 +139,9 @@ class IntegrationService:
         config = None
         match integration_type:
             case AvailableIntegrations.LORIS:
-                config = LorisIntegration.from_schema(elem)
+                config = LorisIntegrationPublic.from_schema(elem)
             case AvailableIntegrations.FUTURE:
-                config=  FutureIntegration.from_schema(elem)
+                config=  FutureIntegrationPublic.from_schema(elem)
         return Integration(
                     applet_id=applet_id,
                     integration_type=integration_type,
