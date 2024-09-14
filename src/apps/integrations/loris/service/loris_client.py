@@ -10,8 +10,9 @@ from apps.shared.domain.custom_validations import InvalidUrlError, validate_url
 class LorisClient:
     @classmethod
     async def login_to_loris(self, hostname: str, username: str, password: str) -> str:
+        url = f"https://{hostname}/api/v0.0.3/login"
         try:
-            hostname = validate_url(hostname)
+            hostname = validate_url(url)
         except InvalidUrlError as iue:
             raise LorisInvalidHostname(hostname=hostname) from iue
         timeout = aiohttp.ClientTimeout(total=60)
@@ -22,7 +23,7 @@ class LorisClient:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             try:
                 async with session.post(
-                    f"https://{hostname}/api/v0.0.3/login",
+                    url,
                     data=json.dumps(loris_login_data),
                 ) as resp:
                     if resp.status == 200:
@@ -39,8 +40,9 @@ class LorisClient:
 
     @classmethod
     async def list_projects(self, hostname: str, token: str):
+        url = f"https://{hostname}/api/v0.0.3/projects"
         try:
-            hostname = validate_url(hostname)
+            hostname = validate_url(url)
         except InvalidUrlError as iue:
             raise LorisInvalidHostname(hostname=hostname) from iue
         headers = {
@@ -50,7 +52,6 @@ class LorisClient:
         }
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            url = f"https://{hostname}/api/v0.0.3/projects"
             async with session.get(
                 url=url,
                 headers=headers,
