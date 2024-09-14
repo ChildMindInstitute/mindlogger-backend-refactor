@@ -7,7 +7,6 @@ from apps.users.domain import User
 
 
 class TestIntegrationRouter(BaseTest):
-
     async def test_create_integration_access_denied(
         self,
         client: TestClient,
@@ -86,7 +85,7 @@ class TestIntegrationRouter(BaseTest):
         client.login(tom)
         response = await client.post("integrations/", data=create_loris_integration_url_data)
         assert response.status_code == 201
-    
+
         retrieve_loris_integration_url_query = {
             "applet_id": applet_one.id,
             "type": "LORIS",
