@@ -24,7 +24,7 @@ class TestIntegrationRouter(BaseTest):
         }
         client.login(tom)
         response = await client.post("integrations/", data=create_loris_integration_url_data)
-        assert response.status_code == 403
+        assert response.status_code == 400
 
     async def test_create_integration_success(
         self,
