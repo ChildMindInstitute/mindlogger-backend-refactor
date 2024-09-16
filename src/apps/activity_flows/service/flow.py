@@ -1,5 +1,6 @@
 import uuid
 
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.crud import FlowItemsCRUD, FlowsCRUD, FlowsHistoryCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.activity_flows.domain.flow import (
@@ -143,6 +144,7 @@ class FlowService:
         deleted_flow_ids = set(all_flows) - set(existing_flows)
         if deleted_flow_ids:
             await ScheduleService(self.session).delete_by_flow_ids(applet_id=applet_id, flow_ids=list(deleted_flow_ids))
+            await ActivityAssignmentService(self.session).delete_by_activity_or_flow_ids(list(deleted_flow_ids))
 
         # Create default events for new activities
         if new_flows:

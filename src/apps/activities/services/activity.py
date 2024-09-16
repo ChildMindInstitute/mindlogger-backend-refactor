@@ -18,6 +18,7 @@ from apps.activities.domain.activity_update import (
 )
 from apps.activities.errors import ActivityAccessDeniedError, ActivityDoeNotExist
 from apps.activities.services.activity_item import ActivityItemService
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD
 from apps.schedule.service.schedule import ScheduleService
@@ -189,6 +190,7 @@ class ActivityService:
             await ScheduleService(self.session).delete_by_activity_ids(
                 applet_id=applet_id, activity_ids=list(deleted_activity_ids)
             )
+            await ActivityAssignmentService(self.session).delete_by_activity_or_flow_ids(list(deleted_activity_ids))
 
         # Create default events for new activities
         if new_activities:
