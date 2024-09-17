@@ -1,12 +1,15 @@
 import enum
 from enum import Enum
 
-from pydantic import Field, PositiveInt, validator
+from pydantic import Field, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
-from apps.activities.domain.custom_validation_subscale import validate_raw_score_subscale, \
-    validate_score_subscale_table, validate_age_subscale
+from apps.activities.domain.custom_validation_subscale import (
+    validate_age_subscale,
+    validate_raw_score_subscale,
+    validate_score_subscale_table,
+)
 from apps.activities.errors import (
     DuplicateScoreConditionIdError,
     DuplicateScoreConditionNameError,

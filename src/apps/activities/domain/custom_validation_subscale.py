@@ -1,6 +1,6 @@
 from pydantic import ValidationError
 
-from apps.activities.errors import InvalidRawScoreSubscaleError, InvalidScoreSubscaleError, InvalidAgeSubscaleError
+from apps.activities.errors import InvalidAgeSubscaleError, InvalidRawScoreSubscaleError, InvalidScoreSubscaleError
 
 
 def validate_score_subscale_table(value: str):
@@ -30,6 +30,7 @@ def validate_score_subscale_table(value: str):
             raise InvalidScoreSubscaleError()
 
     return value
+
 
 def validate_age_subscale(value: str):
     # make sure it's format is "x~y" or "x"

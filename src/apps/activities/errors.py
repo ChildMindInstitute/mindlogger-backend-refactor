@@ -219,6 +219,7 @@ class InvalidRawScoreSubscaleError(ValidationError):
 class InvalidScoreSubscaleError(ValidationError):
     message = _("Score in subscale lookup table is invalid.")
 
+
 class InvalidAgeSubscaleError(ValidationError):
     message = _("Age in subscale lookup table is invalid.")
 
