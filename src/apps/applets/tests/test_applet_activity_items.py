@@ -534,15 +534,18 @@ class TestActivityItems:
         data = applet_minimal_data.copy(deep=True).dict()
         sub_setting = subscale_setting.copy(deep=True).dict()
         sub_setting["subscales"][0]["items"][0]["name"] = single_select_item_create_with_score.name
-        sub_setting["subscales"][0]["subscale_table_data"] = [
-            dict(score="20", age="-1~15", sex="F", raw_score="2", optional_text="some url", severity="Mild")
-        ]
         data["activities"][0]["items"] = [single_select_item_create_with_score]
         data["activities"][0]["subscale_setting"] = sub_setting
-        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
-        assert resp.status_code == http.HTTPStatus.BAD_REQUEST
-        result = resp.json()["result"]
-        assert result[0]["message"] == InvalidAgeSubscaleError.message
+
+        invalid_ages = ["-1", "-1~10", "~", "x~y", "1~", "~10"]
+        for age in invalid_ages:
+            sub_setting["subscales"][0]["subscale_table_data"] = [
+                dict(score="20", age=age, sex="F", raw_score="2", optional_text="some url", severity="Mild")
+            ]
+            resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+            assert resp.status_code == http.HTTPStatus.BAD_REQUEST
+            result = resp.json()["result"]
+            assert result[0]["message"] == InvalidAgeSubscaleError.message
 
     async def test_create_applet__activity_with_score_and_reports__score_and_section(
         self,
