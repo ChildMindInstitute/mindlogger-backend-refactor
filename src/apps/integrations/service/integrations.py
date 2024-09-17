@@ -84,7 +84,7 @@ class IntegrationService:
                     raise UnexpectedPropertiesForIntegration(
                         provided_keys=list(config_dict.keys()),
                         expected_keys=expected_keys,
-                        type=AvailableIntegrations.LORIS,
+                        type=AvailableIntegrations.FUTURE,
                     )
                 future_integration = await FutureIntegrationService(
                     newIntegration.applet_id,
