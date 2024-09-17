@@ -61,6 +61,6 @@ class AnswerIdentifierVersionFilter(BaseQueryParams):
 
 
 class AppletMultiinformantAssessmentParams(InternalModel):
-    target_subject_id: uuid.UUID | None
-    source_subject_id: uuid.UUID | None
-    activity_or_flow_id: uuid.UUID | None
+    target_subject_id: uuid.UUID
+    source_subject_id: uuid.UUID
+    activity_or_flow_id: uuid.UUID
