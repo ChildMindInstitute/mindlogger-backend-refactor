@@ -1,4 +1,4 @@
-from pydantic import ValidationError
+from pydantic import ValidationError, PositiveInt
 
 from apps.activities.errors import InvalidAgeSubscaleError, InvalidRawScoreSubscaleError, InvalidScoreSubscaleError
 
@@ -32,8 +32,8 @@ def validate_score_subscale_table(value: str):
     return value
 
 
-def validate_age_subscale(value: str):
-    # make sure it's format is "x~y" or "x"
+def validate_age_subscale(value: PositiveInt | str | None):
+    # make sure its format is "x~y" or "x"
 
     def validate_non_negative_int(maybe_int: str):
         try:
@@ -43,7 +43,12 @@ def validate_age_subscale(value: str):
         except (ValueError, ValidationError):
             raise InvalidAgeSubscaleError()
 
-    if "~" not in value:
+    if value is None:
+        return value
+    elif isinstance(value, int):
+        if value < 0:
+            raise InvalidAgeSubscaleError()
+    elif "~" not in value:
         # make sure value is a positive integer
         validate_non_negative_int(value)
     else:

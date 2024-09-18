@@ -1,7 +1,7 @@
 import enum
 from enum import Enum
 
-from pydantic import Field, validator
+from pydantic import Field, PositiveInt, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
@@ -172,7 +172,7 @@ class SubscaleCalculationType(str, Enum):
 class SubScaleLookupTable(PublicModel):
     score: str
     raw_score: str
-    age: str | None = None
+    age: PositiveInt | str | None = None
     sex: str | None = Field(default=None, regex="^(M|F)$", description="M or F")
     optional_text: str | None = None
     severity: str | None = Field(default=None, regex="^(Minimal|Mild|Moderate|Severe)$")
