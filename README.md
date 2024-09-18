@@ -178,6 +178,12 @@ For manual installation refer to each service's documentation:
 
 Pipenv used as a default dependencies manager
 Create your virtual environment:
+
+> **NOTE:**
+> Pipenv used as a default dependencies manager.
+> When developing on the API be sure to work from within an active shell.
+> If using VScode, open the terminal from w/in the active shell. Ideally, avoid using the integrated terminal during this process.
+
 ```bash
 # Activate your environment
 pipenv shell
@@ -233,11 +239,14 @@ pipenv install greenlet
 alembic upgrade head
 ```
 
+> 🛑 **NOTE:** If you run into role based errors e.g. `role "postgres" does not exist`, check to see if that program is running anywhere else (e.g. Homebrew), run... i.e. `ps -ef | grep {program-that-errored}`
+> You can attempt to kill the process with the following command `kill -9 {PID-to-program-that-errored}`, followed by rerunning the previous check to confirm if the program has stopped.
+
 ## Running the app
 
 ### Running locally
 
-This option allows you to run the app for development purposes without having to manually build the Docker image.
+This option allows you to run the app for development purposes without having to manually build the Docker image (i.e. When developing on the Web or Admin project).
 
 - Make sure all [required services](#required-services) are properly setup
 - If you're running required services using Docker, disable the `app` service from `docker-compose` before running:
@@ -245,7 +254,20 @@ This option allows you to run the app for development purposes without having to
   docker-compose up -d
   ```
 
-  Alternatively, you may run these services using [make](#running-using-makefile):
+  Alternatively, you may run these services using [make](#running-using-makefile) (i.e. When developing the API):
+
+  You'll need to sudo into `/ect/hosts` and append the following changes.
+
+  ```
+  #mindlogger
+  127.0.0.1   postgres
+  127.0.0.1   rabbitmq
+  127.0.0.1	  redis
+  127.0.0.1	  mailhog
+  ```
+
+  Then run the following command from within the active virtual environment shell...
+
   ```bash
   make run_local
   ```
