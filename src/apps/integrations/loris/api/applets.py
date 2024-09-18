@@ -13,7 +13,12 @@ from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database.deps import get_session
 
-__all__ = ["start_transmit_process", "visits_list", "users_info_with_visits", "get_loris_projects"]
+__all__ = [
+    "start_transmit_process",
+    "visits_list",
+    "users_info_with_visits",
+    "get_loris_projects"
+]
 
 
 async def integration(applet_id: uuid.UUID, session, user, users_and_visits):

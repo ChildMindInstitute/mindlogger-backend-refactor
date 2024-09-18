@@ -122,7 +122,8 @@ class UserAccessAlreadyExists(ValidationError):
     message = _("User Access already exists.")
 
 
-class WorkspaceNotFoundError(Exception): ...
+class WorkspaceNotFoundError(Exception):
+    ...
 
 
 class ArbitraryServerSettingsError(Exception):

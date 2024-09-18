@@ -51,7 +51,8 @@ class LdSubscaleBase(CommonFieldsMixin, ABC):
         return SubscaleCalculationType.AVERAGE if self.ld_is_average_score else SubscaleCalculationType.SUM
 
     @abstractmethod
-    def export(self): ...
+    def export(self):
+        ...
 
 
 class LdSubscaleFinal(LdSubscaleBase):

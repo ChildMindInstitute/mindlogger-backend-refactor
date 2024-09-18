@@ -5,14 +5,12 @@ dname = os.path.dirname(os.path.dirname(abspath))
 os.chdir(dname)
 
 
-import typer  # noqa: E402, I001
+import typer  # noqa: E402
 
 from apps.activities.commands import activities  # noqa: E402
 from apps.answers.commands import convert_assessments  # noqa: E402
-from apps.applets.commands import (  # noqa: E402
-    applet_cli,  # noqa: E402
-    applet_ema_cli,  # noqa: E402
-)
+from apps.applets.commands import applet_cli  # noqa: E402
+from apps.applets.commands import applet_ema_cli  # noqa: E402
 from apps.shared.commands import encryption_cli, patch  # noqa: E402
 from apps.users.commands import token_cli  # noqa: E402
 from apps.workspaces.commands import arbitrary_server_cli  # noqa: E402
