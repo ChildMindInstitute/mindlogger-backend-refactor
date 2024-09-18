@@ -4,12 +4,20 @@ from pydantic import BaseModel, root_validator
 
 from apps.activity_assignments.errors import (
     ActivityAssignmentActivityOrFlowError,
-    ActivityAssignmentMissingRespondentError,
-    ActivityAssignmentMissingTargetError,
     ActivityAssignmentNotActivityAndFlowError,
 )
 from apps.shared.domain import InternalModel, PublicModel
 from apps.subjects.domain import SubjectReadResponse
+
+
+def _validate_assignments(values):
+    if not values.get("activity_id") and not values.get("activity_flow_id"):
+        raise ActivityAssignmentNotActivityAndFlowError()
+
+    if values.get("activity_id") and values.get("activity_flow_id"):
+        raise ActivityAssignmentActivityOrFlowError("Only one of activity_id or activity_flow_id must be provided")
+
+    return values
 
 
 class ActivityAssignmentCreate(BaseModel):
@@ -20,13 +28,7 @@ class ActivityAssignmentCreate(BaseModel):
 
     @root_validator
     def validate_assignments(cls, values):
-        if not values.get("activity_id") and not values.get("activity_flow_id"):
-            raise ActivityAssignmentNotActivityAndFlowError()
-
-        if values.get("activity_id") and values.get("activity_flow_id"):
-            raise ActivityAssignmentActivityOrFlowError("Only one of activity_id or activity_flow_id must be provided")
-
-        return values
+        return _validate_assignments(values)
 
 
 class ActivitiesAssignmentsCreate(InternalModel):
@@ -72,23 +74,7 @@ class ActivityAssignmentDelete(BaseModel):
 
     @root_validator
     def validate_assignments(cls, values):
-        # Validate that exactly one of activity_id or activity_flow_id is provided
-        if not values.get("activity_id") and not values.get("activity_flow_id"):
-            raise ActivityAssignmentNotActivityAndFlowError()
-
-        # Validate that respondent_subject_id is provided
-        if not values.get("respondent_subject_id"):
-            raise ActivityAssignmentMissingRespondentError()
-
-        # Validate that target_subject_id is provided
-        if not values.get("target_subject_id"):
-            raise ActivityAssignmentMissingTargetError()
-
-        # Ensure that only one of activity_id or activity_flow_id is provided
-        if values.get("activity_id") and values.get("activity_flow_id"):
-            raise ActivityAssignmentActivityOrFlowError()
-
-        return values
+        return _validate_assignments(values)
 
 
 class ActivitiesAssignmentsDelete(InternalModel):

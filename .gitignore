@@ -5,7 +5,7 @@
 
 # VSCode
 .vscode/
-
+allure-results/
 
 
 ## Python stuff

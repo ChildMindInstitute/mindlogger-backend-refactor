@@ -30,7 +30,7 @@ image:
   port: 80
 
 entrypoint: /fastapi-entrypoint
-command: /fastapi-start
+command: /ecs-start-feature
 #command: tail -f /dev/null
 
 cpu: 512       # Number of CPU units for the task.

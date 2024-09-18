@@ -61,7 +61,7 @@ And
 
 ### Prerequisites
 
-- Python 3.10 - This project requires Python 3.10 as `aioredis` is [incompatible with 3.11+](https://github.com/aio-libs-abandoned/aioredis-py/issues/1409)
+- Python 3.10
 - [Docker](https://docs.docker.com/get-docker/)
 
 #### Recommended Extras

@@ -1,6 +1,8 @@
+import datetime
 import uuid
 
-from sqlalchemy import or_, select, tuple_, update
+from sqlalchemy import and_, or_, select, tuple_, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
@@ -40,6 +42,11 @@ class _ActivityAssignmentFlowsFilter(Filtering):
                 return field.in_(values)
 
 
+class _ActivityAssignmentSubjectFilter(Filtering):
+    respondent_subject_id = FilterField(ActivityAssigmentSchema.respondent_subject_id)
+    target_subject_id = FilterField(ActivityAssigmentSchema.target_subject_id)
+
+
 class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
     schema_class = ActivityAssigmentSchema
 
@@ -66,9 +73,12 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         bulk insertion operations.
         - Ensures that all new assignments are created in a single database transaction.
         """
+        if len(schemas) == 0:
+            return []
+
         return await self._create_many(schemas)
 
-    async def already_exists(self, schema: ActivityAssigmentSchema) -> bool:
+    async def already_exists(self, schema: ActivityAssigmentSchema) -> ActivityAssigmentSchema:
         """
         Checks if an activity assignment already exists in the database.
 
@@ -97,17 +107,16 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         query = query.where(ActivityAssigmentSchema.respondent_subject_id == schema.respondent_subject_id)
         query = query.where(ActivityAssigmentSchema.target_subject_id == schema.target_subject_id)
         query = query.where(ActivityAssigmentSchema.activity_flow_id == schema.activity_flow_id)
-        query = query.where(ActivityAssigmentSchema.soft_exists())
-        query = query.exists()
-        db_result = await self._execute(select(query))
-        return db_result.scalars().first() or False
 
-    async def unassign_many(
+        db_result = await self._execute(query)
+        return db_result.scalars().first()
+
+    async def delete_many(
         self,
         activity_or_flow_ids: list[uuid.UUID],
         respondent_subject_ids: list[uuid.UUID],
         target_subject_ids: list[uuid.UUID],
-    ) -> None:
+    ):
         """
         Marks the `is_deleted` field as True for all matching assignments based on the provided
         activity or flow IDs, respondent subject IDs, and target subject IDs. The method ensures
@@ -133,11 +142,10 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         AssertionError
             If the lengths of the provided ID lists do not match.
         """
-
         # Ensure all lists are of equal length
         assert len(activity_or_flow_ids) == len(respondent_subject_ids) == len(target_subject_ids)
 
-        query: Query = (
+        stmt = (
             update(ActivityAssigmentSchema)
             .where(
                 or_(
@@ -155,14 +163,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             )
             .values(is_deleted=True)
         )
-        await self._execute(query)
-
-    async def get_by_respondent_subject_id(self, respondent_subject_id) -> list[ActivityAssigmentSchema]:
-        query: Query = select(ActivityAssigmentSchema)
-        query = query.where(ActivityAssigmentSchema.respondent_subject_id == respondent_subject_id)
-        db_result = await self._execute(query)
-
-        return db_result.scalars().all()
+        await self._execute(stmt)
 
     async def get_by_applet(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[ActivityAssigmentSchema]:
         respondent_schema = aliased(SubjectSchema)
@@ -184,36 +185,46 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         if query_params.filters:
             activities_clause = _ActivityAssignmentActivitiesFilter().get_clauses(**query_params.filters)
             flows_clause = _ActivityAssignmentFlowsFilter().get_clauses(**query_params.filters)
+            subject_clauses = _ActivityAssignmentSubjectFilter().get_clauses(**query_params.filters)
 
-            query = query.where(or_(*activities_clause, *flows_clause))
+            query = query.where(
+                and_(
+                    or_(*activities_clause, *flows_clause)
+                    if len(activities_clause) > 0 or len(flows_clause) > 0
+                    else True,
+                    or_(*subject_clauses) if len(subject_clauses) > 0 else True,
+                )
+            )
 
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
 
-    async def get_by_applet_and_respondent(
-        self, applet_id: uuid.UUID, respondent_subject_id: uuid.UUID
-    ) -> list[ActivityAssigmentSchema]:
-        respondent_schema = aliased(SubjectSchema)
-        target_schema = aliased(SubjectSchema)
-        query = (
-            select(ActivityAssigmentSchema)
-            .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
-            .outerjoin(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
-            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
-            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
-            .where(
-                or_(
-                    ActivityFlowSchema.applet_id == applet_id,
-                    ActivitySchema.applet_id == applet_id,
-                ),
-                ActivityAssigmentSchema.soft_exists(),
-                respondent_schema.soft_exists(),
-                target_schema.soft_exists(),
-                respondent_schema.id == respondent_subject_id,
+    async def upsert(self, values: dict) -> ActivityAssigmentSchema | None:
+        stmt = (
+            insert(ActivityAssigmentSchema)
+            .values(values)
+            .on_conflict_do_update(
+                index_elements=[
+                    ActivityAssigmentSchema.respondent_subject_id,
+                    ActivityAssigmentSchema.target_subject_id,
+                    ActivityAssigmentSchema.activity_id
+                    if values.get("activity_id")
+                    else ActivityAssigmentSchema.activity_flow_id,
+                ],
+                set_={
+                    "updated_at": datetime.datetime.utcnow(),
+                    "is_deleted": False,
+                },
+                where=(ActivityAssigmentSchema.soft_exists(exists=False)),
             )
+            .returning(ActivityAssigmentSchema.id)
         )
 
-        db_result = await self._execute(query)
+        result = await self._execute(stmt)
+        model_id = result.scalar_one_or_none()
+        updated_schema = None
+        if model_id:
+            updated_schema = await self._get("id", model_id)
 
-        return db_result.scalars().all()
+        return updated_schema

@@ -3,8 +3,8 @@ import json
 import re
 import typing
 
-import aioredis
-from aioredis.connection import EncodableT
+import redis.asyncio as redis
+from redis.typing import EncodableT
 from sentry_sdk import capture_exception
 
 from config import settings
@@ -71,7 +71,7 @@ class RedisCache:
     _initialized: bool = False
     _instance = None
     configuration: dict = {}
-    _cache: typing.Optional[aioredis.Redis] = None
+    _cache: typing.Optional[redis.Redis] = None
     host: str
     port: int
     db: int
@@ -108,13 +108,13 @@ class RedisCache:
         if not self.host:
             return
         try:
-            self._cache = aioredis.client.Redis(
+            self._cache = redis.client.Redis(
                 host=self.host,
                 port=self.port,
                 db=self.db,
                 **self.configuration,
             )
-        except aioredis.exceptions.ConnectionError as e:
+        except redis.exceptions.ConnectionError as e:
             try:
                 capture_exception(e)
             except ImportError:
@@ -126,7 +126,7 @@ class RedisCache:
         try:
             value = await self._cache.get(key)
             return value
-        except aioredis.RedisError:
+        except redis.RedisError:
             return None
 
     async def set(self, key: str, value: EncodableT, ex=None) -> bool:
