@@ -1,4 +1,4 @@
-from pydantic import ValidationError, PositiveInt
+from pydantic import PositiveInt, ValidationError
 
 from apps.activities.errors import InvalidAgeSubscaleError, InvalidRawScoreSubscaleError, InvalidScoreSubscaleError
 
