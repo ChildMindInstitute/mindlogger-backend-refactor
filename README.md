@@ -239,7 +239,7 @@ pipenv install greenlet
 alembic upgrade head
 ```
 
-> 🛑 **NOTE:** If you run into role based errors e.g. `role "postgres" does not exist`, check to see if that program is running anywhere else (e.g. Homebrew), run... i.e. `ps -ef | grep {program-that-errored}`
+> 🛑 **NOTE:** If you run into role based errors e.g. `role "postgres" does not exist`, check to see if that program is running anywhere else (e.g. Homebrew), run... `ps -ef | grep {program-that-errored}`
 > You can attempt to kill the process with the following command `kill -9 {PID-to-program-that-errored}`, followed by rerunning the previous check to confirm if the program has stopped.
 
 ## Running the app
@@ -256,14 +256,14 @@ This option allows you to run the app for development purposes without having to
 
   Alternatively, you may run these services using [make](#running-using-makefile) (i.e. When developing the API):
 
-  You'll need to sudo into `/ect/hosts` and append the following changes.
+   - You'll need to sudo into `/ect/hosts` and append the following changes.
 
   ```
   #mindlogger
-  127.0.0.1   postgres
-  127.0.0.1   rabbitmq
-  127.0.0.1	  redis
-  127.0.0.1	  mailhog
+  127.0.0.1 postgres
+  127.0.0.1 rabbitmq
+  127.0.0.1 redis
+  127.0.0.1 mailhog
   ```
 
   Then run the following command from within the active virtual environment shell...
@@ -273,6 +273,7 @@ This option allows you to run the app for development purposes without having to
   ```
 
 > 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
+- To test that the API is up and running navigate to `http://localhost:8000/docs` in a browser.
 
 In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
 
