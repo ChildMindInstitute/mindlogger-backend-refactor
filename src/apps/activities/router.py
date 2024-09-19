@@ -6,6 +6,7 @@ from apps.activities.api.activities import (
     applet_activities,
     applet_activities_and_flows,
     applet_activities_for_subject,
+    applet_activities_for_target_subject,
     public_activity_retrieve,
 )
 from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
@@ -15,6 +16,7 @@ from apps.applets.domain.applet import (
     ActivitiesAndFlowsWithAssignmentDetailsPublic,
     AppletActivitiesAndFlowsDetailsPublic,
     AppletActivitiesDetailsPublic,
+    AssignActivitiesAndFlowsPublic,
 )
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
@@ -104,3 +106,15 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(applet_activities_for_subject)
+
+router.get(
+    "/applet/{applet_id}/target/{target_subject_id}",
+    description="""Get all assigned activities and activity flows for a target subject.
+                """,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[AssignActivitiesAndFlowsPublic]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(applet_activities_for_target_subject)

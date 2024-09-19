@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from enum import Enum
 
 from pydantic import Field
 
@@ -13,6 +14,23 @@ from apps.activities.domain.response_type_config import PerformanceTaskType, Res
 from apps.activities.domain.scores_reports import ScoresAndReports
 from apps.activity_assignments.domain.assignments import ActivityAssignmentWithSubject
 from apps.shared.domain import InternalModel, PublicModel
+
+
+class ActivityOrFlowStatusEnum(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    HIDDEN = "hidden"
+    UNAVAILABLE = "unavailable"
+
+
+class ActivityOrFlowBasicInfoPublic(PublicModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    images: list[str] = Field(default_factory=list)
+    is_flow: bool = False
+    status: ActivityOrFlowStatusEnum
+    auto_assign: bool = True
 
 
 class Activity(ActivityBase, InternalModel):
@@ -99,6 +117,10 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
 
 
 class ActivityWithAssignmentDetailsPublic(ActivityLanguageWithItemsMobileDetailPublic):
+    assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
+
+
+class ActivityOrFlowWithAssignmentsPublic(ActivityOrFlowBasicInfoPublic):
     assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
 
 

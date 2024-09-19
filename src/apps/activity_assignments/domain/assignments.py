@@ -57,8 +57,8 @@ class ActivityAssignmentWithSubject(PublicModel):
     id: UUID
     activity_flow_id: UUID | None
     activity_id: UUID | None
-    respondent_subject: SubjectReadResponse
-    target_subject: SubjectReadResponse
+    respondent_subject: SubjectReadResponse | None
+    target_subject: SubjectReadResponse | None
 
 
 class ActivitiesAssignmentsWithSubjects(PublicModel):

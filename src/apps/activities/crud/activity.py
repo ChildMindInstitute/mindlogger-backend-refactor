@@ -5,6 +5,8 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Query
 
 from apps.activities.db.schemas import ActivitySchema
+from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
+from apps.activity_flows.db.schemas import ActivityFlowSchema
 from infrastructure.database import BaseCRUD
 
 __all__ = ["ActivitiesCRUD"]
@@ -101,5 +103,32 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
     async def get_ids_by_applet_id(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
         query: Query = select(ActivitySchema.id)
         query = query.where(ActivitySchema.applet_id == applet_id)
+        result = await self._execute(query)
+        return result.scalars().all()
+
+    async def get_assigned_activity_and_flows(
+        self, applet_id: uuid.UUID, target_subject_id: uuid.UUID
+    ) -> list[
+        ActivityOrFlowWithAssignmentsPublic
+    ]:  # TODO: Change this to a InternalModel class, check if already exist a class that fits
+        # TODO: Write this query joining ActivityAssigmentSchema, ActivityFlowSchema and ActivitySchema
+        # TODO: Pay attention to images field, we should use aggregate function to get all images for each flow
+        # TODO: In case of an activity, this images array, should return only one image
+
+        # TODO: check the methods UserAppletAccessCRUD.get_workspace_managers() and UserAppletAccessCRUD.get_workspace_respondents() as examples of complex queries with aggregations and CTE
+        query: Query = (
+            select(
+                ActivitySchema.id.label("activity_id"),
+                ActivitySchema.name.label("activity_name"),
+                ActivitySchema.description.label("activity_description"),
+                ActivityAssigmentSchema,
+                ActivityFlowSchema,
+            )
+            .join(ActivityAssigmentSchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
+            .join(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
+            .where(ActivitySchema.applet_id == applet_id)
+            .where(ActivityAssigmentSchema.target_subject_id == target_subject_id)
+            .order_by(ActivityFlowSchema.order.asc(), ActivitySchema.order.asc())
+        )
         result = await self._execute(query)
         return result.scalars().all()

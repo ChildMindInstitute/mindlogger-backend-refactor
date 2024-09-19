@@ -8,6 +8,7 @@ from pydantic.generics import GenericModel
 from apps.activities.domain.activity import (
     ActivityBaseInfo,
     ActivityLanguageWithItemsMobileDetailPublic,
+    ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageDetailPublic,
     ActivitySingleLanguageMobileDetailPublic,
@@ -171,6 +172,14 @@ class ActivitiesAndFlowsWithAssignmentDetailsPublic(PublicModel):
 
     activities: list[ActivityWithAssignmentDetailsPublic] = Field(default_factory=list)
     activity_flows: list[FlowWithAssignmentDetailsPublic] = Field(default_factory=list)
+
+
+class AssignActivitiesAndFlowsPublic(PublicModel):
+    """
+    Returns a combination of activity and activity flows
+    """
+
+    activities_and_flows: list[ActivityOrFlowWithAssignmentsPublic] = Field(default_factory=list)
 
 
 class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):

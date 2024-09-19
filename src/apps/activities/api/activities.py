@@ -21,6 +21,7 @@ from apps.applets.domain.applet import (
     AppletActivitiesAndFlowsDetailsPublic,
     AppletActivitiesDetailsPublic,
     AppletSingleLanguageDetailMobilePublic,
+    AssignActivitiesAndFlowsPublic,
 )
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
@@ -155,6 +156,30 @@ async def applet_activities_for_subject(
                 result.activity_flows.append(flow_with_assignment)
 
         return Response(result=result)
+
+
+async def applet_activities_for_target_subject(
+    applet_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+) -> Response[AssignActivitiesAndFlowsPublic]:
+    applet_service = AppletService(session, user.id)
+    await applet_service.exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
+
+    # Ensure reviewers can access the subject
+    await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
+
+    # TODO: Get all activities and flows assigned to the target subject
+    # TODO: Should use InternalClass until here and then convert to PublicClass
+
+    return Response(
+        result=AssignActivitiesAndFlowsPublic(
+            activities_and_flows=[],
+        )
+    )
 
 
 async def applet_activities_and_flows(
