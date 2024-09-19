@@ -203,7 +203,7 @@ Install all dependencies
 ```bash
 # Install all deps from Pipfile.lock
 # to install venv to current directory use `export PIPENV_VENV_IN_PROJECT=1`
-pipenv sync --dev
+pipenv sync --dev --system
 ```
 
 > 🛑 **NOTE:** if you don't use `pipenv` for some reason remember that you will not have automatically exported variables from your `.env` file.
@@ -256,7 +256,7 @@ This option allows you to run the app for development purposes without having to
 
   Alternatively, you may run these services using [make](#running-using-makefile) (i.e. When developing the API):
 
-   - You'll need to sudo into `/ect/hosts` and append the following changes.
+   - You'll need to sudo into `/etc/hosts` and append the following changes.
 
   ```
   #mindlogger
