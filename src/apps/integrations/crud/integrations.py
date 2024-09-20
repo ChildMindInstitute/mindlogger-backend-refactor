@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import IntegrityError
@@ -23,10 +25,10 @@ class IntegrationsCRUD(BaseCRUD[IntegrationsSchema]):
             )
         return new_integrations
 
-    async def retrieve(self, schema: IntegrationsSchema) -> IntegrationsSchema:
+    async def retrieve_by_applet_and_type(self, applet_id: uuid.UUID, type: str) -> IntegrationsSchema:
         query = select(IntegrationsSchema)
-        query = query.where(IntegrationsSchema.applet_id == schema.applet_id)
-        query = query.where(IntegrationsSchema.type == schema.type)
+        query = query.where(IntegrationsSchema.applet_id == applet_id)
+        query = query.where(IntegrationsSchema.type == type)
         query = query.limit(1)
         result: Result = await self._execute(query)
         return result.scalars().first()

@@ -52,4 +52,4 @@ async def retrieve_integration(
 ) -> Integration:
     await CheckAccessService(session, user.id).check_integrations_access(applet_id)
     async with atomic(session):
-        return await IntegrationService(session, user).retrieve_integration(applet_id, type)
+        return await IntegrationService(session, user).retrieve_by_applet_and_type(applet_id, type)

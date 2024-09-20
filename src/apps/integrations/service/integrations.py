@@ -100,12 +100,10 @@ class IntegrationService:
             case _:
                 raise UnsupportedIntegrationError(type=newIntegration.integration_type)
 
-    async def retrieve_integration(self, applet_id, integration_type) -> Integration:
-        integration_schema = await IntegrationsCRUD(self.session).retrieve(
-            IntegrationsSchema(
-                applet_id=applet_id,
-                type=integration_type,
-            )
+    async def retrieve_by_applet_and_type(self, applet_id, integration_type) -> Integration:
+        integration_schema = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
+            applet_id,
+            integration_type
         )
 
         if integration_schema is None:
