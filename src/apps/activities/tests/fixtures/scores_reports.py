@@ -122,6 +122,10 @@ def subscale_total_score_table() -> list[TotalScoreTable]:
 @pytest.fixture
 def subscale_lookup_table() -> list[SubScaleLookupTable]:
     return [
-        SubScaleLookupTable(score="10", age=10, sex="M", raw_score="1", optional_text="some url", severity="Minimal"),
-        SubScaleLookupTable(score="20", age=10, sex="F", raw_score="2", optional_text="some url", severity="Mild"),
+        SubScaleLookupTable(score="10", age="10", sex="M", raw_score="1", optional_text="some url", severity="Minimal"),
+        SubScaleLookupTable(score="20", age="10", sex="F", raw_score="2", optional_text="some url", severity="Mild"),
+        SubScaleLookupTable(score="20", age=15, sex="F", raw_score="2", optional_text="some url", severity="Mild"),
+        SubScaleLookupTable(score="20", sex="F", raw_score="2", optional_text="some url", severity="Mild"),
+        SubScaleLookupTable(score="20", age="10~15", sex="F", raw_score="2", optional_text="some url", severity="Mild"),
+        SubScaleLookupTable(score="20", age="0~5", sex="F", raw_score="2", optional_text="some url", severity="Mild"),
     ]

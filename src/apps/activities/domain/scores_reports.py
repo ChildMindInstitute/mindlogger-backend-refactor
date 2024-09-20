@@ -5,7 +5,11 @@ from pydantic import Field, PositiveInt, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
-from apps.activities.domain.custom_validation_subscale import validate_raw_score_subscale, validate_score_subscale_table
+from apps.activities.domain.custom_validation_subscale import (
+    validate_age_subscale,
+    validate_raw_score_subscale,
+    validate_score_subscale_table,
+)
 from apps.activities.errors import (
     DuplicateScoreConditionIdError,
     DuplicateScoreConditionNameError,
@@ -168,7 +172,7 @@ class SubscaleCalculationType(str, Enum):
 class SubScaleLookupTable(PublicModel):
     score: str
     raw_score: str
-    age: PositiveInt | None = None
+    age: PositiveInt | str | None = None
     sex: str | None = Field(default=None, regex="^(M|F)$", description="M or F")
     optional_text: str | None = None
     severity: str | None = Field(default=None, regex="^(Minimal|Mild|Moderate|Severe)$")
@@ -180,6 +184,10 @@ class SubScaleLookupTable(PublicModel):
     @validator("score")
     def validate_score_lookup(cls, value):
         return validate_score_subscale_table(value)
+
+    @validator("age")
+    def validate_age_lookup(cls, value):
+        return validate_age_subscale(value)
 
 
 class SubscaleItemType(str, Enum):

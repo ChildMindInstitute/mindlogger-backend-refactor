@@ -22,6 +22,7 @@ from apps.activities.domain.scores_reports import (
     SubscaleSetting,
     TotalScoreTable,
 )
+from apps.activities.errors import InvalidAgeSubscaleError
 from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.shared.enums import Language
@@ -520,6 +521,31 @@ class TestActivityItems:
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
         assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+
+    async def test_create_applet__activity_with_subscale_settings_with_invalid_subscale_lookup_table_age(
+        self,
+        client: TestClient,
+        applet_minimal_data: AppletCreate,
+        single_select_item_create_with_score: ActivityItemCreate,
+        tom: User,
+        subscale_setting: SubscaleSetting,
+    ):
+        client.login(tom)
+        data = applet_minimal_data.copy(deep=True).dict()
+        sub_setting = subscale_setting.copy(deep=True).dict()
+        sub_setting["subscales"][0]["items"][0]["name"] = single_select_item_create_with_score.name
+        data["activities"][0]["items"] = [single_select_item_create_with_score]
+        data["activities"][0]["subscale_setting"] = sub_setting
+
+        invalid_ages = ["-1", "-1~10", "~", "x~y", "1~", "~10"]
+        for age in invalid_ages:
+            sub_setting["subscales"][0]["subscale_table_data"] = [
+                dict(score="20", age=age, sex="F", raw_score="2", optional_text="some url", severity="Mild")
+            ]
+            resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+            assert resp.status_code == http.HTTPStatus.BAD_REQUEST
+            result = resp.json()["result"]
+            assert result[0]["message"] == InvalidAgeSubscaleError.message
 
     async def test_create_applet__activity_with_score_and_reports__score_and_section(
         self,
