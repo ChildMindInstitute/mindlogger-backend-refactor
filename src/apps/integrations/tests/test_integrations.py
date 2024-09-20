@@ -1,72 +1,101 @@
-import uuid
+import json
 
-from apps.integrations.domain import AvailableIntegrations
-from apps.integrations.errors import UniqueIntegrationError
-from apps.integrations.router import router as integration_router
+from apps.applets.domain.applet_full import AppletFull
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
 
 
 class TestIntegrationRouter(BaseTest):
-    fixtures = [
-        "workspaces/fixtures/workspaces.json",
-    ]
-    enable_integration_url = integration_router.url_path_for("enable_integration")
-    disable_integration_url = integration_router.url_path_for("disable_integration")
-    create_loris_integration_url = integration_router.url_path_for(
-        "create_integration", type=AvailableIntegrations.LORIS
-    )
-
-    async def test_enable_integration(
+    async def test_create_integration_access_denied(
         self,
         client: TestClient,
         tom: User,
     ):
-        integration_data = [
-            {"integrationType": "LORIS"},
-        ]
+        create_loris_integration_url_data = {
+            "applet_id": "8fb291b2-5ecf-4f21-ada8-04ca48451660",
+            "integration_type": "LORIS",
+            "configuration": {
+                "hostname": "loris.cmiml.net",
+                "username": "lorisfrontadmin",
+                "password": "password",
+                "project": "loris_project",
+            },
+        }
         client.login(tom)
-        response = await client.post(self.enable_integration_url, data=integration_data)
-        assert response.status_code == 200
+        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        assert response.status_code == 403
 
-    async def test_disable_integration(
+    async def test_create_integration_success(
         self,
         client: TestClient,
         tom: User,
+        applet_one: AppletFull,
     ):
+        create_loris_integration_url_data = {
+            "applet_id": applet_one.id,
+            "integration_type": "LORIS",
+            "configuration": {
+                "hostname": "loris.cmiml.net",
+                "username": "lorisfrontadmin",
+                "password": "password",
+                "project": "loris_project",
+            },
+        }
         client.login(tom)
-        response = await client.delete(
-            self.disable_integration_url,
-        )
-        assert response.status_code == 204
+        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        assert response.status_code == 201
 
-    async def test_enable_integration_unique_error(
+    async def test_create_integration_wrong_parameters_for_type(
         self,
         client: TestClient,
         tom: User,
+        applet_one: AppletFull,
     ):
-        integration_data = [
-            {"integrationType": "LORIS"},
-            {"integrationType": "LORIS"},
-        ]
+        create_loris_integration_url_data = {
+            "applet_id": applet_one.id,
+            "integration_type": "LORIS",
+            "configuration": {
+                "api_endpoint": "loris.cmiml.net",
+                "api_key": "lorisfrontadmin",
+            },
+        }
         client.login(tom)
-        response = await client.post(self.enable_integration_url, data=integration_data)
-        assert response.status_code == 400
-
-        result = response.json()["result"]
-        assert len(result) == 1
-        assert result[0]["message"] == UniqueIntegrationError.message
-
-    async def test_create_integration(
-        self,
-        client: TestClient,
-        tom: User,
-    ):
-        create_loris_integration_url_data = [
-            {"applet_id": uuid.UUID, "hostname": "https://someloris.org", "username": "david", "password": "abc12345"}
-        ]
-        client.login(tom)
-        response = await client.post(self.create_loris_integration_url, data=create_loris_integration_url_data)
-        # assert response.status_code == 201
+        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        dict_response = json.loads(response.text)
+        assert len(dict_response["result"]) == 11
         assert response.status_code == 422
+
+    async def test_retrieve_integration(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+    ):
+        create_loris_integration_url_data = {
+            "applet_id": applet_one.id,
+            "integration_type": "LORIS",
+            "configuration": {
+                "hostname": "loris.cmiml.net",
+                "username": "lorisfrontadmin",
+                "password": "password",
+                "project": "loris_project",
+            },
+        }
+        client.login(tom)
+        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        assert response.status_code == 201
+
+        retrieve_loris_integration_url_query = {
+            "applet_id": applet_one.id,
+            "type": "LORIS",
+        }
+        response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
+        dict_response = json.loads(response.text)
+        assert response.status_code == 200
+        assert dict_response["integrationType"] == "LORIS"
+        assert dict_response["appletId"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
+        assert dict_response["configuration"]["hostname"] == "loris.cmiml.net"
+        assert dict_response["configuration"]["username"] == "lorisfrontadmin"
+        assert dict_response["configuration"]["project"] == "loris_project"
+        assert "password" not in dict_response.keys()

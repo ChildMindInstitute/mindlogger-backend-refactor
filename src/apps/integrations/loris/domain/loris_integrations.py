@@ -1,29 +1,44 @@
-import uuid
+import json
 
 from apps.integrations.db.schemas import IntegrationsSchema
-from apps.integrations.domain import AvailableIntegrations
-from apps.shared.domain import InternalModel
+from apps.shared.domain import InternalModel, PublicModel
 
 
-class IntegrationMeta(InternalModel):
+class LorisIntegration(InternalModel):
     hostname: str
     username: str
-    password: str
-    project: str | None
-
-
-class Integrations(InternalModel):
-    applet_id: uuid.UUID
-    type: AvailableIntegrations
-    configuration: IntegrationMeta
+    password: str | None
+    project: str
 
     @classmethod
     def from_schema(cls, schema: IntegrationsSchema):
-        return cls(applet_id=schema.applet_id, type=schema.type, configuration=schema.configuration)
+        new_loris_integration_dict = json.loads(schema.configuration.replace("'", '"'))
+        new_loris_integration = cls(
+            hostname=new_loris_integration_dict["hostname"],
+            username=new_loris_integration_dict["username"],
+            password=new_loris_integration_dict["password"],
+            project=new_loris_integration_dict["project"],
+        )
+        return new_loris_integration
+
+    def __repr__(self):
+        return "LorisIntegration()"
 
 
-class IntegrationsCreate(InternalModel):
-    applet_id: uuid.UUID
+class LorisIntegrationPublic(PublicModel):
     hostname: str
     username: str
-    password: str
+    project: str
+
+    @classmethod
+    def from_schema(cls, schema: IntegrationsSchema):
+        new_loris_integration_dict = json.loads(schema.configuration.replace("'", '"'))
+        new_loris_integration = cls(
+            hostname=new_loris_integration_dict["hostname"],
+            username=new_loris_integration_dict["username"],
+            project=new_loris_integration_dict["project"],
+        )
+        return new_loris_integration
+
+    def __repr__(self):
+        return "LorisIntegrationPublic()"
