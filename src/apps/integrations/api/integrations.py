@@ -62,4 +62,4 @@ async def delete_integration(
 ):
     await CheckAccessService(session, user.id).check_integrations_access(applet_id)
     async with atomic(session):
-        IntegrationService(session, user).delete_integration_by_type(applet_id, integration_type)
+        await IntegrationService(session, user).delete_integration_by_type(applet_id, integration_type)

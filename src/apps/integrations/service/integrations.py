@@ -128,8 +128,8 @@ class IntegrationService:
                 raise UnsupportedIntegrationError(integration_type=integration_type)
 
     async def delete_integration_by_type(self, applet_id, integration_type):
-        elem = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
+        integration = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
             applet_id,
-            integration_type,
+            integration_type
         )
-        await IntegrationsCRUD(self.session).delete_by_id(elem.id)
+        await IntegrationsCRUD(self.session).delete_by_id(integration.id)

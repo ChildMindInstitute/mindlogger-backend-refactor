@@ -1,4 +1,5 @@
 from sqlalchemy import Column, ForeignKey, Text, Unicode, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
@@ -18,5 +19,6 @@ class IntegrationsSchema(Base):
     )
 
     applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False, unique=False)
+    # id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(Text(), unique=False)
     configuration = Column(StringEncryptedType(Unicode, get_key), unique=False)

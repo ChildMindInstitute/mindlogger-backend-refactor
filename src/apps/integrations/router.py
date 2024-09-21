@@ -32,7 +32,7 @@ router.get(
 )(retrieve_integration)
 
 router.delete(
-    "/",
+    "/applet/{applet_id}",
     description="This endpoint is used to delete integrations",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
