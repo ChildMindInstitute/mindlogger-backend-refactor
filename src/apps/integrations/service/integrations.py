@@ -132,4 +132,7 @@ class IntegrationService:
             applet_id,
             integration_type
         )
-        await IntegrationsCRUD(self.session).delete_by_id(integration.id)
+        if integration != None:
+            await IntegrationsCRUD(self.session).delete_by_id(integration.id)
+        else:
+            raise UnavailableIntegrationError(applet_id=applet_id, integration_type=integration_type)

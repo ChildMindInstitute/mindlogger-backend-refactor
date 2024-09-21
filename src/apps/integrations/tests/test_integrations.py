@@ -136,10 +136,12 @@ class TestIntegrationRouter(BaseTest):
         assert "password" not in dict_response.keys()
 
         delete_loris_integration_url_query = {
-            "applet_id": applet_one.id,
             "integration_type": "LORIS",
         }
-        await client.delete("integrations/", query=delete_loris_integration_url_query)
+        await client.delete(f"integrations/applet/{applet_one.id}", query=delete_loris_integration_url_query)
+        assert response.status_code == 200
 
         response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
-        assert response == None
+        assert response.status_code == 400
+        result = json.loads(response.text)
+        assert result["result"][0]["message"] == 'The specified integration type `LORIS` does not exist for applet `92917a56-d586-4613-b7aa-991f2c4b15b1`'
