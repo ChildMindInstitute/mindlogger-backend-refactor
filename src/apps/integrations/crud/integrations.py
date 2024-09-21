@@ -21,14 +21,14 @@ class IntegrationsCRUD(BaseCRUD[IntegrationsSchema]):
             new_integrations = await self._create(schema)
         except IntegrityError:
             raise IntegrationsConfigurationsTypeAlreadyAssignedToAppletError(
-                type=schema.type, applet_id=schema.applet_id
+                integration_type=schema.type, applet_id=schema.applet_id
             )
         return new_integrations
 
-    async def retrieve_by_applet_and_type(self, applet_id: uuid.UUID, type: str) -> IntegrationsSchema:
+    async def retrieve_by_applet_and_type(self, applet_id: uuid.UUID, integration_type: str) -> IntegrationsSchema:
         query = select(IntegrationsSchema)
         query = query.where(IntegrationsSchema.applet_id == applet_id)
-        query = query.where(IntegrationsSchema.type == type)
+        query = query.where(IntegrationsSchema.type == integration_type)
         query = query.limit(1)
         result: Result = await self._execute(query)
         return result.scalars().first()

@@ -88,7 +88,7 @@ class TestIntegrationRouter(BaseTest):
 
         retrieve_loris_integration_url_query = {
             "applet_id": applet_one.id,
-            "type": "LORIS",
+            "integration_type": "LORIS",
         }
         response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
         dict_response = json.loads(response.text)
@@ -123,7 +123,7 @@ class TestIntegrationRouter(BaseTest):
 
         retrieve_loris_integration_url_query = {
             "applet_id": applet_one.id,
-            "type": "LORIS",
+            "integration_type": "LORIS",
         }
         response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
         dict_response = json.loads(response.text)
@@ -137,7 +137,7 @@ class TestIntegrationRouter(BaseTest):
 
         delete_loris_integration_url_query = {
             "applet_id": applet_one.id,
-            "type": "LORIS",
+            "integration_type": "LORIS",
         }
         response = await client.delete("integrations/", query=delete_loris_integration_url_query)
         dict_response = json.loads(response.text)
