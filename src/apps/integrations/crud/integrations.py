@@ -33,10 +33,6 @@ class IntegrationsCRUD(BaseCRUD[IntegrationsSchema]):
         result: Result = await self._execute(query)
         return result.scalars().first()
 
-    async def delete_by_id(self, id_: uuid.UUID):
+    async def delete_by_id(self, id: uuid.UUID):
         """Delete integrations by id."""
-
-        query = update(IntegrationsSchema)
-        query = query.where(IntegrationsSchema.id == id_)
-        query = query.values(is_deleted=True)
-        await self._execute(query)
+        await self._delete(id)

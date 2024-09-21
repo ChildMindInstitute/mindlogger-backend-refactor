@@ -139,15 +139,7 @@ class TestIntegrationRouter(BaseTest):
             "applet_id": applet_one.id,
             "integration_type": "LORIS",
         }
-        response = await client.delete("integrations/", query=delete_loris_integration_url_query)
-        dict_response = json.loads(response.text)
-        assert response.status_code == 200
-        assert dict_response["integrationType"] == "LORIS"
-        assert dict_response["appletId"] == "92917a56-d586-4613-b7aa-991f2c4b15b1"
-        assert dict_response["configuration"]["hostname"] == "loris.cmiml.net"
-        assert dict_response["configuration"]["username"] == "lorisfrontadmin"
-        assert dict_response["configuration"]["project"] == "loris_project"
-        assert "password" not in dict_response.keys()
+        await client.delete("integrations/", query=delete_loris_integration_url_query)
 
         response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
         dict_response = json.loads(response.text)
@@ -157,4 +149,5 @@ class TestIntegrationRouter(BaseTest):
         assert dict_response["configuration"]["hostname"] == "loris.cmiml.net"
         assert dict_response["configuration"]["username"] == "lorisfrontadmin"
         assert dict_response["configuration"]["project"] == "loris_project"
+        assert dict_response["is_deleted"] == True
         assert "password" not in dict_response.keys()

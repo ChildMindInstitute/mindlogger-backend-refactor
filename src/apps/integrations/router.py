@@ -34,9 +34,8 @@ router.get(
 router.delete(
     "/",
     description="This endpoint is used to delete integrations",
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        status.HTTP_200_OK: {"model": Response[Integration]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

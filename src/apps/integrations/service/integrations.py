@@ -127,21 +127,9 @@ class IntegrationService:
             case _:
                 raise UnsupportedIntegrationError(integration_type=integration_type)
 
-    async def delete_integration(self, applet_id, integration_type) -> Integration:
+    async def delete_integration_by_type(self, applet_id, integration_type):
         elem = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
             applet_id,
             integration_type,
         )
         await IntegrationsCRUD(self.session).delete_by_id(elem.id)
-
-        config = None
-        match integration_type:
-            case AvailableIntegrations.LORIS:
-                config = LorisIntegrationPublic.from_schema(elem)
-            case AvailableIntegrations.FUTURE:
-                config = FutureIntegrationPublic.from_schema(elem)
-        return Integration(
-                    applet_id=applet_id,
-                    integration_type=integration_type,
-                    configuration=config
-                )
