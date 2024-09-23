@@ -35,8 +35,10 @@ from apps.answers.domain import (
     PublicSummaryActivityFlow,
     ReviewsCount,
 )
+from apps.answers.domain.answers import MultiinformantAssessmentValidationResponse, PublicSubmissionsResponse
 from apps.answers.filters import (
     AnswerExportFilters,
+    AppletMultiinformantAssessmentParams,
     AppletSubmissionsFilter,
     AppletSubmitDateFilter,
     ReviewAppletItemFilter,
@@ -49,7 +51,7 @@ from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
-from apps.shared.deps import get_i18n
+from apps.shared.deps import get_client_ip, get_i18n
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 from apps.shared.locale import I18N
@@ -59,9 +61,11 @@ from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
+from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_tz_utc_offset
+from infrastructure.logger import logger
 
 
 async def create_answer(
@@ -795,12 +799,18 @@ async def answers_existence_check(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
+    client_ip: str = Depends(get_client_ip),
 ) -> Response[AnswerExistenceResponse]:
     """Provides information whether the answer exists"""
     await AppletService(session, user.id).exist_by_id(schema.applet_id)
     await CheckAccessService(session, user.id).check_answer_check_access(schema.applet_id)
     is_exist = await AnswerService(session, user.id, answer_session).is_answers_uploaded(
-        schema.applet_id, schema.activity_id, schema.created_at
+        schema.applet_id, schema.activity_id, schema.created_at, schema.submit_id
+    )
+
+    logger.info(
+        f"check-existence: applet_id={schema.applet_id}, activity_id={schema.activity_id}, user_id={user.id}, "
+        f"created_at={schema.created_at}, exists={is_exist}, ip={client_ip}"
     )
 
     return Response[AnswerExistenceResponse](result=AnswerExistenceResponse(exists=is_exist))
@@ -821,4 +831,52 @@ async def applet_submission_reviews_retrieve(
     return ResponseMulti(
         result=[AnswerReviewPublic.from_orm(review) for review in reviews],
         count=len(reviews),
+    )
+
+
+async def applet_validate_multiinformant_assessment(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    query_params: QueryParams = Depends(parse_query_params(AppletMultiinformantAssessmentParams)),
+    answer_session=Depends(get_answer_session),
+) -> Response[MultiinformantAssessmentValidationResponse]:
+    is_valid = True
+    message = None
+    code = None
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_check_access(applet_id)
+        await AnswerService(session, user.id, answer_session).validate_multiinformant_assessment(
+            applet_id, **query_params.filters
+        )
+
+        is_valid = True
+    except ValidationError as ex:
+        message = ex.error
+        is_valid = False
+        code = ex.code
+
+    return Response[MultiinformantAssessmentValidationResponse](
+        result=MultiinformantAssessmentValidationResponse(valid=is_valid, message=message, code=code)
+    )
+
+
+async def applet_submissions_list(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(parse_query_params(AnswerExportFilters)),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> PublicSubmissionsResponse:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answer_access(applet_id)
+    submissions, submissions_count = await AnswerService(session, user.id, answer_session).get_applet_submissions(
+        applet_id, query_params
+    )
+
+    participants_count = await WorkspaceService(session, user.id).get_workspace_applet_respondents_total(applet_id)
+
+    return PublicSubmissionsResponse(
+        submissions=submissions, submissions_count=submissions_count, participants_count=participants_count
     )

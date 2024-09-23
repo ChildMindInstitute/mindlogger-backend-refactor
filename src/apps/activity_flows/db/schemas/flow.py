@@ -17,6 +17,7 @@ class _BaseActivityFlowSchema:
     order = Column(REAL())
     is_hidden = Column(Boolean(), default=False)
     extra_fields = Column(JSONB(), default=dict, server_default=text("'{}'::jsonb"))
+    auto_assign = Column(Boolean(), default=True)
 
 
 class ActivityFlowSchema(_BaseActivityFlowSchema, Base):

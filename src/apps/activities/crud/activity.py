@@ -40,7 +40,11 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_mobile_with_items_by_applet_id(self, applet_id: uuid.UUID, is_reviewable=None) -> list:
+    async def get_mobile_with_items_by_applet_id(
+        self,
+        applet_id: uuid.UUID,
+        is_reviewable=None,
+    ) -> list:
         query: Query = select(
             ActivitySchema.id,
             ActivitySchema.name,
@@ -54,10 +58,15 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.response_is_editable,
             ActivitySchema.order,
             ActivitySchema.scores_and_reports,
+            ActivitySchema.performance_task_type,
+            ActivitySchema.is_performance_task,
+            ActivitySchema.auto_assign,
         )
+
         query = query.where(ActivitySchema.applet_id == applet_id)
         if isinstance(is_reviewable, bool):
             query = query.where(ActivitySchema.is_reviewable == is_reviewable)
+
         query = query.order_by(ActivitySchema.order.asc())
         result = await self._execute(query)
 
@@ -77,6 +86,17 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
 
         result = await self._execute(query)
         return result.scalars().first()
+
+    # get by applet id and activity ids
+    async def get_by_applet_id_and_activities_ids(
+        self, applet_id: uuid.UUID, activities_ids: list[uuid.UUID]
+    ) -> list[ActivitySchema]:
+        query: Query = select(ActivitySchema)
+        query = query.where(ActivitySchema.applet_id == applet_id)
+        query = query.where(ActivitySchema.id.in_(activities_ids))
+
+        result = await self._execute(query)
+        return result.scalars().all()
 
     async def get_ids_by_applet_id(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
         query: Query = select(ActivitySchema.id)

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, ForeignKey, Index, String, Unicode
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
@@ -16,6 +17,7 @@ class SubjectSchema(Base):
     first_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
     last_name = Column(StringEncryptedType(Unicode, get_key), nullable=False)
     nickname = Column(StringEncryptedType(Unicode, get_key), default=None, nullable=True)
+    tag = Column(String, default=None, nullable=True)
     secret_user_id = Column(String, nullable=False)
     language = Column(String(length=5))
     __table_args__ = (
@@ -41,6 +43,7 @@ class SubjectRelationSchema(Base):
         index=True,
     )
     relation = Column(String(length=20), nullable=False)
+    meta = Column(JSONB(), nullable=True)
 
     __table_args__ = (
         Index(

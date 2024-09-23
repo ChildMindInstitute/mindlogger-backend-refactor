@@ -52,14 +52,12 @@ PatchRegister.register(
     description="Create flow history records for particular applets",
     manage_session=False,
 )
-
 PatchRegister.register(
     file_path="m2_6879_create_deleted_respondents.py",
     task_id="M2-6879",
     description="[Subject] Create deleted respondents roles",
     manage_session=False,
 )
-
 PatchRegister.register(
     file_path="m2_5551_delete_invitations_of_existing_respondent.sql",
     task_id="M2-5551",
@@ -94,6 +92,38 @@ PatchRegister.register(
     file_path="m2_6757_replace_amp_sanitizer.py",
     task_id="M2-6757",
     description="Change ampersand sanitizer to symbol '&'",
+)
+PatchRegister.register(
+    file_path="m2_6504_update_subject_tags.sql",
+    task_id="M2-6504",
+    description="[MultiinformantR1] Update tag fields for managers/reviewers subjects",
+)
+PatchRegister.register(
+    file_path="m2_6733_add_answer_input_subjects.py",
+    task_id="M2-6733",
+    description="[MultiinformantR1] Add input subject ids for answers in internal and arbitrary DBs",
+)
+PatchRegister.register(
+    file_path="m2_7203_migrate_secret_ids.py",
+    task_id="M2-7203",
+    description="[Migration] Migrate missed secret ids",
+)
+PatchRegister.register(
+    file_path="m2_7543_move_answers_from_internal_to_arbitrary.py",
+    task_id="M2-7543",
+    description="Move applet 'NIMH Rhythms and Mood Family Study EMA' answers to related arbitrary",
+)
+PatchRegister.register(
+    file_path="m2_7571_move_answers_from_arbitrary.py",
+    task_id="M2-7571",
+    description="Move answers from arbitrary to internal (DB & storage)",
+)
+
+PatchRegister.register(
+    file_path="m2_7366_set_auto_assign_to_true_for_activities_and_flows.py",
+    task_id="M2-7366",
+    description="Set auto_assign to true for existing activities and flows",
+    manage_session=False,
 )
 
 app = typer.Typer()

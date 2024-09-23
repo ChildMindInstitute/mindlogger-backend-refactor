@@ -7,7 +7,6 @@ when it imports the declarative 'Base' from this module.
 Import all SQLAlchemy models here
 """
 
-
 import os
 
 from config import settings

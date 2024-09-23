@@ -72,7 +72,7 @@ class ActivityItemHistoriesCRUD(BaseCRUD[ActivityItemHistorySchema]):
         query = query.where(ActivitySchema.applet_id == applet_id)
         query = query.where(
             ActivityHistorySchema.is_reviewable == True,  # noqa: E712
-            ActivityHistorySchema.id_version.in_(subquery),
+            ActivityHistorySchema.id_version.in_(select(subquery)),
         )
         query = query.order_by(ActivityItemHistorySchema.order.asc())
         db_result = await self._execute(query)

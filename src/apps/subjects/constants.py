@@ -10,3 +10,9 @@ class SubjectStatus(str, Enum):
 class Relation(str, Enum):
     self = "self"
     admin = "admin"
+    other = "other"
+
+
+class SubjectTag(str, Enum):
+    TEAM = "Team"
+    # Todo: Add more tags

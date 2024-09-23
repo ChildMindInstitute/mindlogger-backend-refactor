@@ -3,8 +3,17 @@ from fastapi import Body, Depends
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response
 from apps.users.cruds.user import UsersCRUD
-from apps.users.domain import PublicUser, User, UserCreate, UserCreateRequest, UserUpdateRequest
+from apps.users.domain import (
+    PublicUser,
+    User,
+    UserCreate,
+    UserCreateRequest,
+    UserDevice,
+    UserDeviceCreate,
+    UserUpdateRequest,
+)
 from apps.users.services.user import UserService
+from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database.core import atomic
 from infrastructure.database.deps import get_session
@@ -52,3 +61,13 @@ async def user_delete(
 ) -> None:
     async with atomic(session):
         await UsersCRUD(session).delete(user.id)
+
+
+async def user_save_device(
+    user: User = Depends(get_current_user),
+    data: UserDeviceCreate = Body(...),
+    session=Depends(get_session),
+) -> Response[UserDevice]:
+    async with atomic(session):
+        device = await UserDeviceService(session, user.id).add_device(data)
+    return Response(result=device)

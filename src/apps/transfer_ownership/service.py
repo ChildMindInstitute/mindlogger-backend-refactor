@@ -8,6 +8,7 @@ from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.subjects.constants import SubjectTag
 from apps.subjects.domain import SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.constants import TransferOwnershipStatus
@@ -24,6 +25,18 @@ class TransferService:
     def __init__(self, session, user: User):
         self._user = user
         self.session = session
+
+    async def save_transfer_request(self, applet_id: uuid.UUID, target_email: str, target_id: uuid.UUID) -> Transfer:
+        transfer = Transfer(
+            email=target_email,
+            applet_id=applet_id,
+            key=uuid.uuid4(),
+            status=TransferOwnershipStatus.PENDING,
+            from_user_id=self._user.id,
+            to_user_id=target_id,
+        )
+        await TransferCRUD(self.session).create(transfer)
+        return transfer
 
     async def initiate_transfer(self, applet_id: uuid.UUID, transfer_request: InitiateTransfer):
         """Initiate a transfer of ownership of an applet."""
@@ -43,15 +56,7 @@ class TransferService:
             receiver_name = transfer_request.email
             to_user_id = None
 
-        transfer = Transfer(
-            email=transfer_request.email,
-            applet_id=applet_id,
-            key=uuid.uuid4(),
-            status=TransferOwnershipStatus.PENDING,
-            from_user_id=self._user.id,
-            to_user_id=to_user_id,
-        )
-        await TransferCRUD(self.session).create(transfer)
+        transfer = await self.save_transfer_request(applet_id, transfer_request.email, to_user_id)
 
         url = self._generate_transfer_url()
 
@@ -95,6 +100,12 @@ class TransferService:
                 Role.OWNER,
             ],
         )
+        subject_service = SubjectsService(self.session, self._user.id)
+        previous_owner_subject = await subject_service.get_by_user_and_applet(
+            previous_owner.user_id, transfer.applet_id
+        )
+        if previous_owner_subject and previous_owner_subject.id:
+            await subject_service.update(previous_owner_subject.id, tag=None)
 
         await TransferCRUD(self.session).approve_by_key(key, self._user.id)
         await TransferCRUD(self.session).decline_all_pending_by_applet_id(applet_id=transfer.applet_id)
@@ -119,7 +130,7 @@ class TransferService:
                 **roles_data,
             ),
         ]
-        subject_service = SubjectsService(self.session, self._user.id)
+
         await UserAppletAccessCRUD(self.session).upsert_user_applet_access_list(roles_to_add)
         subject = await subject_service.get_by_user_and_applet(self._user.id, transfer.applet_id)
         if subject and subject.id:
@@ -129,6 +140,7 @@ class TransferService:
                 first_name=self._user.first_name,
                 email=EmailStr(self._user.email_encrypted),
                 is_deleted=False,
+                tag=SubjectTag.TEAM,
             )
         else:
             await subject_service.create(
@@ -141,6 +153,7 @@ class TransferService:
                     last_name=self._user.last_name,
                     secret_user_id=f"{uuid.uuid4()}",
                     nickname=self._user.get_full_name(),
+                    tag=SubjectTag.TEAM,
                 )
             )
 

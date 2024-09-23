@@ -1,13 +1,14 @@
-name: deploy_to_dev
+name: Deploy to Dev
 on:
+  workflow_dispatch:
+    inputs:
+      IMAGE_NAME:
+        required: true
+        type: string
+        description: Image tag
+
   workflow_call:
     inputs:
-      COMMIT_HASH:
-        required: true
-        type: string
-      IMAGE_PREFIX:
-        required: true
-        type: string
       IMAGE_NAME:
         required: true
         type: string
@@ -17,97 +18,124 @@ permissions:
   contents: read
   issues: write
 
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER_NAME: cmiml-dev
+  IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+
 jobs:
-
-  run_migration:
-    runs-on: ubuntu-latest
-    env:
-      TASK_DEFINITION: migration
-      ECS_CLUSTER_NAME: cmiml-dev
-      ECS_SERVICE_NAME: migration
-      AWS_REGION: us-east-1
-      IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
-    
-    steps:
-
-    - name: echo IMAGE_NAME
-      run: |
-        echo $IMAGE_NAME
-
-    - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
-        role-session-name: OIDC-GHA-session
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Download task definition
-      run: |
-        aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }} --query taskDefinition > task-definition.json
-
-    - name: Render Amazon ECS task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: task-definition.json
-        container-name: mind_logger
-        image: ${{ env.IMAGE_NAME }}
-  
-    - name: Run migration container
-      id: run-task
-      uses: geekcell/github-action-aws-ecs-run-task@v3.0.0
-      with:
-        cluster: ${{ env.ECS_CLUSTER_NAME }}
-        task-definition: migration
-        subnet-ids: subnet-02b7cfd48947b31ef
-        security-group-ids: sg-0976f7b2b2b5bf411
-        override-container-command: |
-          /bin/sh
-          -c
-          /fastapi-migrate all
+#  run_migration:
+#    environment: dev
+#    name: Run Database Migrations
+#    runs-on: ubuntu-latest
+#    env:
+#      TASK_DEFINITION: migration
+#      ECS_SERVICE_NAME: migration
+#
+#    steps:
+#    - name: echo IMAGE_NAME
+#      run: |
+#        echo $IMAGE_NAME
+#
+#    - name: configure aws credentials
+#      uses: aws-actions/configure-aws-credentials@v3
+#      with:
+#        role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
+#        role-session-name: OIDC-GHA-session
+#        aws-region: ${{ env.AWS_REGION }}
+#
+#    - name: Download task definition
+#      run: |
+#        aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }} --query taskDefinition > task-definition.json
+#
+#    - name: Render Amazon ECS task definition
+#      id: task-def
+#      uses: aws-actions/amazon-ecs-render-task-definition@v1
+#      with:
+#        task-definition: task-definition.json
+#        container-name: mind_logger
+#        image: ${{ inputs.IMAGE_NAME }}
+#
+#    - name: Update Task Definition
+#      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#      with:
+#        task-definition: ${{ steps.task-def.outputs.task-definition }}
+#
+#    - name: Run migration container
+#      id: run-task
+#      uses: geekcell/github-action-aws-ecs-run-task@v4
+#      with:
+#        cluster: ${{ env.ECS_CLUSTER_NAME }}
+#        task-definition: ${{ env.TASK_DEFINITION }}
+#        subnet-ids: subnet-02b7cfd48947b31ef
+#        security-group-ids: sg-0976f7b2b2b5bf411
+#        override-container-command: |
+#          /bin/sh
+#          -c
+#          /fastapi-migrate all
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    needs: run_migration
-    env:
-      TASK_FAMILY_PREFIX: backend
-      ECS_CLUSTER_NAME: cmiml-dev
-      ECS_SERVICE_NAME: backend
-      ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com
-      IMAGE_PREFIX: ${{ inputs.COMMIT_HASH }}
-      COMMIT_HASH: ${{ inputs.IMAGE_PREFIX }}
-      AWS_REGION : "us-east-1"
-    
-    steps:
+#    needs: run_migration
 
+    name: Deploy ${{ matrix.apps.name }}
+    strategy:
+      fail-fast: true
+
+      matrix:
+        apps:
+          - { name: api, task-def: backend_api, service: backend, container: mind_logger }
+          - { name: worker, task-def: backend_worker, service: backend-worker, container: mind_logger_worker }
+          - { name: scheduler, task-def: backend_scheduler, service: backend-scheduler, container: mind_logger_scheduler }
+
+    steps:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
           role-session-name: OIDC-GHA-session
           aws-region: ${{ env.AWS_REGION }}
-      
-      - name: change image and register task definitions
-        run: |
-          NEW_IMAGE=${IMAGE_PREFIX/\//-}-$(echo $COMMIT_HASH | cut -c1-5) 
-          for app in api worker scheduler; do 
-            export NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$ECR_REPO:$NEW_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
-            aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINITION"
-          done
 
-      - name: update services
+      - name: Download task definition
         run: |
-          for app in scheduler worker; do
-            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}-${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
-          done
-          
-          #this step is separate because api sarvice and task definition names are different, need to be changed
-          aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_api
+          aws ecs describe-task-definition --task-definition ${{ matrix.apps.task-def }} --query taskDefinition > task-definition.json
 
-      
+      - name: Render Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ matrix.apps.container }}
+          image: ${{ inputs.IMAGE_NAME }}
+
+      - name: Update Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ matrix.apps.service }}
+          cluster: cmiml-dev
+          wait-for-service-stability: true
+
+#      - name: change image and register task definitions
+#        run: |
+#          for app in api worker scheduler; do
+#            export NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$IMAGE_NAME" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+#            aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINITION"
+#          done
+#
+#      - name: update services
+#        run: |
+#          for app in scheduler worker; do
+#            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}-${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
+#          done
+#
+#          #this step is separate because api service and task definition names are different, need to be changed
+#          aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_api
+
+
   on-failure:
     runs-on: ubuntu-latest
-    if: ${{ always() && (needs.deploy_to_ecs.result == 'failure' || needs.deploy_to_ecs.result == 'timed_out') }}
+    if: ${{ !cancelled() && (needs.deploy_to_ecs.result == 'failure' || needs.deploy_to_ecs.result == 'timed_out') }}
     needs:
       - deploy_to_ecs
     steps:
@@ -121,10 +149,10 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: 'Error when executing deployment!'
-  
+
   on-success:
     runs-on: ubuntu-latest
-    if: ${{ always() && (needs.deploy_to_ecs.result == 'success') }}
+    if: ${{ !cancelled() && (needs.deploy_to_ecs.result == 'success') }}
     needs:
       - deploy_to_ecs
     steps:
@@ -138,4 +166,3 @@ jobs:
           SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: 'Deployment is successfull!'
-          

@@ -133,10 +133,11 @@ async def applet_with_flow(
     data = applet_minimal_data.copy(deep=True)
     data.display_name = "applet with flow"
 
-    second_activity = data.activities[0].copy(deep=True)
-    second_activity.name = data.activities[0].name + " second"
-    second_activity.key = uuid.uuid4()
-    data.activities.append(second_activity)
+    for i in range(2, 4):
+        activity = data.activities[0].copy(deep=True)
+        activity.name = data.activities[0].name + f"#{i}"
+        activity.key = uuid.uuid4()
+        data.activities.append(activity)
 
     data.activity_flows = [
         FlowCreate(
@@ -150,6 +151,37 @@ async def applet_with_flow(
             items=[
                 FlowItemCreate(activity_key=data.activities[0].key),
                 FlowItemCreate(activity_key=data.activities[1].key),
+                FlowItemCreate(activity_key=data.activities[2].key),
+            ],
+        ),
+    ]
+    data.report_server_ip = applet_report_configuration_data.report_server_ip
+    data.report_public_key = applet_report_configuration_data.report_public_key
+    data.report_recipients = applet_report_configuration_data.report_recipients
+    applet_create = AppletCreate(**data.dict())
+    srv = AppletService(session, tom.id)
+    applet = await srv.create(applet_create, applet_id=uuid.uuid4())
+
+    return applet
+
+
+@pytest.fixture
+async def applet_with_flow_duplicated_activities(
+    session: AsyncSession,
+    applet_minimal_data: AppletCreate,
+    tom: User,
+    applet_report_configuration_data: AppletReportConfigurationBase,
+) -> AppletFull:
+    data = applet_minimal_data.copy(deep=True)
+    data.display_name = "applet with flow"
+
+    data.activity_flows = [
+        FlowCreate(
+            name="flow",
+            description={Language.ENGLISH: "description"},
+            items=[
+                FlowItemCreate(activity_key=data.activities[0].key),
+                FlowItemCreate(activity_key=data.activities[0].key),
             ],
         ),
     ]
@@ -202,6 +234,23 @@ def answer_create(
         version=applet.version,
         submit_id=uuid.uuid4(),
         activity_id=applet.activities[0].id,
+        answer=answer_item_create,
+        created_at=datetime.datetime.utcnow().replace(microsecond=0),
+        client=client_meta,
+    )
+
+
+@pytest.fixture
+def answer_create_applet_one(
+    applet_one: AppletFull,
+    answer_item_create: ItemAnswerCreate,
+    client_meta: ClientMeta,
+) -> AppletAnswerCreate:
+    return AppletAnswerCreate(
+        applet_id=applet_one.id,
+        version=applet_one.version,
+        submit_id=uuid.uuid4(),
+        activity_id=applet_one.activities[0].id,
         answer=answer_item_create,
         created_at=datetime.datetime.utcnow().replace(microsecond=0),
         client=client_meta,

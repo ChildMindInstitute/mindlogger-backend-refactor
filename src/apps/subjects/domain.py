@@ -18,6 +18,7 @@ class SubjectCreate(InternalModel):
     secret_user_id: str
     nickname: str | None
     is_deleted: bool = False
+    tag: str | None
 
 
 class Subject(SubjectCreate):
@@ -42,6 +43,7 @@ class SubjectBase(PublicModel):
     email: EmailStr | None
     creator_id: uuid.UUID
     user_id: uuid.UUID | None
+    tag: str | None
 
 
 class SubjectCreateRequest(PublicModel):
@@ -52,6 +54,7 @@ class SubjectCreateRequest(PublicModel):
     secret_user_id: str
     nickname: str | None
     email: EmailStr | None
+    tag: str | None
 
     _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
 
@@ -69,6 +72,7 @@ class SubjectFull(SubjectBase):
 class SubjectUpdateRequest(PublicModel):
     secret_user_id: str
     nickname: str | None
+    tag: str | None
 
 
 class SubjectDeleteRequest(PublicModel):
@@ -76,4 +80,16 @@ class SubjectDeleteRequest(PublicModel):
 
 
 class SubjectReadResponse(SubjectUpdateRequest):
+    id: uuid.UUID
     last_seen: datetime.datetime | None
+    applet_id: uuid.UUID
+    user_id: uuid.UUID | None
+    first_name: str
+    last_name: str
+
+
+class SubjectRelation(InternalModel):
+    source_subject_id: uuid.UUID
+    target_subject_id: uuid.UUID
+    relation: str
+    meta: dict | None

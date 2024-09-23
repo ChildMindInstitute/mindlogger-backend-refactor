@@ -5,7 +5,7 @@ from typing import TypeVar
 from apps.activities.domain.activity_history import ActivityHistoryFull, ActivityItemHistoryFull
 from apps.activities.domain.activity_item_history import ActivityItemHistoryChange
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.conditions import Condition, MinMaxPayload, OptionPayload, TimeRangePayload, ValuePayload
+from apps.activities.domain.conditions import Condition, MinMaxPayload, OptionPayload, MinMaxTimePayload, ValuePayload, SingleDatePayload, DateRangePayload,SingleTimePayload, MinMaxSliderRowPayload
 from apps.activities.domain.response_type_config import AdditionalResponseOption, ResponseType
 from apps.shared.changes_generator import BaseChangeGenerator
 
@@ -66,6 +66,7 @@ class ConfigChangeService(BaseChangeGenerator):
         # Additional options
         "text_input_option": "Add Text Input Option",
         "text_input_required": "Input Required",
+        "portrait_layout": "Portrait Layout",
     }
 
     def check_changes(self, value, changes: list[str]) -> None:
@@ -259,10 +260,32 @@ class ConditionalLogicChangeService(BaseChangeGenerator):
             return condition.payload.option_value
         elif isinstance(condition.payload, ValuePayload):
             return str(condition.payload.value)
-        elif isinstance(condition.payload, MinMaxPayload) or isinstance(condition.payload, TimeRangePayload):
+        elif isinstance(condition.payload, SingleDatePayload):  # Handle Single Date
+            return condition.payload.date.isoformat()
+
+        elif isinstance(condition.payload, DateRangePayload):  # Handle Date Range
+            if condition.payload.minDate and condition.payload.maxDate:
+                return f"Between {condition.payload.minDate.isoformat()} and {condition.payload.maxDate.isoformat()}"
+
+        elif isinstance(condition.payload, MinMaxTimePayload):
+            if condition.payload.minTime and condition.payload.maxTime:
+                minTime = f"{condition.payload.minTime.hour}:{condition.payload.minTime.minute:02d}"
+                maxTime = f"{condition.payload.maxTime.hour}:{condition.payload.maxTime.minute:02d}"
+                return f"Between {minTime} and {maxTime}"
+
+        # Handle SingleTimePayload (single time)
+        elif isinstance(condition.payload, SingleTimePayload):
+            if condition.payload.time:
+                return f"{condition.payload.time.hour}:{condition.payload.time.minute:02d}"
+            
+        elif isinstance(condition.payload, MinMaxPayload):
             min_value = condition.payload.min_value
             max_value = condition.payload.max_value
             return f"{min_value} and {max_value}"
+        elif isinstance(condition.payload, MinMaxSliderRowPayload):
+            maxValue = condition.payload.maxValue
+            minValue = condition.payload.minValue
+            return f"{maxValue} and {minValue}"
         return "true" if condition.payload.value else "false"
 
 

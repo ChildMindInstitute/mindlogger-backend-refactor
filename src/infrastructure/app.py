@@ -6,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
 
 import apps.activities.router as activities
+import apps.activity_assignments.router as activity_assignments
 import apps.alerts.router as alerts
 import apps.alerts.ws_router as ws_alerts
 import apps.answers.router as answers
@@ -61,6 +62,8 @@ routers: Iterable[APIRouter] = (
     library.applet_router,
     ws_alerts.router,
     subject_router.router,
+    activity_assignments.router,
+    activity_assignments.user_router,
 )
 
 # Declare your middlewares here

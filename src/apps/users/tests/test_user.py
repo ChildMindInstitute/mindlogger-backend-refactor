@@ -9,7 +9,7 @@ from apps.authentication.router import router as auth_router
 from apps.shared.domain import to_camelcase
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
-from apps.users.domain import User, UserCreate, UserCreateRequest
+from apps.users.domain import AppInfoOS, User, UserCreate, UserCreateRequest, UserDeviceCreate
 from apps.users.errors import PasswordHasSpacesError, UserIsDeletedError
 from apps.users.router import router as user_router
 from apps.users.tests.factories import UserUpdateRequestFactory
@@ -25,6 +25,11 @@ def request_data() -> UserCreateRequest:
     )
 
 
+@pytest.fixture
+def device_create_data() -> UserDeviceCreate:
+    return UserDeviceCreate(os=AppInfoOS(name="os1", version="1.0.0"), app_version="1.1.1", device_id="device#id")
+
+
 @pytest.mark.usefixtures("user")
 class TestUser:
     get_token_url = auth_router.url_path_for("get_token")
@@ -32,6 +37,7 @@ class TestUser:
     user_retrieve_url = user_router.url_path_for("user_retrieve")
     user_update_url = user_router.url_path_for("user_update")
     user_delete_url = user_router.url_path_for("user_delete")
+    user_devices_url = user_router.url_path_for("user_save_device")
 
     user_update_request = UserUpdateRequestFactory.build()
 
@@ -87,3 +93,34 @@ class TestUser:
         result = response.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == EmailError.msg_template
+
+    async def test_user_create_device(self, client: TestClient, device_create_data: UserDeviceCreate, user: User):
+        client.login(user)
+        payload = device_create_data.copy(deep=True)
+
+        response = await client.post(self.user_devices_url, data=payload.dict(include={"device_id"}))
+        assert response.status_code == status.HTTP_200_OK
+
+        result = response.json()["result"]
+        assert set(result.keys()) == {"appVersion", "createdAt", "deviceId", "id", "os", "updatedAt", "userId"}
+        assert result["userId"] == str(user.id)
+        assert result["os"] is None
+
+        # full data
+        response = await client.post(self.user_devices_url, data=payload)
+        assert response.status_code == status.HTTP_200_OK
+        result_same_device = response.json()["result"]
+        assert result_same_device["id"] == result["id"]
+        assert result_same_device["createdAt"] == result["createdAt"]
+        assert result_same_device["createdAt"] != result_same_device["updatedAt"]
+
+        for k, v in payload.dict(by_alias=True).items():
+            assert result_same_device[k] == v
+
+        # empty data don't clear stored one
+        response = await client.post(self.user_devices_url, data=payload.dict(include={"device_id"}))
+        assert response.status_code == status.HTTP_200_OK
+
+        result = response.json()["result"]
+        for k, v in payload.dict(by_alias=True).items():
+            assert result[k] == v

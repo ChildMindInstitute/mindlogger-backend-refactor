@@ -22,7 +22,7 @@ from apps.invitations.domain import (
     InvitationReviewerRequest,
     InvitationReviewerResponse,
     PrivateInvitationResponse,
-    ShallAccountInvitation,
+    ShellAccountInvitation,
 )
 from apps.invitations.errors import (
     InvitationSubjectAcceptError,
@@ -212,6 +212,10 @@ async def invitation_accept(
         info = await preprocess_arbitrary_url(applet_id=invitation.applet_id, session=session)
         async with asynccontextmanager(get_answer_session)(info) as answer_session:
             async with atomic(session):
+                # remove existing pin of this user
+                await UserAppletAccessService(session, user.id, existing_subject.applet_id).unpin(
+                    pinned_user_id=existing_subject.user_id, pinned_subject_id=None
+                )
                 # remove user_id from deleted subject, accept invitation
                 await service.update(existing_subject.id, user_id=None)
                 await InvitationsService(session, user).accept(key)
@@ -245,7 +249,7 @@ async def invitation_decline(
 async def invitation_subject_send(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    schema: ShallAccountInvitation = Body(...),
+    schema: ShellAccountInvitation = Body(...),
     session=Depends(get_session),
 ) -> Response[InvitationRespondentResponse]:
     async with atomic(session):
@@ -273,12 +277,12 @@ async def invitation_subject_send(
             email=schema.email,
             first_name=subject.first_name,
             last_name=subject.last_name,
-            language=subject.language,
+            language=schema.language or subject.language,
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
         )
         invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
         if subject.email != schema.email:
-            await subject_service.update(subject.id, email=schema.email)
+            await subject_service.update(subject.id, email=schema.email, language=schema.language or subject.language)
 
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))

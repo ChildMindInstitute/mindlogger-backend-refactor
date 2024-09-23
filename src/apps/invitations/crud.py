@@ -125,7 +125,50 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                     created_at=invitation.created_at,
                     nickname=nickname,
                     secret_user_id=secret_id,
+                    tag=invitation.tag,
                 )
+            )
+        return results
+
+    async def get_latest_by_emails(self, emails: list[str]) -> dict[str, InvitationDetail]:
+        """Return the list of "latest invitation" for the provided emails"""
+        query: Query = select(
+            InvitationSchema,
+            AppletSchema.display_name.label("applet_name"),
+            SubjectSchema.secret_user_id.label("user_secret_id"),
+            SubjectSchema.nickname.label("nickname"),
+            SubjectSchema.first_name.label("first_name"),
+            SubjectSchema.last_name.label("last_name"),
+        )
+        query = query.join(AppletSchema, AppletSchema.id == InvitationSchema.applet_id)
+        query = query.outerjoin(
+            SubjectSchema,
+            and_(
+                InvitationSchema.meta.has_key("subject_id"),
+                SubjectSchema.id == func.cast(InvitationSchema.meta["subject_id"].astext, UUID(as_uuid=True)),
+            ),
+        )
+        query = query.where(InvitationSchema.email.in_(emails))
+        query = query.where(InvitationSchema.status.in_([InvitationStatus.PENDING, InvitationStatus.APPROVED]))
+        db_result = await self._execute(query)
+        results = {}
+        for invitation, applet_name, secret_id, nickname, first_name, last_name in db_result.all():
+            results[f"{invitation.email}_{invitation.applet_id}"] = InvitationDetail(
+                id=invitation.id,
+                email=invitation.email,
+                applet_id=invitation.applet_id,
+                applet_name=applet_name,
+                role=invitation.role,
+                key=invitation.key,
+                status=invitation.status,
+                invitor_id=invitation.invitor_id,
+                meta=invitation.meta,
+                first_name=first_name if invitation.role == Role.RESPONDENT else invitation.first_name,
+                last_name=last_name if invitation.role == Role.RESPONDENT else invitation.last_name,
+                created_at=invitation.created_at,
+                nickname=nickname,
+                secret_user_id=secret_id,
+                tag=invitation.tag,
             )
         return results
 
@@ -200,6 +243,8 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
             last_name=last_name if invitation.role == Role.RESPONDENT else invitation.last_name,
             created_at=invitation.created_at,
             user_id=invitation.user_id,
+            tag=invitation.tag,
+            title=invitation.title,
         )
         if invitation.role == Role.RESPONDENT:
             return InvitationDetailRespondent(
@@ -226,6 +271,17 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
         db_result: Result = await self._execute(query)
         return db_result.scalar_one_or_none()
+
+    async def get_pending_respondent_invitation_by_ids(
+        self, applet_id: uuid.UUID, invitation_ids: list[uuid.UUID]
+    ) -> list[InvitationRespondent]:
+        query: Query = select(InvitationSchema)
+        query = query.where(InvitationSchema.role == Role.RESPONDENT)
+        query = query.where(InvitationSchema.applet_id == applet_id)
+        query = query.where(InvitationSchema.status == InvitationStatus.PENDING)
+        query = query.where(InvitationSchema.id.in_(invitation_ids))
+        db_result: Result = await self._execute(query)
+        return db_result.scalars().all()
 
     async def get_pending_subject_invitation(self, applet_id: uuid.UUID, subject_id: uuid.UUID) -> InvitationRespondent:
         query: Query = select(InvitationSchema).where(

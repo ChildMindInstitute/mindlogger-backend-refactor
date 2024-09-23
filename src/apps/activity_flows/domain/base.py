@@ -14,6 +14,7 @@ class FlowBase(BaseModel):
     report_included_activity_name: str | None = None
     report_included_item_name: str | None = None
     is_hidden: bool | None = False
+    auto_assign: bool | None = True
 
     @validator("description")
     def validate_description(cls, value):

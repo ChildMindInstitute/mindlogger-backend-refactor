@@ -6,9 +6,7 @@ on:
       - opened
       - reopened
       - synchronize
-#  push:
-#    branches:
-#      - "feature/**"
+
 
 # Only run the latest.  Cancel old runs in progress.
 concurrency:
@@ -19,7 +17,7 @@ concurrency:
 jobs:
   create-database:
     name: Create preview env DB
-    uses: ./.github/workflows/create_db.yaml
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/create_db.yaml@develop
     with:
       db-name: "mindlogger_backend_pr_${{ github.event.number }}"
     secrets: inherit
@@ -40,55 +38,18 @@ jobs:
           SLACK_ICON: https://github.com/github.png?size=48
           MSG_MINIMAL: actions url
 
-  create-preview-env:
-    needs: [create-database]
-    uses: ./.github/workflows/create-preview-env.yaml
-    with:
-      env-name: "pr-${{ github.event.number }}"
-      env-snake-name: "pr_${{ github.event.number }}"
-      app-name: ${{ github.event.repository.name }}
-      vpc-id: vpc-0a83201b71e854abd
-      copilot-service: mindlogger-backend
-    secrets: inherit
-
-  comment-create-preview-env:
-    name: Comment on preview env
-    runs-on: ubuntu-latest
-    needs: [create-preview-env]
-    if: ${{ always() }}
-    steps:
-      - name: Comment on PR
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: |
-            :arrow_right: Preview environment created: [Click Me!](${{ needs.create-preview-env.outputs.service-url }})
-          reactions: eyes, rocket
-          comment_tag: service-url
-      - name: "Send Slack message on failure"
-        uses: rtCamp/action-slack-notify@v2
-        if: ${{ always() && needs.create-preview-env.result == 'failure' }}
-        env:
-          SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
-          SLACK_TITLE: |
-            :rotating_light: Preview Environment Failed
-          SLACK_MESSAGE: >-
-            Failed to create a preview env for PR-${{ github.event.pull_request.number}} in ${{ github.repository }}
-            \n\n
-            :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            \n\n
-            :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }})
-          MSG_MINIMAL: true
-
   run-unit-tests:
-    uses: ./.github/workflows/tests.yaml
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/tests.yaml@develop
     secrets: inherit
 
   comment-unit-tests:
     name: Comment on unit test outcome
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    needs: [run-unit-tests]
+    permissions:
+      issues: write
+      pull-requests: write
+    needs: [ run-unit-tests ]
     steps:
       - name: Post the link to the report
         uses: guibranco/github-status-action-v2@v1
@@ -116,19 +77,69 @@ jobs:
           SLACK_ICON: https://github.com/github.png?size=48
           MSG_MINIMAL: true
 
+  create-preview-env:
+    needs: [create-database, run-unit-tests]
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/create-preview-env.yaml@develop
+    with:
+      env-name: "pr-${{ github.event.number }}"
+      env-snake-name: "pr_${{ github.event.number }}"
+      app-name: ${{ github.event.repository.name }}
+      vpc-id: vpc-0a83201b71e854abd
+      copilot-service: mindlogger-backend
+    secrets: inherit
+
+  comment-create-preview-env:
+    name: Comment on preview env
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    needs: [create-preview-env]
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Comment on PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            :arrow_right: Preview environment created: [Click Me!](${{ needs.create-preview-env.outputs.service-url }})
+          reactions: eyes, rocket
+          comment_tag: service-url
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        if: ${{ !cancelled() && needs.create-preview-env.result == 'failure' }}
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+          SLACKIFY_MARKDOWN: true
+          SLACK_TITLE: |
+            :rotating_light: Preview Environment Failed
+          SLACK_MESSAGE: >-
+            Failed to create a preview env for PR-${{ github.event.pull_request.number}} in ${{ github.repository }}
+            \n\n
+            :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            \n\n
+            :label: [Pull Request](${{ github.event.pull_request.html_url || github.event.head_commit.url }})
+          MSG_MINIMAL: true
+
+
+
   run-e2e-tests:
     name: Run E2E Test Suite
     needs: [ create-preview-env, run-unit-tests ]
-    if: ${{ always() && needs.run-unit-tests.result == 'success' && needs.create-preview-env.result == 'success' }}
-    uses: ./.github/workflows/e2e-tests.yaml
+    if: ${{ !cancelled() && needs.run-unit-tests.result == 'success' && needs.create-preview-env.result == 'success' }}
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/e2e-tests.yaml@develop
     secrets: inherit
     with:
       service-url: ${{ needs.create-preview-env.outputs.service-url }}
+      db-name: "mindlogger_backend_pr_${{ github.event.number }}"
 
   comment-e2e-tests:
     name: Comment on test outcome
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     needs: [run-e2e-tests]
     steps:
       - name: "Send Slack message on failure"
@@ -164,7 +175,7 @@ jobs:
           comment_tag: e2e-results
 
       - name: Post the link to the report
-        if: always()
+        if: ${{ !cancelled() }}
         uses: guibranco/github-status-action-v2@v1
         with:
           authToken: ${{secrets.GITHUB_TOKEN}}

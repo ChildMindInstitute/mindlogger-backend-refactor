@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from typing import BinaryIO
 
 import boto3
+import botocore
 from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas
 
 from infrastructure.utility.cdn_client import CDNClient
@@ -11,16 +12,20 @@ from infrastructure.utility.cdn_config import CdnConfig
 
 class ArbitraryS3CdnClient(CDNClient):
     def configure_client(self, config: CdnConfig):
+        client_config = botocore.config.Config(
+            max_pool_connections=25,
+        )
         return boto3.client(
             "s3",
             aws_access_key_id=self.config.access_key,
             aws_secret_access_key=self.config.secret_key,
             region_name=self.config.region,
+            config=client_config,
         )
 
 
 class ArbitraryGCPCdnClient(CDNClient):
-    def __init__(self, config: CdnConfig, endpoint_url: str, env: str):
+    def __init__(self, config: CdnConfig, endpoint_url: str, env: str, *, max_concurrent_tasks: int = 10):
         self.endpoint_url = endpoint_url
         super().__init__(config, env)
 
@@ -28,17 +33,21 @@ class ArbitraryGCPCdnClient(CDNClient):
         return f"gs://{self.config.bucket}/{key}"
 
     def configure_client(self, config):
+        client_config = botocore.config.Config(
+            max_pool_connections=25,
+        )
         return boto3.client(
             "s3",
             aws_access_key_id=self.config.access_key,
             aws_secret_access_key=self.config.secret_key,
             region_name=self.config.region,
             endpoint_url=self.endpoint_url,
+            config=client_config,
         )
 
 
 class ArbitraryAzureCdnClient(CDNClient):
-    def __init__(self, sec_key: str, bucket: str, env: str = ""):
+    def __init__(self, sec_key: str, bucket: str, env: str = "", *, max_concurrent_tasks: int = 10):
         self.sec_key = sec_key
         super().__init__(CdnConfig(bucket=bucket), env)
 

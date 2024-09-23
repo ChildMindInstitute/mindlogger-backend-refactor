@@ -1,11 +1,17 @@
 
-name: run_build
+name: Build and Deploy
 on: 
   push:
-  pull_request:
-    types:
-      - closed
+#    branches:
+#      - develop
+  workflow_dispatch: {}
+#  pull_request:
+#    types:
+#      - closed
 
+concurrency:
+  cancel-in-progress: true
+  group: api-build
 
 permissions:
   id-token: write
@@ -27,18 +33,21 @@ env:
 
 jobs:
   build_job:
+    name: Docker Build and Push
     runs-on: ubuntu-latest
     outputs:
-      IMAGE_NAME: ${{ steps.build_step.outputs.IMAGE_NAME }}
+      IMAGE_NAME: ${{ steps.sha.outputs.IMAGE_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
-          role-session-name: OIDC-GHA-session
+          role-session-name: gha-oidc-runner
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Get secrets by name and by ARN
@@ -64,20 +73,32 @@ jobs:
               fi
           fi
 
-      - name: Build image for ECR
-        id: build_step
+      - name: Login to ECR
         run: |
-          echo "IMAGE_NAME=${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}" >> "$GITHUB_OUTPUT"
-          docker build -t ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5} -f ./compose/fastapi/Dockerfile .
-          docker tag ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5} ${ECR_ADDRESS}/${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_ADDRESS }}
 
-      - name: Push image to ECR
+      - name: Generate short sha
+        id: sha
         run: |
-          aws ecr get-login-password | docker login --username AWS --password-stdin ${ECR_ADDRESS}
-          docker push ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=${ECR_REPO}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./compose/fastapi/Dockerfile
+          push: true
+          build-args: |
+            PIPENV_EXTRA_ARGS=--dev
+          cache-to: mode=max,image-manifest=true,oci-mediatypes=true,type=registry,ref=${{ env.ECR_REPO }}:cache
+          cache-from: type=registry,ref=${{ env.ECR_REPO }}:cache
+          tags: ${{ steps.sha.outputs.IMAGE_NAME }},${{ env.ECR_REPO }}:latest
+          platforms: linux/amd64,linux/arm64
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: |
@@ -85,24 +106,24 @@ jobs:
             ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
 
   deploy_to_dev:
+    name: Deploy to Dev
     needs: build_job
-    if: ${{ github.event.pull_request.merged }}
+#    environment: dev
+    #if: ${{ github.event.pull_request.merged }}
     uses: ./.github/workflows/run_deploy_dev.yaml
     with:
-      COMMIT_HASH: ${{ github.sha }}
-      IMAGE_PREFIX: ${{ github.ref_name }}
-      IMAGE_NAME: ${{needs.build_job.outputs.IMAGE_NAME}}
+      IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
 
-  deploy_to_uat:
-    needs: build_job
-    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_uat.yaml@develop
-    with:
-      COMMIT_HASH: ${{ github.sha }}
-      IMAGE_PREFIX: ${{ github.ref_name }}
-
-  deploy_to_test:
-    needs: build_job
-    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_test.yaml@develop
-    with:
-      COMMIT_HASH: ${{ github.sha }}
-      IMAGE_PREFIX: ${{ github.ref_name }}
+#  deploy_to_uat:
+#    needs: build_job
+#    uses: ./.github/workflows/run_deploy_uat.yaml
+#    with:
+#      COMMIT_HASH: ${{ github.sha }}
+#      IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
+#
+#  deploy_to_test:
+#    needs: build_job
+#    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_test.yaml@develop
+#    with:
+#      COMMIT_HASH: ${{ github.sha }}
+#      IMAGE_PREFIX: ${{ github.ref_name }}

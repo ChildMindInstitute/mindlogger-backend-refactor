@@ -9,7 +9,7 @@ from sqlalchemy.orm import Query
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
-from apps.subjects.domain import SubjectCreate
+from apps.subjects.domain import SubjectCreate, SubjectRelation
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["SubjectsCrud"]
@@ -32,12 +32,33 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
             update(self.schema_class).where(self.schema_class.id == id_).values(**values).returning(self.schema_class)
         )
         db_result = await self._execute(query)  # TODO test
-        result = db_result.first()
+        result = db_result.mappings().first()
 
-        return self.schema_class(**dict(zip(result.keys(), result)))
+        return self.schema_class(**result)
 
     async def get_by_id(self, _id: uuid.UUID) -> SubjectSchema | None:
         return await self._get("id", _id)
+
+    async def get_by_ids(self, ids: list[uuid.UUID], include_deleted=False) -> list[SubjectSchema]:
+        query: Query = select(SubjectSchema)
+        query = query.where(
+            SubjectSchema.id.in_(ids),
+            SubjectSchema.soft_exists() if not include_deleted else True,
+        )
+        res = await self._execute(query)
+        return res.scalars().all()
+
+    async def get_by_user_ids(
+        self, applet_id: uuid.UUID, user_ids: list[uuid.UUID], include_deleted=False
+    ) -> list[SubjectSchema]:
+        query: Query = select(SubjectSchema)
+        query = query.where(
+            SubjectSchema.user_id.in_(user_ids),
+            SubjectSchema.applet_id == applet_id,
+            SubjectSchema.soft_exists() if not include_deleted else True,
+        )
+        res = await self._execute(query)
+        return res.scalars().all()
 
     async def get_by_user_and_applet(
         self,
@@ -96,14 +117,17 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         self,
         source_subject_id: uuid.UUID,
         target_subject_id: uuid.UUID,
-    ) -> str | None:
-        query: Query = select(SubjectRelationSchema.relation)
+    ) -> SubjectRelation | None:
+        query: Query = select(SubjectRelationSchema)
         query = query.where(
             SubjectRelationSchema.source_subject_id == source_subject_id,
             SubjectRelationSchema.target_subject_id == target_subject_id,
         )
         result = await self._execute(query)
-        return result.scalar_one_or_none()
+        schema = result.scalars().one_or_none()
+        if not schema:
+            return None
+        return SubjectRelation.from_orm(schema)
 
     async def exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID) -> bool:
         query: Query = select(SubjectSchema.id)

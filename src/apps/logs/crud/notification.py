@@ -77,7 +77,7 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         self,
         user_id: str,
         device_id: str,
-        field: list[InstrumentedAttribute],
+        field: InstrumentedAttribute,
         flt: list[ColumnOperators],
     ) -> NotificationLogSchema | None:
         query: Query = select(field)
@@ -97,7 +97,7 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         return await self._get_previous(
             user_id,
             schema.device_id,
-            [NotificationLogSchema.notification_descriptions],
+            NotificationLogSchema.notification_descriptions,
             [NotificationLogSchema.notification_descriptions.isnot(None)],
         )
 
@@ -105,7 +105,7 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         return await self._get_previous(
             user_id,
             schema.device_id,
-            [NotificationLogSchema.notification_in_queue],
+            NotificationLogSchema.notification_in_queue,
             [NotificationLogSchema.notification_in_queue.isnot(None)],
         )
 
@@ -115,6 +115,6 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         return await self._get_previous(
             user_id,
             schema.device_id,
-            [NotificationLogSchema.scheduled_notifications],
+            NotificationLogSchema.scheduled_notifications,
             [NotificationLogSchema.scheduled_notifications.isnot(None)],
         )

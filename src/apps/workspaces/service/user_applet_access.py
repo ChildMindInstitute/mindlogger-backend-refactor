@@ -9,6 +9,7 @@ from apps.invitations.constants import InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import InvitationDetailGeneric, RespondentMeta
 from apps.shared.exception import NotFoundError
+from apps.subjects.constants import SubjectTag
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import SubjectCreate
@@ -16,6 +17,7 @@ from apps.subjects.errors import AppletUserViolationError
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserNotFound, UsersCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import UserPinRole
 from apps.workspaces.domain.user_applet_access import RespondentInfoPublic
 from apps.workspaces.errors import UserSecretIdAlreadyExists, UserSecretIdAlreadyExistsInInvitation
 
@@ -73,6 +75,7 @@ class UserAppletAccessService:
                 secret_user_id=str(uuid.uuid4()),
                 user_id=user_id,
                 nickname=nickname,
+                tag=SubjectTag.TEAM,
             )
             await SubjectsCrud(self.session).create(subject)
 
@@ -141,6 +144,7 @@ class UserAppletAccessService:
                 invitor_id=invitation.invitor_id,
                 meta=meta,
                 is_deleted=False,
+                title=invitation.title,
             ),
             where=UserAppletAccessSchema.soft_exists(exists=False),
         )
@@ -174,6 +178,7 @@ class UserAppletAccessService:
                         last_name=invitation.last_name,
                         secret_user_id=secret_id,
                         nickname=user.get_full_name(),
+                        tag=invitation.tag,
                     )
                 )
         else:
@@ -397,6 +402,17 @@ class UserAppletAccessService:
 
     async def remove_access_by_user_and_applet_to_role(self, user_id: uuid.UUID, applet_id: uuid.UUID, role: Role):
         await UserAppletAccessCRUD(self.session).remove_access_by_user_and_applet_to_role(user_id, [applet_id], [role])
+
+    async def unpin(self, pinned_user_id: uuid.UUID | None, pinned_subject_id: uuid.UUID | None):
+        owner = await self.get_owner()
+        await UserAppletAccessCRUD(self.session).pin(
+            pin_role=UserPinRole.respondent,
+            user_id=self._user_id,
+            owner_id=owner.owner_id,
+            pinned_user_id=pinned_user_id,
+            pinned_subject_id=pinned_subject_id,
+            force_unpin=True,
+        )
 
     async def set_subjects_for_review(
         self, reviewer_id: uuid.UUID, applet_id: uuid.UUID, subjects: list[uuid.UUID]

@@ -52,6 +52,11 @@ class Answer(InternalModel):
     answer_item: AnswerItem
 
 
+class ParagraphText(InternalModel):
+    value: str
+    should_identify_response: bool = False
+
+
 class Text(InternalModel):
     value: str
     should_identify_response: bool = False
@@ -72,10 +77,11 @@ class Slider(InternalModel):
     additional_text: str | None
 
 
-AnswerTypes = SingleSelection | Slider | MultipleSelection | Text
+AnswerTypes = SingleSelection | Slider | MultipleSelection | Text | ParagraphText
 
 ANSWER_TYPE_MAP: dict[ResponseType, Any] = {
     ResponseType.TEXT: Text,
+    ResponseType.PARAGRAPHTEXT: ParagraphText,
     ResponseType.SINGLESELECT: SingleSelection,
     ResponseType.MULTISELECT: MultipleSelection,
     ResponseType.SLIDER: Slider,
@@ -100,6 +106,7 @@ class AppletAnswerCreate(InternalModel):
     client: ClientMeta
     target_subject_id: uuid.UUID | None
     source_subject_id: uuid.UUID | None
+    input_subject_id: uuid.UUID | None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
@@ -167,8 +174,7 @@ class SubmissionDate(PublicModel):
     end_datetime: datetime.datetime
 
 
-class ReviewFlow(ReviewItem[SubmissionDate]):
-    ...
+class ReviewFlow(ReviewItem[SubmissionDate]): ...
 
 
 class PublicReviewFlow(ReviewFlow):
@@ -257,7 +263,7 @@ class ActivitySubmissionResponse(ActivitySubmission):
     summary: SubmissionSummary | None = None
 
     @validator("summary", always=True)
-    def generate_summary(cls, value, values):
+    def generate_summary(cls, value, values) -> list[Any]:
         if not value:
             answer: ActivityAnswer = values["answer"]
             if answer:
@@ -281,6 +287,26 @@ class ActivitySubmissionResponse(ActivitySubmission):
 class ReviewsCount(PublicModel):
     mine: int = 0
     other: int = 0
+
+
+class AppletSubmission(PublicModel):
+    applet_id: uuid.UUID
+    respondent_subject_id: uuid.UUID
+    respondent_subject_tag: str | None
+    respondent_secret_user_id: str | None
+    respondent_nickname: str | None
+    target_subject_id: uuid.UUID
+    target_subject_tag: str | None
+    target_secret_user_id: str | None
+    target_nickname: str | None
+    source_subject_id: uuid.UUID | None
+    source_subject_tag: str | None
+    source_secret_user_id: str | None
+    source_nickname: str | None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    activity_name: str
+    activity_id: uuid.UUID
 
 
 class FlowSubmission(PublicModel):
@@ -355,7 +381,7 @@ class FlowSubmissionResponse(PublicModel):
         return value
 
     @validator("summary", always=True)
-    def generate_summary(cls, value, values):
+    def generate_summary(cls, value, values) -> list[Any]:
         if not value:
             answers: list[ActivityAnswer] = values["submission"].answers
             if answers:
@@ -495,7 +521,9 @@ class UserAnswerDataBase(BaseModel):
     version: str
     respondent_id: uuid.UUID | str | None = None
     target_subject_id: uuid.UUID | str | None = None
+    target_secret_id: uuid.UUID | str | None = None
     source_subject_id: uuid.UUID | str | None = None
+    source_secret_id: uuid.UUID | str | None = None
     relation: str | None = None
     respondent_secret_id: str | None = None
     legacy_profile_id: str | None = None
@@ -603,6 +631,7 @@ class CompletedEntity(PublicModel):
     id: uuid.UUID
     answer_id: uuid.UUID
     submit_id: uuid.UUID
+    target_subject_id: uuid.UUID | None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
@@ -624,6 +653,7 @@ class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
     created_at: int
     activity_id: str
+    submit_id: uuid.UUID | None = None
 
     @validator("created_at")
     def convert_time_to_unix_timestamp(cls, value: int):
@@ -644,3 +674,29 @@ class IdentifiersQueryParams(InternalModel):
     respondent_id: uuid.UUID | None = None
     target_subject_id: uuid.UUID | None = None
     answer_id: uuid.UUID | None = None
+
+
+class MultiinformantAssessmentValidationResponse(PublicModel):
+    valid: bool
+    message: str | None = None
+    code: str | None = None
+
+
+class PublicSubmissionsResponse(PublicModel):
+    submissions: list[AppletSubmission] = Field(default_factory=list)
+    submissions_count: int = 0
+    participants_count: int = 0
+
+
+class AnswersCopyCheckResult(InternalModel):
+    total_answers: int
+    not_copied_answers: set[uuid.UUID]
+    answers_to_remove: set[uuid.UUID]
+    total_answer_items: int
+    not_copied_answer_items: set[uuid.UUID]
+
+
+class FilesCopyCheckResult(InternalModel):
+    total_files: int
+    not_copied_files: set[str]
+    files_to_remove: set[str]

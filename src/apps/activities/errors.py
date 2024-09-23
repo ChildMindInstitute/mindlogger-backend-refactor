@@ -220,6 +220,10 @@ class InvalidScoreSubscaleError(ValidationError):
     message = _("Score in subscale lookup table is invalid.")
 
 
+class InvalidAgeSubscaleError(ValidationError):
+    message = _("Age in subscale lookup table is invalid.")
+
+
 class IncorrectSubscaleItemError(ValidationError):
     message = _("Activity item inside subscale does not exist.")
 
@@ -237,9 +241,7 @@ class SubscaleItemScoreError(ValidationError):
 
 
 class SubscaleItemTypeError(ValidationError):
-    message = _(
-        "Activity item inside subscale must be of type singleselect, multiselect or slider."  # noqa: E501
-    )
+    message = _("Activity item inside subscale must be of type singleselect, multiselect or slider.")
 
 
 class DuplicateSubscaleNameError(FieldError):
@@ -260,3 +262,15 @@ class IncorrectTimeRange(ValidationError):
 
 class FlowDoesNotExist(NotFoundError):
     message = _("Flow does not exist.")
+
+
+class IncorrectPhrasalTemplateItemError(ValidationError):
+    message = _("Activity item inside phrasal template does not exist.")
+
+
+class IncorrectPhrasalTemplateItemTypeError(ValidationError):
+    message = _("Invalid type for activity item inside phrasal template")
+
+
+class IncorrectPhrasalTemplateItemIndexError(ValidationError):
+    message = _("Invalid item index for activity item inside phrasal template")

@@ -11,6 +11,7 @@ from apps.activities.domain.activity import (
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageDetailPublic,
     ActivitySingleLanguageMobileDetailPublic,
+    ActivityWithAssignmentDetailsPublic,
 )
 from apps.activities.errors import PeriodIsRequiredError
 from apps.activity_flows.domain.flow import (
@@ -18,7 +19,9 @@ from apps.activity_flows.domain.flow import (
     FlowSingleLanguageDetail,
     FlowSingleLanguageDetailPublic,
     FlowSingleLanguageMobileDetailPublic,
+    FlowWithAssignmentDetailsPublic,
 )
+from apps.activity_flows.domain.flow_full import PublicFlowFull
 from apps.applets.domain.base import AppletBaseInfo, AppletFetchBase, Encryption
 from apps.shared.domain import InternalModel, PublicModel, _BaseModel
 from apps.themes.domain import PublicTheme, PublicThemeMobile, Theme
@@ -89,6 +92,7 @@ class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
     activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
     theme: PublicTheme
     encryption: Encryption | None
+    owner_id: uuid.UUID | None
 
 
 class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):
@@ -142,6 +146,31 @@ class AppletActivitiesDetailsPublic(PublicModel):
     activities_details: list[ActivityLanguageWithItemsMobileDetailPublic] = Field(default_factory=list)
     applet_detail: AppletSingleLanguageDetailMobilePublic
     respondent_meta: dict | None = None
+
+
+class ActivityLanguageWithItemsMobileDetailPublicType(ActivityLanguageWithItemsMobileDetailPublic):
+    type = "activity"
+
+
+class PublicFlowFullType(PublicFlowFull):
+    type = "activityFlow"
+
+
+class AppletActivitiesAndFlowsDetailsPublic(PublicModel):
+    """
+    Returns a combination of activity and activity flows
+    """
+
+    details: list[ActivityLanguageWithItemsMobileDetailPublicType | PublicFlowFullType] = Field(default_factory=list)
+
+
+class ActivitiesAndFlowsWithAssignmentDetailsPublic(PublicModel):
+    """
+    Returns a combination of activity and activity flows
+    """
+
+    activities: list[ActivityWithAssignmentDetailsPublic] = Field(default_factory=list)
+    activity_flows: list[FlowWithAssignmentDetailsPublic] = Field(default_factory=list)
 
 
 class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
