@@ -5,7 +5,17 @@ from typing import TypeVar
 from apps.activities.domain.activity_history import ActivityHistoryFull, ActivityItemHistoryFull
 from apps.activities.domain.activity_item_history import ActivityItemHistoryChange
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.conditions import Condition, MinMaxPayload, OptionPayload, MinMaxTimePayload, ValuePayload, SingleDatePayload, DateRangePayload,SingleTimePayload, MinMaxSliderRowPayload
+from apps.activities.domain.conditions import (
+    Condition,
+    DateRangePayload,
+    MinMaxPayload,
+    MinMaxSliderRowPayload,
+    MinMaxTimePayload,
+    OptionPayload,
+    SingleDatePayload,
+    SingleTimePayload,
+    ValuePayload,
+)
 from apps.activities.domain.response_type_config import AdditionalResponseOption, ResponseType
 from apps.shared.changes_generator import BaseChangeGenerator
 
@@ -277,7 +287,7 @@ class ConditionalLogicChangeService(BaseChangeGenerator):
         elif isinstance(condition.payload, SingleTimePayload):
             if condition.payload.time:
                 return f"{condition.payload.time.hour}:{condition.payload.time.minute:02d}"
-            
+
         elif isinstance(condition.payload, MinMaxPayload):
             min_value = condition.payload.min_value
             max_value = condition.payload.max_value
