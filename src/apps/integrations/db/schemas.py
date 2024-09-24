@@ -1,5 +1,4 @@
 from sqlalchemy import Column, ForeignKey, Text, Unicode, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
