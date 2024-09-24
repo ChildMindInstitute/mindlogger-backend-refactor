@@ -220,6 +220,7 @@ class SubscaleSetting(PublicModel):
     calculate_total_score: SubscaleCalculationType | None = None
     subscales: list[Subscale] | None = Field(default_factory=list)
     total_scores_table_data: list[TotalScoreTable] | None = Field(default_factory=list)
+    score_type: str | None = None 
 
     @validator("subscales")
     def validate_unique_subscale_names(cls, value):
