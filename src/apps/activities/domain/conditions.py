@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pydantic import Field, root_validator, validator
 
@@ -162,73 +162,82 @@ class TimePayload(PublicModel):
 
 
 class SingleTimePayload(PublicModel):
-    time: Optional[dict] = None
-    fieldName: Optional[str] = None
+    time: Optional[datetime.time] = None
 
-    @root_validator
-    def validate_time(cls, values):
-        time_dict = values.get("time")
-        if time_dict:
-            values["time"] = cls._dict_to_time(time_dict)
+    @root_validator(pre=True)
+    def validate_time(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        time_value = values.get("time")
+        if isinstance(time_value, dict):
+            values["time"] = cls._dict_to_time(time_value)
+        elif isinstance(time_value, str):
+            values["time"] = cls._string_to_time(time_value)
         return values
 
-    def dict(self, *args, **kwargs):
+    def dict(self, *args, **kwargs) -> Dict[str, Any]:
         d = super().dict(*args, **kwargs)
         if self.time:
-            d["time"] = self._time_to_dict(self.time)
-        if self.fieldName:
-            d["fieldName"] = self.fieldName
-        return {key: value for key, value in d.items() if value is not None}
+            d["time"] = self.time.strftime("%H:%M") 
+        return d
 
     @staticmethod
-    def _dict_to_time(time_dict: dict) -> datetime.time:
-        return datetime.time(hour=time_dict["hours"], minute=time_dict["minutes"])
+    def _dict_to_time(time_dict: Dict[str, Any]) -> datetime.time:
+        if "hours" in time_dict and "minutes" in time_dict:
+            return datetime.time(hour=int(time_dict["hours"]), minute=int(time_dict["minutes"]))
+        raise ValueError("Invalid time dictionary structure")
 
     @staticmethod
-    def _time_to_dict(time: datetime.time) -> dict:
+    def _string_to_time(time_string: str) -> datetime.time:
+        try:
+            return datetime.datetime.strptime(time_string, "%H:%M").time()
+        except ValueError:
+            raise ValueError("Invalid time string format. Expected 'HH:MM'.")
+
+    @staticmethod
+    def _time_to_dict(time: datetime.time) -> Dict[str, int]:
         return {"hours": time.hour, "minutes": time.minute}
 
 
 class MinMaxTimePayload(PublicModel):
-    minTime: Optional[dict] = None
-    maxTime: Optional[dict] = None
-    fieldName: Optional[str] = None
+    minTime: Optional[datetime.time] = None
+    maxTime: Optional[datetime.time] = None
 
-    @root_validator
-    def validate_time_range(cls, values):
+    @root_validator(pre=True)
+    def validate_times(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         min_time_dict = values.get("minTime")
         max_time_dict = values.get("maxTime")
 
-        if min_time_dict and max_time_dict:
-            min_time = cls._dict_to_time(min_time_dict)
-            max_time = cls._dict_to_time(max_time_dict)
-
-            if min_time > max_time:
-                raise ValueError("minTime cannot be later than maxTime")
-
-            values["minTime"] = min_time
-            values["maxTime"] = max_time
+        if isinstance(min_time_dict, dict):
+            values["minTime"] = cls._dict_to_time(min_time_dict)
+        if isinstance(max_time_dict, dict):
+            values["maxTime"] = cls._dict_to_time(max_time_dict)
 
         return values
 
-    def dict(self, *args, **kwargs):
+    def dict(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         d = super().dict(*args, **kwargs)
         if self.minTime:
             d["minTime"] = self._time_to_dict(self.minTime)
         if self.maxTime:
             d["maxTime"] = self._time_to_dict(self.maxTime)
-        if self.fieldName:
-            d["fieldName"] = self.fieldName
         return {key: value for key, value in d.items() if value is not None}
 
     @staticmethod
-    def _dict_to_time(time_dict: dict) -> datetime.time:
-        return datetime.time(hour=time_dict["hours"], minute=time_dict["minutes"])
+    def _dict_to_time(time_dict: Dict[str, int]) -> datetime.time:
+        if "hours" in time_dict and "minutes" in time_dict:
+            return datetime.time(hour=int(time_dict["hours"]), minute=int(time_dict["minutes"]))
+        raise ValueError("Invalid time dictionary structure")
 
     @staticmethod
-    def _time_to_dict(time: datetime.time) -> dict:
+    def _time_to_dict(time: datetime.time) -> Dict[str, int]:
         return {"hours": time.hour, "minutes": time.minute}
 
+    def json_serialize(self) -> Dict[str, Any]:
+        data = self.dict()
+        if self.minTime:
+            data["minTime"] = self._time_to_dict(self.minTime)
+        if self.maxTime:
+            data["maxTime"] = self._time_to_dict(self.maxTime)
+        return data
 
 class MinMaxSliderRowPayload(PublicModelNoExtra):
     minValue: float

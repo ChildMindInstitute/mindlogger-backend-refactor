@@ -270,33 +270,29 @@ class ConditionalLogicChangeService(BaseChangeGenerator):
             return condition.payload.option_value
         elif isinstance(condition.payload, ValuePayload):
             return str(condition.payload.value)
-        elif isinstance(condition.payload, SingleDatePayload):  # Handle Single Date
+        elif isinstance(condition.payload, SingleDatePayload):
             return condition.payload.date.isoformat()
-
-        elif isinstance(condition.payload, DateRangePayload):  # Handle Date Range
+        elif isinstance(condition.payload, DateRangePayload):
             if condition.payload.minDate and condition.payload.maxDate:
                 return f"Between {condition.payload.minDate.isoformat()} and {condition.payload.maxDate.isoformat()}"
-
         elif isinstance(condition.payload, MinMaxTimePayload):
             if condition.payload.minTime and condition.payload.maxTime:
                 minTime = f"{condition.payload.minTime.hour}:{condition.payload.minTime.minute:02d}"
                 maxTime = f"{condition.payload.maxTime.hour}:{condition.payload.maxTime.minute:02d}"
                 return f"Between {minTime} and {maxTime}"
-
-        # Handle SingleTimePayload (single time)
         elif isinstance(condition.payload, SingleTimePayload):
             if condition.payload.time:
                 return f"{condition.payload.time.hour}:{condition.payload.time.minute:02d}"
-
         elif isinstance(condition.payload, MinMaxPayload):
             min_value = condition.payload.min_value
             max_value = condition.payload.max_value
             return f"{min_value} and {max_value}"
         elif isinstance(condition.payload, MinMaxSliderRowPayload):
-            maxValue = condition.payload.maxValue
-            minValue = condition.payload.minValue
-            return f"{maxValue} and {minValue}"
-        return "true" if condition.payload.value else "false"
+            return f"Between {condition.payload.minValue} and {condition.payload.maxValue}"
+        elif hasattr(condition.payload, "value"):
+            return str(condition.payload.value)
+
+        return "Unknown"
 
 
 class ActivityItemChangeService(BaseChangeGenerator):

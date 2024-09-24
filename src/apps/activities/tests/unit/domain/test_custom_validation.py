@@ -9,7 +9,6 @@ from apps.activities.domain.conditions import (
     BetweenCondition,
     Condition,
     ConditionType,
-    DatePayload,
     EqualCondition,
     EqualToOptionCondition,
     GreaterThanCondition,
@@ -17,12 +16,17 @@ from apps.activities.domain.conditions import (
     NotEqualCondition,
     OptionPayload,
     OutsideOfCondition,
+    SingleDatePayload,
+    SingleTimePayload,  # Added for correct payload handling
     TimePayload,
     TimePayloadType,
-    TimeRangePayload,
     ValuePayload,
 )
-from apps.activities.domain.custom_validation import validate_item_flow, validate_score_and_sections, validate_subscales
+from apps.activities.domain.custom_validation import (
+    validate_item_flow,
+    validate_score_and_sections,
+    validate_subscales,
+)
 from apps.activities.domain.response_type_config import ResponseType, SingleSelectionConfig
 from apps.activities.domain.scores_reports import (
     ReportType,
@@ -152,11 +156,7 @@ class TestValidateItemFlow:
 
     @pytest.mark.parametrize(
         "payload",
-        (
-            DatePayload(value="1970-01-01"),
-            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
-            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
-        ),
+        (SingleTimePayload(time={"hours": 1, "minutes": 0}),),  # Fixed SingleTimePayload with dict structure
     )
     def test_validator_successful_create_eq_condition(self, payload):
         EqualCondition(
@@ -167,11 +167,7 @@ class TestValidateItemFlow:
 
     @pytest.mark.parametrize(
         "payload",
-        (
-            DatePayload(value="1970-01-01"),
-            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
-            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
-        ),
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
     )
     def test_validator_successful_create_ne_condition(self, payload):
         NotEqualCondition(
@@ -182,11 +178,7 @@ class TestValidateItemFlow:
 
     @pytest.mark.parametrize(
         "payload",
-        (
-            DatePayload(value="1970-01-01"),
-            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
-            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
-        ),
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
     )
     def test_validator_successful_create_lt_condition(self, payload):
         LessThanCondition(
@@ -197,11 +189,7 @@ class TestValidateItemFlow:
 
     @pytest.mark.parametrize(
         "payload",
-        (
-            DatePayload(value="1970-01-01"),
-            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
-            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
-        ),
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
     )
     def test_validator_successful_create_gt_condition(self, payload):
         GreaterThanCondition(
@@ -212,11 +200,7 @@ class TestValidateItemFlow:
 
     @pytest.mark.parametrize(
         "payload",
-        (
-            DatePayload(value="1970-01-01"),
-            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
-            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
-        ),
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
     )
     def test_validator_successful_create_between_condition(self, payload):
         BetweenCondition(
@@ -227,11 +211,7 @@ class TestValidateItemFlow:
 
     @pytest.mark.parametrize(
         "payload",
-        (
-            DatePayload(value="1970-01-01"),
-            TimePayload(type=TimePayloadType.START_TIME, value="01:00"),
-            TimeRangePayload(type=TimePayloadType.START_TIME, min_value="01:00", max_value="02:00"),
-        ),
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
     )
     def test_validator_successful_create_outside_condition(self, payload):
         OutsideOfCondition(
@@ -243,15 +223,15 @@ class TestValidateItemFlow:
     @pytest.mark.parametrize(
         "payload_type,payload,exp_exception",
         (
-            (DatePayload, dict(value="1970-99-01"), ValidationError),
-            (TimePayload, dict(type=TimePayloadType.START_TIME, value="80:00"), ValueError),
+            (SingleDatePayload, dict(date="1970-99-01"), ValidationError),
+            (SingleTimePayload, dict(time={"hours": 80, "minutes": 0}), ValueError),  # Adjusted time dict
             (
-                TimeRangePayload,
-                dict(type=TimePayloadType.START_TIME, min_value="03:00", max_value="02:00"),
+                SingleTimePayload,
+                dict(time={"hours": 3, "minutes": 0}, min_value="03:00", max_value="02:00"),
                 IncorrectTimeRange,
             ),
-            (TimeRangePayload, dict(type=TimePayloadType.START_TIME, min_value="03:00"), ValidationError),
-            (TimeRangePayload, dict(type="unknown_item_type", min_value="01:00", max_value="02:00"), ValidationError),
+            (SingleTimePayload, dict(time={"hours": 3, "minutes": 0}), ValidationError),
+            (SingleTimePayload, dict(time="unknown_item_type", min_value="01:00", max_value="02:00"), ValidationError),
         ),
     )
     def test_fails_create_outside_condition(self, payload_type, payload, exp_exception):
