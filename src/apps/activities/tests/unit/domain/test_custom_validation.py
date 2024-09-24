@@ -156,7 +156,7 @@ class TestValidateItemFlow:
 
     @pytest.mark.parametrize(
         "payload",
-        (SingleTimePayload(time={"hours": 1, "minutes": 0}),),  # Fixed SingleTimePayload with dict structure
+        (SingleTimePayload(time={"hours": 1, "minutes": 0}),), 
     )
     def test_validator_successful_create_eq_condition(self, payload):
         EqualCondition(
