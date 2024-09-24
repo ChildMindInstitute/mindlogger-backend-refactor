@@ -176,7 +176,7 @@ class SingleTimePayload(PublicModel):
     def dict(self, *args, **kwargs) -> Dict[str, Any]:
         d = super().dict(*args, **kwargs)
         if self.time:
-            d["time"] = self.time.strftime("%H:%M") 
+            d["time"] = self.time.strftime("%H:%M")
         return d
 
     @staticmethod
@@ -238,6 +238,7 @@ class MinMaxTimePayload(PublicModel):
         if self.maxTime:
             data["maxTime"] = self._time_to_dict(self.maxTime)
         return data
+
 
 class MinMaxSliderRowPayload(PublicModelNoExtra):
     minValue: float
