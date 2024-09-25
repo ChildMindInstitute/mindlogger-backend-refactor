@@ -334,15 +334,15 @@ async def get_target_subjects_by_respondent(
 
     class SubjectInfo(TypedDict):
         currently_assigned: bool
-        number_of_submissions: int
+        submission_count: int
 
     subject_info: dict[uuid.UUID, SubjectInfo] = {}
-    for subject_id, number_of_submissions in submission_data:
-        subject_info[subject_id] = {"currently_assigned": False, "number_of_submissions": number_of_submissions}
+    for subject_id, submission_count in submission_data:
+        subject_info[subject_id] = {"currently_assigned": False, "submission_count": submission_count}
 
     for subject_id in assignment_subject_ids:
         if subject_id not in subject_info:
-            subject_info[subject_id] = {"currently_assigned": True, "number_of_submissions": 0}
+            subject_info[subject_id] = {"currently_assigned": True, "submission_count": 0}
         else:
             subject_info[subject_id]["currently_assigned"] = True
 
@@ -361,7 +361,7 @@ async def get_target_subjects_by_respondent(
             user_id=subject.user_id,
             first_name=subject.first_name,
             last_name=subject.last_name,
-            number_of_submissions=subject_info[subject.id]["number_of_submissions"],
+            submission_count=subject_info[subject.id]["submission_count"],
             currently_assigned=subject_info[subject.id]["currently_assigned"],
             last_seen=answer_dates.get(subject.id),
         )

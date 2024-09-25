@@ -944,7 +944,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = (
             select(
                 AnswerSchema.target_subject_id,
-                func.count(func.distinct(AnswerSchema.submit_id)).label("number_of_submissions"),
+                func.count(func.distinct(AnswerSchema.submit_id)).label("submission_count"),
             )
             .where(
                 AnswerSchema.source_subject_id == respondent_subject_id,

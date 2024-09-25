@@ -89,7 +89,7 @@ class SubjectReadResponse(SubjectUpdateRequest):
 
 
 class TargetSubjectByRespondentResponse(SubjectReadResponse):
-    number_of_submissions: int = 0
+    submission_count: int = 0
     currently_assigned: bool = False
 
 
