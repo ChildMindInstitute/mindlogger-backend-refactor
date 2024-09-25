@@ -62,7 +62,7 @@ class IntegrationService:
                     raise UnexpectedPropertiesForIntegration(
                         provided_keys=list(config_dict.keys()),
                         expected_keys=expected_keys,
-                        type=AvailableIntegrations.LORIS,
+                        integration_type=AvailableIntegrations.LORIS,
                     )
                 loris_integration = await LorisIntegrationService(
                     newIntegration.applet_id, self.session, self.user
@@ -84,7 +84,7 @@ class IntegrationService:
                     raise UnexpectedPropertiesForIntegration(
                         provided_keys=list(config_dict.keys()),
                         expected_keys=expected_keys,
-                        type=AvailableIntegrations.FUTURE,
+                        integration_type=AvailableIntegrations.FUTURE,
                     )
                 future_integration = await FutureIntegrationService(
                     newIntegration.applet_id,
@@ -98,7 +98,7 @@ class IntegrationService:
                     configuration=future_integration,
                 )
             case _:
-                raise UnsupportedIntegrationError(type=newIntegration.integration_type)
+                raise UnsupportedIntegrationError(integration_type=newIntegration.integration_type)
 
     async def retrieve_integration(self, applet_id, integration_type) -> Integration:
         integration_schema = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
@@ -107,7 +107,7 @@ class IntegrationService:
         )
 
         if integration_schema is None:
-            raise UnavailableIntegrationError(applet_id=applet_id, type=integration_type)
+            raise UnavailableIntegrationError(applet_id=applet_id, integration_type=integration_type)
 
         match integration_type:
             case AvailableIntegrations.LORIS:
@@ -125,4 +125,14 @@ class IntegrationService:
                     configuration=future_integration,
                 )
             case _:
-                raise UnsupportedIntegrationError(type=integration_type)
+                raise UnsupportedIntegrationError(integration_type=integration_type)
+
+    async def delete_integration_by_type(self, applet_id, integration_type):
+        integration = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
+            applet_id,
+            integration_type
+        )
+        if integration != None:
+            await IntegrationsCRUD(self.session).delete_by_id(integration.id)
+        else:
+            raise UnavailableIntegrationError(applet_id=applet_id, integration_type=integration_type)
