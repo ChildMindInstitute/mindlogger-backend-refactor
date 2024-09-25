@@ -927,6 +927,8 @@ class TestSubjects(BaseTest):
             ],
         )
 
+        client.login(tom)
+
         url = self.subject_target_by_respondent_url.format(
             respondent_subject_id=lucy_applet_one_subject.id, activity_or_flow_id=str(activity.id)
         )
