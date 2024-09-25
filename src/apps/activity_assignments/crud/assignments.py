@@ -137,7 +137,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             ActivityAssigmentSchema.soft_exists(),
         )
 
-        if activity_or_flow_ids and len(activity_or_flow_ids) > 0:
+        if len(activity_or_flow_ids) > 0:
             query = query.where(
                 or_(
                     ActivityAssigmentSchema.activity_id.in_(activity_or_flow_ids),
