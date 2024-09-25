@@ -111,6 +111,41 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().first()
 
+    async def delete_by_activity_or_flow_ids(self, activity_or_flow_ids: list[uuid.UUID]):
+        """
+        Marks the `is_deleted` field as True for all matching assignments based on the provided
+        activity or flow IDs. The method ensures that each ID corresponds to a unique record by
+        treating the ID as a unique combination.
+
+        Parameters:
+        ----------
+        activity_or_flow_ids : list[uuid.UUID]
+            List of activity or flow IDs to search for. These IDs may correspond to either
+            `activity_id` or `activity_flow_id` fields.
+
+        Returns:
+        -------
+        None
+
+        Raises:
+        ------
+        AssertionError
+            If the provided ID list is empty.
+        """
+        assert len(activity_or_flow_ids) > 0
+
+        stmt = (
+            update(ActivityAssigmentSchema)
+            .where(
+                or_(
+                    ActivityAssigmentSchema.activity_id.in_(activity_or_flow_ids),
+                    ActivityAssigmentSchema.activity_flow_id.in_(activity_or_flow_ids),
+                )
+            )
+            .values(is_deleted=True)
+        )
+        await self._execute(stmt)
+
     async def delete_many(
         self,
         activity_or_flow_ids: list[uuid.UUID],
