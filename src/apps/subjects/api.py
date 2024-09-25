@@ -1,18 +1,20 @@
 import uuid
 from datetime import datetime, timedelta
+from typing import TypedDict
 
 from fastapi import Body, Depends
 from fastapi.exceptions import RequestValidationError
 from pydantic.error_wrappers import ErrorWrapper
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_answer_session_by_subject
 from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
-from apps.shared.domain import Response
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.response import EmptyResponse
 from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relation
@@ -24,6 +26,7 @@ from apps.subjects.domain import (
     SubjectReadResponse,
     SubjectRelationCreate,
     SubjectUpdateRequest,
+    TargetSubjectByRespondentResponse,
 )
 from apps.subjects.errors import SecretIDUniqueViolationError
 from apps.subjects.services import SubjectsService
@@ -296,3 +299,69 @@ async def get_my_subject(
             last_name=subject.last_name,
         )
     )
+
+
+async def get_target_subjects_by_respondent(
+    respondent_subject_id: uuid.UUID,
+    activity_or_flow_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[list[TargetSubjectByRespondentResponse]]:
+    subjects_service = SubjectsService(session, user.id)
+    respondent_subject = await subjects_service.get(respondent_subject_id)
+    if not respondent_subject:
+        raise NotFoundError(f"Subject with id {respondent_subject_id} not found")
+
+    if respondent_subject.user_id is None:
+        # Return a generic bad request error to avoid leaking information
+        raise ValidationError(f"Subject {respondent_subject_id} is not a valid respondent")
+
+    # Make sure the authenticated user has access to the subject
+    await CheckAccessService(session, user.id).check_subject_subject_access(
+        respondent_subject.applet_id, respondent_subject.id
+    )
+
+    assignment_subject_ids = await ActivityAssignmentService(session).get_target_subject_ids_by_respondent(
+        respondent_subject_id=respondent_subject_id, activity_or_flow_ids=[activity_or_flow_id]
+    )
+
+    submission_data: list[tuple[uuid.UUID, int]] = await AnswerService(
+        user_id=user.id, session=session, arbitrary_session=answer_session
+    ).get_target_subject_ids_by_respondent_and_activity_or_flow(
+        respondent_subject_id=respondent_subject_id, activity_or_flow_id=activity_or_flow_id
+    )
+
+    class SubjectInfo(TypedDict):
+        currently_assigned: bool
+        number_of_submissions: int
+
+    subject_info: dict[uuid.UUID, SubjectInfo] = {}
+    for subject_id, number_of_submissions in submission_data:
+        subject_info[subject_id] = {"currently_assigned": False, "number_of_submissions": number_of_submissions}
+
+    for subject_id in assignment_subject_ids:
+        if subject_id not in subject_info:
+            subject_info[subject_id] = {"currently_assigned": True, "number_of_submissions": 0}
+        else:
+            subject_info[subject_id]["currently_assigned"] = True
+
+    # Fetch the rest of the subject data
+    subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
+    result = [
+        TargetSubjectByRespondentResponse(
+            secret_user_id=subject.secret_user_id,
+            nickname=subject.nickname,
+            tag=subject.tag,
+            id=subject.id,
+            applet_id=subject.applet_id,
+            user_id=subject.user_id,
+            first_name=subject.first_name,
+            last_name=subject.last_name,
+            number_of_submissions=subject_info[subject.id]["number_of_submissions"],
+            currently_assigned=subject_info[subject.id]["currently_assigned"],
+        )
+        for subject in subjects
+    ]
+
+    return ResponseMulti(result=result, count=len(result))

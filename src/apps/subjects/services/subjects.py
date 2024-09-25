@@ -69,6 +69,10 @@ class SubjectsService:
         schema = await SubjectsCrud(self.session).get_by_id(id_)
         return Subject.from_orm(schema) if schema else None
 
+    async def get_by_ids(self, ids: list[uuid.UUID], include_deleted=False) -> list[Subject]:
+        subjects = await SubjectsCrud(self.session).get_by_ids(ids, include_deleted)
+        return [Subject.from_orm(subject) for subject in subjects]
+
     async def get_if_soft_exist(self, id_: uuid.UUID) -> Subject | None:
         schema = await SubjectsCrud(self.session).get_by_id(id_)
         if schema and schema.soft_exists():
