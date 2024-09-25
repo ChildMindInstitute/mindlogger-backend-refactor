@@ -43,6 +43,7 @@ class AppletBaseInfo(BaseModel):
     stream_enabled: bool | None
     stream_ip_address: IPvAnyAddress | None
     stream_port: PositiveInt | None
+    integrations: list[str] | None
 
     @validator("description", "about")
     def validate_dict(cls, value):

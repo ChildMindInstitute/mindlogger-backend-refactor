@@ -76,6 +76,7 @@ class AppletSingleLanguageDetailMobilePublic(AppletMinimumInfo, PublicModel):
     stream_enabled: bool | None
     stream_ip_address: IPvAnyAddress | None
     stream_port: PositiveInt | None
+    integrations: list[str] | None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
@@ -179,3 +180,4 @@ class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
     updated_at: datetime.datetime | None
     activities: list[ActivityBaseInfo]
     activity_flows: list[FlowBaseInfo]
+    integrations: list[str] | None

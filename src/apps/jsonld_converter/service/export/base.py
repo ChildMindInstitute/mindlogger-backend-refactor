@@ -11,7 +11,8 @@ from apps.shared.domain import InternalModel
 class ContainsNestedModelMixin(ABC, ContextResolverAwareMixin):
     @classmethod
     @abstractmethod
-    def get_supported_types(cls) -> list[Type["BaseModelExport"]]: ...
+    def get_supported_types(cls) -> list[Type["BaseModelExport"]]:
+        ...
 
     def get_supported_processor(self, model: InternalModel) -> "BaseModelExport":
         for candidate in self.get_supported_types():
@@ -40,10 +41,12 @@ class BaseModelExport(ABC, ContextResolverAwareMixin):
 
     @classmethod
     @abstractmethod
-    def supports(cls, model: InternalModel) -> bool: ...
+    def supports(cls, model: InternalModel) -> bool:
+        ...
 
     @abstractmethod
-    async def export(self, model: InternalModel, expand: bool = False) -> ModelExportData: ...
+    async def export(self, model: InternalModel, expand: bool = False) -> ModelExportData:
+        ...
 
     async def _post_process(self, doc: dict, expand: bool):
         if expand:

@@ -9,6 +9,7 @@ from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.cors import CorsSettings
 from config.database import DatabaseSettings
+from config.integrations import LorisSettings
 from config.logs import Logs
 from config.mailing import MailingSettings
 from config.multiinformant import MultiInformantSettings
@@ -94,6 +95,8 @@ class Settings(BaseSettings):
 
     multi_informant: MultiInformantSettings = MultiInformantSettings()
 
+    loris: LorisSettings = LorisSettings()
+
     @property
     def uploads_dir(self):
         return self.root_dir.parent / "uploads"
@@ -129,5 +132,6 @@ settings = Settings(
         "authentication",
         "job",
         "subjects",
+        "integrations",
     ],
 )

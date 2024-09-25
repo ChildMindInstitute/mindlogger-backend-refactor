@@ -31,7 +31,8 @@ class ReportBase(LdDocumentBase, CommonFieldsMixin, ABC):
 
     @classmethod
     @abstractmethod
-    def get_data_type(cls): ...
+    def get_data_type(cls):
+        ...
 
     @classmethod
     def supports(cls, doc: dict) -> bool:

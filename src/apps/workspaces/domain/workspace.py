@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.domain.base import Encryption
+from apps.integrations.domain import Integration
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.domain import InvitationDetail, InvitationResponse
 from apps.shared.domain import InternalModel, PublicModel
@@ -42,6 +43,9 @@ class PublicWorkspace(PublicModel):
         "which is applet owner and prefix",
     )
     use_arbitrary: bool | None = None
+    integrations: list[Integration] | None = Field(
+        description="This field represents the list of integrations in which the workspace participates"
+    )
 
     @validator("use_arbitrary")
     def null_to_false(cls, value):
@@ -65,6 +69,9 @@ class UserWorkspace(InternalModel):
         "which is applet owner and prefix",
     )
     use_arbitrary: bool | None = None
+    integrations: list[Integration] | None = Field(
+        description="This field represents the list of integrations in which the workspace participates"
+    )
 
 
 class WorkspaceAppletEncryption(InternalModel):

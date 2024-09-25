@@ -125,6 +125,7 @@ async def tom_answer_applet_one(session, tom: User, applet_one: AppletFull):
         client=ClientMeta(app_id="web", app_version="1.1.0", width="800", height="600"),
         target_subject_id=subject.id,
         source_subject_id=subject.id,
+        consent_to_share=False,
     )
     return await AnswerService(session, tom.id).create_answer(activity_answer)
 
@@ -210,7 +211,7 @@ class TestWorkspaces(BaseTest):
         res = response.json()
         assert len(res["result"]) == 1
         assert res["count"] == 1
-        assert set(res["result"][0].keys()) == {"useArbitrary", "workspaceName", "ownerId"}
+        assert set(res["result"][0].keys()) == {"useArbitrary", "workspaceName", "integrations", "ownerId"}
         assert res["result"][0]["useArbitrary"] is False
 
     async def test_user_workspace_list_super_admin(self, client, superadmin):

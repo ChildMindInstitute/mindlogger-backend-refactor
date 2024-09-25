@@ -162,6 +162,7 @@ class AppletService:
                 stream_enabled=create_data.stream_enabled,
                 stream_ip_address=create_data.stream_ip_address,
                 stream_port=create_data.stream_port,
+                integrations=create_data.integrations,
             )
         )
         return AppletFull.from_orm(schema)
@@ -326,6 +327,7 @@ class AppletService:
                 stream_enabled=update_data.stream_enabled,
                 stream_ip_address=update_data.stream_ip_address,
                 stream_port=update_data.stream_port,
+                integrations=update_data.integrations,
             ),
         )
         return AppletFull.from_orm(schema)
@@ -431,6 +433,7 @@ class AppletService:
                     stream_ip_address=schema.stream_ip_address,
                     stream_port=schema.stream_port,
                     owner_id=applet_owner.owner_id,
+                    # integrations=schema.integrations,
                 )
             )
         return applets
@@ -475,6 +478,7 @@ class AppletService:
             stream_enabled=schema.stream_enabled,
             stream_ip_address=schema.stream_ip_address,
             stream_port=schema.stream_port,
+            integrations=schema.integrations,
         )
         activities = ActivityService(self.session, self.user_id).get_single_language_by_applet_id(applet_id, language)
         activity_flows = FlowService(self.session).get_single_language_by_applet_id(applet_id, language)
@@ -747,6 +751,7 @@ class AppletService:
             updated_at=schema.updated_at,
             activities=[],
             activity_flows=[],
+            integrations=schema.integrations,
         )
         activities = ActivityService(self.session, self.user_id).get_info_by_applet_id(schema.id, language)
         activity_flows = FlowService(self.session).get_info_by_applet_id(schema.id, language)
