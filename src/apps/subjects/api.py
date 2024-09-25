@@ -352,8 +352,12 @@ async def get_target_subjects_by_respondent(
             subject_info[subject_id]["currently_assigned"] = True
 
     subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
-    result = [
-        TargetSubjectByRespondentResponse(
+    result: list[TargetSubjectByRespondentResponse] = []
+
+    # Find the respondent subject in the list of subjects
+    respondent_target_subject: TargetSubjectByRespondentResponse | None = None
+    for subject in subjects:
+        target_subject = TargetSubjectByRespondentResponse(
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
             tag=subject.tag,
@@ -365,7 +369,14 @@ async def get_target_subjects_by_respondent(
             submission_count=subject_info[subject.id]["submission_count"],
             currently_assigned=subject_info[subject.id]["currently_assigned"],
         )
-        for subject in subjects
-    ]
+
+        if subject.id == respondent_subject_id:
+            respondent_target_subject = target_subject
+        else:
+            result.append(target_subject)
+
+    if respondent_target_subject:
+        # TODO: If this endpoint is ever paginated, this logic will need to be moved to the query level
+        result.insert(0, respondent_target_subject)
 
     return ResponseMulti(result=result, count=len(result))
