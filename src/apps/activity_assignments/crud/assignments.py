@@ -147,7 +147,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
         db_result = await self._execute(query.distinct())
 
-        return [row[0] for row in db_result.all()]
+        return db_result.scalars().all()
 
     async def delete_by_activity_or_flow_ids(self, activity_or_flow_ids: list[uuid.UUID]):
         """
