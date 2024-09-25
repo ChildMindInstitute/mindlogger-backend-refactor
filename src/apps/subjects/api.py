@@ -346,11 +346,7 @@ async def get_target_subjects_by_respondent(
         else:
             subject_info[subject_id]["currently_assigned"] = True
 
-    subject_ids = list(subject_info.keys())
-    subjects: list[Subject] = await subjects_service.get_by_ids(subject_ids)
-    answer_dates = await AnswerService(
-        user_id=user.id, session=session, arbitrary_session=answer_session
-    ).get_last_answer_dates(subject_ids, respondent_subject.applet_id)
+    subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
     result = [
         TargetSubjectByRespondentResponse(
             secret_user_id=subject.secret_user_id,
@@ -363,7 +359,6 @@ async def get_target_subjects_by_respondent(
             last_name=subject.last_name,
             submission_count=subject_info[subject.id]["submission_count"],
             currently_assigned=subject_info[subject.id]["currently_assigned"],
-            last_seen=answer_dates.get(subject.id),
         )
         for subject in subjects
     ]
