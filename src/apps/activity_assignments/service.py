@@ -424,6 +424,9 @@ class ActivityAssignmentService:
             respondent_subject_id, activity_or_flow_ids
         )
 
+    async def check_if_auto_assigned(self, activity_or_flow_id: uuid.UUID) -> bool | None:
+        return await ActivityAssigmentCRUD(self.session).check_if_auto_assigned(activity_or_flow_id)
+
     @staticmethod
     def _get_email_template_name(language: str) -> str:
         return f"new_activity_assignments_{language}"

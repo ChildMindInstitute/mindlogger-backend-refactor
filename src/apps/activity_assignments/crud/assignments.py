@@ -301,3 +301,12 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             updated_schema = await self._get("id", model_id)
 
         return updated_schema
+
+    async def check_if_auto_assigned(self, activity_or_flow_id: uuid.UUID) -> bool | None:
+        activities_query = select(ActivitySchema.auto_assign).where(ActivitySchema.id == activity_or_flow_id)
+        flows_query = select(ActivityFlowSchema.auto_assign).where(ActivityFlowSchema.id == activity_or_flow_id)
+
+        union_query = activities_query.union_all(flows_query).limit(1)
+
+        db_result = await self._execute(union_query)
+        return db_result.scalar_one_or_none()

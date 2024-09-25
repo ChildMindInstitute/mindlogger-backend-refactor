@@ -322,9 +322,14 @@ async def get_target_subjects_by_respondent(
         respondent_subject.applet_id, respondent_subject.id
     )
 
-    assignment_subject_ids = await ActivityAssignmentService(session).get_target_subject_ids_by_respondent(
+    assignment_service = ActivityAssignmentService(session)
+    assignment_subject_ids = await assignment_service.get_target_subject_ids_by_respondent(
         respondent_subject_id=respondent_subject_id, activity_or_flow_ids=[activity_or_flow_id]
     )
+
+    is_auto_assigned = await assignment_service.check_if_auto_assigned(activity_or_flow_id)
+    if is_auto_assigned:
+        assignment_subject_ids.append(respondent_subject_id)
 
     submission_data: list[tuple[uuid.UUID, int]] = await AnswerService(
         user_id=user.id, session=session, arbitrary_session=answer_session
