@@ -303,6 +303,9 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         return updated_schema
 
     async def check_if_auto_assigned(self, activity_or_flow_id: uuid.UUID) -> bool | None:
+        """
+        Checks if the activity or flow is currently set to auto-assign.
+        """
         activities_query = select(ActivitySchema.auto_assign).where(ActivitySchema.id == activity_or_flow_id)
         flows_query = select(ActivityFlowSchema.auto_assign).where(ActivityFlowSchema.id == activity_or_flow_id)
 

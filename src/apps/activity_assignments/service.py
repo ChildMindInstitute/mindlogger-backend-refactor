@@ -425,6 +425,9 @@ class ActivityAssignmentService:
         )
 
     async def check_if_auto_assigned(self, activity_or_flow_id: uuid.UUID) -> bool | None:
+        """
+        Checks if the activity or flow is currently set to auto-assign.
+        """
         return await ActivityAssigmentCRUD(self.session).check_if_auto_assigned(activity_or_flow_id)
 
     @staticmethod
