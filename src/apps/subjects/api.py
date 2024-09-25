@@ -307,7 +307,7 @@ async def get_target_subjects_by_respondent(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     answer_session=Depends(get_answer_session),
-) -> ResponseMulti[list[TargetSubjectByRespondentResponse]]:
+) -> ResponseMulti[TargetSubjectByRespondentResponse]:
     subjects_service = SubjectsService(session, user.id)
     respondent_subject = await subjects_service.get(respondent_subject_id)
     if not respondent_subject:
