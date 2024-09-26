@@ -88,6 +88,11 @@ class SubjectReadResponse(SubjectUpdateRequest):
     last_name: str
 
 
+class TargetSubjectByRespondentResponse(SubjectReadResponse):
+    submission_count: int = 0
+    currently_assigned: bool = False
+
+
 class SubjectRelation(InternalModel):
     source_subject_id: uuid.UUID
     target_subject_id: uuid.UUID

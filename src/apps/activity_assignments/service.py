@@ -399,6 +399,37 @@ class ActivityAssignmentService:
             for assignment in assignments
         ]
 
+    async def get_target_subject_ids_by_respondent(
+        self,
+        respondent_subject_id: uuid.UUID,
+        activity_or_flow_ids: list[uuid.UUID] = [],
+    ) -> list[uuid.UUID]:
+        """
+        Retrieves the IDs of target subjects that have assignments to be completed by the provided respondent.
+
+        Parameters:
+        ----------
+        respondent_subject_id : uuid.UUID
+            The ID of the respondent subject to search for. This parameter is required.
+        activity_or_flow_ids : list[uuid.UUID]
+            Optional list of activity or flow IDs to narrow the search. These IDs may correspond to either
+            `activity_id` or `activity_flow_id` fields
+
+        Returns:
+        -------
+        list[uuid.UUID]
+            List of target subject IDs associated with the provided activity or flow IDs.
+        """
+        return await ActivityAssigmentCRUD(self.session).get_target_subject_ids_by_activity_or_flow_ids(
+            respondent_subject_id, activity_or_flow_ids
+        )
+
+    async def check_if_auto_assigned(self, activity_or_flow_id: uuid.UUID) -> bool | None:
+        """
+        Checks if the activity or flow is currently set to auto-assign.
+        """
+        return await ActivityAssigmentCRUD(self.session).check_if_auto_assigned(activity_or_flow_id)
+
     @staticmethod
     def _get_email_template_name(language: str) -> str:
         return f"new_activity_assignments_{language}"
