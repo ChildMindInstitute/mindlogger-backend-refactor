@@ -167,6 +167,8 @@ async def applet_activities_for_target_subject(
     applet_service = AppletService(session, user.id)
     await applet_service.exist_by_id(applet_id)
 
+    await SubjectsService(session, user.id).exist_by_id(subject_id)
+
     # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
     await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
 
