@@ -167,9 +167,8 @@ async def applet_activities_for_target_subject(
 ) -> Response[AssignActivitiesAndFlowsPublic]:
     applet_service = AppletService(session, user.id)
     await applet_service.exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
-    # Ensure reviewers can access the subject
+    # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
     await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
 
     # TODO: Get all activities and flows assigned to the target subject
