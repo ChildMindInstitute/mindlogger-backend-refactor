@@ -6,8 +6,10 @@ from fastapi import Depends
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import (
     ActivityLanguageWithItemsMobileDetailPublic,
+    ActivityOrFlowStatusEnum,
+    ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
-    ActivityWithAssignmentDetailsPublic, ActivityOrFlowWithAssignmentsPublic,
+    ActivityWithAssignmentDetailsPublic,
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
@@ -161,8 +163,8 @@ async def applet_activities_for_target_subject(
     applet_id: uuid.UUID,
     subject_id: uuid.UUID,
     user: User = Depends(get_current_user),
-    language: str = Depends(get_language),
     session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[ActivityOrFlowWithAssignmentsPublic]:
     applet_service = AppletService(session, user.id)
     await applet_service.exist_by_id(applet_id)
@@ -172,12 +174,46 @@ async def applet_activities_for_target_subject(
     # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
     await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
 
-    # TODO: Get all activities and flows assigned to the target subject
-    # TODO: Should use InternalClass until here and then convert to PublicClass
+    assignments = await ActivityAssignmentService(session).get_all_with_subject_entities(
+        applet_id, QueryParams(filters={"target_subject_id": subject_id})
+    )
+
+    activity_and_flow_ids = await AnswerService(
+        session, user.id, answer_session
+    ).get_activity_and_flow_ids_by_target_subject(subject_id)
+
+    activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
+        activity_and_flow_ids
+    )
+
+    result = []
+    for activity_or_flow in activities_and_flows:
+        activity_or_flow_assignments = [
+            assignment
+            for assignment in assignments
+            if assignment.activity_id == activity_or_flow.id or assignment.activity_flow_id == activity_or_flow.id
+        ]
+
+        if len(activity_or_flow_assignments) > 0:
+            if activity_or_flow.is_hidden:
+                activity_or_flow.status = ActivityOrFlowStatusEnum.HIDDEN
+            else:
+                activity_or_flow.status = ActivityOrFlowStatusEnum.ACTIVE
+        elif activity_or_flow.auto_assign:
+            activity_or_flow.status = ActivityOrFlowStatusEnum.ACTIVE
+        else:
+            activity_or_flow.status = ActivityOrFlowStatusEnum.INACTIVE
+
+        result.append(
+            ActivityOrFlowWithAssignmentsPublic(
+                **activity_or_flow.dict(),
+                assignments=activity_or_flow_assignments,
+            )
+        )
 
     return ResponseMulti(
-        result=[],
-        count=0,
+        result=result,
+        count=len(result),
     )
 
 

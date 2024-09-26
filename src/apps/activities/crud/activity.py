@@ -1,12 +1,13 @@
 import uuid
+from operator import and_
 from typing import cast
 
-from sqlalchemy import delete, select, update
-from sqlalchemy.orm import Query
+from sqlalchemy import delete, func, literal, or_, select, union, update
+from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
-from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
-from apps.activity_flows.db.schemas import ActivityFlowSchema
+from apps.activities.domain.activity import ActivityOrFlowBasicInfoInternal
+from apps.activity_flows.db.schemas import ActivityFlowItemSchema, ActivityFlowSchema
 from infrastructure.database import BaseCRUD
 
 __all__ = ["ActivitiesCRUD"]
@@ -106,29 +107,66 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_assigned_activity_and_flows(
-        self, applet_id: uuid.UUID, target_subject_id: uuid.UUID
-    ) -> list[
-        ActivityOrFlowWithAssignmentsPublic
-    ]:  # TODO: Change this to a InternalModel class, check if already exist a class that fits
-        # TODO: Write this query joining ActivityAssigmentSchema, ActivityFlowSchema and ActivitySchema
-        # TODO: Pay attention to images field, we should use aggregate function to get all images for each flow
-        # TODO: In case of an activity, this images array, should return only one image
-
-        # TODO: check the methods UserAppletAccessCRUD.get_workspace_managers() and UserAppletAccessCRUD.get_workspace_respondents() as examples of complex queries with aggregations and CTE
-        query: Query = (
-            select(
-                ActivitySchema.id.label("activity_id"),
-                ActivitySchema.name.label("activity_name"),
-                ActivitySchema.description.label("activity_description"),
-                ActivityAssigmentSchema,
-                ActivityFlowSchema,
+    async def get_activity_and_flow_basic_info_by_ids_or_auto(
+        self, ids: list[uuid.UUID]
+    ) -> list[ActivityOrFlowBasicInfoInternal]:
+        activities_query: Query = select(
+            ActivitySchema.id,
+            ActivitySchema.name,
+            ActivitySchema.description,
+            ActivitySchema.image.label("images"),
+            literal(False).label("is_flow"),
+            ActivitySchema.auto_assign,
+            ActivitySchema.is_hidden,
+        ).where(
+            or_(
+                ActivitySchema.id.in_(ids),
+                ActivitySchema.auto_assign.is_(True),
             )
-            .join(ActivityAssigmentSchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
-            .join(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
-            .where(ActivitySchema.applet_id == applet_id)
-            .where(ActivityAssigmentSchema.target_subject_id == target_subject_id)
-            .order_by(ActivityFlowSchema.order.asc(), ActivitySchema.order.asc())
         )
-        result = await self._execute(query)
-        return result.scalars().all()
+
+        flow_alias = aliased(ActivityFlowSchema)
+        flow_items_alias = aliased(ActivityFlowItemSchema)
+        activities_alias = aliased(ActivitySchema)
+
+        flows_query = (
+            select(
+                flow_alias.id,
+                flow_alias.name,
+                flow_alias.description,
+                func.coalesce(
+                    func.string_agg(activities_alias.image, ",").filter(
+                        and_(activities_alias.image.isnot(None), activities_alias.image != "")
+                    ),
+                    "",
+                ).label("images"),
+                literal(True).label("is_flow"),
+                flow_alias.auto_assign,
+                flow_alias.is_hidden,
+            )
+            .join(flow_items_alias, flow_alias.id == flow_items_alias.activity_flow_id)
+            .join(activities_alias, flow_items_alias.activity_id == activities_alias.id)
+            .where(
+                or_(
+                    flow_alias.id.in_(ids),
+                    flow_alias.auto_assign.is_(True),
+                )
+            )
+            .group_by(flow_alias.id, flow_alias.name, flow_alias.description, flow_alias.auto_assign)
+        )
+
+        union_query = union(activities_query, flows_query).order_by("is_flow DESC")
+
+        result = await self.session.execute(union_query)
+        return [
+            ActivityOrFlowBasicInfoInternal(
+                id=row[0],
+                name=row[1],
+                description=row[2],
+                images=row[3].split(","),
+                is_flow=row[4],
+                auto_assign=row[5],
+                is_hidden=row[6],
+            )
+            for row in result.fetchall()
+        ]

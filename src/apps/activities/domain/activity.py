@@ -20,7 +20,7 @@ class ActivityOrFlowStatusEnum(Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     HIDDEN = "hidden"
-    UNAVAILABLE = "unavailable"
+    DELETED = "deleted"
 
 
 class ActivityOrFlowBasicInfoPublic(PublicModel):
@@ -31,6 +31,17 @@ class ActivityOrFlowBasicInfoPublic(PublicModel):
     is_flow: bool = False
     status: ActivityOrFlowStatusEnum
     auto_assign: bool = True
+
+
+class ActivityOrFlowBasicInfoInternal(InternalModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    images: list[str] = Field(default_factory=list)
+    is_flow: bool = False
+    status: ActivityOrFlowStatusEnum | None
+    auto_assign: bool = True
+    is_hidden: bool = False
 
 
 class Activity(ActivityBase, InternalModel):

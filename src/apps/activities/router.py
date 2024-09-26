@@ -10,8 +10,10 @@ from apps.activities.api.activities import (
     public_activity_retrieve,
 )
 from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
-from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic, \
-    ActivityOrFlowWithAssignmentsPublic
+from apps.activities.domain.activity import (
+    ActivityOrFlowWithAssignmentsPublic,
+    ActivitySingleLanguageWithItemsDetailPublic,
+)
 from apps.activities.domain.reusable_item_choices import PublicReusableItemChoice
 from apps.applets.domain.applet import (
     ActivitiesAndFlowsWithAssignmentDetailsPublic,

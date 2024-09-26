@@ -8,7 +8,6 @@ from pydantic.generics import GenericModel
 from apps.activities.domain.activity import (
     ActivityBaseInfo,
     ActivityLanguageWithItemsMobileDetailPublic,
-    ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageDetailPublic,
     ActivitySingleLanguageMobileDetailPublic,

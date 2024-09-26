@@ -1,5 +1,6 @@
-from apps.shared.exception import NotFoundError
 from gettext import gettext as _
+
+from apps.shared.exception import NotFoundError
 
 
 class SecretIDUniqueViolationError(Exception):
@@ -7,6 +8,7 @@ class SecretIDUniqueViolationError(Exception):
 
 
 class AppletUserViolationError(Exception): ...
+
 
 class SubjectNotFoundError(NotFoundError):
     message_is_template: bool = True
