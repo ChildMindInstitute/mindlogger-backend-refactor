@@ -163,6 +163,7 @@ async def applet_activities_for_target_subject(
     applet_id: uuid.UUID,
     subject_id: uuid.UUID,
     user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[ActivityOrFlowWithAssignmentsPublic]:
@@ -183,7 +184,7 @@ async def applet_activities_for_target_subject(
     ).get_activity_and_flow_ids_by_target_subject(subject_id)
 
     activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
-        activity_and_flow_ids
+        applet_id, activity_and_flow_ids, language
     )
 
     result = []
