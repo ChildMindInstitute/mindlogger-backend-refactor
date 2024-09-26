@@ -7,7 +7,7 @@ from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import (
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
-    ActivityWithAssignmentDetailsPublic,
+    ActivityWithAssignmentDetailsPublic, ActivityOrFlowWithAssignmentsPublic,
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
@@ -21,11 +21,10 @@ from apps.applets.domain.applet import (
     AppletActivitiesAndFlowsDetailsPublic,
     AppletActivitiesDetailsPublic,
     AppletSingleLanguageDetailMobilePublic,
-    AssignActivitiesAndFlowsPublic,
 )
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
-from apps.shared.domain import Response
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
 from apps.users import User
@@ -164,7 +163,7 @@ async def applet_activities_for_target_subject(
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
     session=Depends(get_session),
-) -> Response[AssignActivitiesAndFlowsPublic]:
+) -> ResponseMulti[ActivityOrFlowWithAssignmentsPublic]:
     applet_service = AppletService(session, user.id)
     await applet_service.exist_by_id(applet_id)
 
@@ -174,10 +173,9 @@ async def applet_activities_for_target_subject(
     # TODO: Get all activities and flows assigned to the target subject
     # TODO: Should use InternalClass until here and then convert to PublicClass
 
-    return Response(
-        result=AssignActivitiesAndFlowsPublic(
-            activities_and_flows=[],
-        )
+    return ResponseMulti(
+        result=[],
+        count=0,
     )
 
 

@@ -10,13 +10,13 @@ from apps.activities.api.activities import (
     public_activity_retrieve,
 )
 from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
-from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic
+from apps.activities.domain.activity import ActivitySingleLanguageWithItemsDetailPublic, \
+    ActivityOrFlowWithAssignmentsPublic
 from apps.activities.domain.reusable_item_choices import PublicReusableItemChoice
 from apps.applets.domain.applet import (
     ActivitiesAndFlowsWithAssignmentDetailsPublic,
     AppletActivitiesAndFlowsDetailsPublic,
     AppletActivitiesDetailsPublic,
-    AssignActivitiesAndFlowsPublic,
 )
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
@@ -113,7 +113,7 @@ router.get(
                 """,
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[AssignActivitiesAndFlowsPublic]},
+        status.HTTP_200_OK: {"model": ResponseMulti[ActivityOrFlowWithAssignmentsPublic]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
