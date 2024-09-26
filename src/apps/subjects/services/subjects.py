@@ -86,7 +86,7 @@ class SubjectsService:
         """
         subject = await self.get(subject_id)
         if not subject:
-            raise SubjectNotFoundError(key="subject_id", value=str(subject_id))
+            raise SubjectNotFoundError(subject_id=str(subject_id))
 
         return subject
 
