@@ -1366,7 +1366,7 @@ class AnswerService:
             return None
 
         service = ReportServerService(self.session, arbitrary_session=self.answer_session)
-        report = await service.create_report(answer.submit_id, answer.id)
+        report = await service.create_report(answer.submit_id, answer.id, activity_id)
         return report
 
     async def get_flow_summary_latest_report(
@@ -1922,9 +1922,20 @@ class ReportServerService:
         return self._is_activity_last_in_flow(applet_full, activity_id, flow_id)
 
     async def create_report(
-        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
+        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None, activity_id: uuid.UUID | None = None
     ) -> ReportServerResponse | None:
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
+        act_crud = ActivitiesCRUD(self.session)
+        activity_data = await act_crud.get_by_id(activity_id)
+        if "scoring_type" in activity_data.scores_and_reports.keys():
+            scoring_type = activity_data.scores_and_reports["scoring_type"]
+            if scoring_type == "lookup_scores":
+                subscale_name = activity_data.scores_and_reports["subscale_name"]
+                subscales = activity_data.subscale_setting["subscales"]
+                for subscale in subscales:
+                    if subscale["name"] == subscale_name:
+                        subscale_table_data = subscale["subscale_table_data"]
+
         if not answers:
             return None
         applet_id_version: str = answers[0].applet_history_id
@@ -1957,6 +1968,8 @@ class ReportServerService:
             now=datetime.datetime.utcnow().strftime("%x"),
             user=user_info,
             applet=applet_full,
+            scoring_type=scoring_type,
+            subscale_table_data=subscale_table_data,
         )
         encrypted_data = encryption.encrypt(data)
 
