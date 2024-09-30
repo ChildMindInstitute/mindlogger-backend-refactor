@@ -31,6 +31,7 @@ class ActivityOrFlowBasicInfoPublic(PublicModel):
     is_flow: bool = False
     status: ActivityOrFlowStatusEnum
     auto_assign: bool = True
+    activity_ids: list[uuid.UUID] | None = None
 
 
 class ActivityOrFlowBasicInfoInternal(InternalModel):
@@ -42,6 +43,7 @@ class ActivityOrFlowBasicInfoInternal(InternalModel):
     status: ActivityOrFlowStatusEnum | None
     auto_assign: bool = True
     is_hidden: bool = False
+    activity_ids: list[uuid.UUID] | None = None
 
 
 class Activity(ActivityBase, InternalModel):

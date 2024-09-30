@@ -2,7 +2,7 @@ import uuid
 from operator import and_
 from typing import cast
 
-from sqlalchemy import delete, func, literal, or_, select, text, union, update
+from sqlalchemy import String, delete, func, literal, or_, select, text, union, update
 from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
@@ -115,6 +115,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.name,
             ActivitySchema.description,
             ActivitySchema.image.label("images"),
+            literal('').label("activity_ids"),
             literal(False).label("is_flow"),
             ActivitySchema.auto_assign,
             ActivitySchema.is_hidden,
@@ -141,6 +142,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
                     ),
                     "",
                 ).label("images"),
+                func.string_agg(activities_alias.id.cast(String), ",").label("activity_ids"),
                 literal(True).label("is_flow"),
                 flow_alias.auto_assign,
                 flow_alias.is_hidden,
@@ -166,9 +168,10 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
                 name=row[1],
                 description=row[2][language],
                 images=row[3].split(","),
-                is_flow=row[4],
-                auto_assign=row[5],
-                is_hidden=row[6],
+                activity_ids=row[4].split(",") if row[4] else None,
+                is_flow=row[5],
+                auto_assign=row[6],
+                is_hidden=row[7],
             )
             for row in result.fetchall()
         ]
