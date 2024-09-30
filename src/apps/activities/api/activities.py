@@ -179,12 +179,16 @@ async def applet_activities_for_target_subject(
         applet_id, QueryParams(filters={"target_subject_id": subject_id})
     )
 
-    activity_and_flow_ids = await AnswerService(
+    activity_and_flow_ids_from_assignments = [
+        assignment.activity_id or assignment.activity_flow_id for assignment in assignments
+    ]
+
+    activity_and_flow_ids_from_submissions = await AnswerService(
         session, user.id, answer_session
     ).get_activity_and_flow_ids_by_target_subject(subject_id)
 
     activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
-        applet_id, activity_and_flow_ids, language
+        applet_id, activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments, language
     )
 
     result = []
