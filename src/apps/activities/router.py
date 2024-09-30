@@ -110,7 +110,7 @@ router.get(
 )(applet_activities_for_subject)
 
 router.get(
-    "/applet/{applet_id}/target/{target_subject_id}",
+    "/applet/{applet_id}/target/{subject_id}",
     description="""Get all assigned activities and activity flows for a target subject.
                 """,
     status_code=status.HTTP_200_OK,
