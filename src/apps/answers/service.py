@@ -1927,14 +1927,16 @@ class ReportServerService:
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
         act_crud = ActivitiesCRUD(self.session)
         activity_data = await act_crud.get_by_id(activity_id)
-        if "scoring_type" in activity_data.scores_and_reports.keys():
-            scoring_type = activity_data.scores_and_reports["scoring_type"]
-            if scoring_type == "lookup_scores":
-                subscale_name = activity_data.scores_and_reports["subscale_name"]
-                subscales = activity_data.subscale_setting["subscales"]
-                for subscale in subscales:
-                    if subscale["name"] == subscale_name:
-                        subscale_table_data = subscale["subscale_table_data"]
+        scoring_type = activity_data.scores_and_reports.get("scoring_type", "raw_scores")
+
+        if scoring_type == "lookup_scores":
+            subscale_name = activity_data.scores_and_reports["subscale_name"]
+            subscales = activity_data.subscale_setting["subscales"]
+            for subscale in subscales:
+                if subscale["name"] == subscale_name:
+                    subscale_table_data = subscale["subscale_table_data"]
+        else:
+            subscale_table_data = []
 
         if not answers:
             return None

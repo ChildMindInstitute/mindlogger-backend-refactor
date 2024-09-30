@@ -112,8 +112,8 @@ class ScoresAndReports(PublicModel):
     generate_report: bool = False
     show_score_summary: bool = False
     reports: list[Score | Section] | None = Field(default_factory=list)
-    scoring_type: str | None = None 
-    subscale_name: str | None = None 
+    scoring_type: str | None = None
+    subscale_name: str | None = None
 
     @validator("reports")
     def validate_reports(cls, value):
