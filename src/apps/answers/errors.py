@@ -90,3 +90,13 @@ class MultiinformantAssessmentNoAccessApplet(ValidationError):
 class MultiinformantAssessmentInvalidActivityOrFlow(ValidationError):
     message = _("Activity or Flow not found")
     code = _("invalid_activity_or_flow_id")
+
+
+class NoSubscaleLinked(ValidationError):
+    message = _("The scoring type is lookup_scores but no subscale is linked")
+    code = _("no_subscale_linked")
+
+
+class SubscaleDoesNotExist(ValidationError):
+    message = _("The scoring type is lookup_scores but the subscale data does not exist")
+    code = _("no_subscale_exist")

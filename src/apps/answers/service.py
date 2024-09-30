@@ -75,8 +75,10 @@ from apps.answers.errors import (
     MultiinformantAssessmentInvalidTargetSubject,
     MultiinformantAssessmentNoAccessApplet,
     NonPublicAppletError,
+    NoSubscaleLinked,
     ReportServerError,
     ReportServerIsNotConfigured,
+    SubscaleDoesNotExist,
     UserDoesNotHavePermissionError,
     WrongAnswerGroupAppletId,
     WrongAnswerGroupVersion,
@@ -1930,11 +1932,15 @@ class ReportServerService:
         scoring_type = activity_data.scores_and_reports.get("scoring_type", "raw_scores")
 
         if scoring_type == "lookup_scores":
-            subscale_name = activity_data.scores_and_reports["subscale_name"]
+            subscale_name = activity_data.scores_and_reports.get("subscale_name", False)
+            if not subscale_name:
+                raise NoSubscaleLinked()
             subscales = activity_data.subscale_setting["subscales"]
             for subscale in subscales:
                 if subscale["name"] == subscale_name:
-                    subscale_table_data = subscale["subscale_table_data"]
+                    subscale_table_data = subscale.get("subscale_table_data", False)
+                    if not subscale_table_data:
+                        raise SubscaleDoesNotExist()
         else:
             subscale_table_data = []
 
