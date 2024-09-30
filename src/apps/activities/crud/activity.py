@@ -115,7 +115,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.name,
             ActivitySchema.description,
             ActivitySchema.image.label("images"),
-            literal('').label("activity_ids"),
+            literal("").label("activity_ids"),
             literal(False).label("is_flow"),
             ActivitySchema.auto_assign,
             ActivitySchema.is_hidden,

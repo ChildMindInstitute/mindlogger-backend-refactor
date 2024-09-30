@@ -179,8 +179,10 @@ async def applet_activities_for_target_subject(
         applet_id, QueryParams(filters={"target_subject_id": subject_id})
     )
 
-    activity_and_flow_ids_from_assignments = [
-        assignment.activity_id or assignment.activity_flow_id for assignment in assignments
+    # Only one of these IDs will be `None` at a time, so the resulting type will be a list of UUIDs
+    activity_and_flow_ids_from_assignments: list[uuid.UUID] = [
+        assignment.activity_id or assignment.activity_flow_id  # type: ignore
+        for assignment in assignments
     ]
 
     activity_and_flow_ids_from_submissions = await AnswerService(
