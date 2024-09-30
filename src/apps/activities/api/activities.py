@@ -195,12 +195,9 @@ async def applet_activities_for_target_subject(
             if assignment.activity_id == activity_or_flow.id or assignment.activity_flow_id == activity_or_flow.id
         ]
 
-        if len(activity_or_flow_assignments) > 0:
-            if activity_or_flow.is_hidden:
-                activity_or_flow.status = ActivityOrFlowStatusEnum.HIDDEN
-            else:
-                activity_or_flow.status = ActivityOrFlowStatusEnum.ACTIVE
-        elif activity_or_flow.auto_assign:
+        if activity_or_flow.is_hidden:
+            activity_or_flow.status = ActivityOrFlowStatusEnum.HIDDEN
+        elif len(activity_or_flow_assignments) > 0 or activity_or_flow.auto_assign:
             activity_or_flow.status = ActivityOrFlowStatusEnum.ACTIVE
         else:
             activity_or_flow.status = ActivityOrFlowStatusEnum.INACTIVE
