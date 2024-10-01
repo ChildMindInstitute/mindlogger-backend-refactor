@@ -100,13 +100,13 @@ def subscale(subscale_item: SubscaleItem) -> Subscale:
 
 
 @pytest.fixture
-def scores_and_reports_lookup_scores(score: Score, section: Section) -> ScoresAndReports:
+def scores_and_reports_lookup_scores(score: Score, section: Section, subscale: Subscale) -> ScoresAndReports:
     return ScoresAndReports(
         generate_report=True,
         show_score_summary=True,
         reports=[score, section],
         scoring_type="lookup_scores",
-        scoring_name=subscale.name,
+        subscale_name=subscale.name,
     )
 
 
