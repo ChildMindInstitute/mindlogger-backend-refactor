@@ -1928,21 +1928,21 @@ class ReportServerService:
     ) -> ReportServerResponse | None:
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
         act_crud = ActivitiesCRUD(self.session)
-        activity_data = await act_crud.get_by_id(activity_id)
-        scoring_type = activity_data.scores_and_reports.get("scoring_type", "raw_scores")
-
-        if scoring_type == "lookup_scores":
-            subscale_name = activity_data.scores_and_reports.get("subscale_name", False)
-            if not subscale_name:
-                raise NoSubscaleLinked()
-            subscales = activity_data.subscale_setting["subscales"]
-            for subscale in subscales:
-                if subscale["name"] == subscale_name:
-                    subscale_table_data = subscale.get("subscale_table_data", False)
-                    if not subscale_table_data:
-                        raise SubscaleDoesNotExist()
-        else:
-            subscale_table_data = []
+        subscale_table_data = []
+        subscale_name = ""
+        if activity_id:
+            activity_data = await act_crud.get_by_id(activity_id)
+            scoring_type = activity_data.scores_and_reports.get("scoring_type", "raw_scores")
+            if scoring_type == "lookup_scores":
+                subscale_name = activity_data.scores_and_reports.get("subscale_name", False)
+                if not subscale_name:
+                    raise NoSubscaleLinked()
+                subscales = activity_data.subscale_setting["subscales"]
+                for subscale in subscales:
+                    if subscale["name"] == subscale_name:
+                        subscale_table_data = subscale.get("subscale_table_data", False)
+                        if not subscale_table_data:
+                            raise SubscaleDoesNotExist()
 
         if not answers:
             return None
@@ -1976,8 +1976,8 @@ class ReportServerService:
             now=datetime.datetime.utcnow().strftime("%x"),
             user=user_info,
             applet=applet_full,
-            scoring_type=scoring_type,
-            subscale_table_data=subscale_table_data,
+            scoringType=scoring_type,
+            subscaleTableData=subscale_table_data,
         )
         encrypted_data = encryption.encrypt(data)
 
