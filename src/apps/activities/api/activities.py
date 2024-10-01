@@ -6,7 +6,6 @@ from fastapi import Depends
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import (
     ActivityLanguageWithItemsMobileDetailPublic,
-    ActivityOrFlowStatusEnum,
     ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
     ActivityWithAssignmentDetailsPublic,
@@ -201,12 +200,7 @@ async def applet_activities_for_target_subject(
             if assignment.activity_id == activity_or_flow.id or assignment.activity_flow_id == activity_or_flow.id
         ]
 
-        if activity_or_flow.is_hidden:
-            activity_or_flow.status = ActivityOrFlowStatusEnum.HIDDEN
-        elif len(activity_or_flow_assignments) > 0 or activity_or_flow.auto_assign:
-            activity_or_flow.status = ActivityOrFlowStatusEnum.ACTIVE
-        else:
-            activity_or_flow.status = ActivityOrFlowStatusEnum.INACTIVE
+        activity_or_flow.set_status(activity_or_flow_assignments)
 
         result.append(
             ActivityOrFlowWithAssignmentsPublic(
