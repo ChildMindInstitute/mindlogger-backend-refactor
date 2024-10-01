@@ -522,6 +522,66 @@ class TestActivityItems:
         result = resp.json()["result"]
         assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
 
+    async def test_create_applet__activity_with_subscale_settings_and_lookup_table_and_score_report_raw_scoring(
+        self,
+        client: TestClient,
+        applet_minimal_data: AppletCreate,
+        single_select_item_create_with_score: ActivityItemCreate,
+        tom: User,
+        subscale_setting: SubscaleSetting,
+        subscale_lookup_table: list[SubScaleLookupTable],
+        scores_and_reports: ScoresAndReports,
+    ):
+        client.login(tom)
+        data = applet_minimal_data.copy(deep=True)
+        sub_setting = subscale_setting.copy(deep=True)
+
+        # Update subscale setting with item name and lookup table
+        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # Update name
+        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table  # Set lookup table data
+
+        data.activities[0].items = [single_select_item_create_with_score]
+        data.activities[0].subscale_setting = sub_setting
+        data.activities[0].scores_and_reports = scores_and_reports
+
+        # Make the POST request
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), json=data.dict(by_alias=True))
+
+        # Assertions
+        assert resp.status_code == http.HTTPStatus.CREATED
+        result = resp.json()["result"]
+        assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+
+    async def test_create_applet__activity_with_subscale_settings_and_lookup_table_and_score_report_lookup_scoring(
+        self,
+        client: TestClient,
+        applet_minimal_data: AppletCreate,
+        single_select_item_create_with_score: ActivityItemCreate,
+        tom: User,
+        subscale_setting: SubscaleSetting,
+        subscale_lookup_table: list[SubScaleLookupTable],
+        scores_and_reports_lookup_scores: ScoresAndReports,
+    ):
+        client.login(tom)
+        data = applet_minimal_data.copy(deep=True)
+        sub_setting = subscale_setting.copy(deep=True)
+
+        # Update subscale setting with item name and lookup table
+        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # Update name
+        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table  # Set lookup table data
+
+        data.activities[0].items = [single_select_item_create_with_score]
+        data.activities[0].subscale_setting = sub_setting
+        data.activities[0].scores_and_reports = scores_and_reports_lookup_scores
+
+        # Make the POST request
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), json=data.dict(by_alias=True))
+
+        # Assertions
+        assert resp.status_code == http.HTTPStatus.CREATED
+        result = resp.json()["result"]
+        assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+
     async def test_create_applet__activity_with_subscale_settings_with_invalid_subscale_lookup_table_age(
         self,
         client: TestClient,

@@ -77,6 +77,15 @@ def scores_and_reports(score: Score, section: Section) -> ScoresAndReports:
 
 
 @pytest.fixture
+def scores_and_reports_raw_score(score: Score, section: Section) -> ScoresAndReports:
+    return ScoresAndReports(
+        generate_report=True,
+        show_score_summary=True,
+        reports=[score, section],
+    )
+
+
+@pytest.fixture
 def subscale_item() -> SubscaleItem:
     return SubscaleItem(name="activity_item_1", type=SubscaleItemType.ITEM)
 
@@ -87,6 +96,17 @@ def subscale(subscale_item: SubscaleItem) -> Subscale:
         name="subscale type item",
         scoring=SubscaleCalculationType.AVERAGE,
         items=[subscale_item],
+    )
+
+
+@pytest.fixture
+def scores_and_reports_lookup_scores(score: Score, section: Section) -> ScoresAndReports:
+    return ScoresAndReports(
+        generate_report=True,
+        show_score_summary=True,
+        reports=[score, section],
+        scoring_type="lookup_scores",
+        scoring_name=subscale.name,
     )
 
 
