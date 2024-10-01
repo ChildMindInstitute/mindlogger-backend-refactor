@@ -119,6 +119,8 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             literal(False).label("is_flow"),
             ActivitySchema.auto_assign,
             ActivitySchema.is_hidden,
+            ActivitySchema.is_performance_task,
+            ActivitySchema.performance_task_type,
         ).where(
             ActivitySchema.applet_id == applet_id,
             or_(
@@ -146,6 +148,8 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
                 literal(True).label("is_flow"),
                 flow_alias.auto_assign,
                 flow_alias.is_hidden,
+                literal(None).label("is_performance_task"),
+                literal(None).label("performance_task_type"),
             )
             .join(flow_items_alias, flow_alias.id == flow_items_alias.activity_flow_id)
             .join(activities_alias, flow_items_alias.activity_id == activities_alias.id)
@@ -172,6 +176,8 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
                 is_flow=row[5],
                 auto_assign=row[6],
                 is_hidden=row[7],
+                is_performance_task=row[8],
+                performance_task_type=row[9],
             )
             for row in result.fetchall()
         ]

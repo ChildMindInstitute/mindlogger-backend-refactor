@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.activities.domain.activity import ActivityOrFlowStatusEnum
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
-from apps.activities.domain.response_type_config import SingleSelectionConfig
+from apps.activities.domain.response_type_config import PerformanceTaskType, SingleSelectionConfig
 from apps.activities.domain.response_values import SingleSelectionValues
 from apps.activities.services.activity import ActivityService
 from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
@@ -112,6 +112,14 @@ async def empty_applet_lucy_manager(
 
 
 @pytest.fixture
+async def applet_with_all_performance_tasks_lucy_manager(
+    session: AsyncSession, applet_with_all_performance_tasks: AppletFull, tom: User, lucy: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_with_all_performance_tasks.id).add_role(lucy.id, Role.MANAGER)
+    return applet_with_all_performance_tasks
+
+
+@pytest.fixture
 async def applet_activity_flow_lucy_manager(
     session: AsyncSession, applet_activity_flow: AppletFull, tom: User, lucy: User
 ) -> AppletFull:
@@ -128,10 +136,31 @@ async def empty_applet_lucy_respondent(
 
 
 @pytest.fixture
+async def applet_with_all_performance_tasks_lucy_respondent(
+    session: AsyncSession, applet_with_all_performance_tasks: AppletFull, tom: User, lucy: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_with_all_performance_tasks.id).add_role(
+        lucy.id, Role.RESPONDENT
+    )
+    return applet_with_all_performance_tasks
+
+
+@pytest.fixture
 async def lucy_empty_applet_subject(
     session: AsyncSession, lucy: User, empty_applet_lucy_respondent: AppletFull
 ) -> Subject:
     applet_id = empty_applet_lucy_respondent.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
+async def lucy_applet_with_all_performance_tasks_subject(
+    session: AsyncSession, lucy: User, applet_with_all_performance_tasks_lucy_respondent: AppletFull
+) -> Subject:
+    applet_id = applet_with_all_performance_tasks_lucy_respondent.id
     query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
@@ -145,10 +174,31 @@ async def empty_applet_user_respondent(session: AsyncSession, empty_applet: Appl
 
 
 @pytest.fixture
+async def applet_with_all_performance_tasks_user_respondent(
+    session: AsyncSession, applet_with_all_performance_tasks: AppletFull, tom: User, user: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_with_all_performance_tasks.id).add_role(
+        user.id, Role.RESPONDENT
+    )
+    return applet_with_all_performance_tasks
+
+
+@pytest.fixture
 async def user_empty_applet_subject(
     session: AsyncSession, user: User, empty_applet_user_respondent: AppletFull
 ) -> Subject:
     applet_id = empty_applet_user_respondent.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user.id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
+async def user_applet_with_all_performance_tasks_subject(
+    session: AsyncSession, user: User, applet_with_all_performance_tasks_user_respondent: AppletFull
+) -> Subject:
+    applet_id = applet_with_all_performance_tasks_user_respondent.id
     query = select(SubjectSchema).where(SubjectSchema.user_id == user.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
@@ -1132,6 +1182,8 @@ class TestActivities:
         assert len(flow_result["activityIds"]) == 1
         assert flow_result["activityIds"][0] == str(flow.items[0].activity_id)
         assert len(flow_result["assignments"]) == 0
+        assert flow_result["isPerformanceTask"] is None
+        assert flow_result["performanceTaskType"] is None
 
         activity = applet_activity_flow_lucy_manager.activities[0]
         activity_result = result[1]
@@ -1144,6 +1196,8 @@ class TestActivities:
         assert activity_result["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
         assert activity_result["activityIds"] is None
         assert len(activity_result["assignments"]) == 0
+        assert activity_result["isPerformanceTask"] is False
+        assert activity_result["performanceTaskType"] is None
 
     async def test_target_assigned_activities_manually_assigned(
         self,
@@ -1308,9 +1362,11 @@ class TestActivities:
         assert flow_result_1["isFlow"] is True
         assert flow_result_1["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
         assert flow_result_1["autoAssign"] is False
-        assert len(flow_result_1["assignments"]) == 1
         assert flow_result_1["activityIds"][0] == str(manual_flow_1.items[0].activity_id)
+        assert flow_result_1["isPerformanceTask"] is None
+        assert flow_result_1["performanceTaskType"] is None
 
+        assert len(flow_result_1["assignments"]) == 1
         flow_assignment_1 = flow_result_1["assignments"][0]
         assert flow_assignment_1["activityFlowId"] == str(manual_flow_1.id)
         assert flow_assignment_1["targetSubject"]["id"] == str(user_empty_applet_subject.id)
@@ -1324,9 +1380,11 @@ class TestActivities:
         assert flow_result_2["isFlow"] is True
         assert flow_result_2["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
         assert flow_result_2["autoAssign"] is False
-        assert len(flow_result_2["assignments"]) == 1
         assert flow_result_2["activityIds"][0] == str(manual_flow_3.items[0].activity_id)
+        assert flow_result_2["isPerformanceTask"] is None
+        assert flow_result_2["performanceTaskType"] is None
 
+        assert len(flow_result_2["assignments"]) == 1
         flow_assignment_2 = flow_result_2["assignments"][0]
         assert flow_assignment_2["activityFlowId"] == str(manual_flow_3.id)
         assert flow_assignment_2["targetSubject"]["id"] == str(user_empty_applet_subject.id)
@@ -1344,9 +1402,11 @@ class TestActivities:
         assert activity_result_1["isFlow"] is False
         assert activity_result_1["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
         assert activity_result_1["autoAssign"] is False
-        assert len(activity_result_1["assignments"]) == 1
         assert activity_result_1["activityIds"] is None
+        assert activity_result_1["isPerformanceTask"] is False
+        assert activity_result_1["performanceTaskType"] is None
 
+        assert len(activity_result_1["assignments"]) == 1
         activity_assignment = activity_result_1["assignments"][0]
         assert activity_assignment["activityId"] == str(manual_activity_1.id)
         assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
@@ -1364,9 +1424,11 @@ class TestActivities:
         assert activity_result_2["isFlow"] is False
         assert activity_result_2["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
         assert activity_result_2["autoAssign"] is False
-        assert len(activity_result_2["assignments"]) == 1
         assert activity_result_2["activityIds"] is None
+        assert activity_result_2["isPerformanceTask"] is False
+        assert activity_result_2["performanceTaskType"] is None
 
+        assert len(activity_result_2["assignments"]) == 1
         activity_assignment = activity_result_2["assignments"][0]
         assert activity_assignment["activityId"] == str(manual_activity_3.id)
         assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
@@ -1425,6 +1487,8 @@ class TestActivities:
         assert activity_result["isFlow"] is False
         assert activity_result["autoAssign"] is False
         assert activity_result["activityIds"] is None
+        assert activity_result["isPerformanceTask"] is False
+        assert activity_result["performanceTaskType"] is None
         assert len(activity_result["assignments"]) == 0
 
     async def test_target_assigned_hidden_activity(
@@ -1531,9 +1595,11 @@ class TestActivities:
         assert manual_flow_result["isFlow"] is True
         assert manual_flow_result["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
         assert manual_flow_result["autoAssign"] is False
-        assert len(manual_flow_result["assignments"]) == 1
         assert manual_flow_result["activityIds"][0] == str(manual_flow.items[0].activity_id)
+        assert manual_flow_result["isPerformanceTask"] is None
+        assert manual_flow_result["performanceTaskType"] is None
 
+        assert len(manual_flow_result["assignments"]) == 1
         flow_assignment = manual_flow_result["assignments"][0]
         assert flow_assignment["activityFlowId"] == str(manual_flow.id)
         assert flow_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
@@ -1545,8 +1611,10 @@ class TestActivities:
         assert auto_flow_result["isFlow"] is True
         assert auto_flow_result["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
         assert auto_flow_result["autoAssign"] is True
-        assert len(auto_flow_result["assignments"]) == 0
         assert auto_flow_result["activityIds"][0] == str(auto_flow.items[0].activity_id)
+        assert auto_flow_result["isPerformanceTask"] is None
+        assert auto_flow_result["performanceTaskType"] is None
+        assert len(auto_flow_result["assignments"]) == 0
 
         activity_result_1 = result[2]
         activity_result_2 = result[3]
@@ -1558,9 +1626,11 @@ class TestActivities:
         assert manual_activity_result["isFlow"] is False
         assert manual_activity_result["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
         assert manual_activity_result["autoAssign"] is False
-        assert len(manual_activity_result["assignments"]) == 1
         assert manual_activity_result["activityIds"] is None
+        assert manual_activity_result["isPerformanceTask"] is False
+        assert manual_activity_result["performanceTaskType"] is None
 
+        assert len(manual_activity_result["assignments"]) == 1
         activity_assignment = manual_activity_result["assignments"][0]
         assert activity_assignment["activityId"] == str(manual_activity.id)
         assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
@@ -1572,5 +1642,40 @@ class TestActivities:
         assert auto_activity_result["isFlow"] is False
         assert auto_activity_result["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
         assert auto_activity_result["autoAssign"] is True
-        assert len(auto_activity_result["assignments"]) == 0
         assert auto_activity_result["activityIds"] is None
+        assert auto_activity_result["isPerformanceTask"] is False
+        assert auto_activity_result["performanceTaskType"] is None
+        assert len(auto_activity_result["assignments"]) == 0
+
+    async def test_target_assigned_performance_task(
+        self,
+        session,
+        client,
+        applet_with_all_performance_tasks_lucy_manager,
+        lucy,
+        lucy_applet_with_all_performance_tasks_subject,
+        user_applet_with_all_performance_tasks_subject,
+    ):
+        client.login(lucy)
+
+        response = await client.get(
+            self.target_assigned_activities_url.format(
+                applet_id=applet_with_all_performance_tasks_lucy_manager.id,
+                subject_id=user_applet_with_all_performance_tasks_subject.id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert len(result) == 6
+
+        for activity_result in result:
+            assert activity_result["isPerformanceTask"] is True
+            assert activity_result["performanceTaskType"] in [
+                PerformanceTaskType.FLANKER.value,
+                PerformanceTaskType.GYROSCOPE.value,
+                PerformanceTaskType.TOUCH.value,
+                PerformanceTaskType.ABTRAILS.value,
+                PerformanceTaskType.UNITY.value,
+            ]

@@ -32,6 +32,8 @@ class ActivityOrFlowBasicInfoPublic(PublicModel):
     status: ActivityOrFlowStatusEnum
     auto_assign: bool = True
     activity_ids: list[uuid.UUID] | None = None
+    performance_task_type: PerformanceTaskType | None = None
+    is_performance_task: bool | None = None
 
 
 class ActivityOrFlowBasicInfoInternal(InternalModel):
@@ -44,6 +46,8 @@ class ActivityOrFlowBasicInfoInternal(InternalModel):
     auto_assign: bool = True
     is_hidden: bool = False
     activity_ids: list[uuid.UUID] | None = None
+    performance_task_type: PerformanceTaskType | None = None
+    is_performance_task: bool | None = None
 
 
 class Activity(ActivityBase, InternalModel):
