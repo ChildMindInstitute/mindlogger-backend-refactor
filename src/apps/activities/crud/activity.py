@@ -121,6 +121,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.is_hidden,
             ActivitySchema.is_performance_task,
             ActivitySchema.performance_task_type,
+            ActivitySchema.order,
         ).where(
             ActivitySchema.applet_id == applet_id,
             or_(
@@ -150,6 +151,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
                 flow_alias.is_hidden,
                 literal(None).label("is_performance_task"),
                 literal(None).label("performance_task_type"),
+                flow_alias.order,
             )
             .join(flow_items_alias, flow_alias.id == flow_items_alias.activity_flow_id)
             .join(activities_alias, flow_items_alias.activity_id == activities_alias.id)
@@ -163,7 +165,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             .group_by(flow_alias.id, flow_alias.name, flow_alias.description, flow_alias.auto_assign)
         )
 
-        union_query = union(activities_query, flows_query).order_by(text("is_flow DESC"))
+        union_query = union(activities_query, flows_query).order_by(text("is_flow DESC"), text('"order" ASC'))
 
         result = await self.session.execute(union_query)
         return [
