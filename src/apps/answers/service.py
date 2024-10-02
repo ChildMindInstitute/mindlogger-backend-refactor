@@ -1853,6 +1853,13 @@ class AnswerService:
             )
         return results
 
+    async def get_target_subject_ids_by_respondent_and_activity_or_flow(
+        self, respondent_subject_id: uuid.UUID, activity_or_flow_id: uuid.UUID
+    ) -> list[tuple[uuid.UUID, int]]:
+        return await AnswersCRUD(self.answer_session).get_target_subject_ids_by_respondent(
+            respondent_subject_id, activity_or_flow_id
+        )
+
 
 class ReportServerService:
     def __init__(self, session, arbitrary_session=None):

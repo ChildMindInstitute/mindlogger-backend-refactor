@@ -937,3 +937,24 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = delete(AnswerSchema)
         query = query.where(AnswerSchema.id.in_(ids))
         await self._execute(query)
+
+    async def get_target_subject_ids_by_respondent(
+        self, respondent_subject_id: uuid.UUID, activity_or_flow_id: uuid.UUID
+    ):
+        query: Query = (
+            select(
+                AnswerSchema.target_subject_id,
+                func.count(func.distinct(AnswerSchema.submit_id)).label("submission_count"),
+            )
+            .where(
+                AnswerSchema.source_subject_id == respondent_subject_id,
+                or_(
+                    AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == str(activity_or_flow_id),
+                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(activity_or_flow_id),
+                ),
+            )
+            .group_by(AnswerSchema.target_subject_id)
+        )
+
+        res = await self._execute(query)
+        return res.all()

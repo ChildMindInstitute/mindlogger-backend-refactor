@@ -111,6 +111,44 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().first()
 
+    async def get_target_subject_ids_by_activity_or_flow_ids(
+        self,
+        respondent_subject_id: uuid.UUID,
+        activity_or_flow_ids: list[uuid.UUID] = [],
+    ) -> list[uuid.UUID]:
+        """
+        Retrieves the IDs of target subjects that have assignments to be completed by the provided respondent.
+
+        Parameters:
+        ----------
+        respondent_subject_id : uuid.UUID
+            The ID of the respondent subject to search for. This parameter is required.
+        activity_or_flow_ids : list[uuid.UUID]
+            Optional list of activity or flow IDs to narrow the search. These IDs may correspond to either
+            `activity_id` or `activity_flow_id` fields
+
+        Returns:
+        -------
+        list[uuid.UUID]
+            List of target subject IDs associated with the provided activity or flow IDs.
+        """
+        query = select(ActivityAssigmentSchema.target_subject_id).where(
+            ActivityAssigmentSchema.respondent_subject_id == respondent_subject_id,
+            ActivityAssigmentSchema.soft_exists(),
+        )
+
+        if len(activity_or_flow_ids) > 0:
+            query = query.where(
+                or_(
+                    ActivityAssigmentSchema.activity_id.in_(activity_or_flow_ids),
+                    ActivityAssigmentSchema.activity_flow_id.in_(activity_or_flow_ids),
+                )
+            )
+
+        db_result = await self._execute(query.distinct())
+
+        return db_result.scalars().all()
+
     async def delete_by_activity_or_flow_ids(self, activity_or_flow_ids: list[uuid.UUID]):
         """
         Marks the `is_deleted` field as True for all matching assignments based on the provided
@@ -263,3 +301,15 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
             updated_schema = await self._get("id", model_id)
 
         return updated_schema
+
+    async def check_if_auto_assigned(self, activity_or_flow_id: uuid.UUID) -> bool | None:
+        """
+        Checks if the activity or flow is currently set to auto-assign.
+        """
+        activities_query = select(ActivitySchema.auto_assign).where(ActivitySchema.id == activity_or_flow_id)
+        flows_query = select(ActivityFlowSchema.auto_assign).where(ActivityFlowSchema.id == activity_or_flow_id)
+
+        union_query = activities_query.union_all(flows_query).limit(1)
+
+        db_result = await self._execute(union_query)
+        return db_result.scalar_one_or_none()
