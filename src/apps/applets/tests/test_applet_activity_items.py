@@ -537,8 +537,8 @@ class TestActivityItems:
         sub_setting = subscale_setting.copy(deep=True)
 
         # Update subscale setting with item name and lookup table
-        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # Update name
-        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table  # Set lookup table data
+        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
+        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table  # type: ignore[index]
 
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].subscale_setting = sub_setting
