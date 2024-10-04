@@ -6,6 +6,8 @@ from apps.integrations.db.schemas import IntegrationsSchema
 from apps.integrations.loris.domain.loris_integrations import LorisIntegration, LorisIntegrationPublic
 from apps.shared.domain import InternalModel, PublicModel
 
+from typing import Any
+
 
 class AvailableIntegrations(str, Enum):
     LORIS = "LORIS"
@@ -47,7 +49,7 @@ class FutureIntegrationPublic(PublicModel):
 class Integration(InternalModel):
     integration_type: AvailableIntegrations
     applet_id: uuid.UUID
-    configuration: FutureIntegrationPublic | LorisIntegrationPublic | FutureIntegration | LorisIntegration
+    configuration: Any
 
     @classmethod
     def from_schema(cls, schema: IntegrationsSchema):

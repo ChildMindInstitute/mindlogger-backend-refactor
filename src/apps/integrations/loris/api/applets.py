@@ -15,6 +15,7 @@ from infrastructure.database.deps import get_session
 
 __all__ = [
     "start_transmit_process",
+    "visits_list",
     "users_info_with_visits",
     "get_loris_projects"
 ]
@@ -37,6 +38,16 @@ async def start_transmit_process(
     # TODO mark answers as integrated to loris
     background_tasks.add_task(integration, applet_id, session, user, users_and_visits)
     return HTTPResponse(status_code=status.HTTP_202_ACCEPTED)
+
+
+async def visits_list(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> PublicListOfVisits:
+    visits = await LorisIntegrationService(
+        uuid.UUID("00000000-0000-0000-0000-000000000000"), session, user
+    ).get_visits_list()
+    return PublicListOfVisits(visits=visits, count=len(visits))
 
 
 async def users_info_with_visits(

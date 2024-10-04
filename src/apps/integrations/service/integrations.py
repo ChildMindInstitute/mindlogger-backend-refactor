@@ -1,7 +1,6 @@
 from typing import cast
 
 from apps.integrations.crud.integrations import IntegrationsCRUD
-from apps.integrations.db.schemas import IntegrationsSchema
 from apps.integrations.domain import AvailableIntegrations, FutureIntegration, FutureIntegrationPublic, Integration
 from apps.integrations.errors import (
     UnavailableIntegrationError,
@@ -55,21 +54,20 @@ class IntegrationService:
     async def create_integration(self, newIntegration: Integration) -> Integration:
         match newIntegration.integration_type:
             case AvailableIntegrations.LORIS:
-                loris_config = cast(LorisIntegration, newIntegration.configuration)
-                expected_keys = ["hostname", "username", "project"]
-                config_dict = loris_config.dict()
-                if None in [config_dict.get(k, None) for k in expected_keys]:
+                expected_keys = ["hostname", "username", "project", "password"]
+                if None in [newIntegration.configuration.get(k, None) for k in expected_keys]:
                     raise UnexpectedPropertiesForIntegration(
-                        provided_keys=list(config_dict.keys()),
+                        provided_keys=list(newIntegration.configuration.keys()),
                         expected_keys=expected_keys,
                         integration_type=AvailableIntegrations.LORIS,
                     )
                 loris_integration = await LorisIntegrationService(
                     newIntegration.applet_id, self.session, self.user
                 ).create_loris_integration(
-                    hostname=loris_config.hostname,
-                    username=loris_config.username,
-                    project=loris_config.project,
+                    hostname=newIntegration.configuration["hostname"],
+                    username=newIntegration.configuration["username"],
+                    project=newIntegration.configuration["project"],
+                    password=newIntegration.configuration["password"],
                 )
                 return Integration(
                     integration_type=AvailableIntegrations.LORIS,
@@ -77,12 +75,10 @@ class IntegrationService:
                     configuration=loris_integration,
                 )
             case AvailableIntegrations.FUTURE:
-                future_conf = cast(FutureIntegration, newIntegration.configuration)
-                expected_keys = ["endpoint"]
-                config_dict = future_conf.dict()
-                if None in [config_dict.get(k, None) for k in expected_keys]:
+                expected_keys = ["endpoint", "api_key"]
+                if None in [newIntegration.configuration.get(k, None) for k in expected_keys]:
                     raise UnexpectedPropertiesForIntegration(
-                        provided_keys=list(config_dict.keys()),
+                        provided_keys=list(newIntegration.configuration.keys()),
                         expected_keys=expected_keys,
                         integration_type=AvailableIntegrations.FUTURE,
                     )
@@ -90,7 +86,8 @@ class IntegrationService:
                     newIntegration.applet_id,
                     self.session,
                 ).create_future_integration(
-                    endpoint=future_conf.endpoint,
+                    endpoint=newIntegration.configuration["endpoint"],
+                    api_key=newIntegration.configuration["api_key"],
                 )
                 return Integration(
                     integration_type=AvailableIntegrations.FUTURE,

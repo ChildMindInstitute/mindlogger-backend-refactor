@@ -7,7 +7,7 @@ from apps.shared.domain import InternalModel, PublicModel
 class LorisIntegration(InternalModel):
     hostname: str
     username: str
-    password: str | None
+    password: str
     project: str
 
     @classmethod
