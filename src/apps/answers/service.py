@@ -1860,6 +1860,15 @@ class AnswerService:
             respondent_subject_id, activity_or_flow_id
         )
 
+    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a target subject
+
+        The data returned is just a combined list of activity and flow IDs, without any
+        distinction between the two
+        """
+        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_target_subject(target_subject_id)
+
 
 class ReportServerService:
     def __init__(self, session, arbitrary_session=None):

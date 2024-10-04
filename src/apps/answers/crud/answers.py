@@ -958,3 +958,26 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         res = await self._execute(query)
         return res.all()
+
+    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a target subject
+        """
+        query: Query = (
+            select(
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
+                ).label("id")
+            )
+            .where(
+                AnswerSchema.target_subject_id == target_subject_id,
+            )
+            .distinct()
+        )
+
+        res = await self._execute(query)
+        return res.scalars().all()

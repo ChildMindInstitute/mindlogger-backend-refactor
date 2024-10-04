@@ -309,9 +309,7 @@ async def get_target_subjects_by_respondent(
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[TargetSubjectByRespondentResponse]:
     subjects_service = SubjectsService(session, user.id)
-    respondent_subject = await subjects_service.get(respondent_subject_id)
-    if not respondent_subject:
-        raise NotFoundError(f"Subject with id {respondent_subject_id} not found")
+    respondent_subject = await subjects_service.exist_by_id(respondent_subject_id)
 
     if respondent_subject.user_id is None:
         # Return a generic bad request error to avoid leaking information
