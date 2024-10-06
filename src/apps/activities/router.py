@@ -5,6 +5,7 @@ from apps.activities.api.activities import (
     activity_retrieve,
     applet_activities,
     applet_activities_and_flows,
+    applet_activities_for_respondent_subject,
     applet_activities_for_subject,
     applet_activities_for_target_subject,
     public_activity_retrieve,
@@ -120,3 +121,15 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(applet_activities_for_target_subject)
+
+router.get(
+    "/applet/{applet_id}/respondent/{subject_id}",
+    description="""Get all assigned activities and activity flows for a respondent subject.
+                """,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[ActivityOrFlowWithAssignmentsPublic]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(applet_activities_for_respondent_subject)

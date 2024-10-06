@@ -277,6 +277,7 @@ class TestActivities:
     applet_update_url = "applets/{applet_id}"
     subject_assigned_activities_url = "/activities/applet/{applet_id}/subject/{subject_id}"
     target_assigned_activities_url = "/activities/applet/{applet_id}/target/{subject_id}"
+    respondent_assigned_activities_url = "/activities/applet/{applet_id}/respondent/{subject_id}"
 
     async def test_activity_detail(self, client, applet_one: AppletFull, tom: User):
         activity = applet_one.activities[0]
@@ -1036,13 +1037,22 @@ class TestActivities:
         assert flow_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
         assert flow_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
 
-    async def test_target_assigned_activities_editor(
-        self, client, applet_one_lucy_editor, lucy, lucy_applet_one_subject
+    def _get_assigned_activities_rul(self, subject_type: str):
+        if subject_type == "target":
+            return self.target_assigned_activities_url
+        elif subject_type == "respondent":
+            return self.respondent_assigned_activities_url
+        else:
+            raise Exception(f"Invalid subject_type: {subject_type}")
+
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_editor(
+        self, client, applet_one_lucy_editor, lucy, lucy_applet_one_subject, subject_type: str
     ):
         client.login(lucy)
 
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=applet_one_lucy_editor.id, subject_id=lucy_applet_one_subject.id
             )
         )
@@ -1053,13 +1063,14 @@ class TestActivities:
         assert result[0]["type"] == "ACCESS_DENIED"
         assert result[0]["message"] == "Access denied."
 
-    async def test_target_assigned_activities_incorrect_reviewer(
-        self, client, applet_one_lucy_reviewer, lucy, lucy_applet_one_subject
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_incorrect_reviewer(
+        self, client, applet_one_lucy_reviewer, lucy, lucy_applet_one_subject, subject_type: str
     ):
         client.login(lucy)
 
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=applet_one_lucy_reviewer.id, subject_id=lucy_applet_one_subject.id
             )
         )
@@ -1070,13 +1081,14 @@ class TestActivities:
         assert result[0]["type"] == "ACCESS_DENIED"
         assert result[0]["message"] == "Access denied."
 
-    async def test_target_assigned_activities_participant(
-        self, client, applet_one_lucy_respondent, lucy, lucy_applet_one_subject
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_participant(
+        self, client, applet_one_lucy_respondent, lucy, lucy_applet_one_subject, subject_type: str
     ):
         client.login(lucy)
 
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=applet_one_lucy_respondent.id, subject_id=lucy_applet_one_subject.id
             )
         )
@@ -1087,13 +1099,20 @@ class TestActivities:
         assert result[0]["type"] == "ACCESS_DENIED"
         assert result[0]["message"] == "Access denied."
 
-    async def test_target_assigned_activities_participant_other(
-        self, client, applet_one_lucy_respondent, lucy, applet_one_user_respondent, user_applet_one_subject
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_participant_other(
+        self,
+        client,
+        applet_one_lucy_respondent,
+        lucy,
+        applet_one_user_respondent,
+        user_applet_one_subject,
+        subject_type: str,
     ):
         client.login(lucy)
 
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=applet_one_lucy_respondent.id, subject_id=user_applet_one_subject.id
             )
         )
@@ -1104,15 +1123,18 @@ class TestActivities:
         assert result[0]["type"] == "ACCESS_DENIED"
         assert result[0]["message"] == "Access denied."
 
-    async def test_target_assigned_activities_invalid_applet(
-        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_invalid_applet(
+        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject, subject_type: str
     ):
-        client.login(lucy)
-
         applet_id = uuid.uuid4()
 
+        client.login(lucy)
+
         response = await client.get(
-            self.target_assigned_activities_url.format(applet_id=applet_id, subject_id=lucy_applet_one_subject.id)
+            self._get_assigned_activities_rul(subject_type).format(
+                applet_id=applet_id, subject_id=lucy_applet_one_subject.id
+            )
         )
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
@@ -1121,15 +1143,18 @@ class TestActivities:
         assert result[0]["type"] == "NOT_FOUND"
         assert result[0]["message"] == f"No such applets with id={applet_id}."
 
-    async def test_target_assigned_activities_invalid_subject(
-        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_invalid_subject(
+        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject, subject_type: str
     ):
-        client.login(lucy)
-
         subject_id = uuid.uuid4()
 
+        client.login(lucy)
+
         response = await client.get(
-            self.target_assigned_activities_url.format(applet_id=applet_one_lucy_manager.id, subject_id=subject_id)
+            self._get_assigned_activities_rul(subject_type).format(
+                applet_id=applet_one_lucy_manager.id, subject_id=subject_id
+            )
         )
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
@@ -1138,13 +1163,14 @@ class TestActivities:
         assert result[0]["type"] == "NOT_FOUND"
         assert result[0]["message"] == f"Subject with id {subject_id} not found"
 
-    async def test_target_assigned_activities_empty_applet(
-        self, client, empty_applet_lucy_manager, lucy, lucy_empty_applet_subject
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_empty_applet(
+        self, client, empty_applet_lucy_manager, lucy, lucy_empty_applet_subject, subject_type: str
     ):
         client.login(lucy)
 
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=empty_applet_lucy_manager.id, subject_id=lucy_empty_applet_subject.id
             )
         )
@@ -1154,13 +1180,14 @@ class TestActivities:
 
         assert result == []
 
-    async def test_target_assigned_activities_auto_assigned(
-        self, client, applet_activity_flow_lucy_manager, lucy, lucy_applet_activity_flow_subject
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_auto_assigned(
+        self, client, applet_activity_flow_lucy_manager, lucy, lucy_applet_activity_flow_subject, subject_type: str
     ):
         client.login(lucy)
 
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=applet_activity_flow_lucy_manager.id, subject_id=lucy_applet_activity_flow_subject.id
             )
         )
@@ -1199,7 +1226,14 @@ class TestActivities:
         assert activity_result["isPerformanceTask"] is False
         assert activity_result["performanceTaskType"] is None
 
-    async def test_target_assigned_activities_manually_assigned(
+    @pytest.mark.parametrize(
+        "subject_type,result_order",
+        [
+            ("target", ["flow-1", "flow-3", "activity-1", "activity-3"]),
+            ("respondent", ["flow-1", "flow-2", "activity-1", "activity-2"]),
+        ],
+    )
+    async def test_assigned_activities_manually_assigned(
         self,
         session,
         client,
@@ -1208,9 +1242,9 @@ class TestActivities:
         lucy_empty_applet_subject,
         user_empty_applet_subject,
         activity_create_session: ActivityCreate,
+        subject_type: str,
+        result_order: list[str],
     ):
-        client.login(lucy)
-
         activities = await ActivityService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
@@ -1236,34 +1270,37 @@ class TestActivities:
                 ),
             ],
         )
-        manual_activity_1 = next((activity for activity in activities if activity.name == "Manual Activity 1"))
-        manual_activity_2 = next((activity for activity in activities if activity.name == "Manual Activity 2"))
-        manual_activity_3 = next((activity for activity in activities if activity.name == "Manual Activity 3"))
-        manual_activity_4 = next((activity for activity in activities if activity.name == "Manual Activity 4"))
+
+        activity_by_number = {
+            1: next((activity for activity in activities if activity.name == "Manual Activity 1")),
+            2: next((activity for activity in activities if activity.name == "Manual Activity 2")),
+            3: next((activity for activity in activities if activity.name == "Manual Activity 3")),
+            4: next((activity for activity in activities if activity.name == "Manual Activity 4")),
+        }
 
         await ActivityAssignmentService(session).create_many(
             empty_applet_lucy_manager.id,
             [
                 ActivityAssignmentCreate(
-                    activity_id=manual_activity_1.id,
+                    activity_id=activity_by_number[1].id,
                     activity_flow_id=None,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
-                    activity_id=manual_activity_2.id,
+                    activity_id=activity_by_number[2].id,
                     activity_flow_id=None,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=lucy_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
-                    activity_id=manual_activity_3.id,
+                    activity_id=activity_by_number[3].id,
                     activity_flow_id=None,
                     respondent_subject_id=lucy_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
-                    activity_id=manual_activity_4.id,
+                    activity_id=activity_by_number[4].id,
                     activity_flow_id=None,
                     respondent_subject_id=lucy_empty_applet_subject.id,
                     target_subject_id=lucy_empty_applet_subject.id,
@@ -1278,72 +1315,76 @@ class TestActivities:
                     name="Manual Flow 1",
                     description={Language.ENGLISH: "Manual Flow"},
                     auto_assign=False,
-                    items=[ActivityFlowItemUpdate(activity_key=manual_activity_1.key)],
+                    items=[ActivityFlowItemUpdate(activity_key=activity_by_number[1].key)],
                 ),
                 FlowUpdate(
                     name="Manual Flow 2",
                     description={Language.ENGLISH: "Manual Flow"},
                     auto_assign=False,
-                    items=[ActivityFlowItemUpdate(activity_key=manual_activity_2.key)],
+                    items=[ActivityFlowItemUpdate(activity_key=activity_by_number[2].key)],
                 ),
                 FlowUpdate(
                     name="Manual Flow 3",
                     description={Language.ENGLISH: "Manual Flow"},
                     auto_assign=False,
-                    items=[ActivityFlowItemUpdate(activity_key=manual_activity_3.key)],
+                    items=[ActivityFlowItemUpdate(activity_key=activity_by_number[3].key)],
                 ),
                 FlowUpdate(
                     name="Manual Flow 4",
                     description={Language.ENGLISH: "Manual Flow"},
                     auto_assign=False,
-                    items=[ActivityFlowItemUpdate(activity_key=manual_activity_4.key)],
+                    items=[ActivityFlowItemUpdate(activity_key=activity_by_number[4].key)],
                 ),
             ],
             {
-                manual_activity_1.key: manual_activity_1.id,
-                manual_activity_2.key: manual_activity_2.id,
-                manual_activity_3.key: manual_activity_3.id,
-                manual_activity_4.key: manual_activity_4.id,
+                activity_by_number[1].key: activity_by_number[1].id,
+                activity_by_number[2].key: activity_by_number[2].id,
+                activity_by_number[3].key: activity_by_number[3].id,
+                activity_by_number[4].key: activity_by_number[4].id,
             },
         )
 
-        manual_flow_1 = next((flow for flow in flows if flow.name == "Manual Flow 1"))
-        manual_flow_2 = next((flow for flow in flows if flow.name == "Manual Flow 2"))
-        manual_flow_3 = next((flow for flow in flows if flow.name == "Manual Flow 3"))
-        manual_flow_4 = next((flow for flow in flows if flow.name == "Manual Flow 4"))
+        flow_by_number = {
+            1: next((flow for flow in flows if flow.name == "Manual Flow 1")),
+            2: next((flow for flow in flows if flow.name == "Manual Flow 2")),
+            3: next((flow for flow in flows if flow.name == "Manual Flow 3")),
+            4: next((flow for flow in flows if flow.name == "Manual Flow 4")),
+        }
 
         await ActivityAssignmentService(session).create_many(
             empty_applet_lucy_manager.id,
             [
                 ActivityAssignmentCreate(
                     activity_id=None,
-                    activity_flow_id=manual_flow_1.id,
+                    activity_flow_id=flow_by_number[1].id,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
                     activity_id=None,
-                    activity_flow_id=manual_flow_2.id,
+                    activity_flow_id=flow_by_number[2].id,
                     respondent_subject_id=user_empty_applet_subject.id,
                     target_subject_id=lucy_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
                     activity_id=None,
-                    activity_flow_id=manual_flow_3.id,
+                    activity_flow_id=flow_by_number[3].id,
                     respondent_subject_id=lucy_empty_applet_subject.id,
                     target_subject_id=user_empty_applet_subject.id,
                 ),
                 ActivityAssignmentCreate(
                     activity_id=None,
-                    activity_flow_id=manual_flow_4.id,
+                    activity_flow_id=flow_by_number[4].id,
                     respondent_subject_id=lucy_empty_applet_subject.id,
                     target_subject_id=lucy_empty_applet_subject.id,
                 ),
             ],
         )
 
+        client.login(lucy)
+
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
             )
         )
@@ -1353,95 +1394,100 @@ class TestActivities:
 
         assert len(result) == 4
 
-        flow_result_1 = next(
-            (flow_result for flow_result in [result[0], result[1]] if flow_result["id"] == str(manual_flow_1.id))
-        )
-        assert flow_result_1["id"] == str(manual_flow_1.id)
-        assert flow_result_1["name"] == manual_flow_1.name
-        assert flow_result_1["description"] == manual_flow_1.description[Language.ENGLISH]
-        assert flow_result_1["isFlow"] is True
-        assert flow_result_1["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
-        assert flow_result_1["autoAssign"] is False
-        assert flow_result_1["activityIds"][0] == str(manual_flow_1.items[0].activity_id)
-        assert flow_result_1["isPerformanceTask"] is None
-        assert flow_result_1["performanceTaskType"] is None
+        spec_activity_numbers: list[int] = []
+        spec_flow_numbers: list[int] = []
+        spec_entity_identifiers: list[str] = []
 
-        assert len(flow_result_1["assignments"]) == 1
-        flow_assignment_1 = flow_result_1["assignments"][0]
-        assert flow_assignment_1["activityFlowId"] == str(manual_flow_1.id)
-        assert flow_assignment_1["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+        for spec_order in result_order:
+            order_spec_parts = spec_order.split("-", 1)
+            order_spec_type = order_spec_parts[0]
+            order_spec_number = int(order_spec_parts[1])
+            order_spec_id: uuid.UUID
+            if order_spec_type == "flow":
+                order_spec_id = flow_by_number[order_spec_number].id
+                spec_flow_numbers.append(order_spec_number)
+            elif order_spec_type == "activity":
+                order_spec_id = activity_by_number[order_spec_number].id
+                spec_activity_numbers.append(order_spec_number)
+            else:
+                raise Exception(f"Invalid order spec type: {order_spec_type}")
+            entity_identifier = f"{order_spec_type}-{order_spec_id}"
+            spec_entity_identifiers.append(entity_identifier)
 
-        flow_result_2 = next(
-            (flow_result for flow_result in [result[0], result[1]] if flow_result["id"] == str(manual_flow_3.id))
-        )
-        assert flow_result_2["id"] == str(manual_flow_3.id)
-        assert flow_result_2["name"] == manual_flow_3.name
-        assert flow_result_2["description"] == manual_flow_3.description[Language.ENGLISH]
-        assert flow_result_2["isFlow"] is True
-        assert flow_result_2["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
-        assert flow_result_2["autoAssign"] is False
-        assert flow_result_2["activityIds"][0] == str(manual_flow_3.items[0].activity_id)
-        assert flow_result_2["isPerformanceTask"] is None
-        assert flow_result_2["performanceTaskType"] is None
+        result_entity_identifiers: list[str] = []
+        for entity in result:
+            entity_type = "flow" if entity["isFlow"] else "activity"
+            entity_id = entity["id"]
+            entity_identifier = f"{entity_type}-{entity_id}"
+            result_entity_identifiers.append(entity_identifier)
 
-        assert len(flow_result_2["assignments"]) == 1
-        flow_assignment_2 = flow_result_2["assignments"][0]
-        assert flow_assignment_2["activityFlowId"] == str(manual_flow_3.id)
-        assert flow_assignment_2["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+        # The `==` operator will deeply compare the 2 lists
+        assert result_entity_identifiers == spec_entity_identifiers
 
-        activity_result_1 = next(
-            (
-                activity_result
-                for activity_result in [result[2], result[3]]
-                if activity_result["id"] == str(manual_activity_1.id)
+        for spec_activity_number in spec_activity_numbers:
+            spec_activity = activity_by_number[spec_activity_number]
+
+            result_activity = next(
+                (entity for entity in result if not entity["isFlow"] and entity["id"] == str(spec_activity.id))
             )
-        )
-        assert activity_result_1["id"] == str(manual_activity_1.id)
-        assert activity_result_1["name"] == manual_activity_1.name
-        assert activity_result_1["description"] == manual_activity_1.description[Language.ENGLISH]
-        assert activity_result_1["isFlow"] is False
-        assert activity_result_1["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
-        assert activity_result_1["autoAssign"] is False
-        assert activity_result_1["activityIds"] is None
-        assert activity_result_1["isPerformanceTask"] is False
-        assert activity_result_1["performanceTaskType"] is None
 
-        assert len(activity_result_1["assignments"]) == 1
-        activity_assignment = activity_result_1["assignments"][0]
-        assert activity_assignment["activityId"] == str(manual_activity_1.id)
-        assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+            assert result_activity is not None
 
-        activity_result_2 = next(
-            (
-                activity_result
-                for activity_result in [result[2], result[3]]
-                if activity_result["id"] == str(manual_activity_3.id)
-            )
-        )
-        assert activity_result_2["id"] == str(manual_activity_3.id)
-        assert activity_result_2["name"] == manual_activity_3.name
-        assert activity_result_2["description"] == manual_activity_3.description[Language.ENGLISH]
-        assert activity_result_2["isFlow"] is False
-        assert activity_result_2["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
-        assert activity_result_2["autoAssign"] is False
-        assert activity_result_2["activityIds"] is None
-        assert activity_result_2["isPerformanceTask"] is False
-        assert activity_result_2["performanceTaskType"] is None
+            assert result_activity["id"] == str(spec_activity.id)
+            assert result_activity["name"] == spec_activity.name
+            assert result_activity["description"] == spec_activity.description[Language.ENGLISH]
+            assert result_activity["isFlow"] is False
+            assert result_activity["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
+            assert result_activity["autoAssign"] is False
+            assert result_activity["activityIds"] is None
+            assert result_activity["isPerformanceTask"] is False
+            assert result_activity["performanceTaskType"] is None
 
-        assert len(activity_result_2["assignments"]) == 1
-        activity_assignment = activity_result_2["assignments"][0]
-        assert activity_assignment["activityId"] == str(manual_activity_3.id)
-        assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
+            assert len(result_activity["assignments"]) == 1
 
-    async def test_target_assigned_activity_from_submission(
+            activity_assignment = result_activity["assignments"][0]
+            assert activity_assignment["activityId"] == str(spec_activity.id)
+
+            subject_attr = "targetSubject" if subject_type == "target" else "respondentSubject"
+            assert activity_assignment[subject_attr]["id"] == str(user_empty_applet_subject.id)
+
+        for spec_flow_number in spec_flow_numbers:
+            spec_flow = flow_by_number[spec_flow_number]
+
+            result_flow = next((entity for entity in result if entity["isFlow"] and entity["id"] == str(spec_flow.id)))
+
+            assert result_flow is not None
+
+            assert result_flow["id"] == str(spec_flow.id)
+            assert result_flow["name"] == spec_flow.name
+            assert result_flow["description"] == spec_flow.description[Language.ENGLISH]
+            assert result_flow["isFlow"] is True
+            assert result_flow["status"] == ActivityOrFlowStatusEnum.ACTIVE.value
+            assert result_flow["autoAssign"] is False
+            assert result_flow["activityIds"][0] == str(spec_flow.items[0].activity_id)
+            assert result_flow["isPerformanceTask"] is None
+            assert result_flow["performanceTaskType"] is None
+
+            assert len(result_flow["assignments"]) == 1
+
+            flow_assignment = result_flow["assignments"][0]
+            assert flow_assignment["activityFlowId"] == str(spec_flow.id)
+
+            subject_attr = "targetSubject" if subject_type == "target" else "respondentSubject"
+            assert flow_assignment[subject_attr]["id"] == str(user_empty_applet_subject.id)
+
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_activities_from_submission(
         self,
         session,
         client,
         tom: User,
         tom_applet_one_subject: Subject,
+        lucy: User,
         lucy_applet_one_subject: Subject,
         applet_one_lucy_respondent: AppletFull,
         answer_create_payload: dict,
+        subject_type: str,
     ):
         activity = applet_one_lucy_respondent.activities[0]
 
@@ -1457,41 +1503,49 @@ class TestActivities:
             ],
         )
 
+        target_subject_id, respondent_subject_id = (
+            [tom_applet_one_subject.id, lucy_applet_one_subject.id]
+            if subject_type == "target"
+            else [lucy_applet_one_subject.id, tom_applet_one_subject.id]
+        )
+
         # Create an activity answer
         await AnswerService(session, tom.id).create_answer(
             AppletAnswerCreate(
                 **answer_create_payload,
-                input_subject_id=lucy_applet_one_subject.id,
-                source_subject_id=lucy_applet_one_subject.id,
-                target_subject_id=tom_applet_one_subject.id,
+                input_subject_id=respondent_subject_id,
+                source_subject_id=respondent_subject_id,
+                target_subject_id=target_subject_id,
             )
         )
 
         client.login(tom)
 
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=applet_one_lucy_respondent.id, subject_id=tom_applet_one_subject.id
             )
         )
+
         assert response.status_code == http.HTTPStatus.OK
 
         result = response.json()["result"]
         assert len(result) == 1
 
-        activity_result = result[0]
-        assert activity_result["id"] == str(activity.id)
-        assert activity_result["name"] == activity.name
-        assert activity_result["description"] == activity.description[Language.ENGLISH]
-        assert activity_result["status"] == ActivityOrFlowStatusEnum.INACTIVE.value
-        assert activity_result["isFlow"] is False
-        assert activity_result["autoAssign"] is False
-        assert activity_result["activityIds"] is None
-        assert activity_result["isPerformanceTask"] is False
-        assert activity_result["performanceTaskType"] is None
-        assert len(activity_result["assignments"]) == 0
+        result_activity = result[0]
+        assert result_activity["id"] == str(activity.id)
+        assert result_activity["name"] == activity.name
+        assert result_activity["description"] == activity.description[Language.ENGLISH]
+        assert result_activity["status"] == ActivityOrFlowStatusEnum.INACTIVE.value
+        assert result_activity["isFlow"] is False
+        assert result_activity["autoAssign"] is False
+        assert result_activity["activityIds"] is None
+        assert result_activity["isPerformanceTask"] is False
+        assert result_activity["performanceTaskType"] is None
+        assert len(result_activity["assignments"]) == 0
 
-    async def test_target_assigned_hidden_activity(
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_hidden_activities(
         self,
         session,
         client,
@@ -1500,9 +1554,8 @@ class TestActivities:
         lucy_empty_applet_subject,
         user_empty_applet_subject,
         activity_create_session: ActivityCreate,
+        subject_type: str,
     ):
-        client.login(lucy)
-
         activities = await ActivityService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
@@ -1558,7 +1611,6 @@ class TestActivities:
                 manual_activity.key: manual_activity.id,
             },
         )
-
         auto_flow = next((flow for flow in flows if flow.name == "Auto Flow"))
         manual_flow = next((flow for flow in flows if flow.name == "Manual Flow"))
 
@@ -1574,9 +1626,12 @@ class TestActivities:
             ],
         )
 
+        client.login(lucy)
+
         response = await client.get(
-            self.target_assigned_activities_url.format(
-                applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
+            self._get_assigned_activities_rul(subject_type).format(
+                applet_id=empty_applet_lucy_manager.id,
+                subject_id=user_empty_applet_subject.id if subject_type == "target" else lucy_empty_applet_subject.id,
             )
         )
 
@@ -1585,69 +1640,62 @@ class TestActivities:
 
         assert len(result) == 4
 
-        flow_result_1 = result[0]
-        flow_result_2 = result[1]
+        result_flow_manual = next((entity for entity in result if entity["isFlow"] and not entity["autoAssign"]))
+        assert result_flow_manual
+        assert result_flow_manual["id"] == str(manual_flow.id)
+        assert result_flow_manual["name"] == manual_flow.name
+        assert result_flow_manual["description"] == manual_flow.description[Language.ENGLISH]
+        assert result_flow_manual["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
+        assert result_flow_manual["activityIds"][0] == str(manual_flow.items[0].activity_id)
+        assert result_flow_manual["isPerformanceTask"] is None
+        assert result_flow_manual["performanceTaskType"] is None
 
-        manual_flow_result = flow_result_1 if not flow_result_1["autoAssign"] else flow_result_2
-        assert manual_flow_result["id"] == str(manual_flow.id)
-        assert manual_flow_result["name"] == manual_flow.name
-        assert manual_flow_result["description"] == manual_flow.description[Language.ENGLISH]
-        assert manual_flow_result["isFlow"] is True
-        assert manual_flow_result["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
-        assert manual_flow_result["autoAssign"] is False
-        assert manual_flow_result["activityIds"][0] == str(manual_flow.items[0].activity_id)
-        assert manual_flow_result["isPerformanceTask"] is None
-        assert manual_flow_result["performanceTaskType"] is None
-
-        assert len(manual_flow_result["assignments"]) == 1
-        flow_assignment = manual_flow_result["assignments"][0]
+        assert len(result_flow_manual["assignments"]) == 1
+        flow_assignment = result_flow_manual["assignments"][0]
         assert flow_assignment["activityFlowId"] == str(manual_flow.id)
         assert flow_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
 
-        auto_flow_result = flow_result_1 if flow_result_1["autoAssign"] else flow_result_2
-        assert auto_flow_result["id"] == str(auto_flow.id)
-        assert auto_flow_result["name"] == auto_flow.name
-        assert auto_flow_result["description"] == auto_flow.description[Language.ENGLISH]
-        assert auto_flow_result["isFlow"] is True
-        assert auto_flow_result["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
-        assert auto_flow_result["autoAssign"] is True
-        assert auto_flow_result["activityIds"][0] == str(auto_flow.items[0].activity_id)
-        assert auto_flow_result["isPerformanceTask"] is None
-        assert auto_flow_result["performanceTaskType"] is None
-        assert len(auto_flow_result["assignments"]) == 0
+        result_flow_auto = next((entity for entity in result if entity["isFlow"] and entity["autoAssign"]))
+        assert result_flow_auto
+        assert result_flow_auto["id"] == str(auto_flow.id)
+        assert result_flow_auto["name"] == auto_flow.name
+        assert result_flow_auto["description"] == auto_flow.description[Language.ENGLISH]
+        assert result_flow_auto["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
+        assert result_flow_auto["activityIds"][0] == str(auto_flow.items[0].activity_id)
+        assert result_flow_auto["isPerformanceTask"] is None
+        assert result_flow_auto["performanceTaskType"] is None
+        assert len(result_flow_auto["assignments"]) == 0
 
-        activity_result_1 = result[2]
-        activity_result_2 = result[3]
+        result_activity_manual = next(
+            (entity for entity in result if not entity["isFlow"] and not entity["autoAssign"])
+        )
+        assert result_activity_manual
+        assert result_activity_manual["id"] == str(manual_activity.id)
+        assert result_activity_manual["name"] == manual_activity.name
+        assert result_activity_manual["description"] == manual_activity.description[Language.ENGLISH]
+        assert result_activity_manual["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
+        assert result_activity_manual["activityIds"] is None
+        assert result_activity_manual["isPerformanceTask"] is False
+        assert result_activity_manual["performanceTaskType"] is None
 
-        manual_activity_result = activity_result_1 if not activity_result_1["autoAssign"] else activity_result_2
-        assert manual_activity_result["id"] == str(manual_activity.id)
-        assert manual_activity_result["name"] == manual_activity.name
-        assert manual_activity_result["description"] == manual_activity.description[Language.ENGLISH]
-        assert manual_activity_result["isFlow"] is False
-        assert manual_activity_result["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
-        assert manual_activity_result["autoAssign"] is False
-        assert manual_activity_result["activityIds"] is None
-        assert manual_activity_result["isPerformanceTask"] is False
-        assert manual_activity_result["performanceTaskType"] is None
-
-        assert len(manual_activity_result["assignments"]) == 1
-        activity_assignment = manual_activity_result["assignments"][0]
+        assert len(result_activity_manual["assignments"]) == 1
+        activity_assignment = result_activity_manual["assignments"][0]
         assert activity_assignment["activityId"] == str(manual_activity.id)
         assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
 
-        auto_activity_result = activity_result_1 if activity_result_1["autoAssign"] else activity_result_2
-        assert auto_activity_result["id"] == str(auto_activity.id)
-        assert auto_activity_result["name"] == auto_activity.name
-        assert auto_activity_result["description"] == auto_activity.description[Language.ENGLISH]
-        assert auto_activity_result["isFlow"] is False
-        assert auto_activity_result["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
-        assert auto_activity_result["autoAssign"] is True
-        assert auto_activity_result["activityIds"] is None
-        assert auto_activity_result["isPerformanceTask"] is False
-        assert auto_activity_result["performanceTaskType"] is None
-        assert len(auto_activity_result["assignments"]) == 0
+        result_activity_auto = next((entity for entity in result if not entity["isFlow"] and entity["autoAssign"]))
+        assert result_activity_auto
+        assert result_activity_auto["id"] == str(auto_activity.id)
+        assert result_activity_auto["name"] == auto_activity.name
+        assert result_activity_auto["description"] == auto_activity.description[Language.ENGLISH]
+        assert result_activity_auto["status"] == ActivityOrFlowStatusEnum.HIDDEN.value
+        assert result_activity_auto["activityIds"] is None
+        assert result_activity_auto["isPerformanceTask"] is False
+        assert result_activity_auto["performanceTaskType"] is None
+        assert len(result_activity_auto["assignments"]) == 0
 
-    async def test_target_assigned_performance_task(
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_assigned_performance_tasks(
         self,
         session,
         client,
@@ -1655,11 +1703,12 @@ class TestActivities:
         lucy,
         lucy_applet_with_all_performance_tasks_subject,
         user_applet_with_all_performance_tasks_subject,
+        subject_type: str,
     ):
         client.login(lucy)
 
         response = await client.get(
-            self.target_assigned_activities_url.format(
+            self._get_assigned_activities_rul(subject_type).format(
                 applet_id=applet_with_all_performance_tasks_lucy_manager.id,
                 subject_id=user_applet_with_all_performance_tasks_subject.id,
             )
