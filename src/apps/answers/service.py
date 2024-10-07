@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
+from apps.activities.domain.scores_reports import SubScaleLookupTable
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist, FlowDoesNotExist
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
@@ -1929,7 +1930,7 @@ class ReportServerService:
         report_name: str | None = None,
     ) -> ReportServerResponse | None:
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
-        subscale_table_data = []
+        subscale_table_data: list[SubScaleLookupTable] | None = None
         subscale_name = ""
         scoring_type = ""
 
