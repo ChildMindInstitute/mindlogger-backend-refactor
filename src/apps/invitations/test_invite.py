@@ -1,5 +1,6 @@
 import http
 import json
+import re
 import uuid
 from typing import Literal
 
@@ -29,6 +30,7 @@ from apps.invitations.errors import (
 )
 from apps.mailing.services import TestMail
 from apps.shared.test import BaseTest
+from apps.shared.test.client import TestClient
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
@@ -40,7 +42,7 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 @pytest.fixture
-async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletFull, tom):
+async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletFull, tom: User):
     srv = AppletService(session, tom.id)
     await srv.create_access_link(applet_one.id, CreateAccessLink(require_login=False))
     applet = await srv.get_full_applet(applet_one.id)
@@ -49,7 +51,7 @@ async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletF
 
 
 @pytest.fixture
-async def applet_one_with_link(session: AsyncSession, applet_one: AppletFull, tom):
+async def applet_one_with_link(session: AsyncSession, applet_one: AppletFull, tom: User):
     srv = AppletService(session, tom.id)
     await srv.create_access_link(applet_one.id, CreateAccessLink(require_login=True))
     applet = await srv.get_full_applet(applet_one.id)
@@ -58,19 +60,23 @@ async def applet_one_with_link(session: AsyncSession, applet_one: AppletFull, to
 
 
 @pytest.fixture
-async def applet_one_lucy_manager(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+async def applet_one_lucy_manager(session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.MANAGER)
     return applet_one
 
 
 @pytest.fixture
-async def applet_one_lucy_coordinator(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+async def applet_one_lucy_coordinator(
+    session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User
+) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.COORDINATOR)
     return applet_one
 
 
 @pytest.fixture
-async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
+async def applet_one_lucy_respondent(
+    session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User
+) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
     return applet_one
 
@@ -93,7 +99,7 @@ def user_create_data() -> UserCreateRequest:
 
 
 @pytest.fixture
-def subject_ids(tom, tom_applet_one_subject) -> list[str]:
+def subject_ids(tom: User, tom_applet_one_subject: Subject) -> list[uuid.UUID]:
     return [tom_applet_one_subject.id]
 
 
@@ -176,6 +182,13 @@ async def applet_one_lucy_subject(session: AsyncSession, applet_one: AppletFull,
     )
 
 
+def message_language(message_body: str):
+    assert message_body
+    match_result = re.search(r"<span data-language=\"([^\"]*)\"></span>", message_body)
+    assert match_result
+    return match_result.group(1)
+
+
 class TestInvite(BaseTest):
     fixtures = [
         "invitations/fixtures/invitations.json",
@@ -196,7 +209,7 @@ class TestInvite(BaseTest):
     shell_acc_create_url = f"{invitation_list}/{{applet_id}}/shell-account"
     shell_acc_invite_url = f"{invitation_list}/{{applet_id}}/subject"
 
-    async def test_invitation_list(self, client, tom):
+    async def test_invitation_list(self, client: TestClient, tom: User):
         client.login(tom)
 
         response = await client.get(self.invitation_list)
@@ -204,7 +217,7 @@ class TestInvite(BaseTest):
 
         assert len(response.json()["result"]) == 3
 
-    async def test_applets_invitation_list(self, client, tom, applet_one):
+    async def test_applets_invitation_list(self, client: TestClient, tom: User, applet_one: AppletFull):
         client.login(tom)
 
         response = await client.get(
@@ -215,7 +228,9 @@ class TestInvite(BaseTest):
 
         assert len(response.json()["result"]) == 2
 
-    async def test_invitation_retrieve(self, client, applet_one, lucy, applet_one_lucy_subject):
+    async def test_invitation_retrieve(
+        self, client: TestClient, applet_one: AppletFull, lucy: User, applet_one_lucy_subject: Subject
+    ):
         client.login(lucy)
         response = await client.get(self.invitation_detail.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6"))
         assert response.status_code == http.HTTPStatus.OK
@@ -227,7 +242,7 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["tag"] is not None
         assert response.json()["result"]["title"] == "PHD"
 
-    async def test_private_invitation_retrieve(self, client, applet_one_with_link, lucy):
+    async def test_private_invitation_retrieve(self, client: TestClient, applet_one_with_link: AppletFull, lucy: User):
         client.login(lucy)
 
         response = await client.get(self.private_invitation_detail.format(key=applet_one_with_link.link))
@@ -237,7 +252,13 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["role"] == Role.RESPONDENT
 
     async def test_admin_invite_manager_success(
-        self, client, invitation_manager_data, tom, user, applet_one, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_manager_data: InvitationManagersRequest,
+        tom: User,
+        user: User,
+        applet_one: AppletFull,
+        mailbox: TestMail,
     ):
         client.login(tom)
         response = await client.post(
@@ -247,11 +268,18 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["userId"] == str(user.id)
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_manager_data.email]
         assert mailbox.mails[0].subject == "Applet 1 invitation"
 
     async def test_admin_invite_coordinator_success(
-        self, client, invitation_coordinator_data, tom, user, applet_one, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_coordinator_data: InvitationManagersRequest,
+        tom: User,
+        user: User,
+        applet_one: AppletFull,
+        mailbox: TestMail,
     ):
         client.login(tom)
         response = await client.post(
@@ -261,10 +289,17 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["userId"] == str(user.id)
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_coordinator_data.email]
 
     async def test_admin_invite_editor_success(
-        self, client, invitation_editor_data, tom, user, applet_one, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_editor_data: InvitationManagersRequest,
+        tom: User,
+        user: User,
+        applet_one: AppletFull,
+        mailbox: TestMail,
     ):
         client.login(tom)
         response = await client.post(
@@ -275,10 +310,17 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["userId"] == str(user.id)
         assert response.json()["result"]["tag"] == "Team"
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_editor_data.email]
 
     async def test_admin_invite_reviewer_success(
-        self, client, invitation_reviewer_data, tom, user, applet_one, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        tom: User,
+        user: User,
+        applet_one: AppletFull,
+        mailbox: TestMail,
     ):
         client.login(tom)
         response = await client.post(
@@ -289,11 +331,18 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["userId"] == str(user.id)
         assert response.json()["result"]["tag"] == "Team"
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_reviewer_data.email]
         assert mailbox.mails[0].subject == "Applet 1 invitation"
 
     async def test_admin_invite_respondent_success(
-        self, client, invitation_respondent_data, tom, user, applet_one, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        tom: User,
+        user: User,
+        applet_one: AppletFull,
+        mailbox: TestMail,
     ):
         client.login(tom)
         response = await client.post(
@@ -305,11 +354,16 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["tag"] == invitation_respondent_data.tag
         assert response.json()["result"]["tag"] is not None
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_respondent_data.email]
         assert mailbox.mails[0].subject == "Applet 1 invitation"
 
     async def test_admin_invite_respondent_duplicate_pending_secret_id(
-        self, client, invitation_respondent_data, tom, applet_one
+        self,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        tom: User,
+        applet_one: AppletFull,
     ):
         client.login(tom)
         response = await client.post(
@@ -318,7 +372,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
 
-        invitation_respondent_data.email = "patric1@gmail.com"
+        invitation_respondent_data.email = EmailStr("patric1@gmail.com")
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data,
@@ -330,7 +384,12 @@ class TestInvite(BaseTest):
         assert result[0]["path"] == ["body", "secretUserId"]
 
     async def test_manager_invite_manager_success(
-        self, client, invitation_manager_data, applet_one_lucy_manager, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_manager_data: InvitationManagersRequest,
+        applet_one_lucy_manager: AppletFull,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(lucy)
         response = await client.post(
@@ -340,11 +399,17 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_manager_data.email]
         assert mailbox.mails[0].subject == "Applet 1 invitation"
 
     async def test_manager_invite_coordinator_success(
-        self, client, invitation_coordinator_data, applet_one_lucy_manager, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_coordinator_data: InvitationManagersRequest,
+        applet_one_lucy_manager: AppletFull,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(lucy)
         response = await client.post(
@@ -354,10 +419,16 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_coordinator_data.email]
 
     async def test_manager_invite_editor_success(
-        self, client, invitation_editor_data, applet_one_lucy_manager, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_editor_data: InvitationManagersRequest,
+        applet_one_lucy_manager: AppletFull,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(lucy)
         response = await client.post(
@@ -367,10 +438,16 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_editor_data.email]
 
     async def test_manager_invite_reviewer_success(
-        self, client, invitation_reviewer_data, lucy, applet_one_lucy_manager, mailbox
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        lucy: User,
+        applet_one_lucy_manager: AppletFull,
+        mailbox,
     ):
         client.login(lucy)
         response = await client.post(
@@ -380,10 +457,16 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_reviewer_data.email]
 
     async def test_manager_invite_respondent_success(
-        self, client, invitation_respondent_data, applet_one_lucy_manager, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        applet_one_lucy_manager,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(lucy)
         response = await client.post(
@@ -393,10 +476,16 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_respondent_data.email]
 
     async def test_coordinator_invite_respondent_success(
-        self, client, invitation_respondent_data, applet_one_lucy_coordinator, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        applet_one_lucy_coordinator,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(lucy)
         response = await client.post(
@@ -406,10 +495,16 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_respondent_data.email]
 
     async def test_coordinator_invite_reviewer_success(
-        self, client, invitation_reviewer_data, applet_one_lucy_coordinator, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        applet_one_lucy_coordinator,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(lucy)
         response = await client.post(
@@ -419,10 +514,15 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
         assert mailbox.mails[0].recipients == [invitation_reviewer_data.email]
 
     async def test_coordinator_invite_manager_fail(
-        self, client, invitation_manager_data, applet_one_lucy_coordinator, lucy
+        self,
+        client: TestClient,
+        invitation_manager_data: InvitationManagersRequest,
+        applet_one_lucy_coordinator,
+        lucy: User,
     ):
         client.login(lucy)
         response = await client.post(
@@ -434,7 +534,11 @@ class TestInvite(BaseTest):
         assert response.json()["result"][0]["message"] == "Access denied."
 
     async def test_editor_invite_respondent_fail(
-        self, client, invitation_respondent_data, lucy, applet_one_lucy_editor
+        self,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        lucy: User,
+        applet_one_lucy_editor: AppletFull,
     ):
         client.login(lucy)
         response = await client.post(
@@ -444,7 +548,14 @@ class TestInvite(BaseTest):
         assert response.status_code == 403
         assert response.json()["result"][0]["message"] == "Access denied to manipulate with invites of the applet."
 
-    async def test_invitation_accept_and_absorb_roles(self, session, client, lucy, applet_one_lucy_roles, applet_one):
+    async def test_invitation_accept_and_absorb_roles(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        lucy: User,
+        applet_one_lucy_roles: AppletFull,
+        applet_one: AppletFull,
+    ):
         client.login(lucy)
 
         roles = await UserAppletAccessCRUD(session).get_user_roles_to_applet(lucy.id, applet_one.id)
@@ -460,7 +571,9 @@ class TestInvite(BaseTest):
         assert Role.MANAGER in roles
         assert Role.RESPONDENT in roles
 
-    async def test_private_invitation_accept(self, session, client, lucy, applet_one_with_link):
+    async def test_private_invitation_accept(
+        self, session: AsyncSession, client: TestClient, lucy: User, applet_one_with_link: AppletFull
+    ):
         client.login(lucy)
 
         response = await client.post(self.accept_private_url.format(key=applet_one_with_link.link))
@@ -470,21 +583,22 @@ class TestInvite(BaseTest):
             applet_id=applet_one_with_link.id,
             ordered_roles=[Role.RESPONDENT],
         )
-        assert access.role == Role.RESPONDENT
+        assert access
+        assert access.role == Role.RESPONDENT.value
 
-    async def test_invitation_accept_invitation_does_not_exists(self, client, tom, uuid_zero):
+    async def test_invitation_accept_invitation_does_not_exists(self, client: TestClient, tom: User, uuid_zero):
         client.login(tom)
 
         response = await client.post(self.accept_url.format(key=uuid_zero))
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
-    async def test_invitation_decline(self, client, lucy):
+    async def test_invitation_decline(self, client: TestClient, lucy: User):
         client.login(lucy)
 
         response = await client.delete(self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6"))
         assert response.status_code == http.HTTPStatus.OK
 
-    async def test_invitation_decline_wrong_invitation_does_not_exists(self, client, tom):
+    async def test_invitation_decline_wrong_invitation_does_not_exists(self, client: TestClient, tom: User):
         client.login(tom)
 
         response = await client.delete(self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da9"))
@@ -493,10 +607,16 @@ class TestInvite(BaseTest):
 
     @pytest.mark.parametrize("role", (Role.MANAGER, Role.COORDINATOR, Role.EDITOR))
     async def test_manager_invite_if_duplicate_email_and_role_not_accepted(
-        self, client, role, invitation_manager_data, applet_one_lucy_manager, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        role: Role,
+        invitation_manager_data: InvitationManagersRequest,
+        applet_one_lucy_manager: AppletFull,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(lucy)
-        invitation_manager_data.role = role
+        invitation_manager_data.role = ManagersRole(role)
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one_lucy_manager.id)),
             invitation_manager_data,
@@ -509,12 +629,20 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert len(mailbox.mails) == 2
+        assert message_language(mailbox.mails[0].body) == "en"
+        assert message_language(mailbox.mails[1].body) == "en"
 
     async def test_admin_invite_respondent_fail_if_duplicate_email(
-        self, client, invitation_respondent_data, tom, applet_one_lucy_respondent, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        tom: User,
+        applet_one_lucy_respondent: AppletFull,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_respondent_data.email = lucy.email_encrypted
+        invitation_respondent_data.email = EmailStr(lucy.email_encrypted)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one_lucy_respondent.id)),
             invitation_respondent_data,
@@ -526,10 +654,16 @@ class TestInvite(BaseTest):
         assert len(mailbox.mails) == 0
 
     async def test_fail_if_invite_manager_on_editor_role(
-        self, client, invitation_editor_data, tom, applet_one_lucy_manager, lucy, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_editor_data: InvitationManagersRequest,
+        tom: User,
+        applet_one_lucy_manager: AppletFull,
+        lucy: User,
+        mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_editor_data.email = lucy.email_encrypted
+        invitation_editor_data.email = EmailStr(lucy.email_encrypted)
         response = await client.post(
             self.invite_manager_url.format(applet_id=applet_one_lucy_manager.id),
             invitation_editor_data,
@@ -541,10 +675,15 @@ class TestInvite(BaseTest):
         assert len(mailbox.mails) == 0
 
     async def test_invite_not_registered_user_manager(
-        self, client, invitation_manager_data, tom, applet_one, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_manager_data: InvitationManagersRequest,
+        tom: User,
+        applet_one: AppletFull,
+        mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_manager_data.email = f"new{invitation_manager_data.email}"
+        invitation_manager_data.email = EmailStr(f"new{invitation_manager_data.email}")
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
             invitation_manager_data,
@@ -552,12 +691,18 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert not response.json()["result"]["userId"]
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
 
     async def test_invite_not_registered_user_reviewer(
-        self, client, invitation_reviewer_data, tom, applet_one, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        tom: User,
+        applet_one: AppletFull,
+        mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_reviewer_data.email = f"new{invitation_reviewer_data.email}"
+        invitation_reviewer_data.email = EmailStr(f"new{invitation_reviewer_data.email}")
         response = await client.post(
             self.invite_reviewer_url.format(applet_id=str(applet_one.id)),
             invitation_reviewer_data.dict(),
@@ -565,12 +710,18 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK, response.json()
         assert not response.json()["result"]["userId"]
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
 
     async def test_invite_not_registered_user_respondent(
-        self, client, invitation_respondent_data, tom, applet_one, mailbox: TestMail
+        self,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        tom: User,
+        applet_one: AppletFull,
+        mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_respondent_data.email = f"new{invitation_respondent_data.email}"
+        invitation_respondent_data.email = EmailStr(f"new{invitation_respondent_data.email}")
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data.dict(),
@@ -578,6 +729,7 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert not response.json()["result"]["userId"]
         assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
 
     @pytest.mark.parametrize(
         "status,url,method",
@@ -587,11 +739,20 @@ class TestInvite(BaseTest):
         ),
     )
     async def test_new_user_accept_decline_invitation(
-        self, session, client, user_create_data, status, url, method, invitation_manager_data, tom, applet_one
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        user_create_data: UserCreateRequest,
+        status: InvitationStatus,
+        url: str,
+        method: str,
+        invitation_manager_data: InvitationManagersRequest,
+        tom: User,
+        applet_one: AppletFull,
     ) -> None:
         client.login(tom)
         new_email = f"new{invitation_manager_data.email}"
-        invitation_manager_data.email = new_email
+        invitation_manager_data.email = EmailStr(new_email)
         # Send an invite
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
@@ -601,7 +762,7 @@ class TestInvite(BaseTest):
         assert not response.json()["result"]["userId"]
 
         invitation_key = response.json()["result"]["key"]
-        user_create_data.email = new_email
+        user_create_data.email = EmailStr(new_email)
         # An invited user creates an account
         resp = await client.post("/users", data=user_create_data.dict())
         assert resp.status_code == http.HTTPStatus.CREATED
@@ -618,11 +779,16 @@ class TestInvite(BaseTest):
         assert inv.status == status  # type: ignore[union-attr]
 
     async def test_update_invitation_for_new_user_who_registered_after_first_invitation(
-        self, client, user_create_data, invitation_manager_data, tom, applet_one
+        self,
+        client: TestClient,
+        user_create_data,
+        invitation_manager_data: InvitationManagersRequest,
+        tom: User,
+        applet_one: AppletFull,
     ) -> None:
         client.login(tom)
         new_email = f"new{invitation_manager_data.email}"
-        invitation_manager_data.email = new_email
+        invitation_manager_data.email = EmailStr(new_email)
         # Send an invite
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
@@ -648,7 +814,12 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["userId"] == exp_user_id
 
     async def test_resend_invitation_with_updates_for_respondent_with_pending_invitation(
-        self, session, client, invitation_respondent_data, tom: User, applet_one: AppletFull
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        tom: User,
+        applet_one: AppletFull,
     ):
         client.login(tom)
         response = await client.post(
@@ -669,7 +840,12 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
     async def test_resend_invitation_for_respondent_with_pending_invitation_only_last_key_valid(
-        self, client, invitation_respondent_data, tom, applet_one, user
+        self,
+        client: TestClient,
+        invitation_respondent_data: InvitationRespondentRequest,
+        tom: User,
+        applet_one: AppletFull,
+        user: User,
     ):
         client.login(tom)
         response = await client.post(
@@ -698,16 +874,16 @@ class TestInvite(BaseTest):
 
     async def test_send_many_pending_invitations_for_one_email_valid_only_last(
         self,
-        client,
-        session,
-        invitation_coordinator_data,
-        invitation_editor_data,
-        invitation_manager_data,
-        invitation_respondent_data,
-        invitation_reviewer_data,
-        tom,
-        applet_one,
-        user,
+        client: TestClient,
+        session: AsyncSession,
+        invitation_coordinator_data: InvitationManagersRequest,
+        invitation_editor_data: InvitationManagersRequest,
+        invitation_manager_data: InvitationManagersRequest,
+        invitation_respondent_data: InvitationRespondentRequest,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        tom: User,
+        applet_one: AppletFull,
+        user: User,
     ):
         client.login(tom)
         invitations_urls = [
@@ -742,7 +918,9 @@ class TestInvite(BaseTest):
         response = await client.get(self.invitation_detail.format(key=keys[-1]))
         assert response.status_code == http.HTTPStatus.OK
 
-    async def test_get_invitation_by_key_invitation_does_not_exist(self, client, tom, uuid_zero):
+    async def test_get_invitation_by_key_invitation_does_not_exist(
+        self, client: TestClient, tom: User, uuid_zero: uuid.UUID
+    ):
         client.login(tom)
 
         response = await client.get(self.invitation_detail.format(key=uuid_zero))
@@ -754,7 +932,11 @@ class TestInvite(BaseTest):
         (("decline_url", "delete"), ("accept_url", "post")),
     )
     async def test_get_invitation_by_key_already_accpted_declined(
-        self, client, url: Literal["decline_url", "accept_url"], method: Literal["delete", "post"], lucy
+        self,
+        client: TestClient,
+        url: Literal["decline_url", "accept_url"],
+        method: Literal["delete", "post"],
+        lucy: User,
     ):
         client.login(lucy)
         key = "6a3ab8e6-f2fa-49ae-b2db-197136677da6"
@@ -767,14 +949,18 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == InvitationAlreadyProcessed.message
 
-    async def test_get_private_invitation_by_link_does_not_exist(self, client, tom, uuid_zero):
+    async def test_get_private_invitation_by_link_does_not_exist(
+        self, client: TestClient, tom: User, uuid_zero: uuid.UUID
+    ):
         client.login(tom)
 
         response = await client.get(self.private_invitation_detail.format(key=uuid_zero))
         assert response.status_code == http.HTTPStatus.NOT_FOUND
         assert response.json()["result"][0]["message"] == InvitationDoesNotExist.message
 
-    async def test_private_invitation_accept_invitation_does_not_exist(self, client, tom, uuid_zero):
+    async def test_private_invitation_accept_invitation_does_not_exist(
+        self, client: TestClient, tom: User, uuid_zero: uuid.UUID
+    ):
         client.login(tom)
 
         response = await client.post(self.accept_private_url.format(key=uuid_zero))
@@ -782,7 +968,12 @@ class TestInvite(BaseTest):
         assert response.json()["result"][0]["message"] == InvitationDoesNotExist.message
 
     async def test_send_invitation_to_reviewer_invitation_already_approved(
-        self, client, invitation_reviewer_data, tom, applet_one, user
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        tom: User,
+        applet_one: AppletFull,
+        user: User,
     ):
         client.login(tom)
         # send an invite
@@ -806,7 +997,9 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["result"][0]["message"] == ManagerInvitationExist.message
 
-    async def test_send_incorrect_role_to_invite_managers(self, client, invitation_manager_data, tom, applet_one):
+    async def test_send_incorrect_role_to_invite_managers(
+        self, client: TestClient, invitation_manager_data: InvitationManagersRequest, tom: User, applet_one: AppletFull
+    ):
         client.login(tom)
         data = invitation_manager_data.dict()
         data["role"] = "notvalid"
@@ -821,7 +1014,12 @@ class TestInvite(BaseTest):
         assert result[0]["message"] == emsg
 
     async def test_invite_reviewer_with_respondent_does_not_exist(
-        self, client, invitation_reviewer_data, tom, applet_one, uuid_zero
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        tom: User,
+        applet_one: AppletFull,
+        uuid_zero: uuid.UUID,
     ):
         client.login(tom)
         invitation_reviewer_data.subjects = [uuid_zero]
@@ -839,7 +1037,14 @@ class TestInvite(BaseTest):
         (("accept_url", "post"), ("decline_url", "delete")),
     )
     async def test_accept_or_decline_already_processed_invitation(
-        self, client, url, method, invitation_manager_data, tom, applet_one, user
+        self,
+        client: TestClient,
+        url: str,
+        method: str,
+        invitation_manager_data: InvitationManagersRequest,
+        tom: User,
+        applet_one: AppletFull,
+        user: User,
     ) -> None:
         client.login(tom)
         # Send an invite
@@ -860,7 +1065,9 @@ class TestInvite(BaseTest):
         resp = await client_method(getattr(self, url).format(key=invitation_key))
         assert resp.status_code == http.HTTPStatus.BAD_REQUEST
 
-    async def test_shell_create_account(self, client, shell_create_data, bob: User, applet_four: AppletFull):
+    async def test_shell_create_account(
+        self, client: TestClient, shell_create_data: dict, bob: User, applet_four: AppletFull
+    ):
         client.login(bob)
         applet_id = str(applet_four.id)
         creator_id = str(bob.id)
@@ -892,7 +1099,9 @@ class TestInvite(BaseTest):
             ),
         ),
     )
-    async def test_shell_invite(self, client, session, bob: User, applet_four: AppletFull, shell_create):
+    async def test_shell_invite(
+        self, client: TestClient, session: AsyncSession, bob: User, applet_four: AppletFull, shell_create: dict
+    ):
         client.login(bob)
         email = "mm@mail.com"
         applet_id = str(applet_four.id)
@@ -910,7 +1119,7 @@ class TestInvite(BaseTest):
         assert subject_model.language == "fr"
 
     async def test_shell_invite_no_language(
-        self, client, session, shell_create_data, bob: User, applet_four: AppletFull
+        self, client: TestClient, session: AsyncSession, shell_create_data: dict, bob: User, applet_four: AppletFull
     ):
         client.login(bob)
         email = "mm_english@mail.com"
@@ -929,7 +1138,13 @@ class TestInvite(BaseTest):
         assert subject_model.language == shell_create_data["language"]
 
     async def test_invite_and_accept_invitation_as_respondent(
-        self, client, session, invitation_respondent_data, tom: User, applet_one: AppletFull, bill_bronson: User
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        invitation_respondent_data: InvitationRespondentRequest,
+        tom: User,
+        applet_one: AppletFull,
+        bill_bronson: User,
     ):
         subject_crud = SubjectsCrud(session)
         applet_id = applet_one.id
@@ -937,7 +1152,7 @@ class TestInvite(BaseTest):
         user_id = tom.id
         # Create invitation to Mike
         client.login(tom)
-        invitation_respondent_data.email = user_email
+        invitation_respondent_data.email = EmailStr(user_email)
         subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=applet_id),
@@ -958,7 +1173,13 @@ class TestInvite(BaseTest):
         assert subjects_on_applet2 == subjects_on_applet1
 
     async def test_invite_and_accept_invitation_as_manager(
-        self, client, session, invitation_manager_data, tom: User, user: UserSchema, applet_one: AppletFull
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        invitation_manager_data: InvitationManagersRequest,
+        tom: User,
+        user: UserSchema,
+        applet_one: AppletFull,
     ):
         subject_crud = SubjectsCrud(session)
         applet_id = applet_one.id
@@ -985,7 +1206,7 @@ class TestInvite(BaseTest):
         assert subjects_on_applet2 == (subjects_on_applet1 + 1)
 
     async def test_private_invitation_accept_create_subject(
-        self, client, session, user: User, applet_one_with_link: AppletFull
+        self, client: TestClient, session: AsyncSession, user: User, applet_one_with_link: AppletFull
     ):
         assert applet_one_with_link.link
         subject_crud = SubjectsCrud(session)
@@ -1000,7 +1221,13 @@ class TestInvite(BaseTest):
         assert subject
 
     async def test_move_pins_from_subject_to_user(
-        self, client, session, tom: User, bob: User, shell_create_data, applet_one: AppletFull
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        tom: User,
+        bob: User,
+        shell_create_data: dict,
+        applet_one: AppletFull,
     ):
         client.login(tom)
         applet_id = str(applet_one.id)
@@ -1026,38 +1253,14 @@ class TestInvite(BaseTest):
         pins = await UserAppletAccessCRUD(session).get_workspace_pins(tom.id)
         assert pins[0].pinned_user_id == bob.id
 
-    @pytest.mark.skip("Not actual")
-    async def test_shell_invite_cant_twice(self, client, session, shell_create_data, tom: User, applet_one: AppletFull):
-        client.login(self.login_url, tom.email_encrypted, "Test1234!")
-        email = "mm@mail.com"
-        applet_id = str(applet_one.id)
-        url = self.shell_acc_create_url.format(applet_id=applet_id)
-
-        subjects = []
-        for i in range(2):
-            body = {**shell_create_data, "secretUserId": f"{uuid.uuid4()}"}
-            response = await client.post(url, body)
-            subject = response.json()["result"]
-            subjects.append(subject)
-
-        url = self.shell_acc_invite_url.format(applet_id=applet_id)
-        # Invite first subject
-        response = await client.post(url, dict(subjectId=subjects[0]["id"], email=email))
-        assert response.status_code == http.HTTPStatus.OK
-        # Try to invite next subject on same email
-        response = await client.post(url, dict(subjectId=subjects[1]["id"], email=email))
-        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        message = response.json()["result"][0]["message"]
-        assert message == RespondentInvitationExist.message
-
     async def test_cant_create_invitation_with_same_secret_id_as_shell_account(
         self,
-        client,
-        session,
+        client: TestClient,
+        session: AsyncSession,
         applet_one: AppletFull,
         applet_one_shell_account: Subject,
         tom: User,
-        invitation_respondent_data,
+        invitation_respondent_data: InvitationRespondentRequest,
     ):
         client.login(tom)
         invitation_respondent_data.secret_user_id = applet_one_shell_account.secret_user_id
@@ -1071,7 +1274,13 @@ class TestInvite(BaseTest):
         assert payload["result"][0]["message"] == NonUniqueValue().error
 
     async def test_shell_update_email_on_accept(
-        self, client, session, bob: User, lucy: User, applet_four: AppletFull, shell_create_data
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        bob: User,
+        lucy: User,
+        applet_four: AppletFull,
+        shell_create_data: dict,
     ):
         client.login(bob)
         applet_id = str(applet_four.id)
