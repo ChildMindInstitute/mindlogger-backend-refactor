@@ -86,14 +86,14 @@ def validate_score_and_sections(values: dict):  # noqa: C901
             scoring_type = report.scoring_type
 
             if scoring_type == "score":
-                if not subscale_name: 
-                    raise SubscaleIsNotLinked() 
+                if not subscale_name:
+                    raise SubscaleIsNotLinked()
                 subscale_setting = values.get("subscale_setting", False)
                 if not subscale_setting:
-                    raise SubscaleSettingDoesNotExist() 
+                    raise SubscaleSettingDoesNotExist()
                 subscales = subscale_setting.subscales
-                subscales_names = [subscale.name for subscale in subscales] 
-                if  subscale_name not in subscales_names:
+                subscales_names = [subscale.name for subscale in subscales]
+                if subscale_name not in subscales_names:
                     raise SubscaleNameDoesNotExist()
                 for subscale in subscales:
                     if subscale.name == subscale_name:
@@ -101,7 +101,7 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                 if not subscale_table_data:
                     raise SubscaleDataDoesNotExist()
 
-        # check if all item names are same as values.name
+            # check if all item names are same as values.name
             for item in report.items_score:
                 if item not in item_names:
                     raise IncorrectScoreItemError()

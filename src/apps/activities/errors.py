@@ -281,7 +281,7 @@ class SubscaleNameDoesNotExist(ValidationError):
     message = _("The lookup table with the passed name does not exist in subcale settings")
     code = _("no_subscale_exist")
 
-    
+
 class SubscaleDataDoesNotExist(ValidationError):
     message = _("The scoring type is score but the subscale data does not exist")
     code = _("no_subscale_exist")
