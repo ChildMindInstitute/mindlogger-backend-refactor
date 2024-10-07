@@ -62,8 +62,5 @@ class MailingService:
         fm = mailing_class(self._connection)
         await fm.send_message(message)
 
-    def get_template(self, path: str, **kwargs):
-        template = self.env.get_template(f"{path}.html")
-        html = template.render(**kwargs)
-
-        return html
+    def get_html_template(self, _template_name: str, **kwargs) -> str:
+        return self.env.get_template(f"{_template_name}.html").render(**kwargs)

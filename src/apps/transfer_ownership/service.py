@@ -65,8 +65,8 @@ class TransferService:
         message = MessageSchema(
             recipients=[transfer_request.email],
             subject="Transfer ownership of an applet",
-            body=service.get_template(
-                path=path,
+            body=service.get_html_template(
+                _template_name=path,
                 applet_owner=self._user.get_full_name(),
                 receiver_name=receiver_name,
                 applet_name=applet.display_name,

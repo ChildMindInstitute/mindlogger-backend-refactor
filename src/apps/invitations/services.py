@@ -136,15 +136,14 @@ class InvitationsService:
         invitation_internal: InvitationRespondent = InvitationRespondent.from_orm(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
-        template_name = self._get_email_template_name(invited_user_id, schema.language)
 
         # Send email to the user
         service = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
-            body=service.get_template(
-                path=template_name,
+            body=service.get_html_template(
+                _template_name=self._get_email_template_name(invited_user_id, schema.language),
                 first_name=subject.first_name,
                 last_name=subject.last_name,
                 applet_name=applet.display_name,
@@ -212,8 +211,6 @@ class InvitationsService:
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
 
-        template_name = self._get_email_template_name(invited_user_id, schema.language)
-
         await WorkspaceService(self.session, self._user.id).update_workspace_name(self._user, schema.workspace_prefix)
 
         # Send email to the user
@@ -221,8 +218,8 @@ class InvitationsService:
         message = MessageSchema(
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
-            body=service.get_template(
-                path=template_name,
+            body=service.get_html_template(
+                _template_name=self._get_email_template_name(invited_user_id, schema.language),
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
@@ -286,8 +283,9 @@ class InvitationsService:
         else:
             invitation_schema = await self.invitations_crud.save(InvitationSchema(**payload))
         invitation_internal = InvitationManagers.from_orm(invitation_schema)
+
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
-        template_name = self._get_email_template_name(invited_user_id, schema.language)
+
         await WorkspaceService(self.session, self._user.id).update_workspace_name(self._user, schema.workspace_prefix)
 
         # Send email to the user
@@ -295,8 +293,8 @@ class InvitationsService:
         message = MessageSchema(
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
-            body=service.get_template(
-                path=template_name,
+            body=service.get_html_template(
+                _template_name=self._get_email_template_name(invited_user_id, schema.language),
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,

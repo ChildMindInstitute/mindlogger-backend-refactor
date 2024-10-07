@@ -167,7 +167,6 @@ class ActivityAssignmentService:
             respondent_subject: SubjectSchema = subjects[respondent_subject_id]
 
             language = respondent_subject.language or "en"
-            template_name = self._get_email_template_name(language)
 
             domain = settings.service.urls.frontend.web_base
             path = settings.service.urls.frontend.applet_home
@@ -180,8 +179,8 @@ class ActivityAssignmentService:
             message = MessageSchema(
                 recipients=[respondent_subject.email],
                 subject=self._get_email_assignment_subject(language),
-                body=service.get_template(
-                    path=template_name,
+                body=service.get_html_template(
+                    _template_name=self._get_email_template_name(language),
                     first_name=respondent_subject.first_name,
                     applet_name=applet.display_name,
                     link=link,
