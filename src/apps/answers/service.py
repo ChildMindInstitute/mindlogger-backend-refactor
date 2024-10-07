@@ -1922,22 +1922,37 @@ class ReportServerService:
         return self._is_activity_last_in_flow(applet_full, activity_id, flow_id)
 
     async def create_report(
-        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None, activity_id: uuid.UUID | None = None
+        self,
+        submit_id: uuid.UUID,
+        answer_id: uuid.UUID | None = None,
+        activity_id: uuid.UUID | None = None,
+        report_name: str | None = None,
     ) -> ReportServerResponse | None:
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
-        act_crud = ActivitiesCRUD(self.session)
         subscale_table_data = []
         subscale_name = ""
         scoring_type = ""
+
         if activity_id:
-            activity_data = await act_crud.get_by_id(activity_id)
-            scoring_type = activity_data.scores_and_reports.get("scoring_type", "raw_scores")
-            if scoring_type == "lookup_scores":
-                subscale_name = activity_data.scores_and_reports.get("subscale_name", False)
-                subscales = activity_data.subscale_setting["subscales"]
-                for subscale in subscales:
-                    if subscale["name"] == subscale_name:
-                        subscale_table_data = subscale.get("subscale_table_data", False)
+            activity_data = await ActivitiesCRUD(self.session).get_by_id(activity_id)
+            reports = activity_data.scores_and_reports.get("reports", [])
+            if not reports:
+                return None  # Early return if no reports are found
+
+            selected_report = next((report for report in reports if report["name"] == report_name), reports[0])
+
+            scoring_type = selected_report.get("scoring_type", "")
+            if scoring_type == "score":
+                subscale_name = selected_report.get("subscale_name", "")
+                subscales = activity_data.subscale_setting.get("subscales", [])
+                subscale_table_data = next(
+                    (
+                        subscale.get("subscale_table_data", [])
+                        for subscale in subscales
+                        if subscale.get("name") == subscale_name
+                    ),
+                    [],
+                )
 
         if not answers:
             return None
