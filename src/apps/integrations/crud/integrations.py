@@ -25,10 +25,8 @@ class IntegrationsCRUD(BaseCRUD[IntegrationsSchema]):
         return new_integrations
 
     async def retrieve_by_applet_and_type(
-            self,
-            applet_id: uuid.UUID,
-            integration_type: str
-    ) -> IntegrationsSchema | None :
+        self, applet_id: uuid.UUID, integration_type: str
+    ) -> IntegrationsSchema | None:
         query = select(IntegrationsSchema)
         query = query.where(IntegrationsSchema.applet_id == applet_id)
         query = query.where(IntegrationsSchema.type == integration_type)

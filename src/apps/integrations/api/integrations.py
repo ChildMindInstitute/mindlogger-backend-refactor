@@ -33,6 +33,7 @@ async def retrieve_integration(
     async with atomic(session):
         return await IntegrationService(session, user).retrieve_integration(applet_id, integration_type)
 
+
 async def delete_integration(
     integration_type: str,
     applet_id: uuid.UUID,

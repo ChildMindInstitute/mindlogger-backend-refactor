@@ -375,7 +375,7 @@ class LorisIntegrationService:
 
             loris_login_data = {
                 "username": self.loris_integration_configuration.username,
-                "password": self.loris_integration_configuration.password
+                "password": self.loris_integration_configuration.password,
             }
 
             async with session.post(
@@ -400,9 +400,9 @@ class LorisIntegrationService:
 
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            url = LorisClient.ml_schema_existing_versions_url(
-                self.loris_integration_configuration.hostname
-            ).format(self.applet_id)
+            url = LorisClient.ml_schema_existing_versions_url(self.loris_integration_configuration.hostname).format(
+                self.applet_id
+            )
             logger.info(f"Sending EXISTING SCHEMA VERSIONS request to the loris server {url}")
             start = time.time()
             async with session.get(
@@ -431,14 +431,12 @@ class LorisIntegrationService:
         token = await LorisClient.login_to_loris(
             self.loris_integration_configuration.hostname,
             self.loris_integration_configuration.username,
-            self.loris_integration_configuration.password
+            self.loris_integration_configuration.password,
         )
 
         try:
             return await LorisClient.get_existing_answers_from_loris(
-                self.loris_integration_configuration.hostname,
-                token,
-                self.applet_id
+                self.loris_integration_configuration.hostname, token, self.applet_id
             )
         except Exception:
             self._create_integration_alerts(
@@ -483,9 +481,7 @@ class LorisIntegrationService:
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             candidate_url = LorisClient.create_candidate_url(self.loris_integration_configuration.hostname)
-            logger.info(
-                f"Sending CREATE CANDIDATE request to the loris server {candidate_url}"
-            )
+            logger.info(f"Sending CREATE CANDIDATE request to the loris server {candidate_url}")
             start = time.time()
             _data_candidate = {
                 "Candidate": {
@@ -545,9 +541,9 @@ class LorisIntegrationService:
                     "Project": "loris",
                 }
                 async with session.put(
-                    LorisClient
-                        .create_visit_url(self.loris_integration_configuration.hostname)
-                        .format(candidate_id, visit),
+                    LorisClient.create_visit_url(self.loris_integration_configuration.hostname).format(
+                        candidate_id, visit
+                    ),
                     data=json.dumps(_data_create_visit),
                     headers=headers,
                 ) as resp:
@@ -588,9 +584,9 @@ class LorisIntegrationService:
                     },
                 }
                 async with session.patch(
-                    LorisClient
-                        .start_visit_url(self.loris_integration_configuration.hostname)
-                        .format(candidate_id, visit),
+                    LorisClient.start_visit_url(self.loris_integration_configuration.hostname).format(
+                        candidate_id, visit
+                    ),
                     data=json.dumps(_data_start_visit),
                     headers=headers,
                 ) as resp:
@@ -637,9 +633,9 @@ class LorisIntegrationService:
                             "Instruments": [activity_id],
                         }
                         async with session.post(
-                            LorisClient
-                                .add_instruments_url(self.loris_integration_configuration.hostname)
-                                .format(candidate_id, visit),
+                            LorisClient.add_instruments_url(self.loris_integration_configuration.hostname).format(
+                                candidate_id, visit
+                            ),
                             data=json.dumps(_data_add_instruments),
                             headers=headers,
                         ) as resp:
@@ -689,8 +685,9 @@ class LorisIntegrationService:
                             }
                             logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)}")
                             async with session.put(
-                                LorisClient.instrument_data_url(self.loris_integration_configuration.hostname)
-                                    .format(candidate_id, visit, activity_id),
+                                LorisClient.instrument_data_url(self.loris_integration_configuration.hostname).format(
+                                    candidate_id, visit, activity_id
+                                ),
                                 data=json.dumps(_data_instrument_data),
                                 headers=headers,
                             ) as resp:
@@ -711,11 +708,11 @@ class LorisIntegrationService:
             self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
         if self.loris_integration_configuration is None:
             raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
-        
+
         token = await LorisClient.login_to_loris(
             self.loris_integration_configuration.hostname,
             self.loris_integration_configuration.username,
-            self.loris_integration_configuration.password
+            self.loris_integration_configuration.password,
         )
 
         return await LorisClient.get_visits_list(self.loris_integration_configuration.hostname, token)
@@ -745,7 +742,9 @@ class LorisIntegrationService:
             )
             start = time.time()
             async with session.get(
-                LorisClient.ml_visits_for_applet_url(self.loris_integration_configuration.hostname).format(str(self.applet_id)),
+                LorisClient.ml_visits_for_applet_url(self.loris_integration_configuration.hostname).format(
+                    str(self.applet_id)
+                ),
                 headers=headers,
             ) as resp:
                 duration = time.time() - start
@@ -764,7 +763,7 @@ class LorisIntegrationService:
         if self.loris_integration_configuration is None:
             raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
 
-        uploaded_answers  = await self._get_existing_answers_from_loris()
+        uploaded_answers = await self._get_existing_answers_from_loris()
         applet_visits = await self.get_visits_for_applet()
         # todo pagination
         answers = await AnswersCRUD(self.answer_session).get_shareable_answers(applet_id=self.applet_id)
@@ -916,14 +915,11 @@ class LorisIntegrationService:
         return LorisProjects(projects=projects)
 
     async def _get_applet_loris_integration_configuration(self) -> LorisIntegration:
-        integration_schema = await IntegrationsCRUD(
-            self.session
-        ).retrieve_by_applet_and_type(
-            self.applet_id,
-            AvailableIntegrations.LORIS
+        integration_schema = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
+            self.applet_id, AvailableIntegrations.LORIS
         )
 
         if integration_schema is None:
             raise UnavailableIntegrationError(applet_id=self.applet_id, integration_type=AvailableIntegrations.LORIS)
-        
+
         return LorisIntegration.from_schema(integration_schema)

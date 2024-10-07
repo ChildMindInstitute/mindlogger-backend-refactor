@@ -62,7 +62,7 @@ class LorisClient:
                 else:
                     error_message = await resp.text()
                     raise LorisInvalidTokenError(message=error_message)
-                
+
     @classmethod
     async def get_visits_list(self, hostname: str, token: str):
         url = LorisClient.get_visits_list_url(hostname).format("loris")
@@ -87,7 +87,7 @@ class LorisClient:
                 else:
                     error_message = await resp.text()
                     raise LorisInvalidTokenError(message=error_message)
-                
+
     @classmethod
     async def get_existing_answers_from_loris(self, hostname, token, applet_id):
         url = LorisClient.ml_schema_existing_answers_url(hostname).format(applet_id)
@@ -120,11 +120,11 @@ class LorisClient:
     @classmethod
     def projects_url(self, hostname: str) -> str:
         return f"https://{hostname}/api/v0.0.3/projects"
-    
+
     @classmethod
     def ml_schema_url(self, hostname: str) -> str:
         return f"https://{hostname}/mindlogger/v1/schema/"
-    
+
     @classmethod
     def create_candidate_url(self, hostname: str) -> str:
         return f"https://{hostname}/api/v0.0.3/candidates"
@@ -136,7 +136,7 @@ class LorisClient:
     @classmethod
     def start_visit_url(self, hostname: str) -> str:
         return f"https://{hostname}/api/v0.0.4-dev/candidates/{{}}/{{}}"
-    
+
     @classmethod
     def add_instruments_url(self, hostname: str) -> str:
         return f"https://{hostname}/api/v0.0.4-dev/candidates/{{}}/{{}}/instruments"
@@ -144,15 +144,15 @@ class LorisClient:
     @classmethod
     def instrument_data_url(self, hostname: str) -> str:
         return f"https://{hostname}/api/v0.0.3/candidates/{{}}/{{}}/instruments/{{}}"
-    
+
     @classmethod
     def ml_schema_existing_versions_url(self, hostname: str) -> str:
         return f"https://{hostname}/mindlogger/v1/applet/{{}}/versions"
-    
+
     @classmethod
     def ml_schema_existing_answers_url(self, hostname: str) -> str:
         return f"https://{hostname}/mindlogger/v1/applet/{{}}/answers"
-    
+
     @classmethod
     def get_visits_list_url(self, hostname: str) -> str:
         return f"https://{hostname}/api/v0.0.3/projects/{{}}/visits"

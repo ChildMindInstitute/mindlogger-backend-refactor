@@ -1,4 +1,3 @@
-
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.integrations.domain import AvailableIntegrations, FutureIntegrationPublic, Integration
 from apps.integrations.errors import (
@@ -98,8 +97,7 @@ class IntegrationService:
 
     async def retrieve_integration(self, applet_id, integration_type) -> Integration:
         integration_schema = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
-            applet_id,
-            integration_type
+            applet_id, integration_type
         )
 
         if integration_schema is None:
@@ -124,10 +122,7 @@ class IntegrationService:
                 raise UnsupportedIntegrationError(integration_type=integration_type)
 
     async def delete_integration_by_type(self, applet_id, integration_type):
-        integration = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
-            applet_id,
-            integration_type
-        )
+        integration = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(applet_id, integration_type)
         if integration is not None:
             await IntegrationsCRUD(self.session).delete_by_id(integration.id)
         else:
