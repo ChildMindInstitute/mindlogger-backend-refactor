@@ -424,39 +424,18 @@ class LorisIntegrationService:
         if self.loris_integration_configuration == None:
             raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
 
-        if not headers:
-            try:
-                token: str = await self._login_to_loris()
-            except LorisServerError as e:
-                logger.info(f"I can't connect to the LORIS server {e}.")
-                raise Exception(f"I can't connect to the LORIS server {e}.")
+        token = await LorisClient.login_to_loris(
+            self.loris_integration_configuration.hostname,
+            self.loris_integration_configuration.username,
+            self.loris_integration_configuration.password
+        )
 
-            headers = {
-                "Authorization": f"Bearer: {token}",
-                "Content-Type": "application/json",
-                "accept": "*/*",
-            }
-        timeout = aiohttp.ClientTimeout(total=60)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            url = LorisClient.ml_schema_existing_answers_url(self.loris_integration_configuration.hostname).format(self.applet_id)
-            logger.info(f"Sending EXISTING ANSWERS request to the loris server {url}")
-            start = time.time()
-            async with session.get(
-                url,
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 200:
-                    logger.info(f"Successful request in {duration:.1f} seconds.")
-                    response_data = await resp.json()
-                    return response_data
-                else:
-                    logger.error(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    await self._create_integration_alerts(
-                        self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
-                    )
-                    raise LorisServerError(message=error_message)
+        try:
+            return await LorisClient.get_existing_answers_from_loris(self.loris_integration_configuration.hostname, token, self.applet_id)
+        except:
+            self._create_integration_alerts(
+                self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+            )
 
     async def _upload_applet_schema_to_loris(self, schemas: list, headers: dict):
         if self.loris_integration_configuration == None:

@@ -3,6 +3,7 @@ import json
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError, ContentTypeError
 
+from apps.integrations.loris.domain.domain import LorisIntegrationAlertMessages
 from apps.integrations.loris.errors import LorisBadCredentialsError, LorisInvalidHostname, LorisInvalidTokenError
 from apps.shared.domain.custom_validations import InvalidUrlError, validate_url
 
@@ -84,6 +85,31 @@ class LorisClient:
                 if resp.status == 200:
                     visits_data = await resp.json()
                     return visits_data["Visits"]
+                else:
+                    error_message = await resp.text()
+                    raise LorisInvalidTokenError(message=error_message)
+                
+    @classmethod
+    async def get_existing_answers_from_loris(self, hostname, token, applet_id):
+        url = LorisClient.ml_schema_existing_answers_url(hostname).format(applet_id)
+        try:
+            hostname = validate_url(url)
+        except InvalidUrlError as iue:
+            raise LorisInvalidHostname(hostname=hostname) from iue
+        headers = {
+            "Authorization": f"Bearer: {token}",
+            "Content-Type": "application/json",
+            "accept": "*/*",
+        }
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                url,
+                headers=headers,
+            ) as resp:
+                if resp.status == 200:
+                    response_data = await resp.json()
+                    return response_data
                 else:
                     error_message = await resp.text()
                     raise LorisInvalidTokenError(message=error_message)
