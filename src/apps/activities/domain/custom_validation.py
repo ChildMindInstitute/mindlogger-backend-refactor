@@ -20,9 +20,13 @@ from apps.activities.errors import (
     IncorrectSectionPrintItemTypeError,
     IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
+    SubscaleDataDoesNotExist,
     SubscaleInsideSubscaleError,
+    SubscaleIsNotLinked,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
+    SubscaleNameDoesNotExist,
+    SubscaleSettingDoesNotExist,
 )
 
 
@@ -78,7 +82,26 @@ def validate_score_and_sections(values: dict):  # noqa: C901
 
         for report in list(scores):
             score_item_ids.append(report.id)
-            # check if all item names are same as values.name
+            subscale_name = report.get("subscale_name", False)
+            scoring_type = report.get("scoring_type", False)
+
+            if scoring_type == "lookup_scores":
+                if not subscale_name: 
+                    raise SubscaleIsNotLinked() 
+                subscale_setting = values.get("subscale_setting", False)
+                if not subscale_setting:
+                    raise SubscaleSettingDoesNotExist() 
+                subscales = subscale_setting["subscales"]   
+                subscales_names = [subscale["name"] for subscale in subscales] 
+                if  subscale_name not in subscales_names:
+                    raise SubscaleNameDoesNotExist()
+                for subscale in subscales:
+                    if subscale["name"] == subscale_name:
+                        subscale_table_data = subscale.get("subscale_table_data", False)
+                if not subscale_table_data:
+                    raise SubscaleDataDoesNotExist()
+
+        # check if all item names are same as values.name
             for item in report.items_score:
                 if item not in item_names:
                     raise IncorrectScoreItemError()
