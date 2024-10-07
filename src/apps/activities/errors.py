@@ -273,7 +273,7 @@ class IncorrectPhrasalTemplateItemIndexError(ValidationError):
 
 
 class SubscaleIsNotLinked(ValidationError):
-    message = _("The scoring type is lookup_scores but no subscale is linked")
+    message = _("The scoring type is score but no subscale is linked")
     code = _("no_subscale_linked")
 
 
@@ -283,10 +283,10 @@ class SubscaleNameDoesNotExist(ValidationError):
 
     
 class SubscaleDataDoesNotExist(ValidationError):
-    message = _("The scoring type is lookup_scores but the subscale data does not exist")
+    message = _("The scoring type is score but the subscale data does not exist")
     code = _("no_subscale_exist")
 
 
 class SubscaleSettingDoesNotExist(ValidationError):
-    message = _("The scoring type is lookup_scores but there are no subscale settings associated with activity")
+    message = _("The scoring type is score but there are no subscale settings associated with activity")
     code = _("no_subscale_exist")

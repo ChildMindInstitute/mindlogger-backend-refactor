@@ -82,22 +82,22 @@ def validate_score_and_sections(values: dict):  # noqa: C901
 
         for report in list(scores):
             score_item_ids.append(report.id)
-            subscale_name = report.get("subscale_name", False)
-            scoring_type = report.get("scoring_type", False)
+            subscale_name = report.subscale_name
+            scoring_type = report.scoring_type
 
-            if scoring_type == "lookup_scores":
+            if scoring_type == "score":
                 if not subscale_name: 
                     raise SubscaleIsNotLinked() 
                 subscale_setting = values.get("subscale_setting", False)
                 if not subscale_setting:
                     raise SubscaleSettingDoesNotExist() 
-                subscales = subscale_setting["subscales"]   
-                subscales_names = [subscale["name"] for subscale in subscales] 
+                subscales = subscale_setting.subscales
+                subscales_names = [subscale.name for subscale in subscales] 
                 if  subscale_name not in subscales_names:
                     raise SubscaleNameDoesNotExist()
                 for subscale in subscales:
-                    if subscale["name"] == subscale_name:
-                        subscale_table_data = subscale.get("subscale_table_data", False)
+                    if subscale.name == subscale_name:
+                        subscale_table_data = subscale.subscale_table_data
                 if not subscale_table_data:
                     raise SubscaleDataDoesNotExist()
 
