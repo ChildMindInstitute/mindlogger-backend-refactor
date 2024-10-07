@@ -56,7 +56,7 @@ class LorisIntegrationService:
         self.user = user
         self.type = AvailableIntegrations.LORIS
         self._answer_session = answer_session
-        self.loris_integration_configuration = None
+        self.loris_integration_configuration : LorisIntegration = None
 
     @property
     def answer_session(self):
@@ -174,7 +174,7 @@ class LorisIntegrationService:
             await self._upload_applet_schema_to_loris(loris_data, headers)
 
         # check loris for already existing answers of the applet and filter them out
-        existing_answers = await self._get_existing_answers_from_loris(headers)
+        existing_answers = await self._get_existing_answers_from_loris()
 
         for user, answer in answers_for_loris_by_respondent.items():
             candidate_id: str
@@ -422,7 +422,7 @@ class LorisIntegrationService:
                     )
                     raise LorisServerError(message=error_message)
 
-    async def _get_existing_answers_from_loris(self, headers: dict | None = None) -> str:
+    async def _get_existing_answers_from_loris(self) -> str:
         if self.loris_integration_configuration is None:
             self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
         if self.loris_integration_configuration is None:
@@ -439,9 +439,10 @@ class LorisIntegrationService:
                 self.loris_integration_configuration.hostname, token, self.applet_id
             )
         except Exception:
-            self._create_integration_alerts(
+            await self._create_integration_alerts(
                 self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
             )
+            return LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
 
     async def _upload_applet_schema_to_loris(self, schemas: list, headers: dict):
         if self.loris_integration_configuration is None:
@@ -618,11 +619,11 @@ class LorisIntegrationService:
             for activity_id in activities_ids:
                 for key, visit in user_and_visits.items():
                     if key.startswith(activity_id):
+                        add_instruments_url = LorisClient.add_instruments_url(
+                            self.loris_integration_configuration.hostname
+                        ).format(candidate_id, visit)
                         logger.info(
-                            f"Sending ADD INSTRUMENTS request to the loris server "
-                            f"{LorisClient
-                               .add_instruments_url(self.loris_integration_configuration.hostname)
-                               .format(candidate_id, visit)}"
+                            f"Sending ADD INSTRUMENTS request to the loris server {add_instruments_url}"
                         )
                         start = time.time()
                         _data_add_instruments = {
@@ -667,11 +668,9 @@ class LorisIntegrationService:
                     if answer_by_activity_id and key.startswith(activity_id):
                         specific_answers = {k: v for k, v in answer_by_activity_id.items() if k.startswith(key)}
                         if specific_answers:
+                            instrument_data_url = LorisClient.instrument_data_url(self.loris_integration_configuration.hostname).format(candidate_id, visit, activity_id)
                             logger.info(
-                                f"Sending SEND INSTUMENT DATA request to the loris server "
-                                f"{LorisClient
-                                    .instrument_data_url(self.loris_integration_configuration.hostname)
-                                    .format(candidate_id, visit, activity_id)}"
+                                f"Sending SEND INSTUMENT DATA request to the loris server {instrument_data_url}"
                             )
                             start = time.time()
                             _data_instrument_data = {
