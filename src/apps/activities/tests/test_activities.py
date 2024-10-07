@@ -39,7 +39,7 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
 @pytest.fixture
-async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletFull, tom):
+async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletFull, tom: User):
     srv = AppletService(session, tom.id)
     await srv.create_access_link(applet_one.id, CreateAccessLink(require_login=False))
     applet = await srv.get_full_applet(applet_one.id)
@@ -57,7 +57,9 @@ async def lucy_applet_one_subject(session: AsyncSession, lucy: User, applet_one_
 
 
 @pytest.fixture
-async def applet_one_user_respondent(session: AsyncSession, applet_one: AppletFull, tom, user) -> AppletFull:
+async def applet_one_user_respondent(
+    session: AsyncSession, applet_one: AppletFull, tom: User, user: User
+) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(user.id, Role.RESPONDENT)
     return applet_one
 
@@ -169,7 +171,9 @@ async def lucy_applet_with_all_performance_tasks_subject(
 
 
 @pytest.fixture
-async def empty_applet_user_respondent(session: AsyncSession, empty_applet: AppletFull, tom, user) -> AppletFull:
+async def empty_applet_user_respondent(
+    session: AsyncSession, empty_applet: AppletFull, tom: User, user: User
+) -> AppletFull:
     await UserAppletAccessService(session, tom.id, empty_applet.id).add_role(user.id, Role.RESPONDENT)
     return empty_applet
 
@@ -280,7 +284,7 @@ class TestActivities:
     target_assigned_activities_url = "/activities/applet/{applet_id}/target/{subject_id}"
     respondent_assigned_activities_url = "/activities/applet/{applet_id}/respondent/{subject_id}"
 
-    async def test_activity_detail(self, client, applet_one: AppletFull, tom: User):
+    async def test_activity_detail(self, client: TestClient, applet_one: AppletFull, tom: User):
         activity = applet_one.activities[0]
         client.login(tom)
         response = await client.get(self.activity_detail.format(pk=activity.id))
@@ -294,7 +298,12 @@ class TestActivities:
         assert result["items"][0]["question"] == activity.items[0].question[Language.ENGLISH]
 
     async def test_activities_applet(
-        self, client, applet_one: AppletFull, default_theme: Theme, tom: User, tom_applet_one_subject
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        default_theme: Theme,
+        tom: User,
+        tom_applet_one_subject: Subject,
     ):
         client.login(tom)
         response = await client.get(self.activities_applet.format(applet_id=applet_one.id))
@@ -399,7 +408,7 @@ class TestActivities:
         }
 
     async def test_activities_flows_applet(
-        self, client, applet_activity_flow: AppletFull, default_theme: Theme, tom: User
+        self, client: TestClient, applet_activity_flow: AppletFull, default_theme: Theme, tom: User
     ):
         client.login(tom)
         response = await client.get(self.activities_flows_applet.format(applet_id=applet_activity_flow.id))
@@ -486,7 +495,7 @@ class TestActivities:
         assert item["activityId"] == str(flow_item.activity_id)
         assert item["order"] == flow_item.order
 
-    async def test_public_activity_detail(self, client, applet_one_with_public_link: AppletFull):
+    async def test_public_activity_detail(self, client: TestClient, applet_one_with_public_link: AppletFull):
         activity = applet_one_with_public_link.activities[0]
         response = await client.get(self.public_activity_detail.format(pk=activity.id))
 
@@ -500,7 +509,7 @@ class TestActivities:
 
     # Get only applet activities with submitted answers
     async def test_activities_applet_has_submitted(
-        self, client, applet_one: AppletFull, default_theme: Theme, tom: User
+        self, client: TestClient, applet_one: AppletFull, default_theme: Theme, tom: User
     ):
         client.login(tom)
 
@@ -546,7 +555,9 @@ class TestActivities:
         assert result["activitiesDetails"][0]["name"] == activity.name
 
     # Get only applet activities with score
-    async def test_activities_applet_has_score(self, client, applet_one: AppletFull, default_theme: Theme, tom: User):
+    async def test_activities_applet_has_score(
+        self, client: TestClient, applet_one: AppletFull, default_theme: Theme, tom: User
+    ):
         client.login(tom)
 
         create_data = dict(
@@ -644,7 +655,7 @@ class TestActivities:
         assert option["score"] > 0
 
     async def test_subject_assigned_activities_editor(
-        self, client, applet_one_lucy_editor, lucy, lucy_applet_one_subject
+        self, client: TestClient, applet_one_lucy_editor: AppletFull, lucy: User, lucy_applet_one_subject: Subject
     ):
         client.login(lucy)
 
@@ -661,7 +672,7 @@ class TestActivities:
         assert result[0]["message"] == "Access denied to applet."
 
     async def test_subject_assigned_activities_incorrect_reviewer(
-        self, client, applet_one_lucy_reviewer, lucy, lucy_applet_one_subject
+        self, client: TestClient, applet_one_lucy_reviewer: AppletFull, lucy: User, lucy_applet_one_subject: Subject
     ):
         client.login(lucy)
 
@@ -678,7 +689,7 @@ class TestActivities:
         assert result[0]["message"] == "Access denied."
 
     async def test_subject_assigned_activities_participant(
-        self, client, applet_one_lucy_respondent, lucy, lucy_applet_one_subject
+        self, client: TestClient, applet_one_lucy_respondent: AppletFull, lucy: User, lucy_applet_one_subject: Subject
     ):
         client.login(lucy)
 
@@ -695,7 +706,12 @@ class TestActivities:
         assert result[0]["message"] == "Access denied to applet."
 
     async def test_subject_assigned_activities_participant_other(
-        self, client, applet_one_lucy_respondent, lucy, applet_one_user_respondent, user_applet_one_subject
+        self,
+        client: TestClient,
+        applet_one_lucy_respondent: AppletFull,
+        lucy: User,
+        applet_one_user_respondent: AppletFull,
+        user_applet_one_subject: Subject,
     ):
         client.login(lucy)
 
@@ -712,7 +728,7 @@ class TestActivities:
         assert result[0]["message"] == "Access denied to applet."
 
     async def test_subject_assigned_activities_invalid_applet(
-        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject
+        self, client: TestClient, applet_one_lucy_manager: AppletFull, lucy: User, lucy_applet_one_subject: AppletFull
     ):
         client.login(lucy)
 
@@ -729,7 +745,7 @@ class TestActivities:
         assert result[0]["message"] == f"No such applets with id={applet_id}."
 
     async def test_subject_assigned_activities_invalid_subject(
-        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject
+        self, client: TestClient, applet_one_lucy_manager: AppletFull, lucy: User, lucy_applet_one_subject: AppletFull
     ):
         client.login(lucy)
 
@@ -746,7 +762,7 @@ class TestActivities:
         assert result[0]["message"] == f"Subject with id {subject_id} not found"
 
     async def test_subject_assigned_activities_empty_applet(
-        self, client, empty_applet_lucy_manager, lucy, lucy_empty_applet_subject
+        self, client: TestClient, empty_applet_lucy_manager: AppletFull, lucy: User, lucy_empty_applet_subject: Subject
     ):
         client.login(lucy)
 
@@ -763,7 +779,11 @@ class TestActivities:
         assert result["activityFlows"] == []
 
     async def test_subject_assigned_activities_auto_assigned(
-        self, client, applet_activity_flow_lucy_manager, lucy, lucy_applet_activity_flow_subject
+        self,
+        client: TestClient,
+        applet_activity_flow_lucy_manager: AppletFull,
+        lucy: User,
+        lucy_applet_activity_flow_subject: Subject,
     ):
         client.login(lucy)
 
@@ -1188,7 +1208,6 @@ class TestActivities:
 
     async def test_assigned_activities_limited_respondent(
         self,
-        session,
         client: TestClient,
         tom: User,
         applet_one: AppletFull,
@@ -1268,7 +1287,7 @@ class TestActivities:
     )
     async def test_assigned_activities_manually_assigned(
         self,
-        session,
+        session: AsyncSession,
         client: TestClient,
         lucy: User,
         empty_applet_lucy_manager: AppletFull,
@@ -1512,10 +1531,9 @@ class TestActivities:
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_from_submission(
         self,
-        session,
+        session: AsyncSession,
         client: TestClient,
         tom: User,
-        lucy: User,
         applet_one_lucy_respondent: AppletFull,
         tom_applet_one_subject: Subject,
         lucy_applet_one_subject: Subject,
@@ -1580,7 +1598,7 @@ class TestActivities:
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_hidden_activities(
         self,
-        session,
+        session: AsyncSession,
         client: TestClient,
         lucy: User,
         empty_applet_lucy_manager: AppletFull,
@@ -1730,11 +1748,9 @@ class TestActivities:
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_performance_tasks(
         self,
-        session,
         client: TestClient,
         lucy: User,
         applet_with_all_performance_tasks_lucy_manager: AppletFull,
-        lucy_applet_with_all_performance_tasks_subject: Subject,
         user_applet_with_all_performance_tasks_subject: Subject,
         subject_type: str,
     ):
