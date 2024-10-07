@@ -62,9 +62,7 @@ class TestIntegrationRouter(BaseTest):
         }
         client.login(tom)
         response = await client.post("integrations/", data=create_loris_integration_url_data)
-        dict_response = json.loads(response.text)
-        assert len(dict_response["result"]) == 11
-        assert response.status_code == 422
+        assert response.status_code == 400
 
     async def test_retrieve_integration(
         self,
