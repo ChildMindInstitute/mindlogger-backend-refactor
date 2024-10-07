@@ -41,11 +41,12 @@ async def start_transmit_process(
 
 
 async def visits_list(
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> PublicListOfVisits:
     visits = await LorisIntegrationService(
-        uuid.UUID("00000000-0000-0000-0000-000000000000"), session, user
+        applet_id, session, user
     ).get_visits_list()
     return PublicListOfVisits(visits=visits, count=len(visits))
 

@@ -944,6 +944,6 @@ class LorisIntegrationService:
         )
 
         if integration_schema is None:
-            raise UnavailableIntegrationError(self.applet_id, AvailableIntegrations.LORIS)
+            raise UnavailableIntegrationError(applet_id=self.applet_id, integration_type=AvailableIntegrations.LORIS)
         
         return LorisIntegration.from_schema(integration_schema)

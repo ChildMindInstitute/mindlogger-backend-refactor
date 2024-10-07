@@ -85,7 +85,7 @@ router.put(
 
 
 router.get(
-    "/visits",
+    "/{applet_id}/visits",
     response_model=PublicListOfVisits,
     status_code=status.HTTP_200_OK,
     responses={
