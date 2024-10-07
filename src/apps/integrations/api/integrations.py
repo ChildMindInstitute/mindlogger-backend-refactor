@@ -3,10 +3,8 @@ import uuid
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
-from apps.integrations.domain import Integration, IntegrationFilter
+from apps.integrations.domain import Integration
 from apps.integrations.service import IntegrationService
-from apps.shared.domain import ResponseMulti
-from apps.shared.query_params import QueryParams, parse_query_params
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic

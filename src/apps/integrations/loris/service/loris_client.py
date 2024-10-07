@@ -3,7 +3,6 @@ import json
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError, ContentTypeError
 
-from apps.integrations.loris.domain.domain import LorisIntegrationAlertMessages
 from apps.integrations.loris.errors import LorisBadCredentialsError, LorisInvalidHostname, LorisInvalidTokenError
 from apps.shared.domain.custom_validations import InvalidUrlError, validate_url
 

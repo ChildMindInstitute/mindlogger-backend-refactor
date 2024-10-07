@@ -1,7 +1,6 @@
-from typing import cast
 
 from apps.integrations.crud.integrations import IntegrationsCRUD
-from apps.integrations.domain import AvailableIntegrations, FutureIntegration, FutureIntegrationPublic, Integration
+from apps.integrations.domain import AvailableIntegrations, FutureIntegrationPublic, Integration
 from apps.integrations.errors import (
     UnavailableIntegrationError,
     UnexpectedPropertiesForIntegration,
@@ -9,7 +8,7 @@ from apps.integrations.errors import (
     UnsupportedIntegrationError,
 )
 from apps.integrations.loris.domain.loris_integrations import LorisIntegrationPublic
-from apps.integrations.loris.service.loris import LorisIntegration, LorisIntegrationService
+from apps.integrations.loris.service.loris import LorisIntegrationService
 from apps.integrations.service.future_integration import FutureIntegrationService
 from apps.shared.query_params import QueryParams
 from apps.users.domain import User
@@ -129,7 +128,7 @@ class IntegrationService:
             applet_id,
             integration_type
         )
-        if integration != None:
+        if integration is not None:
             await IntegrationsCRUD(self.session).delete_by_id(integration.id)
         else:
             raise UnavailableIntegrationError(applet_id=applet_id, integration_type=integration_type)

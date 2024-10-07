@@ -1,12 +1,10 @@
 import json
 import uuid
 from enum import Enum
+from typing import Any
 
 from apps.integrations.db.schemas import IntegrationsSchema
-from apps.integrations.loris.domain.loris_integrations import LorisIntegration, LorisIntegrationPublic
 from apps.shared.domain import InternalModel, PublicModel
-
-from typing import Any
 
 
 class AvailableIntegrations(str, Enum):
