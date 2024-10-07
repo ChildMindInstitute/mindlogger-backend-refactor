@@ -26,6 +26,7 @@ from apps.applets.domain.applet import (
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
+from apps.shared.exception import ValidationError
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
 from apps.users import User
@@ -226,7 +227,12 @@ async def applet_activities_for_respondent_subject(
     applet_service = AppletService(session, user.id)
     await applet_service.exist_by_id(applet_id)
 
-    await SubjectsService(session, user.id).exist_by_id(subject_id)
+    subject = await SubjectsService(session, user.id).exist_by_id(subject_id)
+
+    # Ensure the respondent is not a limited account
+    if subject.user_id is None:
+        # Return a generic bad request error to avoid leaking information
+        raise ValidationError(f"Subject {subject_id} is not a valid respondent")
 
     # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
     await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)

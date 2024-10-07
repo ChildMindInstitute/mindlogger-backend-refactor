@@ -311,6 +311,7 @@ async def get_target_subjects_by_respondent(
     subjects_service = SubjectsService(session, user.id)
     respondent_subject = await subjects_service.exist_by_id(respondent_subject_id)
 
+    # Ensure the respondent is not a limited account
     if respondent_subject.user_id is None:
         # Return a generic bad request error to avoid leaking information
         raise ValidationError(f"Subject {respondent_subject_id} is not a valid respondent")

@@ -29,6 +29,7 @@ from apps.applets.service.applet import AppletService
 from apps.applets.tests.fixtures.applets import _get_or_create_applet
 from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
+from apps.shared.test.client import TestClient
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
 from apps.themes.domain import Theme
@@ -1047,7 +1048,12 @@ class TestActivities:
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_editor(
-        self, client, applet_one_lucy_editor, lucy, lucy_applet_one_subject, subject_type: str
+        self,
+        client: TestClient,
+        applet_one_lucy_editor: AppletFull,
+        lucy: User,
+        lucy_applet_one_subject: AppletFull,
+        subject_type: str,
     ):
         client.login(lucy)
 
@@ -1065,7 +1071,7 @@ class TestActivities:
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_incorrect_reviewer(
-        self, client, applet_one_lucy_reviewer, lucy, lucy_applet_one_subject, subject_type: str
+        self, client: TestClient, applet_one_lucy_reviewer, lucy, lucy_applet_one_subject, subject_type: str
     ):
         client.login(lucy)
 
@@ -1083,7 +1089,7 @@ class TestActivities:
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_participant(
-        self, client, applet_one_lucy_respondent, lucy, lucy_applet_one_subject, subject_type: str
+        self, client: TestClient, applet_one_lucy_respondent, lucy, lucy_applet_one_subject, subject_type: str
     ):
         client.login(lucy)
 
@@ -1102,7 +1108,7 @@ class TestActivities:
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_participant_other(
         self,
-        client,
+        client: TestClient,
         applet_one_lucy_respondent,
         lucy,
         applet_one_user_respondent,
@@ -1125,7 +1131,7 @@ class TestActivities:
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_invalid_applet(
-        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject, subject_type: str
+        self, client: TestClient, applet_one_lucy_manager, lucy, lucy_applet_one_subject, subject_type: str
     ):
         applet_id = uuid.uuid4()
 
@@ -1145,7 +1151,7 @@ class TestActivities:
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_invalid_subject(
-        self, client, applet_one_lucy_manager, lucy, lucy_applet_one_subject, subject_type: str
+        self, client: TestClient, applet_one_lucy_manager, lucy, lucy_applet_one_subject, subject_type: str
     ):
         subject_id = uuid.uuid4()
 
@@ -1165,7 +1171,7 @@ class TestActivities:
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_empty_applet(
-        self, client, empty_applet_lucy_manager, lucy, lucy_empty_applet_subject, subject_type: str
+        self, client: TestClient, empty_applet_lucy_manager, lucy, lucy_empty_applet_subject, subject_type: str
     ):
         client.login(lucy)
 
@@ -1180,9 +1186,36 @@ class TestActivities:
 
         assert result == []
 
+    async def test_assigned_activities_limited_respondent(
+        self,
+        session,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        applet_one_shell_account: Subject,
+    ):
+        client.login(tom)
+
+        response = await client.get(
+            self.respondent_assigned_activities_url.format(
+                applet_id=applet_one.id, subject_id=applet_one_shell_account.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        result = response.json()["result"]
+
+        assert result[0]["type"] == "BAD_REQUEST"
+        assert result[0]["message"] == f"Subject {applet_one_shell_account.id} is not a valid respondent"
+
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_auto_assigned(
-        self, client, applet_activity_flow_lucy_manager, lucy, lucy_applet_activity_flow_subject, subject_type: str
+        self,
+        client: TestClient,
+        lucy: User,
+        applet_activity_flow_lucy_manager: AppletFull,
+        lucy_applet_activity_flow_subject: Subject,
+        subject_type: str,
     ):
         client.login(lucy)
 
@@ -1236,11 +1269,11 @@ class TestActivities:
     async def test_assigned_activities_manually_assigned(
         self,
         session,
-        client,
-        empty_applet_lucy_manager,
-        lucy,
-        lucy_empty_applet_subject,
-        user_empty_applet_subject,
+        client: TestClient,
+        lucy: User,
+        empty_applet_lucy_manager: AppletFull,
+        lucy_empty_applet_subject: Subject,
+        user_empty_applet_subject: Subject,
         activity_create_session: ActivityCreate,
         subject_type: str,
         result_order: list[str],
@@ -1480,12 +1513,12 @@ class TestActivities:
     async def test_assigned_activities_from_submission(
         self,
         session,
-        client,
+        client: TestClient,
         tom: User,
-        tom_applet_one_subject: Subject,
         lucy: User,
-        lucy_applet_one_subject: Subject,
         applet_one_lucy_respondent: AppletFull,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
         answer_create_payload: dict,
         subject_type: str,
     ):
@@ -1548,11 +1581,11 @@ class TestActivities:
     async def test_assigned_hidden_activities(
         self,
         session,
-        client,
-        empty_applet_lucy_manager,
-        lucy,
-        lucy_empty_applet_subject,
-        user_empty_applet_subject,
+        client: TestClient,
+        lucy: User,
+        empty_applet_lucy_manager: AppletFull,
+        lucy_empty_applet_subject: Subject,
+        user_empty_applet_subject: Subject,
         activity_create_session: ActivityCreate,
         subject_type: str,
     ):
@@ -1698,11 +1731,11 @@ class TestActivities:
     async def test_assigned_performance_tasks(
         self,
         session,
-        client,
-        applet_with_all_performance_tasks_lucy_manager,
-        lucy,
-        lucy_applet_with_all_performance_tasks_subject,
-        user_applet_with_all_performance_tasks_subject,
+        client: TestClient,
+        lucy: User,
+        applet_with_all_performance_tasks_lucy_manager: AppletFull,
+        lucy_applet_with_all_performance_tasks_subject: Subject,
+        user_applet_with_all_performance_tasks_subject: Subject,
         subject_type: str,
     ):
         client.login(lucy)
