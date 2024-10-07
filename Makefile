@@ -51,7 +51,7 @@ migrate-arbitrary:
 cq:
 	${RUFF_COMMAND} check . && ${RUFF_COMMAND} format . && ${MYPY_COMMAND} .
 
-# NOTE: cq == "Code quality fix"
+# NOTE: cqf == "Code quality fix"
 .PHONY: cqf
 cqf:
 	${RUFF_COMMAND} format . && ${RUFF_COMMAND} check --fix . && ${MYPY_COMMAND} .

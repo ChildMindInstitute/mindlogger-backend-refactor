@@ -1037,7 +1037,7 @@ class TestActivities:
         assert flow_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
         assert flow_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
 
-    def _get_assigned_activities_rul(self, subject_type: str):
+    def _get_assigned_activities_url(self, subject_type: str):
         if subject_type == "target":
             return self.target_assigned_activities_url
         elif subject_type == "respondent":
@@ -1052,7 +1052,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_one_lucy_editor.id, subject_id=lucy_applet_one_subject.id
             )
         )
@@ -1070,7 +1070,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_one_lucy_reviewer.id, subject_id=lucy_applet_one_subject.id
             )
         )
@@ -1088,7 +1088,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_one_lucy_respondent.id, subject_id=lucy_applet_one_subject.id
             )
         )
@@ -1112,7 +1112,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_one_lucy_respondent.id, subject_id=user_applet_one_subject.id
             )
         )
@@ -1132,7 +1132,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_id, subject_id=lucy_applet_one_subject.id
             )
         )
@@ -1152,7 +1152,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_one_lucy_manager.id, subject_id=subject_id
             )
         )
@@ -1170,7 +1170,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=empty_applet_lucy_manager.id, subject_id=lucy_empty_applet_subject.id
             )
         )
@@ -1187,7 +1187,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_activity_flow_lucy_manager.id, subject_id=lucy_applet_activity_flow_subject.id
             )
         )
@@ -1384,7 +1384,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
             )
         )
@@ -1522,7 +1522,7 @@ class TestActivities:
         client.login(tom)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_one_lucy_respondent.id, subject_id=tom_applet_one_subject.id
             )
         )
@@ -1629,7 +1629,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=empty_applet_lucy_manager.id,
                 subject_id=user_empty_applet_subject.id if subject_type == "target" else lucy_empty_applet_subject.id,
             )
@@ -1708,7 +1708,7 @@ class TestActivities:
         client.login(lucy)
 
         response = await client.get(
-            self._get_assigned_activities_rul(subject_type).format(
+            self._get_assigned_activities_url(subject_type).format(
                 applet_id=applet_with_all_performance_tasks_lucy_manager.id,
                 subject_id=user_applet_with_all_performance_tasks_subject.id,
             )
