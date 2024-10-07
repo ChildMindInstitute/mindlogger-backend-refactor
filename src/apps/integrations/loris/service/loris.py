@@ -56,7 +56,7 @@ class LorisIntegrationService:
         self.user = user
         self.type = AvailableIntegrations.LORIS
         self._answer_session = answer_session
-        self.loris_integration_configuration : LorisIntegration = None
+        self.loris_integration_configuration: LorisIntegration = None
 
     @property
     def answer_session(self):
@@ -622,9 +622,7 @@ class LorisIntegrationService:
                         add_instruments_url = LorisClient.add_instruments_url(
                             self.loris_integration_configuration.hostname
                         ).format(candidate_id, visit)
-                        logger.info(
-                            f"Sending ADD INSTRUMENTS request to the loris server {add_instruments_url}"
-                        )
+                        logger.info(f"Sending ADD INSTRUMENTS request to the loris server {add_instruments_url}")
                         start = time.time()
                         _data_add_instruments = {
                             "Meta": {
@@ -668,7 +666,9 @@ class LorisIntegrationService:
                     if answer_by_activity_id and key.startswith(activity_id):
                         specific_answers = {k: v for k, v in answer_by_activity_id.items() if k.startswith(key)}
                         if specific_answers:
-                            instrument_data_url = LorisClient.instrument_data_url(self.loris_integration_configuration.hostname).format(candidate_id, visit, activity_id)
+                            instrument_data_url = LorisClient.instrument_data_url(
+                                self.loris_integration_configuration.hostname
+                            ).format(candidate_id, visit, activity_id)
                             logger.info(
                                 f"Sending SEND INSTUMENT DATA request to the loris server {instrument_data_url}"
                             )
