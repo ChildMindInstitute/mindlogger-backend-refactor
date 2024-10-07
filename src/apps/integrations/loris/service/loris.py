@@ -707,38 +707,14 @@ class LorisIntegrationService:
             self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
         if self.loris_integration_configuration == None:
             raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+        
+        token = await LorisClient.login_to_loris(
+            self.loris_integration_configuration.hostname,
+            self.loris_integration_configuration.username,
+            self.loris_integration_configuration.password
+        )
 
-        try:
-            token: str = await self._login_to_loris()
-        except LorisServerError as e:
-            logger.info(f"I can't connect to the LORIS server {e}.")
-
-        headers = {
-            "Authorization": f"Bearer: {token}",
-            "Content-Type": "application/json",
-            "accept": "*/*",
-        }
-
-        timeout = aiohttp.ClientTimeout(total=60)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(
-                f"Sending GET VISITS LIST request to the loris server "
-                f"{LorisClient.get_visits_list_url(self.loris_integration_configuration.hostname).format('loris')}"
-            )
-            start = time.time()
-            async with session.get(
-                LorisClient.get_visits_list_url(self.loris_integration_configuration.hostname).format("loris"),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 200:
-                    logger.info(f"Successful request in {duration:.1f} seconds.")
-                    visits_data = await resp.json()
-                    return visits_data["Visits"]
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    raise LorisServerError(message=error_message)
+        return await LorisClient.get_visits_list(self.loris_integration_configuration.hostname, token)
 
     async def get_visits_for_applet(self) -> dict:
         if self.loris_integration_configuration == None:

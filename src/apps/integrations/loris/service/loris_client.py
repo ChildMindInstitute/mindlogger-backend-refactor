@@ -40,7 +40,7 @@ class LorisClient:
 
     @classmethod
     async def list_projects(self, hostname: str, token: str):
-        url = f"https://{hostname}/api/v0.0.3/projects"
+        url = LorisClient.projects_url(hostname)
         try:
             hostname = validate_url(url)
         except InvalidUrlError as iue:
@@ -59,6 +59,31 @@ class LorisClient:
                 if resp.status == 200:
                     response_data = await resp.json()
                     return response_data
+                else:
+                    error_message = await resp.text()
+                    raise LorisInvalidTokenError(message=error_message)
+                
+    @classmethod
+    async def get_visits_list(self, hostname: str, token: str):
+        url = LorisClient.get_visits_list_url(hostname).format("loris")
+        try:
+            hostname = validate_url(url)
+        except InvalidUrlError as iue:
+            raise LorisInvalidHostname(hostname=hostname) from iue
+        headers = {
+            "Authorization": f"Bearer: {token}",
+            "Content-Type": "application/json",
+            "accept": "*/*",
+        }
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                url,
+                headers=headers,
+            ) as resp:
+                if resp.status == 200:
+                    visits_data = await resp.json()
+                    return visits_data["Visits"]
                 else:
                     error_message = await resp.text()
                     raise LorisInvalidTokenError(message=error_message)
