@@ -1312,3 +1312,50 @@ class TestInvite(BaseTest):
         subject_model = await crud.get_by_id(subject["id"])
         assert subject_model
         assert subject_model.email == lucy.email_encrypted
+
+    async def test_shell_reinvite(
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        bob: User,
+        lucy: User,
+        applet_four: AppletFull,
+        shell_create_data: dict,
+        mailbox: TestMail,
+    ):
+        client.login(bob)
+        response = await client.post(self.shell_acc_create_url.format(applet_id=str(applet_four.id)), shell_create_data)
+        assert response.status_code == http.HTTPStatus.OK
+        subject = response.json()["result"]
+        assert subject
+
+        response = await client.post(
+            self.shell_acc_invite_url.format(applet_id=str(applet_four.id)),
+            dict(subjectId=subject["id"], email=lucy.email_encrypted),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == "en"
+        invitation_key = response.json()["result"]["key"]
+        assert invitation_key
+
+        client.login(lucy)
+        response = await client.post(self.accept_url.format(key=invitation_key))
+        assert response.status_code == http.HTTPStatus.OK
+
+        client.login(bob)
+        response = await client.post(
+            self.shell_acc_create_url.format(applet_id=str(applet_four.id)),
+            {**shell_create_data, "secretUserId": f"{uuid.uuid4()}"},
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        subject = response.json()["result"]
+        assert subject
+
+        response = await client.post(
+            self.shell_acc_invite_url.format(applet_id=str(applet_four.id)),
+            dict(subjectId=subject["id"], email=lucy.email_encrypted),
+        )
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        message = response.json()["result"][0]["message"]
+        assert message == RespondentInvitationExist.message
