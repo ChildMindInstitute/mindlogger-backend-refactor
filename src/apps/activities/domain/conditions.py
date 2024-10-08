@@ -1,5 +1,5 @@
 import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Dict, Optional
 
 from pydantic import Field, root_validator, validator
@@ -7,7 +7,7 @@ from pydantic import Field, root_validator, validator
 from apps.shared.domain import PublicModel, PublicModelNoExtra
 
 
-class ConditionType(str, Enum):
+class ConditionType(StrEnum):
     INCLUDES_OPTION = "INCLUDES_OPTION"
     NOT_INCLUDES_OPTION = "NOT_INCLUDES_OPTION"
     EQUAL_TO_OPTION = "EQUAL_TO_OPTION"

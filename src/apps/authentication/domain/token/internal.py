@@ -1,19 +1,19 @@
 import uuid
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import EmailStr
 
 from apps.shared.domain.base import InternalModel
 
 
-class TokenPurpose(str, Enum):
+class TokenPurpose(StrEnum):
     """This enumeration is used for internal needs (cache, ...)."""
 
     ACCESS = "access"
     REFRESH = "refresh"
 
 
-class JWTClaim(str, Enum):
+class JWTClaim(StrEnum):
     sub = "sub"
     jti = "jti"
     exp = "exp"
