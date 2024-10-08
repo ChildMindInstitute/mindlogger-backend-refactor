@@ -1,7 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.integrations.api import create_integration, retrieve_integration, delete_integration
+from apps.integrations.api import create_integration, delete_integration, retrieve_integration
 from apps.integrations.domain import Integration
 from apps.shared.domain import Response
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE

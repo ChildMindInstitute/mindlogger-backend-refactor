@@ -21,6 +21,7 @@ from apps.answers.service import ReportServerService
 from apps.applets.crud.applets_history import AppletHistoriesCRUD
 from apps.integrations.crud.integrations import IntegrationsCRUD, IntegrationsSchema
 from apps.integrations.domain import AvailableIntegrations
+from apps.integrations.errors import UnavailableIntegrationError
 from apps.integrations.loris.crud.user_relationship import MlLorisUserRelationshipCRUD
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
 from apps.integrations.loris.domain.domain import (
@@ -38,7 +39,6 @@ from apps.integrations.loris.service.loris_client import LorisClient
 from apps.subjects.crud import SubjectsCrud
 from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
-from config import settings
 from infrastructure.database.core import atomic
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
@@ -49,12 +49,6 @@ __all__ = [
 ]
 
 
-LORIS_LOGIN_DATA = {
-    "username": settings.loris.username,
-    "password": settings.loris.password,
-}
-
-
 class LorisIntegrationService:
     def __init__(self, applet_id: uuid.UUID, session, user: User, answer_session=None) -> None:
         self.applet_id = applet_id
@@ -62,6 +56,7 @@ class LorisIntegrationService:
         self.user = user
         self.type = AvailableIntegrations.LORIS
         self._answer_session = answer_session
+        self.loris_integration_configuration: LorisIntegration | None = None
 
     @property
     def answer_session(self):
@@ -179,7 +174,7 @@ class LorisIntegrationService:
             await self._upload_applet_schema_to_loris(loris_data, headers)
 
         # check loris for already existing answers of the applet and filter them out
-        existing_answers = await self._get_existing_answers_from_loris(self.applet_id, headers)
+        existing_answers = await self._get_existing_answers_from_loris()
 
         for user, answer in answers_for_loris_by_respondent.items():
             candidate_id: str
@@ -366,13 +361,26 @@ class LorisIntegrationService:
         return loris_answers
 
     async def _login_to_loris(self) -> str:
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(f"Sending LOGIN request to the loris server {settings.loris.login_url}")
+            login_url = LorisClient.login_url(self.loris_integration_configuration.hostname)
+            message = f"Sending LOGIN request to the loris server {login_url}"
+            logger.info(message)
             start = time.time()
+
+            loris_login_data = {
+                "username": self.loris_integration_configuration.username,
+                "password": self.loris_integration_configuration.password,
+            }
+
             async with session.post(
-                settings.loris.login_url,
-                data=json.dumps(LORIS_LOGIN_DATA),
+                LorisClient.login_url(self.loris_integration_configuration.hostname),
+                data=json.dumps(loris_login_data),
             ) as resp:
                 duration = time.time() - start
                 if resp.status == 200:
@@ -385,9 +393,16 @@ class LorisIntegrationService:
                     raise LorisServerError(message=error_message)
 
     async def _get_existing_versions_from_loris(self, headers: dict) -> str:
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            url = settings.loris.ml_schema_existing_versions_url.format(self.applet_id)
+            url = LorisClient.ml_schema_existing_versions_url(self.loris_integration_configuration.hostname).format(
+                self.applet_id
+            )
             logger.info(f"Sending EXISTING SCHEMA VERSIONS request to the loris server {url}")
             start = time.time()
             async with session.get(
@@ -407,48 +422,41 @@ class LorisIntegrationService:
                     )
                     raise LorisServerError(message=error_message)
 
-    async def _get_existing_answers_from_loris(self, applet_id: str, headers: dict | None = None) -> str:
-        if not headers:
-            try:
-                token: str = await self._login_to_loris()
-            except LorisServerError as e:
-                logger.info(f"I can't connect to the LORIS server {e}.")
-                raise Exception(f"I can't connect to the LORIS server {e}.")
+    async def _get_existing_answers_from_loris(self) -> str:
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
 
-            headers = {
-                "Authorization": f"Bearer: {token}",
-                "Content-Type": "application/json",
-                "accept": "*/*",
-            }
-        timeout = aiohttp.ClientTimeout(total=60)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            url = settings.loris.ml_schema_existing_answers_url.format(self.applet_id)
-            logger.info(f"Sending EXISTING ANSWERS request to the loris server {url}")
-            start = time.time()
-            async with session.get(
-                url,
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 200:
-                    logger.info(f"Successful request in {duration:.1f} seconds.")
-                    response_data = await resp.json()
-                    return response_data
-                else:
-                    logger.error(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    await self._create_integration_alerts(
-                        self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
-                    )
-                    raise LorisServerError(message=error_message)
+        token = await LorisClient.login_to_loris(
+            self.loris_integration_configuration.hostname,
+            self.loris_integration_configuration.username,
+            self.loris_integration_configuration.password,
+        )
+
+        try:
+            return await LorisClient.get_existing_answers_from_loris(
+                self.loris_integration_configuration.hostname, token, self.applet_id
+            )
+        except Exception:
+            await self._create_integration_alerts(
+                self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
+            )
+            return LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
 
     async def _upload_applet_schema_to_loris(self, schemas: list, headers: dict):
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(f"Sending UPLOAD SCHEMA request to the loris server {settings.loris.ml_schema_url}")
+            schema_url = LorisClient.ml_schema_url(self.loris_integration_configuration.hostname)
+            logger.info(f"Sending UPLOAD SCHEMA request to the loris server {schema_url}")
             start = time.time()
             async with session.post(
-                settings.loris.ml_schema_url,
+                LorisClient.ml_schema_url(self.loris_integration_configuration.hostname),
                 data=json.dumps([UnencryptedAppletVersion(**schema) for schema in schemas], default=pydantic_encoder),
                 headers=headers,
             ) as resp:
@@ -466,9 +474,15 @@ class LorisIntegrationService:
     async def _create_candidate(
         self, headers: dict, relationship_crud: MlLorisUserRelationshipCRUD, ml_user_id: uuid.UUID
     ) -> str:
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(f"Sending CREATE CANDIDATE request to the loris server {settings.loris.create_candidate_url}")
+            candidate_url = LorisClient.create_candidate_url(self.loris_integration_configuration.hostname)
+            logger.info(f"Sending CREATE CANDIDATE request to the loris server {candidate_url}")
             start = time.time()
             _data_candidate = {
                 "Candidate": {
@@ -479,7 +493,7 @@ class LorisIntegrationService:
                 }
             }
             async with session.post(
-                settings.loris.create_candidate_url,
+                LorisClient.create_candidate_url(self.loris_integration_configuration.hostname),
                 data=json.dumps(_data_candidate),
                 headers=headers,
             ) as resp:
@@ -508,10 +522,16 @@ class LorisIntegrationService:
         return candidate_id
 
     async def _create_and_start_visits(self, headers: dict, candidate_id: str, visits: list[str]):
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             for visit in visits:
-                create_visit_url: str = settings.loris.create_visit_url.format(candidate_id, visit)
+                raw_url = LorisClient.create_visit_url(self.loris_integration_configuration.hostname)
+                create_visit_url: str = raw_url.format(candidate_id, visit)
                 logger.info(f"Sending CREATE VISIT request to the loris server {create_visit_url}")
                 start = time.time()
                 _data_create_visit = {
@@ -522,7 +542,9 @@ class LorisIntegrationService:
                     "Project": "loris",
                 }
                 async with session.put(
-                    settings.loris.create_visit_url.format(candidate_id, visit),
+                    LorisClient.create_visit_url(self.loris_integration_configuration.hostname).format(
+                        candidate_id, visit
+                    ),
                     data=json.dumps(_data_create_visit),
                     headers=headers,
                 ) as resp:
@@ -544,7 +566,8 @@ class LorisIntegrationService:
                         )
                         raise LorisServerError(message=error_message)
 
-                start_visit_url: str = settings.loris.start_visit_url.format(candidate_id, visit)
+                raw_url = LorisClient.start_visit_url(self.loris_integration_configuration.hostname)
+                start_visit_url: str = raw_url.format(candidate_id, visit)
                 logger.info(f"Sending START VISIT request to the loris server {start_visit_url}")
                 start = time.time()
                 _data_start_visit = {
@@ -562,7 +585,9 @@ class LorisIntegrationService:
                     },
                 }
                 async with session.patch(
-                    settings.loris.start_visit_url.format(candidate_id, visit),
+                    LorisClient.start_visit_url(self.loris_integration_configuration.hostname).format(
+                        candidate_id, visit
+                    ),
                     data=json.dumps(_data_start_visit),
                     headers=headers,
                 ) as resp:
@@ -584,15 +609,20 @@ class LorisIntegrationService:
     async def _add_instrument_to_loris(
         self, headers: dict, candidate_id: str, activities_ids: list, user_and_visits: dict
     ):
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             for activity_id in activities_ids:
                 for key, visit in user_and_visits.items():
                     if key.startswith(activity_id):
-                        logger.info(
-                            f"Sending ADD INSTRUMENTS request to the loris server "
-                            f"{settings.loris.add_instruments_url.format(candidate_id, visit)}"
-                        )
+                        add_instruments_url = LorisClient.add_instruments_url(
+                            self.loris_integration_configuration.hostname
+                        ).format(candidate_id, visit)
+                        logger.info(f"Sending ADD INSTRUMENTS request to the loris server {add_instruments_url}")
                         start = time.time()
                         _data_add_instruments = {
                             "Meta": {
@@ -602,7 +632,9 @@ class LorisIntegrationService:
                             "Instruments": [activity_id],
                         }
                         async with session.post(
-                            settings.loris.add_instruments_url.format(candidate_id, visit),
+                            LorisClient.add_instruments_url(self.loris_integration_configuration.hostname).format(
+                                candidate_id, visit
+                            ),
                             data=json.dumps(_data_add_instruments),
                             headers=headers,
                         ) as resp:
@@ -621,6 +653,11 @@ class LorisIntegrationService:
     async def _add_instrument_data_to_loris(
         self, headers: dict, candidate_id: str, answer: dict, activities_ids: list, user_and_visits: dict
     ):
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             for activity_id in activities_ids:
@@ -629,9 +666,11 @@ class LorisIntegrationService:
                     if answer_by_activity_id and key.startswith(activity_id):
                         specific_answers = {k: v for k, v in answer_by_activity_id.items() if k.startswith(key)}
                         if specific_answers:
+                            instrument_data_url = LorisClient.instrument_data_url(
+                                self.loris_integration_configuration.hostname
+                            ).format(candidate_id, visit, activity_id)
                             logger.info(
-                                f"Sending SEND INSTUMENT DATA request to the loris server "
-                                f"{settings.loris.instrument_data_url.format(candidate_id, visit, activity_id)}"
+                                f"Sending SEND INSTUMENT DATA request to the loris server {instrument_data_url}"
                             )
                             start = time.time()
                             _data_instrument_data = {
@@ -645,7 +684,9 @@ class LorisIntegrationService:
                             }
                             logger.info(f"Sending SEND INSTUMENT DATA is : {json.dumps(_data_instrument_data)}")
                             async with session.put(
-                                settings.loris.instrument_data_url.format(candidate_id, visit, activity_id),
+                                LorisClient.instrument_data_url(self.loris_integration_configuration.hostname).format(
+                                    candidate_id, visit, activity_id
+                                ),
                                 data=json.dumps(_data_instrument_data),
                                 headers=headers,
                             ) as resp:
@@ -662,39 +703,25 @@ class LorisIntegrationService:
                                     raise LorisServerError(message=error_message)
 
     async def get_visits_list(self) -> list[str]:
-        try:
-            token: str = await self._login_to_loris()
-        except LorisServerError as e:
-            logger.info(f"I can't connect to the LORIS server {e}.")
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
 
-        headers = {
-            "Authorization": f"Bearer: {token}",
-            "Content-Type": "application/json",
-            "accept": "*/*",
-        }
+        token = await LorisClient.login_to_loris(
+            self.loris_integration_configuration.hostname,
+            self.loris_integration_configuration.username,
+            self.loris_integration_configuration.password,
+        )
 
-        timeout = aiohttp.ClientTimeout(total=60)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            logger.info(
-                f"Sending GET VISITS LIST request to the loris server "
-                f"{settings.loris.get_visits_list_url.format('loris')}"
-            )
-            start = time.time()
-            async with session.get(
-                settings.loris.get_visits_list_url.format("loris"),
-                headers=headers,
-            ) as resp:
-                duration = time.time() - start
-                if resp.status == 200:
-                    logger.info(f"Successful request in {duration:.1f} seconds.")
-                    visits_data = await resp.json()
-                    return visits_data["Visits"]
-                else:
-                    logger.info(f"Failed request in {duration:.1f} seconds.")
-                    error_message = await resp.text()
-                    raise LorisServerError(message=error_message)
+        return await LorisClient.get_visits_list(self.loris_integration_configuration.hostname, token)
 
     async def get_visits_for_applet(self) -> dict:
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
         try:
             token: str = await self._login_to_loris()
         except LorisServerError as e:
@@ -710,11 +737,13 @@ class LorisIntegrationService:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             logger.info(
                 f"Sending GET VISITS FOR APPLET request to the loris server "
-                f"{settings.loris.ml_visits_for_applet_url.format(str(self.applet_id))}"
+                f"{LorisClient.ml_visits_for_applet_url(self.loris_integration_configuration.hostname).format(str(self.applet_id))}"
             )
             start = time.time()
             async with session.get(
-                settings.loris.ml_visits_for_applet_url.format(str(self.applet_id)),
+                LorisClient.ml_visits_for_applet_url(self.loris_integration_configuration.hostname).format(
+                    str(self.applet_id)
+                ),
                 headers=headers,
             ) as resp:
                 duration = time.time() - start
@@ -728,12 +757,15 @@ class LorisIntegrationService:
                     raise LorisServerError(message=error_message)
 
     async def get_uploadable_answers(self) -> tuple[UploadableAnswersData, int]:
-        uploaded_answers, applet_visits, answers = await asyncio.gather(
-            self._get_existing_answers_from_loris(str(self.applet_id)),
-            self.get_visits_for_applet(),
-            # todo pagination
-            AnswersCRUD(self.answer_session).get_shareable_answers(applet_id=self.applet_id),
-        )
+        if self.loris_integration_configuration is None:
+            self.loris_integration_configuration = await self._get_applet_loris_integration_configuration()
+        if self.loris_integration_configuration is None:
+            raise LorisServerError(message=f"{self.applet_id} has no LORIS integration defined")
+
+        uploaded_answers = await self._get_existing_answers_from_loris()
+        applet_visits = await self.get_visits_for_applet()
+        # todo pagination
+        answers = await AnswersCRUD(self.answer_session).get_shareable_answers(applet_id=self.applet_id)
 
         uploaded_answer_ids = set(uploaded_answers)
         del uploaded_answers
@@ -860,7 +892,7 @@ class LorisIntegrationService:
                 sentry_sdk.capture_exception(e)
                 break
 
-    async def create_loris_integration(self, hostname, username, project) -> LorisIntegration:
+    async def create_loris_integration(self, hostname, username, project, password) -> LorisIntegration:
         integration_schema = await IntegrationsCRUD(self.session).create(
             IntegrationsSchema(
                 applet_id=self.applet_id,
@@ -869,6 +901,7 @@ class LorisIntegrationService:
                     "hostname": hostname,
                     "username": username,
                     "project": project,
+                    "password": password,
                 },
             )
         )
@@ -879,3 +912,13 @@ class LorisIntegrationService:
         projects_raw = await LorisClient.list_projects(hostname, token)
         projects = list(projects_raw["Projects"].keys())
         return LorisProjects(projects=projects)
+
+    async def _get_applet_loris_integration_configuration(self) -> LorisIntegration:
+        integration_schema = await IntegrationsCRUD(self.session).retrieve_by_applet_and_type(
+            self.applet_id, AvailableIntegrations.LORIS
+        )
+
+        if integration_schema is None:
+            raise UnavailableIntegrationError(applet_id=self.applet_id, integration_type=AvailableIntegrations.LORIS)
+
+        return LorisIntegration.from_schema(integration_schema)

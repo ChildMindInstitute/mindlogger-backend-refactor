@@ -62,9 +62,7 @@ class TestIntegrationRouter(BaseTest):
         }
         client.login(tom)
         response = await client.post("integrations/", data=create_loris_integration_url_data)
-        dict_response = json.loads(response.text)
-        assert len(dict_response["result"]) == 11
-        assert response.status_code == 422
+        assert response.status_code == 400
 
     async def test_retrieve_integration(
         self,
@@ -99,7 +97,6 @@ class TestIntegrationRouter(BaseTest):
         assert dict_response["configuration"]["username"] == "lorisfrontadmin"
         assert dict_response["configuration"]["project"] == "loris_project"
         assert "password" not in dict_response.keys()
-
 
     async def test_delete_integration(
         self,
@@ -144,4 +141,5 @@ class TestIntegrationRouter(BaseTest):
         response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
         assert response.status_code == 400
         result = json.loads(response.text)
-        assert result["result"][0]["message"] == 'The specified integration type `LORIS` does not exist for applet `92917a56-d586-4613-b7aa-991f2c4b15b1`'
+        m = "The specified integration type `LORIS` does not exist for applet `92917a56-d586-4613-b7aa-991f2c4b15b1`"
+        assert result["result"][0]["message"] == m

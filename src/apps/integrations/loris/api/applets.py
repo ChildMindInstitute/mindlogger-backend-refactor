@@ -13,12 +13,7 @@ from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database.deps import get_session
 
-__all__ = [
-    "start_transmit_process",
-    "visits_list",
-    "users_info_with_visits",
-    "get_loris_projects"
-]
+__all__ = ["start_transmit_process", "visits_list", "users_info_with_visits", "get_loris_projects"]
 
 
 async def integration(applet_id: uuid.UUID, session, user, users_and_visits):
@@ -41,12 +36,11 @@ async def start_transmit_process(
 
 
 async def visits_list(
+    applet_id: uuid.UUID,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> PublicListOfVisits:
-    visits = await LorisIntegrationService(
-        uuid.UUID("00000000-0000-0000-0000-000000000000"), session, user
-    ).get_visits_list()
+    visits = await LorisIntegrationService(applet_id, session, user).get_visits_list()
     return PublicListOfVisits(visits=visits, count=len(visits))
 
 

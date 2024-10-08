@@ -1,7 +1,6 @@
 import uuid
 
-from sqlalchemy import select, update
-from sqlalchemy.engine import Result
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from apps.integrations.db.schemas import IntegrationsSchema
@@ -25,13 +24,14 @@ class IntegrationsCRUD(BaseCRUD[IntegrationsSchema]):
             )
         return new_integrations
 
-    async def retrieve_by_applet_and_type(self, applet_id: uuid.UUID, integration_type: str) -> IntegrationsSchema:
+    async def retrieve_by_applet_and_type(
+        self, applet_id: uuid.UUID, integration_type: str
+    ) -> IntegrationsSchema | None:
         query = select(IntegrationsSchema)
         query = query.where(IntegrationsSchema.applet_id == applet_id)
         query = query.where(IntegrationsSchema.type == integration_type)
-        query = query.limit(1)
-        result: Result = await self._execute(query)
-        return result.scalars().first()
+        result = await self._execute(query)
+        return result.scalar_one_or_none()
 
     async def delete_by_id(self, id_: uuid.UUID):
         """Delete integrations by id."""
