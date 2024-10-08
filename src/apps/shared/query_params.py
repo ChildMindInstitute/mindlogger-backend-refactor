@@ -25,7 +25,7 @@ class QueryParams(InternalModel):
     """
 
     filters: dict[str, Any] = Field(default_factory=dict)
-    search: str | None
+    search: str | None = None
     page: int = Field(gt=0, default=1)
     limit: int = Field(gt=0, default=10, le=settings.service.result_limit)
     ordering: list[str] = Field(default_factory=list)

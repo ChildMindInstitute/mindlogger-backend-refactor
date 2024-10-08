@@ -6,6 +6,7 @@ from apps.activities.domain.activity import (
     ActivityBaseInfo,
     ActivityDuplicate,
     ActivityLanguageWithItemsMobileDetailPublic,
+    ActivityOrFlowBasicInfoInternal,
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageWithItemsDetail,
 )
@@ -18,6 +19,7 @@ from apps.activities.domain.activity_update import (
 )
 from apps.activities.errors import ActivityAccessDeniedError, ActivityDoeNotExist
 from apps.activities.services.activity_item import ActivityItemService
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD
 from apps.schedule.service.schedule import ScheduleService
@@ -189,6 +191,7 @@ class ActivityService:
             await ScheduleService(self.session).delete_by_activity_ids(
                 applet_id=applet_id, activity_ids=list(deleted_activity_ids)
             )
+            await ActivityAssignmentService(self.session).delete_by_activity_or_flow_ids(list(deleted_activity_ids))
 
         # Create default events for new activities
         if new_activities:
@@ -279,6 +282,7 @@ class ActivityService:
                 scores_and_reports=schema.scores_and_reports,
                 performance_task_type=schema.performance_task_type,
                 is_performance_task=schema.is_performance_task,
+                auto_assign=schema.auto_assign,
             )
 
             activities.append(activity)
@@ -450,3 +454,10 @@ class ActivityService:
             activity.contains_response_types = list(set(activity_items_map.get(activity.id, list())))
             activity.item_count = len(activity_items_map.get(activity.id, list()))
         return activities
+
+    async def get_activity_and_flow_basic_info_by_ids_or_auto(
+        self, applet_id: uuid.UUID, ids: list[uuid.UUID], language: str
+    ) -> list[ActivityOrFlowBasicInfoInternal]:
+        return await ActivitiesCRUD(self.session).get_activity_and_flow_basic_info_by_ids_or_auto(
+            applet_id, ids, language
+        )

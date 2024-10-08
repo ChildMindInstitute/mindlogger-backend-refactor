@@ -1,7 +1,9 @@
 
 name: Build and Deploy
 on: 
-#  push: {}
+  push:
+#    branches:
+#      - develop
   workflow_dispatch: {}
 #  pull_request:
 #    types:
@@ -95,18 +97,6 @@ jobs:
           tags: ${{ steps.sha.outputs.IMAGE_NAME }},${{ env.ECR_REPO }}:latest
           platforms: linux/amd64,linux/arm64
 
-#      - name: Build image for ECR
-#        id: build_step
-#        run: |
-#          echo "IMAGE_NAME=${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}" >> "$GITHUB_OUTPUT"
-#          docker build -t ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5} -f ./compose/fastapi/Dockerfile .
-#          docker tag ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5} ${ECR_ADDRESS}/${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
-#
-#      - name: Push image to ECR
-#        run: |
-#          aws ecr get-login-password | docker login --username AWS --password-stdin ${ECR_ADDRESS}
-#          docker push ${ECR_REPO}:${GITHUB_BRANCH_OR_TAG/\//-}-${GITHUB_SHA:0:5}
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -118,7 +108,7 @@ jobs:
   deploy_to_dev:
     name: Deploy to Dev
     needs: build_job
-    environment: dev
+#    environment: dev
     #if: ${{ github.event.pull_request.merged }}
     uses: ./.github/workflows/run_deploy_dev.yaml
     with:

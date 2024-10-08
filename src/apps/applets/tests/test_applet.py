@@ -7,6 +7,7 @@ from unittest.mock import ANY
 import pytest
 from firebase_admin.exceptions import NotFoundError as FireBaseNotFoundError
 from pytest_mock import MockerFixture
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.activity_update import ActivityItemUpdate
@@ -20,6 +21,8 @@ from apps.activities.errors import (
     DuplicatedActivityFlowsError,
     FlowItemActivityKeyNotFoundError,
 )
+from apps.activity_assignments.crud.assignments import ActivityAssigmentCRUD
+from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
 from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
@@ -877,6 +880,64 @@ class TestApplet:
         assert updateResp.status_code == http.HTTPStatus.OK, updateResp.json()
         updateResult = updateResp.json()["result"]
         assert updateResult["activityFlows"][0]["autoAssign"] is False
+
+    async def test_update_applet_delete_activity_with_assignments(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one_with_flow_and_assignments: AppletFull,
+        applet_one_change_activities_ids: AppletUpdate,
+        session: AsyncSession,
+        tom_applet_one_subject,
+    ):
+        client.login(tom)
+
+        assignment: ActivityAssigmentSchema | None = await ActivityAssigmentCRUD(session)._get(
+            "activity_id", applet_one_with_flow_and_assignments.activities[0].id
+        )
+        assert assignment is not None
+        assert assignment.soft_exists() is True
+
+        updateResp = await client.put(
+            self.applet_detail_url.format(pk=applet_one_with_flow_and_assignments.id),
+            data=applet_one_change_activities_ids,
+        )
+        assert updateResp.status_code == http.HTTPStatus.OK, updateResp.json()
+
+        assignment = await ActivityAssigmentCRUD(session)._get(
+            "activity_id", applet_one_with_flow_and_assignments.activities[0].id
+        )
+        assert assignment is not None
+        assert assignment.soft_exists() is False
+
+    async def test_update_applet_delete_flow_with_assignments(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one_with_flow_and_assignments: AppletFull,
+        applet_one_change_activities_ids: AppletUpdate,
+        session: AsyncSession,
+        tom_applet_one_subject,
+    ):
+        client.login(tom)
+
+        assignment: ActivityAssigmentSchema | None = await ActivityAssigmentCRUD(session)._get(
+            "activity_flow_id", applet_one_with_flow_and_assignments.activity_flows[0].id
+        )
+        assert assignment is not None
+        assert assignment.soft_exists() is True
+
+        updateResp = await client.put(
+            self.applet_detail_url.format(pk=applet_one_with_flow_and_assignments.id),
+            data=applet_one_change_activities_ids,
+        )
+        assert updateResp.status_code == http.HTTPStatus.OK, updateResp.json()
+
+        assignment = await ActivityAssigmentCRUD(session)._get(
+            "activity_flow_id", applet_one_with_flow_and_assignments.activity_flows[0].id
+        )
+        assert assignment is not None
+        assert assignment.soft_exists() is False
 
     async def test_update_applet_keep_flow_auto_assign(
         self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate

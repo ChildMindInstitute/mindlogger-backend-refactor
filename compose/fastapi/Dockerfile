@@ -18,7 +18,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash
 
 # Install Python dependencies
-RUN pip install --no-cache-dir pipenv==2023.11.15
+RUN pip install --no-cache-dir pipenv
 
 COPY Pipfile Pipfile.lock ./
 ARG PIPENV_EXTRA_ARGS
@@ -39,6 +39,12 @@ RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
 
 COPY --chown=code:code ./compose/fastapi/migrate /fastapi-migrate
 RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
+
+COPY --chown=code:code ./compose/fastapi/ecs-start /ecs-start
+RUN sed -i 's/\r$//g' /ecs-start && chmod +x /ecs-start
+
+COPY --chown=code:code ./compose/fastapi/ecs-start-feature /ecs-start-feature
+RUN sed -i 's/\r$//g' /ecs-start-feature && chmod +x /ecs-start-feature
 
 # Select internal user
 USER code
@@ -66,7 +72,3 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/
 
 USER code
-
-
-
-
