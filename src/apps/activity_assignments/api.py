@@ -5,6 +5,7 @@ from fastapi import Body, Depends
 from apps.activity_assignments.domain.assignments import (
     ActivitiesAssignments,
     ActivitiesAssignmentsCreate,
+    ActivitiesAssignmentsDelete,
     ActivitiesAssignmentsWithSubjects,
     ActivityAssignmentsListQueryParams,
 )
@@ -27,6 +28,31 @@ async def assignments_create(
     schema: ActivitiesAssignmentsCreate = Body(...),
     session=Depends(get_session),
 ) -> Response[ActivitiesAssignments]:
+    """
+    Creates multiple activity assignments for a specified applet.
+
+    This endpoint allows authorized users to assign activities or flows to participants
+    by creating new assignment records in the database.
+
+    Parameters:
+    -----------
+    applet_id : uuid.UUID
+        The ID of the applet for which assignments are being created.
+
+    user : User, optional
+        The current user making the request (automatically injected).
+
+    schema : ActivitiesAssignmentsCreate
+        The schema containing the list of assignments to be created.
+
+    session : Depends, optional
+        The database session (automatically injected).
+
+    Returns:
+    --------
+    Response[ActivitiesAssignments]
+        A response object containing the newly created assignments for the applet.
+    """
     async with atomic(session):
         service = AppletService(session, user.id)
         await service.exist_by_id(applet_id)
@@ -39,6 +65,39 @@ async def assignments_create(
             assignments=assignments,
         )
     )
+
+
+async def assignment_delete(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    schema: ActivitiesAssignmentsDelete = Body(...),
+    session=Depends(get_session),
+) -> None:
+    """
+    Unassigns multiple activity assignments for a specified applet.
+
+    This endpoint allows authorized users to unassign activities or flows from
+    participants by marking the corresponding assignments as deleted.
+
+    Parameters:
+    -----------
+    applet_id : uuid.UUID
+        The ID of the applet from which assignments are being unassigned.
+
+    user : User, optional
+        The current user making the request (automatically injected).
+
+    schema : ActivitiesAssignmentsDelete
+        The schema containing the list of assignments to be unassigned.
+
+    session : Depends, optional
+        The database session (automatically injected).
+    """
+    async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_activity_assignment_access(applet_id)
+        await ActivityAssignmentService(session).unassign_many(schema.assignments)
 
 
 async def applet_assignments(
@@ -68,9 +127,10 @@ async def applet_respondent_assignments(
 
     respondent_subject = await SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
     if not respondent_subject:
-        raise NotFoundError(f"User don't have subject role in applet {applet_id}")
+        raise NotFoundError(f"User doesn't have subject role in applet {applet_id}")
 
-    assignments = await ActivityAssignmentService(session).get_all_by_respondent(applet_id, respondent_subject.id)
+    query_params = QueryParams(filters={"respondent_subject_id": respondent_subject.id})
+    assignments = await ActivityAssignmentService(session).get_all_with_subject_entities(applet_id, query_params)
 
     return Response(
         result=ActivitiesAssignmentsWithSubjects(

@@ -6,7 +6,7 @@ from typing import Collection
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID, insert
-from sqlalchemy.orm import Query, aliased, contains_eager
+from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
 from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
 
@@ -600,7 +600,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         db_result = await self._execute(query)
-        data = db_result.all()
+        data = db_result.mappings().all()
 
         activities = []
         flows = []
@@ -674,7 +674,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         db_result = await self._execute(query)
-        data = db_result.all()
+        data = db_result.mappings().all()
 
         applet_activities_flows_map: dict[uuid.UUID, dict[str, list]] = dict()
         for row in data:
@@ -937,6 +937,62 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query: Query = delete(AnswerSchema)
         query = query.where(AnswerSchema.id.in_(ids))
         await self._execute(query)
+
+    async def get_target_subject_ids_by_respondent(
+        self, respondent_subject_id: uuid.UUID, activity_or_flow_id: uuid.UUID
+    ):
+        query: Query = (
+            select(
+                AnswerSchema.target_subject_id,
+                func.count(func.distinct(AnswerSchema.submit_id)).label("submission_count"),
+            )
+            .where(
+                AnswerSchema.source_subject_id == respondent_subject_id,
+                or_(
+                    AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == str(activity_or_flow_id),
+                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(activity_or_flow_id),
+                ),
+            )
+            .group_by(AnswerSchema.target_subject_id)
+        )
+
+        res = await self._execute(query)
+        return res.all()
+
+    @staticmethod
+    def __activity_and_flow_ids_by_subject_query(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
+        query: Query = (
+            select(
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
+                ).label("id")
+            )
+            .where(subject_column == subject_id)
+            .distinct()
+        )
+        return query
+
+    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a target subject
+        """
+        res = await self._execute(
+            self.__activity_and_flow_ids_by_subject_query(AnswerSchema.target_subject_id, target_subject_id)
+        )
+        return res.scalars().all()
+
+    async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a source subject
+        """
+        res = await self._execute(
+            self.__activity_and_flow_ids_by_subject_query(AnswerSchema.source_subject_id, source_subject_id)
+        )
+        return res.scalars().all()
 
     async def get_by_applet_id_and_readiness_to_share_data(
         self, applet_id: uuid.UUID, respondent_id: uuid.UUID, answer_ids: list[uuid.UUID]

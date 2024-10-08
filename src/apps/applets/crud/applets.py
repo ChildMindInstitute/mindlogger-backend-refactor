@@ -692,7 +692,7 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
     @staticmethod
     def _get_activity_subquery() -> Query:
         return (
-            select([func.count().label("count")])
+            select(func.count().label("count"))
             .where(
                 AppletSchema.id == ActivitySchema.applet_id,
             )

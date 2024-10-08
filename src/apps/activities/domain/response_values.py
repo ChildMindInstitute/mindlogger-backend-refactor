@@ -28,6 +28,7 @@ from apps.activities.domain.response_type_config import (
     TextConfig,
     TimeConfig,
     TimeRangeConfig,
+    UnityConfig,
     VideoConfig,
 )
 from apps.activities.errors import (
@@ -101,6 +102,10 @@ class StabilityTrackerValues(PublicModel):
 
 class ABTrailsValues(PublicModel):
     type: Literal[ResponseType.ABTRAILS] | None
+
+
+class UnityValues(PublicModel):
+    type: Literal[ResponseType.UNITY] | None
 
 
 class _SingleSelectionValue(PublicModel):
@@ -406,6 +411,7 @@ ResponseValueConfigOptions = [
     FlankerValues,
     StabilityTrackerValues,
     ABTrailsValues,
+    UnityValues,
     PhrasalTemplateValues,
 ]
 
@@ -422,6 +428,7 @@ ResponseValueConfig = (
     | AudioValues
     | AudioPlayerValues
     | TimeValues
+    | UnityValues
     | PhrasalTemplateValues
 )
 
@@ -477,6 +484,7 @@ ResponseTypeConfigOptions = [
     FlankerConfig,
     StabilityTrackerConfig,
     ABTrailsConfig,
+    UnityConfig,
     PhrasalTemplateConfig,
 ]
 

@@ -6,21 +6,27 @@ from fastapi import Depends
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import (
     ActivityLanguageWithItemsMobileDetailPublic,
+    ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
+    ActivityWithAssignmentDetailsPublic,
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
+from apps.activity_assignments.service import ActivityAssignmentService
+from apps.activity_flows.domain.flow import FlowWithAssignmentDetailsPublic
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet import (
+    ActivitiesAndFlowsWithAssignmentDetailsPublic,
     AppletActivitiesAndFlowsDetailsPublic,
     AppletActivitiesDetailsPublic,
     AppletSingleLanguageDetailMobilePublic,
 )
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
-from apps.shared.domain import Response
+from apps.shared.domain import Response, ResponseMulti
+from apps.shared.exception import ValidationError
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
 from apps.users import User
@@ -97,6 +103,179 @@ async def applet_activities(
         respondent_meta=respondent_meta,
     )
     return Response(result=result)
+
+
+async def applet_activities_for_subject(
+    applet_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+) -> Response[ActivitiesAndFlowsWithAssignmentDetailsPublic]:
+    async with atomic(session):
+        applet_service = AppletService(session, user.id)
+        await applet_service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
+
+        # Ensure reviewers can access the subject
+        await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
+
+        activities_future = ActivityService(session, user.id).get_single_language_with_items_by_applet_id(
+            applet_id, language
+        )
+        flows_future = FlowService(session).get_single_language_by_applet_id(applet_id, language)
+
+        query_params = QueryParams(filters={"respondent_subject_id": subject_id, "target_subject_id": subject_id})
+        assignments_future = ActivityAssignmentService(session).get_all_with_subject_entities(applet_id, query_params)
+
+        activities, flows, assignments = await asyncio.gather(activities_future, flows_future, assignments_future)
+        result = ActivitiesAndFlowsWithAssignmentDetailsPublic(
+            activities=[],
+            activity_flows=[],
+        )
+
+        for activity in activities:
+            activity_with_assignment = ActivityWithAssignmentDetailsPublic(
+                **activity.dict(exclude={"report_included_activity_name", "report_included_item_name"})
+            )
+            activity_with_assignment.assignments = [
+                assignment for assignment in assignments if assignment.activity_id == activity.id
+            ]
+
+            if activity_with_assignment.auto_assign is True or len(activity_with_assignment.assignments) > 0:
+                result.activities.append(activity_with_assignment)
+
+        for flow in flows:
+            flow_with_assignment = FlowWithAssignmentDetailsPublic(
+                **flow.dict(exclude={"created_at", "report_included_activity_name", "report_included_item_name"})
+            )
+            flow_with_assignment.assignments = [
+                assignment for assignment in assignments if assignment.activity_flow_id == flow.id
+            ]
+
+            if flow_with_assignment.auto_assign is True or len(flow_with_assignment.assignments) > 0:
+                result.activity_flows.append(flow_with_assignment)
+
+        return Response(result=result)
+
+
+async def applet_activities_for_target_subject(
+    applet_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[ActivityOrFlowWithAssignmentsPublic]:
+    applet_service = AppletService(session, user.id)
+    await applet_service.exist_by_id(applet_id)
+
+    await SubjectsService(session, user.id).exist_by_id(subject_id)
+
+    # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
+    await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
+
+    assignments = await ActivityAssignmentService(session).get_all_with_subject_entities(
+        applet_id, QueryParams(filters={"target_subject_id": subject_id})
+    )
+
+    # Only one of these IDs will be `None` at a time, so the resulting type will be a list of UUIDs
+    activity_and_flow_ids_from_assignments: list[uuid.UUID] = [
+        assignment.activity_id or assignment.activity_flow_id  # type: ignore
+        for assignment in assignments
+    ]
+
+    activity_and_flow_ids_from_submissions = await AnswerService(
+        session, user.id, answer_session
+    ).get_activity_and_flow_ids_by_target_subject(subject_id)
+
+    activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
+        applet_id, activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments, language
+    )
+
+    result = []
+    for activity_or_flow in activities_and_flows:
+        activity_or_flow_assignments = [
+            assignment
+            for assignment in assignments
+            if assignment.activity_id == activity_or_flow.id or assignment.activity_flow_id == activity_or_flow.id
+        ]
+
+        activity_or_flow.set_status(activity_or_flow_assignments)
+
+        result.append(
+            ActivityOrFlowWithAssignmentsPublic(
+                **activity_or_flow.dict(),
+                assignments=activity_or_flow_assignments,
+            )
+        )
+
+    return ResponseMulti(
+        result=result,
+        count=len(result),
+    )
+
+
+async def applet_activities_for_respondent_subject(
+    applet_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> ResponseMulti[ActivityOrFlowWithAssignmentsPublic]:
+    applet_service = AppletService(session, user.id)
+    await applet_service.exist_by_id(applet_id)
+
+    subject = await SubjectsService(session, user.id).exist_by_id(subject_id)
+
+    # Ensure the respondent is not a limited account
+    if subject.user_id is None:
+        # Return a generic bad request error to avoid leaking information
+        raise ValidationError(f"Subject {subject_id} is not a valid respondent")
+
+    # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
+    await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
+
+    assignments = await ActivityAssignmentService(session).get_all_with_subject_entities(
+        applet_id, QueryParams(filters={"respondent_subject_id": subject_id})
+    )
+
+    # Only one of these IDs will be `None` at a time, so the resulting type will be a list of UUIDs
+    activity_and_flow_ids_from_assignments: list[uuid.UUID] = [
+        assignment.activity_id or assignment.activity_flow_id  # type: ignore
+        for assignment in assignments
+    ]
+
+    activity_and_flow_ids_from_submissions = await AnswerService(
+        session, user.id, answer_session
+    ).get_activity_and_flow_ids_by_source_subject(subject_id)
+
+    activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
+        applet_id, activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments, language
+    )
+
+    result: list[ActivityOrFlowWithAssignmentsPublic] = []
+    for activity_or_flow in activities_and_flows:
+        activity_or_flow_assignments = [
+            assignment
+            for assignment in assignments
+            if assignment.activity_id == activity_or_flow.id or assignment.activity_flow_id == activity_or_flow.id
+        ]
+
+        activity_or_flow.set_status(activity_or_flow_assignments)
+
+        result.append(
+            ActivityOrFlowWithAssignmentsPublic(
+                **activity_or_flow.dict(),
+                assignments=activity_or_flow_assignments,
+            )
+        )
+
+    return ResponseMulti(
+        result=result,
+        count=len(result),
+    )
 
 
 async def applet_activities_and_flows(

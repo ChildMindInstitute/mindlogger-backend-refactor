@@ -32,9 +32,9 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
             update(self.schema_class).where(self.schema_class.id == id_).values(**values).returning(self.schema_class)
         )
         db_result = await self._execute(query)  # TODO test
-        result = db_result.first()
+        result = db_result.mappings().first()
 
-        return self.schema_class(**dict(zip(result.keys(), result)))
+        return self.schema_class(**result)
 
     async def get_by_id(self, _id: uuid.UUID) -> SubjectSchema | None:
         return await self._get("id", _id)

@@ -2,9 +2,22 @@ from uuid import UUID
 
 from pydantic import BaseModel, root_validator
 
-from apps.activity_assignments.errors import ActivityAssignmentActivityOrFlowError
+from apps.activity_assignments.errors import (
+    ActivityAssignmentActivityOrFlowError,
+    ActivityAssignmentNotActivityAndFlowError,
+)
 from apps.shared.domain import InternalModel, PublicModel
 from apps.subjects.domain import SubjectReadResponse
+
+
+def _validate_assignments(values):
+    if not values.get("activity_id") and not values.get("activity_flow_id"):
+        raise ActivityAssignmentNotActivityAndFlowError()
+
+    if values.get("activity_id") and values.get("activity_flow_id"):
+        raise ActivityAssignmentActivityOrFlowError("Only one of activity_id or activity_flow_id must be provided")
+
+    return values
 
 
 class ActivityAssignmentCreate(BaseModel):
@@ -15,13 +28,7 @@ class ActivityAssignmentCreate(BaseModel):
 
     @root_validator
     def validate_assignments(cls, values):
-        if not values.get("activity_id") and not values.get("activity_flow_id"):
-            raise ActivityAssignmentActivityOrFlowError()
-
-        if values.get("activity_id") and values.get("activity_flow_id"):
-            raise ActivityAssignmentActivityOrFlowError("Only one of activity_id or activity_flow_id must be provided")
-
-        return values
+        return _validate_assignments(values)
 
 
 class ActivitiesAssignmentsCreate(InternalModel):
@@ -47,6 +54,7 @@ class ActivityAssignmentsListQueryParams(InternalModel):
 
 
 class ActivityAssignmentWithSubject(PublicModel):
+    id: UUID
     activity_flow_id: UUID | None
     activity_id: UUID | None
     respondent_subject: SubjectReadResponse
@@ -56,3 +64,18 @@ class ActivityAssignmentWithSubject(PublicModel):
 class ActivitiesAssignmentsWithSubjects(PublicModel):
     applet_id: UUID
     assignments: list[ActivityAssignmentWithSubject]
+
+
+class ActivityAssignmentDelete(BaseModel):
+    activity_id: UUID | None
+    activity_flow_id: UUID | None
+    respondent_subject_id: UUID
+    target_subject_id: UUID
+
+    @root_validator
+    def validate_assignments(cls, values):
+        return _validate_assignments(values)
+
+
+class ActivitiesAssignmentsDelete(InternalModel):
+    assignments: list[ActivityAssignmentDelete]

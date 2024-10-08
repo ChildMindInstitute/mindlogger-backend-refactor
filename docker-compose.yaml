@@ -28,6 +28,7 @@ services:
 
   redis:
     image: redis
+    container_name: mindlogger_redis
     ports:
       - 6379:6379
 
@@ -35,13 +36,13 @@ services:
     stdin_open: true
     tty: true
     image: mindlogger_webapp
+    container_name: mindlogger_app
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
       target: base
       args:
         - PIPENV_EXTRA_ARGS=--dev
-    container_name: mindlogger_app
     entrypoint: /fastapi-entrypoint
     command: /fastapi-start
     env_file: .env
@@ -128,8 +129,8 @@ services:
     entrypoint: /etc/minio/create_bucket.sh
 
   opentelemetry:
-    container_name: mindlogger_opentelemetry
     image: otel/opentelemetry-collector
+    container_name: mindlogger_opentelemetry
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - "./compose/opentelemetry/otel-collector-config.yaml:/etc/otel-collector-config.yaml"

@@ -1,5 +1,12 @@
 name: Deploy to Dev
 on:
+  workflow_dispatch:
+    inputs:
+      IMAGE_NAME:
+        required: true
+        type: string
+        description: Image tag
+
   workflow_call:
     inputs:
       IMAGE_NAME:
@@ -17,58 +24,59 @@ env:
   IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
 
 jobs:
-  run_migration:
-    name: Run Database Migrations
-    runs-on: ubuntu-latest
-    env:
-      TASK_DEFINITION: migration
-      ECS_SERVICE_NAME: migration
-
-    steps:
-    - name: echo IMAGE_NAME
-      run: |
-        echo $IMAGE_NAME
-
-    - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
-        role-session-name: OIDC-GHA-session
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Download task definition
-      run: |
-        aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }} --query taskDefinition > task-definition.json
-
-    - name: Render Amazon ECS task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: task-definition.json
-        container-name: mind_logger
-        image: ${{ inputs.IMAGE_NAME }}
-
-    - name: Update Task Definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-
-    - name: Run migration container
-      id: run-task
-      uses: geekcell/github-action-aws-ecs-run-task@v3.0.0
-      with:
-        cluster: ${{ env.ECS_CLUSTER_NAME }}
-        task-definition: ${{ env.TASK_DEFINITION }}
-        subnet-ids: subnet-02b7cfd48947b31ef
-        security-group-ids: sg-0976f7b2b2b5bf411
-        override-container-command: |
-          /bin/sh
-          -c
-          /fastapi-migrate all
+#  run_migration:
+#    environment: dev
+#    name: Run Database Migrations
+#    runs-on: ubuntu-latest
+#    env:
+#      TASK_DEFINITION: migration
+#      ECS_SERVICE_NAME: migration
+#
+#    steps:
+#    - name: echo IMAGE_NAME
+#      run: |
+#        echo $IMAGE_NAME
+#
+#    - name: configure aws credentials
+#      uses: aws-actions/configure-aws-credentials@v3
+#      with:
+#        role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
+#        role-session-name: OIDC-GHA-session
+#        aws-region: ${{ env.AWS_REGION }}
+#
+#    - name: Download task definition
+#      run: |
+#        aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION }} --query taskDefinition > task-definition.json
+#
+#    - name: Render Amazon ECS task definition
+#      id: task-def
+#      uses: aws-actions/amazon-ecs-render-task-definition@v1
+#      with:
+#        task-definition: task-definition.json
+#        container-name: mind_logger
+#        image: ${{ inputs.IMAGE_NAME }}
+#
+#    - name: Update Task Definition
+#      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#      with:
+#        task-definition: ${{ steps.task-def.outputs.task-definition }}
+#
+#    - name: Run migration container
+#      id: run-task
+#      uses: geekcell/github-action-aws-ecs-run-task@v4
+#      with:
+#        cluster: ${{ env.ECS_CLUSTER_NAME }}
+#        task-definition: ${{ env.TASK_DEFINITION }}
+#        subnet-ids: subnet-02b7cfd48947b31ef
+#        security-group-ids: sg-0976f7b2b2b5bf411
+#        override-container-command: |
+#          /bin/sh
+#          -c
+#          /fastapi-migrate all
 
   deploy_to_ecs:
     runs-on: ubuntu-latest
-    needs: run_migration
+#    needs: run_migration
 
     name: Deploy ${{ matrix.apps.name }}
     strategy:
@@ -127,7 +135,7 @@ jobs:
 
   on-failure:
     runs-on: ubuntu-latest
-    if: ${{ always() && (needs.deploy_to_ecs.result == 'failure' || needs.deploy_to_ecs.result == 'timed_out') }}
+    if: ${{ !cancelled() && (needs.deploy_to_ecs.result == 'failure' || needs.deploy_to_ecs.result == 'timed_out') }}
     needs:
       - deploy_to_ecs
     steps:
@@ -144,7 +152,7 @@ jobs:
 
   on-success:
     runs-on: ubuntu-latest
-    if: ${{ always() && (needs.deploy_to_ecs.result == 'success') }}
+    if: ${{ !cancelled() && (needs.deploy_to_ecs.result == 'success') }}
     needs:
       - deploy_to_ecs
     steps:

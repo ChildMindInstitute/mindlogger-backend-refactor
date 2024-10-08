@@ -234,6 +234,10 @@ class CheckAccessService:
             await self.check_answer_review_access(applet_id)
 
     async def check_subject_subject_access(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None):
+        """
+        Check if the current authenticated user has access to the subject within this applet. The user must be an
+        owner, manager, coordinator, or a reviewer who was assigned the subject.
+        """
         access = await AppletAccessCRUD(self.session).get_priority_access(applet_id, self.user_id)
         role = getattr(access, "role", None)
         if not access:
