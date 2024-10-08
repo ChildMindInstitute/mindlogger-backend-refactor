@@ -56,7 +56,7 @@ class LorisIntegrationService:
         self.user = user
         self.type = AvailableIntegrations.LORIS
         self._answer_session = answer_session
-        self.loris_integration_configuration: LorisIntegration = None
+        self.loris_integration_configuration: LorisIntegration | None = None
 
     @property
     def answer_session(self):
