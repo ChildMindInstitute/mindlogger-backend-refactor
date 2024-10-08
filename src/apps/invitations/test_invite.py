@@ -209,6 +209,142 @@ class TestInvite(BaseTest):
     shell_acc_create_url = f"{invitation_list}/{{applet_id}}/shell-account"
     shell_acc_invite_url = f"{invitation_list}/{{applet_id}}/subject"
 
+    # @pytest.mark.parametrize("invite_language", ["en", "fr"])
+    @pytest.mark.parametrize("invite_language", ["en"])
+    @pytest.mark.parametrize(
+        "inviter_type,invitee_type,invite_status",
+        [
+            ("admin", "manager", http.HTTPStatus.OK),
+            ("admin", "coordinator", http.HTTPStatus.OK),
+            ("admin", "editor", http.HTTPStatus.OK),
+            ("admin", "reviewer", http.HTTPStatus.OK),
+            ("admin", "respondent", http.HTTPStatus.OK),
+            ("manager", "manager", http.HTTPStatus.OK),
+            ("manager", "coordinator", http.HTTPStatus.OK),
+            ("manager", "editor", http.HTTPStatus.OK),
+            ("manager", "reviewer", http.HTTPStatus.OK),
+            ("manager", "respondent", http.HTTPStatus.OK),
+            ("coordinator", "respondent", http.HTTPStatus.OK),
+            ("coordinator", "reviewer", http.HTTPStatus.OK),
+            ("coordinator", "manager", http.HTTPStatus.FORBIDDEN),
+            ("editor", "respondent", http.HTTPStatus.FORBIDDEN),
+        ],
+    )
+    async def test_invite_existing_user(
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        tom: User,
+        lucy: User,
+        user: User,
+        applet_one: AppletFull,
+        invitation_manager_data: InvitationManagersRequest,
+        invitation_coordinator_data: InvitationManagersRequest,
+        invitation_editor_data: InvitationManagersRequest,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        invitation_respondent_data: InvitationRespondentRequest,
+        mailbox: TestMail,
+        invite_language: str,
+        inviter_type: str,
+        invitee_type: str,
+        invite_status: str,
+    ):
+        if inviter_type == "admin":
+            client.login(tom)
+        elif inviter_type == "manager":
+            client.login(lucy)
+            await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.MANAGER)
+        elif inviter_type == "coordinator":
+            client.login(lucy)
+            await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.COORDINATOR)
+        elif inviter_type == "editor":
+            client.login(lucy)
+            await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.EDITOR)
+        else:
+            raise Exception(f"Invalid inviter_type: {inviter_type}")
+
+        if invitee_type == "manager":
+            url = self.invite_manager_url
+            payload = invitation_manager_data
+        elif invitee_type == "coordinator":
+            url = self.invite_manager_url
+            payload = invitation_coordinator_data
+        elif invitee_type == "editor":
+            url = self.invite_manager_url
+            payload = invitation_editor_data
+        elif invitee_type == "reviewer":
+            url = self.invite_reviewer_url
+            payload = invitation_reviewer_data
+        elif invitee_type == "respondent":
+            url = self.invite_respondent_url
+            payload = invitation_respondent_data
+        else:
+            raise Exception(f"Invalid invitee_type: {invitee_type}")
+        payload.language = invite_language
+
+        response = await client.post(url.format(applet_id=str(applet_one.id)), payload)
+        assert response.status_code == invite_status
+        print(repr(response.json()))
+
+        if invite_status == http.HTTPStatus.OK:
+            assert response.json()["result"]["userId"] == str(user.id)
+            assert len(mailbox.mails) == 1
+            assert message_language(mailbox.mails[0].body) == invite_language
+            assert len(mailbox.mails[0].recipients) == 1
+            assert mailbox.mails[0].recipients[0] == payload.email
+
+            if invitee_type == "respondent":
+                assert response.json()["result"]["userId"] == str(user.id)
+                assert response.json()["result"]["tag"] is not None
+                assert response.json()["result"]["tag"] == payload.tag
+
+    @pytest.mark.parametrize("invite_language", ["en", "fr"])
+    @pytest.mark.parametrize("invitee_type", ["manager", "coordinator", "editor", "reviewer", "respondent"])
+    async def test_invite_new_user(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        invitation_manager_data: InvitationManagersRequest,
+        invitation_coordinator_data: InvitationManagersRequest,
+        invitation_editor_data: InvitationManagersRequest,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        invitation_respondent_data: InvitationRespondentRequest,
+        mailbox: TestMail,
+        invite_language: str,
+        invitee_type: str,
+    ):
+        client.login(tom)
+
+        if invitee_type == "manager":
+            payload = invitation_manager_data
+            url = self.invite_manager_url
+        elif invitee_type == "coordinator":
+            payload = invitation_coordinator_data
+            url = self.invite_manager_url
+        elif invitee_type == "editor":
+            payload = invitation_editor_data
+            url = self.invite_manager_url
+        elif invitee_type == "reviewer":
+            payload = invitation_reviewer_data
+            url = self.invite_reviewer_url
+        elif invitee_type == "respondent":
+            payload = invitation_respondent_data
+            url = self.invite_respondent_url
+        else:
+            raise Exception(f"Invalid invitee_type: {invitee_type}")
+        payload.email = EmailStr(f"new{invitation_manager_data.email}")
+        payload.language = invite_language
+
+        response = await client.post(
+            url.format(applet_id=str(applet_one.id)),
+            payload,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert not response.json()["result"]["userId"]
+        assert len(mailbox.mails) == 1
+        assert message_language(mailbox.mails[0].body) == invite_language
+
     async def test_invitation_list(self, client: TestClient, tom: User):
         client.login(tom)
 
@@ -251,113 +387,6 @@ class TestInvite(BaseTest):
         assert response.json()["result"]["appletId"] == str(applet_one_with_link.id)
         assert response.json()["result"]["role"] == Role.RESPONDENT
 
-    async def test_admin_invite_manager_success(
-        self,
-        client: TestClient,
-        invitation_manager_data: InvitationManagersRequest,
-        tom: User,
-        user: User,
-        applet_one: AppletFull,
-        mailbox: TestMail,
-    ):
-        client.login(tom)
-        response = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one.id)),
-            invitation_manager_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["userId"] == str(user.id)
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_manager_data.email]
-        assert mailbox.mails[0].subject == "Applet 1 invitation"
-
-    async def test_admin_invite_coordinator_success(
-        self,
-        client: TestClient,
-        invitation_coordinator_data: InvitationManagersRequest,
-        tom: User,
-        user: User,
-        applet_one: AppletFull,
-        mailbox: TestMail,
-    ):
-        client.login(tom)
-        response = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one.id)),
-            invitation_coordinator_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["userId"] == str(user.id)
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_coordinator_data.email]
-
-    async def test_admin_invite_editor_success(
-        self,
-        client: TestClient,
-        invitation_editor_data: InvitationManagersRequest,
-        tom: User,
-        user: User,
-        applet_one: AppletFull,
-        mailbox: TestMail,
-    ):
-        client.login(tom)
-        response = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one.id)),
-            invitation_editor_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["userId"] == str(user.id)
-        assert response.json()["result"]["tag"] == "Team"
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_editor_data.email]
-
-    async def test_admin_invite_reviewer_success(
-        self,
-        client: TestClient,
-        invitation_reviewer_data: InvitationReviewerRequest,
-        tom: User,
-        user: User,
-        applet_one: AppletFull,
-        mailbox: TestMail,
-    ):
-        client.login(tom)
-        response = await client.post(
-            self.invite_reviewer_url.format(applet_id=str(applet_one.id)),
-            invitation_reviewer_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK, response.json()
-        assert response.json()["result"]["userId"] == str(user.id)
-        assert response.json()["result"]["tag"] == "Team"
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_reviewer_data.email]
-        assert mailbox.mails[0].subject == "Applet 1 invitation"
-
-    async def test_admin_invite_respondent_success(
-        self,
-        client: TestClient,
-        invitation_respondent_data: InvitationRespondentRequest,
-        tom: User,
-        user: User,
-        applet_one: AppletFull,
-        mailbox: TestMail,
-    ):
-        client.login(tom)
-        response = await client.post(
-            self.invite_respondent_url.format(applet_id=str(applet_one.id)),
-            invitation_respondent_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["userId"] == str(user.id)
-        assert response.json()["result"]["tag"] == invitation_respondent_data.tag
-        assert response.json()["result"]["tag"] is not None
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_respondent_data.email]
-        assert mailbox.mails[0].subject == "Applet 1 invitation"
-
     async def test_admin_invite_respondent_duplicate_pending_secret_id(
         self,
         client: TestClient,
@@ -382,171 +411,6 @@ class TestInvite(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == NonUniqueValue.message
         assert result[0]["path"] == ["body", "secretUserId"]
-
-    async def test_manager_invite_manager_success(
-        self,
-        client: TestClient,
-        invitation_manager_data: InvitationManagersRequest,
-        applet_one_lucy_manager: AppletFull,
-        lucy: User,
-        mailbox: TestMail,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one_lucy_manager.id)),
-            invitation_manager_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_manager_data.email]
-        assert mailbox.mails[0].subject == "Applet 1 invitation"
-
-    async def test_manager_invite_coordinator_success(
-        self,
-        client: TestClient,
-        invitation_coordinator_data: InvitationManagersRequest,
-        applet_one_lucy_manager: AppletFull,
-        lucy: User,
-        mailbox: TestMail,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one_lucy_manager.id)),
-            invitation_coordinator_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_coordinator_data.email]
-
-    async def test_manager_invite_editor_success(
-        self,
-        client: TestClient,
-        invitation_editor_data: InvitationManagersRequest,
-        applet_one_lucy_manager: AppletFull,
-        lucy: User,
-        mailbox: TestMail,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one_lucy_manager.id)),
-            invitation_editor_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_editor_data.email]
-
-    async def test_manager_invite_reviewer_success(
-        self,
-        client: TestClient,
-        invitation_reviewer_data: InvitationReviewerRequest,
-        lucy: User,
-        applet_one_lucy_manager: AppletFull,
-        mailbox,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_reviewer_url.format(applet_id=str(applet_one_lucy_manager.id)),
-            invitation_reviewer_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_reviewer_data.email]
-
-    async def test_manager_invite_respondent_success(
-        self,
-        client: TestClient,
-        invitation_respondent_data: InvitationRespondentRequest,
-        applet_one_lucy_manager,
-        lucy: User,
-        mailbox: TestMail,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_respondent_url.format(applet_id=str(applet_one_lucy_manager.id)),
-            invitation_respondent_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_respondent_data.email]
-
-    async def test_coordinator_invite_respondent_success(
-        self,
-        client: TestClient,
-        invitation_respondent_data: InvitationRespondentRequest,
-        applet_one_lucy_coordinator,
-        lucy: User,
-        mailbox: TestMail,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_respondent_url.format(applet_id=str(applet_one_lucy_coordinator.id)),
-            invitation_respondent_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_respondent_data.email]
-
-    async def test_coordinator_invite_reviewer_success(
-        self,
-        client: TestClient,
-        invitation_reviewer_data: InvitationReviewerRequest,
-        applet_one_lucy_coordinator,
-        lucy: User,
-        mailbox: TestMail,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_reviewer_url.format(applet_id=str(applet_one_lucy_coordinator.id)),
-            invitation_reviewer_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-        assert mailbox.mails[0].recipients == [invitation_reviewer_data.email]
-
-    async def test_coordinator_invite_manager_fail(
-        self,
-        client: TestClient,
-        invitation_manager_data: InvitationManagersRequest,
-        applet_one_lucy_coordinator,
-        lucy: User,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one_lucy_coordinator.id)),
-            invitation_manager_data,
-        )
-
-        assert response.status_code == 403
-        assert response.json()["result"][0]["message"] == "Access denied."
-
-    async def test_editor_invite_respondent_fail(
-        self,
-        client: TestClient,
-        invitation_respondent_data: InvitationRespondentRequest,
-        lucy: User,
-        applet_one_lucy_editor: AppletFull,
-    ):
-        client.login(lucy)
-        response = await client.post(
-            self.invite_respondent_url.format(applet_id=str(applet_one_lucy_editor.id)),
-            invitation_respondent_data,
-        )
-        assert response.status_code == 403
-        assert response.json()["result"][0]["message"] == "Access denied to manipulate with invites of the applet."
 
     async def test_invitation_accept_and_absorb_roles(
         self,
@@ -673,63 +537,6 @@ class TestInvite(BaseTest):
         res = res["result"][0]
         assert res["message"] == ManagerInvitationExist.message
         assert len(mailbox.mails) == 0
-
-    async def test_invite_not_registered_user_manager(
-        self,
-        client: TestClient,
-        invitation_manager_data: InvitationManagersRequest,
-        tom: User,
-        applet_one: AppletFull,
-        mailbox: TestMail,
-    ):
-        client.login(tom)
-        invitation_manager_data.email = EmailStr(f"new{invitation_manager_data.email}")
-        response = await client.post(
-            self.invite_manager_url.format(applet_id=str(applet_one.id)),
-            invitation_manager_data,
-        )
-        assert response.status_code == http.HTTPStatus.OK
-        assert not response.json()["result"]["userId"]
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-
-    async def test_invite_not_registered_user_reviewer(
-        self,
-        client: TestClient,
-        invitation_reviewer_data: InvitationReviewerRequest,
-        tom: User,
-        applet_one: AppletFull,
-        mailbox: TestMail,
-    ):
-        client.login(tom)
-        invitation_reviewer_data.email = EmailStr(f"new{invitation_reviewer_data.email}")
-        response = await client.post(
-            self.invite_reviewer_url.format(applet_id=str(applet_one.id)),
-            invitation_reviewer_data.dict(),
-        )
-        assert response.status_code == http.HTTPStatus.OK, response.json()
-        assert not response.json()["result"]["userId"]
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
-
-    async def test_invite_not_registered_user_respondent(
-        self,
-        client: TestClient,
-        invitation_respondent_data: InvitationRespondentRequest,
-        tom: User,
-        applet_one: AppletFull,
-        mailbox: TestMail,
-    ):
-        client.login(tom)
-        invitation_respondent_data.email = EmailStr(f"new{invitation_respondent_data.email}")
-        response = await client.post(
-            self.invite_respondent_url.format(applet_id=str(applet_one.id)),
-            invitation_respondent_data.dict(),
-        )
-        assert response.status_code == http.HTTPStatus.OK
-        assert not response.json()["result"]["userId"]
-        assert len(mailbox.mails) == 1
-        assert message_language(mailbox.mails[0].body) == "en"
 
     @pytest.mark.parametrize(
         "status,url,method",
