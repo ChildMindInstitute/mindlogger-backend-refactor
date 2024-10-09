@@ -235,12 +235,28 @@ pipenv install greenlet
 > 🛑 **NOTE 4:** If the application can't find the `RabbitMQ` service even though it's running normally, change your `RABBITMQ__URL` to your local ip address instead of `localhost`
 
 ## Run the migrations
+
 ```bash
 alembic upgrade head
 ```
 
-> 🛑 **NOTE:** If you run into role based errors e.g. `role "postgres" does not exist`, check to see if that program is running anywhere else (e.g. Homebrew), run... `ps -ef | grep {program-that-errored}`
-> You can attempt to kill the process with the following command `kill -9 {PID-to-program-that-errored}`, followed by rerunning the previous check to confirm if the program has stopped.
+> [!TIP]
+> If you run into errors such as `nodename nor servname provided, or not known` while trying to run migrations, this may be because the `.env` file uses `"postgres"` as the `DATABASE_HOST` value. To correct the issue, you may temporarily update `DATABASE__HOST` to `"localhost"` before running the migration command.
+>
+> Alternatively, you may edit your `/etc/hosts` file to add the following:
+>
+> ```
+> #mindlogger
+> 127.0.0.1  mailhog
+> 127.0.0.1  postgres
+> 127.0.0.1  rabbitmq
+> 127.0.0.1  redis
+> ```
+>
+> … then, run `make run_local`. This allows the hostname to be resolved correctly both from within, and outside of, the docker container.
+
+> [!TIP]
+> If you run into role based errors e.g. `role "postgres" does not exist`, check to see if that program is running anywhere else (e.g. Homebrew), run... `ps -ef | grep {program-that-errored}` You can attempt to kill the process with the following command `kill -9 {PID-to-program-that-errored}`, followed by rerunning the previous check to confirm if the program has stopped.
 
 ## Running the app
 
