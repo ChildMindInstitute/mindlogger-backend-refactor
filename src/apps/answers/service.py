@@ -1618,7 +1618,7 @@ class AnswerService:
             MessageSchema(
                 recipients=email_list,
                 subject="Response alert",
-                body=mail_service.get_html_template(_template_name="response_alert_en", domain=domain),
+                body=mail_service.get_localized_html_template(_template_name="response_alert", _language="en", domain=domain),
             )
         )
 

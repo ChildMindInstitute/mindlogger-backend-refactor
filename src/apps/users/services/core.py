@@ -91,8 +91,9 @@ class PasswordRecoveryService:
         message = MessageSchema(
             recipients=[user.email_encrypted],
             subject="Password reset",
-            body=service.get_html_template(
-                _template_name="reset_password_en",
+            body=service.get_localized_html_template(
+                _template_name="reset_password",
+                _language="en",
                 email=user.email_encrypted,
                 expiration_minutes=exp,
                 url=url,
