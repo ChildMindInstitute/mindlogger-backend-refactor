@@ -16,8 +16,9 @@ class Applet(PublicModel):
 
 
 class InvitationLanguage(str, Enum):
-    EN = "en"
-    FR = "fr"
+    EN = "en"  # English
+    FR = "fr"  # French
+    EL = "el"  # Greek
 
 
 class InvitationRequest(InternalModel):

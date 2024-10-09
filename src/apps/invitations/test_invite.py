@@ -209,7 +209,7 @@ class TestInvite(BaseTest):
     shell_acc_create_url = f"{invitation_list}/{{applet_id}}/shell-account"
     shell_acc_invite_url = f"{invitation_list}/{{applet_id}}/subject"
 
-    @pytest.mark.parametrize("invite_language", ["en", "fr"])
+    @pytest.mark.parametrize("invite_language", ["en", "fr", "el"])
     @pytest.mark.parametrize(
         "inviter_type,invitee_type,invite_status",
         [
