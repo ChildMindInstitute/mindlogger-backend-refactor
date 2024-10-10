@@ -49,6 +49,30 @@ def score() -> Score:
 
 
 @pytest.fixture
+def score_with_subcale() -> Score:
+    return Score(
+        type=ReportType.score,
+        name="testscore type score",
+        id=SCORE_ID,
+        calculation_type=CalculationType.SUM,
+        scoring_type="score",
+        subscale_name="subscale type item",
+    )
+
+
+@pytest.fixture
+def score_with_subcale_raw() -> Score:
+    return Score(
+        type=ReportType.score,
+        name="testscore type score",
+        id=SCORE_ID,
+        calculation_type=CalculationType.SUM,
+        scoring_type="raw_score",
+        subscale_name=None,
+    )
+
+
+@pytest.fixture
 def section_conditional_logic() -> SectionConditionalLogic:
     return SectionConditionalLogic(
         match=Match.ALL,
@@ -77,11 +101,11 @@ def scores_and_reports(score: Score, section: Section) -> ScoresAndReports:
 
 
 @pytest.fixture
-def scores_and_reports_raw_score(score: Score, section: Section) -> ScoresAndReports:
+def scores_and_reports_raw_score(score_with_subcale_raw: Score, section: Section) -> ScoresAndReports:
     return ScoresAndReports(
         generate_report=True,
         show_score_summary=True,
-        reports=[score, section],
+        reports=[score_with_subcale_raw, section],
     )
 
 
@@ -100,13 +124,13 @@ def subscale(subscale_item: SubscaleItem) -> Subscale:
 
 
 @pytest.fixture
-def scores_and_reports_lookup_scores(score: Score, section: Section, subscale: Subscale) -> ScoresAndReports:
+def scores_and_reports_lookup_scores(
+    score_with_subcale: Score, section: Section, subscale: Subscale
+) -> ScoresAndReports:
     return ScoresAndReports(
         generate_report=True,
         show_score_summary=True,
-        reports=[score, section],
-        scoring_type="lookup_scores",
-        subscale_name=subscale.name,
+        reports=[score_with_subcale, section],
     )
 
 
@@ -119,7 +143,9 @@ def subscale_item_type_subscale(subscale: Subscale) -> SubscaleItem:
 @pytest.fixture
 def subscale_with_item_type_subscale(subscale_item_type_subscale: SubscaleItem) -> Subscale:
     return Subscale(
-        name="subscale type subscale", items=[subscale_item_type_subscale], scoring=SubscaleCalculationType.AVERAGE
+        name="subscale type subscale",
+        scoring=SubscaleCalculationType.AVERAGE,
+        items=[subscale_item_type_subscale],
     )
 
 

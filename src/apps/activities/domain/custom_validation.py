@@ -1,7 +1,7 @@
 from apps.activities.domain.conditions import MultiSelectConditionType, SingleSelectConditionType
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.response_values import PhrasalTemplateFieldType
-from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
+from apps.activities.domain.scores_reports import ReportType, SubscaleItemType, SubscaleSetting
 from apps.activities.errors import (
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
@@ -23,6 +23,7 @@ from apps.activities.errors import (
     SubscaleDataDoesNotExist,
     SubscaleInsideSubscaleError,
     SubscaleIsNotLinked,
+    SubscaleItemDoesNotExist,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
     SubscaleNameDoesNotExist,
@@ -88,18 +89,21 @@ def validate_score_and_sections(values: dict):  # noqa: C901
             if scoring_type == "score":
                 if not subscale_name:
                     raise SubscaleIsNotLinked()
-                subscale_setting = values.get("subscale_setting", False)
+                subscale_setting: SubscaleSetting | None = values.get("subscale_setting", False)
                 if not subscale_setting:
                     raise SubscaleSettingDoesNotExist()
-                subscales = subscale_setting.subscales
-                subscales_names = [subscale.name for subscale in subscales]
-                if subscale_name not in subscales_names:
+
+                linked_subscale = next(
+                    (subscale for subscale in subscale_setting.subscales if subscale.name == subscale_name), None
+                )
+                if not linked_subscale:
                     raise SubscaleNameDoesNotExist()
-                for subscale in subscales:
-                    if subscale.name == subscale_name:
-                        subscale_table_data = subscale.subscale_table_data
-                if not subscale_table_data:
+                elif not linked_subscale.subscale_table_data:
                     raise SubscaleDataDoesNotExist()
+                else:
+                    has_non_subscale_items = any(item.type == SubscaleItemType.ITEM for item in linked_subscale.items)
+                    if not has_non_subscale_items:
+                        raise SubscaleItemDoesNotExist()
 
             # check if all item names are same as values.name
             for item in report.items_score:

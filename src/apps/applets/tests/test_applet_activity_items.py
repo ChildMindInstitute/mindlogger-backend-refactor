@@ -16,6 +16,7 @@ from apps.activities.domain.response_values import SingleSelectionValues, Slider
 from apps.activities.domain.scores_reports import (
     ScoreConditionalLogic,
     ScoresAndReports,
+    ScoringType,
     SectionConditionalLogic,
     Subscale,
     SubScaleLookupTable,
@@ -528,13 +529,13 @@ class TestActivityItems:
         applet_minimal_data: AppletCreate,
         single_select_item_create_with_score: ActivityItemCreate,
         tom: User,
-        subscale_setting: SubscaleSetting,
+        subscale_setting_score_type: SubscaleSetting,
         subscale_lookup_table: list[SubScaleLookupTable],
         scores_and_reports_lookup_scores: ScoresAndReports,
     ):
         client.login(tom)
         data = applet_minimal_data.copy(deep=True)
-        sub_setting = subscale_setting.copy(deep=True)
+        sub_setting = subscale_setting_score_type.copy(deep=True)
 
         # Update subscale setting with item name and lookup table
         sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
@@ -551,8 +552,8 @@ class TestActivityItems:
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
         assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
-        assert result["activities"][0]["scoresAndReports"]["scoringType"] == "lookup_scores"
-        assert result["activities"][0]["scoresAndReports"]["subscaleName"] == "subscale type item"
+        assert result["activities"][0]["scoresAndReports"]["reports"][0]["scoringType"] == ScoringType.SCORE.value
+        assert result["activities"][0]["scoresAndReports"]["reports"][0]["subscaleName"] == "subscale type item"
 
     async def test_create_applet__activity_with_subscale_settings_with_invalid_subscale_lookup_table_age(
         self,
