@@ -2,7 +2,7 @@ import http
 import json
 import re
 import uuid
-from typing import Literal
+from typing import Any, Literal
 
 import pytest
 from pydantic import EmailStr
@@ -15,6 +15,7 @@ from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.domain import (
+    InvitationLanguage,
     InvitationManagersRequest,
     InvitationRespondentRequest,
     InvitationReviewerRequest,
@@ -262,6 +263,7 @@ class TestInvite(BaseTest):
         else:
             raise Exception(f"Invalid inviter_type: {inviter_type}")
 
+        payload: Any
         if invitee_type == "manager":
             url = self.invite_manager_url
             payload = invitation_manager_data
@@ -279,7 +281,7 @@ class TestInvite(BaseTest):
             payload = invitation_respondent_data
         else:
             raise Exception(f"Invalid invitee_type: {invitee_type}")
-        payload.language = invite_language
+        payload.language = InvitationLanguage(invite_language)
 
         response = await client.post(url.format(applet_id=str(applet_one.id)), payload)
         assert response.status_code == invite_status
@@ -314,6 +316,7 @@ class TestInvite(BaseTest):
     ):
         client.login(tom)
 
+        payload: Any
         if invitee_type == "manager":
             payload = invitation_manager_data
             url = self.invite_manager_url
@@ -332,7 +335,7 @@ class TestInvite(BaseTest):
         else:
             raise Exception(f"Invalid invitee_type: {invitee_type}")
         payload.email = EmailStr(f"new{invitation_manager_data.email}")
-        payload.language = invite_language
+        payload.language = InvitationLanguage(invite_language)
 
         response = await client.post(
             url.format(applet_id=str(applet_one.id)),
