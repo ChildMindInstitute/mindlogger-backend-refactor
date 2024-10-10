@@ -7,7 +7,7 @@ from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken, JWTClaim, TokenPayload, TokenPurpose
 from apps.authentication.errors import BadCredentials, InvalidCredentials
 from apps.authentication.services.core import TokensService
-from apps.shared.passlib import get_password_hash, verify
+from apps.shared.bcrypt import get_password_hash, verify
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from config import settings
