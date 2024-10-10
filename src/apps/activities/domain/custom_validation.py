@@ -21,11 +21,13 @@ from apps.activities.errors import (
     IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
     SubscaleDataDoesNotExist,
+    SubscaleDoesNotExist,
     SubscaleInsideSubscaleError,
     SubscaleIsNotLinked,
     SubscaleItemDoesNotExist,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
+    SubscaleItemTypeItemDoesNotExist,
     SubscaleNameDoesNotExist,
     SubscaleSettingDoesNotExist,
 )
@@ -92,18 +94,22 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                 subscale_setting: SubscaleSetting | None = values.get("subscale_setting", False)
                 if not subscale_setting:
                     raise SubscaleSettingDoesNotExist()
+                subscales = subscale_setting.subscales
+                if not subscales:
+                    raise SubscaleDoesNotExist()
 
-                linked_subscale = next(
-                    (subscale for subscale in subscale_setting.subscales if subscale.name == subscale_name), None
-                )
+                linked_subscale = next((subscale for subscale in subscales if subscale.name == subscale_name), None)
+
                 if not linked_subscale:
                     raise SubscaleNameDoesNotExist()
                 elif not linked_subscale.subscale_table_data:
                     raise SubscaleDataDoesNotExist()
+                elif not linked_subscale.items:
+                    raise SubscaleItemDoesNotExist()
                 else:
                     has_non_subscale_items = any(item.type == SubscaleItemType.ITEM for item in linked_subscale.items)
                     if not has_non_subscale_items:
-                        raise SubscaleItemDoesNotExist()
+                        raise SubscaleItemTypeItemDoesNotExist()
 
             # check if all item names are same as values.name
             for item in report.items_score:

@@ -1931,8 +1931,6 @@ class ReportServerService:
     ) -> ReportServerResponse | None:
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
         subscale_table_data: list[SubScaleLookupTable] | None = None
-        subscale_name = ""
-        scoring_type = ""
 
         if activity_id:
             activity_data = await ActivitiesCRUD(self.session).get_by_id(activity_id)
@@ -1942,9 +1940,9 @@ class ReportServerService:
 
             selected_report = next((report for report in reports if report["name"] == report_name), reports[0])
 
-            scoring_type = selected_report.get("scoring_type", "")
+            scoring_type = selected_report.get("scoring_type")
             if scoring_type == "score":
-                subscale_name = selected_report.get("subscale_name", "")
+                subscale_name = selected_report.get("subscale_name")
                 subscales = activity_data.subscale_setting.get("subscales", [])
                 subscale_table_data = next(
                     (
