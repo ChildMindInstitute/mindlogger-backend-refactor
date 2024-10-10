@@ -56,7 +56,7 @@ def score_with_subcale() -> Score:
         id=SCORE_ID,
         calculation_type=CalculationType.SUM,
         scoring_type="score",
-        subscale_name="subscale type item",
+        subscale_name="subscale type score",
     )
 
 
@@ -124,6 +124,15 @@ def subscale(subscale_item: SubscaleItem) -> Subscale:
 
 
 @pytest.fixture
+def subscale_score_type() -> Subscale:
+    return Subscale(
+        name="subscale type score",
+        scoring=SubscaleCalculationType.AVERAGE,
+        items=[SubscaleItem(name="subscale_item", type=SubscaleItemType.ITEM)],
+    )
+
+
+@pytest.fixture
 def scores_and_reports_lookup_scores(
     score_with_subcale: Score, section: Section, subscale: Subscale
 ) -> ScoresAndReports:
@@ -154,6 +163,14 @@ def subscale_setting(subscale: Subscale) -> SubscaleSetting:
     return SubscaleSetting(
         calculate_total_score=SubscaleCalculationType.AVERAGE,
         subscales=[subscale],
+    )
+
+
+@pytest.fixture
+def subscale_setting_score_type(subscale_score_type: Subscale) -> SubscaleSetting:
+    return SubscaleSetting(
+        calculate_total_score=SubscaleCalculationType.AVERAGE,
+        subscales=[subscale_score_type],
     )
 
 
