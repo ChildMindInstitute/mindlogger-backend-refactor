@@ -41,6 +41,10 @@ class Answer(InternalModel):
     activity_history_id: str
     respondent_id: uuid.UUID | None
     is_flow_completed: bool | None = False
+    target_subject_id: uuid.UUID | None = None
+    source_subject_id: uuid.UUID | None = None
+    input_subject_id: uuid.UUID | None = None
+    relation: str | None = None
 
     migrated_data: dict | None = None
     created_at: datetime.datetime

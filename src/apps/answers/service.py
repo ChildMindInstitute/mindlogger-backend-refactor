@@ -60,6 +60,7 @@ from apps.answers.domain import (
     SummaryActivityFlow,
 )
 from apps.answers.domain.answers import (
+    Answer,
     AnswersCopyCheckResult,
     AppletSubmission,
     FilesCopyCheckResult,
@@ -1949,7 +1950,10 @@ class ReportServerService:
     async def create_report(
         self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
     ) -> ReportServerResponse | None:
-        answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
+        filters = dict(submit_id=submit_id)
+        if answer_id:
+            filters.update(answer_id=answer_id)
+        answers = await AnswersCRUD(self.answers_session).get_list(**filters)
         if not answers:
             return None
         applet_id_version: str = answers[0].applet_history_id
@@ -1960,8 +1964,8 @@ class ReportServerService:
         # If answers only on performance tasks
         if not answers_for_report:
             return None
-        answer_map = dict((answer.id, answer) for answer in answers_for_report)
         initial_answer = answers_for_report[0]
+        assert initial_answer.target_subject_id
 
         applet = await AppletsCRUD(self.session).get_by_id(initial_answer.applet_id)
         user_info = await self._get_user_info(initial_answer.target_subject_id)
@@ -1973,12 +1977,10 @@ class ReportServerService:
         )
 
         encryption = ReportServerEncryption(applet.report_public_key)
-        responses, user_public_keys = await self._prepare_responses(answer_map)
+        responses = await self._prepare_responses(answers_for_report)
 
         data = dict(
             responses=responses,
-            userPublicKeys=user_public_keys,
-            userPublicKey=user_public_keys[0],
             now=datetime.datetime.utcnow().strftime("%x"),
             user=user_info,
             applet=applet_full,
@@ -2044,17 +2046,18 @@ class ReportServerService:
             tag=subject.tag,
         )
 
-    async def _prepare_responses(self, answers_map: dict[uuid.UUID, AnswerSchema]) -> tuple[list[dict], list[str]]:
-        answer_items = await AnswerItemsCRUD(self.answers_session).get_respondent_submits_by_answer_ids(
-            list(answers_map.keys())
-        )
-
+    async def _prepare_responses(self, answers: list[Answer]) -> list[dict]:
         responses = list()
-        for answer_item in answer_items:
-            answer = answers_map[answer_item.answer_id]
-            activity_id, version = answer.activity_history_id.split("_")
-            responses.append(dict(activityId=activity_id, answer=answer_item.answer))
-        return responses, [ai.user_public_key for ai in answer_items]
+        for answer in answers:
+            activity_id = HistoryAware().id_from_history_id(answer.activity_history_id)
+            responses.append(
+                dict(
+                    activityId=activity_id,
+                    answer=answer.answer_item.answer,
+                    userPublicKey=answer.answer_item.user_public_key,
+                )
+            )
+        return responses
 
 
 class ReportServerEncryption:
