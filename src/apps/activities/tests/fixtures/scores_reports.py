@@ -139,7 +139,7 @@ def scores_and_reports_lookup_scores(
     return ScoresAndReports(
         generate_report=True,
         show_score_summary=True,
-        reports=[score_with_subcale, section],
+        reports=[score_with_subcale],
     )
 
 

@@ -70,23 +70,28 @@ def validate_item_flow(values: dict):
 
 def validate_subscale_setting_match_reports(values: dict):
     subscale_setting: SubscaleSetting | None = values.get("subscale_setting", False)
-    if not subscale_setting:
-        raise SubscaleSettingDoesNotExist()
-    for report in values["scores_and_reports"].reports:
-        report_subscale_linked = report.subscale_name
-        subscales = subscale_setting.subscales
-        if not subscales:
-            raise SubscaleDoesNotExist()
+    score_reports = [report for report in values["scores_and_reports"].reports if report.type == ReportType.score]
+    for report in score_reports:
+        scoring_type = report.scoring_type
+        if scoring_type == "score":
+            if not subscale_setting:  # report of type score exist then we need a subscale setting
+                raise SubscaleSettingDoesNotExist()
+            report_subscale_linked = report.subscale_name
+            subscales = subscale_setting.subscales
+            if not subscales:
+                raise SubscaleDoesNotExist()
 
-        linked_subscale = next((subscale for subscale in subscales if subscale.name == report_subscale_linked), None)
-        if not linked_subscale:
-            raise SubscaleNameDoesNotExist()
-        elif not linked_subscale.items:
-            raise SubscaleItemDoesNotExist()
-        else:
-            has_non_subscale_items = any(item.type == SubscaleItemType.ITEM for item in linked_subscale.items)
-            if not has_non_subscale_items:
-                raise SubscaleItemTypeItemDoesNotExist()
+            linked_subscale = next(
+                (subscale for subscale in subscales if subscale.name == report_subscale_linked), None
+            )
+            if not linked_subscale:
+                raise SubscaleNameDoesNotExist()
+            elif not linked_subscale.items:
+                raise SubscaleItemDoesNotExist()
+            else:
+                has_non_subscale_items = any(item.type == SubscaleItemType.ITEM for item in linked_subscale.items)
+                if not has_non_subscale_items:
+                    raise SubscaleItemTypeItemDoesNotExist()
 
 
 def validate_score_and_sections(values: dict):  # noqa: C901

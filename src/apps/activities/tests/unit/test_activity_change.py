@@ -86,6 +86,14 @@ def subscale() -> Subscale:
 
 
 @pytest.fixture
+def subscale_setting(subscale: Subscale) -> SubscaleSetting:
+    return SubscaleSetting(
+        calculate_total_score=SubscaleCalculationType.AVERAGE,
+        subscales=[subscale],
+    )
+
+
+@pytest.fixture
 def scores_and_reports(score: Score, section: Section) -> ScoresAndReports:
     return ScoresAndReports(
         generate_report=True,
