@@ -283,7 +283,7 @@ class SubscaleDoesNotExist(ValidationError):
 
 
 class SubscaleNameDoesNotExist(ValidationError):
-    message = _("The lookup table with the passed name does not exist in subcale settings")
+    message = _("The lookup table with the passed name does not exist in subscale settings")
     code = _("no_subscale_name_exist")
 
 

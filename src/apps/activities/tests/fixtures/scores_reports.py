@@ -49,7 +49,7 @@ def score() -> Score:
 
 
 @pytest.fixture
-def score_with_subcale() -> Score:
+def score_with_subscale() -> Score:
     return Score(
         type=ReportType.score,
         name="testscore type score",
@@ -61,7 +61,7 @@ def score_with_subcale() -> Score:
 
 
 @pytest.fixture
-def score_with_subcale_raw() -> Score:
+def score_with_subscale_raw() -> Score:
     return Score(
         type=ReportType.score,
         name="testscore type score",
@@ -101,11 +101,11 @@ def scores_and_reports(score: Score, section: Section) -> ScoresAndReports:
 
 
 @pytest.fixture
-def scores_and_reports_raw_score(score_with_subcale_raw: Score, section: Section) -> ScoresAndReports:
+def scores_and_reports_raw_score(score_with_subscale_raw: Score, section: Section) -> ScoresAndReports:
     return ScoresAndReports(
         generate_report=True,
         show_score_summary=True,
-        reports=[score_with_subcale_raw, section],
+        reports=[score_with_subscale_raw, section],
     )
 
 
@@ -134,12 +134,12 @@ def subscale_score_type() -> Subscale:
 
 @pytest.fixture
 def scores_and_reports_lookup_scores(
-    score_with_subcale: Score, section: Section, subscale: Subscale
+    score_with_subscale: Score, section: Section, subscale: Subscale
 ) -> ScoresAndReports:
     return ScoresAndReports(
         generate_report=True,
         show_score_summary=True,
-        reports=[score_with_subcale],
+        reports=[score_with_subscale],
     )
 
 
