@@ -75,6 +75,39 @@ class ResponseType(str, Enum):
             cls.UNITY,
         )
 
+    @classmethod
+    def conditional_logic_types(cls):
+        return (
+            cls.DATE,
+            cls.NUMBERSELECT,
+            cls.TIME,
+            cls.TIMERANGE,
+            cls.SINGLESELECTROWS,
+            cls.MULTISELECTROWS,
+            cls.SLIDERROWS,
+            cls.SINGLESELECT,
+            cls.MULTISELECT,
+            cls.SLIDER,
+        )
+
+    @classmethod
+    def options_mapped_on_value(cls) -> list[str]:
+        return [
+            cls.SINGLESELECT,
+            cls.MULTISELECT,
+        ]
+
+    @classmethod
+    def options_mapped_on_id(cls) -> list[str]:
+        return [
+            cls.SINGLESELECTROWS,
+            cls.MULTISELECTROWS,
+        ]
+
+    @classmethod
+    def option_based(cls) -> list[str]:
+        return cls.options_mapped_on_id() + cls.options_mapped_on_value()
+
 
 class AdditionalResponseOption(PublicModel):
     text_input_option: bool

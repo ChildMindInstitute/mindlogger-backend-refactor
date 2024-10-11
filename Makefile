@@ -49,7 +49,12 @@ migrate-arbitrary:
 # NOTE: cq == "Code quality"
 .PHONY: cq
 cq:
-	${RUFF_COMMAND} check . && ${RUFF_COMMAND} format . && ${MYPY_COMMAND} .
+	${RUFF_COMMAND} check . && ${RUFF_COMMAND} format --check . && ${MYPY_COMMAND} .
+
+# NOTE: cqf == "Code quality fix"
+.PHONY: cqf
+cqf:
+	${RUFF_COMMAND} format . && ${RUFF_COMMAND} check --fix . && ${MYPY_COMMAND} .
 
 # ###############
 # Docker
