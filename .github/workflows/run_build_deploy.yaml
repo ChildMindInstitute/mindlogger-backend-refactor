@@ -27,7 +27,7 @@ env:
   DR_ECR_ADDRESS: 973422231492.dkr.ecr.us-west-2.amazonaws.com
   OUT_DIR: ./out
   AWS_REGION : "us-east-1"
-  DR_AWS_REGION : "us-east-1"
+  DR_AWS_REGION : "us-west-2"
   ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
   DR_ECR_REPO: 973422231492.dkr.ecr.us-west-2.amazonaws.com/api-server
 
