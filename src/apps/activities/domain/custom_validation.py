@@ -20,10 +20,8 @@ from apps.activities.errors import (
     IncorrectSectionPrintItemTypeError,
     IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
-    SubscaleDataDoesNotExist,
     SubscaleDoesNotExist,
     SubscaleInsideSubscaleError,
-    SubscaleIsNotLinked,
     SubscaleItemDoesNotExist,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
@@ -70,6 +68,27 @@ def validate_item_flow(values: dict):
     return values
 
 
+def validate_subscale_setting_match_reports(values: dict):
+    subscale_setting: SubscaleSetting | None = values.get("subscale_setting", False)
+    if not subscale_setting:
+        raise SubscaleSettingDoesNotExist()
+    for report in values["scores_and_reports"].reports:
+        report_subscale_linked = report.subscale_name
+        subscales = subscale_setting.subscales
+        if not subscales:
+            raise SubscaleDoesNotExist()
+
+        linked_subscale = next((subscale for subscale in subscales if subscale.name == report_subscale_linked), None)
+        if not linked_subscale:
+            raise SubscaleNameDoesNotExist()
+        elif not linked_subscale.items:
+            raise SubscaleItemDoesNotExist()
+        else:
+            has_non_subscale_items = any(item.type == SubscaleItemType.ITEM for item in linked_subscale.items)
+            if not has_non_subscale_items:
+                raise SubscaleItemTypeItemDoesNotExist()
+
+
 def validate_score_and_sections(values: dict):  # noqa: C901
     items = values.get("items", [])
     item_names = [item.name for item in items]
@@ -85,32 +104,7 @@ def validate_score_and_sections(values: dict):  # noqa: C901
 
         for report in list(scores):
             score_item_ids.append(report.id)
-            subscale_name = report.subscale_name
-            scoring_type = report.scoring_type
-
-            if scoring_type == "score":
-                if not subscale_name:
-                    raise SubscaleIsNotLinked()
-                subscale_setting: SubscaleSetting | None = values.get("subscale_setting", False)
-                if not subscale_setting:
-                    raise SubscaleSettingDoesNotExist()
-                subscales = subscale_setting.subscales
-                if not subscales:
-                    raise SubscaleDoesNotExist()
-
-                linked_subscale = next((subscale for subscale in subscales if subscale.name == subscale_name), None)
-
-                if not linked_subscale:
-                    raise SubscaleNameDoesNotExist()
-                elif not linked_subscale.subscale_table_data:
-                    raise SubscaleDataDoesNotExist()
-                elif not linked_subscale.items:
-                    raise SubscaleItemDoesNotExist()
-                else:
-                    has_non_subscale_items = any(item.type == SubscaleItemType.ITEM for item in linked_subscale.items)
-                    if not has_non_subscale_items:
-                        raise SubscaleItemTypeItemDoesNotExist()
-
+            validate_subscale_setting_match_reports(values)
             # check if all item names are same as values.name
             for item in report.items_score:
                 if item not in item_names:

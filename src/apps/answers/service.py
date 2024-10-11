@@ -22,7 +22,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
-from apps.activities.domain.scores_reports import SubScaleLookupTable
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist, FlowDoesNotExist
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
@@ -1367,7 +1366,7 @@ class AnswerService:
             return None
 
         service = ReportServerService(self.session, arbitrary_session=self.answer_session)
-        report = await service.create_report(answer.submit_id, answer.id, activity_id)
+        report = await service.create_report(answer.submit_id, answer.id)
         return report
 
     async def get_flow_summary_latest_report(
@@ -1926,33 +1925,8 @@ class ReportServerService:
         self,
         submit_id: uuid.UUID,
         answer_id: uuid.UUID | None = None,
-        activity_id: uuid.UUID | None = None,
-        report_name: str | None = None,
     ) -> ReportServerResponse | None:
         answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
-        subscale_table_data: list[SubScaleLookupTable] | None = None
-
-        if activity_id:
-            activity_data = await ActivitiesCRUD(self.session).get_by_id(activity_id)
-            reports = activity_data.scores_and_reports.get("reports", [])
-            if not reports:
-                return None  # Early return if no reports are found
-
-            selected_report = next((report for report in reports if report["name"] == report_name), reports[0])
-
-            scoring_type = selected_report.get("scoring_type")
-            if scoring_type == "score":
-                subscale_name = selected_report.get("subscale_name")
-                subscales = activity_data.subscale_setting.get("subscales", [])
-                subscale_table_data = next(
-                    (
-                        subscale.get("subscale_table_data", [])
-                        for subscale in subscales
-                        if subscale.get("name") == subscale_name
-                    ),
-                    [],
-                )
-
         if not answers:
             return None
         applet_id_version: str = answers[0].applet_history_id
@@ -1985,8 +1959,6 @@ class ReportServerService:
             now=datetime.datetime.utcnow().strftime("%x"),
             user=user_info,
             applet=applet_full,
-            scoringType=scoring_type,
-            subscaleTableData=subscale_table_data,
         )
         encrypted_data = encryption.encrypt(data)
 
