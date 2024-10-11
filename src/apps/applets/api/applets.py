@@ -188,7 +188,9 @@ async def applet_duplicate(
         await CheckAccessService(session, user.id).check_applet_duplicate_access(applet_id)
         applet_for_duplicate = await service.get_by_id_for_duplicate(applet_id)
 
-        applet = await service.duplicate(applet_for_duplicate, schema.display_name, schema.encryption)
+        applet = await service.duplicate(
+            applet_for_duplicate, schema.display_name, schema.encryption, schema.include_report_server
+        )
     return Response(result=public_detail.Applet.from_orm(applet))
 
 
