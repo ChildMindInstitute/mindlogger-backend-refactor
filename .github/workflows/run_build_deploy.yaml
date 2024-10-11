@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       IMAGE_NAME: ${{ steps.sha.outputs.IMAGE_NAME }}
+      IMAGE_SHA: ${{ steps.sha.outputs.SHORT_SHA }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
