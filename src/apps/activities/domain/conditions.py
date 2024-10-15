@@ -166,13 +166,13 @@ class SingleTimePayload(PublicModel):
     time: Optional[datetime.time] = None
     max_value: Optional[datetime.time] = None
     min_value: Optional[datetime.time] = None
-    
+
     @root_validator(pre=True)
     def validate_time(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         time_value = values.get("time")
         max_time_value = values.get("max_value")
         min_time_value = values.get("min_value")
-        
+
         if isinstance(time_value, dict):
             values["time"] = cls._dict_to_time(time_value)
         elif isinstance(time_value, str):
@@ -182,22 +182,22 @@ class SingleTimePayload(PublicModel):
                 max_time_value = cls._dict_to_time(max_time_value)
             elif isinstance(max_time_value, str):
                 max_time_value = cls._string_to_time(max_time_value)
-                
+
             if isinstance(min_time_value, dict):
                 min_time_value = cls._dict_to_time(min_time_value)
             elif isinstance(min_time_value, str):
                 min_time_value = cls._string_to_time(min_time_value)
-            
+
             if max_time_value < min_time_value:
                 raise IncorrectTimeRange()
-            
-        if min_time_value:
-            if not max_time_value:
+
+        if min_time_value is not None:
+            if max_time_value is None:
                 raise IncorrectMaxTimeRange()
-        if max_time_value:
-            if not min_time_value:
+        if max_time_value is not None:
+            if min_time_value is None:
                 raise IncorrectMinTimeRange()
-            
+
         return values
 
     def dict(self, *args, **kwargs) -> Dict[str, Any]:

@@ -599,54 +599,138 @@ def test_create_message_item__sanitize_question(message_item_create):
     assert item.question["en"] == "One  Two"
 
 
-@pytest.mark.parametrize(
-    "response_type, config_fixture, cnd_logic_fixture, response_values_fixture",
-    (
-        (ResponseType.SINGLESELECT, "single_select_config", "conditional_logic_equal", "single_select_response_values"),
-        (ResponseType.MULTISELECT, "multi_select_config", "conditional_logic_equal", "multi_select_response_values"),
-        (ResponseType.SLIDER, "slider_config", "conditional_logic_between", "slider_response_values"),
-        (ResponseType.TIME, "time_config", "conditional_logic_between", None),
-        (ResponseType.TIMERANGE, "time_range_config", "conditional_logic_between", None),
-        (
-            ResponseType.NUMBERSELECT,
-            "number_selection_config",
-            "conditional_logic_between",
-            "number_selection_response_values",
-        ),
-        (ResponseType.DATE, "date_config", "conditional_logic_equal", None),
-        (
-            ResponseType.SINGLESELECTROWS,
-            "single_select_row_config",
-            "conditional_logic_equal",
-            "single_select_row_response_values",
-        ),
-        (
-            ResponseType.MULTISELECTROWS,
-            "multi_select_row_config",
-            "conditional_logic_equal",
-            "multi_select_row_response_values",
-        ),
-        (
-            ResponseType.SLIDERROWS,
-            "slider_rows_config",
-            "conditional_logic_rows_outside_of",
-            "slider_rows_response_values",
-        ),
-    ),
-)
-def test_create_activity_item_conditional_logic(
-    base_item_data, request, response_type, config_fixture, cnd_logic_fixture, response_values_fixture
-) -> None:
-    config = request.getfixturevalue(config_fixture)
-    cnd_logic = request.getfixturevalue(cnd_logic_fixture)
-    if response_values_fixture:
-        response_values = request.getfixturevalue(response_values_fixture)
-    else:
-        response_values = None
+def test_single_select_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("single_select_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_equal")
+    response_values = request.getfixturevalue("single_select_response_values")
+
     ActivityItemCreate(
         **base_item_data.dict(),
         config=config,
-        response_type=response_type,
+        response_type=ResponseType.SINGLESELECT,
+        conditional_logic=cnd_logic,
+        response_values=response_values,
+    )
+
+
+def test_multi_select_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("multi_select_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_equal")
+    response_values = request.getfixturevalue("multi_select_response_values")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.MULTISELECT,
+        conditional_logic=cnd_logic,
+        response_values=response_values,
+    )
+
+
+def test_slider_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("slider_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_between")
+    response_values = request.getfixturevalue("slider_response_values")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.SLIDER,
+        conditional_logic=cnd_logic,
+        response_values=response_values,
+    )
+
+
+def test_time_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("time_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_between")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.TIME,
+        conditional_logic=cnd_logic,
+        response_values=None,
+    )
+
+
+def test_time_range_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("time_range_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_between")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.TIMERANGE,
+        conditional_logic=cnd_logic,
+        response_values=None,
+    )
+
+
+def test_number_select_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("number_selection_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_between")
+    response_values = request.getfixturevalue("number_selection_response_values")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.NUMBERSELECT,
+        conditional_logic=cnd_logic,
+        response_values=response_values,
+    )
+
+
+def test_date_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("date_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_equal")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.DATE,
+        conditional_logic=cnd_logic,
+        response_values=None,
+    )
+
+
+def test_single_select_row_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("single_select_row_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_equal")
+    response_values = request.getfixturevalue("single_select_row_response_values")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.SINGLESELECTROWS,
+        conditional_logic=cnd_logic,
+        response_values=response_values,
+    )
+
+
+def test_multi_select_row_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("multi_select_row_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_equal")
+    response_values = request.getfixturevalue("multi_select_row_response_values")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.MULTISELECTROWS,
+        conditional_logic=cnd_logic,
+        response_values=response_values,
+    )
+
+
+def test_slider_rows_logic(base_item_data, request) -> None:
+    config = request.getfixturevalue("slider_rows_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_rows_outside_of")
+    response_values = request.getfixturevalue("slider_rows_response_values")
+
+    ActivityItemCreate(
+        **base_item_data.dict(),
+        config=config,
+        response_type=ResponseType.SLIDERROWS,
         conditional_logic=cnd_logic,
         response_values=response_values,
     )

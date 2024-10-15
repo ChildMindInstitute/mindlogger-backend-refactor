@@ -232,10 +232,6 @@ class TestValidateItemFlow:
         with pytest.raises(IncorrectTimeRange):
             SingleTimePayload(time={"hours": 3, "minutes": 0}, min_value="03:00", max_value="02:00")
 
-    #    def test_single_time_payload_valid_but_fails_validation(self):
-    #        with pytest.raises(ValidationError): #Not sure here what you want to test. I'm assuming that it is that if min_value and max_value are set, the
-    #            SingleTimePayload(time={"hours": 3, "minutes": 0})
-
     def test_single_time_payload_unknown_item_type(self):
         with pytest.raises(ValidationError):
             SingleTimePayload(time="unknown_item_type", min_value="01:00", max_value="02:00")
