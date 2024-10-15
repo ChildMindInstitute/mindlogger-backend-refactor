@@ -49,10 +49,10 @@ class TransferService:
             if to_user.id == self._user.id:
                 raise TransferEmailError()
             receiver_name = to_user.first_name
-            path = "transfer_ownership_registered_user_en"
+            path = "transfer_ownership_registered_user"
             to_user_id = to_user.id
         else:
-            path = "transfer_ownership_unregistered_user_en"
+            path = "transfer_ownership_unregistered_user"
             receiver_name = transfer_request.email
             to_user_id = None
 
@@ -65,8 +65,9 @@ class TransferService:
         message = MessageSchema(
             recipients=[transfer_request.email],
             subject="Transfer ownership of an applet",
-            body=service.get_template(
-                path=path,
+            body=service.get_localized_html_template(
+                template_name=path,
+                language="en",
                 applet_owner=self._user.get_full_name(),
                 receiver_name=receiver_name,
                 applet_name=applet.display_name,
