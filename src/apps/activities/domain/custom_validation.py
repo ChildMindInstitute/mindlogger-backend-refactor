@@ -74,8 +74,6 @@ def validate_item_flow(values: dict):
 
 
 def validate_subscale_setting_match_reports(report: Score, subscale_setting: SubscaleSetting):
-    if not subscale_setting:  # report of type score exist then we need a subscale setting
-        raise SubscaleSettingDoesNotExist()
     report_subscale_linked = report.subscale_name
     subscales = subscale_setting.subscales
     if not subscales:
@@ -109,7 +107,10 @@ def validate_score_and_sections(values: dict):  # noqa: C901
             score_item_ids.append(report.id)
             if report.scoring_type == "score":
                 subscale_setting = values.get("subscale_setting")
-                validate_subscale_setting_match_reports(report, subscale_setting)
+                if not subscale_setting:  # report of type score exist then we need a subscale setting
+                    raise SubscaleSettingDoesNotExist()
+                else:
+                    validate_subscale_setting_match_reports(report, subscale_setting)
 
             # check if all item names are same as values.name
             for item in report.items_score:

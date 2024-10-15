@@ -260,6 +260,14 @@ class IncorrectTimeRange(ValidationError):
     message = _("Incorrect timerange")
 
 
+class IncorrectMinTimeRange(ValidationError):
+    message = _("Mix timerange was not passed")
+
+
+class IncorrectMaxTimeRange(ValidationError):
+    message = _("Max timerange was not passed")
+
+
 class FlowDoesNotExist(NotFoundError):
     message = _("Flow does not exist.")
 
