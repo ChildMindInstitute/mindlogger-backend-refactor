@@ -66,8 +66,8 @@ class TransferService:
             recipients=[transfer_request.email],
             subject="Transfer ownership of an applet",
             body=service.get_localized_html_template(
-                _template_name=path,
-                _language="en",
+                template_name=path,
+                language="en",
                 applet_owner=self._user.get_full_name(),
                 receiver_name=receiver_name,
                 applet_name=applet.display_name,

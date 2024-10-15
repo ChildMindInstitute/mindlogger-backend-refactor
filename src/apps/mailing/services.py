@@ -62,11 +62,11 @@ class MailingService:
         fm = mailing_class(self._connection)
         await fm.send_message(message)
 
-    def get_localized_html_template(self, _template_name: str, _language: str, **kwargs) -> str:
-        kwargs["language"] = _language
+    def get_localized_html_template(self, template_name: str, language: str, **kwargs) -> str:
+        kwargs["language"] = language
         try:
-            return self.env.get_template(f"{_template_name}_{_language}.html").render(**kwargs)
+            return self.env.get_template(f"{template_name}_{language}.html").render(**kwargs)
         except TemplateNotFound:
-            if _language != "en":
-                return self.get_localized_html_template(_template_name, "en", **kwargs)
+            if language != "en":
+                return self.get_localized_html_template(template_name, "en", **kwargs)
             raise

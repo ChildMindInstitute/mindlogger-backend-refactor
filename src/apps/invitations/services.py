@@ -143,8 +143,8 @@ class InvitationsService:
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
             body=service.get_localized_html_template(
-                _template_name=self._get_email_template_name(invited_user_id),
-                _language=schema.language,
+                template_name=self._get_email_template_name(invited_user_id),
+                language=schema.language,
                 first_name=subject.first_name,
                 last_name=subject.last_name,
                 applet_name=applet.display_name,
@@ -219,8 +219,8 @@ class InvitationsService:
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
             body=service.get_localized_html_template(
-                _template_name=self._get_email_template_name(invited_user_id),
-                _language=schema.language,
+                template_name=self._get_email_template_name(invited_user_id),
+                language=schema.language,
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
@@ -294,8 +294,8 @@ class InvitationsService:
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
             body=service.get_localized_html_template(
-                _template_name=self._get_email_template_name(invited_user_id),
-                _language=schema.language,
+                template_name=self._get_email_template_name(invited_user_id),
+                language=schema.language,
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,

@@ -180,8 +180,8 @@ class ActivityAssignmentService:
                 recipients=[respondent_subject.email],
                 subject=self._get_email_assignment_subject(language),
                 body=service.get_localized_html_template(
-                    _template_name=self._get_email_template_name(),
-                    _language=language,
+                    template_name=self._get_email_template_name(),
+                    language=language,
                     first_name=respondent_subject.first_name,
                     applet_name=applet.display_name,
                     link=link,

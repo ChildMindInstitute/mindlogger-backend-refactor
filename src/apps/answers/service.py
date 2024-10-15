@@ -1619,7 +1619,7 @@ class AnswerService:
                 recipients=email_list,
                 subject="Response alert",
                 body=mail_service.get_localized_html_template(
-                    _template_name="response_alert", _language="en", domain=domain
+                    template_name="response_alert", language="en", domain=domain
                 ),
             )
         )

@@ -92,8 +92,8 @@ class PasswordRecoveryService:
             recipients=[user.email_encrypted],
             subject="Password reset",
             body=service.get_localized_html_template(
-                _template_name="reset_password",
-                _language="en",
+                template_name="reset_password",
+                language="en",
                 email=user.email_encrypted,
                 expiration_minutes=exp,
                 url=url,
