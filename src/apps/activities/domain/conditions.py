@@ -152,7 +152,7 @@ class DateRangePayload(PublicModel):
 
 
 class TimePayload(PublicModel):
-    type: str | None = None
+    type: TimePayloadType | None = None
     value: datetime.time
 
     def dict(self, *args, **kwargs):
