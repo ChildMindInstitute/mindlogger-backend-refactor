@@ -1,5 +1,4 @@
 import enum
-from enum import Enum
 
 from pydantic import Field, PositiveInt, validator
 
@@ -24,7 +23,7 @@ from apps.shared.domain import PublicModel
 from apps.shared.domain.custom_validations import sanitize_string
 
 
-class CalculationType(str, Enum):
+class CalculationType(enum.StrEnum):
     SUM = "sum"
     AVERAGE = "average"
     PERCENTAGE = "percentage"
@@ -46,7 +45,7 @@ class ScoreConditionalLogic(PublicModel):
         return value
 
 
-class ReportType(str, enum.Enum):
+class ReportType(enum.StrEnum):
     score = "score"
     section = "section"
 
@@ -164,7 +163,7 @@ class ScoreConditionalLogicMobile(PublicModel):
     conditions: list[ScoreCondition]
 
 
-class SubscaleCalculationType(str, Enum):
+class SubscaleCalculationType(enum.StrEnum):
     SUM = "sum"
     AVERAGE = "average"
 
@@ -190,7 +189,7 @@ class SubScaleLookupTable(PublicModel):
         return validate_age_subscale(value)
 
 
-class SubscaleItemType(str, Enum):
+class SubscaleItemType(enum.StrEnum):
     ITEM = "item"
     SUBSCALE = "subscale"
 

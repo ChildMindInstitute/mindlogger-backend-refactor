@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import Field
 
@@ -6,7 +6,7 @@ from apps.activities.domain.conditions import Condition
 from apps.shared.domain import PublicModel
 
 
-class Match(str, Enum):
+class Match(StrEnum):
     ANY = "any"
     ALL = "all"
 

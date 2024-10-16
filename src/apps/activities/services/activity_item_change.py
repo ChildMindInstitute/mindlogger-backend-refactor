@@ -23,7 +23,7 @@ GT = TypeVar("GT", ActivityHistoryFull, ActivityItemHistoryFull)
 RGT = TypeVar("RGT", None, ActivityHistoryFull, ActivityItemHistoryFull)
 
 
-class ChangeStatusEnum(str, enum.Enum):
+class ChangeStatusEnum(enum.StrEnum):
     ADDED = "added"
     UPDATED = "updated"
     REMOVED = "removed"

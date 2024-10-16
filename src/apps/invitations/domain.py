@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import EmailStr, Extra, Field, root_validator, validator
 
@@ -15,7 +15,7 @@ class Applet(PublicModel):
     display_name: str
 
 
-class InvitationLanguage(str, Enum):
+class InvitationLanguage(StrEnum):
     EN = "en"  # English
     FR = "fr"  # French
     EL = "el"  # Greek

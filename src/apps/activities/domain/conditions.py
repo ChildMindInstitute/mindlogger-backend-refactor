@@ -1,5 +1,5 @@
 import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Dict, Optional
 
 from pydantic import Field, root_validator, validator
@@ -7,7 +7,7 @@ from pydantic import Field, root_validator, validator
 from apps.shared.domain import PublicModel, PublicModelNoExtra
 
 
-class ConditionType(str, Enum):
+class ConditionType(StrEnum):
     INCLUDES_OPTION = "INCLUDES_OPTION"
     NOT_INCLUDES_OPTION = "NOT_INCLUDES_OPTION"
     EQUAL_TO_OPTION = "EQUAL_TO_OPTION"
@@ -21,7 +21,7 @@ class ConditionType(str, Enum):
     EQUAL_TO_SCORE = "EQUAL_TO_SCORE"
 
 
-class DateConditionType(str, Enum):
+class DateConditionType(StrEnum):
     GREATER_THAN_DATE = "GREATER_THAN_DATE"
     LESS_THAN_DATE = "LESS_THAN_DATE"
     EQUAL_TO_DATE = "EQUAL_TO_DATE"
@@ -30,7 +30,7 @@ class DateConditionType(str, Enum):
     OUTSIDE_OF_DATES = "OUTSIDE_OF_DATES"
 
 
-class TimeRangeConditionType(str, Enum):
+class TimeRangeConditionType(StrEnum):
     GREATER_THAN_TIME_RANGE = "GREATER_THAN_TIME_RANGE"
     LESS_THAN_TIMES_RANGE = "LESS_THAN_TIME_RANGE"
     BETWEEN_TIMES_RANGE = "BETWEEN_TIMES_RANGE"
@@ -39,7 +39,7 @@ class TimeRangeConditionType(str, Enum):
     OUTSIDE_OF_TIMES_RANGE = "OUTSIDE_OF_TIMES_RANGE"
 
 
-class TimeConditionType(str, Enum):
+class TimeConditionType(StrEnum):
     GREATER_THAN_TIME = "GREATER_THAN_TIME"
     LESS_THAN_TIME = "LESS_THAN_TIME"
     BETWEEN_TIMES = "BETWEEN_TIMES"
@@ -48,27 +48,27 @@ class TimeConditionType(str, Enum):
     OUTSIDE_OF_TIMES = "OUTSIDE_OF_TIMES"
 
 
-class MultiSelectConditionType(str, Enum):
+class MultiSelectConditionType(StrEnum):
     INCLUDES_OPTION = "INCLUDES_OPTION"
     NOT_INCLUDES_OPTION = "NOT_INCLUDES_OPTION"
 
 
-class MultiSelectionsPerRowConditionType(str, Enum):
+class MultiSelectionsPerRowConditionType(StrEnum):
     INCLUDES_ROW_OPTION = "INCLUDES_ROW_OPTION"
     NOT_INCLUDES_ROW_OPTION = "NOT_INCLUDES_ROW_OPTION"
 
 
-class SingleSelectionPerRowConditionType(str, Enum):
+class SingleSelectionPerRowConditionType(StrEnum):
     EQUAL_TO_ROW_OPTION = "EQUAL_TO_ROW_OPTION"
     NOT_EQUAL_TO_ROW_OPTION = "NOT_EQUAL_TO_ROW_OPTION"
 
 
-class SingleSelectConditionType(str, Enum):
+class SingleSelectConditionType(StrEnum):
     EQUAL_TO_OPTION = "EQUAL_TO_OPTION"
     NOT_EQUAL_TO_OPTION = "NOT_EQUAL_TO_OPTION"
 
 
-class SliderRowConditionType(str, Enum):
+class SliderRowConditionType(StrEnum):
     GREATER_THAN_SLIDER_ROWS = "GREATER_THAN_SLIDER_ROWS"
     LESS_THAN_SLIDER_ROWS = "LESS_THAN_SLIDER_ROWS"
     EQUAL_TO_SLIDER_ROWS = "EQUAL_TO_SLIDER_ROWS"
@@ -77,7 +77,7 @@ class SliderRowConditionType(str, Enum):
     OUTSIDE_OF_SLIDER_ROWS = "OUTSIDE_OF_SLIDER_ROWS"
 
 
-class SliderConditionType(str, Enum):
+class SliderConditionType(StrEnum):
     GREATER_THAN = "GREATER_THAN"
     LESS_THAN = "LESS_THAN"
     EQUAL = "EQUAL"
@@ -86,7 +86,7 @@ class SliderConditionType(str, Enum):
     OUTSIDE_OF = "OUTSIDE_OF"
 
 
-class TimePayloadType(str, Enum):
+class TimePayloadType(StrEnum):
     START_TIME = "startTime"
     END_TIME = "endTime"
 

@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import Field, NonNegativeInt, PositiveInt, validator
@@ -31,7 +31,7 @@ from apps.activities.errors import CorrectAnswerRequiredError
 from apps.shared.domain import PublicModel
 
 
-class ResponseType(str, Enum):
+class ResponseType(StrEnum):
     TEXT = "text"
     PARAGRAPHTEXT = "paragraphText"
     SINGLESELECT = "singleSelect"
@@ -268,12 +268,12 @@ class UnityConfig(PublicModel):
     file: str | None
 
 
-class InputType(str, Enum):
+class InputType(StrEnum):
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"
 
 
-class Phase(str, Enum):
+class Phase(StrEnum):
     PRACTICE = "practice"
     TEST = "test"
 
@@ -320,12 +320,12 @@ class BlockConfiguration(PublicModel):
     order: list[StimulusConfigId]
 
 
-class SamplingMethod(str, Enum):
+class SamplingMethod(StrEnum):
     RANDOMIZE_ORDER = "randomize-order"
     FIXED_ORDER = "fixed-order"
 
 
-class BlockType(str, Enum):
+class BlockType(StrEnum):
     TEST = "test"
     PRACTICE = "practice"
 
@@ -362,14 +362,14 @@ class FlankerConfig(PublicModel):
     block_type: BlockType
 
 
-class ABTrailsOrder(str, Enum):
+class ABTrailsOrder(StrEnum):
     FIRST = "first"
     SECOND = "second"
     THIRD = "third"
     FOURTH = "fourth"
 
 
-class ABTrailsDeviceType(str, Enum):
+class ABTrailsDeviceType(StrEnum):
     TABLET = "tablet"
     MOBILE = "mobile"
 
@@ -434,7 +434,7 @@ class ABTrailsConfig(PublicModel):
         return value
 
 
-class PerformanceTaskType(str, Enum):
+class PerformanceTaskType(StrEnum):
     FLANKER = "flanker"
     GYROSCOPE = "gyroscope"
     TOUCH = "touch"

@@ -1,8 +1,8 @@
-from enum import Enum
-
 __all__ = ["InputType"]
 
+from enum import StrEnum
 
-class InputType(str, Enum):
+
+class InputType(StrEnum):
     RADIOBUTTON = "radiobutton"
     CHECKBOX = "checkbox"
