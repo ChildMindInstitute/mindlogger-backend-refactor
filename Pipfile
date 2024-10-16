@@ -47,7 +47,7 @@ pymongo = "*"
 python-multipart = "==0.0.12"
 redis = "==5.1.0"
 sentry-sdk = "~=2.13"
-sqlalchemy = { extras = ["asyncio"], version = "==1.4.53" }
+sqlalchemy = { extras = ["asyncio"], version = "==2.0.36" }
 sqlalchemy-utils = "==0.41.2"
 taskiq = { extras = ["reload"], version = "==0.11.7" }
 taskiq-aio-pika = "==0.4.1"
