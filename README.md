@@ -4,18 +4,18 @@ This repository is used for the backend of the [MindLogger](https://mindlogger.o
 
 [![Automated tests](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml/badge.svg)](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml)
 <a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/ChildMindInstitute/mindlogger-backend-refactor" target="_blank">
-    <img src="https://coverage-badge.samuelcolvin.workers.dev/ChildMindInstitute/mindlogger-backend-refactor.svg" alt="Coverage">
+<img src="https://coverage-badge.samuelcolvin.workers.dev/ChildMindInstitute/mindlogger-backend-refactor.svg" alt="Coverage">
 </a>
 
 ## Getting Started
 
-* MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
-* MindLogger Backend - **This Repo**
-* MindLogger Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
-* MindLogger Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
-
+- MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
+- MindLogger Backend - **This Repo**
+- MindLogger Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
+- MindLogger Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
 
 ## Contents
+
 - [Features](#features)
 - [Technologies](#technologies)
 - [Application](#application-stack)
@@ -76,32 +76,32 @@ pipenv --python /opt/homebrew/bin/python3.11
 
 ### Environment Variables
 
-| Key                                                          | Default value              | Description                                                                                                                                                                                                                                                                                                                            |
-|--------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| DATABASE\_\_HOST                                             | postgres                   | Database Host                                                                                                                                                                                                                                                                                                                          |
-| DATABASE\_\_USER                                             | postgres                   | User name for Postgresql Database user                                                                                                                                                                                                                                                                                                 |
-| DATABASE\_\_PASSWORD                                         | postgres                   | Password for Postgresql Database user                                                                                                                                                                                                                                                                                                  |
-| DATABASE\_\_DB                                               | mindlogger_backend         | Database name                                                                                                                                                                                                                                                                                                                          |
-| CORS\_\_ALLOW\_ORIGINS                                       | `*`                        | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000`                                                                                                                                                                                                 |
-| CORS\_\_ALLOW\_ORIGINS\_REGEX                                | -                          | Regex pattern of allowed origins.                                                                                                                                                                                                                                                                                                      |
-| CORS\_\_ALLOW\_CREDENTIALS                                   | true                       | Set the `Access-Control-Allow-Credentials` header                                                                                                                                                                                                                                                                                      |
-| CORS\_\_ALLOW_METHODS                                        | `*`                        | Set the `Access-Control-Allow-Methods` header                                                                                                                                                                                                                                                                                          |
-| CORS\_\_ALLOW_HEADERS                                        | `*`                        | Set the `Access-Control-Allow-Headers` header                                                                                                                                                                                                                                                                                          |
-| AUTHENTICATION\_\_ACCESS\_TOKEN\_\_SECRET\_KEY               | secret1                    | Access token's salt                                                                                                                                                                                                                                                                                                                    |
-| AUTHENTICATION\_\_REFRESH\_TOKEN\_\_SECRET\_KEY              | secret2                    | Refresh token salt                                                                                                                                                                                                                                                                                                                     |
-| AUTHENTICATION\_\_REFRESH\_TOKEN\_\_TRANSITION\_KEY          | transition secret          | Transition refresh token salt. Used for changing refresh token key (generate new key for AUTHENTICATION\_\_REFRESH\_TOKEN\_\_SECRET\_KEY and use previous value as transition token key for accepting previously generated refresh tokens during transition period (see AUTHENTICATION\_\_REFRESH\_TOKEN\_\_TRANSITION\_EXPIRE\_DATE)) |
-| AUTHENTICATION\_\_REFRESH\_TOKEN\_\_TRANSITION\_EXPIRE\_DATE | transition expiration date | Transition expiration date. After this date transition token ignored                                                                                                                                                                                                                                                                   |
-| AUTHENTICATION\_\_ALGORITHM                                  | HS256                      | The JWT's algorithm                                                                                                                                                                                                                                                                                                                    |
-| AUTHENTICATION\_\_ACCESS\_TOKEN\_\_EXPIRATION                | 30                         | Time in minutes after which the access token will stop working                                                                                                                                                                                                                                                                         |
-| AUTHENTICATION\_\_REFRESH\_TOKEN\_\_EXPIRATION               | 30                         | Time in minutes after which the refresh token will stop working                                                                                                                                                                                                                                                                        |
-| ADMIN_DOMAIN                                                 | -                          | Admin panel domain                                                                                                                                                                                                                                                                                                                     |
-| RABBITMQ\_\_URL                                              | rabbitmq                   | Rabbitmq service URL                                                                                                                                                                                                                                                                                                                   |
-| RABBITMQ\_\_USE_SSL                                          | True                       | Rabbitmq ssl setting, turn false to local development                                                                                                                                                                                                                                                                                  |
-| MAILING\_\_MAIL\_\_USERNAME                                  | mailhog                    | Mail service username                                                                                                                                                                                                                                                                                                                  |
-| MAILING\_\_MAIL\_\_PASSWORD                                  | mailhog                    | Mail service password                                                                                                                                                                                                                                                                                                                  |
-| MAILING\_\_MAIL\_\_SERVER                                    | mailhog                    | Mail service URL                                                                                                                                                                                                                                                                                                                       |
-| MULTI\_INFORMANT\_\_TEMP\_RELATION\_EXPIRY\_SECS             | 86400                      | Expiry (sec) of temporary multi-informant participant take now relation                                                                                                                                                                                                                                                                |
-| SECRETS\_\_SECRET\_KEY                                       | -                          | Secret key for data encryption. Use this key only for local development                                                                                                                                                                                                                                                                |
+| Key                                                       | Default value              | Description                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DATABASE\_\_HOST                                          | postgres                   | Database Host                                                                                                                                                                                                                                                                                                                     |
+| DATABASE\_\_USER                                          | postgres                   | User name for Postgresql Database user                                                                                                                                                                                                                                                                                            |
+| DATABASE\_\_PASSWORD                                      | postgres                   | Password for Postgresql Database user                                                                                                                                                                                                                                                                                             |
+| DATABASE\_\_DB                                            | mindlogger_backend         | Database name                                                                                                                                                                                                                                                                                                                     |
+| CORS\_\_ALLOW_ORIGINS                                     | `*`                        | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000`                                                                                                                                                                                            |
+| CORS\_\_ALLOW_ORIGINS_REGEX                               | -                          | Regex pattern of allowed origins.                                                                                                                                                                                                                                                                                                 |
+| CORS\_\_ALLOW_CREDENTIALS                                 | true                       | Set the `Access-Control-Allow-Credentials` header                                                                                                                                                                                                                                                                                 |
+| CORS\_\_ALLOW_METHODS                                     | `*`                        | Set the `Access-Control-Allow-Methods` header                                                                                                                                                                                                                                                                                     |
+| CORS\_\_ALLOW_HEADERS                                     | `*`                        | Set the `Access-Control-Allow-Headers` header                                                                                                                                                                                                                                                                                     |
+| AUTHENTICATION\_\_ACCESS_TOKEN\_\_SECRET_KEY              | secret1                    | Access token's salt                                                                                                                                                                                                                                                                                                               |
+| AUTHENTICATION\_\_REFRESH_TOKEN\_\_SECRET_KEY             | secret2                    | Refresh token salt                                                                                                                                                                                                                                                                                                                |
+| AUTHENTICATION\_\_REFRESH_TOKEN\_\_TRANSITION_KEY         | transition secret          | Transition refresh token salt. Used for changing refresh token key (generate new key for AUTHENTICATION\_\_REFRESH_TOKEN\_\_SECRET_KEY and use previous value as transition token key for accepting previously generated refresh tokens during transition period (see AUTHENTICATION\_\_REFRESH_TOKEN\_\_TRANSITION_EXPIRE_DATE)) |
+| AUTHENTICATION\_\_REFRESH_TOKEN\_\_TRANSITION_EXPIRE_DATE | transition expiration date | Transition expiration date. After this date transition token ignored                                                                                                                                                                                                                                                              |
+| AUTHENTICATION\_\_ALGORITHM                               | HS256                      | The JWT's algorithm                                                                                                                                                                                                                                                                                                               |
+| AUTHENTICATION\_\_ACCESS_TOKEN\_\_EXPIRATION              | 30                         | Time in minutes after which the access token will stop working                                                                                                                                                                                                                                                                    |
+| AUTHENTICATION\_\_REFRESH_TOKEN\_\_EXPIRATION             | 30                         | Time in minutes after which the refresh token will stop working                                                                                                                                                                                                                                                                   |
+| ADMIN_DOMAIN                                              | -                          | Admin panel domain                                                                                                                                                                                                                                                                                                                |
+| RABBITMQ\_\_URL                                           | rabbitmq                   | Rabbitmq service URL                                                                                                                                                                                                                                                                                                              |
+| RABBITMQ\_\_USE_SSL                                       | True                       | Rabbitmq ssl setting, turn false to local development                                                                                                                                                                                                                                                                             |
+| MAILING\_\_MAIL\_\_USERNAME                               | mailhog                    | Mail service username                                                                                                                                                                                                                                                                                                             |
+| MAILING\_\_MAIL\_\_PASSWORD                               | mailhog                    | Mail service password                                                                                                                                                                                                                                                                                                             |
+| MAILING\_\_MAIL\_\_SERVER                                 | mailhog                    | Mail service URL                                                                                                                                                                                                                                                                                                                  |
+| MULTI_INFORMANT\_\_TEMP_RELATION_EXPIRY_SECS              | 86400                      | Expiry (sec) of temporary multi-informant participant take now relation                                                                                                                                                                                                                                                           |
+| SECRETS\_\_SECRET_KEY                                     | -                          | Secret key for data encryption. Use this key only for local development                                                                                                                                                                                                                                                           |
 
 ##### ✋ Mandatory:
 
@@ -115,6 +115,7 @@ pipenv --python /opt/homebrew/bin/python3.11
 
 It is highly recommended to create an `.env` file as far as it is needed for setting up the project with Local and Docker approaches.
 Use `.env.default` to get started:\
+
 ```bash
 cp .env.default .env
 ```
@@ -129,8 +130,8 @@ openssl rand -hex 32
 
 Generate a key and update `.env` values:
 
-* `AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY`
-* `AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY`
+- `AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY`
+- `AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY`
 
 ### Required Services
 
@@ -146,16 +147,19 @@ Running required services using Docker is **highly** recommended even if you int
 #### Run services using Docker
 
 - Run Postgres
+
   ```bash
   docker-compose up -d postgres
   ```
 
 - Run Redis
+
   ```bash
   docker-compose up -d redis
   ```
 
 - Run RabbitMQ
+
   ```bash
   docker-compose up -d rabbitmq
   ```
@@ -172,7 +176,6 @@ For manual installation refer to each service's documentation:
 - [PostgreSQL Downloads](https://www.postgresql.org/download/)
 - [Redis: Install Redis](https://redis.io/docs/install/install-redis/)
 - [RabbitMQ documentation](https://rabbitmq-website.pages.dev/docs/download)
-
 
 ### Install all project dependencies
 
@@ -191,16 +194,19 @@ pipenv shell
 
 If `pyenv` is installed Python 3.11 should automatically be installed in the virtual environment, you can check the
 correct version of Python is active by running:
+
 ```bash
 python --version
 ```
 
 If the active version is **not** 3.11, you can manually specify a version while creating your virtual environment:
+
 ```bash
 pipenv --python /opt/homebrew/bin/python3.11
 ```
 
 Install all dependencies
+
 ```bash
 # Install all deps from Pipfile.lock
 # to install venv to current directory use `export PIPENV_VENV_IN_PROJECT=1`
@@ -226,16 +232,18 @@ export BASIC_AUTH__PASSWORD=1234
 set -o allexport; source .env; set +o allexport
 ```
 
-
 > 🛑 **NOTE 2:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
 
 > 🛑 **NOTE 3:** If you get an error running `pipenv sync --dev` related to the dependency `greenlet`, install it by running:
+
 ```bash
 pipenv install greenlet
 ```
+
 > 🛑 **NOTE 4:** If the application can't find the `RabbitMQ` service even though it's running normally, change your `RABBITMQ__URL` to your local ip address instead of `localhost`
 
 ## Run the migrations
+
 ```bash
 alembic upgrade head
 ```
@@ -251,13 +259,14 @@ This option allows you to run the app for development purposes without having to
 
 - Make sure all [required services](#required-services) are properly setup
 - If you're running required services using Docker, disable the `app` service from `docker-compose` before running:
+
   ```bash
   docker-compose up -d
   ```
 
   Alternatively, you may run these services using [make](#running-using-makefile) (i.e. When developing the API):
 
-   - You'll need to sudo into `/etc/hosts` and append the following changes.
+  - You'll need to sudo into `/etc/hosts` and append the following changes.
 
   ```
   #mindlogger
@@ -274,6 +283,7 @@ This option allows you to run the app for development purposes without having to
   ```
 
 > 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
+
 - To test that the API is up and running navigate to `http://localhost:8000/docs` in a browser.
 
 In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
@@ -287,13 +297,16 @@ uvicorn src.main:app --proxy-headers --port {PORT} --reload
 ```
 
 Alternatively, you may run the application using [make](#running-using-makefile):
+
 ```bash
 make run
 ```
+
 ### Running via docker
 
 - [Build the application](#build-application-images)
 - Run the app using Docker:
+
 ```bash
 docker-compose up
 ```
@@ -316,6 +329,7 @@ Additional `docker-compose down` flags that might be useful for development
 ```bash
 -v  # Remove with all volumes
 ```
+
 ### Running using Makefile
 
 You can use the `Makefile` to work with project (run the application / code quality tools / tests ...)
@@ -335,6 +349,7 @@ make test
 # Check everything in one hop
 make check
 ```
+
 ### Docker development
 
 #### Build application images
@@ -755,25 +770,36 @@ For AWS S3 bucket next fields are required:
 In case of Azure blob, specify your connection string into field `storage_secret_key`
 
 ## License
+
 Common Public Attribution License Version 1.0 (CPAL-1.0)
 
 Refer to [LICENSE.md](./LICENSE.MD)
 
 ## Opentelemtry
+
 ### If app is running in docker
+
 - Make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://opentelemetry:4317` endpoint has been already set in `.env`. Run docker container with opentelemetry:
+
 ```bash
 docker-compose up -d opentelemetry
 ```
+
 ### If app is running locally
+
 - Make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317` is exported in environment.
+
 ```bash
 export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317
 ```
+
 or if you use pipenv for autoloading envs - make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317` is added to `.env` file.
+
 - The same as for containerized app - up container with opentelemetry
-```
+
+````
 ```bash
 docker-compose up -d opentelemetry
-```
+````
+
 - Start you app
