@@ -552,7 +552,7 @@ class TestActivityItems:
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
         assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
-        assert result["activities"][0]["scoresAndReports"]["reports"][0]["scoringType"] == ScoringType.SCORE.value
+        assert result["activities"][0]["scoresAndReports"]["reports"][0]["scoringType"] == ScoringType.SCORE
         assert result["activities"][0]["scoresAndReports"]["reports"][0]["subscaleName"] == "subscale type score"
 
     async def test_create_applet__activity_with_subscale_settings_with_invalid_subscale_lookup_table_age(
