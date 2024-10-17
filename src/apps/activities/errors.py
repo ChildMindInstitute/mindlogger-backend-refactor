@@ -256,6 +256,10 @@ class MultiSelectNoneOptionError(ValidationError):
     message = _("No more than 1 none option is not allowed for multiselect.")
 
 
+class IncorrectTimeRange(ValidationError):
+    message = _("Incorrect timerange")
+
+
 class FlowDoesNotExist(NotFoundError):
     message = _("Flow does not exist.")
 

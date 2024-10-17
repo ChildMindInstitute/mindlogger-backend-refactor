@@ -25,7 +25,7 @@ from apps.applets.domain.applet_create_update import AppletCreate, AppletReportC
 from apps.applets.domain.applet_duplicate import AppletDuplicate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
-from apps.applets.domain.base import Encryption
+from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
 from apps.applets.errors import (
     AccessLinkDoesNotExistError,
     AppletAlreadyExist,
@@ -220,6 +220,7 @@ class AppletService:
         applet_exist: AppletDuplicate,
         new_name: str,
         encryption: Encryption,
+        include_report_server: bool,
     ):
         activity_key_id_map = dict()
 
@@ -233,7 +234,7 @@ class AppletService:
         )
         manager_role = Role.EDITOR if has_editor else Role.MANAGER
 
-        create_data = self._prepare_duplicate(applet_exist, new_name, encryption)
+        create_data = self._prepare_duplicate(applet_exist, new_name, encryption, include_report_server)
 
         applet = await self._create(create_data, self.user_id)
 
@@ -253,7 +254,9 @@ class AppletService:
         return applet
 
     @staticmethod
-    def _prepare_duplicate(applet_exist: AppletDuplicate, new_name: str, encryption: Encryption) -> AppletCreate:
+    def _prepare_duplicate(
+        applet_exist: AppletDuplicate, new_name: str, encryption: Encryption, include_report_server: bool
+    ) -> AppletCreate:
         activities = list()
         for activity in applet_exist.activities:
             activities.append(
@@ -290,7 +293,20 @@ class AppletService:
                 )
             )
 
+        report_server_config = (
+            AppletReportConfigurationBase(
+                report_server_ip=applet_exist.report_server_ip,
+                report_public_key=applet_exist.report_public_key,
+                report_include_user_id=applet_exist.report_include_user_id,
+                report_include_case_id=applet_exist.report_include_case_id,
+                report_email_body=applet_exist.report_email_body,
+            ).dict()
+            if include_report_server
+            else {}
+        )
+
         return AppletCreate(
+            **report_server_config,
             display_name=new_name,
             description=applet_exist.description,
             about=applet_exist.about,

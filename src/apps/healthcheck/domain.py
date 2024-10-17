@@ -5,7 +5,7 @@ from pydantic import Field
 from apps.shared.domain import PublicModel
 
 
-class EmergencyMessageType(str, enum.Enum):
+class EmergencyMessageType(enum.StrEnum):
     info = "info"
     warning = "warning"
     blocker = "blocker"

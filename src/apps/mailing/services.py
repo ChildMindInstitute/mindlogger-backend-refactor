@@ -1,5 +1,5 @@
 from fastapi_mail import ConnectionConfig, FastMail
-from jinja2 import Environment, PackageLoader, select_autoescape
+from jinja2 import Environment, PackageLoader, TemplateNotFound, select_autoescape
 
 from apps.mailing.domain import MessageSchema
 from config import settings
@@ -62,8 +62,11 @@ class MailingService:
         fm = mailing_class(self._connection)
         await fm.send_message(message)
 
-    def get_template(self, path: str, **kwargs):
-        template = self.env.get_template(f"{path}.html")
-        html = template.render(**kwargs)
-
-        return html
+    def get_localized_html_template(self, template_name: str, language: str, **kwargs) -> str:
+        kwargs["language"] = language
+        try:
+            return self.env.get_template(f"{template_name}_{language}.html").render(**kwargs)
+        except TemplateNotFound:
+            if language != "en":
+                return self.get_localized_html_template(template_name, "en", **kwargs)
+            raise

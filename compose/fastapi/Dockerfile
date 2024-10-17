@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bookworm AS base
+FROM python:3.11-slim-bookworm AS base
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="src/"
@@ -6,7 +6,7 @@ ENV PYTHONPATH="src/"
 WORKDIR /app/
 
 RUN apt-get -y update && apt-get -y upgrade \
-    && apt-get install --no-install-recommends -y build-essential=12.9 curl=7.88* libffi-dev \
+    && apt-get install --no-install-recommends -y build-essential curl libffi-dev \
     && rm -rf /var/lib/apt/lists/
 
 # Add local non-root user to avoid issue with files
@@ -67,8 +67,8 @@ FROM base AS worker
 
 USER root
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    ffmpeg=7:5.1* \
-    imagemagick=8:6.9* \
+    ffmpeg \
+    imagemagick \
     && rm -rf /var/lib/apt/lists/
 
 USER code

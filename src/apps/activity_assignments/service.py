@@ -167,7 +167,6 @@ class ActivityAssignmentService:
             respondent_subject: SubjectSchema = subjects[respondent_subject_id]
 
             language = respondent_subject.language or "en"
-            template_name = self._get_email_template_name(language)
 
             domain = settings.service.urls.frontend.web_base
             path = settings.service.urls.frontend.applet_home
@@ -180,12 +179,12 @@ class ActivityAssignmentService:
             message = MessageSchema(
                 recipients=[respondent_subject.email],
                 subject=self._get_email_assignment_subject(language),
-                body=service.get_template(
-                    path=template_name,
+                body=service.get_localized_html_template(
+                    template_name=self._get_email_template_name(),
+                    language=language,
                     first_name=respondent_subject.first_name,
                     applet_name=applet.display_name,
                     link=link,
-                    language=language,
                     activity_or_flows_names=activities,
                 ),
             )
@@ -431,8 +430,8 @@ class ActivityAssignmentService:
         return await ActivityAssigmentCRUD(self.session).check_if_auto_assigned(activity_or_flow_id)
 
     @staticmethod
-    def _get_email_template_name(language: str) -> str:
-        return f"new_activity_assignments_{language}"
+    def _get_email_template_name() -> str:
+        return "new_activity_assignments"
 
     @staticmethod
     def _get_email_assignment_subject(language: str) -> str:

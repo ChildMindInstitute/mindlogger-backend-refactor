@@ -1,9 +1,9 @@
 from datetime import datetime
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.websockets import WebSocket
-from jose import JWTError, jwt
 from pydantic import EmailStr, ValidationError
 from starlette.requests import Request
 
@@ -46,7 +46,7 @@ async def get_current_user_for_ws(websocket: WebSocket, session=Depends(get_sess
 
             if datetime.utcfromtimestamp(token_data.exp) < datetime.utcnow():
                 raise AuthenticationError
-        except (JWTError, ValidationError):
+        except (jwt.PyJWTError, ValidationError):
             raise AuthenticationError
 
         # Check if the token is in the blacklist
@@ -77,7 +77,7 @@ def get_current_token(type_: TokenPurpose = TokenPurpose.ACCESS):
 
             if datetime.utcfromtimestamp(token_payload.exp) < datetime.utcnow():
                 raise AuthenticationError
-        except (JWTError, ValidationError):
+        except (jwt.PyJWTError, ValidationError):
             raise AuthenticationError
 
         return InternalToken(payload=token_payload, raw_token=token)

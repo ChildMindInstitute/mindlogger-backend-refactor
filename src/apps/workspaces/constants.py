@@ -1,7 +1,7 @@
 import enum
 
 
-class StorageType(str, enum.Enum):
+class StorageType(enum.StrEnum):
     AWS = "aws"
     AZURE = "azure"
     GCP = "gcp"

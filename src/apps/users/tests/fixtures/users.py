@@ -1,5 +1,4 @@
 import uuid
-from typing import AsyncGenerator
 
 import pytest
 from pydantic import EmailStr
@@ -101,7 +100,7 @@ async def user(user_create: UserCreate, global_session: AsyncSession, pytestconf
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def tom(tom_create: UserCreate, global_session: AsyncSession, pytestconfig: Config) -> AsyncGenerator:
+async def tom(tom_create: UserCreate, global_session: AsyncSession, pytestconfig: Config):
     crud = UsersCRUD(global_session)
     user = await _get_or_create_user(
         crud, tom_create, global_session, uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa1")

@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import Field, NonNegativeInt, root_validator, validator
@@ -41,13 +41,13 @@ from apps.activities.errors import (
 from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
 
 
-class PhrasalTemplateFieldType(str, Enum):
+class PhrasalTemplateFieldType(StrEnum):
     SENTENCE = "sentence"
     ITEM_RESPONSE = "item_response"
     LINE_BREAK = "line_break"
 
 
-class PhrasalTemplateDisplayMode(str, Enum):
+class PhrasalTemplateDisplayMode(StrEnum):
     BULLET_LIST = "bullet_list"
     SENTENCE = "sentence"
     BULLET_LIST_OPTION_ROW = "bullet_list_option_row"

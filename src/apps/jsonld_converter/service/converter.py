@@ -101,7 +101,7 @@ class JsonLDModelConverter(ContainsNestedMixin):
         return obj.export()
 
 
-class ExportFormat(enum.Enum):
+class ExportFormat(enum.StrEnum):
     zip = "zip"
     list = "list"
 

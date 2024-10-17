@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from gettext import gettext as _
 
 from starlette import status
@@ -6,7 +6,7 @@ from starlette import status
 from apps.shared.enums import Language
 
 
-class ExceptionTypes(str, Enum):
+class ExceptionTypes(StrEnum):
     UNDEFINED = "UNDEFINED"
     BAD_REQUEST = "BAD_REQUEST"
     INVALID_VALUE = "INVALID_VALUE"

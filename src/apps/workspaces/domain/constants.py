@@ -1,8 +1,8 @@
-from enum import Enum
+from enum import StrEnum
 from functools import lru_cache
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     SUPER_ADMIN = "super_admin"
     OWNER = "owner"
     MANAGER = "manager"
@@ -55,18 +55,18 @@ class Role(str, Enum):
         return [cls.OWNER, cls.MANAGER, cls.REVIEWER]
 
 
-class ManagersRole(str, Enum):
+class ManagersRole(StrEnum):
     MANAGER = "manager"
     COORDINATOR = "coordinator"
     EDITOR = "editor"
 
 
-class UserPinRole(str, Enum):
+class UserPinRole(StrEnum):
     manager = "manager"
     respondent = "respondent"
 
 
-class DataRetention(str, Enum):
+class DataRetention(StrEnum):
     INDEFINITELY = "indefinitely"
     DAYS = "days"
     WEEKS = "weeks"

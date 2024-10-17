@@ -5,7 +5,7 @@ from pydantic import AnyHttpUrl
 from apps.shared.domain import PublicModel
 
 
-class WebmTargetExtenstion(str, enum.Enum):
+class WebmTargetExtenstion(enum.StrEnum):
     MP3 = ".mp3"
     MP4 = ".mp4"
 

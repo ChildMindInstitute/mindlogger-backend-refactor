@@ -3,8 +3,8 @@ import uuid
 import pytest
 from pydantic import ValidationError
 
+from apps.shared.bcrypt import verify
 from apps.shared.hashing import hash_sha224
-from apps.shared.passlib import verify
 from apps.users import domain, errors
 
 BaseData = dict[str, str]

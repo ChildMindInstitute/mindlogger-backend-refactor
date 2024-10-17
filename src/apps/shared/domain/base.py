@@ -8,6 +8,7 @@ from pydantic import Extra
 __all__ = [
     "InternalModel",
     "PublicModel",
+    "PublicModelNoExtra",
     "to_camelcase",
     "list_items_to_camel_case",
     "dict_keys_to_camel_case",
@@ -102,3 +103,8 @@ class PublicModel(BaseModel):
         allow_population_by_field_name = True
         validate_assignment = True
         alias_generator = to_camelcase
+
+
+class PublicModelNoExtra(PublicModel):
+    class Config(PublicModel.Config):
+        extra = Extra.forbid

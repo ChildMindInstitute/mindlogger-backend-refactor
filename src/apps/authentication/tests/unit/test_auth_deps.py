@@ -1,11 +1,11 @@
 import uuid
 from typing import cast
 
+import jwt
 import pytest
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.websockets import WebSocket
-from jose import JWTError
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -68,7 +68,7 @@ async def test_get_current_user_for_ws__expired_time_is_less_than_now(
 async def test_get_current_user_for_ws__internal_error(
     session: AsyncSession, mock_ws: WebSocket, mocker: MockerFixture, access_token: str
 ):
-    mocker.patch("jose.jwt.decode", side_effect=JWTError())
+    mocker.patch("jwt.decode", side_effect=jwt.PyJWTError())
     mock_ws.headers["sec-websocket-protocol"] = f"{settings.authentication.token_type}|{access_token}"  # type: ignore[index]
     with pytest.raises(AuthenticationError):
         await get_current_user_for_ws(mock_ws, session=session)
@@ -113,7 +113,7 @@ async def test_get_current_refresh_token(refresh_token: str, user: User):
 
 
 async def test_get_current_access_token__internal_error(access_token: str, mocker: MockerFixture):
-    mocker.patch("jose.jwt.decode", side_effect=JWTError())
+    mocker.patch("jwt.decode", side_effect=jwt.PyJWTError())
     coro = get_current_token()
     with pytest.raises(AuthenticationError):
         await coro(token=access_token)

@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import Field, conlist
@@ -8,7 +8,7 @@ from apps.shared.domain.base import PublicModel
 from apps.shared.domain.types import ResponseType
 
 
-class ErrorResponseType(str, Enum):
+class ErrorResponseType(StrEnum):
     UNDEFINED = "UNDEFINED"
 
 

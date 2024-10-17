@@ -108,3 +108,4 @@ class AppletReportConfiguration(AppletReportConfigurationBase, InternalModel):
 class AppletDuplicateRequest(InternalModel):
     display_name: str
     encryption: Encryption
+    include_report_server: bool = False

@@ -11,7 +11,7 @@ from apps.shared.domain import InternalModel
 from config import settings
 
 
-class FirebaseNotificationType(str, enum.Enum):
+class FirebaseNotificationType(enum.StrEnum):
     RESPONSE = "response-data-alert"
     APPLET_UPDATE = "applet-update-alert"
     APPLET_DELETE = "applet-delete-alert"

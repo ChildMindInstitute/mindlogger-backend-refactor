@@ -136,22 +136,21 @@ class InvitationsService:
         invitation_internal: InvitationRespondent = InvitationRespondent.from_orm(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
-        template_name = self._get_email_template_name(invited_user_id, schema.language)
 
         # Send email to the user
         service = MailingService()
         message = MessageSchema(
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
-            body=service.get_template(
-                path=template_name,
+            body=service.get_localized_html_template(
+                template_name=self._get_email_template_name(invited_user_id),
+                language=schema.language,
                 first_name=subject.first_name,
                 last_name=subject.last_name,
                 applet_name=applet.display_name,
                 role=invitation_internal.role,
                 link=self._get_invitation_url_by_role(invitation_internal.role),
                 key=invitation_internal.key,
-                language=schema.language,
             ),
         )
         _ = asyncio.create_task(service.send(message))
@@ -212,8 +211,6 @@ class InvitationsService:
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
 
-        template_name = self._get_email_template_name(invited_user_id, schema.language)
-
         await WorkspaceService(self.session, self._user.id).update_workspace_name(self._user, schema.workspace_prefix)
 
         # Send email to the user
@@ -221,15 +218,15 @@ class InvitationsService:
         message = MessageSchema(
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
-            body=service.get_template(
-                path=template_name,
+            body=service.get_localized_html_template(
+                template_name=self._get_email_template_name(invited_user_id),
+                language=schema.language,
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
                 role=invitation_internal.role,
                 link=self._get_invitation_url_by_role(invitation_internal.role),
                 key=invitation_internal.key,
-                language=schema.language,
             ),
         )
 
@@ -286,8 +283,9 @@ class InvitationsService:
         else:
             invitation_schema = await self.invitations_crud.save(InvitationSchema(**payload))
         invitation_internal = InvitationManagers.from_orm(invitation_schema)
+
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
-        template_name = self._get_email_template_name(invited_user_id, schema.language)
+
         await WorkspaceService(self.session, self._user.id).update_workspace_name(self._user, schema.workspace_prefix)
 
         # Send email to the user
@@ -295,15 +293,15 @@ class InvitationsService:
         message = MessageSchema(
             recipients=[schema.email],
             subject=self._get_invitation_subject(applet),
-            body=service.get_template(
-                path=template_name,
+            body=service.get_localized_html_template(
+                template_name=self._get_email_template_name(invited_user_id),
+                language=schema.language,
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
                 role=invitation_internal.role,
                 link=self._get_invitation_url_by_role(invitation_internal.role),
                 key=invitation_internal.key,
-                language=schema.language,
             ),
         )
 
@@ -427,10 +425,10 @@ class InvitationsService:
         await InvitationCRUD(self.session).delete_by_applet_ids(self._user.email, applet_ids, roles)
 
     @staticmethod
-    def _get_email_template_name(invited_user_id: uuid.UUID | None, language: str) -> str:
+    def _get_email_template_name(invited_user_id: uuid.UUID | None) -> str:
         if not invited_user_id:
-            return f"invitation_new_user_{language}"
-        return f"invitation_registered_user_{language}"
+            return "invitation_new_user"
+        return "invitation_registered_user"
 
     async def get_meta(self, key: uuid.UUID) -> dict | None:
         return await InvitationCRUD(self.session).get_meta(key)

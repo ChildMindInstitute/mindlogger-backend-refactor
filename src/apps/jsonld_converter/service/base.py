@@ -8,7 +8,7 @@ from pyld import ContextResolver, jsonld
 from apps.jsonld_converter.errors import JsonLDLoaderError, JsonLDProcessingError
 
 
-class LdKeyword(str, enum.Enum):
+class LdKeyword(enum.StrEnum):
     context = "@context"
     type = "@type"
     id = "@id"
