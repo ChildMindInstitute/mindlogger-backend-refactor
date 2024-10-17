@@ -29,7 +29,7 @@ class CalculationType(enum.StrEnum):
     PERCENTAGE = "percentage"
 
 
-class ScoringType(str, enum.StrEnum):
+class ScoringType(enum.StrEnum):
     SCORE = "score"
     RAW_SCORE = "raw_score"
 
