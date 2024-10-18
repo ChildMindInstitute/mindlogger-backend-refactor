@@ -1,6 +1,6 @@
 import uuid
 from datetime import time, timedelta
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-class PeriodicityType(str, Enum):
+class PeriodicityType(StrEnum):
     ONCE = "ONCE"
     DAILY = "DAILY"
     WEEKLY = "WEEKLY"
@@ -21,7 +21,7 @@ class PeriodicityType(str, Enum):
     ALWAYS = "ALWAYS"
 
 
-class TimerType(str, Enum):
+class TimerType(StrEnum):
     NOT_SET = "NOT_SET"
     TIMER = "TIMER"
     IDLE = "IDLE"
@@ -45,11 +45,11 @@ class DefaultEvent(BaseModel):
     flow_id: uuid.UUID | None
 
 
-class AvailabilityType(str, Enum):
+class AvailabilityType(StrEnum):
     ALWAYS_AVAILABLE = "AlwaysAvailable"
     SCHEDULED_ACCESS = "ScheduledAccess"
 
 
-class NotificationTriggerType(str, Enum):
+class NotificationTriggerType(StrEnum):
     FIXED = "FIXED"
     RANDOM = "RANDOM"

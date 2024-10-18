@@ -100,6 +100,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         """
         @param filters: see supported filters: _AnswerListFilter
         """
+        self.session.expire_all()
         query = select(AnswerSchema).join(AnswerSchema.answer_item).options(contains_eager(AnswerSchema.answer_item))
 
         _filters = _AnswerListFilter().get_clauses(**filters)

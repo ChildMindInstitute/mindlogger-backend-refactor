@@ -1,7 +1,6 @@
-from apps.activities.domain.conditions import MultiSelectConditionType, SingleSelectConditionType
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.response_values import PhrasalTemplateFieldType
-from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
+from apps.activities.domain.scores_reports import ReportType, Score, SubscaleItemType, SubscaleSetting
 from apps.activities.errors import (
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
@@ -20,9 +19,14 @@ from apps.activities.errors import (
     IncorrectSectionPrintItemTypeError,
     IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
+    SubscaleDoesNotExist,
     SubscaleInsideSubscaleError,
+    SubscaleItemDoesNotExist,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
+    SubscaleItemTypeItemDoesNotExist,
+    SubscaleNameDoesNotExist,
+    SubscaleSettingDoesNotExist,
 )
 
 
@@ -40,27 +44,50 @@ def validate_item_flow(values: dict):
                 else:
                     # check if condition item order is less than current item order  # noqa: E501
                     condition_item_index = item_names.index(condition.item_name)
+                    condition_source_item = items[condition_item_index]
+                    item_type = condition_source_item.config.type
                     if condition_item_index > index:
                         raise IncorrectConditionItemIndexError()
 
                     # check if condition item type is correct
-                    if items[condition_item_index].response_type not in [
-                        ResponseType.SINGLESELECT,
-                        ResponseType.MULTISELECT,
-                        ResponseType.SLIDER,
-                    ]:
+                    if condition_source_item.response_type not in ResponseType.conditional_logic_types():
                         raise IncorrectConditionLogicItemTypeError()
 
                     # check if condition option ids are correct
-                    if condition.type in list(SingleSelectConditionType) or condition.type in list(
-                        MultiSelectConditionType
-                    ):
-                        option_values = [
-                            str(option.value) for option in items[condition_item_index].response_values.options
-                        ]
-                        if str(condition.payload.option_value) not in option_values:
+                    if item_type in ResponseType.option_based():
+                        if item_type in ResponseType.options_mapped_on_value():
+                            option_value_attr = "value"
+                            selected_option = str(condition.payload.option_value)
+                        else:
+                            option_value_attr = "id"
+                            selected_option = str(condition.payload.option_value)
+
+                        option_values = []
+                        for option in condition_source_item.response_values.options:
+                            option_value = getattr(option, option_value_attr)
+                            option_values.append(str(option_value))
+
+                        if selected_option not in option_values:
                             raise IncorrectConditionOptionError()
+
     return values
+
+
+def validate_subscale_setting_match_reports(report: Score, subscale_setting: SubscaleSetting):
+    report_subscale_linked = report.subscale_name
+    subscales = subscale_setting.subscales
+    if not subscales:
+        raise SubscaleDoesNotExist()
+
+    linked_subscale = next((subscale for subscale in subscales if subscale.name == report_subscale_linked), None)
+    if not linked_subscale:
+        raise SubscaleNameDoesNotExist()
+    elif not linked_subscale.items:
+        raise SubscaleItemDoesNotExist()
+    else:
+        has_non_subscale_items = any(item.type == SubscaleItemType.ITEM for item in linked_subscale.items)
+        if not has_non_subscale_items:
+            raise SubscaleItemTypeItemDoesNotExist()
 
 
 def validate_score_and_sections(values: dict):  # noqa: C901
@@ -78,6 +105,13 @@ def validate_score_and_sections(values: dict):  # noqa: C901
 
         for report in list(scores):
             score_item_ids.append(report.id)
+            if report.scoring_type == "score":
+                subscale_setting = values.get("subscale_setting")
+                if not subscale_setting:  # report of type score exist then we need a subscale setting
+                    raise SubscaleSettingDoesNotExist()
+                else:
+                    validate_subscale_setting_match_reports(report, subscale_setting)
+
             # check if all item names are same as values.name
             for item in report.items_score:
                 if item not in item_names:

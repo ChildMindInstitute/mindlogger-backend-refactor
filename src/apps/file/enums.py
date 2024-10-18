@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class FileScopeEnum(str, Enum):
+class FileScopeEnum(StrEnum):
     CONTENT = "content"
     ANSWER = "answer"

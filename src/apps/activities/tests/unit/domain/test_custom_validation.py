@@ -1,18 +1,32 @@
 from typing import cast
 
 import pytest
+from pydantic import ValidationError
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.conditions import (
+    BetweenCondition,
     Condition,
     ConditionType,
     EqualCondition,
     EqualToOptionCondition,
+    GreaterThanCondition,
+    LessThanCondition,
+    NotEqualCondition,
     OptionPayload,
+    OutsideOfCondition,
+    SingleDatePayload,
+    SingleTimePayload,  # Added for correct payload handling
+    TimePayload,
+    TimePayloadType,
     ValuePayload,
 )
-from apps.activities.domain.custom_validation import validate_item_flow, validate_score_and_sections, validate_subscales
+from apps.activities.domain.custom_validation import (
+    validate_item_flow,
+    validate_score_and_sections,
+    validate_subscales,
+)
 from apps.activities.domain.response_type_config import ResponseType, SingleSelectionConfig
 from apps.activities.domain.scores_reports import (
     ReportType,
@@ -41,6 +55,7 @@ from apps.activities.errors import (
     IncorrectSectionPrintItemTypeError,
     IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
+    IncorrectTimeRange,
     SubscaleInsideSubscaleError,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
@@ -75,10 +90,10 @@ def items() -> list[ActivityItemCreate]:
                 is_hidden=False,
                 conditional_logic=ConditionalLogic(
                     conditions=[
-                        EqualCondition(
+                        EqualToOptionCondition(
                             item_name=item_name,
-                            type=ConditionType.EQUAL,
-                            payload=ValuePayload(value=1),
+                            type=ConditionType.EQUAL_TO_OPTION,
+                            payload=OptionPayload(option_value=1),
                         )
                     ]
                 ),
@@ -138,6 +153,88 @@ class TestValidateItemFlow:
             items[0].conditional_logic.conditions = conditions
         with pytest.raises(IncorrectConditionOptionError):
             validate_item_flow(values)
+
+    @pytest.mark.parametrize(
+        "payload",
+        (SingleTimePayload(time={"hours": 1, "minutes": 0}),),
+    )
+    def test_validator_successful_create_eq_condition(self, payload):
+        EqualCondition(
+            item_name="test",
+            type=ConditionType.EQUAL,
+            payload=payload,
+        )
+
+    @pytest.mark.parametrize(
+        "payload",
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
+    )
+    def test_validator_successful_create_ne_condition(self, payload):
+        NotEqualCondition(
+            item_name="test",
+            type=ConditionType.NOT_EQUAL,
+            payload=payload,
+        )
+
+    @pytest.mark.parametrize(
+        "payload",
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
+    )
+    def test_validator_successful_create_lt_condition(self, payload):
+        LessThanCondition(
+            item_name="test",
+            type=ConditionType.LESS_THAN,
+            payload=payload,
+        )
+
+    @pytest.mark.parametrize(
+        "payload",
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
+    )
+    def test_validator_successful_create_gt_condition(self, payload):
+        GreaterThanCondition(
+            item_name="test",
+            type=ConditionType.GREATER_THAN,
+            payload=payload,
+        )
+
+    @pytest.mark.parametrize(
+        "payload",
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
+    )
+    def test_validator_successful_create_between_condition(self, payload):
+        BetweenCondition(
+            item_name="test",
+            type=ConditionType.BETWEEN,
+            payload=payload,
+        )
+
+    @pytest.mark.parametrize(
+        "payload",
+        (TimePayload(type=TimePayloadType.START_TIME, value="01:00"),),
+    )
+    def test_validator_successful_create_outside_condition(self, payload):
+        OutsideOfCondition(
+            item_name="test",
+            type=ConditionType.OUTSIDE_OF,
+            payload=payload,
+        )
+
+    def test_single_date_payload_invalid_date(self):
+        with pytest.raises(ValidationError):
+            SingleDatePayload(date="1970-99-01")
+
+    def test_single_time_payload_invalid_hours(self):
+        with pytest.raises(ValueError):
+            SingleTimePayload(time={"hours": 80, "minutes": 0})
+
+    def test_single_time_payload_incorrect_time_range(self):
+        with pytest.raises(IncorrectTimeRange):
+            SingleTimePayload(time={"hours": 3, "minutes": 0}, min_value="03:00", max_value="02:00")
+
+    def test_single_time_payload_unknown_item_type(self):
+        with pytest.raises(ValidationError):
+            SingleTimePayload(time="unknown_item_type", min_value="01:00", max_value="02:00")
 
 
 class TestValidateScoreAndSections:
