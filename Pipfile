@@ -60,7 +60,7 @@ pyjwt = "==2.9.0"
 [dev-packages]
 ipdb = "==0.13.13"
 pudb = "==2024.1.2"
-pre-commit = "==3.8.0"
+pre-commit = "==4.0.1"
 ruff = "==0.6.8"
 allure-pytest = "==2.13.5"
 pydantic-factories = "==1.17.3"
