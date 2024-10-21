@@ -267,6 +267,7 @@ def validate_phrasal_templates(values: dict):
                             ResponseType.SLIDERROWS,
                             ResponseType.SINGLESELECTROWS,
                             ResponseType.MULTISELECTROWS,
+                            ResponseType.PARAGRAPHTEXT,
                         ]:
                             raise IncorrectPhrasalTemplateItemTypeError()
 
