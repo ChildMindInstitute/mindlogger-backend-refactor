@@ -46,7 +46,7 @@ pydantic = { extras = ["email"], version = "==1.10.18" }
 pymongo = "*"
 python-multipart = "==0.0.12"
 redis = "==5.1.0"
-sentry-sdk = "~=2.13"
+sentry-sdk = "~=2.17"
 sqlalchemy = { extras = ["asyncio"], version = "==1.4.53" }
 sqlalchemy-utils = "==0.41.2"
 taskiq = { extras = ["reload"], version = "==0.11.7" }
