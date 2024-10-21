@@ -12,7 +12,7 @@ asyncpg = "==0.29.0"
 azure-storage-blob = "==12.22.0"
 bcrypt = "==4.2.0"
 boto3 = "==1.26.10"
-fastapi = "==0.110.3"
+fastapi = "==0.115.2"
 # The latest version of the fastapi is not taken because of the issue
 # starlette version for those deps ==0.21.0
 # with fastapi-mail that requires 0.21 < starlette < 0.22
