@@ -6,7 +6,7 @@ from typing import Collection
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID, insert
-from sqlalchemy.orm import Query, aliased, contains_eager
+from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
 from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
 
@@ -100,6 +100,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         """
         @param filters: see supported filters: _AnswerListFilter
         """
+        self.session.expire_all()
         query = select(AnswerSchema).join(AnswerSchema.answer_item).options(contains_eager(AnswerSchema.answer_item))
 
         _filters = _AnswerListFilter().get_clauses(**filters)
@@ -958,3 +959,38 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         res = await self._execute(query)
         return res.all()
+
+    @staticmethod
+    def __activity_and_flow_ids_by_subject_query(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
+        query: Query = (
+            select(
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
+                ).label("id")
+            )
+            .where(subject_column == subject_id)
+            .distinct()
+        )
+        return query
+
+    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a target subject
+        """
+        res = await self._execute(
+            self.__activity_and_flow_ids_by_subject_query(AnswerSchema.target_subject_id, target_subject_id)
+        )
+        return res.scalars().all()
+
+    async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a source subject
+        """
+        res = await self._execute(
+            self.__activity_and_flow_ids_by_subject_query(AnswerSchema.source_subject_id, source_subject_id)
+        )
+        return res.scalars().all()

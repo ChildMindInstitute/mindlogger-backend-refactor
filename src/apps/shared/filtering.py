@@ -2,12 +2,12 @@ import operator
 
 __all__ = ["Filtering", "FilterField"]
 
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column
 
 
-class Comparisons(str, Enum):
+class Comparisons(StrEnum):
     EQUAL = "eq"
     NOT_EQUAL = "neq"
     IN = "in"

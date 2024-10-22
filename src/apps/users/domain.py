@@ -3,10 +3,10 @@ import uuid
 
 from pydantic import EmailStr, Field, root_validator, validator
 
+from apps.shared.bcrypt import get_password_hash
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import lowercase_email
 from apps.shared.hashing import hash_sha224
-from apps.shared.passlib import get_password_hash
 from apps.users.db.schemas import UserDeviceSchema
 from apps.users.errors import PasswordHasSpacesError
 
