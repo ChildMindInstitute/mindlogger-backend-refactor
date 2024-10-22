@@ -129,7 +129,12 @@ class TestActivityItems:
             assert item["responseValues"] == item_create.response_values.dict(by_alias=True)
 
     @pytest.mark.parametrize(
-        "item_fixture", ("phrasal_template_with_text_create", "phrasal_template_with_slider_rows_create")
+        "item_fixture",
+        (
+            "phrasal_template_with_text_create",
+            "phrasal_template_with_slider_rows_create",
+            "phrasal_template_with_paragraph_create",
+        ),
     )
     async def test_create_applet_with_phrasal_template(
         self,
@@ -245,6 +250,25 @@ class TestActivityItems:
         assert result[0]["message"] == activity_errors.IncorrectConditionItemIndexError.message
 
     async def test_create_applet__activity_with_conditional_logic(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_minimal_data: AppletCreate,
+        activity_create_with_conditional_logic: ActivityCreate,
+    ):
+        client.login(tom)
+        data = applet_minimal_data.copy(deep=True)
+        data.activities = [activity_create_with_conditional_logic]
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+        result = response.json()["result"]
+        item_create_with_logic = activity_create_with_conditional_logic.items[1]
+        assert item_create_with_logic.conditional_logic is not None
+        assert result["activities"][0]["items"][1]["conditionalLogic"] == item_create_with_logic.conditional_logic.dict(
+            by_alias=True
+        )
+
+    async def test_create_applet__activity_with_paragraph_and_phrase_builder(
         self,
         client: TestClient,
         tom: User,
