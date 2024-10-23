@@ -298,3 +298,21 @@ def phrasal_template_with_slider_rows_create(
     )
 
     return [slider_rows_item_create, phrasal_item]
+
+
+@pytest.fixture
+def phrasal_template_with_paragraph_create(
+    phrasal_template_config: PhrasalTemplateConfig,
+    phrasal_template_with_paragraph_response_values: PhrasalTemplateValues,
+    base_item_data: BaseItemData,
+    paragraph_text_item_create,
+):
+    phrasal_item = ActivityItemCreate(
+        **base_item_data.dict(exclude={"name"}),
+        name="phrasal_template_paragraph_test",
+        response_type=ResponseType.PHRASAL_TEMPLATE,
+        config=phrasal_template_config,
+        response_values=phrasal_template_with_paragraph_response_values,
+    )
+
+    return [paragraph_text_item_create, phrasal_item]
