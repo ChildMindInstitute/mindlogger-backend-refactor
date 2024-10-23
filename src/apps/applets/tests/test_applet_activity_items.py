@@ -129,7 +129,12 @@ class TestActivityItems:
             assert item["responseValues"] == item_create.response_values.dict(by_alias=True)
 
     @pytest.mark.parametrize(
-        "item_fixture", ("phrasal_template_with_text_create", "phrasal_template_with_slider_rows_create")
+        "item_fixture",
+        (
+            "phrasal_template_with_text_create",
+            "phrasal_template_with_slider_rows_create",
+            "phrasal_template_with_time_create",
+        ),
     )
     async def test_create_applet_with_phrasal_template(
         self,
