@@ -257,16 +257,17 @@ def validate_phrasal_templates(values: dict):
                             raise IncorrectPhrasalTemplateItemError()
 
                         if referenced_item.response_type not in [
-                            ResponseType.TEXT,
-                            ResponseType.SINGLESELECT,
-                            ResponseType.MULTISELECT,
-                            ResponseType.SLIDER,
-                            ResponseType.NUMBERSELECT,
-                            ResponseType.TIMERANGE,
                             ResponseType.DATE,
-                            ResponseType.SLIDERROWS,
-                            ResponseType.SINGLESELECTROWS,
+                            ResponseType.MULTISELECT,
                             ResponseType.MULTISELECTROWS,
+                            ResponseType.NUMBERSELECT,
+                            ResponseType.SINGLESELECT,
+                            ResponseType.SINGLESELECTROWS,
+                            ResponseType.SLIDER,
+                            ResponseType.SLIDERROWS,
+                            ResponseType.TEXT,
+                            ResponseType.TIME,
+                            ResponseType.TIMERANGE,
                         ]:
                             raise IncorrectPhrasalTemplateItemTypeError()
 

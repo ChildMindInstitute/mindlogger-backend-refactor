@@ -191,6 +191,27 @@ def phrasal_template_with_text_response_values(phrasal_template_with_text_respon
 
 
 @pytest.fixture()
+def phrasal_template_with_time_response_fields(time_item_create) -> List[PhrasalTemplateField]:
+    return [
+        _PhrasalTemplateSentenceField(text="test sentence"),
+        _PhrasalTemplateItemResponseField(
+            item_name=time_item_create.name, display_mode=PhrasalTemplateDisplayMode.SENTENCE, item_index=0
+        ),
+    ]
+
+
+@pytest.fixture
+def phrasal_template_with_time_response_values(
+    phrasal_template_with_time_response_fields,
+) -> PhrasalTemplateValues:
+    return PhrasalTemplateValues(
+        phrases=[PhrasalTemplatePhrase(image=None, fields=phrasal_template_with_time_response_fields)],
+        card_title="test card title",
+        type=ResponseType.PHRASAL_TEMPLATE,
+    )
+
+
+@pytest.fixture()
 def phrasal_template_with_slider_rows_response_fields(slider_rows_item_create) -> List[PhrasalTemplateField]:
     return [
         _PhrasalTemplateSentenceField(text="test sentence"),
