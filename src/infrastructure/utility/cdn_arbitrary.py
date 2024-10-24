@@ -3,16 +3,16 @@ from datetime import datetime, timedelta
 from typing import BinaryIO
 
 import boto3
-import botocore
 from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas
+from botocore.config import Config
 
 from infrastructure.utility.cdn_client import CDNClient
 from infrastructure.utility.cdn_config import CdnConfig
 
 
 class ArbitraryS3CdnClient(CDNClient):
-    def configure_client(self, config: CdnConfig):
-        client_config = botocore.config.Config(
+    def configure_client(self, config: CdnConfig, signature_version=None):
+        client_config = Config(
             max_pool_connections=25,
         )
         return boto3.client(
@@ -32,8 +32,8 @@ class ArbitraryGCPCdnClient(CDNClient):
     def generate_private_url(self, key):
         return f"gs://{self.config.bucket}/{key}"
 
-    def configure_client(self, config):
-        client_config = botocore.config.Config(
+    def configure_client(self, config, signature_version=None):
+        client_config = Config(
             max_pool_connections=25,
         )
         return boto3.client(
@@ -58,7 +58,7 @@ class ArbitraryAzureCdnClient(CDNClient):
     def generate_private_url(self, key):
         return f"https://{self.config.bucket}.blob.core.windows.net/mindlogger/{key}"  # noqa
 
-    def configure_client(self, _):
+    def configure_client(self, _, **kwargs):
         blob_service_client = BlobServiceClient.from_connection_string(self.sec_key)
         with suppress(Exception):
             blob_service_client.create_container(self.default_container_name)
