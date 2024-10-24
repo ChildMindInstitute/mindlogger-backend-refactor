@@ -704,7 +704,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return result_list
 
-    async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str:
+    async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str | None:
         query: Query = select(AnswerSchema.applet_history_id)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.order_by(AnswerSchema.version.desc())

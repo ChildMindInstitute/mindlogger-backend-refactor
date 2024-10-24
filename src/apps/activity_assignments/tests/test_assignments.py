@@ -819,13 +819,13 @@ class TestActivityAssignments(BaseTest):
         assert response.json()["result"]["appletId"] == str(applet_one_with_flow.id)
         assignments = response.json()["result"]["assignments"]
         assert len(assignments) == 2
-        assignment = assignments[0]
+        assignment = [a for a in assignments if a["activityId"] is not None][0]
         assert assignment["activityId"] == str(applet_one_with_flow.activities[0].id)
         assert assignment["respondentSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["targetSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["activityFlowId"] is None
         assert assignment["id"] == assignment_activity["id"]
-        assignment = assignments[1]
+        assignment = [a for a in assignments if a["activityFlowId"] is not None][0]
         assert assignment["activityId"] is None
         assert assignment["respondentSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["targetSubjectId"] == str(lucy_applet_one_subject.id)

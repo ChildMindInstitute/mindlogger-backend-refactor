@@ -1,13 +1,15 @@
 import asyncio
 import http
 import io
+import json
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO
 
 import boto3
-import botocore
 import httpx
+from botocore import UNSIGNED
+from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from apps.file.errors import FileNotFoundError
@@ -35,6 +37,8 @@ class CDNClient:
         # semaphore for concurrent calls of urlib3 in boto3
         self.semaphore = asyncio.Semaphore(max_concurrent_tasks)
 
+        self._is_bucket_public: bool | None = None
+
     @classmethod
     def generate_key(cls, scope, unique, filename):
         return f"{cls.default_container_name}/{scope}/{unique}/{filename}"
@@ -42,10 +46,11 @@ class CDNClient:
     def generate_private_url(self, key):
         return f"s3://{self.config.bucket}/{key}"
 
-    def configure_client(self, config):
+    def configure_client(self, config, signature_version=None):
         assert config, "set CDN"
-        client_config = botocore.config.Config(
+        client_config = Config(
             max_pool_connections=25,
+            signature_version=signature_version,
         )
 
         if config.access_key and config.secret_key:
@@ -109,6 +114,18 @@ class CDNClient:
         media_type = mimetypes.guess_type(key)[0] if mimetypes.guess_type(key)[0] else "application/octet-stream"
         return file, media_type
 
+    def _generate_public_url(self, key):
+        client = self.configure_client(config=self.config, signature_version=UNSIGNED)
+        url = client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": self.config.bucket,
+                "Key": key,
+            },
+            ExpiresIn=0,
+        )
+        return url
+
     def _generate_presigned_url(self, key):
         url = self.client.generate_presigned_url(
             "get_object",
@@ -123,6 +140,12 @@ class CDNClient:
     async def generate_presigned_url(self, key):
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._generate_presigned_url, key)
+            url = await asyncio.wrap_future(future)
+            return url
+
+    async def generate_public_url(self, key):
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(self._generate_public_url, key)
             url = await asyncio.wrap_future(future)
             return url
 
@@ -192,3 +215,48 @@ class CDNClient:
             except httpx.HTTPError as e:
                 logger.info("File upload error")
                 raise e
+
+    def _check_is_bucket_public(self) -> bool:
+        # Check the bucket policy
+        try:
+            bucket_policy = self.client.get_bucket_policy(Bucket=self.config.bucket)
+            if policy := bucket_policy.get("Policy"):
+                policy_statements: list = json.loads(policy)["Statement"]
+
+                for statement in policy_statements:
+                    if statement["Effect"] == "Allow" and "Principal" in statement and statement["Principal"] == "*":
+                        return True  # Bucket policy allows public access
+        except ClientError as e:
+            if e.response["Error"]["Code"] != "NoSuchBucketPolicy":
+                logger.error(f"Error getting bucket policy: {e}")
+        except Exception as e:
+            logger.error(f"Error getting bucket policy: {e}")
+
+        return False  # No public access found
+
+    def is_bucket_public(self) -> bool:
+        if self._is_bucket_public is None:
+            self._is_bucket_public = self._check_is_bucket_public()
+
+        return self._is_bucket_public
+
+    def _is_object_public(self, key) -> bool:
+        # Check the object's ACL
+        try:
+            acl = self.client.get_object_acl(Bucket=self.config.bucket, Key=key)
+            for grant in acl["Grants"]:
+                if (
+                    grant["Grantee"].get("Type") == "Group"
+                    and grant["Grantee"].get("URI") == "http://acs.amazonaws.com/groups/global/AllUsers"
+                ):
+                    return True  # Object is publicly accessible
+        except (ClientError, Exception) as e:
+            logger.error(f"Error getting object ACL: {e}")
+            return False
+
+        return False  # No public access found
+
+    async def is_object_public(self, key) -> bool:
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(self._is_object_public, key)
+            return await asyncio.wrap_future(future)
