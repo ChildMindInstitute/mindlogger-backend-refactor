@@ -40,15 +40,14 @@ from apps.users.domain import User, UserCreate, UserCreateRequest
 from apps.workspaces.domain.constants import UserPinRole
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-
-
-@pytest.fixture
-async def applet_one_with_public_link(session: AsyncSession, applet_one: AppletFull, tom: User):
-    srv = AppletService(session, tom.id)
-    await srv.create_access_link(applet_one.id, CreateAccessLink(require_login=False))
-    applet = await srv.get_full_applet(applet_one.id)
-    assert applet.link is not None
-    return applet
+from test.factory.applet_factory import create_applet
+from test.factory.invitation_factory import (
+    build_manager_invitation,
+    build_respondent_invitation,
+    build_reviewer_invitation,
+)
+from test.factory.user_factory import create_user
+from test.utility.subject_utility import get_applet_user_subject
 
 
 @pytest.fixture
@@ -230,6 +229,102 @@ class TestInvite(BaseTest):
             ("editor", "respondent", http.HTTPStatus.FORBIDDEN),
         ],
     )
+    async def test_invite_existing_user2(
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        mailbox: TestMail,
+        invite_language: str,
+        inviter_type: str,
+        invitee_type: str,
+        invite_status: str,
+    ):
+        applet_creator = await create_user(session)
+        applet = await create_applet(session, applet_creator, [], [])
+
+        invitor: User
+        if inviter_type == "admin":
+            # Applet creator is the admin
+            invitor = applet_creator
+        else:
+            invitor = await create_user(session)
+
+        if inviter_type == "admin":
+            # No need to grant additional role to the invitor as it's already the applet creator,
+            # which is an admin.
+            pass
+        elif inviter_type == "manager":
+            await UserAppletAccessService(session, applet_creator.id, applet.id).add_role(invitor.id, Role.MANAGER)
+        elif inviter_type == "coordinator":
+            await UserAppletAccessService(session, applet_creator.id, applet.id).add_role(invitor.id, Role.COORDINATOR)
+        elif inviter_type == "editor":
+            await UserAppletAccessService(session, applet_creator.id, applet.id).add_role(invitor.id, Role.EDITOR)
+        else:
+            raise Exception(f"Invalid inviter_type: {inviter_type}")
+
+        client.login(invitor)
+
+        invitee_email = EmailStr(f"invitee-{uuid.uuid4()}@mindlogger.com")
+        invitee = await create_user(session, email=invitee_email)
+        respondent_secret_user_id = f"secret-user-id-{uuid.uuid4()}"
+        respondent_tag = f"respondent-tag-{uuid.uuid4()}"
+
+        url: str
+        payload: InvitationManagersRequest | InvitationReviewerRequest | InvitationRespondentRequest
+        if invitee_type == "manager":
+            url = self.invite_manager_url
+            payload = build_manager_invitation(invitee_email, ManagersRole.MANAGER)
+        elif invitee_type == "coordinator":
+            url = self.invite_manager_url
+            payload = build_manager_invitation(invitee_email, ManagersRole.COORDINATOR)
+        elif invitee_type == "editor":
+            url = self.invite_manager_url
+            payload = build_manager_invitation(invitee_email, ManagersRole.EDITOR)
+        elif invitee_type == "reviewer":
+            url = self.invite_reviewer_url
+            subject = await get_applet_user_subject(session, applet.id, applet_creator.id)
+            payload = build_reviewer_invitation(invitee_email, [subject.id])
+        elif invitee_type == "respondent":
+            url = self.invite_respondent_url
+            payload = build_respondent_invitation(invitee_email, respondent_secret_user_id, tag=respondent_tag)
+        else:
+            raise Exception(f"Invalid invitee_type: {invitee_type}")
+        payload.language = InvitationLanguage(invite_language)
+
+        response = await client.post(url.format(applet_id=str(applet.id)), payload)
+        assert response.status_code == invite_status
+
+        if invite_status == http.HTTPStatus.OK:
+            assert response.json()["result"]["userId"] == str(invitee.id)
+            assert len(mailbox.mails) == 1
+            assert message_language(mailbox.mails[0].body) == invite_language
+            assert len(mailbox.mails[0].recipients) == 1
+            assert mailbox.mails[0].recipients[0] == invitee_email
+
+            if invitee_type == "respondent":
+                assert response.json()["result"]["secretUserId"] == respondent_secret_user_id
+                assert response.json()["result"]["tag"] == respondent_tag
+
+    @pytest.mark.parametrize("invite_language", ["en", "fr", "el"])
+    @pytest.mark.parametrize(
+        "inviter_type,invitee_type,invite_status",
+        [
+            ("admin", "manager", http.HTTPStatus.OK),
+            ("admin", "coordinator", http.HTTPStatus.OK),
+            ("admin", "editor", http.HTTPStatus.OK),
+            ("admin", "reviewer", http.HTTPStatus.OK),
+            ("admin", "respondent", http.HTTPStatus.OK),
+            ("manager", "manager", http.HTTPStatus.OK),
+            ("manager", "coordinator", http.HTTPStatus.OK),
+            ("manager", "editor", http.HTTPStatus.OK),
+            ("manager", "reviewer", http.HTTPStatus.OK),
+            ("manager", "respondent", http.HTTPStatus.OK),
+            ("coordinator", "respondent", http.HTTPStatus.OK),
+            ("coordinator", "reviewer", http.HTTPStatus.OK),
+            ("coordinator", "manager", http.HTTPStatus.FORBIDDEN),
+            ("editor", "respondent", http.HTTPStatus.FORBIDDEN),
+        ],
+    )
     async def test_invite_existing_user(
         self,
         client: TestClient,
@@ -294,7 +389,6 @@ class TestInvite(BaseTest):
             assert mailbox.mails[0].recipients[0] == payload.email
 
             if invitee_type == "respondent":
-                assert response.json()["result"]["userId"] == str(user.id)
                 assert response.json()["result"]["tag"] is not None
                 assert response.json()["result"]["tag"] == payload.tag
 
