@@ -90,7 +90,7 @@ async def applet_activities(
             activities_future,
         )
         applet_detail = AppletSingleLanguageDetailMobilePublic.from_orm(applet)
-        respondent_meta = {"nickname": subject.nickname if subject else None, "tag": subject.tag if subject else None}
+        respondent_meta = SubjectsService.to_respondent_meta(subject)
 
         if filters.has_submitted or filters.has_score:
             activities = await __filter_activities(
