@@ -268,6 +268,8 @@ def validate_phrasal_templates(values: dict):
                             ResponseType.TEXT,
                             ResponseType.TIME,
                             ResponseType.TIMERANGE,
+                            ResponseType.PARAGRAPHTEXT,
+                            ResponseType.MULTISELECTROWS,
                         ]:
                             raise IncorrectPhrasalTemplateItemTypeError()
 
