@@ -628,17 +628,24 @@ class AnswerService:
             raise AnswerNotFoundError()
 
         answer = answers[0]
-        source_subject_schema = await SubjectsCrud(self.session).get_by_id(answer.source_subject_id)
-        source_subject = SubjectReadResponse(
-            id=source_subject_schema.id,
-            first_name=source_subject_schema.first_name,
-            last_name=source_subject_schema.last_name,
-            nickname=source_subject_schema.nickname,
-            secret_user_id=source_subject_schema.secret_user_id,
-            tag=source_subject_schema.tag,
-            applet_id=source_subject_schema.applet_id,
-            user_id=source_subject_schema.user_id,
-        )
+        source_subject = None
+
+        if answer.source_subject_id:
+            source_subject_schema = await SubjectsCrud(self.session).get_by_id(answer.source_subject_id)
+            source_subject = (
+                SubjectReadResponse(
+                    id=source_subject_schema.id,
+                    first_name=source_subject_schema.first_name,
+                    last_name=source_subject_schema.last_name,
+                    nickname=source_subject_schema.nickname,
+                    secret_user_id=source_subject_schema.secret_user_id,
+                    tag=source_subject_schema.tag,
+                    applet_id=source_subject_schema.applet_id,
+                    user_id=source_subject_schema.user_id,
+                )
+                if source_subject_schema
+                else None
+            )
 
         answer_result = ActivityAnswer(
             **answer.dict(exclude={"migrated_data"}),
@@ -758,11 +765,12 @@ class AnswerService:
 
         answer_result: list[ActivityAnswer] = []
 
-        source_subject_id_answer_index_map = {}
+        source_subject_id_answer_index_map: dict[uuid.UUID, int] = {}
 
         is_flow_completed = False
         for i, answer in enumerate(answers):
-            source_subject_id_answer_index_map[answer.source_subject_id] = i
+            if answer.source_subject_id:
+                source_subject_id_answer_index_map[answer.source_subject_id] = i
             if answer.flow_history_id and answer.is_flow_completed:
                 is_completed = True
             answer_result.append(
