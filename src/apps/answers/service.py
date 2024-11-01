@@ -765,12 +765,15 @@ class AnswerService:
 
         answer_result: list[ActivityAnswer] = []
 
-        source_subject_id_answer_index_map: dict[uuid.UUID, int] = {}
+        source_subject_id_answer_index_map: dict[uuid.UUID, list[int]] = {}
 
         is_flow_completed = False
         for i, answer in enumerate(answers):
             if answer.source_subject_id:
-                source_subject_id_answer_index_map[answer.source_subject_id] = i
+                if answer.source_subject_id not in source_subject_id_answer_index_map:
+                    source_subject_id_answer_index_map[answer.source_subject_id] = [i]
+                else:
+                    source_subject_id_answer_index_map[answer.source_subject_id].append(i)
             if answer.flow_history_id and answer.is_flow_completed:
                 is_completed = True
             answer_result.append(
@@ -805,8 +808,8 @@ class AnswerService:
         source_subject_ids = list(source_subject_id_answer_index_map.keys())
         source_subjects = await SubjectsCrud(self.session).get_by_ids(source_subject_ids)
         for source_subject_schema in source_subjects:
-            answer_index = source_subject_id_answer_index_map[source_subject_schema.id]
-            answer_result[answer_index].source_subject = SubjectReadResponse(
+            answer_indexes = source_subject_id_answer_index_map[source_subject_schema.id]
+            source_subject = SubjectReadResponse(
                 id=source_subject_schema.id,
                 first_name=source_subject_schema.first_name,
                 last_name=source_subject_schema.last_name,
@@ -816,6 +819,8 @@ class AnswerService:
                 applet_id=source_subject_schema.applet_id,
                 user_id=source_subject_schema.user_id,
             )
+            for answer_index in answer_indexes:
+                answer_result[answer_index].source_subject = source_subject
 
         submission = FlowSubmissionDetails(
             submission=FlowSubmission(
