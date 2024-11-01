@@ -99,6 +99,7 @@ from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relatio
 from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import SubjectReadResponse
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -627,6 +628,18 @@ class AnswerService:
             raise AnswerNotFoundError()
 
         answer = answers[0]
+        source_subject_schema = await SubjectsCrud(self.session).get_by_id(answer.source_subject_id)
+        source_subject = SubjectReadResponse(
+                id=source_subject_schema.id,
+                first_name=source_subject_schema.first_name,
+                last_name=source_subject_schema.last_name,
+                nickname=source_subject_schema.nickname,
+                secret_user_id=source_subject_schema.secret_user_id,
+                tag=source_subject_schema.tag,
+                applet_id=source_subject_schema.applet_id,
+                user_id=source_subject_schema.user_id,
+            )
+
         answer_result = ActivityAnswer(
             **answer.dict(exclude={"migrated_data"}),
             **answer.answer_item.dict(
@@ -640,6 +653,7 @@ class AnswerService:
                     "end_datetime",
                 }
             ),
+            source_subject=source_subject,
         )
 
         activities = await ActivityHistoriesCRUD(self.session).load_full([answer.activity_history_id])
@@ -744,8 +758,11 @@ class AnswerService:
 
         answer_result: list[ActivityAnswer] = []
 
+        source_subject_id_answer_index_map = {}
+
         is_flow_completed = False
-        for answer in answers:
+        for i, answer in enumerate(answers):
+            source_subject_id_answer_index_map[answer.source_subject_id] = i
             if answer.flow_history_id and answer.is_flow_completed:
                 is_completed = True
             answer_result.append(
@@ -776,6 +793,21 @@ class AnswerService:
 
         flows = await FlowsHistoryCRUD(self.session).load_full([flow_history_id])
         assert flows
+
+        source_subject_ids = list(source_subject_id_answer_index_map.keys())
+        source_subjects = await SubjectsCrud(self.session).get_by_ids(source_subject_ids)
+        for source_subject_schema in source_subjects:
+            answer_index = source_subject_id_answer_index_map[source_subject_schema.id]
+            answer_result[answer_index].source_subject = SubjectReadResponse(
+                id=source_subject_schema.id,
+                first_name=source_subject_schema.first_name,
+                last_name=source_subject_schema.last_name,
+                nickname=source_subject_schema.nickname,
+                secret_user_id=source_subject_schema.secret_user_id,
+                tag=source_subject_schema.tag,
+                applet_id=source_subject_schema.applet_id,
+                user_id=source_subject_schema.user_id,
+            )
 
         submission = FlowSubmissionDetails(
             submission=FlowSubmission(
