@@ -765,15 +765,12 @@ class AnswerService:
 
         answer_result: list[ActivityAnswer] = []
 
-        source_subject_id_answer_index_map: dict[uuid.UUID, list[int]] = {}
+        source_subject_id_answer_index_map: dict[uuid.UUID, list[int]] = defaultdict(list)
 
         is_flow_completed = False
         for i, answer in enumerate(answers):
             if answer.source_subject_id:
-                if answer.source_subject_id not in source_subject_id_answer_index_map:
-                    source_subject_id_answer_index_map[answer.source_subject_id] = [i]
-                else:
-                    source_subject_id_answer_index_map[answer.source_subject_id].append(i)
+                source_subject_id_answer_index_map[answer.source_subject_id].append(i)
             if answer.flow_history_id and answer.is_flow_completed:
                 is_completed = True
             answer_result.append(
