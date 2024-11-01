@@ -1471,7 +1471,14 @@ class TestAnswerActivityItems(BaseTest):
         assert set(data["summary"]["identifier"]) == {"lastAnswerDate", "identifier", "userPublicKey"}
         assert data["summary"]["identifier"]["identifier"] == "encrypted_identifier"
 
-    async def test_get_answer_activity(self, client: TestClient, tom: User, applet: AppletFull, answer: AnswerSchema):
+    async def test_get_answer_activity(
+        self,
+        client: TestClient,
+        tom: User,
+        tom_applet_subject: SubjectSchema,
+        applet: AppletFull,
+        answer: AnswerSchema
+    ):
         client.login(tom)
         response = await client.get(
             self.activity_answer_url.format(
@@ -1480,7 +1487,41 @@ class TestAnswerActivityItems(BaseTest):
                 activity_id=applet.activities[0].id,
             )
         )
-        assert response.status_code == http.HTTPStatus.OK  # TODO: Check response
+        assert response.status_code == http.HTTPStatus.OK
+        response_json = response.json()
+
+        result = response_json["result"]
+
+        assert set(result.keys()) == {"activity", "answer", "summary"}
+
+        result_answer = result["answer"]
+        assert set(result_answer.keys()) == {
+            "activityHistoryId", "activityId", "answer", "createdAt", "endDatetime", "events", "flowHistoryId", "id",
+            "identifier", "itemIds", "migratedData", "submitId", "userPublicKey", "version", "sourceSubject"
+        }
+        assert result_answer["submitId"] == str(answer.submit_id)
+        assert result_answer["flowHistoryId"] == answer.flow_history_id if answer.flow_history_id else str(
+            answer.flow_history_id)
+
+        assert set(result_answer.keys()) == {
+            "activityHistoryId", "activityId", "answer", "createdAt", "endDatetime", "events", "flowHistoryId", "id",
+            "identifier", "itemIds", "migratedData", "submitId", "userPublicKey", "version", "sourceSubject"
+        }
+
+        assert result_answer["id"] == str(answer.id)
+
+        source_subject = result_answer["sourceSubject"]
+
+        assert set(source_subject.keys()) == {"secretUserId", "nickname", "tag", "id", "lastSeen", "appletId", "userId",
+                                              "firstName", "lastName"}
+        assert source_subject["id"] == str(tom_applet_subject.id)
+        assert source_subject["userId"] == str(tom.id)
+        assert source_subject["secretUserId"] == tom_applet_subject.secret_user_id
+        assert source_subject["nickname"] == tom_applet_subject.nickname
+        assert source_subject["firstName"] == tom_applet_subject.first_name
+        assert source_subject["lastName"] == tom_applet_subject.last_name
+        assert source_subject["tag"] == tom_applet_subject.tag
+        assert source_subject["lastSeen"] is None
 
     async def test_fail_answered_applet_not_existed_activities(
         self, client: TestClient, tom: User, applet: AppletFull, uuid_zero: uuid.UUID, answer: AnswerSchema
@@ -2506,7 +2547,14 @@ class TestAnswerActivityItems(BaseTest):
         assert len(data[0]["answerDates"]) == 2
         assert len(data[1]["answerDates"]) == 1
 
-    async def test_flow_submission(self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow):
+    async def test_flow_submission(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_with_flow: AppletFull,
+        tom_answer_activity_flow: AnswerSchema,
+        tom_applet_with_flow_subject: Subject
+    ):
         client.login(tom)
         url = self.flow_submission_url.format(
             applet_id=applet_with_flow.id,
@@ -2525,10 +2573,23 @@ class TestAnswerActivityItems(BaseTest):
         # fmt: off
         assert set(answer_data.keys()) == {
             "activityHistoryId", "activityId", "answer", "createdAt", "endDatetime", "events", "flowHistoryId", "id",
-            "identifier", "itemIds", "migratedData", "submitId", "userPublicKey", "version"
+            "identifier", "itemIds", "migratedData", "submitId", "userPublicKey", "version", "sourceSubject"
         }
         assert answer_data["submitId"] == str(tom_answer_activity_flow.submit_id)
         assert answer_data["flowHistoryId"] == str(tom_answer_activity_flow.flow_history_id)
+
+        source_subject = answer_data["sourceSubject"]
+
+        assert set(source_subject.keys()) == {"secretUserId", "nickname", "tag", "id", "lastSeen", "appletId", "userId",
+                                              "firstName", "lastName"}
+        assert source_subject["id"] == str(tom_applet_with_flow_subject.id)
+        assert source_subject["userId"] == str(tom.id)
+        assert source_subject["secretUserId"] == tom_applet_with_flow_subject.secret_user_id
+        assert source_subject["nickname"] == tom_applet_with_flow_subject.nickname
+        assert source_subject["firstName"] == tom_applet_with_flow_subject.first_name
+        assert source_subject["lastName"] == tom_applet_with_flow_subject.last_name
+        assert source_subject["tag"] == tom_applet_with_flow_subject.tag
+        assert source_subject["lastSeen"] is None
 
         assert set(data["flow"].keys()) == {
             "id", "activities", "autoAssign", "createdAt", "description", "hideBadge", "idVersion", "isHidden",
