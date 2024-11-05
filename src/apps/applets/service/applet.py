@@ -274,6 +274,7 @@ class AppletService:
                     report_included_item_name=activity.report_included_item_name,  # noqa: E501
                     subscale_setting=activity.subscale_setting,
                     scores_and_reports=activity.scores_and_reports,
+                    auto_assign=activity.auto_assign
                 )
             )
 
@@ -289,6 +290,7 @@ class AppletService:
                     items=[FlowItemCreate(activity_key=item) for item in activity_flow.activity_ids],
                     report_included_activity_name=activity_flow.report_included_activity_name,  # noqa: E501
                     report_included_item_name=activity_flow.report_included_item_name,  # noqa: E501
+                    auto_assign=activity_flow.auto_assign
                 )
             )
 
