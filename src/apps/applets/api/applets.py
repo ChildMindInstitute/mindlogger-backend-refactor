@@ -103,7 +103,7 @@ async def applet_retrieve(
         applet.owner_id = applet_owner.owner_id
     return AppletRetrieveResponse(
         result=AppletSingleLanguageDetailPublic.from_orm(applet),
-        respondent_meta={"nickname": subject.nickname if subject else None, "tag": subject.tag if subject else None},
+        respondent_meta=SubjectsService.to_respondent_meta(subject),
         applet_meta=AppletMeta(has_assessment=has_assessment),
     )
 

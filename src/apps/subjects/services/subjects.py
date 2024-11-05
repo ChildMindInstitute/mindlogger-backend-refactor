@@ -35,6 +35,14 @@ class SubjectsService:
             tag=schema.tag,
         )
 
+    @staticmethod
+    def to_respondent_meta(subject: Subject | None):
+        return {
+            "subjectId": subject.id if subject else None,
+            "nickname": subject.nickname if subject else None,
+            "tag": subject.tag if subject else None,
+        }
+
     async def create(self, schema: SubjectCreate) -> Subject:
         subject_with_secret = await self.get_by_secret_id(schema.applet_id, schema.secret_user_id)
         if subject_with_secret and not subject_with_secret.is_deleted:
