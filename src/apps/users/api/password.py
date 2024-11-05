@@ -72,7 +72,8 @@ async def password_recovery(
     async with atomic(session):
         try:
             content_source = await get_mindlogger_content_source(request)
-            await PasswordRecoveryService(session).send_password_recovery(schema, content_source)
+            content_language = request.headers.get("content-language", "en")
+            await PasswordRecoveryService(session).send_password_recovery(schema, content_source, content_language)
         except UserNotFound:
             pass  # mute error in terms of user enumeration vulnerability
 

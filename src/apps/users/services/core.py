@@ -5,6 +5,7 @@ from typing import cast
 from apps.authentication.services import AuthenticationService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.shared.enums import Language
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     PasswordRecoveryApproveRequest,
@@ -33,6 +34,7 @@ class PasswordRecoveryService:
         self,
         schema: PasswordRecoveryRequest,
         content_source: MindloggerContentSource,
+        content_language: Language,
     ) -> PublicUser:
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
@@ -93,7 +95,7 @@ class PasswordRecoveryService:
             subject="Password reset",
             body=service.get_localized_html_template(
                 template_name="reset_password",
-                language="en",
+                language=content_language,
                 email=user.email_encrypted,
                 expiration_minutes=exp,
                 url=url,
