@@ -4,6 +4,8 @@ from gettext import gettext as _
 from dateutil import tz
 from fastapi import Depends, HTTPException, Request
 from starlette import status
+import pytz
+from datetime import datetime
 
 from infrastructure.http.domain import MindloggerContentSource
 
@@ -39,11 +41,14 @@ def get_local_tz(required: bool = False):
     return _get_local_tz
 
 
-def get_tz_utc_offset(required: bool = False):
-    def _get_tz_utc_offset(local_tz: str | None = Depends(get_local_tz(required))) -> int | None:
-        if local_tz:
-            if l_tz := tz.gettz(local_tz):
-                return int(datetime.datetime.now(l_tz).utcoffset().total_seconds())  # type: ignore[union-attr]
-        return None
-
+def get_tz_utc_offset():
+    def _get_tz_utc_offset(timezone: str | None) -> int | None:
+        if timezone is None:
+            return None
+        try:
+            tz = pytz.timezone(timezone)
+            now = datetime.now(tz)
+            return int(now.utcoffset().total_seconds())
+        except pytz.UnknownTimeZoneError:
+            return None
     return _get_tz_utc_offset
