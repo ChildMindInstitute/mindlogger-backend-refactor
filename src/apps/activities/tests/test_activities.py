@@ -403,7 +403,8 @@ class TestActivities:
         assert result["appletDetail"]["activityFlows"] == []
 
         assert result["respondentMeta"] == {
-            "nickname": f"{tom.first_name} {tom.last_name}",
+            "subjectId": str(tom_applet_one_subject.id),
+            "nickname": tom_applet_one_subject.nickname,
             "tag": tom_applet_one_subject.tag,
         }
 

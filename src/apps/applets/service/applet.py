@@ -768,9 +768,11 @@ class AppletService:
         )
         activities = ActivityService(self.session, self.user_id).get_info_by_applet_id(schema.id, language)
         activity_flows = FlowService(self.session).get_info_by_applet_id(schema.id, language)
-        futures = await asyncio.gather(activities, activity_flows)
+        subject = SubjectsService(self.session, self.user_id).get_by_user_and_applet(self.user_id, schema.id)
+        futures = await asyncio.gather(activities, activity_flows, subject)
         applet.activities = futures[0]
         applet.activity_flows = futures[1]
+        applet.respondent_meta = SubjectsService.to_respondent_meta(futures[2])
         return applet
 
     async def has_assessment(self, applet_id: uuid.UUID) -> bool:

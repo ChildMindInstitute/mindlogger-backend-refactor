@@ -21,6 +21,7 @@ from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.domain.types import _BaseModel
 from apps.shared.locale import I18N
+from apps.subjects.domain import SubjectReadResponse
 
 
 class ClientMeta(InternalModel):
@@ -244,6 +245,7 @@ class ActivityAnswer(PublicModel):
     migrated_data: dict | None = None
     end_datetime: datetime.datetime
     created_at: datetime.datetime
+    source_subject: SubjectReadResponse | None
 
     @validator("activity_id", always=True)
     def extract_activity_id(cls, value, values):
