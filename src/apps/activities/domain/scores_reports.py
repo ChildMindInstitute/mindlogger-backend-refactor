@@ -29,6 +29,11 @@ class CalculationType(enum.StrEnum):
     PERCENTAGE = "percentage"
 
 
+class ScoringType(enum.StrEnum):
+    SCORE = "score"
+    RAW_SCORE = "raw_score"
+
+
 class ScoreConditionalLogic(PublicModel):
     name: str
     id: str
@@ -59,6 +64,8 @@ class Score(PublicModel):
     message: str | None = None
     items_print: list[str] | None = Field(default_factory=list)
     conditional_logic: list[ScoreConditionalLogic] | None = None
+    scoring_type: ScoringType | None = None
+    subscale_name: str | None = None
 
     @validator("conditional_logic")
     def validate_conditional_logic(cls, value, values):

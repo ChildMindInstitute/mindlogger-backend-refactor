@@ -1950,7 +1950,9 @@ class ReportServerService:
         return self._is_activity_last_in_flow(applet_full, activity_id, flow_id)
 
     async def create_report(
-        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
+        self,
+        submit_id: uuid.UUID,
+        answer_id: uuid.UUID | None = None,
     ) -> ReportServerResponse | None:
         filters = dict(submit_id=submit_id)
         if answer_id:

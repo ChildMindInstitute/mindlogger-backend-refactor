@@ -1,6 +1,6 @@
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.response_values import PhrasalTemplateFieldType
-from apps.activities.domain.scores_reports import ReportType, SubscaleItemType
+from apps.activities.domain.scores_reports import ReportType, Score, SubscaleItemType, SubscaleSetting
 from apps.activities.errors import (
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
@@ -19,9 +19,14 @@ from apps.activities.errors import (
     IncorrectSectionPrintItemTypeError,
     IncorrectSubscaleInsideSubscaleError,
     IncorrectSubscaleItemError,
+    SubscaleDoesNotExist,
     SubscaleInsideSubscaleError,
+    SubscaleItemDoesNotExist,
     SubscaleItemScoreError,
     SubscaleItemTypeError,
+    SubscaleItemTypeItemDoesNotExist,
+    SubscaleNameDoesNotExist,
+    SubscaleSettingDoesNotExist,
 )
 
 
@@ -68,6 +73,23 @@ def validate_item_flow(values: dict):
     return values
 
 
+def validate_subscale_setting_match_reports(report: Score, subscale_setting: SubscaleSetting):
+    report_subscale_linked = report.subscale_name
+    subscales = subscale_setting.subscales
+    if not subscales:
+        raise SubscaleDoesNotExist()
+
+    linked_subscale = next((subscale for subscale in subscales if subscale.name == report_subscale_linked), None)
+    if not linked_subscale:
+        raise SubscaleNameDoesNotExist()
+    elif not linked_subscale.items:
+        raise SubscaleItemDoesNotExist()
+    else:
+        has_non_subscale_items = any(item.type == SubscaleItemType.ITEM for item in linked_subscale.items)
+        if not has_non_subscale_items:
+            raise SubscaleItemTypeItemDoesNotExist()
+
+
 def validate_score_and_sections(values: dict):  # noqa: C901
     items = values.get("items", [])
     item_names = [item.name for item in items]
@@ -83,6 +105,13 @@ def validate_score_and_sections(values: dict):  # noqa: C901
 
         for report in list(scores):
             score_item_ids.append(report.id)
+            if report.scoring_type == "score":
+                subscale_setting = values.get("subscale_setting")
+                if not subscale_setting:  # report of type score exist then we need a subscale setting
+                    raise SubscaleSettingDoesNotExist()
+                else:
+                    validate_subscale_setting_match_reports(report, subscale_setting)
+
             # check if all item names are same as values.name
             for item in report.items_score:
                 if item not in item_names:
@@ -98,17 +127,20 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                     if not items[score_item_index].config.add_scores:
                         raise IncorrectScoreItemConfigError()
 
+            print_item_types = [
+                ResponseType.SINGLESELECT,
+                ResponseType.MULTISELECT,
+                ResponseType.SLIDER,
+                ResponseType.TEXT,
+                ResponseType.PARAGRAPHTEXT,
+                ResponseType.NUMBERSELECT,
+            ]
+
             for item in report.items_print:
                 if item not in item_names:
                     raise IncorrectScorePrintItemError()
                 else:
-                    if items[item_names.index(item)].response_type not in [
-                        ResponseType.SINGLESELECT,
-                        ResponseType.MULTISELECT,
-                        ResponseType.SLIDER,
-                        ResponseType.TEXT,
-                        ResponseType.PARAGRAPHTEXT,
-                    ]:
+                    if items[item_names.index(item)].response_type not in print_item_types:
                         raise IncorrectScorePrintItemTypeError()
 
             if report.conditional_logic:
@@ -118,13 +150,7 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                         if item not in item_names:
                             raise IncorrectScorePrintItemError()
                         else:
-                            if items[item_names.index(item)].response_type not in [
-                                ResponseType.SINGLESELECT,
-                                ResponseType.MULTISELECT,
-                                ResponseType.SLIDER,
-                                ResponseType.TEXT,
-                                ResponseType.PARAGRAPHTEXT,
-                            ]:
+                            if items[item_names.index(item)].response_type not in print_item_types:
                                 raise IncorrectScorePrintItemTypeError()
 
         for report in list(sections):
