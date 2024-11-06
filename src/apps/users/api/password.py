@@ -1,6 +1,7 @@
 import uuid
 from typing import Annotated
 
+from apps.shared.enums import Language
 from fastapi import Body, Depends, Query, Request
 from pydantic import Required
 from starlette import status
@@ -72,8 +73,10 @@ async def password_recovery(
     async with atomic(session):
         try:
             content_source = await get_mindlogger_content_source(request)
-            content_language = request.headers.get("content-language", "en")
-            await PasswordRecoveryService(session).send_password_recovery(schema, content_source, content_language)
+            content_language: Language = request.headers.get("content-language", "en")
+            await PasswordRecoveryService(session).send_password_recovery(
+                schema, content_source, language=content_language
+            )
         except UserNotFound:
             pass  # mute error in terms of user enumeration vulnerability
 
