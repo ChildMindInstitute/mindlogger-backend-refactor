@@ -1222,11 +1222,10 @@ class TestActivities:
             )
         )
 
-        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
 
-        assert result[0]["type"] == "BAD_REQUEST"
-        assert result[0]["message"] == f"Subject {applet_one_shell_account.id} is not a valid respondent"
+        assert result == []
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_auto_assigned(

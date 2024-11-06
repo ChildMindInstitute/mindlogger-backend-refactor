@@ -817,7 +817,7 @@ class TestSubjects(BaseTest):
             respondent_subject_id=applet_one_shell_account.id, activity_or_flow_id=activity_or_flow_id
         )
         response = await client.get(url)
-        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.status_code == http.HTTPStatus.OK
 
     async def test_get_target_subjects_by_respondent_editor_user(
         self, client, applet_one_pit_editor: AppletFull, pit: User, tom_applet_one_subject: Subject
