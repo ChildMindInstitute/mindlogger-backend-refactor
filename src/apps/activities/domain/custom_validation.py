@@ -127,17 +127,20 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                     if not items[score_item_index].config.add_scores:
                         raise IncorrectScoreItemConfigError()
 
+            print_item_types = [
+                ResponseType.SINGLESELECT,
+                ResponseType.MULTISELECT,
+                ResponseType.SLIDER,
+                ResponseType.TEXT,
+                ResponseType.PARAGRAPHTEXT,
+                ResponseType.NUMBERSELECT,
+            ]
+
             for item in report.items_print:
                 if item not in item_names:
                     raise IncorrectScorePrintItemError()
                 else:
-                    if items[item_names.index(item)].response_type not in [
-                        ResponseType.SINGLESELECT,
-                        ResponseType.MULTISELECT,
-                        ResponseType.SLIDER,
-                        ResponseType.TEXT,
-                        ResponseType.PARAGRAPHTEXT,
-                    ]:
+                    if items[item_names.index(item)].response_type not in print_item_types:
                         raise IncorrectScorePrintItemTypeError()
 
             if report.conditional_logic:
@@ -147,13 +150,7 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                         if item not in item_names:
                             raise IncorrectScorePrintItemError()
                         else:
-                            if items[item_names.index(item)].response_type not in [
-                                ResponseType.SINGLESELECT,
-                                ResponseType.MULTISELECT,
-                                ResponseType.SLIDER,
-                                ResponseType.TEXT,
-                                ResponseType.PARAGRAPHTEXT,
-                            ]:
+                            if items[item_names.index(item)].response_type not in print_item_types:
                                 raise IncorrectScorePrintItemTypeError()
 
         for report in list(sections):
