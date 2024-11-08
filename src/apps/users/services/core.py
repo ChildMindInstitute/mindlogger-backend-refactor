@@ -22,8 +22,6 @@ from infrastructure.cache import CacheNotFound
 from infrastructure.cache.domain import CacheEntry
 from infrastructure.http.domain import MindloggerContentSource
 
-__all__ = ["PasswordRecoveryService"]
-
 
 class PasswordRecoveryService:
     def __init__(self, session) -> None:
