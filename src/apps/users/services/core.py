@@ -93,10 +93,6 @@ class PasswordRecoveryService:
         message = MessageSchema(
             recipients=[user.email_encrypted],
             subject="Password reset",
-            subject=service.get_localized_string(
-                key="password_reset_subject",
-                language=language,
-            ),
             body=service.get_localized_html_template(
                 template_name="reset_password",
                 language=language,
