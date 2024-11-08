@@ -336,6 +336,7 @@ class ActivityService:
                 subscale_setting=schema.subscale_setting,
                 performance_task_type=schema.performance_task_type,
                 is_performance_task=schema.is_performance_task,
+                auto_assign=schema.auto_assign,
             )
             activity_map[activity.id] = activity
             activities.append(activity)
