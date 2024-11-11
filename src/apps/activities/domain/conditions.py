@@ -32,10 +32,10 @@ class DateConditionType(str, Enum):
 
 class TimeRangeConditionType(str, Enum):
     GREATER_THAN_TIME_RANGE = "GREATER_THAN_TIME_RANGE"
-    LESS_THAN_TIMES_RANGE = "LESS_THAN_TIME_RANGE"
+    LESS_THAN_TIME_RANGE = "LESS_THAN_TIME_RANGE"
     BETWEEN_TIMES_RANGE = "BETWEEN_TIMES_RANGE"
-    EQUAL_TO_TIMES_RANGE = "EQUAL_TO_TIME_RANGE"
-    NOT_EQUAL_TO_TIMES_RANGE = "NOT_EQUAL_TO_TIME_RANGE"
+    EQUAL_TO_TIME_RANGE = "EQUAL_TO_TIME_RANGE"
+    NOT_EQUAL_TO_TIME_RANGE = "NOT_EQUAL_TO_TIME_RANGE"
     OUTSIDE_OF_TIMES_RANGE = "OUTSIDE_OF_TIMES_RANGE"
 
 
@@ -162,44 +162,25 @@ class TimePayload(PublicModel):
 
 
 class SingleTimePayload(PublicModel):
-    time: Optional[datetime.time] = None
+    time: Optional[Dict[str, int]] = None
+    fieldName: Optional[str] = None
 
     @root_validator(pre=True)
     def validate_time(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         time_value = values.get("time")
         if isinstance(time_value, dict):
-            values["time"] = cls._dict_to_time(time_value)
-        elif isinstance(time_value, str):
-            values["time"] = cls._string_to_time(time_value)
+            values["time"] = {"hours": time_value["hours"], "minutes": time_value["minutes"]}
         return values
 
     def dict(self, *args, **kwargs) -> Dict[str, Any]:
         d = super().dict(*args, **kwargs)
-        if self.time:
-            d["time"] = self.time.strftime("%H:%M")
         return d
-
-    @staticmethod
-    def _dict_to_time(time_dict: Dict[str, Any]) -> datetime.time:
-        if "hours" in time_dict and "minutes" in time_dict:
-            return datetime.time(hour=int(time_dict["hours"]), minute=int(time_dict["minutes"]))
-        raise ValueError("Invalid time dictionary structure")
-
-    @staticmethod
-    def _string_to_time(time_string: str) -> datetime.time:
-        try:
-            return datetime.datetime.strptime(time_string, "%H:%M").time()
-        except ValueError:
-            raise ValueError("Invalid time string format. Expected 'HH:MM'.")
-
-    @staticmethod
-    def _time_to_dict(time: datetime.time) -> Dict[str, int]:
-        return {"hours": time.hour, "minutes": time.minute}
 
 
 class MinMaxTimePayload(PublicModel):
-    minTime: Optional[datetime.time] = None
-    maxTime: Optional[datetime.time] = None
+    minTime: Optional[Dict[str, int]] = None
+    maxTime: Optional[Dict[str, int]] = None
+    fieldName: Optional[str] = None
 
     @root_validator(pre=True)
     def validate_times(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -207,37 +188,15 @@ class MinMaxTimePayload(PublicModel):
         max_time_dict = values.get("maxTime")
 
         if isinstance(min_time_dict, dict):
-            values["minTime"] = cls._dict_to_time(min_time_dict)
+            values["minTime"] = {"hours": min_time_dict["hours"], "minutes": min_time_dict["minutes"]}
         if isinstance(max_time_dict, dict):
-            values["maxTime"] = cls._dict_to_time(max_time_dict)
+            values["maxTime"] = {"hours": max_time_dict["hours"], "minutes": max_time_dict["minutes"]}
 
         return values
 
     def dict(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         d = super().dict(*args, **kwargs)
-        if self.minTime:
-            d["minTime"] = self._time_to_dict(self.minTime)
-        if self.maxTime:
-            d["maxTime"] = self._time_to_dict(self.maxTime)
-        return {key: value for key, value in d.items() if value is not None}
-
-    @staticmethod
-    def _dict_to_time(time_dict: Dict[str, int]) -> datetime.time:
-        if "hours" in time_dict and "minutes" in time_dict:
-            return datetime.time(hour=int(time_dict["hours"]), minute=int(time_dict["minutes"]))
-        raise ValueError("Invalid time dictionary structure")
-
-    @staticmethod
-    def _time_to_dict(time: datetime.time) -> Dict[str, int]:
-        return {"hours": time.hour, "minutes": time.minute}
-
-    def json_serialize(self) -> Dict[str, Any]:
-        data = self.dict()
-        if self.minTime:
-            data["minTime"] = self._time_to_dict(self.minTime)
-        if self.maxTime:
-            data["maxTime"] = self._time_to_dict(self.maxTime)
-        return data
+        return d
 
 
 class MinMaxSliderRowPayload(PublicModelNoExtra):
@@ -350,7 +309,7 @@ class _GreaterThanTimeRangeCondition(BaseCondition):
 
 
 class _EqualToTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.EQUAL_TO_TIMES_RANGE, const=True)
+    type: str = Field(TimeRangeConditionType.EQUAL_TO_TIME_RANGE, const=True)
 
 
 class _EqualToTimeCondition(BaseCondition):
@@ -362,7 +321,7 @@ class _NotEqualToTimeCondition(BaseCondition):
 
 
 class _LessThanTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.LESS_THAN_TIMES_RANGE, const=True)
+    type: str = Field(TimeRangeConditionType.LESS_THAN_TIME_RANGE, const=True)
 
 
 class _LessThanTimeCondition(BaseCondition):
@@ -374,7 +333,7 @@ class _BetweenTimeCondition(BaseCondition):
 
 
 class _NotEqualToTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.NOT_EQUAL_TO_TIMES_RANGE, const=True)
+    type: str = Field(TimeRangeConditionType.NOT_EQUAL_TO_TIME_RANGE, const=True)
 
 
 class _OutsideOfTimeRangeCondition(BaseCondition):
