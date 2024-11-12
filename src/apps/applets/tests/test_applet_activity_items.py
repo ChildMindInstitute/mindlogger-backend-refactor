@@ -133,6 +133,7 @@ class TestActivityItems:
         (
             "phrasal_template_with_text_create",
             "phrasal_template_with_slider_rows_create",
+            "phrasal_template_with_time_create",
             "phrasal_template_with_paragraph_create",
         ),
     )
