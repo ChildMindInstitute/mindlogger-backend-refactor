@@ -5,7 +5,6 @@ from typing import cast
 from apps.authentication.services import AuthenticationService
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
-from apps.shared.enums import Language
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     PasswordRecoveryApproveRequest,
@@ -32,7 +31,7 @@ class PasswordRecoveryService:
         self,
         schema: PasswordRecoveryRequest,
         content_source: MindloggerContentSource,
-        language: Language,
+        language: str,
     ) -> PublicUser:
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 

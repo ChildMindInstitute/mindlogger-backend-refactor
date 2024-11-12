@@ -9,7 +9,6 @@ from apps.authentication.deps import get_current_user
 from apps.authentication.services import AuthenticationService
 from apps.job.service import JobService
 from apps.shared.domain.response import Response
-from apps.shared.enums import Language
 from apps.shared.response import EmptyResponse
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
@@ -27,6 +26,7 @@ from config import settings
 from infrastructure.cache import CacheNotFound, PasswordRecoveryHealthCheckNotValid
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.http import get_language
 from infrastructure.http.deps import get_mindlogger_content_source
 
 
@@ -65,6 +65,7 @@ async def password_recovery(
     request: Request,
     schema: PasswordRecoveryRequest = Body(...),
     session=Depends(get_session),
+    language: str = Depends(get_language),
 ) -> EmptyResponse:
     """General endpoint for sending password recovery email
     and stored info in Redis.
@@ -73,10 +74,7 @@ async def password_recovery(
     async with atomic(session):
         try:
             content_source = await get_mindlogger_content_source(request)
-            content_language: Language = Language(request.headers.get("content-language", "en"))
-            await PasswordRecoveryService(session).send_password_recovery(
-                schema, content_source, language=content_language
-            )
+            await PasswordRecoveryService(session).send_password_recovery(schema, content_source, language)
         except UserNotFound:
             pass  # mute error in terms of user enumeration vulnerability
 
