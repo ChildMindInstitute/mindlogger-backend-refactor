@@ -26,7 +26,6 @@ from apps.applets.domain.applet import (
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.exception import ValidationError
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
 from apps.users import User
@@ -190,7 +189,10 @@ async def applet_activities_for_target_subject(
     ).get_activity_and_flow_ids_by_target_subject(subject_id)
 
     activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
-        applet_id, activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments, language
+        applet_id=applet_id,
+        ids=activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments,
+        include_auto=True,
+        language=language,
     )
 
     result = []
@@ -201,7 +203,7 @@ async def applet_activities_for_target_subject(
             if assignment.activity_id == activity_or_flow.id or assignment.activity_flow_id == activity_or_flow.id
         ]
 
-        activity_or_flow.set_status(activity_or_flow_assignments)
+        activity_or_flow.set_status(assignments=activity_or_flow_assignments, include_auto=True)
 
         result.append(
             ActivityOrFlowWithAssignmentsPublic(
@@ -228,11 +230,7 @@ async def applet_activities_for_respondent_subject(
     await applet_service.exist_by_id(applet_id)
 
     subject = await SubjectsService(session, user.id).exist_by_id(subject_id)
-
-    # Ensure the respondent is not a limited account
-    if subject.user_id is None:
-        # Return a generic bad request error to avoid leaking information
-        raise ValidationError(f"Subject {subject_id} is not a valid respondent")
+    is_limited_respondent = subject.user_id is None
 
     # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
     await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
@@ -252,7 +250,10 @@ async def applet_activities_for_respondent_subject(
     ).get_activity_and_flow_ids_by_source_subject(subject_id)
 
     activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
-        applet_id, activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments, language
+        applet_id=applet_id,
+        ids=activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments,
+        include_auto=not is_limited_respondent,
+        language=language,
     )
 
     result: list[ActivityOrFlowWithAssignmentsPublic] = []
@@ -263,7 +264,7 @@ async def applet_activities_for_respondent_subject(
             if assignment.activity_id == activity_or_flow.id or assignment.activity_flow_id == activity_or_flow.id
         ]
 
-        activity_or_flow.set_status(activity_or_flow_assignments)
+        activity_or_flow.set_status(assignments=activity_or_flow_assignments, include_auto=not is_limited_respondent)
 
         result.append(
             ActivityOrFlowWithAssignmentsPublic(

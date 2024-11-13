@@ -316,8 +316,8 @@ def phrasal_template_with_time_create(
     )
 
     return [time_item_create, phrasal_item]
-  
-  
+
+
 @pytest.fixture
 def phrasal_template_with_paragraph_create(
     phrasal_template_config: PhrasalTemplateConfig,
