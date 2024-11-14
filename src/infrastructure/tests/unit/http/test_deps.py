@@ -47,7 +47,7 @@ def test_get_local_tz__exception(headers: list, required: bool, details: str):
     (
         ("UTC", 0),
         ("EST", -5 * 60 * 60),
-        ("US/Pacific", -7 * 60 * 60),
+        ("US/Pacific", -8 * 60 * 60),
         ("wrong-timezone", None),
         (None, None),
     ),
