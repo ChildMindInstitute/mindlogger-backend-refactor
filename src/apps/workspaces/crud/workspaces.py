@@ -73,7 +73,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         db_result = await self._execute(query)
         res = db_result.scalars().all()
 
-        user_arb_uri_map: dict[uuid.UUID, str] = dict()
+        user_arb_uri_map: dict[uuid.UUID, str | None] = dict()
         for user_workspace in res:
             user_arb_uri_map[user_workspace.user_id] = (
                 user_workspace.database_uri if user_workspace.use_arbitrary else None

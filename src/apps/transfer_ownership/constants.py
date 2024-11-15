@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class TransferOwnershipStatus(str, Enum):
+class TransferOwnershipStatus(StrEnum):
     PENDING = "pending"
     APPROVED = "approved"
     DECLINED = "declined"

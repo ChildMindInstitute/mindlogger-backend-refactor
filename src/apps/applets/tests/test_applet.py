@@ -23,13 +23,14 @@ from apps.activities.errors import (
 )
 from apps.activity_assignments.crud.assignments import ActivityAssigmentCRUD
 from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
-from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
+from apps.applets.domain.applet_create_update import AppletCreate, AppletReportConfiguration, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
 from apps.applets.errors import AppletAlreadyExist, AppletVersionNotFoundError
 from apps.applets.service.applet import AppletService
 from apps.shared.exception import NotFoundError
 from apps.shared.test.client import TestClient
+from apps.subjects.domain import Subject
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
@@ -245,6 +246,72 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.CREATED
         assert response.json()["result"]["displayName"] == new_name
 
+    async def test_duplicate_applet_default_exclude_report_server_config(
+        self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption, session: AsyncSession
+    ):
+        await AppletService(session, tom.id).set_report_configuration(
+            applet_one.id,
+            AppletReportConfiguration(
+                report_server_ip="ipaddress",
+                report_public_key="public key",
+                report_recipients=["recipient1", "recipient1"],
+                report_include_user_id=True,
+                report_include_case_id=True,
+                report_email_body="email body",
+            ),
+        )
+
+        client.login(tom)
+        new_name = "New Name"
+        response = await client.post(
+            self.applet_duplicate_url.format(pk=applet_one.id),
+            data=dict(display_name=new_name, encryption=encryption.dict()),
+        )
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        result = response.json()["result"]
+        assert result["displayName"] == new_name
+        assert result["reportServerIp"] == ""
+        assert result["reportPublicKey"] == ""
+        assert result["reportRecipients"] == []
+        assert result["reportIncludeUserId"] is False
+        assert result["reportIncludeCaseId"] is False
+        assert result["reportEmailBody"] == ""
+
+    async def test_duplicate_applet_include_report_server_config(
+        self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption, session: AsyncSession
+    ):
+        await AppletService(session, tom.id).set_report_configuration(
+            applet_one.id,
+            AppletReportConfiguration(
+                report_server_ip="ipaddress",
+                report_public_key="public key",
+                report_recipients=["recipient1", "recipient1"],
+                report_include_user_id=True,
+                report_include_case_id=True,
+                report_email_body="email body",
+            ),
+        )
+
+        client.login(tom)
+        new_name = "New Name"
+        response = await client.post(
+            self.applet_duplicate_url.format(pk=applet_one.id),
+            data=dict(display_name=new_name, encryption=encryption.dict(), include_report_server=True),
+        )
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        result = response.json()["result"]
+        assert result["displayName"] == new_name
+        assert result["reportServerIp"] == "ipaddress"
+        assert result["reportPublicKey"] == "public key"
+        assert result["reportIncludeUserId"] is True
+        assert result["reportIncludeCaseId"] is True
+        assert result["reportEmailBody"] == "email body"
+
+        # Recipients are excluded
+        assert result["reportRecipients"] == []
+
     async def test_duplicate_applet_name_already_exists(
         self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
     ):
@@ -402,16 +469,27 @@ class TestApplet:
         assert len(response.json()["result"]) == 1
         assert response.json()["result"][0]["id"] == str(applet_one.id)
 
-    async def test_applet_detail(self, client: TestClient, tom: User, applet_one_with_flow: AppletFull):
+    async def test_applet_detail(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one_with_flow: AppletFull,
+        tom_applet_one_subject: Subject,
+    ):
         client.login(tom)
         response = await client.get(self.applet_detail_url.format(pk=applet_one_with_flow.id))
         assert response.status_code == http.HTTPStatus.OK
-        result = response.json()["result"]
+        responseJson = response.json()
+        result = responseJson["result"]
         assert result["displayName"] == applet_one_with_flow.display_name
         assert result["ownerId"] == str(tom.id)
         assert len(result["activities"]) == 1
         assert len(result["activityFlows"]) == 1
-        assert response.json()["respondentMeta"]["nickname"] == tom.get_full_name()
+        assert responseJson["respondentMeta"] == {
+            "subjectId": str(tom_applet_one_subject.id),
+            "nickname": tom_applet_one_subject.nickname,
+            "tag": tom_applet_one_subject.tag,
+        }
 
     async def test_public_applet_detail(self, client: TestClient, applet_one_with_public_link: AppletFull):
         response = await client.get(self.public_applet_detail_url.format(key=applet_one_with_public_link.link))
@@ -570,6 +648,11 @@ class TestApplet:
         assert ResponseType.SINGLESELECT in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert ResponseType.MULTISELECT not in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert response.json()["result"]["activities"][0]["itemCount"] == 1
+
+        respondentMeta = response.json()["result"]["respondentMeta"]
+        assert respondentMeta["subjectId"] is not None
+        assert respondentMeta["nickname"] == tom.get_full_name()
+        assert respondentMeta["tag"] == "Team"
 
     async def test_get_public_applet_activities_info(
         self,

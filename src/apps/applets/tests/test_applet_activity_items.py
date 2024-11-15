@@ -16,6 +16,7 @@ from apps.activities.domain.response_values import SingleSelectionValues, Slider
 from apps.activities.domain.scores_reports import (
     ScoreConditionalLogic,
     ScoresAndReports,
+    ScoringType,
     SectionConditionalLogic,
     Subscale,
     SubScaleLookupTable,
@@ -128,7 +129,13 @@ class TestActivityItems:
             assert item["responseValues"] == item_create.response_values.dict(by_alias=True)
 
     @pytest.mark.parametrize(
-        "item_fixture", ("phrasal_template_with_text_create", "phrasal_template_with_slider_rows_create")
+        "item_fixture",
+        (
+            "phrasal_template_with_text_create",
+            "phrasal_template_with_slider_rows_create",
+            "phrasal_template_with_time_create",
+            "phrasal_template_with_paragraph_create",
+        ),
     )
     async def test_create_applet_with_phrasal_template(
         self,
@@ -521,6 +528,38 @@ class TestActivityItems:
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
         assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+
+    async def test_create_applet__activity_with_subscale_settings_and_lookup_table_and_score_report_lookup_scoring(
+        self,
+        client: TestClient,
+        applet_minimal_data: AppletCreate,
+        single_select_item_create_with_score: ActivityItemCreate,
+        tom: User,
+        subscale_setting_score_type: SubscaleSetting,
+        subscale_lookup_table: list[SubScaleLookupTable],
+        scores_and_reports_lookup_scores: ScoresAndReports,
+    ):
+        client.login(tom)
+        data = applet_minimal_data.copy(deep=True)
+        sub_setting = subscale_setting_score_type.copy(deep=True)
+
+        # Update subscale setting with item name and lookup table
+        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
+        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table  # type: ignore[index]
+
+        data.activities[0].items = [single_select_item_create_with_score]
+        data.activities[0].subscale_setting = sub_setting
+        data.activities[0].scores_and_reports = scores_and_reports_lookup_scores
+
+        # Make the POST request
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+
+        # Assertions
+        assert resp.status_code == http.HTTPStatus.CREATED
+        result = resp.json()["result"]
+        assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+        assert result["activities"][0]["scoresAndReports"]["reports"][0]["scoringType"] == ScoringType.SCORE
+        assert result["activities"][0]["scoresAndReports"]["reports"][0]["subscaleName"] == "subscale type score"
 
     async def test_create_applet__activity_with_subscale_settings_with_invalid_subscale_lookup_table_age(
         self,

@@ -38,7 +38,7 @@ See MindLogger's [Knowledge Base article](https://mindlogger.atlassian.net/servi
 
 ## Technologies
 
-- ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
+- ✅ [Python3.11+](https://www.python.org/downloads/release/python-31110/)
 - ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
 - ✅ [FastAPI](https://fastapi.tiangolo.com)
 - ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
@@ -61,7 +61,7 @@ And
 
 ### Prerequisites
 
-- Python 3.10
+- Python 3.11
 - [Docker](https://docs.docker.com/get-docker/)
 
 #### Recommended Extras
@@ -71,7 +71,7 @@ Installing [pyenv](https://github.com/pyenv/pyenv) is recommended to automatical
 Alternatively, on macOS you can use a tool like [Homebrew](https://brew.sh/) to install multiple versions and specify when creating the virtual environment:
 
 ```bash
-pipenv --python /opt/homebrew/bin/python3.10
+pipenv --python /opt/homebrew/bin/python3.11
 ```
 
 ### Environment Variables
@@ -189,14 +189,15 @@ Create your virtual environment:
 pipenv shell
 ```
 
-If `pyenv` is installed Python 3.10 should automatically be installed in the virtual environment, you can check the correct version of Python is active by running:
+If `pyenv` is installed Python 3.11 should automatically be installed in the virtual environment, you can check the
+correct version of Python is active by running:
 ```bash
 python --version
 ```
 
-If the active version is **not** 3.10, you can manually specify a version while creating your virtual environment:
+If the active version is **not** 3.11, you can manually specify a version while creating your virtual environment:
 ```bash
-pipenv --python /opt/homebrew/bin/python3.10
+pipenv --python /opt/homebrew/bin/python3.11
 ```
 
 Install all dependencies

@@ -60,6 +60,7 @@ from apps.answers.domain import (
     SummaryActivityFlow,
 )
 from apps.answers.domain.answers import (
+    Answer,
     AnswersCopyCheckResult,
     AppletSubmission,
     FilesCopyCheckResult,
@@ -98,6 +99,7 @@ from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relatio
 from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import SubjectReadResponse
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -626,6 +628,25 @@ class AnswerService:
             raise AnswerNotFoundError()
 
         answer = answers[0]
+        source_subject = None
+
+        if answer.source_subject_id:
+            source_subject_schema = await SubjectsCrud(self.session).get_by_id(answer.source_subject_id)
+            source_subject = (
+                SubjectReadResponse(
+                    id=source_subject_schema.id,
+                    first_name=source_subject_schema.first_name,
+                    last_name=source_subject_schema.last_name,
+                    nickname=source_subject_schema.nickname,
+                    secret_user_id=source_subject_schema.secret_user_id,
+                    tag=source_subject_schema.tag,
+                    applet_id=source_subject_schema.applet_id,
+                    user_id=source_subject_schema.user_id,
+                )
+                if source_subject_schema
+                else None
+            )
+
         answer_result = ActivityAnswer(
             **answer.dict(exclude={"migrated_data"}),
             **answer.answer_item.dict(
@@ -639,6 +660,7 @@ class AnswerService:
                     "end_datetime",
                 }
             ),
+            source_subject=source_subject,
         )
 
         activities = await ActivityHistoriesCRUD(self.session).load_full([answer.activity_history_id])
@@ -743,8 +765,12 @@ class AnswerService:
 
         answer_result: list[ActivityAnswer] = []
 
+        source_subject_id_answer_index_map: dict[uuid.UUID, list[int]] = defaultdict(list)
+
         is_flow_completed = False
-        for answer in answers:
+        for i, answer in enumerate(answers):
+            if answer.source_subject_id:
+                source_subject_id_answer_index_map[answer.source_subject_id].append(i)
             if answer.flow_history_id and answer.is_flow_completed:
                 is_completed = True
             answer_result.append(
@@ -775,6 +801,23 @@ class AnswerService:
 
         flows = await FlowsHistoryCRUD(self.session).load_full([flow_history_id])
         assert flows
+
+        source_subject_ids = list(source_subject_id_answer_index_map.keys())
+        source_subjects = await SubjectsCrud(self.session).get_by_ids(source_subject_ids)
+        for source_subject_schema in source_subjects:
+            answer_indexes = source_subject_id_answer_index_map[source_subject_schema.id]
+            source_subject = SubjectReadResponse(
+                id=source_subject_schema.id,
+                first_name=source_subject_schema.first_name,
+                last_name=source_subject_schema.last_name,
+                nickname=source_subject_schema.nickname,
+                secret_user_id=source_subject_schema.secret_user_id,
+                tag=source_subject_schema.tag,
+                applet_id=source_subject_schema.applet_id,
+                user_id=source_subject_schema.user_id,
+            )
+            for answer_index in answer_indexes:
+                answer_result[answer_index].source_subject = source_subject
 
         submission = FlowSubmissionDetails(
             submission=FlowSubmission(
@@ -1617,7 +1660,9 @@ class AnswerService:
             MessageSchema(
                 recipients=email_list,
                 subject="Response alert",
-                body=mail_service.get_template(path="response_alert_en", domain=domain),
+                body=mail_service.get_localized_html_template(
+                    template_name="response_alert", language="en", domain=domain
+                ),
             )
         )
 
@@ -1853,6 +1898,31 @@ class AnswerService:
             )
         return results
 
+    async def get_target_subject_ids_by_respondent_and_activity_or_flow(
+        self, respondent_subject_id: uuid.UUID, activity_or_flow_id: uuid.UUID
+    ) -> list[tuple[uuid.UUID, int]]:
+        return await AnswersCRUD(self.answer_session).get_target_subject_ids_by_respondent(
+            respondent_subject_id, activity_or_flow_id
+        )
+
+    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a target subject
+
+        The data returned is just a combined list of activity and flow IDs, without any
+        distinction between the two
+        """
+        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_target_subject(target_subject_id)
+
+    async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a source subject
+
+        The data returned is just a combined list of activity and flow IDs, without any
+        distinction between the two
+        """
+        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
+
 
 class ReportServerService:
     def __init__(self, session, arbitrary_session=None):
@@ -1922,9 +1992,14 @@ class ReportServerService:
         return self._is_activity_last_in_flow(applet_full, activity_id, flow_id)
 
     async def create_report(
-        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
+        self,
+        submit_id: uuid.UUID,
+        answer_id: uuid.UUID | None = None,
     ) -> ReportServerResponse | None:
-        answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
+        filters = dict(submit_id=submit_id)
+        if answer_id:
+            filters.update(answer_id=answer_id)
+        answers = await AnswersCRUD(self.answers_session).get_list(**filters)
         if not answers:
             return None
         applet_id_version: str = answers[0].applet_history_id
@@ -1935,8 +2010,8 @@ class ReportServerService:
         # If answers only on performance tasks
         if not answers_for_report:
             return None
-        answer_map = dict((answer.id, answer) for answer in answers_for_report)
         initial_answer = answers_for_report[0]
+        assert initial_answer.target_subject_id
 
         applet = await AppletsCRUD(self.session).get_by_id(initial_answer.applet_id)
         user_info = await self._get_user_info(initial_answer.target_subject_id)
@@ -1948,12 +2023,10 @@ class ReportServerService:
         )
 
         encryption = ReportServerEncryption(applet.report_public_key)
-        responses, user_public_keys = await self._prepare_responses(answer_map)
+        responses = await self._prepare_responses(answers_for_report)
 
         data = dict(
             responses=responses,
-            userPublicKeys=user_public_keys,
-            userPublicKey=user_public_keys[0],
             now=datetime.datetime.utcnow().strftime("%x"),
             user=user_info,
             applet=applet_full,
@@ -2019,17 +2092,18 @@ class ReportServerService:
             tag=subject.tag,
         )
 
-    async def _prepare_responses(self, answers_map: dict[uuid.UUID, AnswerSchema]) -> tuple[list[dict], list[str]]:
-        answer_items = await AnswerItemsCRUD(self.answers_session).get_respondent_submits_by_answer_ids(
-            list(answers_map.keys())
-        )
-
+    async def _prepare_responses(self, answers: list[Answer]) -> list[dict]:
         responses = list()
-        for answer_item in answer_items:
-            answer = answers_map[answer_item.answer_id]
-            activity_id, version = answer.activity_history_id.split("_")
-            responses.append(dict(activityId=activity_id, answer=answer_item.answer))
-        return responses, [ai.user_public_key for ai in answer_items]
+        for answer in answers:
+            activity_id = HistoryAware().id_from_history_id(answer.activity_history_id)
+            responses.append(
+                dict(
+                    activityId=activity_id,
+                    answer=answer.answer_item.answer,
+                    userPublicKey=answer.answer_item.user_public_key,
+                )
+            )
+        return responses
 
 
 class ReportServerEncryption:

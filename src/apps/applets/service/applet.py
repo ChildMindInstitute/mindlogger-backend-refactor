@@ -25,7 +25,7 @@ from apps.applets.domain.applet_create_update import AppletCreate, AppletReportC
 from apps.applets.domain.applet_duplicate import AppletDuplicate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
-from apps.applets.domain.base import Encryption
+from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
 from apps.applets.errors import (
     AccessLinkDoesNotExistError,
     AppletAlreadyExist,
@@ -219,6 +219,7 @@ class AppletService:
         applet_exist: AppletDuplicate,
         new_name: str,
         encryption: Encryption,
+        include_report_server: bool,
     ):
         activity_key_id_map = dict()
 
@@ -232,7 +233,7 @@ class AppletService:
         )
         manager_role = Role.EDITOR if has_editor else Role.MANAGER
 
-        create_data = self._prepare_duplicate(applet_exist, new_name, encryption)
+        create_data = self._prepare_duplicate(applet_exist, new_name, encryption, include_report_server)
 
         applet = await self._create(create_data, self.user_id)
 
@@ -252,7 +253,9 @@ class AppletService:
         return applet
 
     @staticmethod
-    def _prepare_duplicate(applet_exist: AppletDuplicate, new_name: str, encryption: Encryption) -> AppletCreate:
+    def _prepare_duplicate(
+        applet_exist: AppletDuplicate, new_name: str, encryption: Encryption, include_report_server: bool
+    ) -> AppletCreate:
         activities = list()
         for activity in applet_exist.activities:
             activities.append(
@@ -271,6 +274,7 @@ class AppletService:
                     report_included_item_name=activity.report_included_item_name,  # noqa: E501
                     subscale_setting=activity.subscale_setting,
                     scores_and_reports=activity.scores_and_reports,
+                    auto_assign=activity.auto_assign,
                 )
             )
 
@@ -286,10 +290,24 @@ class AppletService:
                     items=[FlowItemCreate(activity_key=item) for item in activity_flow.activity_ids],
                     report_included_activity_name=activity_flow.report_included_activity_name,  # noqa: E501
                     report_included_item_name=activity_flow.report_included_item_name,  # noqa: E501
+                    auto_assign=activity_flow.auto_assign,
                 )
             )
 
+        report_server_config = (
+            AppletReportConfigurationBase(
+                report_server_ip=applet_exist.report_server_ip,
+                report_public_key=applet_exist.report_public_key,
+                report_include_user_id=applet_exist.report_include_user_id,
+                report_include_case_id=applet_exist.report_include_case_id,
+                report_email_body=applet_exist.report_email_body,
+            ).dict()
+            if include_report_server
+            else {}
+        )
+
         return AppletCreate(
+            **report_server_config,
             display_name=new_name,
             description=applet_exist.description,
             about=applet_exist.about,
@@ -750,9 +768,11 @@ class AppletService:
         )
         activities = ActivityService(self.session, self.user_id).get_info_by_applet_id(schema.id, language)
         activity_flows = FlowService(self.session).get_info_by_applet_id(schema.id, language)
-        futures = await asyncio.gather(activities, activity_flows)
+        subject = SubjectsService(self.session, self.user_id).get_by_user_and_applet(self.user_id, schema.id)
+        futures = await asyncio.gather(activities, activity_flows, subject)
         applet.activities = futures[0]
         applet.activity_flows = futures[1]
+        applet.respondent_meta = SubjectsService.to_respondent_meta(futures[2])
         return applet
 
     async def has_assessment(self, applet_id: uuid.UUID) -> bool:

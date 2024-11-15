@@ -12,6 +12,7 @@ from apps.activities.domain.response_values import (
     MultiSelectionRowsValues,
     MultiSelectionValues,
     NumberSelectionValues,
+    ParagraphTextValues,
     PhrasalTemplateDisplayMode,
     PhrasalTemplateField,
     PhrasalTemplatePhrase,
@@ -50,6 +51,13 @@ def single_select_response_values() -> SingleSelectionValues:
             )
         ],
         type=ResponseType.SINGLESELECT,
+    )
+
+
+@pytest.fixture
+def paragraph_response_values() -> ParagraphTextValues:
+    return ParagraphTextValues(
+        type=ResponseType.PARAGRAPHTEXT,
     )
 
 
@@ -191,11 +199,44 @@ def phrasal_template_with_text_response_values(phrasal_template_with_text_respon
 
 
 @pytest.fixture()
+def phrasal_template_with_time_response_fields(time_item_create) -> List[PhrasalTemplateField]:
+    return [
+        _PhrasalTemplateSentenceField(text="test sentence"),
+        _PhrasalTemplateItemResponseField(
+            item_name=time_item_create.name, display_mode=PhrasalTemplateDisplayMode.SENTENCE, item_index=0
+        ),
+    ]
+
+
+@pytest.fixture
+def phrasal_template_with_time_response_values(
+    phrasal_template_with_time_response_fields,
+) -> PhrasalTemplateValues:
+    return PhrasalTemplateValues(
+        phrases=[PhrasalTemplatePhrase(image=None, fields=phrasal_template_with_time_response_fields)],
+        card_title="test card title",
+        type=ResponseType.PHRASAL_TEMPLATE,
+    )
+
+
+@pytest.fixture()
 def phrasal_template_with_slider_rows_response_fields(slider_rows_item_create) -> List[PhrasalTemplateField]:
     return [
         _PhrasalTemplateSentenceField(text="test sentence"),
         _PhrasalTemplateItemResponseField(
             item_name=slider_rows_item_create.name, display_mode=PhrasalTemplateDisplayMode.SENTENCE, item_index=0
+        ),
+        _PhrasalTemplateLineBreakField(),
+        _PhrasalTemplateSentenceField(text="test sentence 2"),
+    ]
+
+
+@pytest.fixture()
+def phrasal_template_wiht_paragraph_response_fields(paragraph_text_item_create) -> List[PhrasalTemplateField]:
+    return [
+        _PhrasalTemplateSentenceField(text="test sentence"),
+        _PhrasalTemplateItemResponseField(
+            item_name=paragraph_text_item_create.name, display_mode=PhrasalTemplateDisplayMode.SENTENCE, item_index=0
         ),
         _PhrasalTemplateLineBreakField(),
         _PhrasalTemplateSentenceField(text="test sentence 2"),
@@ -209,5 +250,16 @@ def phrasal_template_with_slider_rows_response_values(
     return PhrasalTemplateValues(
         phrases=[PhrasalTemplatePhrase(image=None, fields=phrasal_template_with_slider_rows_response_fields)],
         card_title="test card title",
+        type=ResponseType.PHRASAL_TEMPLATE,
+    )
+
+
+@pytest.fixture
+def phrasal_template_with_paragraph_response_values(
+    phrasal_template_wiht_paragraph_response_fields,
+) -> PhrasalTemplateValues:
+    return PhrasalTemplateValues(
+        phrases=[PhrasalTemplatePhrase(image=None, fields=phrasal_template_wiht_paragraph_response_fields)],
+        card_title="test paragraph card title",
         type=ResponseType.PHRASAL_TEMPLATE,
     )

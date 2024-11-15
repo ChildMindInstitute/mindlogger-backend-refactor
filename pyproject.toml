@@ -55,7 +55,9 @@ env = [
     "DATABASE__USER=postgres",
     "DATABASE__DB=test",
     "ARBITRARY_DB=test_arbitrary",
-    "TASK_ANSWER_ENCRYPTION__BATCH_LIMIT=1"
+    "TASK_ANSWER_ENCRYPTION__BATCH_LIMIT=1",
+    "CDN__LEGACY_REGION=us-east-1",
+    "CDN__LEGACY_BUCKET=testing"
 ]
 
 [tool.coverage.run]
@@ -71,7 +73,7 @@ omit = [
 [tool.mypy]
 plugins = ["pydantic.mypy"]
 ignore_missing_imports = true
-python_version = '3.10'
+python_version = '3.11'
 mypy_path = 'src'
 files = ['*.py']
 warn_redundant_casts = true

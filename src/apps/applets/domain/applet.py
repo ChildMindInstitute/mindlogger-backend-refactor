@@ -179,3 +179,4 @@ class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
     updated_at: datetime.datetime | None
     activities: list[ActivityBaseInfo]
     activity_flows: list[FlowBaseInfo]
+    respondent_meta: dict | None = None

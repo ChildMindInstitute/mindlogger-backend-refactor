@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from enum import Enum
 
 from pydantic import Field
 
@@ -13,6 +14,51 @@ from apps.activities.domain.response_type_config import PerformanceTaskType, Res
 from apps.activities.domain.scores_reports import ScoresAndReports
 from apps.activity_assignments.domain.assignments import ActivityAssignmentWithSubject
 from apps.shared.domain import InternalModel, PublicModel
+
+
+class ActivityOrFlowStatusEnum(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    HIDDEN = "hidden"
+    DELETED = "deleted"
+
+
+class ActivityOrFlowBasicInfoPublic(PublicModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    images: list[str] = Field(default_factory=list)
+    is_flow: bool = False
+    status: ActivityOrFlowStatusEnum
+    auto_assign: bool = True
+    activity_ids: list[uuid.UUID] | None = None
+    performance_task_type: PerformanceTaskType | None = None
+    is_performance_task: bool | None = None
+
+
+class ActivityOrFlowBasicInfoInternal(InternalModel):
+    id: uuid.UUID
+    name: str
+    description: str
+    images: list[str] = Field(default_factory=list)
+    is_flow: bool = False
+    status: ActivityOrFlowStatusEnum | None
+    auto_assign: bool = True
+    is_hidden: bool = False
+    activity_ids: list[uuid.UUID] | None = None
+    performance_task_type: PerformanceTaskType | None = None
+    is_performance_task: bool | None = None
+
+    def set_status(self, assignments: list[ActivityAssignmentWithSubject], include_auto: bool):
+        """
+        Determine and set the value of the status field
+        """
+        if self.is_hidden:
+            self.status = ActivityOrFlowStatusEnum.HIDDEN
+        elif assignments or (include_auto and self.auto_assign):
+            self.status = ActivityOrFlowStatusEnum.ACTIVE
+        else:
+            self.status = ActivityOrFlowStatusEnum.INACTIVE
 
 
 class Activity(ActivityBase, InternalModel):
@@ -99,6 +145,10 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
 
 
 class ActivityWithAssignmentDetailsPublic(ActivityLanguageWithItemsMobileDetailPublic):
+    assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
+
+
+class ActivityOrFlowWithAssignmentsPublic(ActivityOrFlowBasicInfoPublic):
     assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
 
 

@@ -21,6 +21,7 @@ from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.domain.types import _BaseModel
 from apps.shared.locale import I18N
+from apps.subjects.domain import SubjectReadResponse
 
 
 class ClientMeta(InternalModel):
@@ -41,6 +42,10 @@ class Answer(InternalModel):
     activity_history_id: str
     respondent_id: uuid.UUID | None
     is_flow_completed: bool | None = False
+    target_subject_id: uuid.UUID | None = None
+    source_subject_id: uuid.UUID | None = None
+    input_subject_id: uuid.UUID | None = None
+    relation: str | None = None
 
     migrated_data: dict | None = None
     created_at: datetime.datetime
@@ -240,6 +245,7 @@ class ActivityAnswer(PublicModel):
     migrated_data: dict | None = None
     end_datetime: datetime.datetime
     created_at: datetime.datetime
+    source_subject: SubjectReadResponse | None
 
     @validator("activity_id", always=True)
     def extract_activity_id(cls, value, values):

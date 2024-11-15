@@ -1,4 +1,5 @@
 import http
+import re
 import uuid
 
 import pytest
@@ -22,6 +23,7 @@ from apps.mailing.services import TestMail
 from apps.shared.enums import Language
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
+from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate, SubjectFull
 from apps.subjects.services import SubjectsService
@@ -117,11 +119,19 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
     )
 
 
+def message_language(message_body: str):
+    assert message_body
+    match_result = re.search(r"<span data-language=\"([^\"]*)\"></span>", message_body)
+    assert match_result
+    return match_result.group(1)
+
+
 class TestActivityAssignments(BaseTest):
     activities_assignments_applet = "/assignments/applet/{applet_id}"
     user_activities_assignments = "/users/me/assignments/{applet_id}"
     activities_assign_unassign_applet = "/assignments/applet/{applet_id}"
 
+    @pytest.mark.parametrize("invite_language", ["en", "fr", "el"])
     async def test_create_one_assignment(
         self,
         client: TestClient,
@@ -131,7 +141,10 @@ class TestActivityAssignments(BaseTest):
         tom_applet_one_subject,
         session: AsyncSession,
         mailbox: TestMail,
+        invite_language: str,
     ):
+        await SubjectsCrud(session).update(SubjectSchema(id=tom_applet_one_subject.id, language=invite_language))
+
         client.login(tom)
 
         assignments_create = ActivitiesAssignmentsCreate(
@@ -166,7 +179,7 @@ class TestActivityAssignments(BaseTest):
         assert str(model.id) == assignment["id"]
         assert model.activity_id == applet_one.activities[0].id
         assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
-        assert mailbox.mails[0].subject == "Assignment Notification"
+        assert message_language(mailbox.mails[0].body) == invite_language
 
     async def test_create_assignment_fail_wrong_activity(
         self,
@@ -806,13 +819,13 @@ class TestActivityAssignments(BaseTest):
         assert response.json()["result"]["appletId"] == str(applet_one_with_flow.id)
         assignments = response.json()["result"]["assignments"]
         assert len(assignments) == 2
-        assignment = assignments[0]
+        assignment = [a for a in assignments if a["activityId"] is not None][0]
         assert assignment["activityId"] == str(applet_one_with_flow.activities[0].id)
         assert assignment["respondentSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["targetSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["activityFlowId"] is None
         assert assignment["id"] == assignment_activity["id"]
-        assignment = assignments[1]
+        assignment = [a for a in assignments if a["activityFlowId"] is not None][0]
         assert assignment["activityId"] is None
         assert assignment["respondentSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["targetSubjectId"] == str(lucy_applet_one_subject.id)
