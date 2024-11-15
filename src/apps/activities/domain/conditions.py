@@ -90,7 +90,8 @@ class SliderConditionType(StrEnum):
 class FieldNamePayloadType(StrEnum):
     FROM = "from"
     TO = "to"
-    
+
+
 class TimePayloadType(StrEnum):
     START_TIME = "startTime"
     END_TIME = "endTime"
@@ -173,7 +174,7 @@ class TimePayload(PublicModel):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
-    
+
     def dict(self, *args, **kwargs):
         d = super().dict(*args, **kwargs)
         d["value"] = self.value.strftime("%H:%M")
@@ -191,7 +192,7 @@ class SingleTimePayload(PublicModel):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
-    
+
     @root_validator(pre=True)
     def validate_time(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         time_value = values.get("time")
@@ -259,7 +260,7 @@ class MinMaxTimePayload(PublicModel):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
-    
+
     @root_validator(pre=True)
     def validate_times(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         min_time_dict = values.get("minTime")
