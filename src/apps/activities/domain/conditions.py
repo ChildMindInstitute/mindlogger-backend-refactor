@@ -87,6 +87,11 @@ class SliderConditionType(StrEnum):
     OUTSIDE_OF = "OUTSIDE_OF"
 
 
+class FieldNamePayloadType(StrEnum):
+    FROM = "from"
+    TO = "to"
+
+
 class TimePayloadType(StrEnum):
     START_TIME = "startTime"
     END_TIME = "endTime"
@@ -136,6 +141,13 @@ class SingleDatePayload(PublicModel):
 class DateRangePayload(PublicModel):
     minDate: datetime.date
     maxDate: datetime.date
+    fieldName: FieldNamePayloadType | None = None
+
+    @validator("fieldName", pre=True, always=True)
+    def validate_field_name(cls, v):
+        if v is not None and v not in FieldNamePayloadType.__members__.values():
+            raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
+        return v
 
     @root_validator(pre=True)
     def validate_dates(cls, values):
@@ -155,6 +167,13 @@ class DateRangePayload(PublicModel):
 class TimePayload(PublicModel):
     type: TimePayloadType | None = None
     value: datetime.time
+    fieldName: FieldNamePayloadType | None = None
+
+    @validator("fieldName", pre=True, always=True)
+    def validate_field_name(cls, v):
+        if v is not None and v not in FieldNamePayloadType.__members__.values():
+            raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
+        return v
 
     def dict(self, *args, **kwargs):
         d = super().dict(*args, **kwargs)
@@ -166,6 +185,13 @@ class SingleTimePayload(PublicModel):
     time: Optional[datetime.time] = None
     max_value: Optional[datetime.time] = None
     min_value: Optional[datetime.time] = None
+    fieldName: FieldNamePayloadType | None = None
+
+    @validator("fieldName", pre=True, always=True)
+    def validate_field_name(cls, v):
+        if v is not None and v not in FieldNamePayloadType.__members__.values():
+            raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
+        return v
 
     @root_validator(pre=True)
     def validate_time(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -227,6 +253,13 @@ class SingleTimePayload(PublicModel):
 class MinMaxTimePayload(PublicModel):
     minTime: Optional[datetime.time] = None
     maxTime: Optional[datetime.time] = None
+    fieldName: FieldNamePayloadType | None = None
+
+    @validator("fieldName", pre=True, always=True)
+    def validate_field_name(cls, v):
+        if v is not None and v not in FieldNamePayloadType.__members__.values():
+            raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
+        return v
 
     @root_validator(pre=True)
     def validate_times(cls, values: Dict[str, Any]) -> Dict[str, Any]:
