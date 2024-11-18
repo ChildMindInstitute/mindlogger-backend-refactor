@@ -167,13 +167,6 @@ class DateRangePayload(PublicModel):
 class TimePayload(PublicModel):
     type: TimePayloadType | None = None
     value: datetime.time
-    fieldName: FieldNamePayloadType | None = None
-
-    @validator("fieldName", pre=True, always=True)
-    def validate_field_name(cls, v):
-        if v is not None and v not in FieldNamePayloadType.__members__.values():
-            raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
-        return v
 
     def dict(self, *args, **kwargs):
         d = super().dict(*args, **kwargs)
