@@ -10,7 +10,7 @@ router = APIRouter(prefix="/integrations", tags=["Integration"])
 
 
 router.post(
-    path="/",
+    "",
     description="This endpoint is used to create integrations",
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -21,7 +21,7 @@ router.post(
 )(create_integration)
 
 router.get(
-    "/",
+    "",
     description="This endpoint is used to get integrations of an applet given a type",
     status_code=status.HTTP_200_OK,
     responses={
