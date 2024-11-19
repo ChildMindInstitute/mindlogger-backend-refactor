@@ -124,7 +124,7 @@ jobs:
             if [[ "$result" == "SUCCESS" ]]; then
               echo "Build successful! Submitting ticket numbers to Jira"
               tickets="${{ steps.jira-tickets.outputs.tickets }}"
-              json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }"
+              json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]'), \"data\": { \"tag\": \"${currentTag}\", \"repository\": \"${repoName}\" } }"
               curl -X POST -H 'Content-Type: application/json' --url "${JIRA_WEBHOOK_URL}" --data "$json"
               break
             elif [[ "$result" != "null" ]]; then
