@@ -4,6 +4,7 @@ import sentry_sdk
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
+from starlette.middleware.base import BaseHTTPMiddleware
 
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
@@ -34,6 +35,8 @@ from infrastructure.http.execeptions import (
     python_base_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
+from infrastructure.logger import import logger
+from middlewares import Middleware
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (

@@ -11,6 +11,7 @@ logger.setLevel(logging.INFO)
 class DataDogJSONFormatter(json_log_formatter.JSONFormatter):
     def json_record(self, message, extra, record) -> dict:
         extra = super().json_record(message, extra, record)
+        # TODO Can we get user id?
         # extra['user_id'] = current_user_id()
         # extra['ip'] = current_ip()
 
@@ -24,7 +25,6 @@ class DataDogJSONFormatter(json_log_formatter.JSONFormatter):
         extra['dd.trace_id'] = str(trace_id or 0)
         extra['dd.span_id'] = str(span_id or 0)
 
-
         extra['dd.env'] = ddtrace.config.env or ""
         extra['dd.service'] = ddtrace.config.service or ""
         extra['dd.version'] = ddtrace.config.version or ""
@@ -36,6 +36,7 @@ class DataDogJSONFormatter(json_log_formatter.JSONFormatter):
 if os.getenv("DD_TRACE_ENABLED", "false").lower() == 'true':
     # formatter = json_log_formatter.VerboseJSONFormatter()
     formatter = DataDogJSONFormatter()
+
 else:
     fmt = "%(levelname)s:     %(message)s"
     formatter = logging.Formatter(fmt)
