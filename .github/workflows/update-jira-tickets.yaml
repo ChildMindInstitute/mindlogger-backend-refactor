@@ -103,6 +103,8 @@ jobs:
           echo "tickets=${jiraTickets}" >> $GITHUB_OUTPUT
 
       - name: Periodically ping Jenkins for current tag build status
+        env:
+          REPO_URL: "${{ github.server_url }}/${{ github.repository }}"
         run: |
           repoName=${GITHUB_REPOSITORY##*/}
           currentTag="${{ steps.get-tag.outputs.tag }}"
@@ -124,7 +126,7 @@ jobs:
             if [[ "$result" == "SUCCESS" ]]; then
               echo "Build successful! Submitting ticket numbers to Jira"
               tickets="${{ steps.jira-tickets.outputs.tickets }}"
-              json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]'), \"data\": { \"tag\": \"${currentTag}\", \"repository\": \"${repoName}\" } }"
+              json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]'), \"data\": { \"tag\": \"${currentTag}\", \"repository\": \"${REPO_URL}\" } }"
               curl -X POST -H 'Content-Type: application/json' --url "${JIRA_WEBHOOK_URL}" --data "$json"
               break
             elif [[ "$result" != "null" ]]; then
