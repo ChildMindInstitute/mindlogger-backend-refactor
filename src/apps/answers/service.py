@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import datetime
 import itertools
 import json
@@ -13,10 +12,7 @@ from typing import Callable, List
 import aiohttp
 import pydantic
 import sentry_sdk
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
@@ -2022,7 +2018,6 @@ class ReportServerService:
             non_performance=True,
         )
 
-        encryption = ReportServerEncryption(applet.report_public_key)
         responses = await self._prepare_responses(answers_for_report)
 
         data = dict(
@@ -2031,7 +2026,6 @@ class ReportServerService:
             user=user_info,
             applet=applet_full,
         )
-        encrypted_data = encryption.encrypt(data)
 
         activity_id, _ = initial_answer.activity_history_id.split("_")
         flow_id = ""
@@ -2047,7 +2041,7 @@ class ReportServerService:
             start = time.time()
             async with session.post(
                 url,
-                json=dict(payload=encrypted_data),
+                json=dict(payload=jsonable_encoder(data)),
             ) as resp:
                 duration = time.time() - start
                 if resp.status == 200:
@@ -2104,37 +2098,6 @@ class ReportServerService:
                 )
             )
         return responses
-
-
-class ReportServerEncryption:
-    _rate = 0.58
-
-    def __init__(self, key: str):
-        self.encryption = load_pem_public_key(key.encode(), backend=default_backend())
-
-    def encrypt(self, data: dict):
-        str_data = json.dumps(data, default=str)
-        key_size = getattr(self.encryption, "key_size", 0)
-        encrypt = getattr(self.encryption, "encrypt", lambda x, y: x)
-        chunk_size = int(key_size / 8 * self._rate)
-        chunks = []
-        for i in range(len(str_data) // chunk_size + 1):
-            beg = i * chunk_size
-            end = beg + chunk_size
-            encrypted_chunk = encrypt(
-                str_data[beg:end].encode(),
-                self._get_padding(),
-            )
-            chunks.append(base64.b64encode(encrypted_chunk).decode())
-
-        return chunks
-
-    def _get_padding(self):
-        return padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA1()),
-            algorithm=hashes.SHA1(),
-            label=None,
-        )
 
 
 class AnswerEncryptor:
