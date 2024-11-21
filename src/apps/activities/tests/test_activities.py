@@ -1209,11 +1209,38 @@ class TestActivities:
 
     async def test_assigned_activities_limited_respondent(
         self,
+        session: AsyncSession,
         client: TestClient,
         tom: User,
+        tom_applet_one_subject: Subject,
         applet_one: AppletFull,
         applet_one_shell_account: Subject,
+        answer_create_payload: dict,
     ):
+        activity = applet_one.activities[0]
+
+        activity_service = ActivityService(session, tom.id)
+        await activity_service.remove_applet_activities(applet_one.id)
+        await activity_service.update_create(
+            applet_one.id,
+            [
+                ActivityUpdate(
+                    **activity.dict(exclude={"auto_assign"}),
+                    auto_assign=False,
+                ),
+            ],
+        )
+
+        # Create an activity answer
+        await AnswerService(session, tom.id).create_answer(
+            AppletAnswerCreate(
+                **answer_create_payload,
+                input_subject_id=tom_applet_one_subject.id,
+                source_subject_id=applet_one_shell_account.id,
+                target_subject_id=tom_applet_one_subject.id,
+            )
+        )
+
         client.login(tom)
 
         response = await client.get(
@@ -1222,11 +1249,22 @@ class TestActivities:
             )
         )
 
-        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
 
-        assert result[0]["type"] == "BAD_REQUEST"
-        assert result[0]["message"] == f"Subject {applet_one_shell_account.id} is not a valid respondent"
+        assert len(result) == 1
+
+        result_activity = result[0]
+        assert result_activity["id"] == str(activity.id)
+        assert result_activity["name"] == activity.name
+        assert result_activity["description"] == activity.description[Language.ENGLISH]
+        assert result_activity["status"] == ActivityOrFlowStatusEnum.INACTIVE.value
+        assert result_activity["isFlow"] is False
+        assert result_activity["autoAssign"] is False
+        assert result_activity["activityIds"] is None
+        assert result_activity["isPerformanceTask"] is False
+        assert result_activity["performanceTaskType"] is None
+        assert len(result_activity["assignments"]) == 0
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_auto_assigned(

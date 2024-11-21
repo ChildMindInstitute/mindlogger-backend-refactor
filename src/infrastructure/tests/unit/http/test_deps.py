@@ -1,4 +1,7 @@
+import datetime
+
 import pytest
+import pytz
 from fastapi import HTTPException, Request
 
 from infrastructure.http import get_local_tz, get_tz_utc_offset
@@ -53,4 +56,10 @@ def test_get_local_tz__exception(headers: list, required: bool, details: str):
     ),
 )
 def test_get_tz_utc_offset(timezone: str | None, offset: int):
-    assert get_tz_utc_offset()(timezone) == offset
+    offset_without_dst = offset
+    if timezone is not None and offset is not None:
+        tz = pytz.timezone(timezone)
+        now = datetime.datetime.now().astimezone(tz)
+        now_dst_delta = now.dst()
+        offset_without_dst = offset + int(now_dst_delta.total_seconds() if now_dst_delta else 0)
+    assert get_tz_utc_offset()(timezone) == offset_without_dst
