@@ -49,13 +49,13 @@ class ActivityOrFlowBasicInfoInternal(InternalModel):
     performance_task_type: PerformanceTaskType | None = None
     is_performance_task: bool | None = None
 
-    def set_status(self, assignments: list[ActivityAssignmentWithSubject]):
+    def set_status(self, assignments: list[ActivityAssignmentWithSubject], include_auto: bool):
         """
         Determine and set the value of the status field
         """
         if self.is_hidden:
             self.status = ActivityOrFlowStatusEnum.HIDDEN
-        elif assignments or self.auto_assign:
+        elif assignments or (include_auto and self.auto_assign):
             self.status = ActivityOrFlowStatusEnum.ACTIVE
         else:
             self.status = ActivityOrFlowStatusEnum.INACTIVE

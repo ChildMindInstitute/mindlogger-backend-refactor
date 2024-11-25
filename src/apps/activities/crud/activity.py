@@ -108,7 +108,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         return result.scalars().all()
 
     async def get_activity_and_flow_basic_info_by_ids_or_auto(
-        self, applet_id: uuid.UUID, ids: list[uuid.UUID], language: str
+        self, applet_id: uuid.UUID, ids: list[uuid.UUID], include_auto: bool, language: str
     ) -> list[ActivityOrFlowBasicInfoInternal]:
         activities_query: Query = select(
             ActivitySchema.id,
@@ -126,7 +126,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.applet_id == applet_id,
             or_(
                 ActivitySchema.id.in_(ids),
-                ActivitySchema.auto_assign.is_(True),
+                include_auto and ActivitySchema.auto_assign.is_(True),
             ),
         )
 
@@ -159,7 +159,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
                 flow_alias.applet_id == applet_id,
                 or_(
                     flow_alias.id.in_(ids),
-                    flow_alias.auto_assign.is_(True),
+                    include_auto and flow_alias.auto_assign.is_(True),
                 ),
             )
             .group_by(flow_alias.id, flow_alias.name, flow_alias.description, flow_alias.auto_assign)

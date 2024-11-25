@@ -310,11 +310,7 @@ async def get_target_subjects_by_respondent(
 ) -> ResponseMulti[TargetSubjectByRespondentResponse]:
     subjects_service = SubjectsService(session, user.id)
     respondent_subject = await subjects_service.exist_by_id(respondent_subject_id)
-
-    # Ensure the respondent is not a limited account
-    if respondent_subject.user_id is None:
-        # Return a generic bad request error to avoid leaking information
-        raise ValidationError(f"Subject {respondent_subject_id} is not a valid respondent")
+    is_limited_respondent = respondent_subject.user_id is None
 
     # Make sure the authenticated user has access to the subject
     await CheckAccessService(session, user.id).check_subject_subject_access(
@@ -327,7 +323,7 @@ async def get_target_subjects_by_respondent(
     )
 
     is_auto_assigned = await assignment_service.check_if_auto_assigned(activity_or_flow_id)
-    if is_auto_assigned:
+    if is_auto_assigned and not is_limited_respondent:
         assignment_subject_ids.append(respondent_subject_id)
 
     submission_data: list[tuple[uuid.UUID, int]] = await AnswerService(

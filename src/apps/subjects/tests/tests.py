@@ -818,7 +818,7 @@ class TestSubjects(BaseTest):
             respondent_subject_id=applet_one_shell_account.id, activity_or_flow_id=activity_or_flow_id
         )
         response = await client.get(url)
-        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert response.status_code == http.HTTPStatus.OK
 
     async def test_get_target_subjects_by_respondent_editor_user(
         self, client, applet_one_pit_editor: AppletFull, pit: User, tom_applet_one_subject: Subject
@@ -1075,17 +1075,21 @@ class TestSubjects(BaseTest):
         assert shell_account_result["submissionCount"] == 0
         assert shell_account_result["currentlyAssigned"] is True
 
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_get_target_subjects_by_respondent_via_submission(
         self,
         client,
         tom: User,
         tom_applet_one_subject: Subject,
         lucy_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+        subject_type: str,
         applet_one_lucy_respondent: AppletFull,
         answer_create_payload: dict,
         session: AsyncSession,
     ):
         activity = applet_one_lucy_respondent.activities[0]
+        source_subject = lucy_applet_one_subject if subject_type == "respondent" else applet_one_shell_account
 
         # Turn off auto-assignment
         activity_service = ActivityService(session, tom.id)
@@ -1105,7 +1109,7 @@ class TestSubjects(BaseTest):
             AppletAnswerCreate(
                 **answer_create_payload,
                 input_subject_id=lucy_applet_one_subject.id,
-                source_subject_id=lucy_applet_one_subject.id,
+                source_subject_id=source_subject.id,
                 target_subject_id=tom_applet_one_subject.id,
             )
         )
@@ -1113,7 +1117,7 @@ class TestSubjects(BaseTest):
         client.login(tom)
 
         url = self.subject_target_by_respondent_url.format(
-            respondent_subject_id=lucy_applet_one_subject.id, activity_or_flow_id=str(activity.id)
+            respondent_subject_id=source_subject.id, activity_or_flow_id=str(activity.id)
         )
         response = await client.get(url)
         assert response.status_code == http.HTTPStatus.OK

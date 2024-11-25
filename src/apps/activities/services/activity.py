@@ -336,6 +336,7 @@ class ActivityService:
                 subscale_setting=schema.subscale_setting,
                 performance_task_type=schema.performance_task_type,
                 is_performance_task=schema.is_performance_task,
+                auto_assign=schema.auto_assign,
             )
             activity_map[activity.id] = activity
             activities.append(activity)
@@ -456,8 +457,8 @@ class ActivityService:
         return activities
 
     async def get_activity_and_flow_basic_info_by_ids_or_auto(
-        self, applet_id: uuid.UUID, ids: list[uuid.UUID], language: str
+        self, applet_id: uuid.UUID, ids: list[uuid.UUID], include_auto: bool, language: str
     ) -> list[ActivityOrFlowBasicInfoInternal]:
         return await ActivitiesCRUD(self.session).get_activity_and_flow_basic_info_by_ids_or_auto(
-            applet_id, ids, language
+            applet_id, ids, include_auto, language
         )

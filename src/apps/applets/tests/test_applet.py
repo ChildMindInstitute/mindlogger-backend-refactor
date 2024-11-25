@@ -30,6 +30,7 @@ from apps.applets.errors import AppletAlreadyExist, AppletVersionNotFoundError
 from apps.applets.service.applet import AppletService
 from apps.shared.exception import NotFoundError
 from apps.shared.test.client import TestClient
+from apps.subjects.domain import Subject
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
@@ -468,16 +469,27 @@ class TestApplet:
         assert len(response.json()["result"]) == 1
         assert response.json()["result"][0]["id"] == str(applet_one.id)
 
-    async def test_applet_detail(self, client: TestClient, tom: User, applet_one_with_flow: AppletFull):
+    async def test_applet_detail(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one_with_flow: AppletFull,
+        tom_applet_one_subject: Subject,
+    ):
         client.login(tom)
         response = await client.get(self.applet_detail_url.format(pk=applet_one_with_flow.id))
         assert response.status_code == http.HTTPStatus.OK
-        result = response.json()["result"]
+        responseJson = response.json()
+        result = responseJson["result"]
         assert result["displayName"] == applet_one_with_flow.display_name
         assert result["ownerId"] == str(tom.id)
         assert len(result["activities"]) == 1
         assert len(result["activityFlows"]) == 1
-        assert response.json()["respondentMeta"]["nickname"] == tom.get_full_name()
+        assert responseJson["respondentMeta"] == {
+            "subjectId": str(tom_applet_one_subject.id),
+            "nickname": tom_applet_one_subject.nickname,
+            "tag": tom_applet_one_subject.tag,
+        }
 
     async def test_public_applet_detail(self, client: TestClient, applet_one_with_public_link: AppletFull):
         response = await client.get(self.public_applet_detail_url.format(key=applet_one_with_public_link.link))
@@ -636,6 +648,11 @@ class TestApplet:
         assert ResponseType.SINGLESELECT in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert ResponseType.MULTISELECT not in response.json()["result"]["activities"][0]["containsResponseTypes"]
         assert response.json()["result"]["activities"][0]["itemCount"] == 1
+
+        respondentMeta = response.json()["result"]["respondentMeta"]
+        assert respondentMeta["subjectId"] is not None
+        assert respondentMeta["nickname"] == tom.get_full_name()
+        assert respondentMeta["tag"] == "Team"
 
     async def test_get_public_applet_activities_info(
         self,

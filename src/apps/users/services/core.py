@@ -33,6 +33,7 @@ class PasswordRecoveryService:
         self,
         schema: PasswordRecoveryRequest,
         content_source: MindloggerContentSource,
+        language: str,
     ) -> PublicUser:
         user: User = await UsersCRUD(self.session).get_by_email(schema.email)
 
@@ -93,7 +94,7 @@ class PasswordRecoveryService:
             subject="Password reset",
             body=service.get_localized_html_template(
                 template_name="reset_password",
-                language="en",
+                language=language,
                 email=user.email_encrypted,
                 expiration_minutes=exp,
                 url=url,
