@@ -190,8 +190,26 @@ class ActivityAssignmentService:
             )
             _ = asyncio.create_task(service.send(message))
 
-    async def _check_for_already_existing_assignment(self, schema: ActivityAssigmentSchema) -> bool:
-        return await ActivityAssigmentCRUD(self.session).already_exists(schema)
+    async def exist(self, assignment: ActivityAssignmentCreate) -> ActivityAssigmentSchema | bool:
+        """
+        Returns whether an assignment matching the given assignment schema values exists and has not been soft-deleted.
+
+        Parameters:
+        ----------
+        assignment : ActivityAssignmentCreate
+            The assignment object containing the details of the assignment,
+            including `activity_id`, `activity_flow_id`, `respondent_subject_id`, and `target_subject_id`.
+
+        Returns:
+        -------
+        ActivityAssigmentSchema | bool
+            The the first matching assignment if it exists, False otherwise.
+
+        Notes:
+        ------
+        - The existence check excludes soft-deleted assignments.
+        """
+        return await ActivityAssigmentCRUD(self.session).exist(assignment)
 
     @staticmethod
     def _validate_assignment_and_get_activity_or_flow_name(
