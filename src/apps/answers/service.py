@@ -349,7 +349,7 @@ class AnswerService:
 
         # Check if source subject is manually assigned to target subject.
         assignment = ActivityAssignmentCreate(
-            activity_id=applet_answer.activity_id,
+            activity_id=applet_answer.activity_id if applet_answer.flow_id is None else None,
             activity_flow_id=applet_answer.flow_id,
             respondent_subject_id=source_subject.id,
             target_subject_id=target_subject.id,
