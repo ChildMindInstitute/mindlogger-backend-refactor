@@ -9,16 +9,16 @@ from apps.shared.domain.custom_validations import lowercase
 
 class SubjectCreate(InternalModel):
     applet_id: uuid.UUID
-    email: EmailStr | None
+    email: EmailStr | None = None
     creator_id: uuid.UUID
-    user_id: uuid.UUID | None
-    language: str | None
+    user_id: uuid.UUID | None = None
+    language: str | None = None
     first_name: str
     last_name: str
     secret_user_id: str
-    nickname: str | None
+    nickname: str | None = None
     is_deleted: bool = False
-    tag: str | None
+    tag: str | None = None
 
 
 class Subject(SubjectCreate):

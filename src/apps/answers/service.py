@@ -23,6 +23,8 @@ from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, Activity
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist, FlowDoesNotExist
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -345,9 +347,19 @@ class AnswerService:
         else:
             source_subject = respondent_subject
 
-        await self._validate_temp_take_now_relation_between_subjects(
-            respondent_subject.id, source_subject.id, target_subject.id
+        # Check if source subject is manually assigned to target subject.
+        assignment = ActivityAssignmentCreate(
+            activity_id=applet_answer.activity_id if applet_answer.flow_id is None else None,
+            activity_flow_id=applet_answer.flow_id,
+            respondent_subject_id=source_subject.id,
+            target_subject_id=target_subject.id,
         )
+        assignment_exists = await ActivityAssignmentService(self.session).exist(assignment)
+        # If no assignment exists, ensure valid temp take now relation between the subjects.
+        if not assignment_exists:
+            await self._validate_temp_take_now_relation_between_subjects(
+                respondent_subject.id, source_subject.id, target_subject.id
+            )
 
         relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
         answer = await AnswersCRUD(self.answer_session).create(
