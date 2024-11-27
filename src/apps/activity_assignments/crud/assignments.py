@@ -79,7 +79,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
         return await self._create_many(schemas)
 
-    async def exist(self, assignment: ActivityAssignmentCreate) -> ActivityAssigmentSchema | bool:
+    async def exist(self, assignment: ActivityAssignmentCreate) -> ActivityAssigmentSchema | None:
         """
         Checks if an activity assignment exists in the database.
 
@@ -94,8 +94,8 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
         Returns:
         --------
-        ActivityAssigmentSchema | bool
-            The value of the first matching record, if it exists. Otherwise, returns False.
+        ActivityAssigmentSchema | None
+            The value of the first matching record, if it exists. Otherwise, returns None.
 
         Notes:
         ------
@@ -111,7 +111,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         )
 
         db_result = await self._execute(query)
-        return db_result.scalars().first() or False
+        return db_result.scalars().one_or_none()
 
     async def get_target_subject_ids_by_activity_or_flow_ids(
         self,

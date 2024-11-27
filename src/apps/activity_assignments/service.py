@@ -190,7 +190,7 @@ class ActivityAssignmentService:
             )
             _ = asyncio.create_task(service.send(message))
 
-    async def exist(self, assignment: ActivityAssignmentCreate) -> ActivityAssigmentSchema | bool:
+    async def exist(self, assignment: ActivityAssignmentCreate) -> ActivityAssigmentSchema | None:
         """
         Returns whether an assignment matching the given assignment schema values exists and has not been soft-deleted.
 
@@ -202,8 +202,8 @@ class ActivityAssignmentService:
 
         Returns:
         -------
-        ActivityAssigmentSchema | bool
-            The the first matching assignment if it exists, False otherwise.
+        ActivityAssigmentSchema | None
+            The the first matching assignment if it exists, None otherwise.
 
         Notes:
         ------
