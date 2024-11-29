@@ -1232,20 +1232,18 @@ class AnswerService:
         flows_coro = FlowsHistoryCRUD(self.session).get_by_id_versions(list(flow_hist_ids))
         user_map_coro = AppletAccessCRUD(self.session).get_respondent_export_data(applet_id, list(respondent_ids))
         subject_map_coro = AppletAccessCRUD(self.session).get_subject_export_data(applet_id, list(subject_ids))
-        current_user_subject_coro = SubjectsCrud(self.session).get_user_subject(self.user_id, applet_id)
 
         coros_result = await asyncio.gather(
             flows_coro,
             user_map_coro,
             subject_map_coro,
-            current_user_subject_coro,
             return_exceptions=True,
         )
         for res in coros_result:
             if isinstance(res, BaseException):
                 raise res
 
-        flows, user_map, subject_map, current_user_subject = coros_result
+        flows, user_map, subject_map = coros_result
         flow_map = {flow.id_version: flow for flow in flows}  # type: ignore
 
         for answer in answers:
