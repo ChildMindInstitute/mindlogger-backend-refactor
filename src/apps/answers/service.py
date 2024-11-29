@@ -1212,15 +1212,18 @@ class AnswerService:
         applet_assessment_ids = set()
         activity_hist_ids = set()
         flow_hist_ids = set()
+
+				# collect id to resolve data
         for answer in answers:
-            # collect id to resolve data
             if answer.reviewed_answer_id:
                 # collect reviewer ids to fetch the data
                 respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type] # noqa: E501
-            if answer.target_subject_id:
-                subject_ids.add(answer.target_subject_id)  # type: ignore[arg-type] # noqa: E501
             if answer.source_subject_id:
                 subject_ids.add(answer.source_subject_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.target_subject_id:
+                subject_ids.add(answer.target_subject_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.input_subject_id:
+                subject_ids.add(answer.input_subject_id)  # type: ignore[arg-type] # noqa: E501
             if answer.reviewed_answer_id:
                 applet_assessment_ids.add(answer.applet_history_id)
             if answer.flow_history_id:
@@ -1254,12 +1257,34 @@ class AnswerService:
                 respondent = subject_map[answer.target_subject_id]  # type: ignore
 
             answer.respondent_secret_id = respondent.secret_id
+
+
             answer.source_secret_id = (
                 subject_map.get(answer.source_subject_id).secret_id if answer.source_subject_id else None  # type: ignore
             )
+            answer.source_user_nickname = (
+                subject_map.get(answer.source_subject_id).nickname if answer.source_subject_id else None  # type: ignore
+            )
+
+
             answer.target_secret_id = (
                 subject_map.get(answer.target_subject_id).secret_id if answer.target_subject_id else None  # type: ignore
             )
+            answer.target_user_nickname = (
+                subject_map.get(answer.target_subject_id).nickname if answer.target_subject_id else None  # type: ignore
+            )
+            answer.target_user_tag = (
+                subject_map.get(answer.target_subject_id).tag if answer.target_subject_id else None  # type: ignore
+            )
+
+
+            answer.input_secret_id = (
+                subject_map.get(answer.input_subject_id).secret_id if answer.input_subject_id else None  # type: ignore
+            )
+            answer.input_user_nickname = (
+                subject_map.get(answer.input_subject_id).nickname if answer.input_subject_id else None  # type: ignore
+            )
+
             answer.respondent_email = respondent.email
             answer.is_manager = respondent.is_manager
             answer.legacy_profile_id = respondent.legacy_profile_id
