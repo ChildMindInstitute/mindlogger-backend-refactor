@@ -1247,7 +1247,7 @@ class AnswerService:
         flow_map = {flow.id_version: flow for flow in flows}  # type: ignore
 
         for answer in answers:
-            respondent = user_map[answer.respondent_id]
+            respondent = user_map[answer.respondent_id]  # type: ignore
             answer.respondent_secret_id = respondent.secret_id
 
             answer.source_secret_id = (
