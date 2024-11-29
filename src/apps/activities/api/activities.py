@@ -14,12 +14,10 @@ from apps.activities.domain.activity import (
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
-from apps.activity_assignments.domain.assignments import ActivityAssignmentsIdsBySubject
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.domain.flow import FlowWithAssignmentDetailsPublic
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
-from apps.answers.domain import SubmissionsActivityCountBySubject
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet import (
     ActivitiesAndFlowsWithAssignmentDetailsPublic,
@@ -378,36 +376,33 @@ async def applet_activities_counters_for_subject(
 
     await SubjectsService(session, user.id).exist_by_id(subject_id)
 
-    assigned_activities_ids: ActivityAssignmentsIdsBySubject = await ActivityAssignmentService(
-        session
-    ).get_assigned_activity_or_flow_ids_for_subject(subject_id)
+    # Fetch assigned activity or flow IDs for the subject
+    assigned_ids = await ActivityAssignmentService(session).get_assigned_activity_or_flow_ids_for_subject(subject_id)
 
-    submitted_activities: SubmissionsActivityCountBySubject = await AnswerService(
-        session, user.id, answer_session
-    ).get_submissions_by_subject(subject_id)
+    # Fetch activities submissions by the subject
+    submitted_activities = await AnswerService(session, user.id, answer_session).get_submissions_by_subject(subject_id)
 
-    activities_and_flows_ids_auto = await ActivityService(session, user.id).get_activity_and_flow_ids_by_applet_id_auto(
-        applet_id
-    )
+    # Fetch auto assigned activity and flow IDs by applet ID
+    auto_activity_ids = await ActivityService(session, user.id).get_activity_and_flow_ids_by_applet_id_auto(applet_id)
+
+    respondent_ids = set(assigned_ids.as_respondent + auto_activity_ids)
+    target_ids = set(assigned_ids.as_target + auto_activity_ids)
+    all_assigned_ids = respondent_ids.union(target_ids)
 
     activities_counters = ActivitiesCounters(
         subject_id=subject_id,
-        respondent_activities_count=len(assigned_activities_ids.as_respondent + activities_and_flows_ids_auto),
-        target_activities_count=len(assigned_activities_ids.as_target + activities_and_flows_ids_auto),
+        respondent_activities_count=len(respondent_ids),
+        target_activities_count=len(target_ids),
     )
 
-    activity_or_flow_ids = [
-        activity_id
-        for activity_id in set(
-            assigned_activities_ids.as_respondent + assigned_activities_ids.as_target + activities_and_flows_ids_auto
-        )
-        if activity_id not in submitted_activities.activities.keys()
-    ]
+    activities_or_flows_ids_with_submissions = set(submitted_activities.activities.keys())
+    activities_or_flows_without_submissions = all_assigned_ids - activities_or_flows_ids_with_submissions
 
-    for id in activity_or_flow_ids:
+    # Add activities without submissions
+    for activity_or_flow_id in activities_or_flows_without_submissions:
         activities_counters.activities_or_flows.append(
             ActivitySubjectCounters(
-                activity_or_flow_id=id,
+                activity_or_flow_id=activity_or_flow_id,
                 respondents_count=0,
                 subjects_count=0,
                 respondent_submissions_count=0,
@@ -415,34 +410,25 @@ async def applet_activities_counters_for_subject(
             )
         )
 
-    for activity_or_flow_id in submitted_activities.activities.keys():
-        if len(submitted_activities.activities[activity_or_flow_id].respondents) > 0:
-            activities_counters.respondent_activities_count = len(
-                set(
-                    list(submitted_activities.activities[activity_or_flow_id].respondents)
-                    + assigned_activities_ids.as_respondent
-                    + activities_and_flows_ids_auto
-                )
-            )
-        if len(submitted_activities.activities[activity_or_flow_id].subjects) > 0:
-            activities_counters.target_activities_count = len(
-                set(
-                    list(submitted_activities.activities[activity_or_flow_id].subjects)
-                    + assigned_activities_ids.as_target
-                    + activities_and_flows_ids_auto
-                )
-            )
+    # Adding activities with submissions
+    for activity_or_flow_id in activities_or_flows_ids_with_submissions:
+        activity_data = submitted_activities.activities[activity_or_flow_id]
+
+        # Update respondent activities count if there are respondents
+        if activity_data.respondents:
+            activities_counters.respondent_activities_count = len(set(activity_data.respondents) | respondent_ids)
+
+        # Update target activities count if there are subjects
+        if activity_data.subjects:
+            activities_counters.target_activities_count = len(set(activity_data.subjects) | target_ids)
+
         activities_counters.activities_or_flows.append(
             ActivitySubjectCounters(
                 activity_or_flow_id=activity_or_flow_id,
-                respondents_count=len(submitted_activities.activities[activity_or_flow_id].respondents),
-                subjects_count=len(submitted_activities.activities[activity_or_flow_id].subjects),
-                respondent_submissions_count=submitted_activities.activities[
-                    activity_or_flow_id
-                ].respondent_submissions_count,
-                subject_submissions_count=submitted_activities.activities[
-                    activity_or_flow_id
-                ].subject_submissions_count,
+                respondents_count=len(activity_data.respondents),
+                subjects_count=len(activity_data.subjects),
+                respondent_submissions_count=activity_data.respondent_submissions_count,
+                subject_submissions_count=activity_data.subject_submissions_count,
             )
         )
 
