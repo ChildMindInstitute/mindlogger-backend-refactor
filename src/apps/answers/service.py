@@ -1215,9 +1215,7 @@ class AnswerService:
 
         # collect ids to resolve data
         for answer in answers:
-            if answer.reviewed_answer_id:
-                # collect reviewer ids to fetch the data
-                respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type] # noqa: E501
+            respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type] # noqa: E501
             if answer.source_subject_id:
                 subject_ids.add(answer.source_subject_id)  # type: ignore[arg-type] # noqa: E501
             if answer.target_subject_id:
@@ -1251,14 +1249,8 @@ class AnswerService:
         flow_map = {flow.id_version: flow for flow in flows}  # type: ignore
 
         for answer in answers:
-            # respondent data
-            if answer.reviewed_answer_id:
-                # assessment
-                respondent = user_map[answer.respondent_id]  # type: ignore
-            else:
-                respondent = subject_map[answer.target_subject_id]  # type: ignore
-
-            answer.respondent_secret_id = current_user_subject.secret_user_id
+            respondent = user_map[answer.respondent_id]
+            answer.respondent_secret_id = respondent.secret_id
 
             answer.source_secret_id = (
                 subject_map.get(answer.source_subject_id).secret_id if answer.source_subject_id else None  # type: ignore
