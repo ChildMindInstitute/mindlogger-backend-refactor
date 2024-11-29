@@ -1266,7 +1266,9 @@ class AnswerService:
             answer.source_user_nickname = (
                 subject_map.get(answer.source_subject_id).nickname if answer.source_subject_id else None  # type: ignore
             )
-
+            answer.source_user_tag = (
+                subject_map.get(answer.source_subject_id).tag if answer.source_subject_id else None  # type: ignore
+            )
 
             answer.target_secret_id = (
                 subject_map.get(answer.target_subject_id).secret_id if answer.target_subject_id else None  # type: ignore
@@ -1277,7 +1279,6 @@ class AnswerService:
             answer.target_user_tag = (
                 subject_map.get(answer.target_subject_id).tag if answer.target_subject_id else None  # type: ignore
             )
-
 
             answer.input_secret_id = (
                 subject_map.get(answer.input_subject_id).secret_id if answer.input_subject_id else None  # type: ignore
