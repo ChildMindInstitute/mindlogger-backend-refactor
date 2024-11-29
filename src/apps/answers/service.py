@@ -67,6 +67,8 @@ from apps.answers.domain.answers import (
     AppletSubmission,
     FilesCopyCheckResult,
     RespondentAnswerData,
+    SubmissionsActivityCountBySubject,
+    SubmissionsSubjectCounters,
 )
 from apps.answers.errors import (
     ActivityIsNotAssessment,
@@ -1953,6 +1955,32 @@ class AnswerService:
         distinction between the two
         """
         return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
+
+    async def get_submissions_by_subject(self, subject_id: uuid.UUID) -> SubmissionsActivityCountBySubject:
+        submissions_target_coro = AnswersCRUD(self.answer_session).get_submissions_by_target_subject(subject_id)
+        submissions_respondent_coro = AnswersCRUD(self.answer_session).get_submissions_by_respondent_subject(subject_id)
+
+        submissions_target, submissions_respondent = await asyncio.gather(
+            submissions_target_coro, submissions_respondent_coro
+        )
+
+        submissions_activity_count = SubmissionsActivityCountBySubject(subject_id=subject_id)
+
+        for submission in submissions_target:
+            activity_counters = submissions_activity_count.activities.setdefault(
+                submission["id"], SubmissionsSubjectCounters()
+            )
+            activity_counters.subject_submissions_count += 1
+            activity_counters.respondents.add(submission["source_subject_id"])
+
+        for submission in submissions_respondent:
+            activity_counters = submissions_activity_count.activities.setdefault(
+                submission["id"], SubmissionsSubjectCounters()
+            )
+            activity_counters.respondent_submissions_count += 1
+            activity_counters.subjects.add(submission["target_subject_id"])
+
+        return submissions_activity_count
 
 
 class ReportServerService:

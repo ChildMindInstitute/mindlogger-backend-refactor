@@ -5,6 +5,7 @@ from apps.activities.api.activities import (
     activity_retrieve,
     applet_activities,
     applet_activities_and_flows,
+    applet_activities_counters_for_subject,
     applet_activities_for_respondent_subject,
     applet_activities_for_subject,
     applet_activities_for_target_subject,
@@ -12,6 +13,8 @@ from apps.activities.api.activities import (
 )
 from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
 from apps.activities.domain.activity import (
+    ActivitiesCounters,
+    ActivitiesDataForSubjectPublic,
     ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
 )
@@ -116,7 +119,7 @@ router.get(
                 """,
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[ActivityOrFlowWithAssignmentsPublic]},
+        status.HTTP_200_OK: {"model": Response[ActivitiesDataForSubjectPublic]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
@@ -133,3 +136,15 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(applet_activities_for_respondent_subject)
+
+router.get(
+    "/applet/{applet_id}/subject/{subject_id}/counters",
+    description="""Get number of submissions and participants for applets activities and activity flows.
+                """,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[ActivitiesCounters]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(applet_activities_counters_for_subject)

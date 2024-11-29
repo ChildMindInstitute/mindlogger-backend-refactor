@@ -5,17 +5,21 @@ from fastapi import Depends
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import (
+    ActivitiesCounters,
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
+    ActivitySubjectCounters,
     ActivityWithAssignmentDetailsPublic,
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
+from apps.activity_assignments.domain.assignments import ActivityAssignmentsIdsBySubject
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.domain.flow import FlowWithAssignmentDetailsPublic
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
+from apps.answers.domain import SubmissionsActivityCountBySubject
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet import (
     ActivitiesAndFlowsWithAssignmentDetailsPublic,
@@ -358,3 +362,88 @@ async def __filter_activities(
                     activities.remove(activity)
 
     return activities
+
+
+async def applet_activities_counters_for_subject(
+    applet_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> Response[ActivitiesCounters]:
+    applet_service = AppletService(session, user.id)
+    await applet_service.exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+
+    await SubjectsService(session, user.id).exist_by_id(subject_id)
+
+    assigned_activities_ids: ActivityAssignmentsIdsBySubject = await ActivityAssignmentService(
+        session
+    ).get_assigned_activity_or_flow_ids_for_subject(subject_id)
+
+    submitted_activities: SubmissionsActivityCountBySubject = await AnswerService(
+        session, user.id, answer_session
+    ).get_submissions_by_subject(subject_id)
+
+    activities_and_flows_ids_auto = await ActivityService(session, user.id).get_activity_and_flow_ids_by_applet_id_auto(
+        applet_id
+    )
+
+    activities_counters = ActivitiesCounters(
+        subject_id=subject_id,
+        respondent_activities_count=len(assigned_activities_ids.as_respondent + activities_and_flows_ids_auto),
+        target_activities_count=len(assigned_activities_ids.as_target + activities_and_flows_ids_auto),
+    )
+
+    activity_or_flow_ids = [
+        activity_id
+        for activity_id in set(
+            assigned_activities_ids.as_respondent + assigned_activities_ids.as_target + activities_and_flows_ids_auto
+        )
+        if activity_id not in submitted_activities.activities.keys()
+    ]
+
+    for id in activity_or_flow_ids:
+        activities_counters.activities_or_flows.append(
+            ActivitySubjectCounters(
+                activity_or_flow_id=id,
+                respondents_count=0,
+                subjects_count=0,
+                respondent_submissions_count=0,
+                subject_submissions_count=0,
+            )
+        )
+
+    for activity_or_flow_id in submitted_activities.activities.keys():
+        if len(submitted_activities.activities[activity_or_flow_id].respondents) > 0:
+            activities_counters.respondent_activities_count = len(
+                set(
+                    list(submitted_activities.activities[activity_or_flow_id].respondents)
+                    + assigned_activities_ids.as_respondent
+                    + activities_and_flows_ids_auto
+                )
+            )
+        if len(submitted_activities.activities[activity_or_flow_id].subjects) > 0:
+            activities_counters.target_activities_count = len(
+                set(
+                    list(submitted_activities.activities[activity_or_flow_id].subjects)
+                    + assigned_activities_ids.as_target
+                    + activities_and_flows_ids_auto
+                )
+            )
+        activities_counters.activities_or_flows.append(
+            ActivitySubjectCounters(
+                activity_or_flow_id=activity_or_flow_id,
+                respondents_count=len(submitted_activities.activities[activity_or_flow_id].respondents),
+                subjects_count=len(submitted_activities.activities[activity_or_flow_id].subjects),
+                respondent_submissions_count=submitted_activities.activities[
+                    activity_or_flow_id
+                ].respondent_submissions_count,
+                subject_submissions_count=submitted_activities.activities[
+                    activity_or_flow_id
+                ].subject_submissions_count,
+            )
+        )
+
+    return Response(result=activities_counters)

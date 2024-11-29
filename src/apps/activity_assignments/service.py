@@ -10,6 +10,7 @@ from apps.activity_assignments.domain.assignments import (
     ActivityAssignment,
     ActivityAssignmentCreate,
     ActivityAssignmentDelete,
+    ActivityAssignmentsIdsBySubject,
     ActivityAssignmentWithSubject,
 )
 from apps.activity_flows.crud import FlowsCRUD
@@ -446,6 +447,11 @@ class ActivityAssignmentService:
         Checks if the activity or flow is currently set to auto-assign.
         """
         return await ActivityAssigmentCRUD(self.session).check_if_auto_assigned(activity_or_flow_id)
+
+    async def get_assigned_activity_or_flow_ids_for_subject(
+        self, subject_id: uuid.UUID
+    ) -> ActivityAssignmentsIdsBySubject:
+        return await ActivityAssigmentCRUD(self.session).get_assigned_activity_or_flow_ids_for_subject(subject_id)
 
     @staticmethod
     def _get_email_template_name() -> str:

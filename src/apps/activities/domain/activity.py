@@ -152,7 +152,28 @@ class ActivityOrFlowWithAssignmentsPublic(ActivityOrFlowBasicInfoPublic):
     assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
 
 
+class ActivitiesDataForSubjectPublic(PublicModel):
+    activities_and_flows: list[ActivityOrFlowWithAssignmentsPublic] = Field(default_factory=list)
+    activities_and_flows_total_count: int = 0
+    activities_and_submissions_count: int = 0
+
+
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):
     contains_response_types: list[ResponseType]
     item_count: int
     auto_assign: bool
+
+
+class ActivitySubjectCounters(PublicModel):
+    activity_or_flow_id: uuid.UUID
+    respondents_count: int
+    respondent_submissions_count: int
+    subjects_count: int
+    subject_submissions_count: int
+
+
+class ActivitiesCounters(PublicModel):
+    subject_id: uuid.UUID
+    respondent_activities_count: int = 0
+    target_activities_count: int = 0
+    activities_or_flows: list[ActivitySubjectCounters] = Field(default_factory=list)

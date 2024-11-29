@@ -995,3 +995,39 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             self.__activity_and_flow_ids_by_subject_query(AnswerSchema.source_subject_id, source_subject_id)
         )
         return res.scalars().all()
+
+    @staticmethod
+    def _query_submissions_by_subject(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
+        query: Query = (
+            select(
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
+                ).label("id"),
+                AnswerSchema.source_subject_id
+                if subject_column == AnswerSchema.target_subject_id
+                else AnswerSchema.target_subject_id,
+            )
+            .where(subject_column == subject_id)
+            .distinct()
+        )
+        return query
+
+    async def get_submissions_by_target_subject(self, target_subject_id: uuid.UUID) -> list[dict[str, uuid.UUID]]:
+        query: Query = self._query_submissions_by_subject(AnswerSchema.target_subject_id, target_subject_id)
+
+        res = await self._execute(query)
+
+        return res.mappings().all()
+
+    async def get_submissions_by_respondent_subject(
+        self, respondent_subject_id: uuid.UUID
+    ) -> list[dict[str, uuid.UUID]]:
+        query: Query = self._query_submissions_by_subject(AnswerSchema.source_subject_id, respondent_subject_id)
+
+        res = await self._execute(query)
+
+        return res.mappings().all()

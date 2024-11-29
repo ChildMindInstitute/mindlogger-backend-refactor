@@ -79,3 +79,9 @@ class ActivityAssignmentDelete(BaseModel):
 
 class ActivitiesAssignmentsDelete(InternalModel):
     assignments: list[ActivityAssignmentDelete]
+
+
+class ActivityAssignmentsIdsBySubject(PublicModel):
+    subject_id: UUID
+    as_target: list[UUID]
+    as_respondent: list[UUID]
