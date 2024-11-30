@@ -1842,8 +1842,8 @@ class TestAnswerActivityItems(BaseTest):
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate", "relation",
             "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag",
-						"targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
-						"inputSubjectId", "inputSecretId", "inputUserNickname",
+            "targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
+            "inputSubjectId", "inputSecretId", "inputUserNickname",
             "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
         }
         # Comment for now, wtf is it
