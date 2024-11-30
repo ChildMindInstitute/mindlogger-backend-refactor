@@ -1058,15 +1058,6 @@ class TestAnswerActivityItems(BaseTest):
             self.applet_answers_export_url.format(applet_id=str(applet_one_lucy_manager.id)),
         )
         assert response.status_code == http.HTTPStatus.OK
-
-        # Add debug prints
-        print("\nResponse JSON:")
-        print(response.json())
-        print("\nAnswers in response:")
-        print(response.json()["result"]["answers"])
-        print("\nFirst answer details:")
-        print(response.json()["result"]["answers"][0])
-
         assert re.match(
             r"\[admin account\] \([0-9a-f]{8}\-[0-9a-f]{4}\-4[0-9a-f]{3}\-[89ab][0-9a-f]{3}\-[0-9a-f]{12}\)",
             response.json()["result"]["answers"][0]["respondentSecretId"],
