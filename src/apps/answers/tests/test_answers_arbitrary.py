@@ -620,7 +620,7 @@ class TestAnswerActivityItems(BaseTest):
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate", "relation",
-            "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag"
+            "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag",
 						"targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
 						"inputSubjectId", "inputSecretId", "inputUserNickname",
             "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
