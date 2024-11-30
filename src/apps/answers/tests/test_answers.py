@@ -1041,6 +1041,7 @@ class TestAnswerActivityItems(BaseTest):
         lucy: User,
         answer_create: AppletAnswerCreate,
         applet_one_lucy_manager: AppletFull,
+        applet_one_lucy_respondent: AppletFull,
     ):
         client.login(lucy)
         data = answer_create.copy(deep=True)
