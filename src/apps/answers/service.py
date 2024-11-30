@@ -1232,7 +1232,7 @@ class AnswerService:
         flows_coro = FlowsHistoryCRUD(self.session).get_by_id_versions(list(flow_hist_ids))
         user_map_coro = AppletAccessCRUD(self.session).get_respondent_export_data(applet_id, list(respondent_ids))
         subject_map_coro = AppletAccessCRUD(self.session).get_subject_export_data(applet_id, list(subject_ids))
-        current_user_subject_coro = SubjectsCrud(self.session).get_user_subject(self.user_id, applet_id)
+        current_user_subject_coro = SubjectsCrud(self.session).get_user_subject(self.user_id, applet_id)  # type: ignore[arg-type]
 
         coros_result = await asyncio.gather(
             flows_coro,
@@ -1250,7 +1250,7 @@ class AnswerService:
 
         for answer in answers:
             respondent = user_map[answer.respondent_id]  # type: ignore
-            answer.respondent_secret_id = current_user.secret_user_id
+            answer.respondent_secret_id = current_user.secret_user_id  # type: ignore
 
             answer.source_secret_id = (
                 subject_map.get(answer.source_subject_id).secret_id if answer.source_subject_id else None  # type: ignore
