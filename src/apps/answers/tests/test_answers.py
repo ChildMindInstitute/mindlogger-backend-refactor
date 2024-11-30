@@ -1840,9 +1840,11 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime", "legacyProfileId", "migratedDate",
-            "relation", "sourceSubjectId", "sourceSecretId", "targetSubjectId",
-            "targetSecretId", "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
+            "endDatetime", "legacyProfileId", "migratedDate", "relation",
+            "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag"
+						"targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
+						"inputSubjectId", "inputSecretId", "inputUserNickname",
+            "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
