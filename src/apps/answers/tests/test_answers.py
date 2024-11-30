@@ -1876,7 +1876,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(data["answers"]) == 1
         assert resp_data["count"] == 1
         assert data["answers"][0]["respondentId"] == str(tom.id)
-        assert data["answers"][0]["respondentSecretId"] == answer_shell_account_target["secret_user_id"]
+        assert data["answers"][0]["respondentSecretId"] == answer_shell_account_target["respondent_secret_user_id"]
 
     @pytest.mark.parametrize(
         "user_fixture, exp_cnt",
