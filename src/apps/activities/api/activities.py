@@ -385,12 +385,12 @@ async def applet_activities_counters_for_subject(
     # Fetch auto assigned activity and flow IDs by applet ID
     auto_activity_ids = await ActivityService(session, user.id).get_activity_and_flow_ids_by_applet_id_auto(applet_id)
 
-    activity_ids_as_respondent = set(assigned_ids.as_respondent + auto_activity_ids)
-    activity_ids_as_target = set(assigned_ids.as_target + auto_activity_ids)
+    activity_ids_as_respondent = set(assigned_ids.as_respondent).union(auto_activity_ids)
+    activity_ids_as_target = set(assigned_ids.as_target).union(auto_activity_ids)
     all_assigned_ids = activity_ids_as_respondent.union(activity_ids_as_target)
 
     activities_or_flows_ids_with_submissions = set(submitted_activities.activities.keys())
-    activities_or_flows_ids_without_submissions = all_assigned_ids - activities_or_flows_ids_with_submissions
+    activities_or_flows_ids_without_submissions = all_assigned_ids.difference(activities_or_flows_ids_with_submissions)
 
     activities_counters = ActivitiesCounters(
         subject_id=subject_id,
