@@ -1968,14 +1968,14 @@ class AnswerService:
 
         for submission in submissions_target:
             activity_counters = submissions_activity_count.activities.setdefault(
-                submission["id"], SubmissionsSubjectCounters()
+                uuid.UUID(submission["id"]), SubmissionsSubjectCounters()
             )
             activity_counters.subject_submissions_count += 1
             activity_counters.respondents.add(submission["source_subject_id"])
 
         for submission in submissions_respondent:
             activity_counters = submissions_activity_count.activities.setdefault(
-                submission["id"], SubmissionsSubjectCounters()
+                uuid.UUID(submission["id"]), SubmissionsSubjectCounters()
             )
             activity_counters.respondent_submissions_count += 1
             activity_counters.subjects.add(submission["target_subject_id"])
