@@ -164,6 +164,7 @@ class ActivitySubjectMetadata(PublicModel):
     respondent_submissions_count: int
     subjects_count: int
     subject_submissions_count: int
+    last_submission_date: datetime | None
 
 
 class ActivitiesMetadata(PublicModel):

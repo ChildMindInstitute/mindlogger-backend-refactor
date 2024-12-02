@@ -720,6 +720,7 @@ class SubmissionsSubjectCounters(InternalModel):
     subjects: set[uuid.UUID] = Field(default_factory=set)
     subject_submissions_count: int = 0
     respondent_submissions_count: int = 0
+    last_submission_date: datetime.datetime | None = None
 
 
 class SubmissionsActivityCountBySubject(InternalModel):
