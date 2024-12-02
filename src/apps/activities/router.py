@@ -138,7 +138,7 @@ router.get(
 
 router.get(
     "/applet/{applet_id}/subject/{subject_id}/counters",
-    description="""Get number of submissions and participants for applets activities and activity flows.
+    description="""Get number of submissions and participants for activities and activity flows associated with the given participant, either as respondent or target subject.
                 """,
     status_code=status.HTTP_200_OK,
     responses={
