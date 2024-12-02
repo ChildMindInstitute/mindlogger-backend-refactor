@@ -38,7 +38,7 @@ See MindLogger's [Knowledge Base article](https://mindlogger.atlassian.net/servi
 
 ## Technologies
 
-- ✅ [Python3.10+](https://www.python.org/downloads/release/python-3108/)
+- ✅ [Python3.11+](https://www.python.org/downloads/release/python-31110/)
 - ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
 - ✅ [FastAPI](https://fastapi.tiangolo.com)
 - ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
@@ -54,7 +54,6 @@ And
 **Code quality tools:**
 
 - ✅ [ruff](https://github.com/astral-sh/ruff)
-- ✅ [isort](https://github.com/PyCQA/isort)
 - ✅ [mypy](https://github.com/python/mypy)
 - ✅ [pytest](https://github.com/pytest-dev/pytest)
 
@@ -62,7 +61,7 @@ And
 
 ### Prerequisites
 
-- Python 3.10 - This project requires Python 3.10 as `aioredis` is [incompatible with 3.11+](https://github.com/aio-libs-abandoned/aioredis-py/issues/1409)
+- Python 3.11
 - [Docker](https://docs.docker.com/get-docker/)
 
 #### Recommended Extras
@@ -72,7 +71,7 @@ Installing [pyenv](https://github.com/pyenv/pyenv) is recommended to automatical
 Alternatively, on macOS you can use a tool like [Homebrew](https://brew.sh/) to install multiple versions and specify when creating the virtual environment:
 
 ```bash
-pipenv --python /opt/homebrew/bin/python3.10
+pipenv --python /opt/homebrew/bin/python3.11
 ```
 
 ### Environment Variables
@@ -179,26 +178,33 @@ For manual installation refer to each service's documentation:
 
 Pipenv used as a default dependencies manager
 Create your virtual environment:
+
+> **NOTE:**
+> Pipenv used as a default dependencies manager.
+> When developing on the API be sure to work from within an active shell.
+> If using VScode, open the terminal from w/in the active shell. Ideally, avoid using the integrated terminal during this process.
+
 ```bash
 # Activate your environment
 pipenv shell
 ```
 
-If `pyenv` is installed Python 3.10 should automatically be installed in the virtual environment, you can check the correct version of Python is active by running:
+If `pyenv` is installed Python 3.11 should automatically be installed in the virtual environment, you can check the
+correct version of Python is active by running:
 ```bash
 python --version
 ```
 
-If the active version is **not** 3.10, you can manually specify a version while creating your virtual environment:
+If the active version is **not** 3.11, you can manually specify a version while creating your virtual environment:
 ```bash
-pipenv --python /opt/homebrew/bin/python3.10
+pipenv --python /opt/homebrew/bin/python3.11
 ```
 
 Install all dependencies
 ```bash
 # Install all deps from Pipfile.lock
 # to install venv to current directory use `export PIPENV_VENV_IN_PROJECT=1`
-pipenv sync --dev
+pipenv sync --dev --system
 ```
 
 > 🛑 **NOTE:** if you don't use `pipenv` for some reason remember that you will not have automatically exported variables from your `.env` file.
@@ -234,11 +240,14 @@ pipenv install greenlet
 alembic upgrade head
 ```
 
+> 🛑 **NOTE:** If you run into role based errors e.g. `role "postgres" does not exist`, check to see if that program is running anywhere else (e.g. Homebrew), run... `ps -ef | grep {program-that-errored}`
+> You can attempt to kill the process with the following command `kill -9 {PID-to-program-that-errored}`, followed by rerunning the previous check to confirm if the program has stopped.
+
 ## Running the app
 
 ### Running locally
 
-This option allows you to run the app for development purposes without having to manually build the Docker image.
+This option allows you to run the app for development purposes without having to manually build the Docker image (i.e. When developing on the Web or Admin project).
 
 - Make sure all [required services](#required-services) are properly setup
 - If you're running required services using Docker, disable the `app` service from `docker-compose` before running:
@@ -246,12 +255,26 @@ This option allows you to run the app for development purposes without having to
   docker-compose up -d
   ```
 
-  Alternatively, you may run these services using [make](#running-using-makefile):
+  Alternatively, you may run these services using [make](#running-using-makefile) (i.e. When developing the API):
+
+   - You'll need to sudo into `/etc/hosts` and append the following changes.
+
+  ```
+  #mindlogger
+  127.0.0.1 postgres
+  127.0.0.1 rabbitmq
+  127.0.0.1 redis
+  127.0.0.1 mailhog
+  ```
+
+  Then run the following command from within the active virtual environment shell...
+
   ```bash
   make run_local
   ```
 
 > 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
+- To test that the API is up and running navigate to `http://localhost:8000/docs` in a browser.
 
 In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
 

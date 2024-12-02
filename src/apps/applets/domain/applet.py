@@ -11,6 +11,7 @@ from apps.activities.domain.activity import (
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageDetailPublic,
     ActivitySingleLanguageMobileDetailPublic,
+    ActivityWithAssignmentDetailsPublic,
 )
 from apps.activities.errors import PeriodIsRequiredError
 from apps.activity_flows.domain.flow import (
@@ -18,6 +19,7 @@ from apps.activity_flows.domain.flow import (
     FlowSingleLanguageDetail,
     FlowSingleLanguageDetailPublic,
     FlowSingleLanguageMobileDetailPublic,
+    FlowWithAssignmentDetailsPublic,
 )
 from apps.activity_flows.domain.flow_full import PublicFlowFull
 from apps.applets.domain.base import AppletBaseInfo, AppletFetchBase, Encryption
@@ -154,9 +156,21 @@ class PublicFlowFullType(PublicFlowFull):
     type = "activityFlow"
 
 
-# Returns a combination of activity and activity flows
 class AppletActivitiesAndFlowsDetailsPublic(PublicModel):
+    """
+    Returns a combination of activity and activity flows
+    """
+
     details: list[ActivityLanguageWithItemsMobileDetailPublicType | PublicFlowFullType] = Field(default_factory=list)
+
+
+class ActivitiesAndFlowsWithAssignmentDetailsPublic(PublicModel):
+    """
+    Returns a combination of activity and activity flows
+    """
+
+    activities: list[ActivityWithAssignmentDetailsPublic] = Field(default_factory=list)
+    activity_flows: list[FlowWithAssignmentDetailsPublic] = Field(default_factory=list)
 
 
 class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
@@ -165,3 +179,4 @@ class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
     updated_at: datetime.datetime | None
     activities: list[ActivityBaseInfo]
     activity_flows: list[FlowBaseInfo]
+    respondent_meta: dict | None = None

@@ -123,7 +123,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def update_by_id(self, id_, **values):
+    async def update_by_id(self, id_, **values) -> None:
         subquery: Query = select(ActivityHistorySchema.id_version)
         subquery = subquery.where(ActivityHistorySchema.id == id_)
         subquery = subquery.limit(1)

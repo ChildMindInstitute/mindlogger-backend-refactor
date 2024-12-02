@@ -102,7 +102,7 @@ router.get(
 
 router.post(
     "/{applet_id}/duplicate",
-    description="""This endpoint using for duplicate existing applet""",
+    description="""Duplicate an existing applet, and optionally its report server configuration""",
     response_model_by_alias=True,
     response_model=Response[public_detail.Applet],
     status_code=status.HTTP_201_CREATED,

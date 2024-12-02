@@ -26,6 +26,18 @@ class TransferService:
         self._user = user
         self.session = session
 
+    async def save_transfer_request(self, applet_id: uuid.UUID, target_email: str, target_id: uuid.UUID) -> Transfer:
+        transfer = Transfer(
+            email=target_email,
+            applet_id=applet_id,
+            key=uuid.uuid4(),
+            status=TransferOwnershipStatus.PENDING,
+            from_user_id=self._user.id,
+            to_user_id=target_id,
+        )
+        await TransferCRUD(self.session).create(transfer)
+        return transfer
+
     async def initiate_transfer(self, applet_id: uuid.UUID, transfer_request: InitiateTransfer):
         """Initiate a transfer of ownership of an applet."""
         # check if user is owner of applet
@@ -37,22 +49,14 @@ class TransferService:
             if to_user.id == self._user.id:
                 raise TransferEmailError()
             receiver_name = to_user.first_name
-            path = "transfer_ownership_registered_user_en"
+            path = "transfer_ownership_registered_user"
             to_user_id = to_user.id
         else:
-            path = "transfer_ownership_unregistered_user_en"
+            path = "transfer_ownership_unregistered_user"
             receiver_name = transfer_request.email
             to_user_id = None
 
-        transfer = Transfer(
-            email=transfer_request.email,
-            applet_id=applet_id,
-            key=uuid.uuid4(),
-            status=TransferOwnershipStatus.PENDING,
-            from_user_id=self._user.id,
-            to_user_id=to_user_id,
-        )
-        await TransferCRUD(self.session).create(transfer)
+        transfer = await self.save_transfer_request(applet_id, transfer_request.email, to_user_id)
 
         url = self._generate_transfer_url()
 
@@ -61,8 +65,9 @@ class TransferService:
         message = MessageSchema(
             recipients=[transfer_request.email],
             subject="Transfer ownership of an applet",
-            body=service.get_template(
-                path=path,
+            body=service.get_localized_html_template(
+                template_name=path,
+                language="en",
                 applet_owner=self._user.get_full_name(),
                 receiver_name=receiver_name,
                 applet_name=applet.display_name,

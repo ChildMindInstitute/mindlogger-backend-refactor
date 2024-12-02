@@ -1,6 +1,4 @@
-FROM python:3.10-slim-bookworm as base
-
-ARG PIPENV_EXTRA_ARGS
+FROM python:3.11-slim-bookworm AS base
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="src/"
@@ -8,7 +6,7 @@ ENV PYTHONPATH="src/"
 WORKDIR /app/
 
 RUN apt-get -y update && apt-get -y upgrade \
-    && apt-get install --no-install-recommends -y build-essential=12.9 curl=7.88* \
+    && apt-get install --no-install-recommends -y build-essential curl libffi-dev \
     && rm -rf /var/lib/apt/lists/
 
 # Add local non-root user to avoid issue with files
@@ -20,9 +18,10 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash
 
 # Install Python dependencies
-RUN pip install --no-cache-dir pipenv==2023.11.15
+RUN pip install --no-cache-dir pipenv
 
 COPY Pipfile Pipfile.lock ./
+ARG PIPENV_EXTRA_ARGS
 RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
 
 
@@ -41,10 +40,16 @@ RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
 COPY --chown=code:code ./compose/fastapi/migrate /fastapi-migrate
 RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
 
+COPY --chown=code:code ./compose/fastapi/ecs-start /ecs-start
+RUN sed -i 's/\r$//g' /ecs-start && chmod +x /ecs-start
+
+COPY --chown=code:code ./compose/fastapi/ecs-start-feature /ecs-start-feature
+RUN sed -i 's/\r$//g' /ecs-start-feature && chmod +x /ecs-start-feature
+
 # Select internal user
 USER code
 
-FROM base as fargate
+FROM base AS fargate
 # Hack for Fargate
 # https://github.com/aws/containers-roadmap/issues/938
 USER root
@@ -58,16 +63,12 @@ VOLUME ["/tmp"]
 VOLUME ["/app/uploads"]
 
 # worker instructions
-FROM base as worker
+FROM base AS worker
 
 USER root
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    ffmpeg=7:5.1* \
-    imagemagick=8:6.9* \
+    ffmpeg \
+    imagemagick \
     && rm -rf /var/lib/apt/lists/
 
 USER code
-
-
-
-

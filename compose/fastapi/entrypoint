@@ -10,7 +10,7 @@ import asyncio
 import sys
 import os
 
-from aioredis import from_url
+from redis.asyncio import from_url
 from config import settings
 from infrastructure.logger import logger
 

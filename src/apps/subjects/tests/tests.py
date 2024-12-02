@@ -9,7 +9,13 @@ from asyncpg import UniqueViolationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.activities.domain.activity_update import ActivityUpdate
+from apps.activities.services.activity import ActivityService
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate, ActivityAssignmentDelete
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.domain import AppletAnswerCreate
+from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
@@ -202,9 +208,25 @@ async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFu
 
 
 @pytest.fixture
+async def applet_one_pit_respondent(session: AsyncSession, applet_one: AppletFull, tom: User, pit: User) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(pit.id, Role.RESPONDENT)
+    return applet_one
+
+
+@pytest.fixture
 async def lucy_applet_one_subject(session: AsyncSession, lucy: User, applet_one_lucy_respondent: AppletFull) -> Subject:
     applet_id = applet_one_lucy_respondent.id
     user_id = lucy.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
+async def pit_applet_one_subject(session: AsyncSession, pit: User, applet_one_pit_respondent: AppletFull) -> Subject:
+    applet_id = applet_one_pit_respondent.id
+    user_id = pit.id
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
@@ -266,6 +288,9 @@ class TestSubjects(BaseTest):
     subject_relation_url = "/subjects/{subject_id}/relations/{source_subject_id}"
     subject_temporary_multiinformant_relation_url = (
         "/subjects/{subject_id}/relations/{source_subject_id}/multiinformant-assessment"
+    )
+    subject_target_by_respondent_url = (
+        "/subjects/respondent/{respondent_subject_id}/activity-or-flow/{activity_or_flow_id}"
     )
     answer_url = "/answers"
 
@@ -540,7 +565,17 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert set(res.keys()) == {
+            "id",
+            "secretUserId",
+            "nickname",
+            "lastSeen",
+            "tag",
+            "appletId",
+            "firstName",
+            "lastName",
+            "userId",
+        }
         assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
@@ -631,7 +666,17 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert set(res.keys()) == {
+            "id",
+            "secretUserId",
+            "nickname",
+            "lastSeen",
+            "tag",
+            "appletId",
+            "firstName",
+            "lastName",
+            "userId",
+        }
         assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
@@ -657,7 +702,17 @@ class TestSubjects(BaseTest):
         data = response.json()
         assert data
         res = data["result"]
-        assert set(res.keys()) == {"id", "secretUserId", "nickname", "lastSeen", "tag", "appletId", "userId"}
+        assert set(res.keys()) == {
+            "id",
+            "secretUserId",
+            "nickname",
+            "lastSeen",
+            "tag",
+            "appletId",
+            "firstName",
+            "lastName",
+            "userId",
+        }
         assert uuid.UUID(res["id"]) == applet_one_shell_account.id
         assert res["secretUserId"] == applet_one_shell_account.secret_user_id
         assert res["nickname"] == applet_one_shell_account.nickname
@@ -740,3 +795,338 @@ class TestSubjects(BaseTest):
         client.login(request.getfixturevalue(user_fixture))
         res = await client.get(self.subject_detail_url.format(subject_id=subject_id))
         assert res.status_code == expected
+
+    async def test_get_target_subjects_by_respondent_invalid_respondent(
+        self, client, tom: User, applet_one: AppletFull
+    ):
+        invalid_respondent_subject_id = str(uuid.uuid4())
+        activity_or_flow_id = str(applet_one.activities[0].id)
+        client.login(tom)
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=invalid_respondent_subject_id, activity_or_flow_id=activity_or_flow_id
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+    async def test_get_target_subjects_by_respondent_limited_account_respondent(
+        self, client, tom: User, applet_one: AppletFull, applet_one_shell_account: Subject
+    ):
+        activity_or_flow_id = str(applet_one.activities[0].id)
+        client.login(tom)
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=applet_one_shell_account.id, activity_or_flow_id=activity_or_flow_id
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+
+    async def test_get_target_subjects_by_respondent_editor_user(
+        self, client, applet_one_pit_editor: AppletFull, pit: User, tom_applet_one_subject: Subject
+    ):
+        activity_or_flow_id = str(applet_one_pit_editor.activities[0].id)
+        client.login(pit)
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=tom_applet_one_subject.id, activity_or_flow_id=activity_or_flow_id
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_get_target_subjects_by_respondent_respondent_user(
+        self, client, lucy: User, tom_applet_one_subject: Subject, applet_one_lucy_respondent: AppletFull
+    ):
+        activity_or_flow_id = str(applet_one_lucy_respondent.activities[0].id)
+        client.login(lucy)
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=tom_applet_one_subject.id, activity_or_flow_id=activity_or_flow_id
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_get_target_subjects_by_respondent_reviewer_without_assignment(
+        self, client, lucy: User, tom_applet_one_subject: Subject, applet_one_pit_reviewer: AppletFull
+    ):
+        activity_or_flow_id = str(applet_one_pit_reviewer.activities[0].id)
+        client.login(lucy)
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=tom_applet_one_subject.id, activity_or_flow_id=activity_or_flow_id
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+
+    async def test_get_target_subjects_by_respondent_reviewer_with_assignment(
+        self, client, lucy: User, tom_applet_one_subject: Subject, applet_one_lucy_reviewer_with_subject: AppletFull
+    ):
+        activity_or_flow_id = str(applet_one_lucy_reviewer_with_subject.activities[0].id)
+        client.login(lucy)
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=tom_applet_one_subject.id, activity_or_flow_id=activity_or_flow_id
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+
+    async def test_get_target_subjects_by_respondent_no_assignments_or_submissions(
+        self,
+        client,
+        tom: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        applet_one_lucy_respondent: AppletFull,
+        session,
+    ):
+        activity_or_flow_id = str(applet_one_lucy_respondent.activities[0].id)
+        client.login(tom)
+
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=lucy_applet_one_subject.id, activity_or_flow_id=activity_or_flow_id
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+
+        result = response.json()["result"]
+
+        assert len(result) == 1
+
+        subject_result = result[0]
+
+        assert subject_result["id"] == str(lucy_applet_one_subject.id)
+        assert subject_result["submissionCount"] == 0
+        assert subject_result["currentlyAssigned"] is True
+
+    async def test_get_target_subjects_by_respondent_manual_assignment(
+        self,
+        client,
+        tom: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        applet_one_lucy_respondent: AppletFull,
+        session,
+    ):
+        activity = applet_one_lucy_respondent.activities[0]
+
+        # Turn off auto-assignment
+        activity_service = ActivityService(session, tom.id)
+        await activity_service.remove_applet_activities(applet_one_lucy_respondent.id)
+        await activity_service.update_create(
+            applet_one_lucy_respondent.id,
+            [
+                ActivityUpdate(
+                    **activity.dict(exclude={"auto_assign"}),
+                    auto_assign=False,
+                )
+            ],
+        )
+
+        # Create a manual assignment
+        await ActivityAssignmentService(session).create_many(
+            applet_one_lucy_respondent.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_id=activity.id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                ),
+            ],
+        )
+
+        client.login(tom)
+
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=lucy_applet_one_subject.id, activity_or_flow_id=str(activity.id)
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+
+        result = response.json()["result"]
+
+        assert len(result) == 1
+
+        subject_result = result[0]
+
+        assert subject_result["id"] == str(tom_applet_one_subject.id)
+        assert subject_result["submissionCount"] == 0
+        assert subject_result["currentlyAssigned"] is True
+
+    async def test_get_target_subjects_by_respondent_excludes_deleted_assignment(
+        self,
+        client,
+        tom: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        applet_one_lucy_respondent: AppletFull,
+        session,
+    ):
+        activity = applet_one_lucy_respondent.activities[0]
+
+        # Turn off auto-assignment
+        activity_service = ActivityService(session, tom.id)
+        await activity_service.remove_applet_activities(applet_one_lucy_respondent.id)
+        await activity_service.update_create(
+            applet_one_lucy_respondent.id,
+            [
+                ActivityUpdate(
+                    **activity.dict(exclude={"auto_assign"}),
+                    auto_assign=False,
+                )
+            ],
+        )
+
+        # Create a deleted assignment
+        assignment_service = ActivityAssignmentService(session)
+        await assignment_service.create_many(
+            applet_one_lucy_respondent.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_id=activity.id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                ),
+            ],
+        )
+        await assignment_service.unassign_many(
+            [
+                ActivityAssignmentDelete(
+                    activity_id=activity.id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                )
+            ]
+        )
+
+        client.login(tom)
+
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=lucy_applet_one_subject.id, activity_or_flow_id=str(activity.id)
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+
+        assert response.json()["result"] == []
+
+    async def test_get_target_subjects_by_respondent_multiple_assignments(
+        self,
+        client,
+        tom: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        pit_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+        applet_one_lucy_respondent: AppletFull,
+        applet_one_pit_respondent: AppletFull,
+        session,
+    ):
+        activity = applet_one_lucy_respondent.activities[0]
+
+        # Turn off auto-assignment
+        activity_service = ActivityService(session, tom.id)
+        await activity_service.remove_applet_activities(applet_one_lucy_respondent.id)
+        await activity_service.update_create(
+            applet_one_lucy_respondent.id,
+            [
+                ActivityUpdate(
+                    **activity.dict(exclude={"auto_assign"}),
+                    auto_assign=False,
+                )
+            ],
+        )
+
+        # Create a manual assignment
+        await ActivityAssignmentService(session).create_many(
+            applet_one_lucy_respondent.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_id=activity.id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=activity.id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=applet_one_shell_account.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=activity.id,
+                    respondent_subject_id=tom_applet_one_subject.id,
+                    target_subject_id=pit_applet_one_subject.id,
+                ),
+            ],
+        )
+
+        client.login(tom)
+
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=lucy_applet_one_subject.id, activity_or_flow_id=str(activity.id)
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+
+        result = response.json()["result"]
+
+        assert len(result) == 2
+
+        tom_result = result[0]
+
+        assert tom_result["id"] == str(tom_applet_one_subject.id)
+        assert tom_result["submissionCount"] == 0
+        assert tom_result["currentlyAssigned"] is True
+
+        shell_account_result = result[1]
+
+        assert shell_account_result["id"] == str(applet_one_shell_account.id)
+        assert shell_account_result["submissionCount"] == 0
+        assert shell_account_result["currentlyAssigned"] is True
+
+    @pytest.mark.parametrize("subject_type", ["target", "respondent"])
+    async def test_get_target_subjects_by_respondent_via_submission(
+        self,
+        client,
+        tom: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+        subject_type: str,
+        applet_one_lucy_respondent: AppletFull,
+        answer_create_payload: dict,
+        session: AsyncSession,
+    ):
+        activity = applet_one_lucy_respondent.activities[0]
+        source_subject = lucy_applet_one_subject if subject_type == "respondent" else applet_one_shell_account
+
+        # Turn off auto-assignment
+        activity_service = ActivityService(session, tom.id)
+        await activity_service.remove_applet_activities(applet_one_lucy_respondent.id)
+        await activity_service.update_create(
+            applet_one_lucy_respondent.id,
+            [
+                ActivityUpdate(
+                    **activity.dict(exclude={"auto_assign"}),
+                    auto_assign=False,
+                )
+            ],
+        )
+
+        # Create an answer
+        await AnswerService(session, tom.id).create_answer(
+            AppletAnswerCreate(
+                **answer_create_payload,
+                input_subject_id=lucy_applet_one_subject.id,
+                source_subject_id=source_subject.id,
+                target_subject_id=tom_applet_one_subject.id,
+            )
+        )
+
+        client.login(tom)
+
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=source_subject.id, activity_or_flow_id=str(activity.id)
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+
+        result = response.json()["result"]
+
+        assert len(result) == 1
+
+        tom_result = result[0]
+
+        assert tom_result["id"] == str(tom_applet_one_subject.id)
+        assert tom_result["submissionCount"] == 1
+        assert tom_result["currentlyAssigned"] is False

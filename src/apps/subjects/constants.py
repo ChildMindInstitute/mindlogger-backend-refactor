@@ -1,18 +1,18 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class SubjectStatus(str, Enum):
+class SubjectStatus(StrEnum):
     INVITED = "invited"
     NOT_INVITED = "not_invited"
     PENDING = "pending"
 
 
-class Relation(str, Enum):
+class Relation(StrEnum):
     self = "self"
     admin = "admin"
     other = "other"
 
 
-class SubjectTag(str, Enum):
+class SubjectTag(StrEnum):
     TEAM = "Team"
     # Todo: Add more tags

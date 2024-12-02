@@ -3,8 +3,8 @@ import http
 import uuid
 from unittest import mock
 
+import jwt
 import pytest
-from jose import jwt
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 

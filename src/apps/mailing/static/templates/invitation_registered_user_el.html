@@ -1,0 +1,28 @@
+<html style="max-width: 700px" lang="en">
+
+<body>
+{% include 'header.html' %}
+<table style="padding: 0">
+  <tr>
+    <td style="padding-bottom: 1%">
+      Γεια σας, {{first_name}},
+    </td>
+  </tr>
+  <tr>
+    <td style="padding-bottom: 1%">
+      Έχετε προσκληθεί να γίνετε {{role}} του <b>"{{applet_name}}"</b> στο MindLogger.
+    </td>
+  </tr>
+  <tr>
+    <td style="padding-top: 2%; padding-bottom: 1%;">
+      <a href="{{link}}/{{key}}?lang={{language}}" style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 100px; display: inline-block; font-weight: 400; text-align: center; vertical-align: middle; text-decoration: none; color: #ffffff; background-color: #00639A; border-color: #00639A;">
+        Ξεκινήστε
+      </a>
+    </td>
+  </tr>
+  {% include 'blocks/team_info_en.html' %}
+</table>
+{% include 'footers/footer_info_en.html' %}
+</body>
+
+</html>

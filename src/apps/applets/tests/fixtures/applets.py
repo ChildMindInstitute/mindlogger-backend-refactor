@@ -20,7 +20,8 @@ from apps.applets.tests import constants
 from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
 from apps.subjects.db.schemas import SubjectSchema
-from apps.subjects.domain import Subject
+from apps.subjects.domain import Subject, SubjectCreate
+from apps.subjects.services import SubjectsService
 from apps.themes.service import ThemeService
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -293,6 +294,21 @@ async def applet_two_lucy_respondent(
 
 
 @pytest.fixture
+async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
+    return await SubjectsService(session, tom.id).create(
+        SubjectCreate(
+            applet_id=applet_one.id,
+            creator_id=tom.id,
+            first_name="Shell",
+            last_name="Account",
+            nickname="shell-account-0",
+            secret_user_id=f"{uuid.uuid4()}",
+            email="shell@mail.com",
+        )
+    )
+
+
+@pytest.fixture
 async def applet_lucy_respondent(session: AsyncSession, applet: AppletFull, user: User, lucy: User) -> AppletFull:
     await UserAppletAccessService(session, user.id, applet.id).add_role(lucy.id, Role.RESPONDENT)
     return applet
@@ -337,6 +353,7 @@ async def applet_with_all_performance_tasks(
     activity_flanker_create: ActivityCreate,
     actvitiy_cst_gyroscope_create: ActivityCreate,
     actvitiy_cst_touch_create: ActivityCreate,
+    activity_unity_create: ActivityCreate,
 ) -> AppletFull:
     data = applet_minimal_data.copy(deep=True)
     data.activities = [
@@ -345,6 +362,7 @@ async def applet_with_all_performance_tasks(
         activity_flanker_create,
         actvitiy_cst_gyroscope_create,
         actvitiy_cst_touch_create,
+        activity_unity_create,
     ]
     applet = await AppletService(session, tom.id).create(data)
     return applet

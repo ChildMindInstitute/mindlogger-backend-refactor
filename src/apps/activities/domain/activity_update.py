@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from pydantic import root_validator
 
@@ -30,7 +31,7 @@ class ActivityUpdate(ActivityBase, PublicModel):
     items: list[ActivityItemUpdate]
 
     @root_validator()
-    def validate_existing_ids_for_duplicate(cls, values):
+    def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
         items: list[ActivityItemUpdate] = values.get("items", [])
 
         item_names = set()

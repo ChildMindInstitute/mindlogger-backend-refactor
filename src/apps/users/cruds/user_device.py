@@ -34,7 +34,7 @@ class UserDevicesCRUD(BaseCRUD[UserDeviceSchema]):
         )
         result = await self._execute(stmt)
 
-        row = result.one()
+        row = result.mappings().first()
         model = UserDeviceSchema(**row)
 
         return model

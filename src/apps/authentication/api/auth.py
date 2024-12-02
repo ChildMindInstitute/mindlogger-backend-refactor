@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
 
+import jwt
 from fastapi import Body, Depends
-from jose import JWTError, jwt
 from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
@@ -82,7 +82,7 @@ async def refresh_access_token(
                     settings.authentication.refresh_token.secret_key,
                     algorithms=[settings.authentication.algorithm],
                 )
-            except JWTError:
+            except jwt.PyJWTError:
                 # check transition key
                 transition_key = settings.authentication.refresh_token.transition_key
                 transition_expire_date = settings.authentication.refresh_token.transition_expire_date
@@ -93,14 +93,14 @@ async def refresh_access_token(
                     raise
                 payload = jwt.decode(
                     schema.refresh_token,
-                    transition_key,
+                    str(transition_key),
                     algorithms=[settings.authentication.algorithm],
                 )
                 regenerate_refresh_token = True
 
             token_data = TokenPayload(**payload)
 
-        except (JWTError, ValidationError) as e:
+        except (jwt.PyJWTError, ValidationError) as e:
             raise InvalidRefreshToken() from e
 
         # Check if the token is in the blacklist

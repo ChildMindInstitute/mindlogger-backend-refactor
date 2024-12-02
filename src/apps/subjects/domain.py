@@ -9,16 +9,16 @@ from apps.shared.domain.custom_validations import lowercase
 
 class SubjectCreate(InternalModel):
     applet_id: uuid.UUID
-    email: EmailStr | None
+    email: EmailStr | None = None
     creator_id: uuid.UUID
-    user_id: uuid.UUID | None
-    language: str | None
+    user_id: uuid.UUID | None = None
+    language: str | None = None
     first_name: str
     last_name: str
     secret_user_id: str
-    nickname: str | None
+    nickname: str | None = None
     is_deleted: bool = False
-    tag: str | None
+    tag: str | None = None
 
 
 class Subject(SubjectCreate):
@@ -84,6 +84,13 @@ class SubjectReadResponse(SubjectUpdateRequest):
     last_seen: datetime.datetime | None
     applet_id: uuid.UUID
     user_id: uuid.UUID | None
+    first_name: str
+    last_name: str
+
+
+class TargetSubjectByRespondentResponse(SubjectReadResponse):
+    submission_count: int = 0
+    currently_assigned: bool = False
 
 
 class SubjectRelation(InternalModel):

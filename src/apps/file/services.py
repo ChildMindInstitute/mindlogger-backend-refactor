@@ -59,7 +59,7 @@ class S3PresignService:
         else:
             return await self.get_regular_client()
 
-    async def _presign(self, url: str | None):
+    async def _presign(self, url: str | None, legacy_cdn_client: CDNClient, regular_cdn_client: CDNClient):
         if not url:
             return
 
@@ -67,23 +67,26 @@ class S3PresignService:
             if not await self._check_access_to_legacy_url(url):
                 return url
             key = self._get_key(url)
-            wsp_service = workspace.WorkspaceService(self.session, self.user_id)
-            arbitrary_info = await wsp_service.get_arbitrary_info_if_use_arbitrary(self.applet_id)
-            legacy_cdn_client = await self.get_legacy_client(arbitrary_info)
+            if legacy_cdn_client.is_bucket_public() or await legacy_cdn_client.is_object_public(key):
+                return await legacy_cdn_client.generate_public_url(key)
             return await legacy_cdn_client.generate_presigned_url(key)
         elif self._is_regular_file_url_format(url):
             if not await self._check_access_to_regular_url(url):
                 return url
             key = self._get_key(url)
-            client = await self.get_regular_client()
-            return await client.generate_presigned_url(key)
+            return await regular_cdn_client.generate_presigned_url(key)
         else:
             return url
 
     async def presign(self, urls: List[str | None]) -> List[str]:
         c_list = []
+        wsp_service = workspace.WorkspaceService(self.session, self.user_id)
+        arbitrary_info = await wsp_service.get_arbitrary_info_if_use_arbitrary(self.applet_id)
+        legacy_cdn_client = await self.get_legacy_client(arbitrary_info)
+        regular_cdn_client = await self.get_regular_client()
+
         for url in urls:
-            c_list.append(self._presign(url))
+            c_list.append(self._presign(url, legacy_cdn_client, regular_cdn_client))
         result = await asyncio.gather(*c_list)
         return result
 
@@ -136,7 +139,7 @@ class GCPPresignService(S3PresignService):
         r"gs:\/\/[a-zA-Z0-9.-]+\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+\/[a-f0-9-]+\/[a-f0-9-]+\/[a-zA-Z0-9-]+"  # noqa
     )
 
-    async def _presign(self, url: str | None):
+    async def _presign(self, url: str | None, *kwargs):
         regular_cdn_client = await select_storage(applet_id=self.applet_id, session=self.session)
 
         if self._is_legacy_file_url_format(url):

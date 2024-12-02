@@ -8,7 +8,6 @@ REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${
 EXPORT_COMMAND = python src/export_spec.py
 
 RUFF_COMMAND = ruff
-ISORT_COMMAND = isort
 MYPY_COMMAND = mypy
 
 DOCKER_COMPOSE_EXISTS := $(shell command -v docker-compose 2> /dev/null)
@@ -50,7 +49,12 @@ migrate-arbitrary:
 # NOTE: cq == "Code quality"
 .PHONY: cq
 cq:
-	${RUFF_COMMAND} . && ${RUFF_COMMAND} format . && ${ISORT_COMMAND} . && ${MYPY_COMMAND} .
+	${RUFF_COMMAND} check . && ${RUFF_COMMAND} format --check . && ${MYPY_COMMAND} .
+
+# NOTE: cqf == "Code quality fix"
+.PHONY: cqf
+cqf:
+	${RUFF_COMMAND} format . && ${RUFF_COMMAND} check --fix . && ${MYPY_COMMAND} .
 
 # ###############
 # Docker
@@ -60,7 +64,7 @@ cq:
 .PHONY: dcq
 dcq:
 	${DOCKER_EXEC} \
-		${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./
+		${RUFF_COMMAND} check ./ && ${MYPY_COMMAND} ./
 
 .PHONY: dtest
 dtest:
@@ -81,7 +85,7 @@ creport:
 .PHONY: dcheck
 dcheck:
 	${DOCKER_EXEC} \
-		${RUFF_COMMAND} ./ && ${ISORT_COMMAND} ./ && ${MYPY_COMMAND} ./ && ${TEST_COMMAND}
+		${RUFF_COMMAND} check ./ && ${MYPY_COMMAND} ./ && ${TEST_COMMAND}
 
 .PHONY: save_specs
 save_specs:

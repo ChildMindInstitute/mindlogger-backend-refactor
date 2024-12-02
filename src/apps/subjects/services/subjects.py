@@ -12,7 +12,7 @@ from apps.subjects.domain import Subject, SubjectCreate, SubjectRelation
 
 __all__ = ["SubjectsService"]
 
-from apps.subjects.errors import SecretIDUniqueViolationError
+from apps.subjects.errors import SecretIDUniqueViolationError, SubjectNotFoundError
 
 
 class SubjectsService:
@@ -34,6 +34,14 @@ class SubjectsService:
             secret_user_id=schema.secret_user_id,
             tag=schema.tag,
         )
+
+    @staticmethod
+    def to_respondent_meta(subject: Subject | None):
+        return {
+            "subjectId": subject.id if subject else None,
+            "nickname": subject.nickname if subject else None,
+            "tag": subject.tag if subject else None,
+        }
 
     async def create(self, schema: SubjectCreate) -> Subject:
         subject_with_secret = await self.get_by_secret_id(schema.applet_id, schema.secret_user_id)
@@ -69,11 +77,26 @@ class SubjectsService:
         schema = await SubjectsCrud(self.session).get_by_id(id_)
         return Subject.from_orm(schema) if schema else None
 
+    async def get_by_ids(self, ids: list[uuid.UUID], include_deleted=False) -> list[Subject]:
+        subjects = await SubjectsCrud(self.session).get_by_ids(ids, include_deleted)
+        return [Subject.from_orm(subject) for subject in subjects]
+
     async def get_if_soft_exist(self, id_: uuid.UUID) -> Subject | None:
         schema = await SubjectsCrud(self.session).get_by_id(id_)
         if schema and schema.soft_exists():
             return Subject.from_orm(schema)
         return None
+
+    async def exist_by_id(self, subject_id: uuid.UUID) -> Subject:
+        """
+        Checks if a subject exists and returns subject. If the subject does not exist,
+        SubjectNotFoundError will be raised
+        """
+        subject = await self.get(subject_id)
+        if not subject:
+            raise SubjectNotFoundError(subject_id=str(subject_id))
+
+        return subject
 
     async def create_relation(
         self, subject_id: uuid.UUID, source_subject_id: uuid.UUID, relation: str, meta: dict[str, Any] = {}

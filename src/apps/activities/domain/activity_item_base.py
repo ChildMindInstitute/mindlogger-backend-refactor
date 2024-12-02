@@ -8,7 +8,6 @@ from apps.activities.errors import (
     AlertFlagMissingSliderItemError,
     DataMatrixRequiredError,
     HiddenWhenConditionalLogicSetError,
-    IncorrectConditionLogicItemTypeError,
     IncorrectConfigError,
     IncorrectNameCharactersError,
     IncorrectResponseValueError,
@@ -153,22 +152,6 @@ class BaseActivityItem(BaseModel):
                     raise DataMatrixRequiredError()
 
         return values
-
-    @validator("conditional_logic")
-    def validate_conditional_logic(cls, value, values):
-        response_type = values.get("response_type")
-        if value is not None and response_type not in [
-            ResponseType.SINGLESELECT,
-            ResponseType.MULTISELECT,
-            ResponseType.SLIDER,
-            ResponseType.TEXT,
-            ResponseType.PARAGRAPHTEXT,
-            ResponseType.TIME,
-            ResponseType.TIMERANGE,
-        ]:
-            raise IncorrectConditionLogicItemTypeError()
-
-        return value
 
     @root_validator(skip_on_failure=True)
     def validate_is_hidden(cls, values):

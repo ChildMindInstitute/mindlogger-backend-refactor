@@ -1,10 +1,13 @@
 import uuid
+from operator import and_
 from typing import cast
 
-from sqlalchemy import delete, select, update
-from sqlalchemy.orm import Query
+from sqlalchemy import String, delete, func, literal, or_, select, text, union, update
+from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
+from apps.activities.domain.activity import ActivityOrFlowBasicInfoInternal
+from apps.activity_flows.db.schemas import ActivityFlowItemSchema, ActivityFlowSchema
 from infrastructure.database import BaseCRUD
 
 __all__ = ["ActivitiesCRUD"]
@@ -60,6 +63,7 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
             ActivitySchema.scores_and_reports,
             ActivitySchema.performance_task_type,
             ActivitySchema.is_performance_task,
+            ActivitySchema.auto_assign,
         )
 
         query = query.where(ActivitySchema.applet_id == applet_id)
@@ -102,3 +106,80 @@ class ActivitiesCRUD(BaseCRUD[ActivitySchema]):
         query = query.where(ActivitySchema.applet_id == applet_id)
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_activity_and_flow_basic_info_by_ids_or_auto(
+        self, applet_id: uuid.UUID, ids: list[uuid.UUID], include_auto: bool, language: str
+    ) -> list[ActivityOrFlowBasicInfoInternal]:
+        activities_query: Query = select(
+            ActivitySchema.id,
+            ActivitySchema.name,
+            ActivitySchema.description,
+            ActivitySchema.image.label("images"),
+            literal("").label("activity_ids"),
+            literal(False).label("is_flow"),
+            ActivitySchema.auto_assign,
+            ActivitySchema.is_hidden,
+            ActivitySchema.is_performance_task,
+            ActivitySchema.performance_task_type,
+            ActivitySchema.order,
+        ).where(
+            ActivitySchema.applet_id == applet_id,
+            or_(
+                ActivitySchema.id.in_(ids),
+                include_auto and ActivitySchema.auto_assign.is_(True),
+            ),
+        )
+
+        flow_alias = aliased(ActivityFlowSchema)
+        flow_items_alias = aliased(ActivityFlowItemSchema)
+        activities_alias = aliased(ActivitySchema)
+
+        flows_query = (
+            select(
+                flow_alias.id,
+                flow_alias.name,
+                flow_alias.description,
+                func.coalesce(
+                    func.string_agg(activities_alias.image, ",").filter(
+                        and_(activities_alias.image.isnot(None), activities_alias.image != "")
+                    ),
+                    "",
+                ).label("images"),
+                func.string_agg(activities_alias.id.cast(String), ",").label("activity_ids"),
+                literal(True).label("is_flow"),
+                flow_alias.auto_assign,
+                flow_alias.is_hidden,
+                literal(None).label("is_performance_task"),
+                literal(None).label("performance_task_type"),
+                flow_alias.order,
+            )
+            .join(flow_items_alias, flow_alias.id == flow_items_alias.activity_flow_id)
+            .join(activities_alias, flow_items_alias.activity_id == activities_alias.id)
+            .where(
+                flow_alias.applet_id == applet_id,
+                or_(
+                    flow_alias.id.in_(ids),
+                    include_auto and flow_alias.auto_assign.is_(True),
+                ),
+            )
+            .group_by(flow_alias.id, flow_alias.name, flow_alias.description, flow_alias.auto_assign)
+        )
+
+        union_query = union(activities_query, flows_query).order_by(text("is_flow DESC"), text('"order" ASC'))
+
+        result = await self.session.execute(union_query)
+        return [
+            ActivityOrFlowBasicInfoInternal(
+                id=row[0],
+                name=row[1],
+                description=row[2][language],
+                images=row[3].split(","),
+                activity_ids=row[4].split(",") if row[4] else None,
+                is_flow=row[5],
+                auto_assign=row[6],
+                is_hidden=row[7],
+                is_performance_task=row[8],
+                performance_task_type=row[9],
+            )
+            for row in result.fetchall()
+        ]

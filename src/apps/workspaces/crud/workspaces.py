@@ -46,15 +46,19 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         return instance
 
     async def get_by_applet_id(self, applet_id: uuid.UUID) -> UserWorkspaceSchema | None:
-        access_subquery: Query = select(UserAppletAccessSchema.owner_id)
-        access_subquery = access_subquery.where(
-            and_(
-                UserAppletAccessSchema.role == Role.OWNER,
-                UserAppletAccessSchema.applet_id == applet_id,
+        query: Query = (
+            select(UserWorkspaceSchema)
+            .join(
+                UserAppletAccessSchema,
+                and_(
+                    UserAppletAccessSchema.user_id == UserWorkspaceSchema.user_id,
+                    UserAppletAccessSchema.role == Role.OWNER,
+                    UserAppletAccessSchema.soft_exists(),
+                ),
             )
+            .where(UserAppletAccessSchema.applet_id == applet_id)
         )
-        query: Query = select(UserWorkspaceSchema)
-        query = query.where(UserWorkspaceSchema.user_id.in_(access_subquery))
+
         db_result = await self._execute(query)
         res = db_result.scalars().first()
         return res
@@ -69,7 +73,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         db_result = await self._execute(query)
         res = db_result.scalars().all()
 
-        user_arb_uri_map: dict[uuid.UUID, str] = dict()
+        user_arb_uri_map: dict[uuid.UUID, str | None] = dict()
         for user_workspace in res:
             user_arb_uri_map[user_workspace.user_id] = (
                 user_workspace.database_uri if user_workspace.use_arbitrary else None

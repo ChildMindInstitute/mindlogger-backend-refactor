@@ -1,11 +1,14 @@
 import enum
-from enum import Enum
 
 from pydantic import Field, PositiveInt, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
-from apps.activities.domain.custom_validation_subscale import validate_raw_score_subscale, validate_score_subscale_table
+from apps.activities.domain.custom_validation_subscale import (
+    validate_age_subscale,
+    validate_raw_score_subscale,
+    validate_score_subscale_table,
+)
 from apps.activities.errors import (
     DuplicateScoreConditionIdError,
     DuplicateScoreConditionNameError,
@@ -20,10 +23,15 @@ from apps.shared.domain import PublicModel
 from apps.shared.domain.custom_validations import sanitize_string
 
 
-class CalculationType(str, Enum):
+class CalculationType(enum.StrEnum):
     SUM = "sum"
     AVERAGE = "average"
     PERCENTAGE = "percentage"
+
+
+class ScoringType(enum.StrEnum):
+    SCORE = "score"
+    RAW_SCORE = "raw_score"
 
 
 class ScoreConditionalLogic(PublicModel):
@@ -42,7 +50,7 @@ class ScoreConditionalLogic(PublicModel):
         return value
 
 
-class ReportType(str, enum.Enum):
+class ReportType(enum.StrEnum):
     score = "score"
     section = "section"
 
@@ -56,6 +64,8 @@ class Score(PublicModel):
     message: str | None = None
     items_print: list[str] | None = Field(default_factory=list)
     conditional_logic: list[ScoreConditionalLogic] | None = None
+    scoring_type: ScoringType | None = None
+    subscale_name: str | None = None
 
     @validator("conditional_logic")
     def validate_conditional_logic(cls, value, values):
@@ -160,7 +170,7 @@ class ScoreConditionalLogicMobile(PublicModel):
     conditions: list[ScoreCondition]
 
 
-class SubscaleCalculationType(str, Enum):
+class SubscaleCalculationType(enum.StrEnum):
     SUM = "sum"
     AVERAGE = "average"
 
@@ -168,9 +178,10 @@ class SubscaleCalculationType(str, Enum):
 class SubScaleLookupTable(PublicModel):
     score: str
     raw_score: str
-    age: PositiveInt | None = None
+    age: PositiveInt | str | None = None
     sex: str | None = Field(default=None, regex="^(M|F)$", description="M or F")
     optional_text: str | None = None
+    severity: str | None = Field(default=None, regex="^(Minimal|Mild|Moderate|Severe)$")
 
     @validator("raw_score")
     def validate_raw_score_lookup(cls, value):
@@ -180,8 +191,12 @@ class SubScaleLookupTable(PublicModel):
     def validate_score_lookup(cls, value):
         return validate_score_subscale_table(value)
 
+    @validator("age")
+    def validate_age_lookup(cls, value):
+        return validate_age_subscale(value)
 
-class SubscaleItemType(str, Enum):
+
+class SubscaleItemType(enum.StrEnum):
     ITEM = "item"
     SUBSCALE = "subscale"
 

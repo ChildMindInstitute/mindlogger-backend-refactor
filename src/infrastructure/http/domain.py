@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class MindloggerContentSource(str, Enum):
+class MindloggerContentSource(StrEnum):
     """The allowed values for the Mindlogger-Content-Source HTTP header."""
 
     web = "web"

@@ -103,7 +103,7 @@ async def applet_retrieve(
         applet.owner_id = applet_owner.owner_id
     return AppletRetrieveResponse(
         result=AppletSingleLanguageDetailPublic.from_orm(applet),
-        respondent_meta={"nickname": subject.nickname if subject else None, "tag": subject.tag if subject else None},
+        respondent_meta=SubjectsService.to_respondent_meta(subject),
         applet_meta=AppletMeta(has_assessment=has_assessment),
     )
 
@@ -188,7 +188,9 @@ async def applet_duplicate(
         await CheckAccessService(session, user.id).check_applet_duplicate_access(applet_id)
         applet_for_duplicate = await service.get_by_id_for_duplicate(applet_id)
 
-        applet = await service.duplicate(applet_for_duplicate, schema.display_name, schema.encryption)
+        applet = await service.duplicate(
+            applet_for_duplicate, schema.display_name, schema.encryption, schema.include_report_server
+        )
     return Response(result=public_detail.Applet.from_orm(applet))
 
 

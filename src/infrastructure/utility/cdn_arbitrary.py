@@ -4,41 +4,50 @@ from typing import BinaryIO
 
 import boto3
 from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas
+from botocore.config import Config
 
 from infrastructure.utility.cdn_client import CDNClient
 from infrastructure.utility.cdn_config import CdnConfig
 
 
 class ArbitraryS3CdnClient(CDNClient):
-    def configure_client(self, config: CdnConfig):
+    def configure_client(self, config: CdnConfig, signature_version=None):
+        client_config = Config(
+            max_pool_connections=25,
+        )
         return boto3.client(
             "s3",
             aws_access_key_id=self.config.access_key,
             aws_secret_access_key=self.config.secret_key,
             region_name=self.config.region,
+            config=client_config,
         )
 
 
 class ArbitraryGCPCdnClient(CDNClient):
-    def __init__(self, config: CdnConfig, endpoint_url: str, env: str):
+    def __init__(self, config: CdnConfig, endpoint_url: str, env: str, *, max_concurrent_tasks: int = 10):
         self.endpoint_url = endpoint_url
         super().__init__(config, env)
 
     def generate_private_url(self, key):
         return f"gs://{self.config.bucket}/{key}"
 
-    def configure_client(self, config):
+    def configure_client(self, config, signature_version=None):
+        client_config = Config(
+            max_pool_connections=25,
+        )
         return boto3.client(
             "s3",
             aws_access_key_id=self.config.access_key,
             aws_secret_access_key=self.config.secret_key,
             region_name=self.config.region,
             endpoint_url=self.endpoint_url,
+            config=client_config,
         )
 
 
 class ArbitraryAzureCdnClient(CDNClient):
-    def __init__(self, sec_key: str, bucket: str, env: str = ""):
+    def __init__(self, sec_key: str, bucket: str, env: str = "", *, max_concurrent_tasks: int = 10):
         self.sec_key = sec_key
         super().__init__(CdnConfig(bucket=bucket), env)
 
@@ -49,7 +58,7 @@ class ArbitraryAzureCdnClient(CDNClient):
     def generate_private_url(self, key):
         return f"https://{self.config.bucket}.blob.core.windows.net/mindlogger/{key}"  # noqa
 
-    def configure_client(self, _):
+    def configure_client(self, _, **kwargs):
         blob_service_client = BlobServiceClient.from_connection_string(self.sec_key)
         with suppress(Exception):
             blob_service_client.create_container(self.default_container_name)

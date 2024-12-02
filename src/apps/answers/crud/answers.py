@@ -5,8 +5,8 @@ from typing import Collection
 
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Query, aliased, contains_eager
+from sqlalchemy.dialects.postgresql import UUID, insert
+from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
 from sqlalchemy.sql import Values
 from sqlalchemy.sql.elements import BooleanClauseList
 
@@ -100,6 +100,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         """
         @param filters: see supported filters: _AnswerListFilter
         """
+        self.session.expire_all()
         query = select(AnswerSchema).join(AnswerSchema.answer_item).options(contains_eager(AnswerSchema.answer_item))
 
         _filters = _AnswerListFilter().get_clauses(**filters)
@@ -570,6 +571,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.submit_id,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
@@ -585,6 +587,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
                 AnswerItemSchema.local_end_time.desc(),
@@ -592,12 +595,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .distinct(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
             )
         )
 
         db_result = await self._execute(query)
-        data = db_result.all()
+        data = db_result.mappings().all()
 
         activities = []
         flows = []
@@ -642,6 +646,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.submit_id,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
@@ -656,6 +661,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
                 AnswerItemSchema.local_end_time.desc(),
@@ -663,12 +669,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .distinct(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
             )
         )
 
         db_result = await self._execute(query)
-        data = db_result.all()
+        data = db_result.mappings().all()
 
         applet_activities_flows_map: dict[uuid.UUID, dict[str, list]] = dict()
         for row in data:
@@ -697,7 +704,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return result_list
 
-    async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str:
+    async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str | None:
         query: Query = select(AnswerSchema.applet_history_id)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.order_by(AnswerSchema.version.desc())
@@ -865,3 +872,125 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.flow_history_id.like(f"{flow_id}_%"))
         result = await self._execute(query)
         return result.scalar_one_or_none()
+
+    async def get_applet_answer_rows(self, applet_id: uuid.UUID):
+        query = select(AnswerSchema.__table__).where(AnswerSchema.applet_id == applet_id)
+        res = await self._execute(query)
+        return res.all()
+
+    async def get_applet_answers_total(self, applet_id: uuid.UUID):
+        query = select(func.count(AnswerSchema.id)).where(AnswerSchema.applet_id == applet_id)
+        res = await self._execute(query)
+        return res.scalar()
+
+    async def get_applet_answer_item_rows(self, applet_id: uuid.UUID):
+        query = (
+            select(AnswerItemSchema.__table__)
+            .join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+            .where(AnswerSchema.applet_id == applet_id)
+        )
+
+        res = await self._execute(query)
+        return res.all()
+
+    async def get_applet_answer_items_total(self, applet_id: uuid.UUID):
+        query = (
+            select(func.count(AnswerItemSchema.id))
+            .join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+            .where(AnswerSchema.applet_id == applet_id)
+        )
+
+        res = await self._execute(query)
+        return res.scalar()
+
+    async def insert_answers_batch(self, values):
+        insert_query = (
+            insert(AnswerSchema)
+            .values(values)
+            .on_conflict_do_nothing(
+                index_elements=[AnswerSchema.id],
+            )
+        )
+        await self._execute(insert_query)
+
+    async def insert_answer_items_batch(self, values):
+        insert_query = (
+            insert(AnswerItemSchema)
+            .values(values)
+            .on_conflict_do_nothing(
+                index_elements=[AnswerItemSchema.id],
+            )
+        )
+        await self._execute(insert_query)
+
+    async def get_answers_respondents(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
+        query = (
+            select(AnswerItemSchema.respondent_id)
+            .join(AnswerSchema, AnswerSchema.id == AnswerItemSchema.answer_id)
+            .where(AnswerSchema.applet_id == applet_id)
+            .distinct()
+        )
+        res = await self._execute(query)
+        user_ids = res.scalars().all()
+        return user_ids
+
+    async def delete_by_ids(self, ids: list[uuid.UUID]):
+        query: Query = delete(AnswerSchema)
+        query = query.where(AnswerSchema.id.in_(ids))
+        await self._execute(query)
+
+    async def get_target_subject_ids_by_respondent(
+        self, respondent_subject_id: uuid.UUID, activity_or_flow_id: uuid.UUID
+    ):
+        query: Query = (
+            select(
+                AnswerSchema.target_subject_id,
+                func.count(func.distinct(AnswerSchema.submit_id)).label("submission_count"),
+            )
+            .where(
+                AnswerSchema.source_subject_id == respondent_subject_id,
+                or_(
+                    AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == str(activity_or_flow_id),
+                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(activity_or_flow_id),
+                ),
+            )
+            .group_by(AnswerSchema.target_subject_id)
+        )
+
+        res = await self._execute(query)
+        return res.all()
+
+    @staticmethod
+    def __activity_and_flow_ids_by_subject_query(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
+        query: Query = (
+            select(
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
+                ).label("id")
+            )
+            .where(subject_column == subject_id)
+            .distinct()
+        )
+        return query
+
+    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a target subject
+        """
+        res = await self._execute(
+            self.__activity_and_flow_ids_by_subject_query(AnswerSchema.target_subject_id, target_subject_id)
+        )
+        return res.scalars().all()
+
+    async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a source subject
+        """
+        res = await self._execute(
+            self.__activity_and_flow_ids_by_subject_query(AnswerSchema.source_subject_id, source_subject_id)
+        )
+        return res.scalars().all()

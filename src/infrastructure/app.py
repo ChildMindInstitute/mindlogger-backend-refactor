@@ -66,6 +66,7 @@ routers: Iterable[APIRouter] = (
     ws_alerts.router,
     subject_router.router,
     activity_assignments.router,
+    activity_assignments.user_router,
 )
 
 # Declare your middlewares here

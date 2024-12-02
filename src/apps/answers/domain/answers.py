@@ -21,6 +21,7 @@ from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.domain.types import _BaseModel
 from apps.shared.locale import I18N
+from apps.subjects.domain import SubjectReadResponse
 
 
 class ClientMeta(InternalModel):
@@ -41,6 +42,10 @@ class Answer(InternalModel):
     activity_history_id: str
     respondent_id: uuid.UUID | None
     is_flow_completed: bool | None = False
+    target_subject_id: uuid.UUID | None = None
+    source_subject_id: uuid.UUID | None = None
+    input_subject_id: uuid.UUID | None = None
+    relation: str | None = None
 
     migrated_data: dict | None = None
     created_at: datetime.datetime
@@ -101,12 +106,12 @@ class AppletAnswerCreate(InternalModel):
     is_flow_completed: bool | None = None
     activity_id: uuid.UUID
     answer: ItemAnswerCreate
-    created_at: datetime.datetime | None
+    created_at: datetime.datetime | None = None
     alerts: list[AnswerAlert] = Field(default_factory=list)
     client: ClientMeta
-    target_subject_id: uuid.UUID | None
-    source_subject_id: uuid.UUID | None
-    input_subject_id: uuid.UUID | None
+    target_subject_id: uuid.UUID | None = None
+    source_subject_id: uuid.UUID | None = None
+    input_subject_id: uuid.UUID | None = None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
@@ -116,7 +121,7 @@ class AssessmentAnswerCreate(InternalModel):
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
     assessment_version_id: str
-    reviewed_flow_submit_id: uuid.UUID | None
+    reviewed_flow_submit_id: uuid.UUID | None = None
 
 
 class AnswerDate(InternalModel):
@@ -174,8 +179,7 @@ class SubmissionDate(PublicModel):
     end_datetime: datetime.datetime
 
 
-class ReviewFlow(ReviewItem[SubmissionDate]):
-    ...
+class ReviewFlow(ReviewItem[SubmissionDate]): ...
 
 
 class PublicReviewFlow(ReviewFlow):
@@ -241,6 +245,7 @@ class ActivityAnswer(PublicModel):
     migrated_data: dict | None = None
     end_datetime: datetime.datetime
     created_at: datetime.datetime
+    source_subject: SubjectReadResponse | None
 
     @validator("activity_id", always=True)
     def extract_activity_id(cls, value, values):
@@ -264,7 +269,7 @@ class ActivitySubmissionResponse(ActivitySubmission):
     summary: SubmissionSummary | None = None
 
     @validator("summary", always=True)
-    def generate_summary(cls, value, values):
+    def generate_summary(cls, value, values) -> list[Any]:
         if not value:
             answer: ActivityAnswer = values["answer"]
             if answer:
@@ -382,7 +387,7 @@ class FlowSubmissionResponse(PublicModel):
         return value
 
     @validator("summary", always=True)
-    def generate_summary(cls, value, values):
+    def generate_summary(cls, value, values) -> list[Any]:
         if not value:
             answers: list[ActivityAnswer] = values["submission"].answers
             if answers:
@@ -632,6 +637,7 @@ class CompletedEntity(PublicModel):
     id: uuid.UUID
     answer_id: uuid.UUID
     submit_id: uuid.UUID
+    target_subject_id: uuid.UUID | None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
@@ -686,3 +692,17 @@ class PublicSubmissionsResponse(PublicModel):
     submissions: list[AppletSubmission] = Field(default_factory=list)
     submissions_count: int = 0
     participants_count: int = 0
+
+
+class AnswersCopyCheckResult(InternalModel):
+    total_answers: int
+    not_copied_answers: set[uuid.UUID]
+    answers_to_remove: set[uuid.UUID]
+    total_answer_items: int
+    not_copied_answer_items: set[uuid.UUID]
+
+
+class FilesCopyCheckResult(InternalModel):
+    total_files: int
+    not_copied_files: set[str]
+    files_to_remove: set[str]

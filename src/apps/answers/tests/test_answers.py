@@ -13,6 +13,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.domain.activity_update import ActivityUpdate
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
@@ -1116,29 +1118,21 @@ class TestAnswerActivityItems(BaseTest):
             },
         )
 
-        await subject_service.create_relation(
-            relation="take-now",
-            source_subject_id=source_subject.id,
-            subject_id=target_subject.id,
-            meta={
-                "expiresAt": (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat(),
-            },
-        )
-
         data.source_subject_id = source_subject.id
         data.target_subject_id = target_subject.id
         data.input_subject_id = applet_one_sam_subject.id
 
-        # before posting the request, make sure that there is a temporary relation
-        existing_relation = await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
-        assert existing_relation
+        # before posting the request, make sure that there are temporary relations
+        assert subject_service.get_relation(applet_one_sam_subject.id, source_subject.id)
+        assert subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
 
         response = await client.post(self.answer_url, data=data)
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
-        # after submitting make sure that the relation has been deleted
-        relation_exists = await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
-        assert not relation_exists
+
+        # after submitting make sure that the relations have been deleted
+        assert not await subject_service.get_relation(applet_one_sam_subject.id, source_subject.id)
+        assert not await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
 
     async def test_answer_activity_items_relation_equal_other_when_relation_is_temp(
         self,
@@ -1278,24 +1272,21 @@ class TestAnswerActivityItems(BaseTest):
             relation="parent", source_subject_id=applet_one_sam_subject.id, subject_id=target_subject.id
         )
 
-        await subject_service.create_relation(
-            relation="parent", source_subject_id=source_subject.id, subject_id=target_subject.id
-        )
-
         data.source_subject_id = source_subject.id
         data.target_subject_id = target_subject.id
         data.input_subject_id = applet_one_sam_subject.id
 
-        # before posting the request, make sure that there is a temporary relation
-        existing_relation = await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
-        assert existing_relation
+        # before posting the request, make sure that there are temporary relations
+        assert await subject_service.get_relation(applet_one_sam_subject.id, source_subject.id)
+        assert await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
 
         response = await client.post(self.answer_url, data=data)
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
-        # after submitting make sure that the relation has not been deleted
-        relation_exists = await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
-        assert relation_exists
+
+        # after submitting make sure that the relations have not been deleted
+        assert await subject_service.get_relation(applet_one_sam_subject.id, source_subject.id)
+        assert await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
 
     async def test_answer_activity_items_create_expired_temporary_relation_fail(
         self,
@@ -1352,9 +1343,81 @@ class TestAnswerActivityItems(BaseTest):
             },
         )
 
+        data.source_subject_id = source_subject.id
+        data.target_subject_id = target_subject.id
+        data.input_subject_id = applet_one_sam_subject.id
+
+        # before posting the request, make sure that there are temporary relations
+        assert await subject_service.get_relation(applet_one_sam_subject.id, source_subject.id)
+        assert await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST, response.json()
+
+    async def test_answer_activity_items_create_expired_temporary_relation_with_assignment_success(
+        self,
+        tom: User,
+        answer_create_applet_one: AppletAnswerCreate,
+        client: TestClient,
+        session: AsyncSession,
+        sam: User,
+        applet_one: AppletFull,
+        applet_one_sam_respondent,
+        applet_one_sam_subject,
+    ) -> None:
+        client.login(tom)
+        subject_service = SubjectsService(session, tom.id)
+
+        data = answer_create_applet_one.copy(deep=True)
+
+        client.login(sam)
+        subject_service = SubjectsService(session, sam.id)
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                email=EmailStr("source_subject@mindlogger.com"),
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        # Create an assignment by source subject about target subject
+        await ActivityAssignmentService(session).create_many(
+            applet_id=applet_one.id,
+            assignments_create=[
+                ActivityAssignmentCreate(
+                    activity_id=answer_create_applet_one.activity_id,
+                    activity_flow_id=None,
+                    respondent_subject_id=source_subject.id,
+                    target_subject_id=target_subject.id,
+                ),
+            ],
+        )
+
+        # create a relation between respondent and source
         await subject_service.create_relation(
             relation="take-now",
-            source_subject_id=source_subject.id,
+            source_subject_id=applet_one_sam_subject.id,
+            subject_id=source_subject.id,
+            meta={
+                "expiresAt": (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
+            },
+        )
+        # create a relation between respondent and target
+        await subject_service.create_relation(
+            relation="take-now",
+            source_subject_id=applet_one_sam_subject.id,
             subject_id=target_subject.id,
             meta={
                 "expiresAt": (datetime.datetime.now() - datetime.timedelta(days=1)).isoformat(),
@@ -1365,12 +1428,12 @@ class TestAnswerActivityItems(BaseTest):
         data.target_subject_id = target_subject.id
         data.input_subject_id = applet_one_sam_subject.id
 
-        # before posting the request, make sure that there is a temporary relation
-        existing_relation = await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
-        assert existing_relation
+        # before posting the request, make sure that there are temporary relations
+        assert await subject_service.get_relation(applet_one_sam_subject.id, source_subject.id)
+        assert await subject_service.get_relation(applet_one_sam_subject.id, target_subject.id)
 
         response = await client.post(self.answer_url, data=data)
-        assert response.status_code == http.HTTPStatus.BAD_REQUEST, response.json()
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
     async def test_answer_get_export_data__answer_from_respondent(
         self,
@@ -1471,7 +1534,9 @@ class TestAnswerActivityItems(BaseTest):
         assert set(data["summary"]["identifier"]) == {"lastAnswerDate", "identifier", "userPublicKey"}
         assert data["summary"]["identifier"]["identifier"] == "encrypted_identifier"
 
-    async def test_get_answer_activity(self, client: TestClient, tom: User, applet: AppletFull, answer: AnswerSchema):
+    async def test_get_answer_activity(
+        self, client: TestClient, tom: User, tom_applet_subject: SubjectSchema, applet: AppletFull, answer: AnswerSchema
+    ):
         client.login(tom)
         response = await client.get(
             self.activity_answer_url.format(
@@ -1480,7 +1545,79 @@ class TestAnswerActivityItems(BaseTest):
                 activity_id=applet.activities[0].id,
             )
         )
-        assert response.status_code == http.HTTPStatus.OK  # TODO: Check response
+        assert response.status_code == http.HTTPStatus.OK
+        response_json = response.json()
+
+        result = response_json["result"]
+
+        assert set(result.keys()) == {"activity", "answer", "summary"}
+
+        result_answer = result["answer"]
+        assert set(result_answer.keys()) == {
+            "activityHistoryId",
+            "activityId",
+            "answer",
+            "createdAt",
+            "endDatetime",
+            "events",
+            "flowHistoryId",
+            "id",
+            "identifier",
+            "itemIds",
+            "migratedData",
+            "submitId",
+            "userPublicKey",
+            "version",
+            "sourceSubject",
+        }
+        assert result_answer["submitId"] == str(answer.submit_id)
+        assert (
+            result_answer["flowHistoryId"] == answer.flow_history_id
+            if answer.flow_history_id
+            else str(answer.flow_history_id)
+        )
+
+        assert set(result_answer.keys()) == {
+            "activityHistoryId",
+            "activityId",
+            "answer",
+            "createdAt",
+            "endDatetime",
+            "events",
+            "flowHistoryId",
+            "id",
+            "identifier",
+            "itemIds",
+            "migratedData",
+            "submitId",
+            "userPublicKey",
+            "version",
+            "sourceSubject",
+        }
+
+        assert result_answer["id"] == str(answer.id)
+
+        source_subject = result_answer["sourceSubject"]
+
+        assert set(source_subject.keys()) == {
+            "secretUserId",
+            "nickname",
+            "tag",
+            "id",
+            "lastSeen",
+            "appletId",
+            "userId",
+            "firstName",
+            "lastName",
+        }
+        assert source_subject["id"] == str(tom_applet_subject.id)
+        assert source_subject["userId"] == str(tom.id)
+        assert source_subject["secretUserId"] == tom_applet_subject.secret_user_id
+        assert source_subject["nickname"] == tom_applet_subject.nickname
+        assert source_subject["firstName"] == tom_applet_subject.first_name
+        assert source_subject["lastName"] == tom_applet_subject.last_name
+        assert source_subject["tag"] == tom_applet_subject.tag
+        assert source_subject["lastSeen"] is None
 
     async def test_fail_answered_applet_not_existed_activities(
         self, client: TestClient, tom: User, applet: AppletFull, uuid_zero: uuid.UUID, answer: AnswerSchema
@@ -2004,6 +2141,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
@@ -2037,6 +2175,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
@@ -2504,7 +2643,14 @@ class TestAnswerActivityItems(BaseTest):
         assert len(data[0]["answerDates"]) == 2
         assert len(data[1]["answerDates"]) == 1
 
-    async def test_flow_submission(self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_flow):
+    async def test_flow_submission(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_with_flow: AppletFull,
+        tom_answer_activity_flow: AnswerSchema,
+        tom_applet_with_flow_subject: Subject,
+    ):
         client.login(tom)
         url = self.flow_submission_url.format(
             applet_id=applet_with_flow.id,
@@ -2523,10 +2669,23 @@ class TestAnswerActivityItems(BaseTest):
         # fmt: off
         assert set(answer_data.keys()) == {
             "activityHistoryId", "activityId", "answer", "createdAt", "endDatetime", "events", "flowHistoryId", "id",
-            "identifier", "itemIds", "migratedData", "submitId", "userPublicKey", "version"
+            "identifier", "itemIds", "migratedData", "submitId", "userPublicKey", "version", "sourceSubject"
         }
         assert answer_data["submitId"] == str(tom_answer_activity_flow.submit_id)
         assert answer_data["flowHistoryId"] == str(tom_answer_activity_flow.flow_history_id)
+
+        source_subject = answer_data["sourceSubject"]
+
+        assert set(source_subject.keys()) == {"secretUserId", "nickname", "tag", "id", "lastSeen", "appletId", "userId",
+                                              "firstName", "lastName"}
+        assert source_subject["id"] == str(tom_applet_with_flow_subject.id)
+        assert source_subject["userId"] == str(tom.id)
+        assert source_subject["secretUserId"] == tom_applet_with_flow_subject.secret_user_id
+        assert source_subject["nickname"] == tom_applet_with_flow_subject.nickname
+        assert source_subject["firstName"] == tom_applet_with_flow_subject.first_name
+        assert source_subject["lastName"] == tom_applet_with_flow_subject.last_name
+        assert source_subject["tag"] == tom_applet_with_flow_subject.tag
+        assert source_subject["lastSeen"] is None
 
         assert set(data["flow"].keys()) == {
             "id", "activities", "autoAssign", "createdAt", "description", "hideBadge", "idVersion", "isHidden",
@@ -3499,19 +3658,72 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["valid"] is True
 
-    async def test_validat_multiinformant_assessment_fail_not_manager(self, client, lucy: User, applet_one: AppletFull):
+    async def test_validat_multiinformant_assessment_fail_not_manager(
+        self, client, applet_with_flow, session: AsyncSession, lucy: User, tom: User, applet_one: AppletFull
+    ):
+        subject_service = SubjectsService(session, tom.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_with_flow.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_with_flow.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
         client.login(lucy)
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
-
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
         response = await client.get(url)
 
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
-    async def test_validate_multiinformant_assessment_fail_no_applet(self, client, lucy: User):
+    async def test_validate_multiinformant_assessment_fail_no_applet(
+        self, client, session: AsyncSession, applet_one: AppletFull, lucy: User
+    ):
         client.login(lucy)
+        subject_service = SubjectsService(session, lucy.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=lucy.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=lucy.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=uuid.uuid4())
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
 
         response = await client.get(url)
 
@@ -3526,8 +3738,8 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.get(url)
 
-        assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is True
+        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["result"][0]["message"] == "field required"
 
     async def test_validate_multiinformant_assessment_fail_source_subject_not_found(
         self, client, tom: User, applet_one: AppletFull, applet_two: AppletFull, session: AsyncSession
@@ -3535,16 +3747,6 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
 
         subject_service = SubjectsService(session, tom.id)
-
-        source_subject = await subject_service.create(
-            SubjectCreate(
-                applet_id=applet_two.id,
-                creator_id=tom.id,
-                first_name="source",
-                last_name="subject",
-                secret_user_id=f"{uuid.uuid4()}",
-            )
-        )
 
         target_subject = await subject_service.create(
             SubjectCreate(
@@ -3557,13 +3759,14 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
-
-        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
-
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={uuid.uuid4()}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
         response = await client.get(url)
 
         assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
+        assert response.json()["result"]["message"] == "Source subject not found"
         assert response.json()["result"]["code"] == "invalid_source_subject"
 
     async def test_validate_multiinformant_assessment_fail_target_subject_not_found(
@@ -3583,24 +3786,15 @@ class TestAnswerActivityItems(BaseTest):
             )
         )
 
-        target_subject = await subject_service.create(
-            SubjectCreate(
-                applet_id=applet_two.id,
-                creator_id=tom.id,
-                first_name="target",
-                last_name="subject",
-                secret_user_id=f"{uuid.uuid4()}",
-            )
-        )
-
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
-
-        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
-
+        url = (
+            f"{url}?targetSubjectId={uuid.uuid4()}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
         response = await client.get(url)
 
         assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
+        assert response.json()["result"]["message"] == "Target subject not found"
         assert response.json()["result"]["code"] == "invalid_target_subject"
 
     async def test_validate_multiinformant_assessment_fail_temporary_relation_expired(
@@ -3656,12 +3850,14 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
-        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
-
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
         response = await client.get(url)
 
         assert response.status_code == http.HTTPStatus.OK
-        assert response.json()["result"]["valid"] is False
+        assert response.json()["result"]["message"] == "Subject relation not found"
         assert response.json()["result"]["code"] == "no_access_to_applet"
 
     async def test_validate_multiinformant_assessment_success_temporary_relation_not_expired(
@@ -3717,8 +3913,11 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
-        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
-
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
+        # activity_or_flow_id
         response = await client.get(url)
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["result"]["valid"] is True
@@ -3766,7 +3965,10 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one.id)
-        url = f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one.activities[0].id}"
+        )
 
         response = await client.get(url)
         assert response.status_code == http.HTTPStatus.OK
@@ -3776,11 +3978,39 @@ class TestAnswerActivityItems(BaseTest):
         self,
         client,
         lucy: User,
+        sam: User,
+        tom: User,
+        session: AsyncSession,
+        applet_one: AppletFull,
         applet_one_lucy_manager: AppletFull,
     ):
         client.login(lucy)
+        subject_service = SubjectsService(session, sam.id)
+
+        source_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="source",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        target_subject = await subject_service.create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="target",
+                last_name="subject",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
 
         url = self.multiinformat_assessment_validate_url.format(applet_id=applet_one_lucy_manager.id)
+        url = (
+            f"{url}?targetSubjectId={target_subject.id}&sourceSubjectId={source_subject.id}"
+            f"&activityOrFlowId={applet_one_lucy_manager.activities[0].id}"
+        )
 
         response = await client.get(url)
 

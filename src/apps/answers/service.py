@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import datetime
+import itertools
 import json
 import os
 import time
@@ -16,11 +17,14 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist, FlowDoesNotExist
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -57,7 +61,13 @@ from apps.answers.domain import (
     SummaryActivity,
     SummaryActivityFlow,
 )
-from apps.answers.domain.answers import AppletSubmission, RespondentAnswerData
+from apps.answers.domain.answers import (
+    Answer,
+    AnswersCopyCheckResult,
+    AppletSubmission,
+    FilesCopyCheckResult,
+    RespondentAnswerData,
+)
 from apps.answers.errors import (
     ActivityIsNotAssessment,
     AnswerAccessDeniedError,
@@ -81,6 +91,7 @@ from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.applet_history import Version
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
+from apps.file.enums import FileScopeEnum
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
@@ -90,15 +101,17 @@ from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relatio
 from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
+from apps.subjects.domain import SubjectReadResponse
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import WorkspaceRespondent
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from infrastructure.database import atomic
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
-from infrastructure.utility import RedisCache
+from infrastructure.utility import CDNClient, RedisCache
 
 
 class AnswerService:
@@ -334,9 +347,19 @@ class AnswerService:
         else:
             source_subject = respondent_subject
 
-        await self._validate_temp_take_now_relation_between_subjects(
-            respondent_subject.id, source_subject.id, target_subject.id
+        # Check if source subject is manually assigned to target subject.
+        assignment = ActivityAssignmentCreate(
+            activity_id=applet_answer.activity_id if applet_answer.flow_id is None else None,
+            activity_flow_id=applet_answer.flow_id,
+            respondent_subject_id=source_subject.id,
+            target_subject_id=target_subject.id,
         )
+        assignment_exists = await ActivityAssignmentService(self.session).exist(assignment)
+        # If no assignment exists, ensure valid temp take now relation between the subjects.
+        if not assignment_exists:
+            await self._validate_temp_take_now_relation_between_subjects(
+                respondent_subject.id, source_subject.id, target_subject.id
+            )
 
         relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
         answer = await AnswersCRUD(self.answer_session).create(
@@ -617,6 +640,25 @@ class AnswerService:
             raise AnswerNotFoundError()
 
         answer = answers[0]
+        source_subject = None
+
+        if answer.source_subject_id:
+            source_subject_schema = await SubjectsCrud(self.session).get_by_id(answer.source_subject_id)
+            source_subject = (
+                SubjectReadResponse(
+                    id=source_subject_schema.id,
+                    first_name=source_subject_schema.first_name,
+                    last_name=source_subject_schema.last_name,
+                    nickname=source_subject_schema.nickname,
+                    secret_user_id=source_subject_schema.secret_user_id,
+                    tag=source_subject_schema.tag,
+                    applet_id=source_subject_schema.applet_id,
+                    user_id=source_subject_schema.user_id,
+                )
+                if source_subject_schema
+                else None
+            )
+
         answer_result = ActivityAnswer(
             **answer.dict(exclude={"migrated_data"}),
             **answer.answer_item.dict(
@@ -630,6 +672,7 @@ class AnswerService:
                     "end_datetime",
                 }
             ),
+            source_subject=source_subject,
         )
 
         activities = await ActivityHistoriesCRUD(self.session).load_full([answer.activity_history_id])
@@ -734,8 +777,12 @@ class AnswerService:
 
         answer_result: list[ActivityAnswer] = []
 
+        source_subject_id_answer_index_map: dict[uuid.UUID, list[int]] = defaultdict(list)
+
         is_flow_completed = False
-        for answer in answers:
+        for i, answer in enumerate(answers):
+            if answer.source_subject_id:
+                source_subject_id_answer_index_map[answer.source_subject_id].append(i)
             if answer.flow_history_id and answer.is_flow_completed:
                 is_completed = True
             answer_result.append(
@@ -766,6 +813,23 @@ class AnswerService:
 
         flows = await FlowsHistoryCRUD(self.session).load_full([flow_history_id])
         assert flows
+
+        source_subject_ids = list(source_subject_id_answer_index_map.keys())
+        source_subjects = await SubjectsCrud(self.session).get_by_ids(source_subject_ids)
+        for source_subject_schema in source_subjects:
+            answer_indexes = source_subject_id_answer_index_map[source_subject_schema.id]
+            source_subject = SubjectReadResponse(
+                id=source_subject_schema.id,
+                first_name=source_subject_schema.first_name,
+                last_name=source_subject_schema.last_name,
+                nickname=source_subject_schema.nickname,
+                secret_user_id=source_subject_schema.secret_user_id,
+                tag=source_subject_schema.tag,
+                applet_id=source_subject_schema.applet_id,
+                user_id=source_subject_schema.user_id,
+            )
+            for answer_index in answer_indexes:
+                answer_result[answer_index].source_subject = source_subject
 
         submission = FlowSubmissionDetails(
             submission=FlowSubmission(
@@ -1608,7 +1672,9 @@ class AnswerService:
             MessageSchema(
                 recipients=email_list,
                 subject="Response alert",
-                body=mail_service.get_template(path="response_alert_en", domain=domain),
+                body=mail_service.get_localized_html_template(
+                    template_name="response_alert", language="en", domain=domain
+                ),
             )
         )
 
@@ -1844,6 +1910,31 @@ class AnswerService:
             )
         return results
 
+    async def get_target_subject_ids_by_respondent_and_activity_or_flow(
+        self, respondent_subject_id: uuid.UUID, activity_or_flow_id: uuid.UUID
+    ) -> list[tuple[uuid.UUID, int]]:
+        return await AnswersCRUD(self.answer_session).get_target_subject_ids_by_respondent(
+            respondent_subject_id, activity_or_flow_id
+        )
+
+    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a target subject
+
+        The data returned is just a combined list of activity and flow IDs, without any
+        distinction between the two
+        """
+        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_target_subject(target_subject_id)
+
+    async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
+        """
+        Get a list of activity and flow IDs based on answers submitted for a source subject
+
+        The data returned is just a combined list of activity and flow IDs, without any
+        distinction between the two
+        """
+        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
+
 
 class ReportServerService:
     def __init__(self, session, arbitrary_session=None):
@@ -1913,9 +2004,14 @@ class ReportServerService:
         return self._is_activity_last_in_flow(applet_full, activity_id, flow_id)
 
     async def create_report(
-        self, submit_id: uuid.UUID, answer_id: uuid.UUID | None = None
+        self,
+        submit_id: uuid.UUID,
+        answer_id: uuid.UUID | None = None,
     ) -> ReportServerResponse | None:
-        answers = await AnswersCRUD(self.answers_session).get_by_submit_id(submit_id, answer_id)
+        filters = dict(submit_id=submit_id)
+        if answer_id:
+            filters.update(answer_id=answer_id)
+        answers = await AnswersCRUD(self.answers_session).get_list(**filters)
         if not answers:
             return None
         applet_id_version: str = answers[0].applet_history_id
@@ -1926,8 +2022,8 @@ class ReportServerService:
         # If answers only on performance tasks
         if not answers_for_report:
             return None
-        answer_map = dict((answer.id, answer) for answer in answers_for_report)
         initial_answer = answers_for_report[0]
+        assert initial_answer.target_subject_id
 
         applet = await AppletsCRUD(self.session).get_by_id(initial_answer.applet_id)
         user_info = await self._get_user_info(initial_answer.target_subject_id)
@@ -1939,12 +2035,10 @@ class ReportServerService:
         )
 
         encryption = ReportServerEncryption(applet.report_public_key)
-        responses, user_public_keys = await self._prepare_responses(answer_map)
+        responses = await self._prepare_responses(answers_for_report)
 
         data = dict(
             responses=responses,
-            userPublicKeys=user_public_keys,
-            userPublicKey=user_public_keys[0],
             now=datetime.datetime.utcnow().strftime("%x"),
             user=user_info,
             applet=applet_full,
@@ -2010,17 +2104,18 @@ class ReportServerService:
             tag=subject.tag,
         )
 
-    async def _prepare_responses(self, answers_map: dict[uuid.UUID, AnswerSchema]) -> tuple[list[dict], list[str]]:
-        answer_items = await AnswerItemsCRUD(self.answers_session).get_respondent_submits_by_answer_ids(
-            list(answers_map.keys())
-        )
-
+    async def _prepare_responses(self, answers: list[Answer]) -> list[dict]:
         responses = list()
-        for answer_item in answer_items:
-            answer = answers_map[answer_item.answer_id]
-            activity_id, version = answer.activity_history_id.split("_")
-            responses.append(dict(activityId=activity_id, answer=answer_item.answer))
-        return responses, [ai.user_public_key for ai in answer_items]
+        for answer in answers:
+            activity_id = HistoryAware().id_from_history_id(answer.activity_history_id)
+            responses.append(
+                dict(
+                    activityId=activity_id,
+                    answer=answer.answer_item.answer,
+                    userPublicKey=answer.answer_item.user_public_key,
+                )
+            )
+        return responses
 
 
 class ReportServerEncryption:
@@ -2079,3 +2174,234 @@ class AnswerEncryptor:
             return decrypt_cbc(self.key, data, iv).decode("utf-8")
         except Exception as e:
             raise EncryptionError("Cannot decrypt answer data") from e
+
+
+class AnswerTransferService:
+    def __init__(
+        self,
+        session: AsyncSession,
+        answer_session_source: AsyncSession,
+        answer_session_target: AsyncSession,
+        storage_source: CDNClient,
+        storage_target: CDNClient,
+    ):
+        self.session = session
+        self.answer_session_source = answer_session_source
+        self.answer_session_target = answer_session_target
+        self.storage_source = storage_source
+        self.storage_target = storage_target
+
+    @classmethod
+    async def check_db(cls, session: AsyncSession):
+        try:
+            logger.info("Check database availability.")
+            await session.execute("select current_date")
+            logger.info("Database is available.")
+        except asyncio.TimeoutError:
+            raise Exception("Timeout error")
+        except Exception as e:
+            raise e
+
+    async def copy_answers(self, applet_id: uuid.UUID, *, insert_batch_size: int = 1000):
+        logger.info("Copy answers...")
+
+        source_repo = AnswersCRUD(self.answer_session_source)
+        target_repo = AnswersCRUD(self.answer_session_target)
+
+        data, total_target = await asyncio.gather(
+            # TODO paginate
+            source_repo.get_applet_answer_rows(applet_id),
+            target_repo.get_applet_answers_total(applet_id),
+        )
+
+        logger.info(f"Total records in source DB: {len(data)}")
+        logger.info(f"Total records in target DB: {total_target}")
+
+        for i in range(0, len(data), insert_batch_size):
+            values = [dict(row) for row in data[i : i + insert_batch_size]]
+            await target_repo.insert_answers_batch(values)
+
+        total_target = await target_repo.get_applet_answers_total(applet_id)
+        logger.info(f"Total records in target DB: {total_target}")
+
+        logger.info("Copy answers - DONE")
+
+    async def copy_answer_items(self, applet_id: uuid.UUID, insert_batch_size: int = 1000):
+        logger.info("Copy answer items...")
+
+        source_repo = AnswersCRUD(self.answer_session_source)
+        target_repo = AnswersCRUD(self.answer_session_target)
+
+        data, total_target = await asyncio.gather(
+            # TODO paginate
+            source_repo.get_applet_answer_item_rows(applet_id),
+            target_repo.get_applet_answer_items_total(applet_id),
+        )
+
+        logger.info(f"Total records in source DB: {len(data)}")
+        logger.info(f"Total records in target DB: {total_target}")
+
+        for i in range(0, len(data), insert_batch_size):
+            values = [dict(row) for row in data[i : i + insert_batch_size]]
+            await target_repo.insert_answer_items_batch(values)
+
+        total_target = await target_repo.get_applet_answer_items_total(applet_id)
+        logger.info(f"Total records in target DB: {total_target}")
+
+        logger.info("Copy answer items - DONE")
+
+    async def _get_applet_files_list(self, session, storage, applet_id: uuid.UUID):
+        tasks = []
+        files = []
+        user_ids = await AnswersCRUD(session).get_answers_respondents(applet_id)
+
+        # concurrently get file list for each user/applet
+        for user_id in user_ids:
+            unique = f"{user_id}/{applet_id}"
+            prefix = storage.generate_key(FileScopeEnum.ANSWER, unique, "")
+            task = asyncio.create_task(storage.list_object(prefix))
+            tasks.append(task)
+
+        # collect total objs
+        for _task in asyncio.as_completed(tasks):
+            _files = await _task
+            files.extend(_files)
+
+        return files
+
+    async def copy_applet_files(self, applet_id: uuid.UUID):
+        logger.info("Copy applet files...")
+        files = await self._get_applet_files_list(self.answer_session_source, self.storage_source, applet_id)
+
+        size_source = sum([f["Size"] for f in files])
+        logger.info(f"Total size on source: {size_source}")
+
+        files_target = await self._get_applet_files_list(self.answer_session_target, self.storage_target, applet_id)
+        size_target = sum([f["Size"] for f in files_target])
+        logger.info(f"Total size on target: {size_target}")
+
+        tasks = []
+        # copy files concurrently
+        for file in files:
+            task = asyncio.create_task(self.storage_target.copy(file["Key"], self.storage_source))
+            tasks.append(task)
+
+        total = len(tasks)
+        logger.info(f"Total files: {total}")
+        i = 0
+        for _task in asyncio.as_completed(tasks):
+            i += 1
+            await _task
+            logger.info(f"Processed [{i} / {total}] {int(i / total * 100)}%")
+        logger.info("Copy applet files done")
+
+        files_target = await self._get_applet_files_list(self.answer_session_target, self.storage_target, applet_id)
+        size_target = sum([f["Size"] for f in files_target])
+        logger.info(f"Total size on source: {size_source}")
+        logger.info(f"Total size on target: {size_target}")
+        if size_source != size_target:
+            logger.error(f"!!!Applet '{applet_id}' size doesn't match!!!")
+
+    async def transfer(self, applet_id: uuid.UUID, *, copy_db: bool = True, copy_files: bool = True):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        logger.info(f"Move answers for applet '{applet.display_name}'({applet.id})")
+
+        if copy_db:
+            async with atomic(self.answer_session_target):
+                await self.copy_answers(applet.id)
+            async with atomic(self.answer_session_target):
+                await self.copy_answer_items(applet.id)
+        else:
+            logger.info("Skip copying database")
+
+        if copy_files:
+            await self.copy_applet_files(applet_id)
+        else:
+            logger.info("Skip copying files")
+
+    async def get_copied_answers(self, applet_id: uuid.UUID):
+        source_repo = AnswersCRUD(self.answer_session_source)
+        target_repo = AnswersCRUD(self.answer_session_target)
+
+        # answers
+        source_data, target_data = await asyncio.gather(
+            source_repo.get_applet_answer_rows(applet_id),
+            target_repo.get_applet_answer_rows(applet_id),
+        )
+        target_answer_ids = {row.id for row in target_data}
+        del target_data
+        source_answer_ids = {row.id for row in source_data}
+        del source_data
+
+        total_answers = len(source_answer_ids)
+        not_copied_answers = source_answer_ids - target_answer_ids
+        answers_to_remove = source_answer_ids - not_copied_answers
+        del source_answer_ids
+
+        # items
+        source_data, target_data = await asyncio.gather(
+            source_repo.get_applet_answer_item_rows(applet_id),
+            target_repo.get_applet_answer_item_rows(applet_id),
+        )
+        target_item_ids = {row.id for row in target_data}
+        del target_data
+        total_items = len(source_data)
+
+        not_copied_items = defaultdict(list)  # {answer_id: item_id}
+        for row in source_data:
+            if row.id not in target_item_ids:
+                not_copied_items[row.answer_id].append(row.id)
+        del source_data
+
+        # exclude found answers from deletion list
+        answers_to_remove = answers_to_remove.difference(not_copied_items.keys())
+        not_copied_item_ids = set(itertools.chain.from_iterable(not_copied_items.values()))
+        return AnswersCopyCheckResult(
+            total_answers=total_answers,
+            not_copied_answers=not_copied_answers,
+            answers_to_remove=answers_to_remove,
+            total_answer_items=total_items,
+            not_copied_answer_items=not_copied_item_ids,
+        )
+
+    async def delete_source_answers(self, answers_to_delete: list[uuid.UUID], *, batch_size: int = 1000):
+        for i in range(0, len(answers_to_delete), batch_size):
+            values = answers_to_delete[i : i + batch_size]
+            await AnswersCRUD(self.answer_session_source).delete_by_ids(values)
+
+    async def get_copied_files(self, applet_id: uuid.UUID):
+        files_target = await self._get_applet_files_list(self.answer_session_source, self.storage_target, applet_id)
+        target_checksum = {file[CDNClient.KEY_KEY]: file[CDNClient.KEY_CHECKSUM] for file in files_target}
+        del files_target
+        files_source = await self._get_applet_files_list(self.answer_session_source, self.storage_source, applet_id)
+        total_files = len(files_source)
+        files_not_copied = set()
+        files_to_remove = set()
+        for file in files_source:
+            key = file[CDNClient.KEY_KEY]
+            if target_checksum.get(key, None) == file[CDNClient.KEY_CHECKSUM]:
+                files_to_remove.add(key)
+            else:
+                files_not_copied.add(key)
+        return FilesCopyCheckResult(
+            total_files=total_files,
+            not_copied_files=files_not_copied,
+            files_to_remove=files_to_remove,
+        )
+
+    async def delete_source_files(self, keys: list[str]):
+        logger.info("Delete files")
+        tasks = []
+        # delete files concurrently
+        for key in keys:
+            task = asyncio.create_task(self.storage_source.delete_object(key))
+            tasks.append(task)
+
+        total = len(tasks)
+        logger.info(f"Total files: {total}")
+        i = 0
+        for _task in asyncio.as_completed(tasks):
+            i += 1
+            await _task
+            logger.info(f"Deleted [{i} / {total}] {int(i / total * 100)}%")
+        logger.info("Delete files done")

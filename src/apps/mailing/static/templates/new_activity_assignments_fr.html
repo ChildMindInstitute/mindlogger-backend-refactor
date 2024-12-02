@@ -2,35 +2,36 @@
 <body>
 {% include 'header.html' %}
 <table style="padding: 0">
-    <tr>
-        <td style="padding-bottom: 1%">
-            Bonjour {{first_name}},
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-bottom: 1%">
-            Une ou plusieurs activités vous ont été attribuées dans <b>"{{applet_name}}"</b>.
-        </td>
-    </tr>
+  <tr>
+    <td style="padding-bottom: 1%">
+      Bonjour {{first_name}},
+    </td>
+  </tr>
+  <tr>
+    <td style="padding-bottom: 1%">
+      Une ou plusieurs activités vous ont été attribuées dans <b>"{{applet_name}}"</b>.
+    </td>
+  </tr>
 </table>
 <ul>
-    {% for name in activity_or_flows_names %}
-    <li>{{name}}</li>
-    {% endfor %}
+  {% for name in activity_or_flows_names %}
+  <li>{{name}}</li>
+  {% endfor %}
 </ul>
 <table style="padding: 0">
-    <tr>
-        <td>
-            Veuillez vous connecter pour consulter les détails de la tâche dans Mindlogger.
-        </td>
-    </tr>
-    <tr>
-        <td style="padding-top: 2%; padding-bottom: 1%;">
-            <a href="{{link}}"
-               style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 100px; display: inline-block; font-weight: 400; text-align: center; vertical-align: middle; text-decoration: none; color: #ffffff; background-color: #00639A; border-color: #00639A;">Commencer</a>
-        </td>
-    </tr>
-    {% include 'blocks/team_info_fr.html' %}
+  <tr>
+    <td>
+      Veuillez vous connecter pour consulter les détails de la tâche dans Mindlogger.
+    </td>
+  </tr>
+  <tr>
+    <td style="padding-top: 2%; padding-bottom: 1%;">
+      <a href="{{link}}" style="padding: 0.4rem 1rem; font-size: 0.8rem; line-height: 1.5; border-radius: 100px; display: inline-block; font-weight: 400; text-align: center; vertical-align: middle; text-decoration: none; color: #ffffff; background-color: #00639A; border-color: #00639A;">
+        Commencer
+      </a>
+    </td>
+  </tr>
+  {% include 'blocks/team_info_fr.html' %}
 </table>
 {% include 'footers/footer_info_fr.html' %}
 </body>
