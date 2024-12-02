@@ -14,7 +14,6 @@ from apps.activities.api.activities import (
 from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
 from apps.activities.domain.activity import (
     ActivitiesCounters,
-    ActivitiesDataForSubjectPublic,
     ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
 )
@@ -119,7 +118,7 @@ router.get(
                 """,
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[ActivitiesDataForSubjectPublic]},
+        status.HTTP_200_OK: {"model": ResponseMulti[ActivityOrFlowWithAssignmentsPublic]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
