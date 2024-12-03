@@ -1,10 +1,22 @@
+import os
+
+# This line needs to be run before any `ddtrace` import, to avoid sending traces
+# in local dev environment (we don't have a Datadog agent configured locally, so
+# it prints a stacktrace every time it tries to send a trace)
+# TODO: Find a better way to activate Datadog traces?
+os.environ["DD_TRACE_ENABLED"] = os.getenv("DD_TRACE_ENABLED", "false")  # noqa
+
 from typing import Iterable, Type
 
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
+from pydantic import parse_obj_as
 from starlette.middleware.base import BaseHTTPMiddleware
+from ddtrace.contrib.asgi.middleware import TraceMiddleware
+import structlog
+
 
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
@@ -35,8 +47,7 @@ from infrastructure.http.execeptions import (
     python_base_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
-from infrastructure.logger import import logger
-from middlewares import Middleware
+from infrastructure.logger import setup_logging
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -84,6 +95,12 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
 
 
 def create_app():
+    LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    setup_logging(json_logs=LOG_JSON_FORMAT, log_level=LOG_LEVEL)
+
+    access_logger = structlog.stdlib.get_logger("api.access")
+
     # Create base FastAPI application
     app = FastAPI(
         description=f"Commit id: <b>{settings.commit_id}" f"</b><br>Version: <b>{settings.version}</b>",
@@ -110,5 +127,19 @@ def create_app():
     # TODO: Remove when oasdiff starts support OpenAPI 3.1
     # https://github.com/Tufin/oasdiff/issues/52
     app.openapi_version = "3.0.3"
+
+    # UGLY HACK
+    # Datadog's `TraceMiddleware` is applied as the very first middleware in the list, by patching `FastAPI` constructor.
+    # Unfortunately that means that it is the innermost middleware, so the trace/span are created last in the middleware
+    # chain. Because we want to add the trace_id/span_id in the access log, we need to extract it from the middleware list,
+    # put it back as the outermost middleware, and rebuild the middleware stack.
+    tracing_middleware = next(
+        (m for m in app.user_middleware if m.cls == TraceMiddleware), None
+    )
+    if tracing_middleware is not None:
+        app.user_middleware = [m for m in app.user_middleware if m.cls != TraceMiddleware]
+
+        app.user_middleware.insert(0, tracing_middleware)
+        app.middleware_stack = app.build_middleware_stack()
 
     return app
