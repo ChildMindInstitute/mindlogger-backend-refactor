@@ -389,10 +389,6 @@ async def applet_activities_counters_for_subject(
 
     all_assigned_ids = set(assigned_activities.activities.keys()).union(auto_activity_ids)
 
-    activities_or_flows_ids_with_submissions = set(submitted_activities.activities.keys())
-
-    activities_or_flows_ids_without_submissions = all_assigned_ids.difference(activities_or_flows_ids_with_submissions)
-
     activities_counters = ActivitiesCounters(subject_id=subject_id)
 
     for activity_or_flow_id in submitted_activities.activities:
