@@ -1966,19 +1966,19 @@ class AnswerService:
 
         submissions_activity_count = SubmissionsActivityCountBySubject(subject_id=subject_id)
 
-        for submission in submissions_target:
+        for activityOrFlow in submissions_target:
             activity_counters = submissions_activity_count.activities.setdefault(
-                uuid.UUID(submission["id"]), SubmissionsSubjectCounters()
+                uuid.UUID(activityOrFlow["id"]), SubmissionsSubjectCounters()
             )
-            activity_counters.subject_submissions_count += 1
-            activity_counters.respondents.add(submission["source_subject_id"])
+            activity_counters.subject_submissions_count = activityOrFlow["submissions_count"]
+            activity_counters.respondents.update(activityOrFlow["subject_ids"])
 
-        for submission in submissions_respondent:
+        for activityOrFlow in submissions_respondent:
             activity_counters = submissions_activity_count.activities.setdefault(
-                uuid.UUID(submission["id"]), SubmissionsSubjectCounters()
+                uuid.UUID(activityOrFlow["id"]), SubmissionsSubjectCounters()
             )
-            activity_counters.respondent_submissions_count += 1
-            activity_counters.subjects.add(submission["target_subject_id"])
+            activity_counters.respondent_submissions_count = activityOrFlow["submissions_count"]
+            activity_counters.subjects.update(activityOrFlow["subject_ids"])
 
         return submissions_activity_count
 

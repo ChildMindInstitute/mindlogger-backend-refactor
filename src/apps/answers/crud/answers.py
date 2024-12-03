@@ -1007,25 +1007,26 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                     ),
                     else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
                 ).label("id"),
-                AnswerSchema.source_subject_id
-                if subject_column == AnswerSchema.target_subject_id
-                else AnswerSchema.target_subject_id,
+                func.array_agg(
+                    AnswerSchema.source_subject_id
+                    if subject_column == AnswerSchema.target_subject_id
+                    else AnswerSchema.target_subject_id
+                ).label("subject_ids"),
+                func.count(AnswerSchema.submit_id).label("submissions_count"),
             )
             .where(subject_column == subject_id)
-            .distinct()
+            .group_by("id")
         )
         return query
 
-    async def get_submissions_by_target_subject(self, target_subject_id: uuid.UUID) -> list[dict[str, uuid.UUID]]:
+    async def get_submissions_by_target_subject(self, target_subject_id: uuid.UUID) -> list[dict]:
         query: Query = self._query_submissions_by_subject(AnswerSchema.target_subject_id, target_subject_id)
 
         res = await self._execute(query)
 
         return res.mappings().all()
 
-    async def get_submissions_by_respondent_subject(
-        self, respondent_subject_id: uuid.UUID
-    ) -> list[dict[str, uuid.UUID]]:
+    async def get_submissions_by_respondent_subject(self, respondent_subject_id: uuid.UUID) -> list[dict]:
         query: Query = self._query_submissions_by_subject(AnswerSchema.source_subject_id, respondent_subject_id)
 
         res = await self._execute(query)

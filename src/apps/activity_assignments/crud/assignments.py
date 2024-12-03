@@ -1,14 +1,13 @@
-import asyncio
 import datetime
 import uuid
 
-from sqlalchemy import and_, case, or_, select, tuple_, update
+from sqlalchemy import and_, case, func, or_, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import InstrumentedAttribute, Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
-from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate, ActivityAssignmentsIdsBySubject
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.query_params import QueryParams
@@ -318,40 +317,46 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
         return db_result.scalar_one_or_none()
 
     @staticmethod
-    def __activity_and_flow_ids_by_subject_query(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
-        query: Query = select(
-            case(
-                (
-                    ActivityAssigmentSchema.activity_id.isnot(None),
-                    ActivityAssigmentSchema.activity_id,
-                ),
-                else_=ActivityAssigmentSchema.activity_flow_id,
-            ).label("id")
-        ).where(
-            subject_column == subject_id,
-            ActivityAssigmentSchema.soft_exists(),
+    def _activity_and_flow_ids_by_subject_query(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
+        query: Query = (
+            select(
+                case(
+                    (
+                        ActivityAssigmentSchema.activity_id.isnot(None),
+                        ActivityAssigmentSchema.activity_id,
+                    ),
+                    else_=ActivityAssigmentSchema.activity_flow_id,
+                ).label("id"),
+                func.array_agg(
+                    ActivityAssigmentSchema.respondent_subject_id
+                    if subject_column == ActivityAssigmentSchema.target_subject_id
+                    else ActivityAssigmentSchema.target_subject_id
+                ).label("subject_ids"),
+                func.count(ActivityAssigmentSchema.id).label("assignments_count"),
+            )
+            .where(
+                subject_column == subject_id,
+                ActivityAssigmentSchema.soft_exists(),
+            )
+            .group_by("id")
         )
 
         return query
 
-    async def get_assigned_activity_or_flow_ids_for_subject(self, subject_id) -> ActivityAssignmentsIdsBySubject:
-        # Get a list of activity and flow IDs based on assignments for a target subject
-        result_target_coro = self._execute(
-            self.__activity_and_flow_ids_by_subject_query(ActivityAssigmentSchema.target_subject_id, subject_id)
+    async def get_assignments_by_target_subject(self, target_subject_id: uuid.UUID) -> list[dict]:
+        query: Query = self._activity_and_flow_ids_by_subject_query(
+            ActivityAssigmentSchema.target_subject_id, target_subject_id
         )
 
-        # Get a list of activity and flow IDs based on assignments for a respondent subject
-        result_respondent_coro = self._execute(
-            self.__activity_and_flow_ids_by_subject_query(ActivityAssigmentSchema.respondent_subject_id, subject_id)
+        res = await self._execute(query)
+
+        return res.mappings().all()
+
+    async def get_assignments_by_respondent_subject(self, respondent_subject_id: uuid.UUID) -> list[dict]:
+        query: Query = self._activity_and_flow_ids_by_subject_query(
+            ActivityAssigmentSchema.respondent_subject_id, respondent_subject_id
         )
 
-        result_target, result_respondent = await asyncio.gather(result_target_coro, result_respondent_coro)
+        res = await self._execute(query)
 
-        as_target = result_target.scalars().all()
-        as_respondent = result_respondent.scalars().all()
-
-        return ActivityAssignmentsIdsBySubject(
-            as_target=as_target,
-            as_respondent=as_respondent,
-            subject_id=subject_id,
-        )
+        return res.mappings().all()

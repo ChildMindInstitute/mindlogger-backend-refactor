@@ -1334,13 +1334,13 @@ class TestActivities:
         activity_counters = next(
             item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(activity.id)
         )
-        assert flow_counters["respondentsCount"] == 0
+        assert flow_counters["respondentsCount"] == 1
         assert flow_counters["respondentSubmissionsCount"] == 0
-        assert flow_counters["subjectsCount"] == 0
+        assert flow_counters["subjectsCount"] == 1
         assert flow_counters["subjectSubmissionsCount"] == 0
-        assert activity_counters["respondentsCount"] == 0
+        assert activity_counters["respondentsCount"] == 1
         assert activity_counters["respondentSubmissionsCount"] == 0
-        assert activity_counters["subjectsCount"] == 0
+        assert activity_counters["subjectsCount"] == 1
         assert activity_counters["subjectSubmissionsCount"] == 0
 
     @pytest.mark.parametrize(
@@ -1606,9 +1606,9 @@ class TestActivities:
         assert result["targetActivitiesCount"] == 4
         assert len(result["activitiesOrFlows"]) == 6
         for activityOrFlow in result["activitiesOrFlows"]:
-            assert activityOrFlow["respondentsCount"] == 0
+            assert activityOrFlow["respondentsCount"] == (0 if subject_type == "target" else 1)
             assert activityOrFlow["respondentSubmissionsCount"] == 0
-            assert activityOrFlow["subjectsCount"] == 0
+            assert activityOrFlow["subjectsCount"] == (1 if subject_type == "target" else 0)
             assert activityOrFlow["subjectSubmissionsCount"] == 0
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
@@ -1860,9 +1860,14 @@ class TestActivities:
         assert result["respondentActivitiesCount"] == (2 if subject_type == "target" else 4)
         assert result["targetActivitiesCount"] == (4 if subject_type == "target" else 2)
         for activityOrFlow in result["activitiesOrFlows"]:
-            assert activityOrFlow["respondentsCount"] == 0
+            is_auto = (
+                activityOrFlow["id"] == result_flow_auto["flow_id"]
+                or activityOrFlow["id"] == result_activity_auto["activity_id"]
+            )
+
+            assert activityOrFlow["respondentsCount"] == (1 if is_auto or subject_type == "target" else 0)
             assert activityOrFlow["respondentSubmissionsCount"] == 0
-            assert activityOrFlow["subjectsCount"] == 0
+            assert activityOrFlow["subjectsCount"] == (1 if not is_auto or subject_type == "target" else 0)
             assert activityOrFlow["subjectSubmissionsCount"] == 0
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
