@@ -152,12 +152,6 @@ class ActivityOrFlowWithAssignmentsPublic(ActivityOrFlowBasicInfoPublic):
     assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
 
 
-class ActivitiesDataForSubjectPublic(PublicModel):
-    activities_and_flows: list[ActivityOrFlowWithAssignmentsPublic] = Field(default_factory=list)
-    activities_and_flows_total_count: int = 0
-    activities_and_submissions_count: int = 0
-
-
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):
     contains_response_types: list[ResponseType]
     item_count: int

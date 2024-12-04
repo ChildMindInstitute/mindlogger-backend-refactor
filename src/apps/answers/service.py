@@ -17,6 +17,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from more_itertools import flatten
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
@@ -104,6 +105,7 @@ from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import SubjectReadResponse
+from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -1956,6 +1958,21 @@ class AnswerService:
         """
         return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
 
+    async def _filter_out_soft_deleted_subjects(
+        self, submissions_target: list[dict], submissions_respondent: list[dict]
+    ) -> set[uuid.UUID]:
+        # Filter out soft-deleted source subjects from submissions_target
+        # and soft-deleted target subjects from submissions_respondent
+        all_submissions = submissions_target + submissions_respondent
+
+        subject_ids = list(flatten([activityOrFlow["subject_ids"] for activityOrFlow in all_submissions]))
+
+        assert self.user_id
+        existing_subjects = await SubjectsService(self.session, self.user_id).get_by_ids(list(subject_ids))
+        existing_subject_ids = {subject.id for subject in existing_subjects}
+
+        return existing_subject_ids
+
     async def get_submissions_by_subject(self, subject_id: uuid.UUID) -> SubmissionsActivityCountBySubject:
         submissions_target_coro = AnswersCRUD(self.answer_session).get_submissions_by_target_subject(subject_id)
         submissions_respondent_coro = AnswersCRUD(self.answer_session).get_submissions_by_respondent_subject(subject_id)
@@ -1964,6 +1981,8 @@ class AnswerService:
             submissions_target_coro, submissions_respondent_coro
         )
 
+        existing_subject_ids = await self._filter_out_soft_deleted_subjects(submissions_target, submissions_respondent)
+
         submissions_activity_count = SubmissionsActivityCountBySubject(subject_id=subject_id)
 
         for activityOrFlow in submissions_target:
@@ -1971,14 +1990,21 @@ class AnswerService:
                 uuid.UUID(activityOrFlow["id"]), SubmissionsSubjectCounters()
             )
             activity_counters.subject_submissions_count = activityOrFlow["submissions_count"]
-            activity_counters.respondents.update(activityOrFlow["subject_ids"])
+            subject_ids = {
+                subject_id for subject_id in activityOrFlow["subject_ids"] if subject_id in existing_subject_ids
+            }
+
+            activity_counters.respondents.update(subject_ids)
 
         for activityOrFlow in submissions_respondent:
             activity_counters = submissions_activity_count.activities.setdefault(
                 uuid.UUID(activityOrFlow["id"]), SubmissionsSubjectCounters()
             )
             activity_counters.respondent_submissions_count = activityOrFlow["submissions_count"]
-            activity_counters.subjects.update(activityOrFlow["subject_ids"])
+            subject_ids = {
+                subject_id for subject_id in activityOrFlow["subject_ids"] if subject_id in existing_subject_ids
+            }
+            activity_counters.subjects.update(subject_ids)
 
         return submissions_activity_count
 
