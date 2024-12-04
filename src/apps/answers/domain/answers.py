@@ -715,13 +715,13 @@ class FilesCopyCheckResult(InternalModel):
     files_to_remove: set[str]
 
 
-class SubmissionsSubjectCounters(PublicModel):
+class SubmissionsSubjectCounters(InternalModel):
     respondents: set[uuid.UUID] = Field(default_factory=set)
     subjects: set[uuid.UUID] = Field(default_factory=set)
     subject_submissions_count: int = 0
     respondent_submissions_count: int = 0
 
 
-class SubmissionsActivityCountBySubject(PublicModel):
+class SubmissionsActivityCountBySubject(InternalModel):
     subject_id: uuid.UUID
     activities: dict[uuid.UUID, SubmissionsSubjectCounters] = Field(default_factory=dict)
