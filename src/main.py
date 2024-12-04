@@ -28,6 +28,7 @@ async def logging_middleware(request: Request, call_next) -> Response:
     # If the call_next raises an error, we still want to return our own 500 response,
     # so we can add headers to it (process time, request ID...)
     response = Response(status_code=500)
+
     try:
         response = await call_next(request)
     except Exception:

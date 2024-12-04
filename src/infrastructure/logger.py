@@ -1,7 +1,5 @@
 import logging
-import os
 import sys
-import ddtrace
 import structlog
 from ddtrace import tracer
 from structlog.types import EventDict, Processor
@@ -11,6 +9,8 @@ from structlog.types import EventDict, Processor
 
 logger = structlog.stdlib.get_logger("api")
 
+
+# Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
 
 # https://github.com/hynek/structlog/issues/35#issuecomment-591321744
 def rename_event_key(_, __, event_dict: EventDict) -> EventDict:
@@ -34,6 +34,9 @@ def drop_color_message_key(_, __, event_dict: EventDict) -> EventDict:
 
 
 def tracer_injection(_, __, event_dict: EventDict) -> EventDict:
+    """
+    Inject Datadog trace info into the event dict.
+    """
     # get correlation ids from current tracer context
     span = tracer.current_span()
     trace_id, span_id = (span.trace_id, span.span_id) if span else (None, None)
@@ -46,6 +49,9 @@ def tracer_injection(_, __, event_dict: EventDict) -> EventDict:
 
 
 def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
+    """
+    Setup logging for the application.
+    """
     timestamper = structlog.processors.TimeStamper(fmt="iso")
 
     shared_processors: list[Processor] = [
@@ -117,8 +123,6 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
     logging.getLogger("uvicorn.access").handlers.clear()
     logging.getLogger("uvicorn.access").propagate = False
 
-
-
     def handle_exception(exc_type, exc_value, exc_traceback):
         """
         Log any uncaught exception instead of letting it be printed by Python
@@ -134,61 +138,3 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
         )
 
     sys.excepthook = handle_exception
-
-
-# class DataDogJSONFormatter(json_log_formatter.JSONFormatter):
-#     def json_record(self, message, extra, record) -> dict:
-#         extra = super().json_record(message, extra, record)
-#         # TODO Can we get user id?
-#         # extra['user_id'] = current_user_id()
-#         # extra['ip'] = current_ip()
-#
-#         # Include builtins
-#         extra['level'] = record.levelname
-#         extra['name'] = record.name
-#
-#         span = tracer.current_span()
-#         trace_id, span_id = (str((1 << 64) - 1 & span.trace_id), span.span_id) if span else (None, None)
-#
-#         extra['dd.trace_id'] = str(trace_id or 0)
-#         extra['dd.span_id'] = str(span_id or 0)
-#
-#         extra['dd.env'] = ddtrace.config.env or ""
-#         extra['dd.service'] = ddtrace.config.service or ""
-#         extra['dd.version'] = ddtrace.config.version or ""
-#
-#         return extra
-#
-#
-# class ContextFilter(logging.Filter):
-#     def filter(self, record):
-#         pass
-#
-#
-# # Enable json/structured logs when Datadog is enabled
-# if os.getenv("DD_TRACE_ENABLED", "false").lower() == 'true':
-#     # formatter = json_log_formatter.VerboseJSONFormatter()
-#     formatter = DataDogJSONFormatter()
-#
-#     for _log in ["uvicorn", "uvicorn.error"]:
-#         # Clear the log handlers for uvicorn loggers, and enable propagation
-#         # so the messages are caught by our root logger and formatted correctly
-#         # by structlog
-#         logging.getLogger(_log).handlers.clear()
-#         logging.getLogger(_log).propagate = True
-#
-#         # Since we re-create the access logs ourselves, to add all information
-#         # in the structured log (see the `logging_middleware` in main.py), we clear
-#         # the handlers and prevent the logs to propagate to a logger higher up in the
-#         # hierarchy (effectively rendering them silent).
-#     logging.getLogger("uvicorn.access").handlers.clear()
-#     logging.getLogger("uvicorn.access").propagate = False
-#
-# else:
-#     fmt = "%(levelname)s:     %(message)s"
-#     formatter = logging.Formatter(fmt)
-
-# handler = logging.StreamHandler()
-# handler.setLevel(logging.INFO)
-# handler.setFormatter(formatter)
-# logger.addHandler(handler)
