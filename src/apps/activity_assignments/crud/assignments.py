@@ -318,6 +318,9 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
     @staticmethod
     def _activity_and_flow_ids_by_subject_query(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
+        respondent_schema = aliased(SubjectSchema)
+        target_schema = aliased(SubjectSchema)
+
         query: Query = (
             select(
                 case(
@@ -326,7 +329,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
                         ActivityAssigmentSchema.activity_id,
                     ),
                     else_=ActivityAssigmentSchema.activity_flow_id,
-                ).label("id"),
+                ).label("activity_id"),
                 func.array_agg(
                     ActivityAssigmentSchema.respondent_subject_id
                     if subject_column == ActivityAssigmentSchema.target_subject_id
@@ -334,11 +337,15 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
                 ).label("subject_ids"),
                 func.count(ActivityAssigmentSchema.id).label("assignments_count"),
             )
+            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
+            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
             .where(
                 subject_column == subject_id,
                 ActivityAssigmentSchema.soft_exists(),
+                respondent_schema.soft_exists(),
+                target_schema.soft_exists(),
             )
-            .group_by("id")
+            .group_by("activity_id", ActivityAssigmentSchema.activity_id, ActivityAssigmentSchema.activity_flow_id)
         )
 
         return query

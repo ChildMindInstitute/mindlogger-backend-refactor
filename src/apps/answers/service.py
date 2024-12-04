@@ -17,7 +17,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
-from more_itertools import flatten
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
@@ -1961,65 +1960,64 @@ class AnswerService:
     async def _filter_out_soft_deleted_subjects(
         self, submissions_target: list[dict], submissions_respondent: list[dict]
     ) -> set[uuid.UUID]:
-        # Filter out soft-deleted source subjects from submissions_target
-        # and soft-deleted target subjects from submissions_respondent
-        all_submissions = submissions_target + submissions_respondent
+       """
+        Filter out soft-deleted source subjects from submissions_target
+        and soft-deleted target subjects from submissions_respondent
+       """
+       all_submissions = submissions_target + submissions_respondent
 
-        subject_ids = list(flatten([activityOrFlow["subject_ids"] for activityOrFlow in all_submissions]))
+       subject_ids = set([activityOrFlow["subject_id"] for activityOrFlow in all_submissions])
 
-        assert self.user_id
-        existing_subjects = await SubjectsService(self.session, self.user_id).get_by_ids(list(subject_ids))
-        existing_subject_ids = {subject.id for subject in existing_subjects}
+       assert self.user_id
+       existing_subjects = await SubjectsService(self.session, self.user_id).get_by_ids(list(subject_ids))
+       existing_subject_ids = {subject.id for subject in existing_subjects}
 
-        return existing_subject_ids
+       return existing_subject_ids
 
-    async def get_submissions_by_subject(self, subject_id: uuid.UUID) -> SubmissionsActivityCountBySubject:
-        submissions_target_coro = AnswersCRUD(self.answer_session).get_submissions_by_target_subject(subject_id)
-        submissions_respondent_coro = AnswersCRUD(self.answer_session).get_submissions_by_respondent_subject(subject_id)
+   async def get_submissions_by_subject(self, subject_id: uuid.UUID) -> SubmissionsActivityCountBySubject:
+       submissions_target_coro = AnswersCRUD(self.answer_session).get_submissions_by_target_subject(subject_id)
+       submissions_respondent_coro = AnswersCRUD(self.answer_session).get_submissions_by_respondent_subject(subject_id)
 
-        submissions_target, submissions_respondent = await asyncio.gather(
-            submissions_target_coro, submissions_respondent_coro
-        )
+       submissions_target, submissions_respondent = await asyncio.gather(
+           submissions_target_coro, submissions_respondent_coro
+       )
 
-        existing_subject_ids = await self._filter_out_soft_deleted_subjects(submissions_target, submissions_respondent)
+       existing_subject_ids = await self._filter_out_soft_deleted_subjects(submissions_target, submissions_respondent)
 
-        submissions_activity_count = SubmissionsActivityCountBySubject(subject_id=subject_id)
+       submissions_activity_count = SubmissionsActivityCountBySubject(subject_id=subject_id)
 
-        for activityOrFlow in submissions_target:
-            activity_counters = submissions_activity_count.activities.setdefault(
-                uuid.UUID(activityOrFlow["id"]), SubmissionsSubjectCounters()
-            )
-            activity_counters.subject_submissions_count = activityOrFlow["submissions_count"]
-            subject_ids = {
-                subject_id for subject_id in activityOrFlow["subject_ids"] if subject_id in existing_subject_ids
-            }
+       for activityOrFlow in submissions_target:
+           activity_counters = submissions_activity_count.activities.setdefault(
+               uuid.UUID(activityOrFlow["activity_id"]), SubmissionsSubjectCounters()
+           )
+           respondent_subject_id = activityOrFlow["subject_id"]
+           if respondent_subject_id in existing_subject_ids:
+               activity_counters.respondents.add(respondent_subject_id)
+               activity_counters.subject_submissions_count += 1
 
-            activity_counters.respondents.update(subject_ids)
+       for activityOrFlow in submissions_respondent:
+           activity_counters = submissions_activity_count.activities.setdefault(
+               uuid.UUID(activityOrFlow["activity_id"]), SubmissionsSubjectCounters()
+           )
+           target_subject_id = activityOrFlow["subject_id"]
+           if target_subject_id in existing_subject_ids:
+               activity_counters.subjects.add(target_subject_id)
+               activity_counters.respondent_submissions_count += 1
 
-        for activityOrFlow in submissions_respondent:
-            activity_counters = submissions_activity_count.activities.setdefault(
-                uuid.UUID(activityOrFlow["id"]), SubmissionsSubjectCounters()
-            )
-            activity_counters.respondent_submissions_count = activityOrFlow["submissions_count"]
-            subject_ids = {
-                subject_id for subject_id in activityOrFlow["subject_ids"] if subject_id in existing_subject_ids
-            }
-            activity_counters.subjects.update(subject_ids)
-
-        return submissions_activity_count
+       return submissions_activity_count
 
 
 class ReportServerService:
-    def __init__(self, session, arbitrary_session=None):
-        self.session = session
-        self._answers_session = arbitrary_session
+   def __init__(self, session, arbitrary_session=None):
+       self.session = session
+       self._answers_session = arbitrary_session
 
-    @property
-    def answers_session(self):
-        return self._answers_session if self._answers_session else self.session
+   @property
+   def answers_session(self):
+       return self._answers_session if self._answers_session else self.session
 
-    async def is_reportable(self, answer: AnswerSchema, is_single_report_flow=False) -> bool:
-        """Check is report available for answer or not.
+   async def is_reportable(self, answer: AnswerSchema, is_single_report_flow=False) -> bool:
+       """Check is report available for answer or not.
 
         First check applet report related fields. All fields must be filled.
         Second check activities report related fields. If it is flow single

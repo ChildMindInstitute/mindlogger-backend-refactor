@@ -465,14 +465,14 @@ class ActivityAssignmentService:
 
         for activityOrFlow in assignments_target:
             activity_counters = assignments_activity_count.activities.setdefault(
-                activityOrFlow["id"], AssignmentsSubjectCounters()
+                activityOrFlow["activity_id"], AssignmentsSubjectCounters()
             )
             activity_counters.subject_assignments_count = activityOrFlow["assignments_count"]
             activity_counters.respondents.update(activityOrFlow["subject_ids"])
 
         for activityOrFlow in assignments_respondent:
             activity_counters = assignments_activity_count.activities.setdefault(
-                activityOrFlow["id"], AssignmentsSubjectCounters()
+                activityOrFlow["activity_id"], AssignmentsSubjectCounters()
             )
             activity_counters.respondent_assignments_count = activityOrFlow["assignments_count"]
             activity_counters.subjects.update(activityOrFlow["subject_ids"])
