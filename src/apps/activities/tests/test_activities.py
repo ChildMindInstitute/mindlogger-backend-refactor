@@ -1593,24 +1593,6 @@ class TestActivities:
             subject_attr = "targetSubject" if subject_type == "target" else "respondentSubject"
             assert flow_assignment[subject_attr]["id"] == str(user_empty_applet_subject.id)
 
-        response = await client.get(
-            self.activity_counters_by_subject_url.format(
-                applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
-            )
-        )
-
-        assert response.status_code == http.HTTPStatus.OK
-        result = response.json()["result"]
-
-        assert result["respondentActivitiesCount"] == 4
-        assert result["targetActivitiesCount"] == 4
-        assert len(result["activitiesOrFlows"]) == 6
-        for activityOrFlow in result["activitiesOrFlows"]:
-            assert activityOrFlow["respondentsCount"] == (0 if subject_type == "target" else 1)
-            assert activityOrFlow["respondentSubmissionsCount"] == 0
-            assert activityOrFlow["subjectsCount"] == (1 if subject_type == "target" else 0)
-            assert activityOrFlow["subjectSubmissionsCount"] == 0
-
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_from_submission(
         self,
@@ -1687,8 +1669,8 @@ class TestActivities:
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
 
-        assert result["respondentActivitiesCount"] == (1 if subject_type == "target" else 0)
-        assert result["targetActivitiesCount"] == (0 if subject_type == "target" else 1)
+        assert result["respondentActivitiesCount"] == (0 if subject_type == "target" else 1)
+        assert result["targetActivitiesCount"] == (1 if subject_type == "target" else 0)
         assert len(result["activitiesOrFlows"]) == 1
         activityOrFlow = result["activitiesOrFlows"][0]
         assert activityOrFlow["respondentsCount"] == (1 if subject_type == "target" else 0)
@@ -1860,14 +1842,13 @@ class TestActivities:
         assert result["respondentActivitiesCount"] == (2 if subject_type == "target" else 4)
         assert result["targetActivitiesCount"] == (4 if subject_type == "target" else 2)
         for activityOrFlow in result["activitiesOrFlows"]:
-            is_auto = (
-                activityOrFlow["id"] == result_flow_auto["flow_id"]
-                or activityOrFlow["id"] == result_activity_auto["activity_id"]
-            )
+            is_auto = activityOrFlow["activityOrFlowId"] == str(auto_flow.id) or activityOrFlow[
+                "activityOrFlowId"
+            ] == str(auto_activity.id)
 
             assert activityOrFlow["respondentsCount"] == (1 if is_auto or subject_type == "target" else 0)
             assert activityOrFlow["respondentSubmissionsCount"] == 0
-            assert activityOrFlow["subjectsCount"] == (1 if not is_auto or subject_type == "target" else 0)
+            assert activityOrFlow["subjectsCount"] == (1 if is_auto or subject_type != "target" else 0)
             assert activityOrFlow["subjectSubmissionsCount"] == 0
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])

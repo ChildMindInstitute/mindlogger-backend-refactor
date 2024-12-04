@@ -384,75 +384,72 @@ async def applet_activities_counters_for_subject(
     # Fetch activities submissions by the subject
     submitted_activities = await AnswerService(session, user.id, answer_session).get_submissions_by_subject(subject_id)
 
-    # Fetch auto assigned activity and flow IDs by applet ID
+    # Fetch auto-assigned activity and flow IDs by applet ID
     auto_activity_ids = await ActivityService(session, user.id).get_activity_and_flow_ids_by_applet_id_auto(applet_id)
 
-    all_assigned_ids = set(assigned_activities.activities.keys()).union(auto_activity_ids)
+    # Combine all assigned IDs and submitted activity IDs
+    all_activity_ids = (
+        set(assigned_activities.activities.keys())
+        | set(submitted_activities.activities.keys())
+        | set(auto_activity_ids)
+    )
 
-    activities_counters = ActivitiesCounters(subject_id=subject_id)
+    # Initialize ActivitiesCounters with zero counts
+    activities_counters = ActivitiesCounters(
+        subject_id=subject_id, respondent_activities_count=0, target_activities_count=0, activities_or_flows=[]
+    )
 
-    for activity_or_flow_id in submitted_activities.activities:
-        submission_data = submitted_activities.activities[activity_or_flow_id]
-
-        # Update respondent activities count if there are respondents
-        if submission_data.respondents:
-            activities_counters.respondent_activities_count += 1
-
-        # Update target activities count if there are subjects
-        if submission_data.subjects:
-            activities_counters.target_activities_count += 1
-
-        respondents_count = len(submission_data.respondents)
-        subjects_counts = len(submission_data.subjects)
-
-        assignments_data = assigned_activities.activities.get(activity_or_flow_id)
-
-        if assignments_data:
-            respondents_count = len(submission_data.respondents.union(assignments_data.respondents))
-            subjects_counts = len(submission_data.subjects.union(assignments_data.subjects))
-
-        activities_counters.activities_or_flows.append(
-            ActivitySubjectCounters(
-                activity_or_flow_id=activity_or_flow_id,
-                respondents_count=respondents_count,
-                subjects_count=subjects_counts,
-                respondent_submissions_count=submission_data.respondent_submissions_count,
-                subject_submissions_count=submission_data.subject_submissions_count,
-            )
-        )
-
-    for activity_or_flow_id in all_assigned_ids:
+    # Iterate over all activity or flow IDs
+    for activity_or_flow_id in all_activity_ids:
         is_auto = activity_or_flow_id in auto_activity_ids
+
+        # Get submission and assignment data if available
+        submission_data = submitted_activities.activities.get(activity_or_flow_id)
         assignments_data = assigned_activities.activities.get(activity_or_flow_id)
 
-        respondents_count = 1  # count auto assign
-        subjects_counts = 1  # count auto assign
+        # Initialize sets for respondents and subjects
+        respondents = set()
+        subjects = set()
 
+        # Initialize submission counts
+        respondent_submissions_count = 0
+        subject_submissions_count = 0
+
+        # Update from submission data
+        if submission_data:
+            respondents.update(submission_data.respondents)
+            subjects.update(submission_data.subjects)
+            respondent_submissions_count = submission_data.respondent_submissions_count
+            subject_submissions_count = submission_data.subject_submissions_count
+
+        # Update from assignment data
         if assignments_data:
-            respondents_count = (
-                len(assignments_data.respondents.union({subject_id})) if is_auto else len(assignments_data.respondents)
-            )
-            subjects_counts = (
-                len(assignments_data.subjects.union({subject_id})) if is_auto else len(assignments_data.subjects)
-            )
+            respondents.update(assignments_data.respondents)
+            subjects.update(assignments_data.subjects)
 
-            if assignments_data.subjects:
-                activities_counters.respondent_activities_count += 1
+        # Include the subject for auto-assigned activities
+        if is_auto:
+            respondents.add(subject_id)
+            subjects.add(subject_id)
 
-            if assignments_data.respondents:
-                activities_counters.target_activities_count += 1
+        # Calculate counts
+        respondents_count = len(respondents)
+        subjects_count = len(subjects)
 
-        elif is_auto:
-            activities_counters.target_activities_count += 1
+        # Update activities counters counts
+        if subjects_count > 0:
             activities_counters.respondent_activities_count += 1
+        if respondents_count > 0:
+            activities_counters.target_activities_count += 1
 
+        # Append the activity subject counters
         activities_counters.activities_or_flows.append(
             ActivitySubjectCounters(
                 activity_or_flow_id=activity_or_flow_id,
                 respondents_count=respondents_count,
-                subjects_count=subjects_counts,
-                respondent_submissions_count=0,
-                subject_submissions_count=0,
+                subjects_count=subjects_count,
+                respondent_submissions_count=respondent_submissions_count,
+                subject_submissions_count=subject_submissions_count,
             )
         )
 
