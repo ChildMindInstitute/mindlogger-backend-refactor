@@ -950,9 +950,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
             .where(
                 AnswerSchema.source_subject_id == respondent_subject_id,
-                or_(
-                    AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == str(activity_or_flow_id),
-                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(activity_or_flow_id),
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(activity_or_flow_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == str(activity_or_flow_id),
                 ),
             )
             .group_by(AnswerSchema.target_subject_id)
