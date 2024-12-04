@@ -38,7 +38,7 @@ COPY --chown=code:code ./compose/fastapi/start /fastapi-start
 RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
 
 COPY --chown=code:code ./compose/fastapi/start-datadog /fastapi-start-datadog
-RUN sed -i 's/\r$//g' /start-datadog && chmod +x /fastapi-start-datadog
+RUN sed -i 's/\r$//g' /fastapi-start-datadog && chmod +x /fastapi-start-datadog
 
 
 
@@ -46,10 +46,10 @@ COPY --chown=code:code ./compose/fastapi/migrate /fastapi-migrate
 RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
 
 COPY --chown=code:code ./compose/fastapi/ecs-start /fastapi-ecs-start
-RUN sed -i 's/\r$//g' /ecs-start && chmod +x /fastapi-ecs-start
+RUN sed -i 's/\r$//g' /fastapi-ecs-start && chmod +x /fastapi-ecs-start
 
 COPY --chown=code:code ./compose/fastapi/ecs-start-feature /fastapi-ecs-start-feature
-RUN sed -i 's/\r$//g' /ecs-start-feature && chmod +x /fastapi-ecs-start-feature
+RUN sed -i 's/\r$//g' /fastapi-ecs-start-feature && chmod +x /fastapi-ecs-start-feature
 
 # Select internal user
 USER code
