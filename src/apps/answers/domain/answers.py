@@ -106,12 +106,12 @@ class AppletAnswerCreate(InternalModel):
     is_flow_completed: bool | None = None
     activity_id: uuid.UUID
     answer: ItemAnswerCreate
-    created_at: datetime.datetime | None
+    created_at: datetime.datetime | None = None
     alerts: list[AnswerAlert] = Field(default_factory=list)
     client: ClientMeta
-    target_subject_id: uuid.UUID | None
-    source_subject_id: uuid.UUID | None
-    input_subject_id: uuid.UUID | None
+    target_subject_id: uuid.UUID | None = None
+    source_subject_id: uuid.UUID | None = None
+    input_subject_id: uuid.UUID | None = None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
@@ -121,7 +121,7 @@ class AssessmentAnswerCreate(InternalModel):
     item_ids: list[uuid.UUID]
     reviewer_public_key: str
     assessment_version_id: str
-    reviewed_flow_submit_id: uuid.UUID | None
+    reviewed_flow_submit_id: uuid.UUID | None = None
 
 
 class AnswerDate(InternalModel):

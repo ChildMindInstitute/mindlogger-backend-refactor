@@ -59,11 +59,11 @@ class AssessmentItem(InternalModel):
 
 
 class ItemAnswerCreate(InternalModel):
-    answer: str | None
-    events: str | None
+    answer: str | None = None
+    events: str | None = None
     item_ids: list[uuid.UUID]
-    identifier: str | None
-    scheduled_time: datetime.datetime | None
+    identifier: str | None = None
+    scheduled_time: datetime.datetime | None = None
     start_time: datetime.datetime
     end_time: datetime.datetime
     user_public_key: str | None
