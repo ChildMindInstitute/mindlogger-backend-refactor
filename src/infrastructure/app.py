@@ -1,21 +1,9 @@
-import os
-
-# This line needs to be run before any `ddtrace` import, to avoid sending traces
-# in local dev environment (we don't have a Datadog agent configured locally, so
-# it prints a stacktrace every time it tries to send a trace)
-# TODO: Find a better way to activate Datadog traces?
-os.environ["DD_TRACE_ENABLED"] = os.getenv("DD_TRACE_ENABLED", "false")  # noqa
-
 from typing import Iterable, Type
 
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
-from pydantic import parse_obj_as
-from starlette.middleware.base import BaseHTTPMiddleware
-from ddtrace.contrib.asgi.middleware import TraceMiddleware
-import structlog
 
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
@@ -47,7 +35,7 @@ from infrastructure.http.execeptions import (
     python_base_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
-from infrastructure.logger import setup_logging, LoggingMiddleware
+from infrastructure.datadog import LoggingMiddleware
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -91,8 +79,8 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
     ),
     (middlewares_.InternalizationMiddleware, {}),
     (middlewares_.CORSMiddleware, middlewares_.cors_options),
-    # (LoggingMiddleware, {}),
-    # (CorrelationIdMiddleware, {})
+    (LoggingMiddleware, {}),
+    (CorrelationIdMiddleware, {})
 )
 
 

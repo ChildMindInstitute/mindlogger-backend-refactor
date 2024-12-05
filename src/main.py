@@ -1,32 +1,16 @@
 import os
-from asgi_correlation_id import CorrelationIdMiddleware
-from asgi_correlation_id.context import correlation_id
-from ddtrace.contrib.asgi.middleware import TraceMiddleware
-from fastapi import FastAPI, Request, Response
-from pydantic import parse_obj_as
-from uvicorn.protocols.utils import get_path_with_query_string
-import structlog
-import time
+# This line needs to be run before any `ddtrace` import, to avoid sending traces
+# in local dev environment (we don't have a Datadog agent configured locally, so
+# it prints a stacktrace every time it tries to send a trace)
+os.environ["DD_TRACE_ENABLED"] = os.getenv("DD_TRACE_ENABLED", "false")  # noqa
+
+# Import DataDog tracer ASAP
+if os.getenv("DD_TRACE_ENABLED").lower() == "true":
+    import ddtrace.auto # noqa
 
 from infrastructure.app import create_app
-from infrastructure.logger import setup_logging
-
-LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-setup_logging(json_logs=LOG_JSON_FORMAT, log_level=LOG_LEVEL)
 
 app = create_app()
-
-
-# @app.middleware("http")
-
-#
-# # This middleware must be placed after the logging, to populate the context with the request ID
-# # NOTE: Why last??
-# # Answer: middlewares are applied in the reverse order of when they are added (you can verify this
-# # by debugging `app.middleware_stack` and recursively drilling down the `app` property).
-# app.add_middleware(CorrelationIdMiddleware)
-
 
 # @app.on_event("startup")
 # async def create_superuser():
