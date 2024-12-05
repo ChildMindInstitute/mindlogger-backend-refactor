@@ -1946,7 +1946,11 @@ class AnswerService:
         The data returned is just a combined list of activity and flow IDs, without any
         distinction between the two
         """
-        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_target_subject(target_subject_id)
+        results = await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_target_subject(target_subject_id)
+        existing_subject_ids = await self._filter_out_soft_deleted_subjects(results)
+        activity_ids = [result["activity_id"] for result in results if result["subject_id"] in existing_subject_ids]
+
+        return activity_ids
 
     async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
         """
@@ -1955,18 +1959,17 @@ class AnswerService:
         The data returned is just a combined list of activity and flow IDs, without any
         distinction between the two
         """
-        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
+        results = await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
+        existing_subject_ids = await self._filter_out_soft_deleted_subjects(results)
+        activity_ids = [result["activity_id"] for result in results if result["subject_id"] in existing_subject_ids]
 
-    async def _filter_out_soft_deleted_subjects(
-        self, submissions_target: list[dict], submissions_respondent: list[dict]
-    ) -> set[uuid.UUID]:
-        """
-        Filter out soft-deleted source subjects from submissions_target
-        and soft-deleted target subjects from submissions_respondent
-        """
-        all_submissions = submissions_target + submissions_respondent
+        return activity_ids
 
-        subject_ids = set([activityOrFlow["subject_id"] for activityOrFlow in all_submissions])
+    async def _filter_out_soft_deleted_subjects(self, submissions: list[dict]) -> set[uuid.UUID]:
+        """
+        Return subject_ids contained in given submissions array that correspond to soft-deleted subjects
+        """
+        subject_ids = set([activityOrFlow["subject_id"] for activityOrFlow in submissions])
 
         assert self.user_id
         existing_subjects = await SubjectsService(self.session, self.user_id).get_by_ids(list(subject_ids))
@@ -1982,7 +1985,7 @@ class AnswerService:
             submissions_target_coro, submissions_respondent_coro
         )
 
-        existing_subject_ids = await self._filter_out_soft_deleted_subjects(submissions_target, submissions_respondent)
+        existing_subject_ids = await self._filter_out_soft_deleted_subjects(submissions_target + submissions_respondent)
 
         submissions_activity_count = SubmissionsActivityCountBySubject(subject_id=subject_id)
 
