@@ -15,6 +15,7 @@ from apps.activities.domain.activity import (
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
 from apps.activity_assignments.service import ActivityAssignmentService
+from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.domain.flow import FlowWithAssignmentDetailsPublic
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
@@ -394,10 +395,14 @@ async def applet_activities_counters_for_subject(
         | set(auto_activity_ids)
     )
 
+    activities = await ActivitiesCRUD(session).get_by_applet_id_and_activities_ids(applet_id, list(all_activity_ids))
+    flows = await FlowsCRUD(session).get_by_applet_id_and_flows_ids(applet_id, list(all_activity_ids))
+
+    activities_state = {activity.id: activity.soft_exists() for activity in activities}
+    flows_state = {flow.id: flow.soft_exists() for flow in flows}
+
     # Initialize ActivitiesCounters with zero counts
-    activities_counters = ActivitiesCounters(
-        subject_id=subject_id, respondent_activities_count=0, target_activities_count=0, activities_or_flows=[]
-    )
+    activities_counters = ActivitiesCounters(subject_id=subject_id)
 
     # Iterate over all activity or flow IDs
     for activity_or_flow_id in all_activity_ids:
@@ -436,11 +441,19 @@ async def applet_activities_counters_for_subject(
         respondents_count = len(respondents)
         subjects_count = len(subjects)
 
+        activity_or_flow_exists = activities_state.get(activity_or_flow_id) or flows_state.get(activity_or_flow_id)
+
         # Update activities counters counts
         if subjects_count > 0:
-            activities_counters.respondent_activities_count += 1
+            if activity_or_flow_exists:
+                activities_counters.respondent_activities_count_existing += 1
+            else:
+                activities_counters.respondent_activities_count_deleted += 1
         if respondents_count > 0:
-            activities_counters.target_activities_count += 1
+            if activity_or_flow_exists:
+                activities_counters.target_activities_count_existing += 1
+            else:
+                activities_counters.target_activities_count_deleted += 1
 
         # Append the activity subject counters
         activities_counters.activities_or_flows.append(

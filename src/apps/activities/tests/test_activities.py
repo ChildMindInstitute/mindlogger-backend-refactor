@@ -1327,8 +1327,10 @@ class TestActivities:
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
 
-        assert result["respondentActivitiesCount"] == 2
-        assert result["targetActivitiesCount"] == 2
+        assert result["respondentActivitiesCountExisting"] == 2
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == 2
+        assert result["targetActivitiesCountDeleted"] == 0
         assert len(result["activitiesOrFlows"]) == 2
         flow_counters = next(item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(flow.id))
         activity_counters = next(
@@ -1669,8 +1671,10 @@ class TestActivities:
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
 
-        assert result["respondentActivitiesCount"] == (0 if subject_type == "target" else 1)
-        assert result["targetActivitiesCount"] == (1 if subject_type == "target" else 0)
+        assert result["respondentActivitiesCountExisting"] == (0 if subject_type == "target" else 1)
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == (1 if subject_type == "target" else 0)
+        assert result["targetActivitiesCountDeleted"] == 0
         assert len(result["activitiesOrFlows"]) == 1
         activityOrFlow = result["activitiesOrFlows"][0]
         assert activityOrFlow["respondentsCount"] == (1 if subject_type == "target" else 0)
@@ -1839,8 +1843,10 @@ class TestActivities:
         result = response.json()["result"]
 
         assert len(result["activitiesOrFlows"]) == 4
-        assert result["respondentActivitiesCount"] == (2 if subject_type == "target" else 4)
-        assert result["targetActivitiesCount"] == (4 if subject_type == "target" else 2)
+        assert result["respondentActivitiesCountExisting"] == (2 if subject_type == "target" else 4)
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == (4 if subject_type == "target" else 2)
+        assert result["targetActivitiesCountDeleted"] == 0
         for activityOrFlow in result["activitiesOrFlows"]:
             is_auto = activityOrFlow["activityOrFlowId"] == str(auto_flow.id) or activityOrFlow[
                 "activityOrFlowId"

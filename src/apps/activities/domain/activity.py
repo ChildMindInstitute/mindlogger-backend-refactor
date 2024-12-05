@@ -168,6 +168,8 @@ class ActivitySubjectCounters(PublicModel):
 
 class ActivitiesCounters(PublicModel):
     subject_id: uuid.UUID
-    respondent_activities_count: int = 0
-    target_activities_count: int = 0
+    respondent_activities_count_existing: int = 0
+    respondent_activities_count_deleted: int = 0
+    target_activities_count_existing: int = 0
+    target_activities_count_deleted: int = 0
     activities_or_flows: list[ActivitySubjectCounters] = Field(default_factory=list)
