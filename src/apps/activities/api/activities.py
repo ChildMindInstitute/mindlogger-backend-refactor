@@ -172,7 +172,8 @@ async def applet_activities_for_target_subject(
     applet_service = AppletService(session, user.id)
     await applet_service.exist_by_id(applet_id)
 
-    await SubjectsService(session, user.id).exist_by_id(subject_id)
+    subject = await SubjectsService(session, user.id).exist_by_id(subject_id)
+    is_limited_respondent = subject.user_id is None
 
     # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
     await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
@@ -194,7 +195,7 @@ async def applet_activities_for_target_subject(
     activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
         applet_id=applet_id,
         ids=activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments,
-        include_auto=True,
+        include_auto=not is_limited_respondent,
         language=language,
     )
 
