@@ -1,6 +1,6 @@
 import logging
-import time
 import sys
+import time
 
 import structlog
 from asgi_correlation_id.context import correlation_id

@@ -119,6 +119,10 @@ variables:
 #  CDN__LEGACY_ACCESS_KEY:
   CDN__TTL_SIGNED_URLS: 3600
 
+  DD_ENV: feature
+  DD_SERVICE: backend-api
+  DD_VERSION: ${COPILOT_ENVIRONMENT_NAME}
+
   # jsonld converter
   JSONLD_CONVERTER__PROTOCOL_PASSWORD:
 
