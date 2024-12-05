@@ -17,7 +17,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from ddtrace.contrib.asgi.middleware import TraceMiddleware
 import structlog
 
-
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
 import apps.alerts.router as alerts
@@ -39,6 +38,7 @@ import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import apps.workspaces.router as workspaces
 import middlewares as middlewares_
+from asgi_correlation_id import CorrelationIdMiddleware
 from apps.shared.exception import BaseError
 from config import settings
 from infrastructure.http.execeptions import (
@@ -47,7 +47,7 @@ from infrastructure.http.execeptions import (
     python_base_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
-from infrastructure.logger import setup_logging
+from infrastructure.logger import setup_logging, LoggingMiddleware
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -91,16 +91,12 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
     ),
     (middlewares_.InternalizationMiddleware, {}),
     (middlewares_.CORSMiddleware, middlewares_.cors_options),
+    # (LoggingMiddleware, {}),
+    # (CorrelationIdMiddleware, {})
 )
 
 
 def create_app():
-    LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))
-    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-    setup_logging(json_logs=LOG_JSON_FORMAT, log_level=LOG_LEVEL)
-
-    access_logger = structlog.stdlib.get_logger("api.access")
-
     # Create base FastAPI application
     app = FastAPI(
         description=f"Commit id: <b>{settings.commit_id}" f"</b><br>Version: <b>{settings.version}</b>",
@@ -133,13 +129,13 @@ def create_app():
     # Unfortunately that means that it is the innermost middleware, so the trace/span are created last in the middleware
     # chain. Because we want to add the trace_id/span_id in the access log, we need to extract it from the middleware list,
     # put it back as the outermost middleware, and rebuild the middleware stack.
-    tracing_middleware = next(
-        (m for m in app.user_middleware if m.cls == TraceMiddleware), None
-    )
-    if tracing_middleware is not None:
-        app.user_middleware = [m for m in app.user_middleware if m.cls != TraceMiddleware]
-
-        app.user_middleware.insert(0, tracing_middleware)
-        app.middleware_stack = app.build_middleware_stack()
+    # tracing_middleware = next(
+    #     (m for m in app.user_middleware if m.cls == TraceMiddleware), None
+    # )
+    # if tracing_middleware is not None:
+    #     app.user_middleware = [m for m in app.user_middleware if m.cls != TraceMiddleware]
+    #
+    #     app.user_middleware.insert(0, tracing_middleware)
+    #     app.middleware_stack = app.build_middleware_stack()
 
     return app

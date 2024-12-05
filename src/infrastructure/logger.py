@@ -2,12 +2,30 @@ import logging
 import sys
 import structlog
 from ddtrace import tracer
+from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
+import os
 
-# logger = logging.getLogger()
-# logger.setLevel(logging.INFO)
+from asgi_correlation_id.context import correlation_id
+from ddtrace.contrib.asgi.middleware import TraceMiddleware
+from fastapi import FastAPI, Request, Response
+from uvicorn.protocols.utils import get_path_with_query_string
+import structlog
+import time
 
-logger = structlog.stdlib.get_logger("api")
+
+if os.environ.get("ENV") == "testing":
+    # Some tests check logging output, so use the old logger
+    fmt = "%(levelname)s:     %(message)s"
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(fmt)
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+else:
+    logger = structlog.stdlib.get_logger("api")
 
 
 # Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
@@ -123,18 +141,79 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
     logging.getLogger("uvicorn.access").handlers.clear()
     logging.getLogger("uvicorn.access").propagate = False
 
-    def handle_exception(exc_type, exc_value, exc_traceback):
-        """
-        Log any uncaught exception instead of letting it be printed by Python
-        (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
-        See https://stackoverflow.com/a/16993115/3641865
-        """
-        if issubclass(exc_type, KeyboardInterrupt):
-            sys.__excepthook__(exc_type, exc_value, exc_traceback)
-            return
+    # def handle_exception(exc_type, exc_value, exc_traceback):
+    #     """
+    #     Log any uncaught exception instead of letting it be printed by Python
+    #     (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
+    #     See https://stackoverflow.com/a/16993115/3641865
+    #     """
+    #     if issubclass(exc_type, KeyboardInterrupt):
+    #         sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    #         return
+    #
+    #     root_logger.error(
+    #         "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
+    #     )
+    #
+    # sys.excepthook = handle_exception
 
-        root_logger.error(
-            "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
-        )
 
-    sys.excepthook = handle_exception
+# async def logging_middleware(request: Request, call_next) -> Response:
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        structlog.contextvars.clear_contextvars()
+        # These context vars will be added to all log entries emitted during the request
+        request_id = correlation_id.get()
+        structlog.contextvars.bind_contextvars(request_id=request_id)
+
+        start_time = time.perf_counter_ns()
+        # If the call_next raises an error, we still want to return our own 500 response,
+        # so we can add headers to it (process time, request ID...)
+        response = Response(status_code=500)
+
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            # TODO: Validate that we don't swallow exceptions (unit test?)
+            structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
+            raise e
+        finally:
+            access_logger = structlog.stdlib.get_logger("api.access")
+            process_time = time.perf_counter_ns() - start_time
+            status_code = response.status_code
+            url = get_path_with_query_string(request.scope)
+            client_host = request.client.host
+            client_port = request.client.port
+            http_method = request.method
+            http_version = request.scope["http_version"]
+            # Recreate the Uvicorn access log format, but add all parameters as structured information
+
+            if 400 < status_code < 500:
+                access_logger.warn(
+                    f"""{client_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+                    http={
+                        "url": str(request.url),
+                        "status_code": status_code,
+                        "method": http_method,
+                        "request_id": request_id,
+                        "version": http_version,
+                    },
+                    network={"client": {"ip": client_host, "port": client_port}},
+                    duration=process_time,
+                )
+            else:
+                access_logger.info(
+                    f"""{client_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+                    http={
+                        "url": str(request.url),
+                        "status_code": status_code,
+                        "method": http_method,
+                        "request_id": request_id,
+                        "version": http_version,
+                    },
+                    network={"client": {"ip": client_host, "port": client_port}},
+                    duration=process_time,
+                )
+            # response.headers["X-Process-Time"] = str(process_time / 10 ** 9)
+            return response
