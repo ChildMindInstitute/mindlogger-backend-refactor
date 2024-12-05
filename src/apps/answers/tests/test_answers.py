@@ -1840,9 +1840,11 @@ class TestAnswerActivityItems(BaseTest):
             "flowName", "id", "itemIds", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
-            "endDatetime", "legacyProfileId", "migratedDate",
-            "relation", "sourceSubjectId", "sourceSecretId", "targetSubjectId",
-            "targetSecretId", "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
+            "endDatetime", "legacyProfileId", "migratedDate", "relation",
+            "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag",
+            "targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
+            "inputSubjectId", "inputSecretId", "inputUserNickname",
+            "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
@@ -1874,7 +1876,8 @@ class TestAnswerActivityItems(BaseTest):
         assert len(data["answers"]) == 1
         assert resp_data["count"] == 1
         assert data["answers"][0]["respondentId"] == str(tom.id)
-        assert data["answers"][0]["respondentSecretId"] == answer_shell_account_target["target_secret_user_id"]
+        respondent_secret_id = data["answers"][0]["respondentSecretId"].split(" ")[-1].strip("()")
+        assert respondent_secret_id == answer_shell_account_target["respondent_secret_user_id"]
 
     @pytest.mark.parametrize(
         "user_fixture, exp_cnt",
