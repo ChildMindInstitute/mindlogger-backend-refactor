@@ -5,11 +5,11 @@ from fastapi import Depends
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import (
-    ActivitiesCounters,
+    ActivitiesMetadata,
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
-    ActivitySubjectCounters,
+    ActivitySubjectMetadata,
     ActivityWithAssignmentDetailsPublic,
 )
 from apps.activities.filters import AppletActivityFilter
@@ -364,14 +364,14 @@ async def __filter_activities(
     return activities
 
 
-async def applet_activities_counters_for_subject(
+async def applet_activities_metadata_for_subject(
     applet_id: uuid.UUID,
     subject_id: uuid.UUID,
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
-) -> Response[ActivitiesCounters]:
+) -> Response[ActivitiesMetadata]:
     applet_service = AppletService(session, user.id)
     await applet_service.exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
@@ -404,7 +404,7 @@ async def applet_activities_counters_for_subject(
     flows_state = {flow.id: flow.soft_exists() for flow in flows}
 
     # Initialize ActivitiesCounters with zero counts
-    activities_counters = ActivitiesCounters(subject_id=subject_id)
+    activities_metadata = ActivitiesMetadata(subject_id=subject_id)
 
     # Iterate over all activity or flow IDs
     for activity_or_flow_id in all_activity_ids:
@@ -448,18 +448,18 @@ async def applet_activities_counters_for_subject(
         # Update activities counters counts
         if subjects_count > 0:
             if activity_or_flow_exists:
-                activities_counters.respondent_activities_count_existing += 1
+                activities_metadata.respondent_activities_count_existing += 1
             else:
-                activities_counters.respondent_activities_count_deleted += 1
+                activities_metadata.respondent_activities_count_deleted += 1
         if respondents_count > 0:
             if activity_or_flow_exists:
-                activities_counters.target_activities_count_existing += 1
+                activities_metadata.target_activities_count_existing += 1
             else:
-                activities_counters.target_activities_count_deleted += 1
+                activities_metadata.target_activities_count_deleted += 1
 
         # Append the activity subject counters
-        activities_counters.activities_or_flows.append(
-            ActivitySubjectCounters(
+        activities_metadata.activities_or_flows.append(
+            ActivitySubjectMetadata(
                 activity_or_flow_id=activity_or_flow_id,
                 respondents_count=respondents_count,
                 subjects_count=subjects_count,
@@ -468,4 +468,4 @@ async def applet_activities_counters_for_subject(
             )
         )
 
-    return Response(result=activities_counters)
+    return Response(result=activities_metadata)

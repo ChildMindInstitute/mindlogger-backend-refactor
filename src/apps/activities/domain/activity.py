@@ -158,7 +158,7 @@ class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):
     auto_assign: bool
 
 
-class ActivitySubjectCounters(PublicModel):
+class ActivitySubjectMetadata(PublicModel):
     activity_or_flow_id: uuid.UUID
     respondents_count: int
     respondent_submissions_count: int
@@ -166,10 +166,10 @@ class ActivitySubjectCounters(PublicModel):
     subject_submissions_count: int
 
 
-class ActivitiesCounters(PublicModel):
+class ActivitiesMetadata(PublicModel):
     subject_id: uuid.UUID
     respondent_activities_count_existing: int = 0
     respondent_activities_count_deleted: int = 0
     target_activities_count_existing: int = 0
     target_activities_count_deleted: int = 0
-    activities_or_flows: list[ActivitySubjectCounters] = Field(default_factory=list)
+    activities_or_flows: list[ActivitySubjectMetadata] = Field(default_factory=list)

@@ -283,7 +283,7 @@ class TestActivities:
     subject_assigned_activities_url = "/activities/applet/{applet_id}/subject/{subject_id}"
     target_assigned_activities_url = "/activities/applet/{applet_id}/target/{subject_id}"
     respondent_assigned_activities_url = "/activities/applet/{applet_id}/respondent/{subject_id}"
-    activity_counters_by_subject_url = "/activities/applet/{applet_id}/subject/{subject_id}/counters"
+    activity_metadata_by_subject_url = "/activities/applet/{applet_id}/subject/{subject_id}/metadata"
 
     async def test_activity_detail(self, client: TestClient, applet_one: AppletFull, tom: User):
         activity = applet_one.activities[0]
@@ -1319,7 +1319,7 @@ class TestActivities:
         assert activity_result["performanceTaskType"] is None
 
         response = await client.get(
-            self.activity_counters_by_subject_url.format(
+            self.activity_metadata_by_subject_url.format(
                 applet_id=applet_activity_flow_lucy_manager.id, subject_id=lucy_applet_activity_flow_subject.id
             )
         )
@@ -1663,7 +1663,7 @@ class TestActivities:
         assert len(result_activity["assignments"]) == 0
 
         response = await client.get(
-            self.activity_counters_by_subject_url.format(
+            self.activity_metadata_by_subject_url.format(
                 applet_id=applet_one_lucy_respondent.id, subject_id=tom_applet_one_subject.id
             )
         )
@@ -1833,7 +1833,7 @@ class TestActivities:
         assert len(result_activity_auto["assignments"]) == 0
 
         response = await client.get(
-            self.activity_counters_by_subject_url.format(
+            self.activity_metadata_by_subject_url.format(
                 applet_id=empty_applet_lucy_manager.id,
                 subject_id=user_empty_applet_subject.id if subject_type == "target" else lucy_empty_applet_subject.id,
             )
