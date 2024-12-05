@@ -433,8 +433,8 @@ async def applet_activities_counters_for_subject(
             respondents.update(assignments_data.respondents)
             subjects.update(assignments_data.subjects)
 
-        # Include the subject for auto-assigned activities
-        if is_auto:
+        # Include the subject for auto-assigned activities, excluding limited accounts
+        if is_auto and not is_limited_respondent:
             respondents.add(subject_id)
             subjects.add(subject_id)
 
