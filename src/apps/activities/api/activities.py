@@ -375,7 +375,8 @@ async def applet_activities_counters_for_subject(
     await applet_service.exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
 
-    await SubjectsService(session, user.id).exist_by_id(subject_id)
+    subject = await SubjectsService(session, user.id).exist_by_id(subject_id)
+    is_limited_respondent = subject.user_id is None
 
     # Fetch assigned activity or flow IDs for the subject
     assigned_activities = await ActivityAssignmentService(session).get_assigned_activity_or_flow_ids_for_subject(
