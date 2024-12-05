@@ -1,14 +1,17 @@
 import logging
+import time
+import sys
+
+import structlog
+from asgi_correlation_id.context import correlation_id
 from ddtrace import tracer
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
-from asgi_correlation_id.context import correlation_id
-from fastapi import FastAPI, Request, Response
 from uvicorn.protocols.utils import get_path_with_query_string
-import structlog
-import time
 
 # Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
+
 
 # https://github.com/hynek/structlog/issues/35#issuecomment-591321744
 def rename_event_key(_, __, event_dict: EventDict) -> EventDict:
@@ -74,10 +77,10 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
 
     structlog.configure(
         processors=shared_processors
-                   + [
-                       # Prepare event dict for `ProcessorFormatter`.
-                       structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-                   ],
+        + [
+            # Prepare event dict for `ProcessorFormatter`.
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
@@ -115,32 +118,33 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
         logging.getLogger(_log).propagate = True
 
     # Since we re-create the access logs ourselves, to add all information
-    # in the structured log (see the `logging_middleware` in app.py), we clear
+    # in the structured log (see the `DataDogLoggingMiddleware`), we clear
     # the handlers and prevent the logs to propagate to a logger higher up in the
     # hierarchy (effectively rendering them silent).
     logging.getLogger("uvicorn.access").handlers.clear()
     logging.getLogger("uvicorn.access").propagate = False
 
-    # def handle_exception(exc_type, exc_value, exc_traceback):
-    #     """
-    #     Log any uncaught exception instead of letting it be printed by Python
-    #     (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
-    #     See https://stackoverflow.com/a/16993115/3641865
-    #     """
-    #     if issubclass(exc_type, KeyboardInterrupt):
-    #         sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    #         return
-    #
-    #     root_logger.error(
-    #         "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
-    #     )
-    #
-    # sys.excepthook = handle_exception
+    def handle_exception(exc_type, exc_value, exc_traceback):
+        """
+        Log any uncaught exception instead of letting it be printed by Python
+        (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
+        See https://stackoverflow.com/a/16993115/3641865
+        """
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+
+        root_logger.error(
+            "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
+        )
+
+    sys.excepthook = handle_exception
 
 
 # async def logging_middleware(request: Request, call_next) -> Response:
 
-class LoggingMiddleware(BaseHTTPMiddleware):
+
+class DataDogLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         structlog.contextvars.clear_contextvars()
         # These context vars will be added to all log entries emitted during the request

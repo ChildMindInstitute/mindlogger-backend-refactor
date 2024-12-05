@@ -1,6 +1,7 @@
 from typing import Iterable, Type
 
 import sentry_sdk
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
@@ -26,16 +27,15 @@ import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import apps.workspaces.router as workspaces
 import middlewares as middlewares_
-from asgi_correlation_id import CorrelationIdMiddleware
 from apps.shared.exception import BaseError
 from config import settings
+from infrastructure.datadog import DataDogLoggingMiddleware
 from infrastructure.http.execeptions import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
     python_base_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
-from infrastructure.datadog import LoggingMiddleware
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -79,8 +79,8 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
     ),
     (middlewares_.InternalizationMiddleware, {}),
     (middlewares_.CORSMiddleware, middlewares_.cors_options),
-    (LoggingMiddleware, {}),
-    (CorrelationIdMiddleware, {})
+    (DataDogLoggingMiddleware, {}),
+    (CorrelationIdMiddleware, {}),
 )
 
 
@@ -113,9 +113,12 @@ def create_app():
     app.openapi_version = "3.0.3"
 
     # UGLY HACK
-    # Datadog's `TraceMiddleware` is applied as the very first middleware in the list, by patching `FastAPI` constructor.
-    # Unfortunately that means that it is the innermost middleware, so the trace/span are created last in the middleware
-    # chain. Because we want to add the trace_id/span_id in the access log, we need to extract it from the middleware list,
+    # Datadog's `TraceMiddleware` is applied as the very first middleware
+    # in the list, by patching `FastAPI` constructor.
+    # Unfortunately that means that it is the innermost middleware, so the trace/span are
+    # created last in the middleware
+    # chain. Because we want to add the trace_id/span_id in the access log,
+    # we need to extract it from the middleware list,
     # put it back as the outermost middleware, and rebuild the middleware stack.
     # tracing_middleware = next(
     #     (m for m in app.user_middleware if m.cls == TraceMiddleware), None
