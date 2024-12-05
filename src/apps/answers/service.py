@@ -67,7 +67,7 @@ from apps.answers.domain.answers import (
     AppletSubmission,
     FilesCopyCheckResult,
     RespondentAnswerData,
-    SubmissionsActivityCountBySubject,
+    SubmissionsActivityMetadataBySubject,
     SubmissionsSubjectCounters,
 )
 from apps.answers.errors import (
@@ -1979,9 +1979,13 @@ class AnswerService:
 
         return existing_subject_ids
 
-    async def get_submissions_by_subject(self, subject_id: uuid.UUID) -> SubmissionsActivityCountBySubject:
-        submissions_target_coro = AnswersCRUD(self.answer_session).get_submissions_by_target_subject(subject_id)
-        submissions_respondent_coro = AnswersCRUD(self.answer_session).get_submissions_by_respondent_subject(subject_id)
+    async def get_submissions_metadata_by_subject(self, subject_id: uuid.UUID) -> SubmissionsActivityMetadataBySubject:
+        submissions_target_coro = AnswersCRUD(self.answer_session).get_submissions_metadata_by_target_subject(
+            subject_id
+        )
+        submissions_respondent_coro = AnswersCRUD(self.answer_session).get_submissions_metadata_by_respondent_subject(
+            subject_id
+        )
 
         submissions_target, submissions_respondent = await asyncio.gather(
             submissions_target_coro, submissions_respondent_coro
@@ -1989,27 +1993,37 @@ class AnswerService:
 
         existing_subject_ids = await self._filter_out_soft_deleted_subjects(submissions_target + submissions_respondent)
 
-        submissions_activity_count = SubmissionsActivityCountBySubject(subject_id=subject_id)
+        submissions_activity_metadata = SubmissionsActivityMetadataBySubject(subject_id=subject_id)
 
         for activity_submissions in submissions_target:
-            activity_counters = submissions_activity_count.activities.setdefault(
+            activity_metadata = submissions_activity_metadata.activities.setdefault(
                 uuid.UUID(activity_submissions["activity_id"]), SubmissionsSubjectCounters()
             )
             respondent_subject_id = activity_submissions["subject_id"]
             if respondent_subject_id in existing_subject_ids:
-                activity_counters.respondents.add(respondent_subject_id)
-                activity_counters.subject_submissions_count += activity_submissions["submission_count"]
+                activity_metadata.respondents.add(respondent_subject_id)
+                activity_metadata.subject_submissions_count += activity_submissions["submission_count"]
+                activity_metadata.last_submission_date = (
+                    activity_submissions["last_submission_date"]
+                    if not activity_metadata.last_submission_date
+                    else max(activity_metadata.last_submission_date, activity_submissions["last_submission_date"])
+                )
 
         for activity_submissions in submissions_respondent:
-            activity_counters = submissions_activity_count.activities.setdefault(
+            activity_metadata = submissions_activity_metadata.activities.setdefault(
                 uuid.UUID(activity_submissions["activity_id"]), SubmissionsSubjectCounters()
             )
             target_subject_id = activity_submissions["subject_id"]
             if target_subject_id in existing_subject_ids:
-                activity_counters.subjects.add(target_subject_id)
-                activity_counters.respondent_submissions_count += activity_submissions["submission_count"]
+                activity_metadata.subjects.add(target_subject_id)
+                activity_metadata.respondent_submissions_count += activity_submissions["submission_count"]
+                activity_metadata.last_submission_date = (
+                    activity_submissions["last_submission_date"]
+                    if not activity_metadata.last_submission_date
+                    else max(activity_metadata.last_submission_date, activity_submissions["last_submission_date"])
+                )
 
-        return submissions_activity_count
+        return submissions_activity_metadata
 
 
 class ReportServerService:

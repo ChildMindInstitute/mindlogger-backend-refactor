@@ -723,6 +723,6 @@ class SubmissionsSubjectCounters(InternalModel):
     last_submission_date: datetime.datetime | None = None
 
 
-class SubmissionsActivityCountBySubject(InternalModel):
+class SubmissionsActivityMetadataBySubject(InternalModel):
     subject_id: uuid.UUID
     activities: dict[uuid.UUID, SubmissionsSubjectCounters] = Field(default_factory=dict)
