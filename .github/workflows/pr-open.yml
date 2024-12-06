@@ -49,6 +49,7 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
+      discussions: write
     needs: [ run-unit-tests ]
     steps:
       - name: Post the link to the report
