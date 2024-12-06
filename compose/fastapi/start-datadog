@@ -9,7 +9,7 @@ export UVICORN_HOST="0.0.0.0"
 export UVICORN_PORT=80
 
 
-LOG_JSON_FORMAT=true DD_TRACE_ENABLED=true uvicorn main:app \
+LOG_JSON_FORMAT=true DD_TRACE_ENABLED=true ddtrace-run uvicorn main:app \
   --host ${UVICORN_HOST} --port ${UVICORN_PORT} \
   --reload --proxy-headers \
   --log-config uvicorn_disable_logging.json
