@@ -526,12 +526,19 @@ class UserAnswerDataBase(BaseModel):
     submit_id: uuid.UUID
     version: str
     respondent_id: uuid.UUID | str | None = None
-    target_subject_id: uuid.UUID | str | None = None
-    target_secret_id: uuid.UUID | str | None = None
+    respondent_secret_id: str | None = None
     source_subject_id: uuid.UUID | str | None = None
     source_secret_id: uuid.UUID | str | None = None
+    source_user_nickname: str | None = None
+    source_user_tag: str | None = None
+    target_subject_id: uuid.UUID | str | None = None
+    target_secret_id: uuid.UUID | str | None = None
+    target_user_nickname: str | None = None
+    target_user_tag: str | None = None
+    input_subject_id: uuid.UUID | str | None = None
+    input_secret_id: uuid.UUID | str | None = None
+    input_user_nickname: str | None = None
     relation: str | None = None
-    respondent_secret_id: str | None = None
     legacy_profile_id: str | None = None
     user_public_key: str | None
     answer: str | None = None

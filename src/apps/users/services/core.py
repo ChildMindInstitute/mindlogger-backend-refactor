@@ -29,6 +29,14 @@ class PasswordRecoveryService:
         self._cache: PasswordRecoveryCache = PasswordRecoveryCache()
         self.session = session
 
+    def get_locallized_email_subject(self, language: str) -> str:
+        subjects = {
+            "en": "Password reset",
+            "fr": "Réinitialisation du mot de passe",
+            "el": "Επαναφορά κωδικού πρόσβασης",
+        }
+        return subjects.get(language, "Password reset")
+
     async def send_password_recovery(
         self,
         schema: PasswordRecoveryRequest,
@@ -91,7 +99,7 @@ class PasswordRecoveryService:
 
         message = MessageSchema(
             recipients=[user.email_encrypted],
-            subject="Password reset",
+            subject=self.get_locallized_email_subject(language),
             body=service.get_localized_html_template(
                 template_name="reset_password",
                 language=language,
