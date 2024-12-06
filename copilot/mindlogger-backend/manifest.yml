@@ -57,18 +57,18 @@ storage:
       path: /app/uploads
       read_only: false
     # For Datadog
-    sock:
-      efs: true
-      path: '/var/run/docker.sock'
-      read_only: true
-    proc:
-      efs: true
-      path: '/proc/'
-      read_only: true
-    cgroup:
-      efs: true
-      path: '/sys/fs/cgroup/'
-      read_only: true
+#    sock:
+#      efs: false
+#      path: '/var/run/docker.sock'
+#      read_only: true
+#    proc:
+#      efs: false
+#      path: '/proc/'
+#      read_only: true
+#    cgroup:
+#      efs: false
+#      path: '/sys/fs/cgroup/'
+#      read_only: true
 
 variables:
   # Python configurations
@@ -198,13 +198,13 @@ sidecars:
     secrets:
       DD_API_KEY: #/copilot/${COPILOT_APPLICATION_NAME}/${COPILOT_ENVIRONMENT_NAME}/secrets/DATADOG_API_KEY
         secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DD_API_KEY::"
-    mount_points:
-      - source_volume: sock
-        path: '/var/run/docker.sock'
-      - source_volume: proc
-        path: '/proc/'
-      - source_volume: cgroup
-        path: '/sys/fs/cgroup/'
+#    mount_points:
+#      - source_volume: sock
+#        path: '/var/run/docker.sock'
+#      - source_volume: proc
+#        path: '/proc/'
+#      - source_volume: cgroup
+#        path: '/sys/fs/cgroup/'
 
   firelens:
     essential: true
