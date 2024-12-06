@@ -957,6 +957,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                     ),
                     else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == str(activity_or_flow_id),
                 ),
+                # Exclude incomplete activity flow assessments
+                AnswerSchema.is_flow_completed.isnot(False),
             )
             .group_by(AnswerSchema.target_subject_id)
         )
@@ -981,7 +983,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                     else AnswerSchema.target_subject_id
                 ).label("subject_id"),
             )
-            .where(subject_column == subject_id)
+            .where(
+                subject_column == subject_id,
+                # Exclude incomplete activity flow assessments
+                AnswerSchema.is_flow_completed.isnot(False),
+            )
             .group_by("activity_id", "subject_id")
         )
         return query
@@ -1022,7 +1028,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                     else AnswerSchema.target_subject_id
                 ).label("subject_id"),
             )
-            .where(subject_column == subject_id)
+            .where(
+                subject_column == subject_id,
+                # Exclude incomplete activity flow assessments
+                AnswerSchema.is_flow_completed.isnot(False),
+            )
             .group_by("activity_id", "subject_id")
         )
         return query
