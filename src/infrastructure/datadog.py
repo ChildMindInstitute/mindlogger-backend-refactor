@@ -161,7 +161,7 @@ class DataDogLoggingMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             # TODO: Validate that we don't swallow exceptions (unit test?)
             structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
-            raise e
+            # raise e
         finally:
             access_logger = structlog.stdlib.get_logger("api.access")
             process_time = time.perf_counter_ns() - start_time

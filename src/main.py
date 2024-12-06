@@ -11,7 +11,7 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
     logging.getLogger("main").setLevel(logging.INFO)
     logging.getLogger("main").addHandler(logging.StreamHandler())
     logging.getLogger("main").info("Enabling Datadog")
-    # import ddtrace.auto  # noqa
+    import ddtrace.auto  # noqa
 #     import ddtrace
 #     ddtrace.patch_all()
 
