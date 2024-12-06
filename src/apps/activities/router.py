@@ -8,10 +8,12 @@ from apps.activities.api.activities import (
     applet_activities_for_respondent_subject,
     applet_activities_for_subject,
     applet_activities_for_target_subject,
+    applet_activities_metadata_for_subject,
     public_activity_retrieve,
 )
 from apps.activities.api.reusable_item_choices import item_choice_create, item_choice_delete, item_choice_retrieve
 from apps.activities.domain.activity import (
+    ActivitiesMetadata,
     ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
 )
@@ -133,3 +135,16 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(applet_activities_for_respondent_subject)
+
+router.get(
+    "/applet/{applet_id}/subject/{subject_id}/metadata",
+    description="""Get metadata, like number of submissions and participants for activities and activity 
+                  flows associated with the given participant, either as respondent or target subject.
+                """,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": Response[ActivitiesMetadata]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(applet_activities_metadata_for_subject)
