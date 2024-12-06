@@ -942,7 +942,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_target_subject_ids_by_respondent(
         self, respondent_subject_id: uuid.UUID, activity_or_flow_id: uuid.UUID
-    ):
+    ) -> list[tuple[uuid.UUID, int]]:
         query: Query = (
             select(
                 AnswerSchema.target_subject_id,
@@ -1006,20 +1006,25 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     @staticmethod
     def _query_submissions_by_subject(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
-        query: Query = select(
-            case(
+        query: Query = (
+            select(
+                func.count(func.distinct(AnswerSchema.submit_id)).label("submission_count"),
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
+                ).label("activity_id"),
                 (
-                    AnswerSchema.flow_history_id.isnot(None),
-                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
-                ),
-                else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
-            ).label("activity_id"),
-            (
-                AnswerSchema.source_subject_id
-                if subject_column == AnswerSchema.target_subject_id
-                else AnswerSchema.target_subject_id
-            ).label("subject_id"),
-        ).where(subject_column == subject_id)
+                    AnswerSchema.source_subject_id
+                    if subject_column == AnswerSchema.target_subject_id
+                    else AnswerSchema.target_subject_id
+                ).label("subject_id"),
+            )
+            .where(subject_column == subject_id)
+            .group_by("activity_id", "subject_id")
+        )
         return query
 
     async def get_submissions_by_target_subject(self, target_subject_id: uuid.UUID) -> list[dict]:

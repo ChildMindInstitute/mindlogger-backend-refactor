@@ -1941,10 +1941,11 @@ class AnswerService:
 
     async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
         """
-        Get a list of activity and flow IDs based on answers submitted for a target subject
+        Get a list of activity and flow IDs based on answers submitted for a target subject.
+        Excludes answers whose source subject was soft-deleted.
 
         The data returned is just a combined list of activity and flow IDs, without any
-        distinction between the two
+        distinction between the two.
         """
         results = await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_target_subject(target_subject_id)
         existing_subject_ids = await self._filter_out_soft_deleted_subjects(results)
@@ -1954,10 +1955,11 @@ class AnswerService:
 
     async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
         """
-        Get a list of activity and flow IDs based on answers submitted for a source subject
+        Get a list of activity and flow IDs based on answers submitted for a source subject.
+        Excludes answers whose target subject was soft-deleted.
 
         The data returned is just a combined list of activity and flow IDs, without any
-        distinction between the two
+        distinction between the two.
         """
         results = await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
         existing_subject_ids = await self._filter_out_soft_deleted_subjects(results)
@@ -1967,7 +1969,7 @@ class AnswerService:
 
     async def _filter_out_soft_deleted_subjects(self, submissions: list[dict]) -> set[uuid.UUID]:
         """
-        Return subject_ids contained in given submissions array that correspond to soft-deleted subjects
+        Filter out submissions whose subject_id column corresponds to soft-deleted subjects
         """
         subject_ids = set([activityOrFlow["subject_id"] for activityOrFlow in submissions])
 
@@ -1989,23 +1991,23 @@ class AnswerService:
 
         submissions_activity_count = SubmissionsActivityCountBySubject(subject_id=subject_id)
 
-        for activityOrFlow in submissions_target:
+        for activity_submissions in submissions_target:
             activity_counters = submissions_activity_count.activities.setdefault(
-                uuid.UUID(activityOrFlow["activity_id"]), SubmissionsSubjectCounters()
+                uuid.UUID(activity_submissions["activity_id"]), SubmissionsSubjectCounters()
             )
-            respondent_subject_id = activityOrFlow["subject_id"]
+            respondent_subject_id = activity_submissions["subject_id"]
             if respondent_subject_id in existing_subject_ids:
                 activity_counters.respondents.add(respondent_subject_id)
-                activity_counters.subject_submissions_count += 1
+                activity_counters.subject_submissions_count += activity_submissions["submission_count"]
 
-        for activityOrFlow in submissions_respondent:
+        for activity_submissions in submissions_respondent:
             activity_counters = submissions_activity_count.activities.setdefault(
-                uuid.UUID(activityOrFlow["activity_id"]), SubmissionsSubjectCounters()
+                uuid.UUID(activity_submissions["activity_id"]), SubmissionsSubjectCounters()
             )
-            target_subject_id = activityOrFlow["subject_id"]
+            target_subject_id = activity_submissions["subject_id"]
             if target_subject_id in existing_subject_ids:
                 activity_counters.subjects.add(target_subject_id)
-                activity_counters.respondent_submissions_count += 1
+                activity_counters.respondent_submissions_count += activity_submissions["submission_count"]
 
         return submissions_activity_count
 
