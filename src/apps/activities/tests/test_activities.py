@@ -283,6 +283,7 @@ class TestActivities:
     subject_assigned_activities_url = "/activities/applet/{applet_id}/subject/{subject_id}"
     target_assigned_activities_url = "/activities/applet/{applet_id}/target/{subject_id}"
     respondent_assigned_activities_url = "/activities/applet/{applet_id}/respondent/{subject_id}"
+    activity_metadata_by_subject_url = "/activities/applet/{applet_id}/subject/{subject_id}/metadata"
 
     async def test_activity_detail(self, client: TestClient, applet_one: AppletFull, tom: User):
         activity = applet_one.activities[0]
@@ -1317,6 +1318,33 @@ class TestActivities:
         assert activity_result["isPerformanceTask"] is False
         assert activity_result["performanceTaskType"] is None
 
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=applet_activity_flow_lucy_manager.id, subject_id=lucy_applet_activity_flow_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert result["respondentActivitiesCountExisting"] == 2
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == 2
+        assert result["targetActivitiesCountDeleted"] == 0
+        assert len(result["activitiesOrFlows"]) == 2
+        flow_counters = next(item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(flow.id))
+        activity_counters = next(
+            item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(activity.id)
+        )
+        assert flow_counters["respondentsCount"] == 1
+        assert flow_counters["respondentSubmissionsCount"] == 0
+        assert flow_counters["subjectsCount"] == 1
+        assert flow_counters["subjectSubmissionsCount"] == 0
+        assert activity_counters["respondentsCount"] == 1
+        assert activity_counters["respondentSubmissionsCount"] == 0
+        assert activity_counters["subjectsCount"] == 1
+        assert activity_counters["subjectSubmissionsCount"] == 0
+
     @pytest.mark.parametrize(
         "subject_type,result_order",
         [
@@ -1634,6 +1662,26 @@ class TestActivities:
         assert result_activity["performanceTaskType"] is None
         assert len(result_activity["assignments"]) == 0
 
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=applet_one_lucy_respondent.id, subject_id=tom_applet_one_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert result["respondentActivitiesCountExisting"] == (0 if subject_type == "target" else 1)
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == (1 if subject_type == "target" else 0)
+        assert result["targetActivitiesCountDeleted"] == 0
+        assert len(result["activitiesOrFlows"]) == 1
+        activityOrFlow = result["activitiesOrFlows"][0]
+        assert activityOrFlow["respondentsCount"] == (1 if subject_type == "target" else 0)
+        assert activityOrFlow["respondentSubmissionsCount"] == (0 if subject_type == "target" else 1)
+        assert activityOrFlow["subjectsCount"] == (0 if subject_type == "target" else 1)
+        assert activityOrFlow["subjectSubmissionsCount"] == (1 if subject_type == "target" else 0)
+
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_hidden_activities(
         self,
@@ -1783,6 +1831,31 @@ class TestActivities:
         assert result_activity_auto["isPerformanceTask"] is False
         assert result_activity_auto["performanceTaskType"] is None
         assert len(result_activity_auto["assignments"]) == 0
+
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=empty_applet_lucy_manager.id,
+                subject_id=user_empty_applet_subject.id if subject_type == "target" else lucy_empty_applet_subject.id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert len(result["activitiesOrFlows"]) == 4
+        assert result["respondentActivitiesCountExisting"] == (2 if subject_type == "target" else 4)
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == (4 if subject_type == "target" else 2)
+        assert result["targetActivitiesCountDeleted"] == 0
+        for activityOrFlow in result["activitiesOrFlows"]:
+            is_auto = activityOrFlow["activityOrFlowId"] == str(auto_flow.id) or activityOrFlow[
+                "activityOrFlowId"
+            ] == str(auto_activity.id)
+
+            assert activityOrFlow["respondentsCount"] == (1 if is_auto or subject_type == "target" else 0)
+            assert activityOrFlow["respondentSubmissionsCount"] == 0
+            assert activityOrFlow["subjectsCount"] == (1 if is_auto or subject_type != "target" else 0)
+            assert activityOrFlow["subjectSubmissionsCount"] == 0
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_performance_tasks(
