@@ -23,7 +23,7 @@ class TestIntegrationRouter(BaseTest):
             },
         }
         client.login(tom)
-        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        response = await client.post("integrations", data=create_loris_integration_url_data)
         assert response.status_code == 403
 
     async def test_create_integration_success(
@@ -43,7 +43,7 @@ class TestIntegrationRouter(BaseTest):
             },
         }
         client.login(tom)
-        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        response = await client.post("integrations", data=create_loris_integration_url_data)
         assert response.status_code == 201
 
     async def test_create_integration_wrong_parameters_for_type(
@@ -61,7 +61,7 @@ class TestIntegrationRouter(BaseTest):
             },
         }
         client.login(tom)
-        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        response = await client.post("integrations", data=create_loris_integration_url_data)
         assert response.status_code == 400
 
     async def test_retrieve_integration(
@@ -81,14 +81,14 @@ class TestIntegrationRouter(BaseTest):
             },
         }
         client.login(tom)
-        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        response = await client.post("integrations", data=create_loris_integration_url_data)
         assert response.status_code == 201
 
         retrieve_loris_integration_url_query = {
             "applet_id": applet_one.id,
             "integration_type": "LORIS",
         }
-        response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
+        response = await client.get("integrations", query=retrieve_loris_integration_url_query)
         dict_response = json.loads(response.text)
         assert response.status_code == 200
         assert dict_response["integrationType"] == "LORIS"
@@ -115,14 +115,14 @@ class TestIntegrationRouter(BaseTest):
             },
         }
         client.login(tom)
-        response = await client.post("integrations/", data=create_loris_integration_url_data)
+        response = await client.post("integrations", data=create_loris_integration_url_data)
         assert response.status_code == 201
 
         retrieve_loris_integration_url_query = {
             "applet_id": applet_one.id,
             "integration_type": "LORIS",
         }
-        response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
+        response = await client.get("integrations", query=retrieve_loris_integration_url_query)
         dict_response = json.loads(response.text)
         assert response.status_code == 200
         assert dict_response["integrationType"] == "LORIS"
@@ -138,7 +138,7 @@ class TestIntegrationRouter(BaseTest):
         await client.delete(f"integrations/applet/{applet_one.id}", query=delete_loris_integration_url_query)
         assert response.status_code == 200
 
-        response = await client.get("integrations/", query=retrieve_loris_integration_url_query)
+        response = await client.get("integrations", query=retrieve_loris_integration_url_query)
         assert response.status_code == 400
         result = json.loads(response.text)
         m = "The specified integration type `LORIS` does not exist for applet `92917a56-d586-4613-b7aa-991f2c4b15b1`"
