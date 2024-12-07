@@ -13,8 +13,8 @@ class AlertService:
     async def get_all_alerts(self, filters: QueryParams) -> list[Alert]:
         alerts = []
         schemas = await AlertCRUD(self.session).get_all_for_user(self.user_id, filters.page, filters.limit)
-        for alert, applet_history, access, applet, workspace, subject in schemas:
-            if applet.integrations and "loris" in applet.integrations:
+        for alert, applet_history, access, applet, workspace, subject, integrations in schemas:
+            if integrations and "LORIS" in integrations:
                 _secret_id = "Loris Integration"
             else:
                 _secret_id = subject.secret_user_id if subject else "Anonymous"

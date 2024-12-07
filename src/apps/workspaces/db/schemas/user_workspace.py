@@ -25,4 +25,3 @@ class UserWorkspaceSchema(Base):
     storage_url = Column(StringEncryptedType(Unicode, get_key))
     storage_bucket = Column(StringEncryptedType(Unicode, get_key))
     use_arbitrary = Column(Boolean(), default=False)
-    integrations = Column(JSONB(), default=dict())

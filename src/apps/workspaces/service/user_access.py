@@ -1,13 +1,9 @@
 import uuid
 from gettext import gettext as _
-from typing import List
-
-import pydantic
 
 import config
 from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import UserAppletAccessCRUD
-from apps.integrations.domain import Integration
 from apps.invitations.domain import ReviewerMeta
 from apps.invitations.errors import RespondentsNotSet
 from apps.shared.exception import AccessDeniedError, ValidationError
@@ -57,9 +53,6 @@ class UserAccessService:
             UserWorkspace(
                 user_id=workspace.user_id,
                 workspace_name=workspace.workspace_name,
-                integrations=pydantic.parse_obj_as(List[Integration], workspace.integrations)
-                if workspace.integrations
-                else None,
             )
             for workspace in workspaces
         ]
@@ -74,9 +67,6 @@ class UserAccessService:
             UserWorkspace(
                 user_id=workspace.user_id,
                 workspace_name=workspace.workspace_name,
-                integrations=pydantic.parse_obj_as(List[Integration], workspace.integrations)
-                if workspace.integrations
-                else None,
             )
             for workspace in workspaces
         ]

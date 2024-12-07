@@ -5,6 +5,7 @@ from sqlalchemy.orm import Query
 
 from apps.alerts.db.schemas import AlertSchema
 from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
+from apps.integrations.db.schemas import IntegrationsSchema
 from apps.shared.ordering import Ordering
 from apps.shared.paging import paging
 from apps.shared.searching import Searching
@@ -40,11 +41,23 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
         self, user_id: uuid.UUID, page: int, limit: int
     ) -> list[
         tuple[
-            AlertSchema, AppletHistorySchema, UserAppletAccessSchema, AppletSchema, UserWorkspaceSchema, SubjectSchema
+            AlertSchema,
+            AppletHistorySchema,
+            UserAppletAccessSchema,
+            AppletSchema,
+            UserWorkspaceSchema,
+            SubjectSchema,
+            IntegrationsSchema,
         ]
     ]:
         query: Query = select(
-            AlertSchema, AppletHistorySchema, UserAppletAccessSchema, AppletSchema, UserWorkspaceSchema, SubjectSchema
+            AlertSchema,
+            AppletHistorySchema,
+            UserAppletAccessSchema,
+            AppletSchema,
+            UserWorkspaceSchema,
+            SubjectSchema,
+            IntegrationsSchema.type,
         )
         query = query.join(
             UserAppletAccessSchema,
@@ -72,6 +85,7 @@ class AlertCRUD(BaseCRUD[AlertSchema]):
             isouter=True,
         )
         query = query.outerjoin(SubjectSchema, SubjectSchema.id == AlertSchema.subject_id)
+        query = query.outerjoin(IntegrationsSchema, IntegrationsSchema.applet_id == UserAppletAccessSchema.applet_id)
         query = query.where(AlertSchema.user_id == user_id, AppletSchema.is_deleted.is_(False))
         query = query.order_by(AlertSchema.created_at.desc())
         query = paging(query, page, limit)

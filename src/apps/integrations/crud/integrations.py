@@ -33,6 +33,13 @@ class IntegrationsCRUD(BaseCRUD[IntegrationsSchema]):
         result = await self._execute(query)
         return result.scalar_one_or_none()
 
+    async def retrieve_list_by_applet(self, applet_id: uuid.UUID) -> IntegrationsSchema:
+        query = select(IntegrationsSchema.type)
+        query = query.where(IntegrationsSchema.applet_id == applet_id)
+        result = await self._execute(query)
+        # App/Web expect a lower case value to mark answers as shareable
+        return [row[0].lower() for row in result.fetchall() if row[0] is not None]
+
     async def delete_by_id(self, id_: uuid.UUID):
         """Delete integrations by id."""
         await self._delete(id=id_)

@@ -35,6 +35,7 @@ from apps.applets.errors import (
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderAppletCRUD, FolderCRUD
+from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.schedule.service import ScheduleService
 from apps.shared.version import (
     INITIAL_VERSION,
@@ -162,7 +163,6 @@ class AppletService:
                 stream_enabled=create_data.stream_enabled,
                 stream_ip_address=create_data.stream_ip_address,
                 stream_port=create_data.stream_port,
-                integrations=create_data.integrations,
             )
         )
         return AppletFull.from_orm(schema)
@@ -345,7 +345,6 @@ class AppletService:
                 stream_enabled=update_data.stream_enabled,
                 stream_ip_address=update_data.stream_ip_address,
                 stream_port=update_data.stream_port,
-                integrations=update_data.integrations,
             ),
         )
         return AppletFull.from_orm(schema)
@@ -427,6 +426,7 @@ class AppletService:
         for schema in schemas:
             theme = theme_map.get(schema.theme_id)
             applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(schema.id)
+            integrations_list = await IntegrationsCRUD(self.session).retrieve_list_by_applet(schema.id)
             applets.append(
                 AppletSingleLanguageInfo(
                     id=schema.id,
@@ -451,7 +451,7 @@ class AppletService:
                     stream_ip_address=schema.stream_ip_address,
                     stream_port=schema.stream_port,
                     owner_id=applet_owner.owner_id,
-                    # integrations=schema.integrations,
+                    integrations=integrations_list,
                 )
             )
         return applets
@@ -496,13 +496,14 @@ class AppletService:
             stream_enabled=schema.stream_enabled,
             stream_ip_address=schema.stream_ip_address,
             stream_port=schema.stream_port,
-            integrations=schema.integrations,
         )
         activities = ActivityService(self.session, self.user_id).get_single_language_by_applet_id(applet_id, language)
         activity_flows = FlowService(self.session).get_single_language_by_applet_id(applet_id, language)
-        futures = await asyncio.gather(activities, activity_flows)
+        integrations = IntegrationsCRUD(self.session).retrieve_list_by_applet(schema.id)
+        futures = await asyncio.gather(activities, activity_flows, integrations)
         applet.activities = futures[0]
         applet.activity_flows = futures[1]
+        applet.integrations = futures[2]
         return applet
 
     async def get_single_language_by_key(self, key: uuid.UUID, language: str) -> AppletSingleLanguageDetail:
@@ -769,7 +770,6 @@ class AppletService:
             updated_at=schema.updated_at,
             activities=[],
             activity_flows=[],
-            integrations=schema.integrations,
         )
         activities = ActivityService(self.session, self.user_id).get_info_by_applet_id(schema.id, language)
         activity_flows = FlowService(self.session).get_info_by_applet_id(schema.id, language)

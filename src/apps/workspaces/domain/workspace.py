@@ -43,9 +43,6 @@ class PublicWorkspace(PublicModel):
         "which is applet owner and prefix",
     )
     use_arbitrary: bool | None = None
-    integrations: list[Integration] | None = Field(
-        description="This field represents the list of integrations in which the workspace participates"
-    )
 
     @validator("use_arbitrary")
     def null_to_false(cls, value):
@@ -69,9 +66,6 @@ class UserWorkspace(InternalModel):
         "which is applet owner and prefix",
     )
     use_arbitrary: bool | None = None
-    integrations: list[Integration] | None = Field(
-        description="This field represents the list of integrations in which the workspace participates"
-    )
 
 
 class WorkspaceAppletEncryption(InternalModel):
