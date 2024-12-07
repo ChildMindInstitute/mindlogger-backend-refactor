@@ -23,6 +23,8 @@ from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, Activity
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist, FlowDoesNotExist
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
+from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -345,9 +347,19 @@ class AnswerService:
         else:
             source_subject = respondent_subject
 
-        await self._validate_temp_take_now_relation_between_subjects(
-            respondent_subject.id, source_subject.id, target_subject.id
+        # Check if source subject is manually assigned to target subject.
+        assignment = ActivityAssignmentCreate(
+            activity_id=applet_answer.activity_id if applet_answer.flow_id is None else None,
+            activity_flow_id=applet_answer.flow_id,
+            respondent_subject_id=source_subject.id,
+            target_subject_id=target_subject.id,
         )
+        assignment_exists = await ActivityAssignmentService(self.session).exist(assignment)
+        # If no assignment exists, ensure valid temp take now relation between the subjects.
+        if not assignment_exists:
+            await self._validate_temp_take_now_relation_between_subjects(
+                respondent_subject.id, source_subject.id, target_subject.id
+            )
 
         relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
         answer = await AnswersCRUD(self.answer_session).create(
@@ -1201,15 +1213,16 @@ class AnswerService:
         applet_assessment_ids = set()
         activity_hist_ids = set()
         flow_hist_ids = set()
+
+        # collect ids to resolve data
         for answer in answers:
-            # collect id to resolve data
-            if answer.reviewed_answer_id:
-                # collect reviewer ids to fetch the data
-                respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type] # noqa: E501
-            if answer.target_subject_id:
-                subject_ids.add(answer.target_subject_id)  # type: ignore[arg-type] # noqa: E501
+            respondent_ids.add(answer.respondent_id)  # type: ignore[arg-type] # noqa: E501
             if answer.source_subject_id:
                 subject_ids.add(answer.source_subject_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.target_subject_id:
+                subject_ids.add(answer.target_subject_id)  # type: ignore[arg-type] # noqa: E501
+            if answer.input_subject_id:
+                subject_ids.add(answer.input_subject_id)  # type: ignore[arg-type] # noqa: E501
             if answer.reviewed_answer_id:
                 applet_assessment_ids.add(answer.applet_history_id)
             if answer.flow_history_id:
@@ -1220,35 +1233,53 @@ class AnswerService:
         flows_coro = FlowsHistoryCRUD(self.session).get_by_id_versions(list(flow_hist_ids))
         user_map_coro = AppletAccessCRUD(self.session).get_respondent_export_data(applet_id, list(respondent_ids))
         subject_map_coro = AppletAccessCRUD(self.session).get_subject_export_data(applet_id, list(subject_ids))
+        current_user_subject_coro = SubjectsCrud(self.session).get_user_subject(self.user_id, applet_id)  # type: ignore[arg-type]
 
         coros_result = await asyncio.gather(
             flows_coro,
             user_map_coro,
             subject_map_coro,
+            current_user_subject_coro,
             return_exceptions=True,
         )
         for res in coros_result:
             if isinstance(res, BaseException):
                 raise res
 
-        flows, user_map, subject_map = coros_result
+        flows, user_map, subject_map, current_user = coros_result
         flow_map = {flow.id_version: flow for flow in flows}  # type: ignore
 
         for answer in answers:
-            # respondent data
-            if answer.reviewed_answer_id:
-                # assessment
-                respondent = user_map[answer.respondent_id]  # type: ignore
-            else:
-                respondent = subject_map[answer.target_subject_id]  # type: ignore
+            respondent = user_map[answer.respondent_id]  # type: ignore
+            answer.respondent_secret_id = current_user.secret_user_id  # type: ignore
 
-            answer.respondent_secret_id = respondent.secret_id
             answer.source_secret_id = (
                 subject_map.get(answer.source_subject_id).secret_id if answer.source_subject_id else None  # type: ignore
             )
+            answer.source_user_nickname = (
+                subject_map.get(answer.source_subject_id).nickname if answer.source_subject_id else None  # type: ignore
+            )
+            answer.source_user_tag = (
+                subject_map.get(answer.source_subject_id).tag if answer.source_subject_id else None  # type: ignore
+            )
+
             answer.target_secret_id = (
                 subject_map.get(answer.target_subject_id).secret_id if answer.target_subject_id else None  # type: ignore
             )
+            answer.target_user_nickname = (
+                subject_map.get(answer.target_subject_id).nickname if answer.target_subject_id else None  # type: ignore
+            )
+            answer.target_user_tag = (
+                subject_map.get(answer.target_subject_id).tag if answer.target_subject_id else None  # type: ignore
+            )
+
+            answer.input_secret_id = (
+                subject_map.get(answer.input_subject_id).secret_id if answer.input_subject_id else None  # type: ignore
+            )
+            answer.input_user_nickname = (
+                subject_map.get(answer.input_subject_id).nickname if answer.input_subject_id else None  # type: ignore
+            )
+
             answer.respondent_email = respondent.email
             answer.is_manager = respondent.is_manager
             answer.legacy_profile_id = respondent.legacy_profile_id

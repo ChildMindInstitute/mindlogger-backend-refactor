@@ -7,6 +7,7 @@ from sqlalchemy.orm import Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
+from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
 from apps.activity_flows.db.schemas import ActivityFlowSchema
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.query_params import QueryParams
@@ -78,9 +79,9 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
         return await self._create_many(schemas)
 
-    async def already_exists(self, schema: ActivityAssigmentSchema) -> ActivityAssigmentSchema:
+    async def exist(self, assignment: ActivityAssignmentCreate) -> ActivityAssigmentSchema | None:
         """
-        Checks if an activity assignment already exists in the database.
+        Checks if an activity assignment exists in the database.
 
         This method builds a query to check for the existence of an assignment with the same
         `activity_id`, `activity_flow_id`, `respondent_subject_id`, and `target_subject_id`,
@@ -88,28 +89,29 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
         Parameters:
         -----------
-        schema : ActivityAssigmentSchema
+        assignment : ActivityAssignmentCreate
             The activity assignment schema to check for existence.
 
         Returns:
         --------
-        bool
-            `True` if the assignment already exists, otherwise `False`.
+        ActivityAssigmentSchema | None
+            The value of the first matching record, if it exists. Otherwise, returns None.
 
         Notes:
         ------
-        - This method uses the `_execute` method from the `BaseCRUD` class to run the query and
-        check for the existence of the assignment.
-        - The existence check is based on the combination of IDs and considers soft-deleted records.
+        - The existence check excludes soft-deleted records.
         """
         query: Query = select(ActivityAssigmentSchema)
-        query = query.where(ActivityAssigmentSchema.activity_id == schema.activity_id)
-        query = query.where(ActivityAssigmentSchema.respondent_subject_id == schema.respondent_subject_id)
-        query = query.where(ActivityAssigmentSchema.target_subject_id == schema.target_subject_id)
-        query = query.where(ActivityAssigmentSchema.activity_flow_id == schema.activity_flow_id)
+        query = query.where(
+            ActivityAssigmentSchema.activity_id == assignment.activity_id,
+            ActivityAssigmentSchema.activity_flow_id == assignment.activity_flow_id,
+            ActivityAssigmentSchema.respondent_subject_id == assignment.respondent_subject_id,
+            ActivityAssigmentSchema.target_subject_id == assignment.target_subject_id,
+            ActivityAssigmentSchema.soft_exists(),
+        )
 
         db_result = await self._execute(query)
-        return db_result.scalars().first()
+        return db_result.scalars().one_or_none()
 
     async def get_target_subject_ids_by_activity_or_flow_ids(
         self,
