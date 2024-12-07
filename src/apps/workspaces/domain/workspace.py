@@ -7,7 +7,6 @@ from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.applets.domain.base import Encryption
-from apps.integrations.domain import Integration
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.domain import InvitationDetail, InvitationResponse
 from apps.shared.domain import InternalModel, PublicModel

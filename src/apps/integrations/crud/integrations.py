@@ -30,8 +30,9 @@ class IntegrationsCRUD(BaseCRUD[IntegrationsSchema]):
         query = select(IntegrationsSchema)
         query = query.where(IntegrationsSchema.applet_id == applet_id)
         query = query.where(IntegrationsSchema.type == integration_type)
+        query = query.limit(1)
         result = await self._execute(query)
-        return result.scalar_one_or_none()
+        return result.scalars().first()
 
     async def retrieve_list_by_applet(self, applet_id: uuid.UUID) -> IntegrationsSchema:
         query = select(IntegrationsSchema.type)

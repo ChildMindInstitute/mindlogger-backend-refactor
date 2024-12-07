@@ -1,5 +1,4 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Unicode
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
