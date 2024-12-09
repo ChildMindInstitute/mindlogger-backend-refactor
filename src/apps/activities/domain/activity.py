@@ -162,9 +162,10 @@ class ActivitySubjectMetadata(PublicModel):
     activity_or_flow_id: uuid.UUID
     respondents_count: int
     respondent_submissions_count: int
+    respondent_last_submission_date: datetime | None
     subjects_count: int
     subject_submissions_count: int
-    last_submission_date: datetime | None
+    subject_last_submission_date: datetime | None
 
 
 class ActivitiesMetadata(PublicModel):

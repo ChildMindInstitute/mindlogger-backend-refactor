@@ -1359,14 +1359,16 @@ class TestActivities:
         )
         assert flow_metadata["respondentsCount"] == 1
         assert flow_metadata["respondentSubmissionsCount"] == 0
+        assert flow_metadata["respondentLastSubmissionDate"] is None
         assert flow_metadata["subjectsCount"] == 1
         assert flow_metadata["subjectSubmissionsCount"] == 0
-        assert flow_metadata["lastSubmissionDate"] is None
+        assert flow_metadata["subjectLastSubmissionDate"] is None
         assert activity_metadata["respondentsCount"] == 1
         assert activity_metadata["respondentSubmissionsCount"] == 0
+        assert activity_metadata["respondentLastSubmissionDate"] is None
         assert activity_metadata["subjectsCount"] == 1
         assert activity_metadata["subjectSubmissionsCount"] == 0
-        assert activity_metadata["lastSubmissionDate"] is None
+        assert activity_metadata["subjectLastSubmissionDate"] is None
 
     @pytest.mark.parametrize(
         "subject_type,result_order",
@@ -1756,9 +1758,18 @@ class TestActivities:
         activityOrFlow = result["activitiesOrFlows"][0]
         assert activityOrFlow["respondentsCount"] == (1 if subject_type == "target" else 0)
         assert activityOrFlow["respondentSubmissionsCount"] == (0 if subject_type == "target" else 1)
+        assert (
+            activityOrFlow["respondentLastSubmissionDate"] is None
+            if subject_type == "target"
+            else activityOrFlow["respondentLastSubmissionDate"] is not None
+        )
         assert activityOrFlow["subjectsCount"] == (0 if subject_type == "target" else 1)
         assert activityOrFlow["subjectSubmissionsCount"] == (1 if subject_type == "target" else 0)
-        assert activityOrFlow["lastSubmissionDate"] is not None
+        assert (
+            activityOrFlow["subjectLastSubmissionDate"] is not None
+            if subject_type == "target"
+            else activityOrFlow["subjectLastSubmissionDate"] is None
+        )
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_hidden_activities(

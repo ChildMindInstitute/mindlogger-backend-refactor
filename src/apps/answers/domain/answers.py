@@ -719,8 +719,9 @@ class SubmissionsSubjectCounters(InternalModel):
     respondents: set[uuid.UUID] = Field(default_factory=set)
     subjects: set[uuid.UUID] = Field(default_factory=set)
     subject_submissions_count: int = 0
+    subject_last_submission_date: datetime.datetime | None = None
     respondent_submissions_count: int = 0
-    last_submission_date: datetime.datetime | None = None
+    respondent_last_submission_date: datetime.datetime | None = None
 
 
 class SubmissionsActivityMetadataBySubject(InternalModel):

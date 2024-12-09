@@ -422,16 +422,18 @@ async def applet_activities_metadata_for_subject(
 
         # Initialize submission counts
         respondent_submissions_count = 0
+        respondent_last_submission_date = None
         subject_submissions_count = 0
-        last_submission_date = None
+        subject_last_submission_date = None
 
         # Update from submission data
         if submission_data:
             respondents.update(submission_data.respondents)
             subjects.update(submission_data.subjects)
             respondent_submissions_count = submission_data.respondent_submissions_count
+            respondent_last_submission_date = submission_data.respondent_last_submission_date
             subject_submissions_count = submission_data.subject_submissions_count
-            last_submission_date = submission_data.last_submission_date
+            subject_last_submission_date = submission_data.subject_last_submission_date
 
         # Update from assignment data
         if assignments_data:
@@ -468,8 +470,9 @@ async def applet_activities_metadata_for_subject(
                 respondents_count=respondents_count,
                 subjects_count=subjects_count,
                 respondent_submissions_count=respondent_submissions_count,
+                respondent_last_submission_date=respondent_last_submission_date,
                 subject_submissions_count=subject_submissions_count,
-                last_submission_date=last_submission_date,
+                subject_last_submission_date=subject_last_submission_date,
             )
         )
 

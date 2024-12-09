@@ -2003,10 +2003,12 @@ class AnswerService:
             if respondent_subject_id in existing_subject_ids:
                 activity_metadata.respondents.add(respondent_subject_id)
                 activity_metadata.subject_submissions_count += activity_submissions["submission_count"]
-                activity_metadata.last_submission_date = (
+                activity_metadata.subject_last_submission_date = (
                     activity_submissions["last_submission_date"]
-                    if not activity_metadata.last_submission_date
-                    else max(activity_metadata.last_submission_date, activity_submissions["last_submission_date"])
+                    if not activity_metadata.subject_last_submission_date
+                    else max(
+                        activity_metadata.subject_last_submission_date, activity_submissions["last_submission_date"]
+                    )
                 )
 
         for activity_submissions in submissions_respondent:
@@ -2017,10 +2019,12 @@ class AnswerService:
             if target_subject_id in existing_subject_ids:
                 activity_metadata.subjects.add(target_subject_id)
                 activity_metadata.respondent_submissions_count += activity_submissions["submission_count"]
-                activity_metadata.last_submission_date = (
+                activity_metadata.respondent_last_submission_date = (
                     activity_submissions["last_submission_date"]
-                    if not activity_metadata.last_submission_date
-                    else max(activity_metadata.last_submission_date, activity_submissions["last_submission_date"])
+                    if not activity_metadata.respondent_last_submission_date
+                    else max(
+                        activity_metadata.respondent_last_submission_date, activity_submissions["last_submission_date"]
+                    )
                 )
 
         return submissions_activity_metadata
