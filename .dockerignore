@@ -7,3 +7,5 @@ docker-compose.yaml
 *.md
 *.rst
 venv*/
+allure-results
+.git
