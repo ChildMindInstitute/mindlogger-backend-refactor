@@ -29,7 +29,7 @@ import apps.workspaces.router as workspaces
 import middlewares as middlewares_
 from apps.shared.exception import BaseError
 from config import settings
-from infrastructure.datadog import DataDogLoggingMiddleware
+from infrastructure.datadog import StructuredLoggingMiddleware
 from infrastructure.http.execeptions import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
@@ -79,7 +79,7 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
     ),
     (middlewares_.InternalizationMiddleware, {}),
     (middlewares_.CORSMiddleware, middlewares_.cors_options),
-    (DataDogLoggingMiddleware, {}),
+    (StructuredLoggingMiddleware, {}),
     (CorrelationIdMiddleware, {}),
 )
 

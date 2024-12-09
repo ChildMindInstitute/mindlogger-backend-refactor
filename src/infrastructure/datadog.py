@@ -10,6 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
 from uvicorn.protocols.utils import get_path_with_query_string
 
+
 # Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
 
 
@@ -49,7 +50,7 @@ def tracer_injection(_, __, event_dict: EventDict) -> EventDict:
     return event_dict
 
 
-def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
+def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
     """
     Setup logging for the application.
     """
@@ -64,6 +65,7 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
         drop_color_message_key,
         tracer_injection,
         timestamper,
+        structlog.processors.dict_tracebacks,
         structlog.processors.StackInfoRenderer(),
     ]
 
@@ -77,10 +79,10 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
 
     structlog.configure(
         processors=shared_processors
-        + [
-            # Prepare event dict for `ProcessorFormatter`.
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
+                   + [
+                       # Prepare event dict for `ProcessorFormatter`.
+                       structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+                   ],
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
@@ -110,7 +112,7 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
     root_logger.addHandler(handler)
     root_logger.setLevel(log_level.upper())
 
-    for _log in ["uvicorn", "uvicorn.error"]:
+    for _log in ["uvicorn", "uvicorn.error", "ddtrace.internal.writer.writer"]:
         # Clear the log handlers for uvicorn loggers, and enable propagation
         # so the messages are caught by our root logger and formatted correctly
         # by structlog
@@ -124,27 +126,28 @@ def setup_logging(json_logs: bool = False, log_level: str = "INFO"):
     logging.getLogger("uvicorn.access").handlers.clear()
     logging.getLogger("uvicorn.access").propagate = False
 
-    def handle_exception(exc_type, exc_value, exc_traceback):
-        """
-        Log any uncaught exception instead of letting it be printed by Python
-        (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
-        See https://stackoverflow.com/a/16993115/3641865
-        """
-        if issubclass(exc_type, KeyboardInterrupt):
-            sys.__excepthook__(exc_type, exc_value, exc_traceback)
-            return
-
-        root_logger.error(
-            "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
-        )
-
-    sys.excepthook = handle_exception
-
-
-# async def logging_middleware(request: Request, call_next) -> Response:
+    # def handle_exception(exc_type, exc_value, exc_traceback):
+    #     """
+    #     Log any uncaught exception instead of letting it be printed by Python
+    #     (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
+    #     See https://stackoverflow.com/a/16993115/3641865
+    #     """
+    #     if issubclass(exc_type, KeyboardInterrupt):
+    #         sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    #         return
+    #
+    #     root_logger.error(
+    #         "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
+    #     )
+    #
+    # sys.excepthook = handle_exception
 
 
-class DataDogLoggingMiddleware(BaseHTTPMiddleware):
+class StructuredLoggingMiddleware(BaseHTTPMiddleware):
+    """
+    This class makes structured access logs in the application
+    """
+
     async def dispatch(self, request: Request, call_next) -> Response:
         structlog.contextvars.clear_contextvars()
         # These context vars will be added to all log entries emitted during the request
@@ -154,50 +157,46 @@ class DataDogLoggingMiddleware(BaseHTTPMiddleware):
         start_time = time.perf_counter_ns()
         # If the call_next raises an error, we still want to return our own 500 response,
         # so we can add headers to it (process time, request ID...)
-        response = Response(status_code=500)
+        # response = Response(status_code=500)
 
-        try:
-            response = await call_next(request)
-        except Exception as e:
-            # TODO: Validate that we don't swallow exceptions (unit test?)
-            structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
-            # raise e
-        finally:
-            access_logger = structlog.stdlib.get_logger("api.access")
-            process_time = time.perf_counter_ns() - start_time
-            status_code = response.status_code
-            url = get_path_with_query_string(request.scope)
-            client_host = request.client.host
-            client_port = request.client.port
-            http_method = request.method
-            http_version = request.scope["http_version"]
-            # Recreate the Uvicorn access log format, but add all parameters as structured information
+        response = await call_next(request)
 
-            if 400 < status_code < 500:
-                access_logger.warn(
-                    f"""{client_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
-                    http={
-                        "url": str(request.url),
-                        "status_code": status_code,
-                        "method": http_method,
-                        "request_id": request_id,
-                        "version": http_version,
-                    },
-                    network={"client": {"ip": client_host, "port": client_port}},
-                    duration=process_time,
-                )
-            else:
-                access_logger.info(
-                    f"""{client_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
-                    http={
-                        "url": str(request.url),
-                        "status_code": status_code,
-                        "method": http_method,
-                        "request_id": request_id,
-                        "version": http_version,
-                    },
-                    network={"client": {"ip": client_host, "port": client_port}},
-                    duration=process_time,
-                )
+        access_logger = structlog.stdlib.get_logger("api.access")
+        process_time = time.perf_counter_ns() - start_time
+        status_code = response.status_code
+        url = get_path_with_query_string(request.scope)
+        client_host = request.client.host
+        client_port = request.client.port
+        real_host = request.headers.get("X-Forwarded-For", client_host)
+        http_method = request.method
+        http_version = request.scope["http_version"]
+        # Recreate the Uvicorn access log format, but add all parameters as structured information
+
+        if 400 < status_code < 500:
+            access_logger.warn(
+                f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+                http={
+                    "url": str(request.url),
+                    "status_code": status_code,
+                    "method": http_method,
+                    "request_id": request_id,
+                    "version": http_version,
+                },
+                network={"client": {"ip": real_host, "port": client_port}},
+                duration=process_time,
+            )
+        else:
+            access_logger.info(
+                f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+                http={
+                    "url": str(request.url),
+                    "status_code": status_code,
+                    "method": http_method,
+                    "request_id": request_id,
+                    "version": http_version,
+                },
+                network={"client": {"ip": real_host, "port": client_port}},
+                duration=process_time,
+            )
             # response.headers["X-Process-Time"] = str(process_time / 10 ** 9)
-            return response
+        return response

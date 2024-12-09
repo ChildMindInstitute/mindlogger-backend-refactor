@@ -13,6 +13,9 @@ from infrastructure.logger import logger
 
 def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
+
+    logger.error(error)
+
     response = ErrorResponseMulti(
         result=[
             ErrorResponse(
@@ -22,6 +25,8 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
             )
         ]
     )
+
+
 
     return JSONResponse(
         response.dict(by_alias=True),
