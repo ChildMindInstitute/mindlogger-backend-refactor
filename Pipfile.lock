@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "578bf8ce82875f3bc65c46c8dada7a184f74af54b6b702f5ed24f949e13f0177"
+            "sha256": "4c1d12806f35bb7bfcff7da63c7ef09d4ac6753c73240ca31a9f52fed14fe22f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -160,11 +160,11 @@
         },
         "anyio": {
             "hashes": [
-                "sha256:4c8bc31ccdb51c7f7bd251f51c609e038d63e34219b44aa86e47576389880b4c",
-                "sha256:6d170c36fba3bdd840c73d3868c1e777e33676a69c3a72cf0a0d5d6d8009b61d"
+                "sha256:2f834749c602966b7d456a7567cafcb309f96482b5081d14ac93ccd457f9dd48",
+                "sha256:ea60c3723ab42ba6fff7e8ccb0488c898ec538ff4df1f1d5e642c3601d07e352"
             ],
             "markers": "python_version >= '3.9'",
-            "version": "==4.6.2.post1"
+            "version": "==4.7.0"
         },
         "asgiref": {
             "hashes": [
@@ -597,12 +597,12 @@
         },
         "fastapi": {
             "hashes": [
-                "sha256:0b504a063ffb3cf96a5e27dc1bc32c80ca743a2528574f9cdc77daa2d31b4742",
-                "sha256:db653475586b091cb8b2fec2ac54a680ac6a158e07406e1abae31679e8826349"
+                "sha256:9ec46f7addc14ea472958a96aae5b5de65f39721a46aaf5705c480d9a8b76654",
+                "sha256:e9240b29e36fa8f4bb7290316988e90c381e5092e0cbe84e7818cc3713bcf305"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==0.115.4"
+            "version": "==0.115.6"
         },
         "fastapi-mail": {
             "hashes": [
@@ -2156,11 +2156,11 @@
         },
         "starlette": {
             "hashes": [
-                "sha256:9834fd799d1a87fd346deb76158668cfa0b0d56f85caefe8268e2d97c3468b62",
-                "sha256:fbc189474b4731cf30fcef52f18a8d070e3f3b46c6a04c97579e85e6ffca942d"
+                "sha256:0e4ab3d16522a255be6b28260b938eae2482f98ce5cc934cb08dce8dc3ba5835",
+                "sha256:44cedb2b7c77a9de33a8b74b2b90e9f50d11fcf25d8270ea525ad71a25374ff7"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==0.41.2"
+            "version": "==0.41.3"
         },
         "taskiq": {
             "extras": [
