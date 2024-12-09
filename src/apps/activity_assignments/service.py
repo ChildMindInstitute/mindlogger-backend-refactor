@@ -11,6 +11,8 @@ from apps.activity_assignments.domain.assignments import (
     ActivityAssignmentCreate,
     ActivityAssignmentDelete,
     ActivityAssignmentWithSubject,
+    AssignmentsActivityCountBySubject,
+    AssignmentsSubjectCounters,
 )
 from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.db.schemas import ActivityFlowSchema
@@ -446,6 +448,36 @@ class ActivityAssignmentService:
         Checks if the activity or flow is currently set to auto-assign.
         """
         return await ActivityAssigmentCRUD(self.session).check_if_auto_assigned(activity_or_flow_id)
+
+    async def get_assigned_activity_or_flow_ids_for_subject(
+        self, subject_id: uuid.UUID
+    ) -> AssignmentsActivityCountBySubject:
+        assignments_target_coro = ActivityAssigmentCRUD(self.session).get_assignments_by_target_subject(subject_id)
+        assignments_respondent_coro = ActivityAssigmentCRUD(self.session).get_assignments_by_respondent_subject(
+            subject_id
+        )
+
+        assignments_target, assignments_respondent = await asyncio.gather(
+            assignments_target_coro, assignments_respondent_coro
+        )
+
+        assignments_activity_count = AssignmentsActivityCountBySubject(subject_id=subject_id)
+
+        for activityOrFlow in assignments_target:
+            activity_counters = assignments_activity_count.activities.setdefault(
+                activityOrFlow["activity_id"], AssignmentsSubjectCounters()
+            )
+            activity_counters.subject_assignments_count = activityOrFlow["assignments_count"]
+            activity_counters.respondents.update(activityOrFlow["subject_ids"])
+
+        for activityOrFlow in assignments_respondent:
+            activity_counters = assignments_activity_count.activities.setdefault(
+                activityOrFlow["activity_id"], AssignmentsSubjectCounters()
+            )
+            activity_counters.respondent_assignments_count = activityOrFlow["assignments_count"]
+            activity_counters.subjects.update(activityOrFlow["subject_ids"])
+
+        return assignments_activity_count
 
     @staticmethod
     def _get_email_template_name() -> str:

@@ -5,14 +5,17 @@ from fastapi import Depends
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.activities.domain.activity import (
+    ActivitiesMetadata,
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivityOrFlowWithAssignmentsPublic,
     ActivitySingleLanguageWithItemsDetailPublic,
+    ActivitySubjectMetadata,
     ActivityWithAssignmentDetailsPublic,
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
 from apps.activity_assignments.service import ActivityAssignmentService
+from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.domain.flow import FlowWithAssignmentDetailsPublic
 from apps.activity_flows.service.flow import FlowService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session
@@ -169,7 +172,8 @@ async def applet_activities_for_target_subject(
     applet_service = AppletService(session, user.id)
     await applet_service.exist_by_id(applet_id)
 
-    await SubjectsService(session, user.id).exist_by_id(subject_id)
+    subject = await SubjectsService(session, user.id).exist_by_id(subject_id)
+    is_limited_respondent = subject.user_id is None
 
     # Restrict the endpoint access to owners, managers, coordinators, and assigned reviewers
     await CheckAccessService(session, user.id).check_subject_subject_access(applet_id, subject_id)
@@ -191,7 +195,7 @@ async def applet_activities_for_target_subject(
     activities_and_flows = await ActivityService(session, user.id).get_activity_and_flow_basic_info_by_ids_or_auto(
         applet_id=applet_id,
         ids=activity_and_flow_ids_from_submissions + activity_and_flow_ids_from_assignments,
-        include_auto=True,
+        include_auto=not is_limited_respondent,
         language=language,
     )
 
@@ -358,3 +362,110 @@ async def __filter_activities(
                     activities.remove(activity)
 
     return activities
+
+
+async def applet_activities_metadata_for_subject(
+    applet_id: uuid.UUID,
+    subject_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    language: str = Depends(get_language),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> Response[ActivitiesMetadata]:
+    applet_service = AppletService(session, user.id)
+    await applet_service.exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+
+    subject = await SubjectsService(session, user.id).exist_by_id(subject_id)
+    is_limited_respondent = subject.user_id is None
+
+    # Fetch assigned activity or flow IDs for the subject
+    assigned_activities = await ActivityAssignmentService(session).get_assigned_activity_or_flow_ids_for_subject(
+        subject_id
+    )
+
+    # Fetch activities submissions by the subject
+    submitted_activities = await AnswerService(session, user.id, answer_session).get_submissions_by_subject(subject_id)
+
+    # Fetch auto-assigned activity and flow IDs by applet ID
+    auto_activity_ids = await ActivityService(session, user.id).get_activity_and_flow_ids_by_applet_id_auto(applet_id)
+
+    # Combine all assigned IDs and submitted activity IDs
+    all_activity_ids = (
+        set(assigned_activities.activities.keys())
+        | set(submitted_activities.activities.keys())
+        | set(auto_activity_ids)
+    )
+
+    activities = await ActivitiesCRUD(session).get_by_applet_id_and_activities_ids(applet_id, list(all_activity_ids))
+    flows = await FlowsCRUD(session).get_by_applet_id_and_flows_ids(applet_id, list(all_activity_ids))
+
+    activities_state = {activity.id: activity.soft_exists() for activity in activities}
+    flows_state = {flow.id: flow.soft_exists() for flow in flows}
+
+    # Initialize ActivitiesCounters with zero counts
+    activities_metadata = ActivitiesMetadata(subject_id=subject_id)
+
+    # Iterate over all activity or flow IDs
+    for activity_or_flow_id in all_activity_ids:
+        is_auto = activity_or_flow_id in auto_activity_ids
+
+        # Get submission and assignment data if available
+        submission_data = submitted_activities.activities.get(activity_or_flow_id)
+        assignments_data = assigned_activities.activities.get(activity_or_flow_id)
+
+        # Initialize sets for respondents and subjects
+        respondents = set()
+        subjects = set()
+
+        # Initialize submission counts
+        respondent_submissions_count = 0
+        subject_submissions_count = 0
+
+        # Update from submission data
+        if submission_data:
+            respondents.update(submission_data.respondents)
+            subjects.update(submission_data.subjects)
+            respondent_submissions_count = submission_data.respondent_submissions_count
+            subject_submissions_count = submission_data.subject_submissions_count
+
+        # Update from assignment data
+        if assignments_data:
+            respondents.update(assignments_data.respondents)
+            subjects.update(assignments_data.subjects)
+
+        # Include the subject for auto-assigned activities, excluding limited accounts
+        if is_auto and not is_limited_respondent:
+            respondents.add(subject_id)
+            subjects.add(subject_id)
+
+        # Calculate counts
+        respondents_count = len(respondents)
+        subjects_count = len(subjects)
+
+        activity_or_flow_exists = activities_state.get(activity_or_flow_id) or flows_state.get(activity_or_flow_id)
+
+        # Update activities counters counts
+        if subjects_count > 0:
+            if activity_or_flow_exists:
+                activities_metadata.respondent_activities_count_existing += 1
+            else:
+                activities_metadata.respondent_activities_count_deleted += 1
+        if respondents_count > 0:
+            if activity_or_flow_exists:
+                activities_metadata.target_activities_count_existing += 1
+            else:
+                activities_metadata.target_activities_count_deleted += 1
+
+        # Append the activity subject counters
+        activities_metadata.activities_or_flows.append(
+            ActivitySubjectMetadata(
+                activity_or_flow_id=activity_or_flow_id,
+                respondents_count=respondents_count,
+                subjects_count=subjects_count,
+                respondent_submissions_count=respondent_submissions_count,
+                subject_submissions_count=subject_submissions_count,
+            )
+        )
+
+    return Response(result=activities_metadata)

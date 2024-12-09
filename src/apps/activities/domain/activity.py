@@ -156,3 +156,20 @@ class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):
     contains_response_types: list[ResponseType]
     item_count: int
     auto_assign: bool
+
+
+class ActivitySubjectMetadata(PublicModel):
+    activity_or_flow_id: uuid.UUID
+    respondents_count: int
+    respondent_submissions_count: int
+    subjects_count: int
+    subject_submissions_count: int
+
+
+class ActivitiesMetadata(PublicModel):
+    subject_id: uuid.UUID
+    respondent_activities_count_existing: int = 0
+    respondent_activities_count_deleted: int = 0
+    target_activities_count_existing: int = 0
+    target_activities_count_deleted: int = 0
+    activities_or_flows: list[ActivitySubjectMetadata] = Field(default_factory=list)

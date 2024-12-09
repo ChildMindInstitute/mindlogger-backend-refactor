@@ -32,6 +32,7 @@ from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.themes.domain import Theme
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
@@ -283,6 +284,7 @@ class TestActivities:
     subject_assigned_activities_url = "/activities/applet/{applet_id}/subject/{subject_id}"
     target_assigned_activities_url = "/activities/applet/{applet_id}/target/{subject_id}"
     respondent_assigned_activities_url = "/activities/applet/{applet_id}/respondent/{subject_id}"
+    activity_metadata_by_subject_url = "/activities/applet/{applet_id}/subject/{subject_id}/metadata"
 
     async def test_activity_detail(self, client: TestClient, applet_one: AppletFull, tom: User):
         activity = applet_one.activities[0]
@@ -1266,6 +1268,26 @@ class TestActivities:
         assert result_activity["performanceTaskType"] is None
         assert len(result_activity["assignments"]) == 0
 
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=applet_one.id, subject_id=applet_one_shell_account.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert result["respondentActivitiesCountExisting"] == 1
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == 0
+        assert result["targetActivitiesCountDeleted"] == 0
+        assert len(result["activitiesOrFlows"]) == 1
+        assert result["activitiesOrFlows"][0]["activityOrFlowId"] == str(activity.id)
+        assert result["activitiesOrFlows"][0]["respondentsCount"] == 0
+        assert result["activitiesOrFlows"][0]["respondentSubmissionsCount"] == 1
+        assert result["activitiesOrFlows"][0]["subjectsCount"] == 1
+        assert result["activitiesOrFlows"][0]["subjectSubmissionsCount"] == 0
+
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_auto_assigned(
         self,
@@ -1316,6 +1338,33 @@ class TestActivities:
         assert len(activity_result["assignments"]) == 0
         assert activity_result["isPerformanceTask"] is False
         assert activity_result["performanceTaskType"] is None
+
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=applet_activity_flow_lucy_manager.id, subject_id=lucy_applet_activity_flow_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert result["respondentActivitiesCountExisting"] == 2
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == 2
+        assert result["targetActivitiesCountDeleted"] == 0
+        assert len(result["activitiesOrFlows"]) == 2
+        flow_counters = next(item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(flow.id))
+        activity_counters = next(
+            item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(activity.id)
+        )
+        assert flow_counters["respondentsCount"] == 1
+        assert flow_counters["respondentSubmissionsCount"] == 0
+        assert flow_counters["subjectsCount"] == 1
+        assert flow_counters["subjectSubmissionsCount"] == 0
+        assert activity_counters["respondentsCount"] == 1
+        assert activity_counters["respondentSubmissionsCount"] == 0
+        assert activity_counters["subjectsCount"] == 1
+        assert activity_counters["subjectSubmissionsCount"] == 0
 
     @pytest.mark.parametrize(
         "subject_type,result_order",
@@ -1567,6 +1616,60 @@ class TestActivities:
             subject_attr = "targetSubject" if subject_type == "target" else "respondentSubject"
             assert flow_assignment[subject_attr]["id"] == str(user_empty_applet_subject.id)
 
+        as_respondent = (
+            {activity_by_number[1].id, activity_by_number[2].id}
+            if subject_type == "target"
+            else {activity_by_number[4].id, activity_by_number[3].id}
+        )
+        as_target = (
+            {activity_by_number[1].id, activity_by_number[3].id}
+            if subject_type == "target"
+            else {activity_by_number[4].id, activity_by_number[2].id}
+        )
+
+        as_respondent.update(
+            {flow_by_number[1].id, flow_by_number[2].id}
+            if subject_type == "target"
+            else {
+                flow_by_number[4].id,
+                flow_by_number[3].id,
+            }
+        )
+        as_target.update(
+            {flow_by_number[1].id, flow_by_number[3].id}
+            if subject_type == "target"
+            else {
+                flow_by_number[4].id,
+                flow_by_number[2].id,
+            }
+        )
+
+        client.login(lucy)
+
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=empty_applet_lucy_manager.id,
+                subject_id=user_empty_applet_subject.id if subject_type == "target" else lucy_empty_applet_subject.id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert len(result["activitiesOrFlows"]) == 6
+        assert result["respondentActivitiesCountExisting"] == 4
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == 4
+        assert result["targetActivitiesCountDeleted"] == 0
+        for activityOrFlow in result["activitiesOrFlows"]:
+            is_respondent = uuid.UUID(activityOrFlow["activityOrFlowId"]) in as_respondent
+            is_target = uuid.UUID(activityOrFlow["activityOrFlowId"]) in as_target
+
+            assert activityOrFlow["respondentsCount"] == (1 if is_target else 0)
+            assert activityOrFlow["respondentSubmissionsCount"] == 0
+            assert activityOrFlow["subjectsCount"] == (1 if is_respondent else 0)
+            assert activityOrFlow["subjectSubmissionsCount"] == 0
+
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_activities_from_submission(
         self,
@@ -1633,6 +1736,26 @@ class TestActivities:
         assert result_activity["isPerformanceTask"] is False
         assert result_activity["performanceTaskType"] is None
         assert len(result_activity["assignments"]) == 0
+
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=applet_one_lucy_respondent.id, subject_id=tom_applet_one_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert result["respondentActivitiesCountExisting"] == (0 if subject_type == "target" else 1)
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == (1 if subject_type == "target" else 0)
+        assert result["targetActivitiesCountDeleted"] == 0
+        assert len(result["activitiesOrFlows"]) == 1
+        activityOrFlow = result["activitiesOrFlows"][0]
+        assert activityOrFlow["respondentsCount"] == (1 if subject_type == "target" else 0)
+        assert activityOrFlow["respondentSubmissionsCount"] == (0 if subject_type == "target" else 1)
+        assert activityOrFlow["subjectsCount"] == (0 if subject_type == "target" else 1)
+        assert activityOrFlow["subjectSubmissionsCount"] == (1 if subject_type == "target" else 0)
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_hidden_activities(
@@ -1784,6 +1907,31 @@ class TestActivities:
         assert result_activity_auto["performanceTaskType"] is None
         assert len(result_activity_auto["assignments"]) == 0
 
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=empty_applet_lucy_manager.id,
+                subject_id=user_empty_applet_subject.id if subject_type == "target" else lucy_empty_applet_subject.id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert len(result["activitiesOrFlows"]) == 4
+        assert result["respondentActivitiesCountExisting"] == (2 if subject_type == "target" else 4)
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == (4 if subject_type == "target" else 2)
+        assert result["targetActivitiesCountDeleted"] == 0
+        for activityOrFlow in result["activitiesOrFlows"]:
+            is_auto = activityOrFlow["activityOrFlowId"] == str(auto_flow.id) or activityOrFlow[
+                "activityOrFlowId"
+            ] == str(auto_activity.id)
+
+            assert activityOrFlow["respondentsCount"] == (1 if is_auto or subject_type == "target" else 0)
+            assert activityOrFlow["respondentSubmissionsCount"] == 0
+            assert activityOrFlow["subjectsCount"] == (1 if is_auto or subject_type != "target" else 0)
+            assert activityOrFlow["subjectSubmissionsCount"] == 0
+
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_performance_tasks(
         self,
@@ -1816,3 +1964,91 @@ class TestActivities:
                 PerformanceTaskType.ABTRAILS.value,
                 PerformanceTaskType.UNITY.value,
             ]
+
+    async def test_activities_metadata_deleted_subject(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        lucy: User,
+        empty_applet_lucy_manager: AppletFull,
+        lucy_empty_applet_subject: Subject,
+        user_empty_applet_subject: Subject,
+        activity_create_session: ActivityCreate,
+    ):
+        activity_service = ActivityService(session, lucy.id)
+        activities = await activity_service.update_create(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityUpdate(
+                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    name="Manual Activity 1",
+                    auto_assign=False,
+                ),
+                ActivityUpdate(
+                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    name="Manual Activity 2",
+                    auto_assign=False,
+                ),
+            ],
+        )
+
+        await ActivityAssignmentService(session).create_many(
+            empty_applet_lucy_manager.id,
+            [
+                ActivityAssignmentCreate(
+                    activity_id=activities[0].id,
+                    activity_flow_id=None,
+                    respondent_subject_id=lucy_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=activities[1].id,
+                    activity_flow_id=None,
+                    respondent_subject_id=user_empty_applet_subject.id,
+                    target_subject_id=user_empty_applet_subject.id,
+                ),
+            ],
+        )
+
+        manual_activity_2 = next((activity for activity in activities if activity.name == "Manual Activity 2"))
+
+        client.login(lucy)
+
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert result["respondentActivitiesCountExisting"] == 1
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == 2
+        assert result["targetActivitiesCountDeleted"] == 0
+        assert len(result["activitiesOrFlows"]) == 2
+        for activityOrFlow in result["activitiesOrFlows"]:
+            assert activityOrFlow["respondentsCount"] == 1
+            assert activityOrFlow["respondentSubmissionsCount"] == 0
+            assert activityOrFlow["subjectsCount"] == (
+                1 if activityOrFlow["activityOrFlowId"] == str(manual_activity_2.id) else 0
+            )
+            assert activityOrFlow["subjectSubmissionsCount"] == 0
+
+        await SubjectsService(session, lucy.id).delete(user_empty_applet_subject.id)
+
+        response = await client.get(
+            self.activity_metadata_by_subject_url.format(
+                applet_id=empty_applet_lucy_manager.id, subject_id=user_empty_applet_subject.id
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+
+        assert result["respondentActivitiesCountExisting"] == 0
+        assert result["respondentActivitiesCountDeleted"] == 0
+        assert result["targetActivitiesCountExisting"] == 0
+        assert result["targetActivitiesCountDeleted"] == 0
+        assert len(result["activitiesOrFlows"]) == 0
