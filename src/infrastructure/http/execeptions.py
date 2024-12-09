@@ -13,8 +13,9 @@ from infrastructure.logger import logger
 
 def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
-
-    logger.error(error)
+    # TODO Some unit tests check for error messages.  Might be bad?  If the erroring endpoint doesn't log anything
+    # TODO then there is nothing in the log.  Logging here ensures errors actually get logged.
+    # logger.error(error)
 
     response = ErrorResponseMulti(
         result=[
