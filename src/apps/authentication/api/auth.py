@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import jwt
 from fastapi import Body, Depends
@@ -86,10 +86,9 @@ async def refresh_access_token(
                 # check transition key
                 transition_key = settings.authentication.refresh_token.transition_key
                 transition_expire_date = settings.authentication.refresh_token.transition_expire_date
+                today = datetime.now(timezone.utc).date()
 
-                if not (
-                    transition_key and transition_expire_date and transition_expire_date > datetime.utcnow().date()
-                ):
+                if not (transition_key and transition_expire_date and transition_expire_date > today):
                     raise
                 payload = jwt.decode(
                     schema.refresh_token,

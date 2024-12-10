@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD
@@ -20,6 +21,7 @@ from apps.activities.domain.activity_update import (
 from apps.activities.errors import ActivityAccessDeniedError, ActivityDoeNotExist
 from apps.activities.services.activity_item import ActivityItemService
 from apps.activity_assignments.service import ActivityAssignmentService
+from apps.activity_flows.crud import FlowsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD
 from apps.schedule.service.schedule import ScheduleService
@@ -462,3 +464,11 @@ class ActivityService:
         return await ActivitiesCRUD(self.session).get_activity_and_flow_basic_info_by_ids_or_auto(
             applet_id, ids, include_auto, language
         )
+
+    async def get_activity_and_flow_ids_by_applet_id_auto(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
+        activity_ids_coro = ActivitiesCRUD(self.session).get_ids_by_applet_id_auto(applet_id)
+        flow_ids_coro = FlowsCRUD(self.session).get_ids_by_applet_id_auto(applet_id)
+
+        activity_ids, flow_ids = await asyncio.gather(activity_ids_coro, flow_ids_coro)
+
+        return activity_ids + flow_ids
