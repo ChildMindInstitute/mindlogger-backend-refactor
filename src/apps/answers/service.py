@@ -28,7 +28,7 @@ from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.crud import FlowsCRUD, FlowsHistoryCRUD
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
-from apps.alerts.domain import AlertMessage
+from apps.alerts.domain import AlertMessage, AlertTypes
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.crud.notes import AnswerNotesCRUD
@@ -381,6 +381,7 @@ class AnswerService:
                 source_subject_id=source_subject.id,
                 input_subject_id=input_subject.id,
                 relation=relation,
+                consent_to_share=applet_answer.consent_to_share,
             )
         )
         item_answer = applet_answer.answer
@@ -1620,6 +1621,7 @@ class AnswerService:
                         activity_item_id=raw_alert.activity_item_id,
                         alert_message=raw_alert.message,
                         answer_id=answer_id,
+                        type=AlertTypes.ANSWER_ALERT.value,
                     )
                 )
         alerts = await AlertCRUD(self.session).create_many(alert_schemas)
@@ -1640,6 +1642,7 @@ class AnswerService:
                         activity_id=alert.activity_id,
                         activity_item_id=alert.activity_item_id,
                         answer_id=answer_id,
+                        type=alert.type,
                     ).dict(),
                 )
             except Exception as e:
@@ -2210,6 +2213,69 @@ class ReportServerService:
                 )
             )
         return responses
+
+    async def _prepare_loris_responses(self, answers_map: dict[uuid.UUID, AnswerSchema]) -> list[dict]:
+        answer_items = await AnswerItemsCRUD(self.answers_session).get_respondent_submits_by_answer_ids(
+            list(answers_map.keys())
+        )
+
+        responses = list()
+        for answer_item in answer_items:
+            answer = answers_map[answer_item.answer_id]
+            activity_id_version = str(answer.activity_history_id).replace("_", "__")
+            activity_answer_id = f"{activity_id_version}__{answer_item.answer_id}"
+            responses.append(
+                dict(
+                    activityId=activity_answer_id, answer=answer_item.answer, userPublicKey=answer_item.user_public_key
+                )
+            )
+        return responses
+
+    async def decrypt_data_for_loris(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID, answer_ids: list[uuid.UUID]
+    ) -> tuple[dict, list] | None:
+        answers = await AnswersCRUD(self.answers_session).get_by_applet_id_and_readiness_to_share_data(
+            applet_id=applet_id, respondent_id=respondent_id, answer_ids=answer_ids
+        )
+        if not answers:
+            return None
+
+        answer_map = dict((answer.id, answer) for answer in answers)
+        answer_versions = [a.version for a in answers]
+
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+        responses = await self._prepare_loris_responses(answer_map)
+
+        data = dict(
+            responses=responses,
+            appletEncryption=dict(
+                accountId=applet.encryption["account_id"],
+                base=applet.encryption["base"],
+                prime=applet.encryption["prime"],
+                publicKey=applet.encryption["public_key"],
+            ),
+            appletId=str(applet_id),
+        )
+
+        url: str = "{}/decrypt-user-responses".format(applet.report_server_ip.rstrip("/"))
+
+        async with aiohttp.ClientSession() as session:
+            logger.info(f"Sending request to the report server for LORIS {url}")
+            start = time.time()
+            async with session.post(
+                url,
+                json=data,
+            ) as resp:
+                duration = time.time() - start
+                if resp.status == 200:
+                    logger.info(f"Successful request (for LORIS) in {duration:.1f}" "  seconds.")
+                    response_data = await resp.json()
+                    # return ReportServerResponse(**response_data)
+                    return response_data, answer_versions
+                else:
+                    logger.error(f"Failed request (for LORIS) in {duration:.1f}" "  seconds.")
+                    error_message = await resp.text()
+                    raise ReportServerError(message=error_message)
 
 
 class ReportServerEncryption:
