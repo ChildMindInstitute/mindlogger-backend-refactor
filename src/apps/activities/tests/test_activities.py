@@ -1353,18 +1353,22 @@ class TestActivities:
         assert result["targetActivitiesCountExisting"] == 2
         assert result["targetActivitiesCountDeleted"] == 0
         assert len(result["activitiesOrFlows"]) == 2
-        flow_counters = next(item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(flow.id))
-        activity_counters = next(
+        flow_metadata = next(item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(flow.id))
+        activity_metadata = next(
             item for item in result["activitiesOrFlows"] if item["activityOrFlowId"] == str(activity.id)
         )
-        assert flow_counters["respondentsCount"] == 1
-        assert flow_counters["respondentSubmissionsCount"] == 0
-        assert flow_counters["subjectsCount"] == 1
-        assert flow_counters["subjectSubmissionsCount"] == 0
-        assert activity_counters["respondentsCount"] == 1
-        assert activity_counters["respondentSubmissionsCount"] == 0
-        assert activity_counters["subjectsCount"] == 1
-        assert activity_counters["subjectSubmissionsCount"] == 0
+        assert flow_metadata["respondentsCount"] == 1
+        assert flow_metadata["respondentSubmissionsCount"] == 0
+        assert flow_metadata["respondentLastSubmissionDate"] is None
+        assert flow_metadata["subjectsCount"] == 1
+        assert flow_metadata["subjectSubmissionsCount"] == 0
+        assert flow_metadata["subjectLastSubmissionDate"] is None
+        assert activity_metadata["respondentsCount"] == 1
+        assert activity_metadata["respondentSubmissionsCount"] == 0
+        assert activity_metadata["respondentLastSubmissionDate"] is None
+        assert activity_metadata["subjectsCount"] == 1
+        assert activity_metadata["subjectSubmissionsCount"] == 0
+        assert activity_metadata["subjectLastSubmissionDate"] is None
 
     @pytest.mark.parametrize(
         "subject_type,result_order",
@@ -1754,8 +1758,18 @@ class TestActivities:
         activityOrFlow = result["activitiesOrFlows"][0]
         assert activityOrFlow["respondentsCount"] == (1 if subject_type == "target" else 0)
         assert activityOrFlow["respondentSubmissionsCount"] == (0 if subject_type == "target" else 1)
+        assert (
+            activityOrFlow["respondentLastSubmissionDate"] is None
+            if subject_type == "target"
+            else activityOrFlow["respondentLastSubmissionDate"] is not None
+        )
         assert activityOrFlow["subjectsCount"] == (0 if subject_type == "target" else 1)
         assert activityOrFlow["subjectSubmissionsCount"] == (1 if subject_type == "target" else 0)
+        assert (
+            activityOrFlow["subjectLastSubmissionDate"] is not None
+            if subject_type == "target"
+            else activityOrFlow["subjectLastSubmissionDate"] is None
+        )
 
     @pytest.mark.parametrize("subject_type", ["target", "respondent"])
     async def test_assigned_hidden_activities(

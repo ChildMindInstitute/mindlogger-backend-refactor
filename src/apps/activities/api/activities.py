@@ -385,7 +385,9 @@ async def applet_activities_metadata_for_subject(
     )
 
     # Fetch activities submissions by the subject
-    submitted_activities = await AnswerService(session, user.id, answer_session).get_submissions_by_subject(subject_id)
+    submissions_metadata = await AnswerService(session, user.id, answer_session).get_submissions_metadata_by_subject(
+        subject_id
+    )
 
     # Fetch auto-assigned activity and flow IDs by applet ID
     auto_activity_ids = await ActivityService(session, user.id).get_activity_and_flow_ids_by_applet_id_auto(applet_id)
@@ -393,7 +395,7 @@ async def applet_activities_metadata_for_subject(
     # Combine all assigned IDs and submitted activity IDs
     all_activity_ids = (
         set(assigned_activities.activities.keys())
-        | set(submitted_activities.activities.keys())
+        | set(submissions_metadata.activities.keys())
         | set(auto_activity_ids)
     )
 
@@ -411,7 +413,7 @@ async def applet_activities_metadata_for_subject(
         is_auto = activity_or_flow_id in auto_activity_ids
 
         # Get submission and assignment data if available
-        submission_data = submitted_activities.activities.get(activity_or_flow_id)
+        submission_data = submissions_metadata.activities.get(activity_or_flow_id)
         assignments_data = assigned_activities.activities.get(activity_or_flow_id)
 
         # Initialize sets for respondents and subjects
@@ -420,14 +422,18 @@ async def applet_activities_metadata_for_subject(
 
         # Initialize submission counts
         respondent_submissions_count = 0
+        respondent_last_submission_date = None
         subject_submissions_count = 0
+        subject_last_submission_date = None
 
         # Update from submission data
         if submission_data:
             respondents.update(submission_data.respondents)
             subjects.update(submission_data.subjects)
             respondent_submissions_count = submission_data.respondent_submissions_count
+            respondent_last_submission_date = submission_data.respondent_last_submission_date
             subject_submissions_count = submission_data.subject_submissions_count
+            subject_last_submission_date = submission_data.subject_last_submission_date
 
         # Update from assignment data
         if assignments_data:
@@ -464,7 +470,9 @@ async def applet_activities_metadata_for_subject(
                 respondents_count=respondents_count,
                 subjects_count=subjects_count,
                 respondent_submissions_count=respondent_submissions_count,
+                respondent_last_submission_date=respondent_last_submission_date,
                 subject_submissions_count=subject_submissions_count,
+                subject_last_submission_date=subject_last_submission_date,
             )
         )
 

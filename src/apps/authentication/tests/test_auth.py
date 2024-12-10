@@ -109,7 +109,7 @@ class TestAuthentication(BaseTest):
         token_data = TokenPayload(**payload)
 
         new_token_key = "new token key"
-        transition_expire_date = datetime.date.today() + datetime.timedelta(days=1)
+        transition_expire_date = datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=1)
 
         # refresh access token, check refresh token not changed
         _status_code, _token = await self._request_refresh_token(client, refresh_token)
@@ -129,7 +129,7 @@ class TestAuthentication(BaseTest):
 
             # check transition expire date
             with mock.patch("apps.authentication.api.auth.datetime") as date_mock:
-                date_mock.utcnow().date.return_value = transition_expire_date + datetime.timedelta(days=1)
+                date_mock.now().date.return_value = transition_expire_date + datetime.timedelta(days=1)
                 _status_code, _ = await self._request_refresh_token(client, refresh_token)
                 assert _status_code == http.HTTPStatus.BAD_REQUEST
 
