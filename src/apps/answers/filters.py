@@ -34,6 +34,7 @@ class AppletSubmissionsFilter(BaseQueryParams):
 class AppletSubmitDateFilter(BaseQueryParams):
     respondent_id: uuid.UUID | None
     target_subject_id: uuid.UUID | None
+    activity_id: str | None
     from_date: datetime.date
     to_date: datetime.date
 
