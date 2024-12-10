@@ -8,7 +8,7 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
     logging.getLogger("main").info("Enabling Datadog")
     # import ddtrace.auto  # noqa
     from ddtrace import patch
-    # Manually patch.  The auto patcher throws some erros in AMQP (which it doesn't support so why patch it??)
+    # Manually patch.  The auto patcher throws some errors in AMQP (which it doesn't support so why patch it??)
     patch(sqlalchemy=True, fastapi=True, botocore=True, asyncpg=True, httpx=True, jinja2=True,
           requests=True, starlette=True, structlog=True)
 

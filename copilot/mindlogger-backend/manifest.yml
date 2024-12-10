@@ -176,37 +176,47 @@ taskdef_overrides:
       SoftLimit: 1048576
       HardLimit: 1048576
 
-#logging:
-#  destination:
-#    Host: http-intake.logs.datadoghq.com
-#    TLS: on
-#  secretOptions:
-#    apikey:
-#      secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DD_API_KEY::"
+logging:
+  destination:
+    Name: "datadog"
+    Host: "http-intake.logs.datadoghq.com"
+    dd_service: "backend-api"
+    dd_source: "backend"
+    dd_message_key: "log"
+    dd_tags: "project:fluentbit"
+    TLS: "on"
+    provider: "ecs"
+  configFilePath: "/fluent-bit/configs/parse-json.conf"
+  enableMetadata: true
+  secretOptions:
+    apikey:
+      secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DD_API_KEY::"
 
 
-#sidecars:
-#  datadog:
-#    image: public.ecr.aws/datadog/agent:7
-#    variables:
-#      ECS_FARGATE: true
-#      DD_SITE: us5.datadoghq.com
-#      DD_ENV: ${COPILOT_ENVIRONMENT_NAME}
-#      DD_LOGS_ENABLED: true
-#      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: true
-#      DD_CONTAINER_EXCLUDE: name:datadog-agent
-#      DD_APM_ENABLED: true
-#    secrets:
-#      DD_API_KEY: #/copilot/${COPILOT_APPLICATION_NAME}/${COPILOT_ENVIRONMENT_NAME}/secrets/DATADOG_API_KEY
-#        secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DD_API_KEY::"
-##    mount_points:
-##      - source_volume: sock
-##        path: '/var/run/docker.sock'
-##      - source_volume: proc
-##        path: '/proc/'
-##      - source_volume: cgroup
-##        path: '/sys/fs/cgroup/'
-#
+sidecars:
+  datadog:
+    image: public.ecr.aws/datadog/agent:7
+    variables:
+      ECS_FARGATE: true
+      DD_SITE: us5.datadoghq.com
+      DD_ENV: ${COPILOT_ENVIRONMENT_NAME}
+      DD_LOGS_ENABLED: true
+      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: true
+      DD_CONTAINER_EXCLUDE: name:datadog-agent
+      DD_APM_ENABLED: true
+    secrets:
+      DD_API_KEY:
+        secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DD_API_KEY::"
+
+        #/copilot/${COPILOT_APPLICATION_NAME}/${COPILOT_ENVIRONMENT_NAME}/secrets/DATADOG_API_KEY
+#    mount_points:
+#      - source_volume: sock
+#        path: '/var/run/docker.sock'
+#      - source_volume: proc
+#        path: '/proc/'
+#      - source_volume: cgroup
+#        path: '/sys/fs/cgroup/'
+
 #  firelens:
 #    essential: true
 #    image: amazon/aws-for-fluent-bit:stable
