@@ -234,6 +234,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         query = query.where(func.date(AnswerSchema.created_at) >= filters.from_date)
         query = query.where(func.date(AnswerSchema.created_at) <= filters.to_date)
         query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(AnswerSchema.activity_history_id.contains(filters.activity_id))
+
         if filters.respondent_id:
             query = query.where(AnswerSchema.respondent_id == filters.respondent_id)
         if filters.target_subject_id:
