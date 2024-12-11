@@ -63,7 +63,7 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.stdlib.ExtraAdder(),
         drop_color_message_key,
-        tracer_injection,
+        # tracer_injection, # Not needed, patched in
         timestamper,
         structlog.processors.dict_tracebacks,
         structlog.processors.StackInfoRenderer(),
