@@ -1,9 +1,9 @@
 import datetime
 import uuid
 
-from sqlalchemy import and_, or_, select, tuple_, update
+from sqlalchemy import and_, case, func, or_, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Query, aliased
+from sqlalchemy.orm import InstrumentedAttribute, Query, aliased
 
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
@@ -315,3 +315,55 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
         db_result = await self._execute(union_query)
         return db_result.scalar_one_or_none()
+
+    @staticmethod
+    def _activity_and_flow_ids_by_subject_query(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
+        respondent_schema = aliased(SubjectSchema)
+        target_schema = aliased(SubjectSchema)
+
+        query: Query = (
+            select(
+                case(
+                    (
+                        ActivityAssigmentSchema.activity_id.isnot(None),
+                        ActivityAssigmentSchema.activity_id,
+                    ),
+                    else_=ActivityAssigmentSchema.activity_flow_id,
+                ).label("activity_id"),
+                func.array_agg(
+                    ActivityAssigmentSchema.respondent_subject_id
+                    if subject_column == ActivityAssigmentSchema.target_subject_id
+                    else ActivityAssigmentSchema.target_subject_id
+                ).label("subject_ids"),
+                func.count(ActivityAssigmentSchema.id).label("assignments_count"),
+            )
+            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
+            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
+            .where(
+                subject_column == subject_id,
+                ActivityAssigmentSchema.soft_exists(),
+                respondent_schema.soft_exists(),
+                target_schema.soft_exists(),
+            )
+            .group_by("activity_id", ActivityAssigmentSchema.activity_id, ActivityAssigmentSchema.activity_flow_id)
+        )
+
+        return query
+
+    async def get_assignments_by_target_subject(self, target_subject_id: uuid.UUID) -> list[dict]:
+        query: Query = self._activity_and_flow_ids_by_subject_query(
+            ActivityAssigmentSchema.target_subject_id, target_subject_id
+        )
+
+        res = await self._execute(query)
+
+        return res.mappings().all()
+
+    async def get_assignments_by_respondent_subject(self, respondent_subject_id: uuid.UUID) -> list[dict]:
+        query: Query = self._activity_and_flow_ids_by_subject_query(
+            ActivityAssigmentSchema.respondent_subject_id, respondent_subject_id
+        )
+
+        res = await self._execute(query)
+
+        return res.mappings().all()

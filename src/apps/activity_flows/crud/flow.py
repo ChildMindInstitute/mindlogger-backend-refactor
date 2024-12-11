@@ -67,3 +67,10 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
 
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def get_ids_by_applet_id_auto(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
+        query: Query = select(ActivityFlowSchema.id)
+        query = query.where(ActivityFlowSchema.applet_id == applet_id, ActivityFlowSchema.auto_assign.is_(True))
+
+        result = await self._execute(query)
+        return result.scalars().all()
