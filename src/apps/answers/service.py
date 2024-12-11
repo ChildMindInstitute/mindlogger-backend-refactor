@@ -67,6 +67,8 @@ from apps.answers.domain.answers import (
     AppletSubmission,
     FilesCopyCheckResult,
     RespondentAnswerData,
+    SubmissionsActivityMetadataBySubject,
+    SubmissionsSubjectCounters,
 )
 from apps.answers.errors import (
     ActivityIsNotAssessment,
@@ -102,6 +104,7 @@ from apps.subjects.constants import Relation
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import SubjectReadResponse
+from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
 from apps.workspaces.crud.applet_access import AppletAccessCRUD
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -1938,21 +1941,93 @@ class AnswerService:
 
     async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
         """
-        Get a list of activity and flow IDs based on answers submitted for a target subject
+        Get a list of activity and flow IDs based on answers submitted for a target subject.
+        Excludes answers whose source subject was soft-deleted.
 
         The data returned is just a combined list of activity and flow IDs, without any
-        distinction between the two
+        distinction between the two.
         """
-        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_target_subject(target_subject_id)
+        results = await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_target_subject(target_subject_id)
+        existing_subject_ids = await self._filter_out_soft_deleted_subjects(results)
+        activity_ids = [result["activity_id"] for result in results if result["subject_id"] in existing_subject_ids]
+
+        return activity_ids
 
     async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
         """
-        Get a list of activity and flow IDs based on answers submitted for a source subject
+        Get a list of activity and flow IDs based on answers submitted for a source subject.
+        Excludes answers whose target subject was soft-deleted.
 
         The data returned is just a combined list of activity and flow IDs, without any
-        distinction between the two
+        distinction between the two.
         """
-        return await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
+        results = await AnswersCRUD(self.answer_session).get_activity_and_flow_ids_by_source_subject(source_subject_id)
+        existing_subject_ids = await self._filter_out_soft_deleted_subjects(results)
+        activity_ids = [result["activity_id"] for result in results if result["subject_id"] in existing_subject_ids]
+
+        return activity_ids
+
+    async def _filter_out_soft_deleted_subjects(self, submissions: list[dict]) -> set[uuid.UUID]:
+        """
+        Filter out submissions whose subject_id column corresponds to soft-deleted subjects
+        """
+        subject_ids = set([activityOrFlow["subject_id"] for activityOrFlow in submissions])
+
+        assert self.user_id
+        existing_subjects = await SubjectsService(self.session, self.user_id).get_by_ids(list(subject_ids))
+        existing_subject_ids = {subject.id for subject in existing_subjects}
+
+        return existing_subject_ids
+
+    async def get_submissions_metadata_by_subject(self, subject_id: uuid.UUID) -> SubmissionsActivityMetadataBySubject:
+        submissions_target_coro = AnswersCRUD(self.answer_session).get_submissions_metadata_by_target_subject(
+            subject_id
+        )
+        submissions_respondent_coro = AnswersCRUD(self.answer_session).get_submissions_metadata_by_respondent_subject(
+            subject_id
+        )
+
+        submissions_target, submissions_respondent = await asyncio.gather(
+            submissions_target_coro, submissions_respondent_coro
+        )
+
+        existing_subject_ids = await self._filter_out_soft_deleted_subjects(submissions_target + submissions_respondent)
+
+        submissions_activity_metadata = SubmissionsActivityMetadataBySubject(subject_id=subject_id)
+
+        for activity_submissions in submissions_target:
+            activity_metadata = submissions_activity_metadata.activities.setdefault(
+                uuid.UUID(activity_submissions["activity_id"]), SubmissionsSubjectCounters()
+            )
+            respondent_subject_id = activity_submissions["subject_id"]
+            if respondent_subject_id in existing_subject_ids:
+                activity_metadata.respondents.add(respondent_subject_id)
+                activity_metadata.subject_submissions_count += activity_submissions["submission_count"]
+                activity_metadata.subject_last_submission_date = (
+                    activity_submissions["last_submission_date"]
+                    if not activity_metadata.subject_last_submission_date
+                    else max(
+                        activity_metadata.subject_last_submission_date, activity_submissions["last_submission_date"]
+                    )
+                )
+
+        for activity_submissions in submissions_respondent:
+            activity_metadata = submissions_activity_metadata.activities.setdefault(
+                uuid.UUID(activity_submissions["activity_id"]), SubmissionsSubjectCounters()
+            )
+            target_subject_id = activity_submissions["subject_id"]
+            if target_subject_id in existing_subject_ids:
+                activity_metadata.subjects.add(target_subject_id)
+                activity_metadata.respondent_submissions_count += activity_submissions["submission_count"]
+                activity_metadata.respondent_last_submission_date = (
+                    activity_submissions["last_submission_date"]
+                    if not activity_metadata.respondent_last_submission_date
+                    else max(
+                        activity_metadata.respondent_last_submission_date, activity_submissions["last_submission_date"]
+                    )
+                )
+
+        return submissions_activity_metadata
 
 
 class ReportServerService:

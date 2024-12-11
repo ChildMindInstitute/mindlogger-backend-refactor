@@ -1,6 +1,7 @@
+import uuid
 from uuid import UUID
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, Field, root_validator
 
 from apps.activity_assignments.errors import (
     ActivityAssignmentActivityOrFlowError,
@@ -79,3 +80,15 @@ class ActivityAssignmentDelete(BaseModel):
 
 class ActivitiesAssignmentsDelete(InternalModel):
     assignments: list[ActivityAssignmentDelete]
+
+
+class AssignmentsSubjectCounters(PublicModel):
+    respondents: set[uuid.UUID] = Field(default_factory=set)
+    subjects: set[uuid.UUID] = Field(default_factory=set)
+    subject_assignments_count: int = 0
+    respondent_assignments_count: int = 0
+
+
+class AssignmentsActivityCountBySubject(PublicModel):
+    subject_id: uuid.UUID
+    activities: dict[uuid.UUID, AssignmentsSubjectCounters] = Field(default_factory=dict)
