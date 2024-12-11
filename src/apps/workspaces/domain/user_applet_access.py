@@ -137,8 +137,6 @@ class RespondentExportData(InternalModel):
 
 class SubjectExportData(RespondentExportData):
     user_id: uuid.UUID | None
-    nickname: str | None
-    tag: str | None
 
 
 class RespondentInfoPublic(PublicModel):
