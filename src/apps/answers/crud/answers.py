@@ -325,7 +325,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.respondent_id,
                 self._exclude_assessment_val(AnswerSchema.target_subject_id).label("target_subject_id"),
                 self._exclude_assessment_val(AnswerSchema.source_subject_id).label("source_subject_id"),
-                self._exclude_assessment_val(AnswerSchema.input_subject_id).label("input_subject_id"),
                 self._exclude_assessment_val(AnswerSchema.relation).label("relation"),
                 AnswerItemSchema.answer,
                 AnswerItemSchema.events,
