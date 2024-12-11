@@ -238,9 +238,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             case(
                 (
                     AnswerSchema.flow_history_id.isnot(None),
-                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(filters.activity_or_flow_id),
+                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(filters.activity_or_flow_id),  # noqa: E501
                 ),
-                else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id)
+                else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id)  # noqa: E501
                 == str(filters.activity_or_flow_id),
             )
         )
