@@ -278,6 +278,8 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 SubjectSchema.id,
                 SubjectSchema.user_id,
                 SubjectSchema.email,
+                SubjectSchema.nickname,
+                SubjectSchema.tag,
                 SubjectSchema.secret_user_id.label("secret_id"),
                 UserAppletAccessSchema.legacy_profile_id,
                 has_manager_role.label("is_manager"),
