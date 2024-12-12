@@ -258,6 +258,7 @@ class TestAnswerActivityItems(BaseTest):
                 respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
+                activityOrFlowId=applet.activities[0].id,
             ),
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -283,6 +284,7 @@ class TestAnswerActivityItems(BaseTest):
                 respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
+                activityOrFlowId=applet.activities[0].id,
             ),
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -295,6 +297,7 @@ class TestAnswerActivityItems(BaseTest):
                 respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
+                activityOrFlowId=applet.activities[0].id,
             ),
         )
         assert response.status_code == 200
