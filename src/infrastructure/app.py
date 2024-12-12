@@ -112,21 +112,5 @@ def create_app():
     # https://github.com/Tufin/oasdiff/issues/52
     app.openapi_version = "3.0.3"
 
-    # UGLY HACK
-    # Datadog's `TraceMiddleware` is applied as the very first middleware
-    # in the list, by patching `FastAPI` constructor.
-    # Unfortunately that means that it is the innermost middleware, so the trace/span are
-    # created last in the middleware
-    # chain. Because we want to add the trace_id/span_id in the access log,
-    # we need to extract it from the middleware list,
-    # put it back as the outermost middleware, and rebuild the middleware stack.
-    # tracing_middleware = next(
-    #     (m for m in app.user_middleware if m.cls == TraceMiddleware), None
-    # )
-    # if tracing_middleware is not None:
-    #     app.user_middleware = [m for m in app.user_middleware if m.cls != TraceMiddleware]
-    #
-    #     app.user_middleware.insert(0, tracing_middleware)
-    #     app.middleware_stack = app.build_middleware_stack()
 
     return app
