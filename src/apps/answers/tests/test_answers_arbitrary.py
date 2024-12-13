@@ -265,6 +265,71 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"]["dates"]) == 1
         await assert_answer_exist_on_arbitrary(str(answer_create.submit_id), arbitrary_session)
 
+    async def test_answer_skippable_activity_items_create_for_respondent_with_flow_id(
+        self,
+        arbitrary_session: AsyncSession,
+        arbitrary_client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet: AppletFull,
+    ):
+        arbitrary_client.login(tom)
+
+        response = await arbitrary_client.post(self.answer_url, data=answer_create)
+
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+        response = await arbitrary_client.get(
+            self.applet_submit_dates_url.format(applet_id=str(applet.id)),
+            dict(
+                respondentId=tom.id,
+                fromDate=datetime.date.today() - datetime.timedelta(days=10),
+                toDate=datetime.date.today() + datetime.timedelta(days=10),
+                activityOrFlowId=applet.activity_flows[0].id,
+            ),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(response.json()["result"]["dates"]) == 1
+        await assert_answer_exist_on_arbitrary(str(answer_create.submit_id), arbitrary_session)
+
+    async def test_list_submit_dates_with_flow_id(
+        self,
+        arbitrary_session: AsyncSession,
+        arbitrary_client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet: AppletFull,
+    ):
+        arbitrary_client.login(tom)
+
+        response = await arbitrary_client.post(self.answer_url, data=answer_create)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        response = await arbitrary_client.get(
+            self.applet_submit_dates_url.format(applet_id=str(applet.id)),
+            dict(
+                respondentId=tom.id,
+                fromDate=datetime.date.today() - datetime.timedelta(days=10),
+                toDate=datetime.date.today() + datetime.timedelta(days=10),
+                activityOrFlowId=applet.activity_flows[0].id,
+            ),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(response.json()["result"]["dates"]) == 1
+        await assert_answer_exist_on_arbitrary(str(answer_create.submit_id), arbitrary_session)
+
+        response = await arbitrary_client.get(
+            self.applet_submit_dates_url.format(applet_id=str(applet.id)),
+            dict(
+                respondentId=tom.id,
+                fromDate=datetime.date.today() - datetime.timedelta(days=10),
+                toDate=datetime.date.today() + datetime.timedelta(days=10),
+                activityOrFlowId=applet.activity_flows[0].id,
+            ),
+        )
+        assert response.status_code == 200
+        assert len(response.json()["result"]["dates"]) == 1
+
     async def test_list_submit_dates(
         self,
         arbitrary_session: AsyncSession,
