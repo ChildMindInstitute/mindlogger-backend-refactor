@@ -1,5 +1,4 @@
 import logging
-import sys
 import time
 
 import structlog
@@ -9,7 +8,6 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
 from uvicorn.protocols.utils import get_path_with_query_string
-
 
 # Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
 
@@ -79,10 +77,10 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
 
     structlog.configure(
         processors=shared_processors
-                   + [
-                       # Prepare event dict for `ProcessorFormatter`.
-                       structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-                   ],
+        + [
+            # Prepare event dict for `ProcessorFormatter`.
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
