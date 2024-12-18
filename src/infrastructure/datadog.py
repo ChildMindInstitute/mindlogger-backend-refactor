@@ -7,7 +7,6 @@ from ddtrace import tracer
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
-from uvicorn.protocols.utils import get_path_with_query_string
 
 # Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
 
@@ -162,9 +161,9 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         access_logger = structlog.stdlib.get_logger("api.access")
         process_time = time.perf_counter_ns() - start_time
         status_code = response.status_code
-        url = get_path_with_query_string(request.scope)
-        client_host = request.client.host
-        client_port = request.client.port
+        url = request.url
+        client_host = request.client.host if request.client else None
+        client_port = request.client.port if request.client else None
         real_host = request.headers.get("X-Forwarded-For", client_host)
         http_method = request.method
         http_version = request.scope["http_version"]

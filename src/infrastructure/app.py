@@ -112,5 +112,4 @@ def create_app():
     # https://github.com/Tufin/oasdiff/issues/52
     app.openapi_version = "3.0.3"
 
-
     return app
