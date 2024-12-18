@@ -44,7 +44,7 @@ services:
       args:
         - PIPENV_EXTRA_ARGS=--dev
     entrypoint: /fastapi-entrypoint
-    command: /fastapi-start-datadog
+    command: /fastapi-start
     env_file: .env
     depends_on:
       - postgres
