@@ -1,7 +1,8 @@
 import datetime
 import uuid
+from enum import Enum
 
-from pydantic import validator
+from pydantic import Field, validator
 
 from apps.shared.domain import InternalModel, PublicModel, ResponseMulti, dict_keys_to_camel_case
 
@@ -12,6 +13,11 @@ __all__ = [
 ]
 
 
+class AlertTypes(str, Enum):
+    ANSWER_ALERT = "answer"
+    INTEGRATION_ALERT = "integration"
+
+
 class Alert(InternalModel):
     id: uuid.UUID
     is_watched: bool
@@ -19,8 +25,8 @@ class Alert(InternalModel):
     applet_name: str
     version: str
     secret_id: str
-    activity_id: uuid.UUID
-    activity_item_id: uuid.UUID
+    activity_id: uuid.UUID | None
+    activity_item_id: uuid.UUID | None
     message: str
     created_at: datetime.datetime
     answer_id: uuid.UUID | None
@@ -29,6 +35,7 @@ class Alert(InternalModel):
     workspace: str
     respondent_id: uuid.UUID
     subject_id: uuid.UUID | None
+    type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
 
 class AlertPublic(PublicModel):
@@ -38,8 +45,8 @@ class AlertPublic(PublicModel):
     applet_name: str
     version: str
     secret_id: str
-    activity_id: uuid.UUID
-    activity_item_id: uuid.UUID
+    activity_id: uuid.UUID | None
+    activity_item_id: uuid.UUID | None
     message: str
     created_at: datetime.datetime
     answer_id: uuid.UUID | None
@@ -48,6 +55,7 @@ class AlertPublic(PublicModel):
     workspace: str
     respondent_id: uuid.UUID
     subject_id: uuid.UUID | None
+    type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
     @validator("encryption", pre=True)
     def convert_response_values_keys(cls, response_values):
@@ -64,9 +72,10 @@ class AlertMessage(InternalModel):
     version: str
     message: str
     created_at: datetime.datetime
-    activity_id: uuid.UUID
-    activity_item_id: uuid.UUID
-    answer_id: uuid.UUID
+    activity_id: uuid.UUID | None
+    activity_item_id: uuid.UUID | None
+    answer_id: uuid.UUID | None
+    type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
 
 class AlertHandlerResult(InternalModel):
@@ -85,6 +94,7 @@ class AlertHandlerResult(InternalModel):
     workspace: str
     respondent_id: str
     subject_id: str | None
+    type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
 
 class AlertResponseMulti(ResponseMulti[AlertPublic]):
