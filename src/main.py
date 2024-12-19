@@ -7,7 +7,7 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
     logging.getLogger("main").addHandler(logging.StreamHandler())
     logging.getLogger("main").info("Enabling Datadog")
     # import ddtrace.auto  # noqa
-    from ddtrace import patch
+    from ddtrace import config, patch
 
     # Manually patch.  The auto patcher throws some errors in AMQP (which it doesn't support so why patch it??)
     patch(
@@ -20,7 +20,11 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
         requests=True,
         starlette=True,
         structlog=True,
+        futures=True,
+        gevent=True,
+        redis=True,
     )
+    config.botocore["distributed_tracing"] = True
 
 
 from infrastructure.app import create_app
