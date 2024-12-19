@@ -27,8 +27,6 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
         ]
     )
 
-
-
     return JSONResponse(
         response.dict(by_alias=True),
         status_code=error.status_code,
