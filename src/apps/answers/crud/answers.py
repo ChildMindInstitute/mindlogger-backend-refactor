@@ -325,6 +325,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.respondent_id,
                 self._exclude_assessment_val(AnswerSchema.target_subject_id).label("target_subject_id"),
                 self._exclude_assessment_val(AnswerSchema.source_subject_id).label("source_subject_id"),
+                self._exclude_assessment_val(AnswerSchema.input_subject_id).label("input_subject_id"),
                 self._exclude_assessment_val(AnswerSchema.relation).label("relation"),
                 AnswerItemSchema.answer,
                 AnswerItemSchema.events,
@@ -941,7 +942,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_target_subject_ids_by_respondent(
         self, respondent_subject_id: uuid.UUID, activity_or_flow_id: uuid.UUID
-    ):
+    ) -> list[tuple[uuid.UUID, int]]:
         query: Query = (
             select(
                 AnswerSchema.target_subject_id,
@@ -949,10 +950,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             )
             .where(
                 AnswerSchema.source_subject_id == respondent_subject_id,
-                or_(
-                    AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == str(activity_or_flow_id),
-                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(activity_or_flow_id),
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == str(activity_or_flow_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == str(activity_or_flow_id),
                 ),
+                # Exclude incomplete activity flow assessments
+                AnswerSchema.is_flow_completed.isnot(False),
             )
             .group_by(AnswerSchema.target_subject_id)
         )
@@ -970,27 +976,81 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                         AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
                     ),
                     else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
-                ).label("id")
+                ).label("activity_id"),
+                (
+                    AnswerSchema.source_subject_id
+                    if subject_column == AnswerSchema.target_subject_id
+                    else AnswerSchema.target_subject_id
+                ).label("subject_id"),
             )
-            .where(subject_column == subject_id)
-            .distinct()
+            .where(
+                subject_column == subject_id,
+                # Exclude incomplete activity flow assessments
+                AnswerSchema.is_flow_completed.isnot(False),
+            )
+            .group_by("activity_id", "subject_id")
         )
         return query
 
-    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[uuid.UUID]:
+    async def get_activity_and_flow_ids_by_target_subject(self, target_subject_id: uuid.UUID) -> list[dict]:
         """
         Get a list of activity and flow IDs based on answers submitted for a target subject
         """
         res = await self._execute(
             self.__activity_and_flow_ids_by_subject_query(AnswerSchema.target_subject_id, target_subject_id)
         )
-        return res.scalars().all()
+        return res.mappings().all()
 
-    async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[uuid.UUID]:
+    async def get_activity_and_flow_ids_by_source_subject(self, source_subject_id: uuid.UUID) -> list[dict]:
         """
         Get a list of activity and flow IDs based on answers submitted for a source subject
         """
         res = await self._execute(
             self.__activity_and_flow_ids_by_subject_query(AnswerSchema.source_subject_id, source_subject_id)
         )
-        return res.scalars().all()
+        return res.mappings().all()
+
+    @staticmethod
+    def _query_submissions_metadata_by_subject(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
+        query: Query = (
+            select(
+                func.count(func.distinct(AnswerSchema.submit_id)).label("submission_count"),
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id),
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id),
+                ).label("activity_id"),
+                (
+                    AnswerSchema.source_subject_id
+                    if subject_column == AnswerSchema.target_subject_id
+                    else AnswerSchema.target_subject_id
+                ).label("subject_id"),
+                func.max(AnswerSchema.created_at).label("last_submission_date"),
+            )
+            .where(
+                subject_column == subject_id,
+                # Exclude incomplete activity flow assessments
+                AnswerSchema.is_flow_completed.isnot(False),
+            )
+            .group_by("activity_id", "subject_id")
+        )
+
+        return query
+
+    async def get_submissions_metadata_by_target_subject(self, target_subject_id: uuid.UUID) -> list[dict]:
+        query: Query = self._query_submissions_metadata_by_subject(AnswerSchema.target_subject_id, target_subject_id)
+
+        res = await self._execute(query)
+
+        return res.mappings().all()
+
+    async def get_submissions_metadata_by_respondent_subject(self, respondent_subject_id: uuid.UUID) -> list[dict]:
+        query: Query = self._query_submissions_metadata_by_subject(
+            AnswerSchema.source_subject_id, respondent_subject_id
+        )
+
+        res = await self._execute(query)
+
+        return res.mappings().all()
