@@ -49,13 +49,13 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
-      discussions: write
+      statuses: write
     needs: [ run-unit-tests ]
     steps:
       - name: Post the link to the report
         uses: guibranco/github-status-action-v2@v1
         with:
-          authToken: ${{secrets.PAT_TOKEN}}
+          authToken: ${{secrets.GITHUB_TOKEN}}
           context: 'Unit Test report'
           state: ${{ needs.run-unit-tests.result }}
           sha: ${{ github.event.pull_request.head.sha }}
@@ -141,6 +141,7 @@ jobs:
     permissions:
       issues: write
       pull-requests: write
+      statuses: write
     needs: [run-e2e-tests]
     steps:
       - name: "Send Slack message on failure"
