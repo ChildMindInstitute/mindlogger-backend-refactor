@@ -33,3 +33,4 @@ class AlertSchema(Base):
     activity_item_id = Column(UUID(as_uuid=True))
     alert_message = Column(StringEncryptedType(Unicode, get_key), nullable=False)
     answer_id = Column(UUID(as_uuid=True))
+    type = Column(String())
