@@ -504,6 +504,12 @@ class AnswerService:
             old_activity_answer_dates: dict[uuid.UUID, list[AnswerDate]] = defaultdict(list)
             activity_history_ids = set()
             for answer in answers:
+                if filters.flow_id:
+                    if not answer.flow_history_id or not answer.flow_history_id.startswith(str(filters.flow_id)):
+                        continue
+                elif answer.flow_history_id:
+                    continue
+
                 activity_id, _ = HistoryAware.split_id_version(answer.activity_history_id)
                 if _activity := activity_map.get(activity_id):
                     _activity.answer_dates.append(

@@ -17,6 +17,7 @@ class SummaryActivityFilter(BaseQueryParams):
 class ReviewAppletItemFilter(BaseQueryParams):
     target_subject_id: uuid.UUID
     created_date: datetime.date
+    flow_id: uuid.UUID | None
 
 
 class AppletSubmissionsFilter(BaseQueryParams):

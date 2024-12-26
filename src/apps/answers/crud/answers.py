@@ -431,17 +431,26 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             ActivityHistorySchema.id,
             AppletHistorySchema.version,
             AppletHistorySchema.created_at,
+            AnswerSchema.activity_history_id,
+            AnswerSchema.flow_history_id,
         )
         query = query.join(
             AppletHistorySchema,
             AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
         )
-        query = query.where(ActivityHistorySchema.id == activity_id)
+        query = query.outerjoin(AnswerSchema, AnswerSchema.activity_history_id.ilike(f"{str(activity_id)}%"))
+        query = query.where(
+            ActivityHistorySchema.id == activity_id,
+            AnswerSchema.flow_history_id.is_(None),
+        )
         query = query.order_by(AppletHistorySchema.created_at.asc())
         db_result = await self._execute(query)
         results = []
-        for _, version, created_at in db_result.all():
-            results.append(Version(version=version, created_at=created_at))
+
+        for _, version, created_at, flow_history_id, _ in db_result.all():
+            # Filters out the activities associated with flows to display only isolated activities
+            if flow_history_id.endswith(version):
+                results.append(Version(version=version, created_at=created_at))
 
         return results
 
