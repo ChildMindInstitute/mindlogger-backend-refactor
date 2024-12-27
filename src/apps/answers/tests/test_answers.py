@@ -1008,7 +1008,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"]["dates"]) == 1
 
     async def test_answer_skippable_activity_items_create_for_respondent_with_flow_id(
-        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet: AppletFull
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_with_flow: AppletFull
     ):
         client.login(tom)
 
@@ -1017,12 +1017,12 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         response = await client.get(
-            self.applet_submit_dates_url.format(applet_id=str(applet.id)),
+            self.applet_submit_dates_url.format(applet_id=str(applet_with_flow.id)),
             dict(
                 respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
-                activityOrFlowId=applet.activity_flows[0].id,
+                activityOrFlowId=applet_with_flow.activity_flows[0].id,
             ),
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -1049,7 +1049,7 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"]["dates"]) == 1
 
     async def test_list_submit_dates_with_flow_id(
-        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet: AppletFull
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_with_flow: AppletFull
     ):
         client.login(tom)
 
@@ -1057,12 +1057,12 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
 
         response = await client.get(
-            self.applet_submit_dates_url.format(applet_id=str(applet.id)),
+            self.applet_submit_dates_url.format(applet_id=str(applet_with_flow.id)),
             dict(
                 respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
-                activityOrFlowId=applet.activity_flows[0].id,
+                activityOrFlowId=applet_with_flow.activity_flows[0].id,
             ),
         )
         assert response.status_code == http.HTTPStatus.OK

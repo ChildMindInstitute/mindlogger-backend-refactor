@@ -449,7 +449,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         for _, version, created_at, flow_history_id, _ in db_result.all():
             # Filters out the activities associated with flows to display only isolated activities
-            if flow_history_id.endswith(version):
+            if flow_history_id and flow_history_id.endswith(version):
                 results.append(Version(version=version, created_at=created_at))
 
         return results

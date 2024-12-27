@@ -271,7 +271,7 @@ class TestAnswerActivityItems(BaseTest):
         arbitrary_client: TestClient,
         tom: User,
         answer_create: AppletAnswerCreate,
-        applet: AppletFull,
+        applet_with_flow: AppletFull,
     ):
         arbitrary_client.login(tom)
 
@@ -280,12 +280,12 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
         response = await arbitrary_client.get(
-            self.applet_submit_dates_url.format(applet_id=str(applet.id)),
+            self.applet_submit_dates_url.format(applet_id=str(applet_with_flow.id)),
             dict(
                 respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
-                activityOrFlowId=applet.activity_flows[0].id,
+                activityOrFlowId=applet_with_flow.activity_flows[0].id,
             ),
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -298,7 +298,7 @@ class TestAnswerActivityItems(BaseTest):
         arbitrary_client: TestClient,
         tom: User,
         answer_create: AppletAnswerCreate,
-        applet: AppletFull,
+        applet_with_flow: AppletFull,
     ):
         arbitrary_client.login(tom)
 
@@ -306,12 +306,12 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
 
         response = await arbitrary_client.get(
-            self.applet_submit_dates_url.format(applet_id=str(applet.id)),
+            self.applet_submit_dates_url.format(applet_id=str(applet_with_flow.id)),
             dict(
                 respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
-                activityOrFlowId=applet.activity_flows[0].id,
+                activityOrFlowId=applet_with_flow.activity_flows[0].id,
             ),
         )
         assert response.status_code == http.HTTPStatus.OK
@@ -319,12 +319,12 @@ class TestAnswerActivityItems(BaseTest):
         await assert_answer_exist_on_arbitrary(str(answer_create.submit_id), arbitrary_session)
 
         response = await arbitrary_client.get(
-            self.applet_submit_dates_url.format(applet_id=str(applet.id)),
+            self.applet_submit_dates_url.format(applet_id=str(applet_with_flow.id)),
             dict(
                 respondentId=tom.id,
                 fromDate=datetime.date.today() - datetime.timedelta(days=10),
                 toDate=datetime.date.today() + datetime.timedelta(days=10),
-                activityOrFlowId=applet.activity_flows[0].id,
+                activityOrFlowId=applet_with_flow.activity_flows[0].id,
             ),
         )
         assert response.status_code == 200
