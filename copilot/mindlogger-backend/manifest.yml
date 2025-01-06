@@ -73,7 +73,6 @@ storage:
 variables:
   # Python configurations
 #  ENV: testing
-
   # PostgreSQL configurations
   DATABASE__HOST: cmiml-feature-db.cjg844g2kgxp.us-east-1.rds.amazonaws.com
   DATABASE__PORT: 5432
@@ -181,9 +180,9 @@ logging:
     Name: "datadog"
     Host: "http-intake.logs.datadoghq.com"
     dd_service: "backend-api"
-    dd_source: "backend"
+    dd_source: "feature"
     dd_message_key: "log"
-    dd_tags: "project:fluentbit"
+    dd_tags: "version:${COPILOT_ENVIRONMENT_NAME},env:feature"
     TLS: "on"
     provider: "ecs"
   configFilePath: "/fluent-bit/configs/parse-json.conf"
@@ -198,8 +197,9 @@ sidecars:
     image: public.ecr.aws/datadog/agent:7
     variables:
       ECS_FARGATE: true
-      DD_SITE: us5.datadoghq.com
-      DD_ENV: ${COPILOT_ENVIRONMENT_NAME}
+      DD_SITE: datadoghq.com
+      DD_ENV: feature
+      DD_VERSION: ${COPILOT_ENVIRONMENT_NAME}
       DD_LOGS_ENABLED: true
       DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: true
       DD_CONTAINER_EXCLUDE: name:datadog-agent
