@@ -74,7 +74,7 @@ def pydantic_validation_errors_handler(_: Request, error: RequestValidationError
 
 def sqlalchemy_database_error_handler(_: Request, error: TimeoutError | InvalidPasswordError) -> JSONResponse:
     """This function is called if the SQLAlchemy database error was raised."""
-    logger.error(error)
+    logger.error(str(error))
     response = ErrorResponseMulti(result=[ErrorResponse(message=f"Database error: {str(error)}")])
 
     return JSONResponse(
