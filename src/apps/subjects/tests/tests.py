@@ -1137,15 +1137,15 @@ class TestSubjects(BaseTest):
         assert tom_result["teamMemberCanViewData"] is True
 
     async def test_get_target_subjects_by_respondent_via_submission_as_reviewer(
-            self,
-            client,
-            tom: User,
-            pit: User,
-            tom_applet_one_subject: Subject,
-            applet_one_shell_account: Subject,
-            applet_one_pit_reviewer: AppletFull,
-            answer_create_payload: dict,
-            session: AsyncSession,
+        self,
+        client,
+        tom: User,
+        pit: User,
+        tom_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+        applet_one_pit_reviewer: AppletFull,
+        answer_create_payload: dict,
+        session: AsyncSession,
     ):
         activity = applet_one_pit_reviewer.activities[0]
 
@@ -1163,9 +1163,9 @@ class TestSubjects(BaseTest):
         )
 
         # Assign pit as a reviewer to tom
-        await (UserAppletAccessService(session, tom.id, applet_one_pit_reviewer.id).
-               set_subjects_for_review(reviewer_id=pit.id, applet_id=applet_one_pit_reviewer.id,
-                                       subjects=[tom_applet_one_subject.id]))
+        await UserAppletAccessService(session, tom.id, applet_one_pit_reviewer.id).set_subjects_for_review(
+            reviewer_id=pit.id, applet_id=applet_one_pit_reviewer.id, subjects=[tom_applet_one_subject.id]
+        )
 
         filtered_answer_create_payload = {k: v for k, v in answer_create_payload.items() if k != "submit_id"}
 
@@ -1218,15 +1218,15 @@ class TestSubjects(BaseTest):
         assert shell_account_result["teamMemberCanViewData"] is False
 
     async def test_get_target_subjects_by_respondent_via_submission_as_coordinator(
-            self,
-            client,
-            tom: User,
-            bob: User,
-            tom_applet_one_subject: Subject,
-            applet_one_shell_account: Subject,
-            applet_one_bob_coordinator: AppletFull,
-            answer_create_payload: dict,
-            session: AsyncSession,
+        self,
+        client,
+        tom: User,
+        bob: User,
+        tom_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+        applet_one_bob_coordinator: AppletFull,
+        answer_create_payload: dict,
+        session: AsyncSession,
     ):
         activity = applet_one_bob_coordinator.activities[0]
 

@@ -318,8 +318,9 @@ async def get_target_subjects_by_respondent(
         respondent_subject.applet_id, respondent_subject.id
     )
 
-    access = await AppletAccessService(session).get_priority_access(applet_id=respondent_subject.applet_id,
-                                                                    user_id=user.id)
+    access = await AppletAccessService(session).get_priority_access(
+        applet_id=respondent_subject.applet_id, user_id=user.id
+    )
     if not access:
         raise AccessDeniedError()
 
@@ -360,7 +361,8 @@ async def get_target_subjects_by_respondent(
     is_super_reviewer = access.role in Role.super_reviewers()
     for subject in subjects:
         can_view_data = is_super_reviewer or (
-                    access.role == Role.REVIEWER and str(subject.id) in access.meta.get("subjects", []))
+            access.role == Role.REVIEWER and str(subject.id) in access.meta.get("subjects", [])
+        )
 
         target_subject = TargetSubjectByRespondentResponse(
             secret_user_id=subject.secret_user_id,
@@ -373,7 +375,7 @@ async def get_target_subjects_by_respondent(
             last_name=subject.last_name,
             submission_count=subject_info[subject.id]["submission_count"],
             currently_assigned=subject_info[subject.id]["currently_assigned"],
-            team_member_can_view_data=can_view_data
+            team_member_can_view_data=can_view_data,
         )
 
         if subject.id == respondent_subject_id:
