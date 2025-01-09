@@ -54,6 +54,8 @@ jobs:
           role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
           role-session-name: gha-preview-env
           aws-region: ${{ inputs.aws-region }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Install copilot
         run: |
           curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux && chmod +x copilot && 

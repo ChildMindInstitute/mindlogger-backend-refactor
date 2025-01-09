@@ -80,7 +80,8 @@ jobs:
 
   create-preview-env:
     needs: [create-database, run-unit-tests]
-    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/create-preview-env.yaml@develop
+    uses: ./.github/workflows/create-preview-env.yaml
+#    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/create-preview-env.yaml@develop
     with:
       env-name: "pr-${{ github.event.number }}"
       env-snake-name: "pr_${{ github.event.number }}"
