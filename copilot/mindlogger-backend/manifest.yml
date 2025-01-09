@@ -28,6 +28,10 @@ image:
       PIPENV_EXTRA_ARGS: --dev
   # Port exposed through your container to route traffic to it.
   port: 80
+  labels:
+    "com.datadoghq.tags.env": feature
+    "com.datadoghq.tags.service": backend-api
+    "com.datadoghq.tags.version": ${COPILOT_ENVIRONMENT_NAME}
 
 entrypoint: /fastapi-entrypoint
 command: /ecs-start-feature
@@ -35,7 +39,7 @@ command: /ecs-start-feature
 
 cpu: 512       # Number of CPU units for the task.
 memory: 1024    # Amount of memory in MiB used by the task.
-platform: linux/x86_64  # See https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/#platform
+platform: linux/arm64  # See https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/#platform
 count: 1       # Number of tasks that should be running in your service.
 exec: true     # Enable running commands in your container.
 network:
