@@ -1,9 +1,10 @@
 
 name: Build and Deploy
-on: 
+on:
   push:
     branches:
       - develop
+#      - chore/bump-amazon-ecs-deploy-task-definition-version
   workflow_dispatch: {}
 
 
