@@ -61,7 +61,7 @@ jobs:
           image: ${{ inputs.IMAGE_NAME }}
 
       - name: Update Task Definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ matrix.apps.service }}
