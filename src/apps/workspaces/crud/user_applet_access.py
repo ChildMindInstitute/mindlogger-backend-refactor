@@ -457,6 +457,31 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .exists()
         )
 
+        # Subquery to get the list of roles for each user and applet
+        roles_subquery = (
+            select(
+                UserAppletAccessSchema.user_id,
+                UserAppletAccessSchema.applet_id,
+                func.array_agg(
+                    aggregate_order_by(
+                        UserAppletAccessSchema.role,
+                        case(
+                            (UserAppletAccessSchema.role == Role.OWNER, 1),
+                            (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                            (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                            (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                            (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                            (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                            else_=10,
+                        ).asc(),
+                    )
+                ).label("roles"),
+            )
+            .where(UserAppletAccessSchema.soft_exists())
+            .group_by(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.user_id)
+            .subquery()
+        )
+
         query: Query = select(
             # fmt: off
             UserSchema.id,
@@ -518,6 +543,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     SubjectSchema.last_name,
                     text("'subject_created_at'"),
                     SubjectSchema.created_at,
+                    text("'roles'"),
+                    func.coalesce(roles_subquery.c.roles, []),
                 )
             ).label("details"),
         )
@@ -531,6 +558,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserAppletAccessSchema.applet_id == SubjectSchema.applet_id,
                 UserAppletAccessSchema.user_id == SubjectSchema.user_id,
                 UserAppletAccessSchema.role == Role.RESPONDENT,
+            ),
+            isouter=True,
+        )
+        query = query.join(
+            roles_subquery,
+            and_(
+                roles_subquery.c.user_id == SubjectSchema.user_id,
+                roles_subquery.c.applet_id == SubjectSchema.applet_id,
             ),
             isouter=True,
         )
