@@ -1,6 +1,7 @@
 import datetime
 import http
 import uuid
+from typing import Any
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -411,7 +412,9 @@ class TestWorkspaces(BaseTest):
         assert lucy_result["details"]
         assert tom_result["details"]
 
-        sorting_function = lambda x: x["appletDisplayName"]
+        def sorting_function(x: Any):
+            return x["appletDisplayName"]
+
         lucy_result_details = sorted(lucy_result["details"], key=sorting_function)
         shell_account_result_details = sorted(shell_account_result["details"], key=sorting_function)
         tom_result_details = sorted(tom_result["details"], key=sorting_function)
@@ -445,7 +448,7 @@ class TestWorkspaces(BaseTest):
         assert tom_result_details[1]["roles"] == [Role.OWNER, Role.RESPONDENT]
 
         # Check for the roles of the other participants
-        assert shell_account_result_details[0]["roles"] == [] # Limited accounts have no roles
+        assert shell_account_result_details[0]["roles"] == []  # Limited accounts have no roles
         assert user_result_details[0]["roles"] == [Role.RESPONDENT]
 
         # test manual, case-insensitive ordering by encrypted nicknames field
