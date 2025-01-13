@@ -88,6 +88,7 @@ class SubjectReadResponse(SubjectUpdateRequest):
     first_name: str
     last_name: str
 
+
 class SubjectReadResponseWithRoles(SubjectReadResponse):
     roles: list[Role]
 

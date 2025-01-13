@@ -24,10 +24,10 @@ from apps.subjects.domain import (
     SubjectCreateRequest,
     SubjectDeleteRequest,
     SubjectReadResponse,
+    SubjectReadResponseWithRoles,
     SubjectRelationCreate,
     SubjectUpdateRequest,
     TargetSubjectByRespondentResponse,
-    SubjectReadResponseWithRoles,
 )
 from apps.subjects.errors import SecretIDUniqueViolationError
 from apps.subjects.services import SubjectsService
@@ -360,11 +360,10 @@ async def get_target_subjects_by_respondent(
             subject_info[subject_id]["currently_assigned"] = True
 
     subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
-    roles: dict[uuid.UUID, list[Role]] = await (
-        UserAppletAccessService(session, user.id, respondent_subject.applet_id)
-        .get_applet_roles_by_priority_for_users(
-            respondent_subject.applet_id, [subject.user_id for subject in subjects if subject.user_id]
-        )
+    roles: dict[uuid.UUID, list[Role]] = await UserAppletAccessService(
+        session, user.id, respondent_subject.applet_id
+    ).get_applet_roles_by_priority_for_users(
+        respondent_subject.applet_id, [subject.user_id for subject in subjects if subject.user_id]
     )
 
     result: list[TargetSubjectByRespondentResponse] = []

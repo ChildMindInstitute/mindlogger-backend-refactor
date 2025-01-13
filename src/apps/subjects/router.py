@@ -21,8 +21,8 @@ from apps.subjects.domain import (
     SubjectCreateResponse,
     SubjectFull,
     SubjectReadResponse,
-    TargetSubjectByRespondentResponse,
     SubjectReadResponseWithRoles,
+    TargetSubjectByRespondentResponse,
 )
 from apps.users import User
 from infrastructure.database.deps import get_session

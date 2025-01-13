@@ -1168,7 +1168,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return dict(db_result.all())
 
     async def get_applet_roles_by_priority_for_users(
-            self, applet_id: uuid.UUID, user_ids: list[uuid.UUID]
+        self, applet_id: uuid.UUID, user_ids: list[uuid.UUID]
     ) -> dict[uuid.UUID, list[Role]]:
         """
         Get a map of user ID to their roles in the given applet

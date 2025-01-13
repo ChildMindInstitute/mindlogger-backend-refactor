@@ -237,7 +237,7 @@ class UserAppletAccessService:
         return roles
 
     async def get_applet_roles_by_priority_for_users(
-            self, applet_id: uuid.UUID, user_ids: list[uuid.UUID]
+        self, applet_id: uuid.UUID, user_ids: list[uuid.UUID]
     ) -> dict[uuid.UUID, list[Role]]:
         return await UserAppletAccessCRUD(self.session).get_applet_roles_by_priority_for_users(applet_id, user_ids)
 
