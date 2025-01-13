@@ -27,6 +27,7 @@ from apps.subjects.domain import (
     SubjectRelationCreate,
     SubjectUpdateRequest,
     TargetSubjectByRespondentResponse,
+    SubjectReadResponseWithRoles,
 )
 from apps.subjects.errors import SecretIDUniqueViolationError
 from apps.subjects.services import SubjectsService
@@ -232,7 +233,7 @@ async def get_subject(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
-) -> Response[SubjectReadResponse]:
+) -> Response[SubjectReadResponseWithRoles]:
     subjects_service = SubjectsService(session, user.id)
     subject = await subjects_service.get(subject_id)
     if not subject:
@@ -253,8 +254,12 @@ async def get_subject(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
 
+    roles: list[str] = []
+    if subject.user_id:
+        roles = await UserAppletAccessService(session, subject.user_id, subject.applet_id).get_roles()
+
     return Response(
-        result=SubjectReadResponse(
+        result=SubjectReadResponseWithRoles(
             id=subject.id,
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
@@ -264,6 +269,7 @@ async def get_subject(
             user_id=subject.user_id,
             first_name=subject.first_name,
             last_name=subject.last_name,
+            roles=roles,
         )
     )
 
