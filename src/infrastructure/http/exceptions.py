@@ -77,7 +77,7 @@ def sqlalchemy_database_error_handler(
 ) -> JSONResponse:
     """This function is called if the SQLAlchemy database error was raised."""
     logger.error(str(error))
-    response = ErrorResponseMulti(result=[ErrorResponse(message=f"Database error: {str(error)}")])
+    response = ErrorResponseMulti(result=[ErrorResponse(message="Internal server error")])
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
