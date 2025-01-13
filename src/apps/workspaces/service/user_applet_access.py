@@ -236,6 +236,11 @@ class UserAppletAccessService:
         roles = await UserAppletAccessCRUD(self.session).get_user_roles_to_applet(self._user_id, self._applet_id)
         return roles
 
+    async def get_applet_roles_by_priority_for_users(
+            self, applet_id: uuid.UUID, user_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, list[Role]]:
+        return await UserAppletAccessCRUD(self.session).get_applet_roles_by_priority_for_users(applet_id, user_ids)
+
     async def _validate_secret_user_id(self, exclude_id: uuid.UUID, secret_id: str):
         access = await UserAppletAccessCRUD(self.session).get_by_secret_user_id_for_applet(
             self._applet_id, secret_id, exclude_id

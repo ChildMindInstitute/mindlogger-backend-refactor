@@ -360,6 +360,13 @@ async def get_target_subjects_by_respondent(
             subject_info[subject_id]["currently_assigned"] = True
 
     subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
+    roles: dict[uuid.UUID, list[Role]] = await (
+        UserAppletAccessService(session, user.id, respondent_subject.applet_id)
+        .get_applet_roles_by_priority_for_users(
+            respondent_subject.applet_id, [subject.user_id for subject in subjects if subject.user_id]
+        )
+    )
+
     result: list[TargetSubjectByRespondentResponse] = []
 
     # Find the respondent subject in the list of subjects
@@ -382,6 +389,7 @@ async def get_target_subjects_by_respondent(
             submission_count=subject_info[subject.id]["submission_count"],
             currently_assigned=subject_info[subject.id]["currently_assigned"],
             team_member_can_view_data=can_view_data,
+            roles=roles[subject.user_id] if subject.user_id else [],
         )
 
         if subject.id == respondent_subject_id:
