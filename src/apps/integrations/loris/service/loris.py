@@ -62,7 +62,7 @@ class LorisIntegrationService:
     def answer_session(self):
         return self._answer_session if self._answer_session else self.session
 
-    async def integration(self, users_and_visits):
+    async def integration(self, users_and_visits) -> None:
         respondents: list = [user.user_id for user in users_and_visits]
         if not respondents:
             await self._create_integration_alerts(
