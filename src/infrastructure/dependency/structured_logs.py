@@ -1,3 +1,8 @@
+"""
+Structured Logging helper methods and classes.  Used for DataDog integration
+
+Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
+"""
 import logging
 import time
 
@@ -8,10 +13,7 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
 
-# Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
 
-
-# https://github.com/hynek/structlog/issues/35#issuecomment-591321744
 def rename_event_key(_, __, event_dict: EventDict) -> EventDict:
     """
     Log entries keep the text message in the `event` field, but Datadog
@@ -35,6 +37,7 @@ def drop_color_message_key(_, __, event_dict: EventDict) -> EventDict:
 def tracer_injection(_, __, event_dict: EventDict) -> EventDict:
     """
     Inject Datadog trace info into the event dict.
+    DEPRECATED, this is done with ddtrace.patch
     """
     # get correlation ids from current tracer context
     span = tracer.current_span()
@@ -76,10 +79,10 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
 
     structlog.configure(
         processors=shared_processors
-        + [
-            # Prepare event dict for `ProcessorFormatter`.
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
+                   + [
+                       # Prepare event dict for `ProcessorFormatter`.
+                       structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+                   ],
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
@@ -106,6 +109,8 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
     # Use OUR `ProcessorFormatter` to format all `logging` entries.
     handler.setFormatter(formatter)
     root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    # Clear any existing handlers
     root_logger.addHandler(handler)
     root_logger.setLevel(log_level.upper())
 
@@ -142,7 +147,7 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
 
 class StructuredLoggingMiddleware(BaseHTTPMiddleware):
     """
-    This class makes structured access logs in the application
+    This class makes structured access logs in FastAPI
     """
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -168,35 +173,49 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         real_host = request.headers.get("X-Forwarded-For", client_host)
         http_method = request.method
         http_version = request.scope["http_version"]
-        # Recreate the Uvicorn access log format, but add all parameters as structured information
 
-        if 400 < status_code < 500:
-            access_logger.warn(
-                f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
-                http={
-                    "url": str(request.url),
-                    "request_path": str(path),
-                    "status_code": status_code,
-                    "method": http_method,
-                    "request_id": request_id,
-                    "version": http_version,
-                },
-                network={"client": {"ip": real_host, "port": client_port}},
-                duration=process_time,
-            )
-        else:
-            access_logger.info(
-                f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
-                http={
-                    "url": str(request.url),
-                    "request_path": str(path),
-                    "status_code": status_code,
-                    "method": http_method,
-                    "request_id": request_id,
-                    "version": http_version,
-                },
-                network={"client": {"ip": real_host, "port": client_port}},
-                duration=process_time,
-            )
-            # response.headers["X-Process-Time"] = str(process_time / 10 ** 9)
+        # Recreate the Uvicorn access log format, but add all parameters as structured information
+        logger_fn = access_logger.warn if 400 < status_code < 500 else access_logger.info
+        logger_fn(f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+                  http={
+                      "url": str(request.url),
+                      "request_path": str(path),
+                      "status_code": status_code,
+                      "method": http_method,
+                      "request_id": request_id,
+                      "version": http_version,
+                  },
+                  network={"client": {"ip": real_host, "port": client_port}},
+                  duration=process_time,
+                  )
+
+        # if 400 < status_code < 500:
+        #     access_logger.warn(
+        #         f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+        #         http={
+        #             "url": str(request.url),
+        #             "request_path": str(path),
+        #             "status_code": status_code,
+        #             "method": http_method,
+        #             "request_id": request_id,
+        #             "version": http_version,
+        #         },
+        #         network={"client": {"ip": real_host, "port": client_port}},
+        #         duration=process_time,
+        #     )
+        # else:
+        #     access_logger.info(
+        #         f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+        #         http={
+        #             "url": str(request.url),
+        #             "request_path": str(path),
+        #             "status_code": status_code,
+        #             "method": http_method,
+        #             "request_id": request_id,
+        #             "version": http_version,
+        #         },
+        #         network={"client": {"ip": real_host, "port": client_port}},
+        #         duration=process_time,
+        #     )
+        # response.headers["X-Process-Time"] = str(process_time / 10 ** 9)
         return response

@@ -44,7 +44,7 @@ services:
       args:
         - PIPENV_EXTRA_ARGS=--dev
     entrypoint: /fastapi-entrypoint
-    command: /fastapi-start
+    command: /start-backend-datadog
     env_file: .env
     depends_on:
       - postgres
@@ -68,7 +68,8 @@ services:
     image: mindlogger_worker
     container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
-    command: [ 'taskiq', 'worker', 'broker:broker', '-fsd' ]
+    command: ['/start-worker']
+#    command: [ 'taskiq', 'worker', 'worker:worker', '-fsd' ]
     env_file: .env
     volumes:
       - ./:/app/
@@ -88,7 +89,8 @@ services:
     image: mindlogger_webapp
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
-    command: [ 'taskiq', 'scheduler', 'scheduler:scheduler', '-fsd' ]
+#    command: [ 'taskiq', 'scheduler', 'scheduler:scheduler', '-fsd' ]
+    command: ['/start-scheduler']
     env_file: .env
     volumes:
       - ./:/app/

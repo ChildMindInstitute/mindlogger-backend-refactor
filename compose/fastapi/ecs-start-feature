@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Startup script for feature branches on ECS Fargate with DataDog enabled
+
 set -eo pipefail
 set -o nounset
 
