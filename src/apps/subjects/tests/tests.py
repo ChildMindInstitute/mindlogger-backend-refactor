@@ -587,6 +587,7 @@ class TestSubjects(BaseTest):
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
         assert res["tag"] == tom_applet_one_subject.tag
+        assert res["teamMemberCanViewData"] is True
         assert uuid.UUID(res["appletId"]) == tom_applet_one_subject.applet_id
         assert uuid.UUID(res["userId"]) == tom.id
 
@@ -750,6 +751,61 @@ class TestSubjects(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()
         assert data
+
+        assert data["result"]["teamMemberCanViewData"] is True
+
+    async def test_get_subject_coordinator(
+        self,
+        client,
+        tom_applet_one_subject: Subject,
+        bob: User,
+        applet_one_bob_coordinator: AppletFull,
+    ):
+        client.login(bob)
+        response = await client.get(self.subject_detail_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()
+        assert data
+
+        assert data["result"]["teamMemberCanViewData"] is False
+
+    async def test_get_subject_coordinator_and_reviewer(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        tom: User,
+        tom_applet_one_subject: Subject,
+        bob: User,
+        applet_one_bob_coordinator_reviewer: AppletFull,
+    ):
+        applet = applet_one_bob_coordinator_reviewer
+        subject = tom_applet_one_subject
+
+        client.login(bob)
+
+        # Fetch before assigning tom to bob
+        response = await client.get(self.subject_detail_url.format(subject_id=subject.id))
+
+        # bob can fetch tom because he is a coordinator
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()
+        assert data
+
+        # bob should not be able to view tom's data yet
+        assert data["result"]["teamMemberCanViewData"] is False
+
+        # Assign bob as a reviewer to tom
+        await UserAppletAccessService(session, tom.id, applet.id).set_subjects_for_review(
+            reviewer_id=bob.id, applet_id=applet.id, subjects=[subject.id]
+        )
+
+        response = await client.get(self.subject_detail_url.format(subject_id=subject.id))
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()
+        assert data
+
+        # bob should be able to view tom's data now
+        assert data["result"]["teamMemberCanViewData"] is True
 
     async def test_editor_remove_respondent_access_error(
         self, client, session, tom, mike, lucy, applet_one: AppletFull, applet_one_lucy_respondent
