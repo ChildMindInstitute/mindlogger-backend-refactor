@@ -352,15 +352,15 @@ async def get_target_subjects_by_respondent(
     accesses = await UserAppletAccessService(
         session, applet_id=respondent_subject.applet_id, user_id=user.id
     ).get_applet_accesses()
-    respondent_target_subject: TargetSubjectByRespondentResponse | None = None
     is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
     reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
-    is_regular_reviewer = reviewer_access is not None
+
+    respondent_target_subject: TargetSubjectByRespondentResponse | None = None
 
     # Find the respondent subject in the list of subjects
     for subject in subjects:
         can_view_data = is_super_reviewer or (
-            is_regular_reviewer and str(subject.id) in reviewer_access.meta.get("subjects", [])
+            reviewer_access is not None and str(subject.id) in reviewer_access.meta.get("subjects", [])
         )
 
         target_subject = TargetSubjectByRespondentResponse(
