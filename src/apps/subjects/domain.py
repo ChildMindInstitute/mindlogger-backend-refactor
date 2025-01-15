@@ -88,6 +88,10 @@ class SubjectReadResponse(SubjectUpdateRequest):
     last_name: str
 
 
+class SubjectReadResponseWithDataAccess(SubjectReadResponse):
+    team_member_can_view_data: bool = False
+
+
 class TargetSubjectByRespondentResponse(SubjectReadResponse):
     submission_count: int = 0
     currently_assigned: bool = False

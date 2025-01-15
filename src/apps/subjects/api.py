@@ -24,6 +24,7 @@ from apps.subjects.domain import (
     SubjectCreateRequest,
     SubjectDeleteRequest,
     SubjectReadResponse,
+    SubjectReadResponseWithDataAccess,
     SubjectRelationCreate,
     SubjectUpdateRequest,
     TargetSubjectByRespondentResponse,
@@ -231,7 +232,7 @@ async def get_subject(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
-) -> Response[SubjectReadResponse]:
+) -> Response[SubjectReadResponseWithDataAccess]:
     subjects_service = SubjectsService(session, user.id)
     subject = await subjects_service.get(subject_id)
     if not subject:
@@ -252,8 +253,14 @@ async def get_subject(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
 
+    accesses = await UserAppletAccessService(
+        session, applet_id=subject.applet_id, user_id=user.id
+    ).get_applet_accesses()
+    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+
     return Response(
-        result=SubjectReadResponse(
+        result=SubjectReadResponseWithDataAccess(
             id=subject.id,
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
@@ -263,6 +270,8 @@ async def get_subject(
             user_id=subject.user_id,
             first_name=subject.first_name,
             last_name=subject.last_name,
+            team_member_can_view_data=is_super_reviewer
+            or (reviewer_access is not None and str(subject.id) in reviewer_access.meta.get("subjects", [])),
         )
     )
 
