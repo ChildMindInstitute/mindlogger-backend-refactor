@@ -39,6 +39,13 @@ Resources:
               - "arn:aws:s3:::cmiml-feature-answer/*"
               - "arn:aws:s3:::cmiml-feature-operations/*"
 
+          - Sid: DataDogAgent
+            Effect: Allow
+            Action:
+              - "ecs:ListClusters"
+              - "ecs:ListContainerInstances"
+              - "ecs:DescribeContainerInstances"
+            Resource: ["*"]
 
 
 Outputs:

@@ -14,6 +14,12 @@ RUN apt-get -y update && apt-get -y upgrade \
 ARG USERNAME=code
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
+
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
+ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
+ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
+
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash
 
@@ -36,6 +42,11 @@ RUN sed -i 's/\r$//g' /fastapi-entrypoint && chmod +x /fastapi-entrypoint
 
 COPY --chown=code:code ./compose/fastapi/start /fastapi-start
 RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
+
+COPY --chown=code:code ./compose/fastapi/start-datadog /fastapi-start-datadog
+RUN sed -i 's/\r$//g' /fastapi-start-datadog && chmod +x /fastapi-start-datadog
+
+
 
 COPY --chown=code:code ./compose/fastapi/migrate /fastapi-migrate
 RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate

@@ -1,9 +1,9 @@
 
 name: Build and Deploy
-on: 
+on:
   push:
-#    branches:
-#      - develop
+    branches:
+      - develop
   workflow_dispatch: {}
 
 
@@ -98,13 +98,15 @@ jobs:
           echo "IMAGE_NAME=${ECR_REPO}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./compose/fastapi/Dockerfile
           push: true
           build-args: |
             PIPENV_EXTRA_ARGS=--dev
+            DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
+            DD_GIT_COMMIT_SHA=${{ github.sha }}
           cache-to: mode=max,image-manifest=true,oci-mediatypes=true,type=registry,ref=${{ env.ECR_REPO }}:cache
           cache-from: type=registry,ref=${{ env.ECR_REPO }}:cache
           tags: |
