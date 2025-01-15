@@ -202,6 +202,7 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     subject_last_name: str
     subject_created_at: datetime.datetime
     invitation: InvitationResponse | None = None
+    team_member_can_view_data: bool = False
 
 
 class PublicWorkspaceRespondent(PublicModel):

@@ -396,14 +396,6 @@ class UserAppletAccessService:
         crud = UserAppletAccessCRUD(self.session)
         return await crud.get(self._user_id, self._applet_id, Role.RESPONDENT.value)
 
-    async def get_applet_accesses(self) -> list[UserAppletAccessSchema]:
-        """
-        Get a list of all a user's accesses for a given applet
-        :return:
-        """
-        crud = UserAppletAccessCRUD(self.session)
-        return await crud.get_user_applet_accesses_by_roles(self._user_id, [self._applet_id], Role.as_list())
-
     async def get_owner(self) -> UserAppletAccessSchema:
         crud = UserAppletAccessCRUD(self.session)
         return await crud.get_applet_owner(self._applet_id)

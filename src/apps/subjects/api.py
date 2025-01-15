@@ -34,6 +34,7 @@ from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.services.user import UserService
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.applet_access import AppletAccessService
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
@@ -253,9 +254,7 @@ async def get_subject(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
 
-    accesses = await UserAppletAccessService(
-        session, applet_id=subject.applet_id, user_id=user.id
-    ).get_applet_accesses()
+    accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=[subject.applet_id], user_id=user.id)
     is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
     reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
 
@@ -358,9 +357,9 @@ async def get_target_subjects_by_respondent(
     subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
     result: list[TargetSubjectByRespondentResponse] = []
 
-    accesses = await UserAppletAccessService(
-        session, applet_id=respondent_subject.applet_id, user_id=user.id
-    ).get_applet_accesses()
+    accesses = await AppletAccessService(session).get_applet_accesses(
+        applet_ids=[respondent_subject.applet_id], user_id=user.id
+    )
     is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
     reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
 
