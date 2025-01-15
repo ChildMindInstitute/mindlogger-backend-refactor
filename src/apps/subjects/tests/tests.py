@@ -582,6 +582,7 @@ class TestSubjects(BaseTest):
             "firstName",
             "lastName",
             "userId",
+            "teamMemberCanViewData",
         }
         assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
@@ -720,11 +721,13 @@ class TestSubjects(BaseTest):
             "firstName",
             "lastName",
             "userId",
+            "teamMemberCanViewData",
         }
         assert uuid.UUID(res["id"]) == applet_one_shell_account.id
         assert res["secretUserId"] == applet_one_shell_account.secret_user_id
         assert res["nickname"] == applet_one_shell_account.nickname
         assert res["tag"] == applet_one_shell_account.tag
+        assert res["teamMemberCanViewData"] is True
         assert uuid.UUID(res["appletId"]) == applet_one_shell_account.applet_id
         assert res["userId"] is None
 
