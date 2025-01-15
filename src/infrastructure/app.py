@@ -17,6 +17,8 @@ import apps.authentication.router as auth
 import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
+import apps.integrations.loris.router as loris
+import apps.integrations.router as integrations
 import apps.invitations.router as invitations
 import apps.library.router as library
 import apps.logs.router as logs
@@ -68,6 +70,8 @@ routers: Iterable[APIRouter] = (
     subject_router.router,
     activity_assignments.router,
     activity_assignments.user_router,
+    loris.router,
+    integrations.router,
 )
 
 # Declare your middlewares here

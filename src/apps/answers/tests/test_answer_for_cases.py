@@ -90,6 +90,7 @@ class TestAnswerCases:
                 start_time=10,
                 end_time=11,
             ),
+            consent_to_share=False,
         )
 
         response = await client.post(self.answer_url, data=create_data)
@@ -125,6 +126,7 @@ class TestAnswerCases:
                 start_time=10,
                 end_time=11,
             ),
+            consent_to_share=False,
         )
 
         response = await client.post(self.answer_url, data=create_data)

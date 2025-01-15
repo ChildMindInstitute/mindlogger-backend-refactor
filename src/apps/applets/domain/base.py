@@ -70,3 +70,4 @@ class AppletFetchBase(AppletReportConfigurationBase, AppletBaseInfo):
     updated_at: datetime.datetime | None
     is_published: bool = False
     owner_id: uuid.UUID | None
+    integrations: list[str] | None

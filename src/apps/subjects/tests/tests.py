@@ -114,6 +114,7 @@ def answer_create_payload(applet_one: AppletFull):
             width=819,
             height=1080,
         ),
+        consent_to_share=False,
     )
 
 
