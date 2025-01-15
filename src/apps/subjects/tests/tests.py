@@ -190,6 +190,13 @@ async def applet_one_bob_coordinator(session: AsyncSession, applet_one: AppletFu
 
 
 @pytest.fixture
+async def applet_one_bob_coordinator_reviewer(session: AsyncSession, applet_one: AppletFull, tom, bob) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(bob.id, Role.COORDINATOR)
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(bob.id, Role.REVIEWER)
+    return applet_one
+
+
+@pytest.fixture
 async def applet_one_pit_editor(session: AsyncSession, applet_one: AppletFull, tom, pit) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(pit.id, Role.EDITOR)
     return applet_one
@@ -1285,6 +1292,87 @@ class TestSubjects(BaseTest):
         assert tom_result["submissionCount"] == 1
         assert tom_result["currentlyAssigned"] is False
         assert tom_result["teamMemberCanViewData"] is False
+
+        shell_account_result = result[1]
+
+        assert shell_account_result["id"] == str(applet_one_shell_account.id)
+        assert shell_account_result["submissionCount"] == 1
+        assert shell_account_result["currentlyAssigned"] is False
+        assert shell_account_result["teamMemberCanViewData"] is False
+
+    async def test_get_target_subjects_by_respondent_via_submission_as_coordinator_and_reviewer(
+        self,
+        client,
+        tom: User,
+        bob: User,
+        tom_applet_one_subject: Subject,
+        applet_one_shell_account: Subject,
+        applet_one_bob_coordinator_reviewer: AppletFull,
+        answer_create_payload: dict,
+        session: AsyncSession,
+    ):
+        activity = applet_one_bob_coordinator_reviewer.activities[0]
+
+        # Turn off auto-assignment
+        activity_service = ActivityService(session, tom.id)
+        await activity_service.remove_applet_activities(applet_one_bob_coordinator_reviewer.id)
+        await activity_service.update_create(
+            applet_one_bob_coordinator_reviewer.id,
+            [
+                ActivityUpdate(
+                    **activity.dict(exclude={"auto_assign"}),
+                    auto_assign=False,
+                )
+            ],
+        )
+
+        # Assign bob as a reviewer to tom
+        await UserAppletAccessService(session, tom.id, applet_one_bob_coordinator_reviewer.id).set_subjects_for_review(
+            reviewer_id=bob.id, applet_id=applet_one_bob_coordinator_reviewer.id, subjects=[tom_applet_one_subject.id]
+        )
+
+        filtered_answer_create_payload = {k: v for k, v in answer_create_payload.items() if k != "submit_id"}
+
+        # Self-report answer
+        await AnswerService(session, tom.id).create_answer(
+            AppletAnswerCreate(
+                **filtered_answer_create_payload,
+                submit_id=str(uuid.uuid4()),
+                input_subject_id=tom_applet_one_subject.id,
+                source_subject_id=tom_applet_one_subject.id,
+                target_subject_id=tom_applet_one_subject.id,
+            )
+        )
+
+        # Multi-informant answer
+        await AnswerService(session, tom.id).create_answer(
+            AppletAnswerCreate(
+                **filtered_answer_create_payload,
+                submit_id=str(uuid.uuid4()),
+                input_subject_id=tom_applet_one_subject.id,
+                source_subject_id=tom_applet_one_subject.id,
+                target_subject_id=applet_one_shell_account.id,
+            )
+        )
+
+        client.login(bob)
+
+        url = self.subject_target_by_respondent_url.format(
+            respondent_subject_id=tom_applet_one_subject.id, activity_or_flow_id=str(activity.id)
+        )
+        response = await client.get(url)
+        assert response.status_code == http.HTTPStatus.OK
+
+        result = response.json()["result"]
+
+        assert len(result) == 2
+
+        tom_result = result[0]
+
+        assert tom_result["id"] == str(tom_applet_one_subject.id)
+        assert tom_result["submissionCount"] == 1
+        assert tom_result["currentlyAssigned"] is False
+        assert tom_result["teamMemberCanViewData"] is True
 
         shell_account_result = result[1]
 
