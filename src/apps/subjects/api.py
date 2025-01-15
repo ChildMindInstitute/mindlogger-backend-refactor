@@ -15,7 +15,7 @@ from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
+from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.response import EmptyResponse
 from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relation
 from apps.subjects.domain import (
@@ -33,7 +33,6 @@ from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.services.user import UserService
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.service.applet_access import AppletAccessService
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
@@ -318,12 +317,6 @@ async def get_target_subjects_by_respondent(
         respondent_subject.applet_id, respondent_subject.id
     )
 
-    access = await AppletAccessService(session).get_priority_access(
-        applet_id=respondent_subject.applet_id, user_id=user.id
-    )
-    if not access:
-        raise AccessDeniedError()
-
     assignment_service = ActivityAssignmentService(session)
     assignment_subject_ids = await assignment_service.get_target_subject_ids_by_respondent(
         respondent_subject_id=respondent_subject_id, activity_or_flow_ids=[activity_or_flow_id]
@@ -356,12 +349,18 @@ async def get_target_subjects_by_respondent(
     subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
     result: list[TargetSubjectByRespondentResponse] = []
 
-    # Find the respondent subject in the list of subjects
+    accesses = await UserAppletAccessService(
+        session, applet_id=respondent_subject.applet_id, user_id=user.id
+    ).get_applet_accesses()
     respondent_target_subject: TargetSubjectByRespondentResponse | None = None
-    is_super_reviewer = access.role in Role.super_reviewers()
+    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+    is_regular_reviewer = reviewer_access is not None
+
+    # Find the respondent subject in the list of subjects
     for subject in subjects:
         can_view_data = is_super_reviewer or (
-            access.role == Role.REVIEWER and str(subject.id) in access.meta.get("subjects", [])
+            is_regular_reviewer and str(subject.id) in reviewer_access.meta.get("subjects", [])
         )
 
         target_subject = TargetSubjectByRespondentResponse(
