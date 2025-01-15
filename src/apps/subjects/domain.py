@@ -91,6 +91,7 @@ class SubjectReadResponse(SubjectUpdateRequest):
 class TargetSubjectByRespondentResponse(SubjectReadResponse):
     submission_count: int = 0
     currently_assigned: bool = False
+    team_member_can_view_data: bool = False
 
 
 class SubjectRelation(InternalModel):
