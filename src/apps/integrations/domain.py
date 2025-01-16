@@ -9,6 +9,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 class AvailableIntegrations(str, Enum):
     LORIS = "LORIS"
+    PROLIFIC = "PROLIFIC"
     FUTURE = "FUTURE"
 
 
