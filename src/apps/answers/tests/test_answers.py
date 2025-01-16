@@ -1008,11 +1008,11 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"]["dates"]) == 1
 
     async def test_answer_skippable_activity_items_create_for_respondent_with_flow_id(
-        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_with_flow: AppletFull
+        self, client: TestClient, tom: User, answer_with_flow_create: AppletAnswerCreate, applet_with_flow: AppletFull
     ):
         client.login(tom)
 
-        response = await client.post(self.answer_url, data=answer_create)
+        response = await client.post(self.answer_url, data=answer_with_flow_create)
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
@@ -1049,11 +1049,11 @@ class TestAnswerActivityItems(BaseTest):
         assert len(response.json()["result"]["dates"]) == 1
 
     async def test_list_submit_dates_with_flow_id(
-        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_with_flow: AppletFull
+        self, client: TestClient, tom: User, answer_with_flow_create: AppletAnswerCreate, applet_with_flow: AppletFull
     ):
         client.login(tom)
 
-        response = await client.post(self.answer_url, data=answer_create)
+        response = await client.post(self.answer_url, data=answer_with_flow_create)
         assert response.status_code == http.HTTPStatus.CREATED
 
         response = await client.get(

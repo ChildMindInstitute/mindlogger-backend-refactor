@@ -270,12 +270,12 @@ class TestAnswerActivityItems(BaseTest):
         arbitrary_session: AsyncSession,
         arbitrary_client: TestClient,
         tom: User,
-        answer_create: AppletAnswerCreate,
+        answer_with_flow_create: AppletAnswerCreate,
         applet_with_flow: AppletFull,
     ):
         arbitrary_client.login(tom)
 
-        response = await arbitrary_client.post(self.answer_url, data=answer_create)
+        response = await arbitrary_client.post(self.answer_url, data=answer_with_flow_create)
 
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
@@ -290,19 +290,19 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert len(response.json()["result"]["dates"]) == 1
-        await assert_answer_exist_on_arbitrary(str(answer_create.submit_id), arbitrary_session)
+        await assert_answer_exist_on_arbitrary(str(answer_with_flow_create.submit_id), arbitrary_session)
 
     async def test_list_submit_dates_with_flow_id(
         self,
         arbitrary_session: AsyncSession,
         arbitrary_client: TestClient,
         tom: User,
-        answer_create: AppletAnswerCreate,
+        answer_with_flow_create: AppletAnswerCreate,
         applet_with_flow: AppletFull,
     ):
         arbitrary_client.login(tom)
 
-        response = await arbitrary_client.post(self.answer_url, data=answer_create)
+        response = await arbitrary_client.post(self.answer_url, data=answer_with_flow_create)
         assert response.status_code == http.HTTPStatus.CREATED
 
         response = await arbitrary_client.get(
@@ -316,7 +316,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert len(response.json()["result"]["dates"]) == 1
-        await assert_answer_exist_on_arbitrary(str(answer_create.submit_id), arbitrary_session)
+        await assert_answer_exist_on_arbitrary(str(answer_with_flow_create.submit_id), arbitrary_session)
 
         response = await arbitrary_client.get(
             self.applet_submit_dates_url.format(applet_id=str(applet_with_flow.id)),
