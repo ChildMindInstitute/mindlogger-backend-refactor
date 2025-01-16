@@ -94,7 +94,7 @@ class CheckAccessService:
         await self._check_applet_roles(applet_id, roles)
 
     async def check_applet_activity_assignment_access(self, applet_id: uuid.UUID):
-        await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER])
+        await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER, Role.COORDINATOR])
 
     async def check_workspace_folder_access(self, owner_id: uuid.UUID):
         await self._check_workspace_roles(

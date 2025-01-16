@@ -24,6 +24,7 @@ from apps.subjects.domain import (
     SubjectCreateRequest,
     SubjectDeleteRequest,
     SubjectReadResponse,
+    SubjectReadResponseWithRoles,
     SubjectRelationCreate,
     SubjectUpdateRequest,
     TargetSubjectByRespondentResponse,
@@ -232,7 +233,7 @@ async def get_subject(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
-) -> Response[SubjectReadResponse]:
+) -> Response[SubjectReadResponseWithRoles]:
     subjects_service = SubjectsService(session, user.id)
     subject = await subjects_service.get(subject_id)
     if not subject:
@@ -253,8 +254,12 @@ async def get_subject(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
 
+    roles: list[str] = []
+    if subject.user_id:
+        roles = await UserAppletAccessService(session, subject.user_id, subject.applet_id).get_roles()
+
     return Response(
-        result=SubjectReadResponse(
+        result=SubjectReadResponseWithRoles(
             id=subject.id,
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
@@ -264,6 +269,7 @@ async def get_subject(
             user_id=subject.user_id,
             first_name=subject.first_name,
             last_name=subject.last_name,
+            roles=roles,
         )
     )
 
@@ -354,6 +360,12 @@ async def get_target_subjects_by_respondent(
             subject_info[subject_id]["currently_assigned"] = True
 
     subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
+    roles: dict[uuid.UUID, list[Role]] = await UserAppletAccessService(
+        session, user.id, respondent_subject.applet_id
+    ).get_applet_roles_by_priority_for_users(
+        respondent_subject.applet_id, [subject.user_id for subject in subjects if subject.user_id]
+    )
+
     result: list[TargetSubjectByRespondentResponse] = []
 
     # Find the respondent subject in the list of subjects
@@ -376,6 +388,7 @@ async def get_target_subjects_by_respondent(
             submission_count=subject_info[subject.id]["submission_count"],
             currently_assigned=subject_info[subject.id]["currently_assigned"],
             team_member_can_view_data=can_view_data,
+            roles=roles[subject.user_id] if subject.user_id else [],
         )
 
         if subject.id == respondent_subject_id:

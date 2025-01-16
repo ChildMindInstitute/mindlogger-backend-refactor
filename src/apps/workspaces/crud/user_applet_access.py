@@ -329,10 +329,24 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         return result.scalars().first()
 
     async def get_user_roles_to_applet(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> list[str]:
-        query: Query = select(distinct(UserAppletAccessSchema.role))
-        query = query.where(UserAppletAccessSchema.soft_exists())
-        query = query.where(UserAppletAccessSchema.applet_id == applet_id)
-        query = query.where(UserAppletAccessSchema.user_id == user_id)
+        from_query: Query = select(UserAppletAccessSchema)
+        from_query = from_query.where(UserAppletAccessSchema.soft_exists())
+        from_query = from_query.where(UserAppletAccessSchema.user_id == user_id)
+        from_query = from_query.where(UserAppletAccessSchema.applet_id == applet_id)
+        from_query = from_query.order_by(
+            case(
+                (UserAppletAccessSchema.role == Role.OWNER, 1),
+                (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                else_=10,
+            ).asc()
+        ).alias("prioritized_access")
+
+        query = select(distinct(from_query.c.role))
+
         db_result = await self._execute(query)
 
         return db_result.scalars().all()
@@ -457,6 +471,31 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             .exists()
         )
 
+        # Subquery to get the list of roles for each user and applet
+        roles_subquery = (
+            select(
+                UserAppletAccessSchema.user_id,
+                UserAppletAccessSchema.applet_id,
+                func.array_agg(
+                    aggregate_order_by(
+                        UserAppletAccessSchema.role,
+                        case(
+                            (UserAppletAccessSchema.role == Role.OWNER, 1),
+                            (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                            (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                            (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                            (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                            (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                            else_=10,
+                        ).asc(),
+                    )
+                ).label("roles"),
+            )
+            .where(UserAppletAccessSchema.soft_exists())
+            .group_by(UserAppletAccessSchema.applet_id, UserAppletAccessSchema.user_id)
+            .subquery()
+        )
+
         query: Query = select(
             # fmt: off
             UserSchema.id,
@@ -518,6 +557,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     SubjectSchema.last_name,
                     text("'subject_created_at'"),
                     SubjectSchema.created_at,
+                    text("'roles'"),
+                    func.coalesce(roles_subquery.c.roles, []),
                 )
             ).label("details"),
         )
@@ -531,6 +572,14 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 UserAppletAccessSchema.applet_id == SubjectSchema.applet_id,
                 UserAppletAccessSchema.user_id == SubjectSchema.user_id,
                 UserAppletAccessSchema.role == Role.RESPONDENT,
+            ),
+            isouter=True,
+        )
+        query = query.join(
+            roles_subquery,
+            and_(
+                roles_subquery.c.user_id == SubjectSchema.user_id,
+                roles_subquery.c.applet_id == SubjectSchema.applet_id,
             ),
             isouter=True,
         )
@@ -1113,6 +1162,38 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         query = select(from_query.c.applet_id, from_query.c.role)
         query = query.distinct(from_query.c.applet_id)
+
+        db_result = await self._execute(query)
+
+        return dict(db_result.all())
+
+    async def get_applet_roles_by_priority_for_users(
+        self, applet_id: uuid.UUID, user_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, list[Role]]:
+        """
+        Get a map of user ID to their roles in the given applet
+        :param applet_id:
+        :param user_ids:
+        :return:
+        """
+        from_query: Query = select(UserAppletAccessSchema)
+        from_query = from_query.where(UserAppletAccessSchema.soft_exists())
+        from_query = from_query.where(UserAppletAccessSchema.applet_id == applet_id)
+        from_query = from_query.where(UserAppletAccessSchema.user_id.in_(user_ids))
+        from_query = from_query.order_by(
+            case(
+                (UserAppletAccessSchema.role == Role.OWNER, 1),
+                (UserAppletAccessSchema.role == Role.MANAGER, 2),
+                (UserAppletAccessSchema.role == Role.COORDINATOR, 3),
+                (UserAppletAccessSchema.role == Role.EDITOR, 4),
+                (UserAppletAccessSchema.role == Role.REVIEWER, 5),
+                (UserAppletAccessSchema.role == Role.RESPONDENT, 6),
+                else_=10,
+            ).asc()
+        ).alias("prioritized_access")
+
+        query = select(from_query.c.user_id, func.array_agg(from_query.c.role))
+        query = query.group_by(from_query.c.user_id)
 
         db_result = await self._execute(query)
 
