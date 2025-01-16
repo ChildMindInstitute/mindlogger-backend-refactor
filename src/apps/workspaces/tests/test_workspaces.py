@@ -1,6 +1,7 @@
 import datetime
 import http
 import uuid
+from typing import Any
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -138,6 +139,7 @@ async def tom_answer_applet_one(session, tom: User, applet_one: AppletFull):
         client=ClientMeta(app_id="web", app_version="1.1.0", width="800", height="600"),
         target_subject_id=subject.id,
         source_subject_id=subject.id,
+        consent_to_share=False,
     )
     return await AnswerService(session, tom.id).create_answer(activity_answer)
 
@@ -424,8 +426,13 @@ class TestWorkspaces(BaseTest):
         assert lucy_result["details"]
         assert tom_result["details"]
 
-        lucy_result_details = lucy_result["details"]
-        tom_result_details = sorted(tom_result["details"], key=lambda x: x["appletDisplayName"])
+        def sorting_function(x: Any):
+            return x["appletDisplayName"]
+
+        lucy_result_details = sorted(lucy_result["details"], key=sorting_function)
+        shell_account_result_details = sorted(shell_account_result["details"], key=sorting_function)
+        tom_result_details = sorted(tom_result["details"], key=sorting_function)
+        user_result_details = sorted(user_result["details"], key=sorting_function)
 
         # Lucy has a pending invitation to Applet 1
         assert lucy_result_details[0]["invitation"]  # Applet 1
@@ -434,6 +441,7 @@ class TestWorkspaces(BaseTest):
         assert lucy_result_details[0]["subjectFirstName"] == lucy.first_name
         assert lucy_result_details[0]["subjectLastName"] == lucy.last_name
         assert lucy_result_details[0]["subjectCreatedAt"]
+        assert lucy_result_details[0]["roles"] == [Role.RESPONDENT]
         assert lucy_result_details[0]["teamMemberCanViewData"] is True
 
         # Tom has an approved invitation to Applet 1
@@ -443,6 +451,7 @@ class TestWorkspaces(BaseTest):
         assert tom_result_details[0]["subjectFirstName"] == tom.first_name
         assert tom_result_details[0]["subjectLastName"] == tom.last_name
         assert tom_result_details[0]["subjectCreatedAt"]
+        assert tom_result_details[0]["roles"] == [Role.OWNER, Role.RESPONDENT]
         assert tom_result_details[0]["teamMemberCanViewData"] is True
 
         # Tom has a pending invitation to Applet 2
@@ -452,7 +461,12 @@ class TestWorkspaces(BaseTest):
         assert tom_result_details[1]["subjectFirstName"] == tom.first_name
         assert tom_result_details[1]["subjectLastName"] == tom.last_name
         assert tom_result_details[1]["subjectCreatedAt"]
+        assert tom_result_details[1]["roles"] == [Role.OWNER, Role.RESPONDENT]
         assert tom_result_details[1]["teamMemberCanViewData"] is True
+
+        # Check for the roles of the other participants
+        assert shell_account_result_details[0]["roles"] == []  # Limited accounts have no roles
+        assert user_result_details[0]["roles"] == [Role.RESPONDENT]
 
         # test manual, case-insensitive ordering by encrypted nicknames field
         assert set(data.keys()) == {"count", "result", "orderingFields"}
@@ -608,6 +622,7 @@ class TestWorkspaces(BaseTest):
         assert lucy_result_details[0]["subjectFirstName"] == lucy.first_name
         assert lucy_result_details[0]["subjectLastName"] == lucy.last_name
         assert lucy_result_details[0]["subjectCreatedAt"]
+        assert lucy_result_details[0]["roles"] == [Role.RESPONDENT]
         assert lucy_result_details[0]["teamMemberCanViewData"] is True
 
         # Tom has an approved invitation to Applet 1
@@ -617,6 +632,7 @@ class TestWorkspaces(BaseTest):
         assert tom_result_details[0]["subjectFirstName"] == tom.first_name
         assert tom_result_details[0]["subjectLastName"] == tom.last_name
         assert tom_result_details[0]["subjectCreatedAt"]
+        assert tom_result_details[0]["roles"] == [Role.OWNER, Role.RESPONDENT]
         assert tom_result_details[0]["teamMemberCanViewData"] is True
 
         # test search

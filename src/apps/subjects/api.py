@@ -254,6 +254,10 @@ async def get_subject(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
 
+    roles: list[str] = []
+    if subject.user_id:
+        roles = await UserAppletAccessService(session, subject.user_id, subject.applet_id).get_roles()
+
     accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=[subject.applet_id], user_id=user.id)
     is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
     reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
@@ -269,6 +273,7 @@ async def get_subject(
             user_id=subject.user_id,
             first_name=subject.first_name,
             last_name=subject.last_name,
+            roles=roles,
             team_member_can_view_data=is_super_reviewer
             or (reviewer_access is not None and str(subject.id) in reviewer_access.meta.get("subjects", [])),
         )
@@ -355,6 +360,12 @@ async def get_target_subjects_by_respondent(
             subject_info[subject_id]["currently_assigned"] = True
 
     subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
+    roles: dict[uuid.UUID, list[Role]] = await UserAppletAccessService(
+        session, user.id, respondent_subject.applet_id
+    ).get_applet_roles_by_priority_for_users(
+        respondent_subject.applet_id, [subject.user_id for subject in subjects if subject.user_id]
+    )
+
     result: list[TargetSubjectByRespondentResponse] = []
 
     accesses = await AppletAccessService(session).get_applet_accesses(
@@ -383,6 +394,7 @@ async def get_target_subjects_by_respondent(
             submission_count=subject_info[subject.id]["submission_count"],
             currently_assigned=subject_info[subject.id]["currently_assigned"],
             team_member_can_view_data=can_view_data,
+            roles=roles[subject.user_id] if subject.user_id else [],
         )
 
         if subject.id == respondent_subject_id:

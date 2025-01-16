@@ -94,7 +94,7 @@ class CheckAccessService:
         await self._check_applet_roles(applet_id, roles)
 
     async def check_applet_activity_assignment_access(self, applet_id: uuid.UUID):
-        await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER])
+        await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER, Role.COORDINATOR])
 
     async def check_workspace_folder_access(self, owner_id: uuid.UUID):
         await self._check_workspace_roles(
@@ -251,4 +251,14 @@ class CheckAccessService:
             if str(subject_id) not in allowed_subject_ids:
                 raise AccessDeniedError()
         else:
+            raise AccessDeniedError()
+
+    async def check_answer_publishing_access(self, applet_id: uuid.UUID):
+        await self._check_applet_roles(applet_id, [Role.OWNER])
+
+    async def check_integrations_access(self, applet_id: uuid.UUID):
+        access = await UserAppletAccessCRUD(self.session).get_by_roles(
+            self.user_id, applet_id, [Role.MANAGER, Role.OWNER]
+        )
+        if not access:
             raise AccessDeniedError()

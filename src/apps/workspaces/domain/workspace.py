@@ -89,6 +89,7 @@ class WorkspaceRespondentDetails(InternalModel):
     subject_last_name: str
     subject_created_at: datetime.datetime
     invitation: InvitationDetail | None = None
+    roles: list[Role]
 
     @validator("respondent_nickname", "subject_first_name", "subject_last_name", pre=True)
     def decrypt_fields(cls, value):
@@ -202,6 +203,7 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     subject_last_name: str
     subject_created_at: datetime.datetime
     invitation: InvitationResponse | None = None
+    roles: list[Role]
     team_member_can_view_data: bool = False
 
 
