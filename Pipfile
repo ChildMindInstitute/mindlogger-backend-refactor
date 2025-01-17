@@ -11,13 +11,13 @@ alembic = "==1.14.0"
 asyncpg = "==0.30.0"
 azure-storage-blob = "==12.24.0"
 bcrypt = "==4.2.1"
-boto3 = "==1.35.*"
+boto3 = "==1.36.*"
 fastapi = "==0.115.6"
 fastapi-mail = "==1.2.9"
 firebase-admin = "==6.6.*"
 httpx = "==0.28.*"
 jinja2 = "==3.1.*"
-more-itertools = "==10.5.0"
+more-itertools = "==10.6.0"
 nh3 = "==0.2.20"
 pydantic = { extras = ["email"], version = "==1.10.18" }
 pyjwt = "==2.10.1"
@@ -36,7 +36,7 @@ typer = "==0.15.*"
 uvicorn = { extras = ["standard"], version = "==0.34.*" }
 ddtrace = "==2.*"
 bytecode = "==0.16.0"
-structlog = "==24.4.0"
+structlog = "==25.1.*"
 asgi-correlation-id = "==4.3.4"
 
 
@@ -59,7 +59,7 @@ pytest-env = "==1.1.5"
 pytest-lazy-fixtures = "==1.*"
 pytest-mock = "==3.14.0"
 reproschema = "==0.6.2"
-ruff = "==0.8.*"
+ruff = "==0.9.*"
 types-aiofiles = "==24.1.0.*"
 types-cachetools = "==5.5.0.*"
 types-python-dateutil = "==2.9.0.*"
@@ -68,7 +68,7 @@ types-requests = "==2.32.0.*"
 typing-extensions = "==4.12.2"
 
 [requires]
-python_version = "3.11"
+python_version = "3.13"
 
 [scripts]
 cli = "python src/cli.py"

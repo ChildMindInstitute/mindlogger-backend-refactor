@@ -215,9 +215,9 @@ def answer_item_create(
         identifier="encrypted_identifier",
         scheduled_time=None,
         scheduled_event_id=str(uuid.uuid4()),
-        start_time=datetime.datetime.utcnow(),
-        end_time=datetime.datetime.utcnow() + datetime.timedelta(seconds=1),
-        local_end_date=datetime.datetime.utcnow().date() - datetime.timedelta(days=1),
+        start_time=datetime.datetime.now(datetime.UTC),
+        end_time=datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=1),
+        local_end_date=datetime.datetime.now(datetime.UTC).date() - datetime.timedelta(days=1),
         local_end_time=datetime.time(15, 0),
         user_public_key="public_key",
     )
@@ -235,7 +235,7 @@ def answer_create(
         submit_id=uuid.uuid4(),
         activity_id=applet.activities[0].id,
         answer=answer_item_create,
-        created_at=datetime.datetime.utcnow().replace(microsecond=0),
+        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
         client=client_meta,
         consent_to_share=False,
     )
@@ -253,7 +253,7 @@ def answer_create_applet_one(
         submit_id=uuid.uuid4(),
         activity_id=applet_one.activities[0].id,
         answer=answer_item_create,
-        created_at=datetime.datetime.utcnow().replace(microsecond=0),
+        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
         client=client_meta,
     )
 
@@ -276,7 +276,7 @@ def answer_with_alert_create(
         submit_id=uuid.uuid4(),
         activity_id=applet.activities[0].id,
         answer=answer_item_create,
-        created_at=datetime.datetime.utcnow().replace(microsecond=0),
+        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
         client=client_meta,
         alerts=[answer_alert],
         consent_to_share=False,
@@ -302,7 +302,7 @@ def public_answer_create(
         submit_id=uuid.uuid4(),
         activity_id=public_applet.activities[0].id,
         answer=item_create,
-        created_at=datetime.datetime.utcnow().replace(microsecond=0),
+        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
         client=client_meta,
         consent_to_share=False,
     )
@@ -320,7 +320,7 @@ def answer_with_flow_create(
         submit_id=uuid.uuid4(),
         activity_id=applet.activities[0].id,
         answer=answer_item_create,
-        created_at=datetime.datetime.utcnow().replace(microsecond=0),
+        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
         client=client_meta,
         flow_id=applet.activity_flows[0].id,
         is_flow_completed=True,
@@ -353,7 +353,7 @@ def answer_reviewable_activity_create(
         submit_id=uuid.uuid4(),
         activity_id=activity.id,
         answer=item_create,
-        created_at=datetime.datetime.utcnow().replace(microsecond=0),
+        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
         client=client_meta,
         consent_to_share=False,
     )
@@ -513,8 +513,8 @@ def tom_answer_create_data(tom, applet_with_reviewable_activity) -> AppletAnswer
         activity_id=applet_with_reviewable_activity.activities[0].id,
         answer=ItemAnswerCreate(
             item_ids=[applet_with_reviewable_activity.activities[0].items[0].id],
-            start_time=datetime.datetime.utcnow(),
-            end_time=datetime.datetime.utcnow(),
+            start_time=datetime.datetime.now(datetime.UTC),
+            end_time=datetime.datetime.now(datetime.UTC),
             user_public_key=str(tom.id),
         ),
         client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
@@ -593,7 +593,7 @@ def answers_reviewable_submission_create(
             submit_id=submit_id,
             activity_id=activity.id,
             answer=item_create,
-            created_at=datetime.datetime.utcnow().replace(microsecond=0),
+            created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
             client=client_meta,
             flow_id=applet_with_reviewable_flow.activity_flows[0].id,
         )

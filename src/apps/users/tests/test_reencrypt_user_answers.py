@@ -44,8 +44,8 @@ def job_model(user: User) -> Job:
         creator_id=user.id,
         status=JobStatus.in_progress,
         id=uuid.uuid4(),
-        created_at=datetime.datetime.utcnow(),
-        updated_at=datetime.datetime.utcnow(),
+        created_at=datetime.datetime.now(datetime.UTC),
+        updated_at=datetime.datetime.now(datetime.UTC),
     )
 
 
@@ -89,8 +89,8 @@ def answer_item_create(
         item_ids=[applet.activities[0].items[0].id],
         identifier=None,
         scheduled_time=None,
-        start_time=datetime.datetime.utcnow(),
-        end_time=datetime.datetime.utcnow() + datetime.timedelta(seconds=1),
+        start_time=datetime.datetime.now(datetime.UTC),
+        end_time=datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=1),
         user_public_key=str(public_key),
     )
 
@@ -109,7 +109,7 @@ async def answer(
         submit_id=uuid.uuid4(),
         activity_id=applet.activities[0].id,
         answer=answer_item_create,
-        created_at=datetime.datetime.utcnow(),
+        created_at=datetime.datetime.now(datetime.UTC),
         client=client_meta,
         consent_to_share=False,
     )
@@ -132,7 +132,7 @@ async def answer_second(
         submit_id=uuid.uuid4(),
         activity_id=applet.activities[0].id,
         answer=answer_item_create,
-        created_at=datetime.datetime.utcnow(),
+        created_at=datetime.datetime.now(datetime.UTC),
         client=client_meta,
         consent_to_share=False,
     )
@@ -156,7 +156,7 @@ async def answer_arbitrary(
         submit_id=uuid.uuid4(),
         activity_id=applet.activities[0].id,
         answer=answer_item_create,
-        created_at=datetime.datetime.utcnow(),
+        created_at=datetime.datetime.now(datetime.UTC),
         client=client_meta,
         consent_to_share=False,
     )

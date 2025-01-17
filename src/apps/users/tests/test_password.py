@@ -29,7 +29,7 @@ def cache_entry(user: UserCreate):
         instance=PasswordRecoveryInfoFactory.build(
             email=user.email,
         ),
-        created_at=datetime.datetime.utcnow(),
+        created_at=datetime.datetime.now(datetime.UTC),
     )
 
 
