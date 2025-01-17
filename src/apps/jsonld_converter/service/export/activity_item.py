@@ -204,7 +204,7 @@ class SliderValuesMixin:
                 "schema:value": v,
             }
             if scores:
-                choice["schema:score"] = scores[i]
+                choice["schema:score"] = scores[i]  # type: ignore[assignment]
             if image:
                 choice["schema:image"] = image
 
@@ -272,7 +272,7 @@ class ActivityItemSliderRowsExport(ActivityItemBaseExport, SliderValuesMixin):
                 "schema:maxValue": row.max_label,
                 "schema:minValueImg": row.min_image,
                 "schema:maxValueImg": row.max_image,
-                "choices": self._build_choices_prop(row),
+                "choices": self._build_choices_prop(row),  # type: ignore[arg-type]
             }
             slider_options.append(option)
 

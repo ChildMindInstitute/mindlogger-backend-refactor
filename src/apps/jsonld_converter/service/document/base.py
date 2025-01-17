@@ -236,7 +236,7 @@ class CommonFieldsMixin:
 
     def _get_allow_list(self, doc: dict, drop=False) -> list[str]:
         rules = self.attr_processor.get_attr_list(doc, "reproschema:allow", drop=drop) or []
-        return [rule.get(LdKeyword.id) if isinstance(rule, dict) else rule for rule in rules]
+        return [rule.get(LdKeyword.id) if isinstance(rule, dict) else rule for rule in rules]  # type: ignore
 
     def _is_allowed(self, allow_list: list[str], keys: list[str]) -> bool:
         for key in keys:
