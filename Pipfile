@@ -34,7 +34,7 @@ taskiq-fastapi = "==0.3.*"
 taskiq-redis = "==1.0.2"
 typer = "==0.15.*"
 uvicorn = { extras = ["standard"], version = "==0.34.*" }
-ddtrace = "==2.*"
+ddtrace = "==2.19.*"
 bytecode = "==0.16.0"
 structlog = "==25.1.*"
 asgi-correlation-id = "==4.3.4"
