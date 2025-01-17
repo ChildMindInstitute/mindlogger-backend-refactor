@@ -214,7 +214,7 @@ class TestWorkspaces(BaseTest):
     workspace_respondents_pin = "/workspaces/{owner_id}/respondents/{user_id}/pin"
     workspace_subject_pin = "/workspaces/{owner_id}/subjects/{subject_id}/pin"
     workspace_managers_pin = "/workspaces/{owner_id}/managers/{user_id}/pin"
-    workspace_get_applet_respondent = "/workspaces/{owner_id}" "/applets/{applet_id}" "/respondents/{respondent_id}"
+    workspace_get_applet_respondent = "/workspaces/{owner_id}/applets/{applet_id}/respondents/{respondent_id}"
 
     @pytest.mark.usefixtures("applet_three")
     async def test_user_workspace_list(self, client, lucy):

@@ -112,7 +112,7 @@ async def reencrypt(
                 print(f"Started reencrypting data in the table {table_name}")
                 columns = table_name_column_name_map.get(table_name, [])
                 if not columns:
-                    print("[red]" f"[bold]{table_name}[/bold] table does not have encrypted columns. Skipped[red]")
+                    print(f"[red][bold]{table_name}[/bold] table does not have encrypted columns. Skipped[red]")
                     continue
                 for column in columns:
                     print(f"Update column {column}")

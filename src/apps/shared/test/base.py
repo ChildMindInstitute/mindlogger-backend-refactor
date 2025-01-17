@@ -49,7 +49,7 @@ class BaseTest:
                 values = ",".join(map(_str_caster, datum["fields"].values()))
                 query = text(
                     f"""
-                insert into "{datum['table']}"({columns}) values ({values})
+                insert into "{datum["table"]}"({columns}) values ({values})
                 """
                 )
                 await session.execute(query)

@@ -19,7 +19,7 @@ class BasePeriodicity(BaseModel):
     end_date: date | None
     selected_date: date | None = Field(
         None,
-        description="If type is WEEKLY, MONTHLY or ONCE," " selectedDate must be set.",
+        description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
     )
 
     @root_validator

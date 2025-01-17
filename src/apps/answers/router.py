@@ -330,7 +330,7 @@ router.get(
 )(answer_note_list)
 
 router.put(
-    "/applet/{applet_id}/answers/{answer_id}/activities/" "{activity_id}/notes/{note_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}",
     # noqa: E501
     status_code=status.HTTP_200_OK,
     responses={
@@ -340,7 +340,7 @@ router.put(
 )(answer_note_edit)
 
 router.delete(
-    "/applet/{applet_id}/answers/{answer_id}/activities/" "{activity_id}/notes/{note_id}",
+    "/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes/{note_id}",
     # noqa: E501
     status_code=status.HTTP_204_NO_CONTENT,
     responses={

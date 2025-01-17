@@ -14,6 +14,6 @@ class AudioFileConvert(BaseModel):
 
 
 class ImageConvert(BaseModel):
-    command: str = "convert -strip -interlace JPEG -sampling-factor 4:2:0 " "-quality 85 -colorspace RGB {fin} {fout}"
+    command: str = "convert -strip -interlace JPEG -sampling-factor 4:2:0 -quality 85 -colorspace RGB {fin} {fout}"
     subprocess_timeout: int = 20  # sec
     task_wait_timeout: int = 10  # sec

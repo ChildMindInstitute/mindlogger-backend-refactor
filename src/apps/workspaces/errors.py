@@ -87,7 +87,7 @@ class AppletInviteAccessDenied(AccessDeniedError):
 
 
 class AppletSetScheduleAccessDenied(AccessDeniedError):
-    message = _("Access denied to manipulate with " "schedules and notifications of the applet.")
+    message = _("Access denied to manipulate with schedules and notifications of the applet.")
 
 
 class TransferOwnershipAccessDenied(AccessDeniedError):

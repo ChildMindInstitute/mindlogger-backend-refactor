@@ -2268,12 +2268,12 @@ class ReportServerService:
             ) as resp:
                 duration = time.time() - start
                 if resp.status == 200:
-                    logger.info(f"Successful request (for LORIS) in {duration:.1f}" "  seconds.")
+                    logger.info(f"Successful request (for LORIS) in {duration:.1f}  seconds.")
                     response_data = await resp.json()
                     # return ReportServerResponse(**response_data)
                     return response_data, answer_versions
                 else:
-                    logger.error(f"Failed request (for LORIS) in {duration:.1f}" "  seconds.")
+                    logger.error(f"Failed request (for LORIS) in {duration:.1f}  seconds.")
                     error_message = await resp.text()
                     raise ReportServerError(message=error_message)
 
