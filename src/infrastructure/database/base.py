@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, MetaData, inspect, text
 from sqlalchemy.dialects.postgresql import UUID
@@ -36,13 +36,13 @@ class Base(SoftDeletable, _Base):  # type: ignore
     )
     created_at = Column(
         DateTime(),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         server_default=text("timezone('utc', now())"),
     )
     updated_at = Column(
         DateTime(),
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         server_default=text("timezone('utc', now())"),
         server_onupdate=text("timezone('utc', now())"),
     )

@@ -23,7 +23,7 @@ class AuthenticationService:
     def create_access_token(data: dict) -> str:
         to_encode = data.copy()
         expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
         to_encode.setdefault(JWTClaim.exp, expire)
         to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
         encoded_jwt = jwt.encode(
@@ -37,7 +37,7 @@ class AuthenticationService:
     def create_refresh_token(data: dict) -> str:
         to_encode = data.copy()
         expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
         to_encode.setdefault(JWTClaim.exp, expire)
         to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
         encoded_jwt = jwt.encode(
@@ -68,14 +68,14 @@ class AuthenticationService:
         if not token.payload.rjti:
             return None
 
-        access_exp = datetime.utcfromtimestamp(token.payload.exp)
+        access_exp = datetime.fromtimestamp(token.payload.exp, timezone.utc)
         refresh_expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
         access_expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
         expire = access_exp - access_expires_delta + refresh_expires_delta
         refresh_token = InternalToken(
             payload=TokenPayload(
                 sub=token.payload.sub,
-                exp=expire.replace(tzinfo=timezone.utc).timestamp(),
+                exp=int(expire.timestamp()),
                 jti=token.payload.rjti,
             )
         )

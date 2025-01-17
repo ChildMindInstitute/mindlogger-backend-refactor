@@ -128,7 +128,7 @@ class ActivityEventRawRow(RawRow):
 def is_last_day_of_month(date: datetime.date):
     mdays = calendar.mdays.copy()  # type: ignore[attr-defined]
     if calendar.isleap(date.year):
-        mdays[calendar.February] += 1  # type: ignore[attr-defined]
+        mdays[calendar.FEBRUARY] += 1  # type: ignore[attr-defined]
     return date.day == mdays[date.month]
 
 

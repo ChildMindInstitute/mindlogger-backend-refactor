@@ -133,10 +133,10 @@ async def tom_answer_applet_one(session, tom: User, applet_one: AppletFull):
         activity_id=activity.id,
         answer=ItemAnswerCreate(
             item_ids=items_ids,
-            start_time=datetime.datetime.utcnow(),
-            end_time=datetime.datetime.utcnow(),
+            start_time=datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
+            end_time=datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
         ),
-        client=ClientMeta(app_id="web", app_version="1.1.0", width="800", height="600"),
+        client=ClientMeta(app_id="web", app_version="1.1.0", width=800, height=600),
         target_subject_id=subject.id,
         source_subject_id=subject.id,
         consent_to_share=False,
@@ -1477,7 +1477,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         result = response.json()["result"]
         date_answer = datetime.datetime.fromisoformat(result["lastSeen"])
-        date_now = datetime.datetime.utcnow()
+        date_now = datetime.datetime.now(datetime.UTC)
         assert date_now.day == date_answer.day
         assert date_now.month == date_answer.month
         assert date_now.year == date_answer.year

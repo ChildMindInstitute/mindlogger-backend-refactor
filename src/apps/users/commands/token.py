@@ -21,7 +21,7 @@ async def generate(
 
     if ttl:
         expires_delta = datetime.timedelta(seconds=ttl)
-        expire = datetime.datetime.utcnow() + expires_delta
+        expire = datetime.datetime.now(datetime.UTC).replace(tzinfo=None) + expires_delta
         payload[JWTClaim.exp] = expire
 
     access_token = AuthenticationService.create_access_token(payload)

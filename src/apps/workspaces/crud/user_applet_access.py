@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Tuple
 
 from asyncpg.exceptions import UniqueViolationError
@@ -217,8 +217,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                 "applet_id": stmt.excluded.applet_id,
                 "role": stmt.excluded.role,
                 "is_deleted": stmt.excluded.is_deleted,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
                 "meta": stmt.excluded.meta,
                 "nickname": stmt.excluded.nickname,
                 "title": stmt.excluded.title,
