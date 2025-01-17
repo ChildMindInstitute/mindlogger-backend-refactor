@@ -43,8 +43,8 @@ async def main(
                 try:
                     await update_answers(arb_session)
                     await arb_session.commit()
-                    print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
+                    print(f"Processing workspace#{i + 1} {workspace.id} finished")
                 except Exception:
                     await arb_session.rollback()
-                    print(f"[bold red]Workspace#{i + 1} {workspace.id} " f"processing error[/bold red]")
+                    print(f"[bold red]Workspace#{i + 1} {workspace.id} processing error[/bold red]")
                     raise

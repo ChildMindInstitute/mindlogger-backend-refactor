@@ -376,7 +376,7 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
             required = ["storage_url", "storage_bucket", "storage_access_key"]
 
         if required and not all((values[itm] is not None) for itm in required):
-            raise ValueError(f"{', '.join(required)} are required " f"for {storage_type} storage")
+            raise ValueError(f"{', '.join(required)} are required for {storage_type} storage")
 
         return values
 

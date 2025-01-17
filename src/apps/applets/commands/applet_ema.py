@@ -210,7 +210,7 @@ async def _export_flows(applet_id: uuid.UUID, path_prefix: str):
 
 @app.command(
     short_help=f'Export applet "{APPLET_NAME or "NOT CONFIGURED"}"({APPLET_ID or "NOT CONFIGURED"})'
-    f' flow data as csv file'
+    f" flow data as csv file"
 )
 @coro
 async def export_flows(

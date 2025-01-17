@@ -94,7 +94,7 @@ class InvalidDataMatrixByOptionError(FieldError):
 
 
 class InvalidScoreLengthError(FieldError):
-    message = _("Scores must have the same length as the " "range of min_value and max_value")
+    message = _("Scores must have the same length as the range of min_value and max_value")
 
 
 class ActivityAccessDeniedError(AccessDeniedError):

@@ -228,7 +228,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         result = list(await self._execute(stmt))
         if not result:
-            raise UniqueViolationError("duplicate key value violates unique" ' constraint "unique_user_applet_role"')
+            raise UniqueViolationError('duplicate key value violates unique constraint "unique_user_applet_role"')
 
         return result
 

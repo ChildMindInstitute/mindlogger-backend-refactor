@@ -294,7 +294,7 @@ async def test_reencrypt_answers_exception_during_reencrypt_no_retries(
     spy = mocker.spy(JobService, "change_status")
     task = await reencrypt_answers.kiq(user.id, user.email_encrypted, user_create.password, "new-pass", retries=0)
     await task.wait_result()
-    err_msg = f"Reencryption {user_id}: cannot process applet " f"{applet.id}, skip"
+    err_msg = f"Reencryption {user_id}: cannot process applet {applet.id}, skip"
     spy.assert_awaited_once_with(ANY, job_model.id, JobStatus.error, dict(errors=[err_msg, "ERROR"]))
     answer_after = (await AnswerItemsCRUD(session).get_by_answer_and_activity(answer_id, [act_id_version]))[0].answer
     assert answer_before == answer_after
