@@ -85,6 +85,19 @@ async def applet_one_lucy_roles(
 
 
 @pytest.fixture
+async def applet_one_bob_coordinator(session: AsyncSession, applet_one: AppletFull, tom, bob) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(bob.id, Role.COORDINATOR)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_bob_coordinator_reviewer(session: AsyncSession, applet_one: AppletFull, tom, bob) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(bob.id, Role.COORDINATOR)
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(bob.id, Role.REVIEWER)
+    return applet_one
+
+
+@pytest.fixture
 async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull, tom: User) -> Subject:
     return await SubjectsService(session, tom.id).create(
         SubjectCreate(
@@ -429,6 +442,7 @@ class TestWorkspaces(BaseTest):
         assert lucy_result_details[0]["subjectLastName"] == lucy.last_name
         assert lucy_result_details[0]["subjectCreatedAt"]
         assert lucy_result_details[0]["roles"] == [Role.RESPONDENT]
+        assert lucy_result_details[0]["teamMemberCanViewData"] is True
 
         # Tom has an approved invitation to Applet 1
         assert tom_result_details[0]["invitation"]  # Applet 1
@@ -438,6 +452,7 @@ class TestWorkspaces(BaseTest):
         assert tom_result_details[0]["subjectLastName"] == tom.last_name
         assert tom_result_details[0]["subjectCreatedAt"]
         assert tom_result_details[0]["roles"] == [Role.OWNER, Role.RESPONDENT]
+        assert tom_result_details[0]["teamMemberCanViewData"] is True
 
         # Tom has a pending invitation to Applet 2
         assert tom_result_details[1]["invitation"]  # Applet 2
@@ -447,6 +462,7 @@ class TestWorkspaces(BaseTest):
         assert tom_result_details[1]["subjectLastName"] == tom.last_name
         assert tom_result_details[1]["subjectCreatedAt"]
         assert tom_result_details[1]["roles"] == [Role.OWNER, Role.RESPONDENT]
+        assert tom_result_details[1]["teamMemberCanViewData"] is True
 
         # Check for the roles of the other participants
         assert shell_account_result_details[0]["roles"] == []  # Limited accounts have no roles
@@ -491,6 +507,81 @@ class TestWorkspaces(BaseTest):
                 access_ids = {detail["accessId"] for detail in result[0]["details"]}
                 assert access_id in access_ids
 
+    async def test_get_workspace_respondents_as_coordinator(
+        self,
+        client: TestClient,
+        tom: User,
+        bob: User,
+        applet_one_lucy_respondent: AppletFull,
+        applet_one_bob_coordinator: AppletFull,
+        uuid_zero: uuid.UUID,
+    ):
+        client.login(bob)
+        response = await client.get(
+            self.workspace_respondents_url.format(owner_id=tom.id),
+            dict(ordering="+nicknames"),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 2  # lucy, tom
+        assert data["count"] == len(data["result"])
+
+        lucy_result = data["result"][0]
+        tom_result = data["result"][1]
+
+        assert lucy_result["nicknames"]
+        assert lucy_result["secretIds"]
+        assert lucy_result["details"]
+        assert tom_result["details"]
+
+        lucy_result_details = lucy_result["details"]
+        tom_result_details = sorted(tom_result["details"], key=lambda x: x["appletDisplayName"])
+
+        assert tom_result_details[0]["teamMemberCanViewData"] is False
+        assert lucy_result_details[0]["teamMemberCanViewData"] is False
+
+    async def test_get_workspace_respondents_as_coordinator_and_reviewer(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        tom: User,
+        tom_applet_one_subject: Subject,
+        bob: User,
+        applet_one_lucy_respondent: AppletFull,
+        applet_one_bob_coordinator_reviewer: AppletFull,
+        uuid_zero: uuid.UUID,
+    ):
+        # Assign bob as a reviewer to tom
+        await UserAppletAccessService(session, tom.id, applet_one_bob_coordinator_reviewer.id).set_subjects_for_review(
+            reviewer_id=bob.id, applet_id=applet_one_bob_coordinator_reviewer.id, subjects=[tom_applet_one_subject.id]
+        )
+
+        client.login(bob)
+        response = await client.get(
+            self.workspace_respondents_url.format(owner_id=tom.id),
+            dict(ordering="+nicknames"),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 2  # lucy, tom
+        assert data["count"] == len(data["result"])
+
+        lucy_result = data["result"][0]
+        tom_result = data["result"][1]
+
+        assert lucy_result["nicknames"]
+        assert lucy_result["secretIds"]
+        assert lucy_result["details"]
+        assert tom_result["details"]
+
+        lucy_result_details = lucy_result["details"]
+        tom_result_details = sorted(tom_result["details"], key=lambda x: x["appletDisplayName"])
+
+        assert tom_result_details[0]["teamMemberCanViewData"] is True
+        assert lucy_result_details[0]["teamMemberCanViewData"] is False
+
     async def test_get_workspace_applet_respondents(
         self,
         client: TestClient,
@@ -532,6 +623,7 @@ class TestWorkspaces(BaseTest):
         assert lucy_result_details[0]["subjectLastName"] == lucy.last_name
         assert lucy_result_details[0]["subjectCreatedAt"]
         assert lucy_result_details[0]["roles"] == [Role.RESPONDENT]
+        assert lucy_result_details[0]["teamMemberCanViewData"] is True
 
         # Tom has an approved invitation to Applet 1
         assert tom_result_details[0]["invitation"]  # Applet 1
@@ -541,6 +633,7 @@ class TestWorkspaces(BaseTest):
         assert tom_result_details[0]["subjectLastName"] == tom.last_name
         assert tom_result_details[0]["subjectCreatedAt"]
         assert tom_result_details[0]["roles"] == [Role.OWNER, Role.RESPONDENT]
+        assert tom_result_details[0]["teamMemberCanViewData"] is True
 
         # test search
         access_id = lucy_result_details[0]["accessId"]
@@ -575,6 +668,85 @@ class TestWorkspaces(BaseTest):
         data = response.json()
         assert data["count"] == 0
         assert not data["result"]
+
+    async def test_get_workspace_applet_respondents_as_coordinator(
+        self,
+        client: TestClient,
+        tom: User,
+        bob: User,
+        applet_one_lucy_respondent: AppletFull,
+        applet_one_bob_coordinator: AppletFull,
+        uuid_zero: uuid.UUID,
+    ):
+        client.login(bob)
+        response = await client.get(
+            self.workspace_applet_respondents_list.format(
+                owner_id=tom.id,
+                applet_id=str(applet_one_bob_coordinator.id),
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert data["count"] == 2  # lucy, tom
+        assert data["count"] == len(data["result"])
+
+        lucy_result = data["result"][0]
+        tom_result = data["result"][1]
+
+        assert lucy_result["nicknames"]
+        assert lucy_result["secretIds"]
+        assert lucy_result["details"]
+        assert tom_result["details"]
+
+        lucy_result_details = lucy_result["details"]
+        tom_result_details = tom_result["details"]
+
+        assert lucy_result_details[0]["teamMemberCanViewData"] is False
+        assert tom_result_details[0]["teamMemberCanViewData"] is False
+
+    async def test_get_workspace_applet_respondents_as_coordinator_and_reviewer(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        tom: User,
+        tom_applet_one_subject: Subject,
+        bob: User,
+        applet_one_lucy_respondent: AppletFull,
+        applet_one_bob_coordinator_reviewer: AppletFull,
+        uuid_zero: uuid.UUID,
+    ):
+        # Assign bob as a reviewer to tom
+        await UserAppletAccessService(session, tom.id, applet_one_bob_coordinator_reviewer.id).set_subjects_for_review(
+            reviewer_id=bob.id, applet_id=applet_one_bob_coordinator_reviewer.id, subjects=[tom_applet_one_subject.id]
+        )
+
+        client.login(bob)
+        response = await client.get(
+            self.workspace_applet_respondents_list.format(
+                owner_id=tom.id,
+                applet_id=str(applet_one_bob_coordinator_reviewer.id),
+            ),
+        )
+
+        assert response.status_code == 200, response.json()
+        data = response.json()
+        assert data["count"] == 2  # lucy, tom
+        assert data["count"] == len(data["result"])
+
+        lucy_result = data["result"][0]
+        tom_result = data["result"][1]
+
+        assert lucy_result["nicknames"]
+        assert lucy_result["secretIds"]
+        assert lucy_result["details"]
+        assert tom_result["details"]
+
+        lucy_result_details = lucy_result["details"]
+        tom_result_details = tom_result["details"]
+
+        assert lucy_result_details[0]["teamMemberCanViewData"] is False
+        assert tom_result_details[0]["teamMemberCanViewData"] is True
 
     async def test_get_workspace_applet_respondents_filters(
         self,

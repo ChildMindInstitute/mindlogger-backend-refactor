@@ -5,6 +5,9 @@ from apps.workspaces.crud.applet_access import AppletAccessCRUD
 
 __all__ = ["AppletAccessService"]
 
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
+from apps.workspaces.domain.constants import Role
+
 
 class AppletAccessService:
     def __init__(self, session):
@@ -28,3 +31,12 @@ class AppletAccessService:
             return None
 
         return UserAppletAccess.from_orm(schema)
+
+    async def get_applet_accesses(self, user_id: uuid.UUID, applet_ids: list[uuid.UUID]) -> list[UserAppletAccess]:
+        """
+        Get a list of all a user's accesses for the specified applets
+        :return:
+        """
+        crud = UserAppletAccessCRUD(self.session)
+        schemas = await crud.get_user_applet_accesses_by_roles(user_id, applet_ids, Role.as_list())
+        return [UserAppletAccess.from_orm(schema) for schema in schemas]

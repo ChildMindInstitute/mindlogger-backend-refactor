@@ -36,6 +36,7 @@ from apps.workspaces.domain.workspace import (
     WorkspaceSearchAppletPublic,
 )
 from apps.workspaces.filters import WorkspaceUsersQueryParams
+from apps.workspaces.service.applet_access import AppletAccessService
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
@@ -245,7 +246,28 @@ async def workspace_respondents_list(
         session=session, arbitrary_session=answer_session
     ).fill_last_activity_workspace_respondent(data)
     respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
-    return ResponseMultiOrdering(result=respondents, count=total, ordering_fields=ordering_fields)
+
+    applet_ids = [detail.applet_id for respondent in respondents if respondent.details for detail in respondent.details]
+
+    accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=applet_ids, user_id=user.id)
+    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+
+    public_respondents: list[PublicWorkspaceRespondent] = []
+    for respondent in respondents:
+        public_respondent = PublicWorkspaceRespondent(
+            **respondent.dict(),
+        )
+
+        if public_respondent.details:
+            for detail in public_respondent.details:
+                detail.team_member_can_view_data = is_super_reviewer or (
+                    reviewer_access is not None and str(detail.subject_id) in reviewer_access.meta.get("subjects", [])
+                )
+
+        public_respondents.append(public_respondent)
+
+    return ResponseMultiOrdering(result=public_respondents, count=total, ordering_fields=ordering_fields)
 
 
 async def workspace_applet_respondents_list(
@@ -255,7 +277,7 @@ async def workspace_applet_respondents_list(
     query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
-) -> ResponseMulti[PublicWorkspaceRespondent]:
+) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
     service = WorkspaceService(session, user.id)
     await service.exists_by_owner_id(owner_id)
 
@@ -266,7 +288,26 @@ async def workspace_applet_respondents_list(
         session=session, arbitrary_session=answer_session
     ).fill_last_activity_workspace_respondent(data, applet_id)
     respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
-    return ResponseMultiOrdering(result=respondents, count=total, ordering_fields=ordering_fields)
+
+    accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=[applet_id], user_id=user.id)
+    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+
+    public_respondents: list[PublicWorkspaceRespondent] = []
+    for respondent in respondents:
+        public_respondent = PublicWorkspaceRespondent(
+            **respondent.dict(),
+        )
+
+        if public_respondent.details:
+            for detail in public_respondent.details:
+                detail.team_member_can_view_data = is_super_reviewer or (
+                    reviewer_access is not None and str(detail.subject_id) in reviewer_access.meta.get("subjects", [])
+                )
+
+        public_respondents.append(public_respondent)
+
+    return ResponseMultiOrdering(result=public_respondents, count=total, ordering_fields=ordering_fields)
 
 
 async def workspace_managers_list(
