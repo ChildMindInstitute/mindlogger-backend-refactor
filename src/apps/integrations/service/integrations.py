@@ -7,6 +7,7 @@ from apps.integrations.errors import (
 )
 from apps.integrations.loris.domain.loris_integrations import LorisIntegrationPublic
 from apps.integrations.loris.service.loris import LorisIntegrationService
+from apps.integrations.prolific.service.prolific import ProlificIntegrationService
 from apps.integrations.service.future_integration import FutureIntegrationService
 from apps.users.domain import User
 
@@ -42,6 +43,24 @@ class IntegrationService:
                     integration_type=AvailableIntegrations.LORIS,
                     applet_id=newIntegration.applet_id,
                     configuration=loris_integration,
+                )
+            case AvailableIntegrations.PROLIFIC:
+                expected_keys = ["api_key"]
+                if None in [newIntegration.configuration.get(k, None) for k in expected_keys]:
+                    raise UnexpectedPropertiesForIntegration(
+                        provided_keys=list(newIntegration.configuration.keys()),
+                        expected_keys=expected_keys,
+                        integration_type=AvailableIntegrations.PROLIFIC,
+                    )
+                prolific_integration = await ProlificIntegrationService(
+                    newIntegration.applet_id,
+                    self.session,
+                    self.user,
+                ).create_prolific_integration(api_key=newIntegration.configuration["api_key"])
+                return Integration(
+                    integration_type=AvailableIntegrations.PROLIFIC,
+                    applet_id=newIntegration.applet_id,
+                    configuration=prolific_integration,
                 )
             case AvailableIntegrations.FUTURE:
                 expected_keys = ["endpoint", "api_key"]
@@ -81,6 +100,12 @@ class IntegrationService:
                     integration_type=AvailableIntegrations.LORIS,
                     applet_id=applet_id,
                     configuration=loris_integration,
+                )
+            case AvailableIntegrations.PROLIFIC:
+                return Integration(
+                    integration_type=AvailableIntegrations.PROLIFIC,
+                    applet_id=applet_id,
+                    configuration={},  # Configuration is empty as we don't want to share the api_key
                 )
             case AvailableIntegrations.FUTURE:
                 future_integration = FutureIntegrationPublic.from_schema(integration_schema)
