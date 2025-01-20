@@ -1,6 +1,7 @@
 """
 Entrypoint for the backend scheduler
 """
+
 import datadog  # noqa: F401, I001
 
 from taskiq import TaskiqScheduler

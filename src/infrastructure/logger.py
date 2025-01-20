@@ -3,7 +3,6 @@ import os
 
 import structlog
 
-
 if os.environ.get("ENV") == "testing":
     # Some tests check logging output, so use the old logger
     fmt = "%(levelname)s:     %(message)s"
@@ -17,5 +16,3 @@ if os.environ.get("ENV") == "testing":
 else:
     # Default to structured logger, enable JSON format if env set
     logger = structlog.stdlib.get_logger("api")  # type: ignore
-
-

@@ -10,5 +10,4 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-
 taskiq scheduler scheduler:scheduler -fsd

@@ -3,6 +3,7 @@ Structured Logging helper methods and classes.  Used for DataDog integration
 
 Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417a246822f64ca26
 """
+
 import logging
 import time
 
@@ -79,10 +80,10 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
 
     structlog.configure(
         processors=shared_processors
-                   + [
-                       # Prepare event dict for `ProcessorFormatter`.
-                       structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-                   ],
+        + [
+            # Prepare event dict for `ProcessorFormatter`.
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
@@ -176,18 +177,19 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
 
         # Recreate the Uvicorn access log format, but add all parameters as structured information
         logger_fn = access_logger.warn if 400 < status_code < 500 else access_logger.info
-        logger_fn(f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
-                  http={
-                      "url": str(request.url),
-                      "request_path": str(path),
-                      "status_code": status_code,
-                      "method": http_method,
-                      "request_id": request_id,
-                      "version": http_version,
-                  },
-                  network={"client": {"ip": real_host, "port": client_port}},
-                  duration=process_time,
-                  )
+        logger_fn(
+            f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+            http={
+                "url": str(request.url),
+                "request_path": str(path),
+                "status_code": status_code,
+                "method": http_method,
+                "request_id": request_id,
+                "version": http_version,
+            },
+            network={"client": {"ip": real_host, "port": client_port}},
+            duration=process_time,
+        )
 
         # if 400 < status_code < 500:
         #     access_logger.warn(
