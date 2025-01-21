@@ -2,6 +2,7 @@ from typing import Iterable, Type
 
 import sentry_sdk
 from asgi_correlation_id import CorrelationIdMiddleware
+from asyncpg import InvalidPasswordError
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
@@ -16,6 +17,8 @@ import apps.authentication.router as auth
 import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
+import apps.integrations.loris.router as loris
+import apps.integrations.router as integrations
 import apps.invitations.router as invitations
 import apps.library.router as library
 import apps.logs.router as logs
@@ -34,6 +37,7 @@ from infrastructure.http.execeptions import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
     python_base_error_handler,
+    sqlalchemy_database_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
 
@@ -66,6 +70,8 @@ routers: Iterable[APIRouter] = (
     subject_router.router,
     activity_assignments.router,
     activity_assignments.user_router,
+    loris.router,
+    integrations.router,
 )
 
 # Declare your middlewares here
@@ -107,7 +113,11 @@ def create_app():
 
     app.add_exception_handler(RequestValidationError, pydantic_validation_errors_handler)
     app.add_exception_handler(BaseError, custom_base_errors_handler)
+    app.add_exception_handler(TimeoutError, sqlalchemy_database_error_handler)
+    app.add_exception_handler(ConnectionRefusedError, sqlalchemy_database_error_handler)
+    app.add_exception_handler(InvalidPasswordError, sqlalchemy_database_error_handler)
     app.add_exception_handler(Exception, python_base_error_handler)
+
     # TODO: Remove when oasdiff starts support OpenAPI 3.1
     # https://github.com/Tufin/oasdiff/issues/52
     app.openapi_version = "3.0.3"

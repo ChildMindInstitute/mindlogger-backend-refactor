@@ -180,7 +180,7 @@ logging:
     Name: "datadog"
     Host: "http-intake.logs.datadoghq.com"
     dd_service: "backend-api"
-    dd_source: "feature"
+    dd_source: "api-server"
     dd_message_key: "log"
     dd_tags: "version:${COPILOT_ENVIRONMENT_NAME},env:feature"
     TLS: "on"

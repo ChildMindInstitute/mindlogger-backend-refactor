@@ -7,7 +7,9 @@ from urllib.parse import urlparse
 
 import nh3
 import requests
+from pydantic import BaseModel, HttpUrl
 from pydantic.color import Color
+from pydantic.error_wrappers import ValidationError as PValidationError
 
 __all__ = [
     "validate_image",
@@ -37,6 +39,10 @@ class InvalidAudioError(ValidationError):
 class InvalidUUIDError(ValidationError):
     zero_path = None
     message = _("Invalid uuid value.")
+
+
+class InvalidUrlError(ValidationError):
+    message = _("Invalid URL.")
 
 
 def validate_image(value: str) -> str:
@@ -150,6 +156,19 @@ def array_from_string(comma_separated: bool = False):
         return val
 
     return _array_from_string
+
+
+class UrlValidator(BaseModel):
+    url: HttpUrl
+
+
+def validate_url(possible_url: str) -> str:
+    try:
+        UrlValidator(url=possible_url)
+    except PValidationError as pve:
+        raise InvalidUrlError() from pve
+    else:
+        return possible_url
 
 
 nh3_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)

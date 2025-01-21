@@ -21,6 +21,7 @@ from apps.subjects.domain import (
     SubjectCreateResponse,
     SubjectFull,
     SubjectReadResponse,
+    SubjectReadResponseWithDataAccess,
     TargetSubjectByRespondentResponse,
 )
 from apps.users import User
@@ -70,10 +71,10 @@ router.delete(
 
 router.get(
     "/{subject_id}",
-    response_model=Response[SubjectReadResponse],
+    response_model=Response[SubjectReadResponseWithDataAccess],
     status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_200_OK: {"model": Response[SubjectReadResponse]},
+        status.HTTP_200_OK: {"model": Response[SubjectReadResponseWithDataAccess]},
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },

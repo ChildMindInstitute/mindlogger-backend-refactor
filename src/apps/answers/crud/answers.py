@@ -1010,6 +1010,41 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         return res.mappings().all()
 
+    async def get_by_applet_id_and_readiness_to_share_data(
+        self, applet_id: uuid.UUID, respondent_id: uuid.UUID, answer_ids: list[uuid.UUID]
+    ) -> list[AnswerSchema] | None:
+        query: Query = select(AnswerSchema)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(AnswerSchema.respondent_id == respondent_id)
+        query = query.where(AnswerSchema.consent_to_share.is_(True))
+        query = query.where(AnswerSchema.id.in_(answer_ids))
+        query = query.order_by(AnswerSchema.created_at.asc())
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def get_respondents_by_applet_id_and_readiness_to_share_data(
+        self, applet_id: uuid.UUID
+    ) -> list[AnswerSchema] | None:
+        query: Query = select(AnswerSchema.respondent_id)
+        query = query.where(AnswerSchema.applet_id == applet_id)
+        query = query.where(AnswerSchema.consent_to_share.is_(True))
+        query = query.order_by(AnswerSchema.created_at.asc())
+        db_result = await self._execute(query)
+        return db_result.scalars().all()
+
+    async def get_shareable_answers(self, applet_id: uuid.UUID):
+        query: Query = (
+            select(AnswerSchema)
+            .where(
+                AnswerSchema.applet_id == applet_id,
+                AnswerSchema.consent_to_share.is_(True),
+            )
+            .order_by(AnswerSchema.created_at)
+        )
+        result = await self._execute(query)
+
+        return result.scalars().all()
+
     @staticmethod
     def _query_submissions_metadata_by_subject(subject_column: InstrumentedAttribute, subject_id: uuid.UUID) -> Query:
         query: Query = (

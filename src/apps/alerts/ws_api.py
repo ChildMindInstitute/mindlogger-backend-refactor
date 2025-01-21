@@ -64,12 +64,17 @@ async def _handle_websocket(websocket, user_id, session):
             traceback.print_tb(e.__traceback__)
             continue
         try:
+            if applet.integrations and "loris" in applet.integrations:
+                _secret_id = "Loris Integration"
+            else:
+                _secret_id = subject.secret_user_id if subject else "Anonymous"
+
             applet_alert = AlertHandlerResult(
                 id=str(alert_message.id),
                 applet_id=str(alert_message.applet_id),
                 applet_name=applet_history.display_name,
                 version=alert_message.version,
-                secret_id=subject.secret_user_id if subject else "Anonymous",
+                secret_id=_secret_id,
                 activity_id=str(alert_message.activity_id),
                 activity_item_id=str(alert_message.activity_item_id),
                 message=alert_message.message,
@@ -80,6 +85,7 @@ async def _handle_websocket(websocket, user_id, session):
                 workspace=workspace.workspace_name,
                 respondent_id=str(alert_message.respondent_id),
                 subject_id=str(alert_message.subject_id),
+                type=alert_message.type,
             )
             await websocket.send_json(applet_alert.dict())
         except ConnectionClosed:

@@ -1,5 +1,6 @@
 import traceback
 
+from asyncpg import InvalidPasswordError
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from starlette import status
@@ -68,4 +69,17 @@ def pydantic_validation_errors_handler(_: Request, error: RequestValidationError
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    )
+
+
+def sqlalchemy_database_error_handler(
+    _: Request, error: TimeoutError | InvalidPasswordError | ConnectionRefusedError
+) -> JSONResponse:
+    """This function is called if the SQLAlchemy database error was raised."""
+    logger.error(str(error))
+    response = ErrorResponseMulti(result=[ErrorResponse(message="Internal server error")])
+
+    return JSONResponse(
+        content=jsonable_encoder(response.dict(by_alias=True)),
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )

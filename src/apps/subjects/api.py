@@ -15,7 +15,7 @@ from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
+from apps.shared.exception import NotFoundError, ValidationError
 from apps.shared.response import EmptyResponse
 from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relation
 from apps.subjects.domain import (
@@ -24,6 +24,7 @@ from apps.subjects.domain import (
     SubjectCreateRequest,
     SubjectDeleteRequest,
     SubjectReadResponse,
+    SubjectReadResponseWithDataAccess,
     SubjectRelationCreate,
     SubjectUpdateRequest,
     TargetSubjectByRespondentResponse,
@@ -232,7 +233,7 @@ async def get_subject(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
-) -> Response[SubjectReadResponse]:
+) -> Response[SubjectReadResponseWithDataAccess]:
     subjects_service = SubjectsService(session, user.id)
     subject = await subjects_service.get(subject_id)
     if not subject:
@@ -253,8 +254,16 @@ async def get_subject(
         user_id=user.id, session=session, arbitrary_session=arbitrary_session
     ).get_last_answer_dates([subject.id], subject.applet_id)
 
+    roles: list[str] = []
+    if subject.user_id:
+        roles = await UserAppletAccessService(session, subject.user_id, subject.applet_id).get_roles()
+
+    accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=[subject.applet_id], user_id=user.id)
+    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+
     return Response(
-        result=SubjectReadResponse(
+        result=SubjectReadResponseWithDataAccess(
             id=subject.id,
             secret_user_id=subject.secret_user_id,
             nickname=subject.nickname,
@@ -264,6 +273,9 @@ async def get_subject(
             user_id=subject.user_id,
             first_name=subject.first_name,
             last_name=subject.last_name,
+            roles=roles,
+            team_member_can_view_data=is_super_reviewer
+            or (reviewer_access is not None and str(subject.id) in reviewer_access.meta.get("subjects", [])),
         )
     )
 
@@ -318,12 +330,6 @@ async def get_target_subjects_by_respondent(
         respondent_subject.applet_id, respondent_subject.id
     )
 
-    access = await AppletAccessService(session).get_priority_access(
-        applet_id=respondent_subject.applet_id, user_id=user.id
-    )
-    if not access:
-        raise AccessDeniedError()
-
     assignment_service = ActivityAssignmentService(session)
     assignment_subject_ids = await assignment_service.get_target_subject_ids_by_respondent(
         respondent_subject_id=respondent_subject_id, activity_or_flow_ids=[activity_or_flow_id]
@@ -354,14 +360,26 @@ async def get_target_subjects_by_respondent(
             subject_info[subject_id]["currently_assigned"] = True
 
     subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
+    roles: dict[uuid.UUID, list[Role]] = await UserAppletAccessService(
+        session, user.id, respondent_subject.applet_id
+    ).get_applet_roles_by_priority_for_users(
+        respondent_subject.applet_id, [subject.user_id for subject in subjects if subject.user_id]
+    )
+
     result: list[TargetSubjectByRespondentResponse] = []
 
-    # Find the respondent subject in the list of subjects
+    accesses = await AppletAccessService(session).get_applet_accesses(
+        applet_ids=[respondent_subject.applet_id], user_id=user.id
+    )
+    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+
     respondent_target_subject: TargetSubjectByRespondentResponse | None = None
-    is_super_reviewer = access.role in Role.super_reviewers()
+
+    # Find the respondent subject in the list of subjects
     for subject in subjects:
         can_view_data = is_super_reviewer or (
-            access.role == Role.REVIEWER and str(subject.id) in access.meta.get("subjects", [])
+            reviewer_access is not None and str(subject.id) in reviewer_access.meta.get("subjects", [])
         )
 
         target_subject = TargetSubjectByRespondentResponse(
@@ -376,6 +394,7 @@ async def get_target_subjects_by_respondent(
             submission_count=subject_info[subject.id]["submission_count"],
             currently_assigned=subject_info[subject.id]["currently_assigned"],
             team_member_can_view_data=can_view_data,
+            roles=roles[subject.user_id] if subject.user_id else [],
         )
 
         if subject.id == respondent_subject_id:
