@@ -33,7 +33,7 @@ import middlewares as middlewares_
 from apps.shared.exception import BaseError
 from config import settings
 from infrastructure.dependency.structured_logs import StructuredLoggingMiddleware
-from infrastructure.http.execeptions import (
+from infrastructure.http.exceptions import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
     python_base_error_handler,
