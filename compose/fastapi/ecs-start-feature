@@ -6,4 +6,4 @@ set -eo pipefail
 set -o nounset
 
 ENV=testing /fastapi-migrate
-/fastapi-start-datadog
+/start-backend-datadog
