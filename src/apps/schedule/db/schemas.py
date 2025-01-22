@@ -21,7 +21,7 @@ class _BaseEventSchema:
     one_time_completion = Column(Boolean, nullable=True)
     timer = Column(Interval, nullable=True)
     timer_type = Column(String(10), nullable=False)  # NOT_SET, TIMER, IDLE
-    version = Column(String(13), nullable=True) # TODO: Remove nullable=True with M2-8494
+    version = Column(String(13), nullable=True)  # TODO: Remove nullable=True with M2-8494
 
     # Periodicity columns
     # TODO: Remove nullable=True with M2-8494
