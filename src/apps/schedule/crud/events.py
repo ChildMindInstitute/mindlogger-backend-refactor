@@ -176,6 +176,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     one_time_completion=row.EventSchema.one_time_completion,
                     timer=row.EventSchema.timer,
                     timer_type=row.EventSchema.timer_type,
+                    version=row.EventSchema.version,
                     user_id=user_id,
                     periodicity=Periodicity(
                         id=row.EventSchema.periodicity_id,
@@ -274,6 +275,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     one_time_completion=row.EventSchema.one_time_completion,
                     timer=row.EventSchema.timer,
                     timer_type=row.EventSchema.timer_type,
+                    version=row.EventSchema.version,
                     user_id=user_id,
                     periodicity=Periodicity(
                         id=row.EventSchema.periodicity_id,
@@ -467,6 +469,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     one_time_completion=row.EventSchema.one_time_completion,
                     timer=row.EventSchema.timer,
                     timer_type=row.EventSchema.timer_type,
+                    version=row.EventSchema.version,
                     user_id=user_id,
                     periodicity=Periodicity(
                         id=row.EventSchema.periodicity_id,
@@ -604,6 +607,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     one_time_completion=row.EventSchema.one_time_completion,
                     timer=row.EventSchema.timer,
                     timer_type=row.EventSchema.timer_type,
+                    version=row.EventSchema.version,
                     user_id=user_id,
                     periodicity=Periodicity(
                         id=row.EventSchema.periodicity_id,
