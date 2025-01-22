@@ -112,6 +112,7 @@ class AppletAnswerCreate(InternalModel):
     target_subject_id: uuid.UUID | None = None
     source_subject_id: uuid.UUID | None = None
     input_subject_id: uuid.UUID | None = None
+    consent_to_share: bool | None = False
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 

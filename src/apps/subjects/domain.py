@@ -5,6 +5,7 @@ from pydantic import EmailStr, validator
 
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.domain.custom_validations import lowercase
+from apps.workspaces.domain.constants import Role
 
 
 class SubjectCreate(InternalModel):
@@ -88,7 +89,11 @@ class SubjectReadResponse(SubjectUpdateRequest):
     last_name: str
 
 
-class TargetSubjectByRespondentResponse(SubjectReadResponse):
+class SubjectReadResponseWithRoles(SubjectReadResponse):
+    roles: list[Role]
+
+
+class TargetSubjectByRespondentResponse(SubjectReadResponseWithRoles):
     submission_count: int = 0
     currently_assigned: bool = False
     team_member_can_view_data: bool = False

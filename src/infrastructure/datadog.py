@@ -162,6 +162,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         process_time = time.perf_counter_ns() - start_time
         status_code = response.status_code
         url = request.url
+        path = request.url.path
         client_host = request.client.host if request.client else None
         client_port = request.client.port if request.client else None
         real_host = request.headers.get("X-Forwarded-For", client_host)
@@ -174,6 +175,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                 f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
                 http={
                     "url": str(request.url),
+                    "request_path": str(path),
                     "status_code": status_code,
                     "method": http_method,
                     "request_id": request_id,
@@ -187,6 +189,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                 f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
                 http={
                     "url": str(request.url),
+                    "request_path": str(path),
                     "status_code": status_code,
                     "method": http_method,
                     "request_id": request_id,

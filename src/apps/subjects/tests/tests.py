@@ -114,6 +114,7 @@ def answer_create_payload(applet_one: AppletFull):
             width=819,
             height=1080,
         ),
+        consent_to_share=False,
     )
 
 
@@ -575,11 +576,13 @@ class TestSubjects(BaseTest):
             "firstName",
             "lastName",
             "userId",
+            "roles",
         }
         assert uuid.UUID(res["id"]) == tom_applet_one_subject.id
         assert res["secretUserId"] == tom_applet_one_subject.secret_user_id
         assert res["nickname"] == tom_applet_one_subject.nickname
         assert res["tag"] == tom_applet_one_subject.tag
+        assert res["roles"] == [Role.OWNER, Role.RESPONDENT]
         assert uuid.UUID(res["appletId"]) == tom_applet_one_subject.applet_id
         assert uuid.UUID(res["userId"]) == tom.id
 
@@ -712,11 +715,13 @@ class TestSubjects(BaseTest):
             "firstName",
             "lastName",
             "userId",
+            "roles",
         }
         assert uuid.UUID(res["id"]) == applet_one_shell_account.id
         assert res["secretUserId"] == applet_one_shell_account.secret_user_id
         assert res["nickname"] == applet_one_shell_account.nickname
         assert res["tag"] == applet_one_shell_account.tag
+        assert res["roles"] == []
         assert uuid.UUID(res["appletId"]) == applet_one_shell_account.applet_id
         assert res["userId"] is None
 
