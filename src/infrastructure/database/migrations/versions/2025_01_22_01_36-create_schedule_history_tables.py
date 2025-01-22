@@ -16,8 +16,22 @@ down_revision = "dc2dd9e195d5"
 branch_labels = None
 depends_on = None
 
+EVENT_TYPE_ENUM = 'event_type_enum'
+EVENT_TYPE_ENUM_VALUES = ['activity', 'flow']
 
 def upgrade() -> None:
+    # Create the event_type enum
+    op.execute(
+        f"""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '{EVENT_TYPE_ENUM}') THEN
+                CREATE TYPE {EVENT_TYPE_ENUM} AS ENUM ({', '.join(f"'{value}'" for value in EVENT_TYPE_ENUM_VALUES)});
+            END IF;
+        END $$;
+        """
+    )
+
     # Create the `event_histories` table
     op.create_table(
         "event_histories",
@@ -39,7 +53,11 @@ def upgrade() -> None:
         sa.Column("selected_date", sa.Date(), nullable=True),
         sa.Column("id_version", sa.String(), nullable=False),
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("event_type", sa.Enum("activity", "flow", name="event_type_enum"), nullable=False),
+        sa.Column(
+            "event_type",
+            postgresql.ENUM(*EVENT_TYPE_ENUM_VALUES, name=EVENT_TYPE_ENUM, create_type=False),
+            nullable=False
+        ),
         sa.Column("activity_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("activity_flow_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=True),
@@ -147,3 +165,6 @@ def downgrade() -> None:
     op.drop_table("notification_histories")
     op.drop_table("applet_events")
     op.drop_table("event_histories")
+
+    # Drop the event_type enum
+    op.execute(f"DROP TYPE IF EXISTS {EVENT_TYPE_ENUM};")
