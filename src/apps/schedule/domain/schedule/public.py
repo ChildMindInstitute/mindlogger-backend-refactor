@@ -46,6 +46,7 @@ class PublicEvent(PublicModel, BaseEvent):
     activity_id: uuid.UUID | None
     flow_id: uuid.UUID | None
     notification: PublicNotification | None = None
+    version: str | None = None
 
 
 class ActivityEventCount(PublicModel):
@@ -122,6 +123,7 @@ class ScheduleEventDto(PublicModel):
     timers: TimerDto
     availabilityType: AvailabilityType
     notificationSettings: NotificationDTO | None = None
+    version: str | None = None
 
 
 class PublicEventByUser(PublicModel):

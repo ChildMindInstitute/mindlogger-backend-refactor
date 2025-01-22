@@ -33,6 +33,7 @@ class EventUpdate(EventCreate):
 
 class Event(EventCreate, InternalModel):
     id: uuid.UUID
+    version: str | None = None
 
 
 class Periodicity(BasePeriodicity, InternalModel):
@@ -94,3 +95,4 @@ class EventFull(InternalModel, BaseEvent):
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None = None
     flow_id: uuid.UUID | None = None
+    version: str | None = None
