@@ -1,5 +1,5 @@
-from sqlalchemy import Boolean, Column, Date, Enum, ForeignKey, Integer, Interval, String, Time, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ENUM, UUID
 
 from infrastructure.database.base import Base
 from infrastructure.database.mixins import HistoryAware
@@ -44,7 +44,7 @@ class EventHistorySchema(_BaseEventSchema, HistoryAware, Base):
 
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
-    event_type = Column(Enum("activity", "flow", name="event_type_enum", create_type=True), nullable=False)
+    event_type = Column(ENUM("activity", "flow", name="event_type_enum", create_type=False), nullable=False)
     activity_id = Column(UUID(as_uuid=True), nullable=True)
     activity_flow_id = Column(UUID(as_uuid=True), nullable=True)
     user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
