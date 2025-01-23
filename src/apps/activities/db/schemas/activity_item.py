@@ -33,4 +33,5 @@ class ActivityItemHistorySchema(_BaseActivityItemSchema, Base):
     activity_id = Column(
         ForeignKey("activity_histories.id_version", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
