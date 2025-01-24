@@ -110,8 +110,8 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
     # Use OUR `ProcessorFormatter` to format all `logging` entries.
     handler.setFormatter(formatter)
     root_logger = logging.getLogger()
-    root_logger.handlers.clear()
     # Clear any existing handlers
+    root_logger.handlers.clear()
     root_logger.addHandler(handler)
     root_logger.setLevel(log_level.upper())
 
@@ -191,33 +191,5 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             duration=process_time,
         )
 
-        # if 400 < status_code < 500:
-        #     access_logger.warn(
-        #         f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
-        #         http={
-        #             "url": str(request.url),
-        #             "request_path": str(path),
-        #             "status_code": status_code,
-        #             "method": http_method,
-        #             "request_id": request_id,
-        #             "version": http_version,
-        #         },
-        #         network={"client": {"ip": real_host, "port": client_port}},
-        #         duration=process_time,
-        #     )
-        # else:
-        #     access_logger.info(
-        #         f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
-        #         http={
-        #             "url": str(request.url),
-        #             "request_path": str(path),
-        #             "status_code": status_code,
-        #             "method": http_method,
-        #             "request_id": request_id,
-        #             "version": http_version,
-        #         },
-        #         network={"client": {"ip": real_host, "port": client_port}},
-        #         duration=process_time,
-        #     )
         # response.headers["X-Process-Time"] = str(process_time / 10 ** 9)
         return response

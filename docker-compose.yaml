@@ -69,7 +69,6 @@ services:
     container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
     command: ['/start-worker']
-#    command: [ 'taskiq', 'worker', 'worker:worker', '-fsd' ]
     env_file: .env
     volumes:
       - ./:/app/
@@ -89,7 +88,6 @@ services:
     image: mindlogger_scheduler
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
-#    command: [ 'taskiq', 'scheduler', 'scheduler:scheduler', '-fsd' ]
     command: ['/start-scheduler']
     env_file: .env
     volumes:
