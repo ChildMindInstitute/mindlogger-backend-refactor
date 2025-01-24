@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Use this script to start on ECS and run a migration
+# May be deprecated
+
 set -eo pipefail
 set -o nounset
 

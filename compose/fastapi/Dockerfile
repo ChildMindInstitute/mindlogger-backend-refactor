@@ -40,22 +40,31 @@ COPY ./ ./
 COPY --chown=code:code ./compose/fastapi/entrypoint /fastapi-entrypoint
 RUN sed -i 's/\r$//g' /fastapi-entrypoint && chmod +x /fastapi-entrypoint
 
-COPY --chown=code:code ./compose/fastapi/start /fastapi-start
+# Legacy startup
+COPY --chown=code:code ./compose/fastapi/start-backend-otel /fastapi-start
 RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
 
-COPY --chown=code:code ./compose/fastapi/start-datadog /fastapi-start-datadog
-RUN sed -i 's/\r$//g' /fastapi-start-datadog && chmod +x /fastapi-start-datadog
+COPY --chown=code:code ./compose/fastapi/start-backend-datadog /start-backend-datadog
+RUN sed -i 's/\r$//g' /start-backend-datadog && chmod +x /start-backend-datadog
 
-
-
+# Migration script
 COPY --chown=code:code ./compose/fastapi/migrate /fastapi-migrate
 RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
 
+# ECS
 COPY --chown=code:code ./compose/fastapi/ecs-start /ecs-start
 RUN sed -i 's/\r$//g' /ecs-start && chmod +x /ecs-start
 
 COPY --chown=code:code ./compose/fastapi/ecs-start-feature /ecs-start-feature
 RUN sed -i 's/\r$//g' /ecs-start-feature && chmod +x /ecs-start-feature
+
+# Scheduler and worker
+COPY --chown=code:code ./compose/fastapi/start-worker /start-worker
+RUN sed -i 's/\r$//g' /start-worker && chmod +x /start-worker
+
+COPY --chown=code:code ./compose/fastapi/start-scheduler /start-scheduler
+RUN sed -i 's/\r$//g' /start-worker && chmod +x /start-scheduler
+
 
 # Select internal user
 USER code
