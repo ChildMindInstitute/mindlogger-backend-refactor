@@ -140,9 +140,7 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
 
-        root_logger.error(
-            "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
-        )
+        root_logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
     sys.excepthook = handle_exception
 
