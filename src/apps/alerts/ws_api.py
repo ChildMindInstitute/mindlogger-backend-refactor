@@ -9,6 +9,7 @@ from websockets.exceptions import ConnectionClosed
 from apps.alerts.domain import AlertHandlerResult, AlertMessage
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD
 from apps.authentication.deps import get_current_user_for_ws
+from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.shared.exception import ValidationError
 from apps.subjects.services import SubjectsService
 from apps.users import User
@@ -52,19 +53,20 @@ async def _handle_websocket(websocket, user_id, session):
                 Role.RESPONDENT,
             )
 
-            applet_history, applet, workspace, subject = await asyncio.gather(
+            applet_history, applet, workspace, subject, integrations = await asyncio.gather(
                 AppletHistoriesCRUD(session).retrieve_by_applet_version(
                     f"{alert_message.applet_id}_{alert_message.version}"
                 ),
                 AppletsCRUD(session).get_by_id(alert_message.applet_id),
                 UserWorkspaceCRUD(session).get_by_user_id(respondent_access.owner_id),
                 SubjectsService(session, respondent_access.owner_id).get(alert_message.subject_id),
+                IntegrationsCRUD(session).retrieve_list_by_applet(alert_message.applet_id),
             )
         except Exception as e:
             traceback.print_tb(e.__traceback__)
             continue
         try:
-            if applet.integrations and "loris" in applet.integrations:
+            if integrations and "loris" in integrations:
                 _secret_id = "Loris Integration"
             else:
                 _secret_id = subject.secret_user_id if subject else "Anonymous"
