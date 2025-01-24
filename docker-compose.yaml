@@ -88,7 +88,6 @@ services:
     image: mindlogger_webapp
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
-#    command: [ 'taskiq', 'scheduler', 'scheduler:scheduler', '-fsd' ]
     command: ['/start-scheduler']
     env_file: .env
     volumes:
