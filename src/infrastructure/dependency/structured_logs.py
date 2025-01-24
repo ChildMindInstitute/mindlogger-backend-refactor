@@ -5,6 +5,7 @@ Much of this is borrowed from: https://gist.github.com/Brymes/cd8f9f138e12845417
 """
 
 import logging
+import sys
 import time
 
 import structlog
@@ -129,21 +130,21 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
     logging.getLogger("uvicorn.access").handlers.clear()
     logging.getLogger("uvicorn.access").propagate = False
 
-    # def handle_exception(exc_type, exc_value, exc_traceback):
-    #     """
-    #     Log any uncaught exception instead of letting it be printed by Python
-    #     (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
-    #     See https://stackoverflow.com/a/16993115/3641865
-    #     """
-    #     if issubclass(exc_type, KeyboardInterrupt):
-    #         sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    #         return
-    #
-    #     root_logger.error(
-    #         "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
-    #     )
-    #
-    # sys.excepthook = handle_exception
+    def handle_exception(exc_type, exc_value, exc_traceback):
+        """
+        Log any uncaught exception instead of letting it be printed by Python
+        (but leave KeyboardInterrupt untouched to allow users to Ctrl+C to stop)
+        See https://stackoverflow.com/a/16993115/3641865
+        """
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+
+        root_logger.error(
+            "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
+        )
+
+    sys.excepthook = handle_exception
 
 
 class StructuredLoggingMiddleware(BaseHTTPMiddleware):
@@ -160,36 +161,41 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         start_time = time.perf_counter_ns()
         # If the call_next raises an error, we still want to return our own 500 response,
         # so we can add headers to it (process time, request ID...)
-        # response = Response(status_code=500)
+        response = Response(status_code=500)
 
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            # TODO: Validate that we don't swallow exceptions (unit test?)
+            structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
+            raise e
+        finally:
+            access_logger = structlog.stdlib.get_logger("api.access")
+            process_time = time.perf_counter_ns() - start_time
+            status_code = response.status_code
+            url = request.url
+            path = request.url.path
+            client_host = request.client.host if request.client else None
+            client_port = request.client.port if request.client else None
+            real_host = request.headers.get("X-Forwarded-For", client_host)
+            http_method = request.method
+            http_version = request.scope["http_version"]
 
-        access_logger = structlog.stdlib.get_logger("api.access")
-        process_time = time.perf_counter_ns() - start_time
-        status_code = response.status_code
-        url = request.url
-        path = request.url.path
-        client_host = request.client.host if request.client else None
-        client_port = request.client.port if request.client else None
-        real_host = request.headers.get("X-Forwarded-For", client_host)
-        http_method = request.method
-        http_version = request.scope["http_version"]
-
-        # Recreate the Uvicorn access log format, but add all parameters as structured information
-        logger_fn = access_logger.warn if 400 < status_code < 500 else access_logger.info
-        logger_fn(
-            f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
-            http={
-                "url": str(request.url),
-                "request_path": str(path),
-                "status_code": status_code,
-                "method": http_method,
-                "request_id": request_id,
-                "version": http_version,
-            },
-            network={"client": {"ip": real_host, "port": client_port}},
-            duration=process_time,
-        )
+            # Recreate the Uvicorn access log format, but add all parameters as structured information
+            logger_fn = access_logger.warn if 400 < status_code < 500 else access_logger.info
+            logger_fn(
+                f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+                http={
+                    "url": str(request.url),
+                    "request_path": str(path),
+                    "status_code": status_code,
+                    "method": http_method,
+                    "request_id": request_id,
+                    "version": http_version,
+                },
+                network={"client": {"ip": real_host, "port": client_port}},
+                duration=process_time,
+            )
 
         # response.headers["X-Process-Time"] = str(process_time / 10 ** 9)
         return response
