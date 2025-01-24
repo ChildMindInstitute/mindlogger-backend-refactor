@@ -166,7 +166,6 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception as e:
-            # TODO: Validate that we don't swallow exceptions (unit test?)
             structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
             raise e
         finally:
