@@ -110,8 +110,8 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
     # Use OUR `ProcessorFormatter` to format all `logging` entries.
     handler.setFormatter(formatter)
     root_logger = logging.getLogger()
-    root_logger.handlers.clear()
     # Clear any existing handlers
+    root_logger.handlers.clear()
     root_logger.addHandler(handler)
     root_logger.setLevel(log_level.upper())
 
