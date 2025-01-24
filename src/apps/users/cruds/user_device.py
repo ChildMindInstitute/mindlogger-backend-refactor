@@ -27,7 +27,7 @@ class UserDevicesCRUD(BaseCRUD[UserDeviceSchema]):
                 constraint=UserDeviceSchema.uq_constraint,
                 set_={
                     **values,
-                    "updated_at": datetime.datetime.utcnow(),
+                    "updated_at": datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
                 },
             )
             .returning(UserDeviceSchema)

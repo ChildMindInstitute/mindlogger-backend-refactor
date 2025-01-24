@@ -1,6 +1,6 @@
 import json
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Generic
 
 from config import settings
@@ -84,7 +84,10 @@ class BaseCacheService(ABC, Generic[_InputObject]):
         instance: _InputObject,
         ttl: int | None = None,
     ) -> CacheEntry[_InputObject]:
-        enhanced_cache_entry: CacheEntry[_InputObject] = CacheEntry(instance=instance, created_at=datetime.utcnow())
+        enhanced_cache_entry: CacheEntry[_InputObject] = CacheEntry(
+            instance=instance,
+            created_at=datetime.now(timezone.utc),
+        )
 
         await self.redis_client.set(
             key=self._build_key(key=key),

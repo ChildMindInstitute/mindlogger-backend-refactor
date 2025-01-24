@@ -1,5 +1,5 @@
 from contextlib import suppress
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import BinaryIO
 
 import boto3
@@ -76,7 +76,7 @@ class ArbitraryAzureCdnClient(CDNClient):
     def _generate_presigned_url(self, key: str):
         blob_client = self.client.get_blob_client(self.default_container_name, key)
         permissions = BlobSasPermissions(read=True)
-        expiration = datetime.utcnow() + timedelta(seconds=self.config.ttl_signed_urls)
+        expiration = datetime.now(timezone.utc) + timedelta(seconds=self.config.ttl_signed_urls)
         sas_token = generate_blob_sas(
             account_name=self.client.account_name,
             container_name=self.default_container_name,

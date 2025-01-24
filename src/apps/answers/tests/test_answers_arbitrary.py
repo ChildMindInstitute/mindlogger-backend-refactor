@@ -171,7 +171,7 @@ class TestAnswerActivityItems(BaseTest):
             self.review_activities_url.format(applet_id=str(answer_with_alert_create.applet_id)),
             dict(
                 targetSubjectId=subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
 
@@ -347,7 +347,7 @@ class TestAnswerActivityItems(BaseTest):
             self.review_activities_url.format(applet_id=str(answer_create.applet_id)),
             dict(
                 targetSubjectId=tom_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
 
@@ -372,7 +372,7 @@ class TestAnswerActivityItems(BaseTest):
             self.review_activities_url.format(applet_id=str(answer_create.applet_id)),
             dict(
                 targetSubjectId=tom_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
 
@@ -467,7 +467,7 @@ class TestAnswerActivityItems(BaseTest):
             )
         )
         assert response.status_code == http.HTTPStatus.OK
-        assessment = response.json()["result"]
+        assessment: dict = response.json()["result"]
         assert assessment["answer"] == assessment_arbitrary_create.answer
         assert assessment["reviewerPublicKey"] == assessment_arbitrary_create.reviewer_public_key
         assert assessment["itemIds"] == [str(i) for i in assessment_arbitrary_create.item_ids]
@@ -512,7 +512,7 @@ class TestAnswerActivityItems(BaseTest):
             self.review_activities_url.format(applet_id=str(answer_arbitrary.applet_id)),
             dict(
                 targetSubjectId=tom_applet_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
 
@@ -665,7 +665,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 0
 
-        created_at = datetime.datetime.utcnow()
+        created_at = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
         data = answer_create.copy(deep=True)
         data.created_at = created_at
 
@@ -852,7 +852,7 @@ class TestAnswerActivityItems(BaseTest):
         "column,value",
         (
             ("activity_id", "00000000-0000-0000-0000-000000000000_99"),
-            ("created_at", datetime.datetime.utcnow().timestamp() * 1000),
+            ("created_at", datetime.datetime.now(datetime.UTC).timestamp() * 1000),
         ),
     )
     async def test_check_existance_answer_does_not_exist(
@@ -863,8 +863,8 @@ class TestAnswerActivityItems(BaseTest):
             "applet_id": str(answer_arbitrary.applet_id),
             "activity_id": answer_arbitrary.activity_history_id.split("_")[0],
             "created_at": answer_arbitrary.created_at.timestamp(),
+            column: value,
         }
-        data[column] = value
         resp = await arbitrary_client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
         assert not resp.json()["result"]["exists"]

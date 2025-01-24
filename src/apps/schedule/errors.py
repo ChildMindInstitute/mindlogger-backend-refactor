@@ -74,7 +74,7 @@ class OneTimeCompletionCaseError(FieldError):
 
 
 class StartEndTimeAccessBeforeScheduleCaseError(FieldError):
-    message = _("start_time, end_time, access_before_schedule " "must be set if periodicity is not ALWAYS.")
+    message = _("start_time, end_time, access_before_schedule must be set if periodicity is not ALWAYS.")
 
 
 class StartEndTimeEqualError(FieldError):

@@ -288,7 +288,7 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
                     else ActivityAssigmentSchema.activity_flow_id,
                 ],
                 set_={
-                    "updated_at": datetime.datetime.utcnow(),
+                    "updated_at": datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
                     "is_deleted": False,
                 },
                 where=(ActivityAssigmentSchema.soft_exists(exists=False)),
