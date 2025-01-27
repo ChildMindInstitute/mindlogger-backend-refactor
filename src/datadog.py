@@ -11,7 +11,6 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
     logger.setLevel(logging.INFO)
     logger.addHandler(logging.StreamHandler())
     logger.info("Enabling Datadog")
-    # import ddtrace.auto  # noqa
     from ddtrace import config, patch
 
     # Manually patch.  The auto patcher throws some errors in AMQP (which it doesn't support so why patch it??)
