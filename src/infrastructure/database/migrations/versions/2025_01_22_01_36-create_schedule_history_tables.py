@@ -46,7 +46,7 @@ def upgrade() -> None:
         sa.Column("one_time_completion", sa.Boolean(), nullable=True),
         sa.Column("timer", sa.Interval(), nullable=True),
         sa.Column("timer_type", sa.String(length=10), nullable=False),
-        sa.Column("version", sa.String(length=13), nullable=True),
+        sa.Column("version", sa.String(length=13), nullable=False),
         sa.Column("periodicity", sa.String(length=10), nullable=False),
         sa.Column("start_date", sa.Date(), nullable=True),
         sa.Column("end_date", sa.Date(), nullable=True),
