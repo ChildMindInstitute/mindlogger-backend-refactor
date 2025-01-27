@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint
+import uuid
+
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 
 from infrastructure.database.base import Base
@@ -34,9 +36,12 @@ class _BaseEventSchema:
 class EventSchema(_BaseEventSchema, Base):
     __tablename__ = "events"
 
-    periodicity_id = Column(ForeignKey("periodicity.id", ondelete="RESTRICT"), nullable=False)
+    periodicity_id = Column(
+        UUID(as_uuid=True),
+        default=lambda: uuid.uuid4(),
+        server_default=text("gen_random_uuid()"),
+    )
     applet_id = Column(ForeignKey("applets.id", ondelete="CASCADE"), nullable=False)
-    old_periodicity_id = Column(UUID(as_uuid=True), nullable=True)
 
 
 class EventHistorySchema(_BaseEventSchema, HistoryAware, Base):
