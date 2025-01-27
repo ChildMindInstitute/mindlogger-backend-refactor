@@ -194,5 +194,4 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                 duration=process_time,
             )
 
-        # response.headers["X-Process-Time"] = str(process_time / 10 ** 9)
         return response
