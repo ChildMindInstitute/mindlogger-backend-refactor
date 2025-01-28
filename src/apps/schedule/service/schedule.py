@@ -19,7 +19,6 @@ from apps.schedule.domain.schedule.internal import (
     EventUpdate,
     FlowEventCreate,
     NotificationSetting,
-    Periodicity,
     ReminderSetting,
     ReminderSettingCreate,
     UserEventCreate,
@@ -255,13 +254,11 @@ class ScheduleService:
             full_events.append(
                 EventFull(
                     id=event.id,
-                    **base_event.dict(exclude={"periodicity"}),
-                    periodicity=Periodicity(
-                        type=event.periodicity,
-                        start_date=event.start_date,
-                        end_date=event.end_date,
-                        selected_date=event.selected_date,
-                    ),
+                    **base_event.dict(),
+                    periodicity=event.periodicity,
+                    start_date=event.start_date,
+                    end_date=event.end_date,
+                    selected_date=event.selected_date,
                     activity_id=activity_id,
                     flow_id=flow_id,
                     version=event.version,
@@ -739,13 +736,13 @@ class ScheduleService:
 
         availabilityType = (
             AvailabilityType.ALWAYS_AVAILABLE
-            if event.periodicity.type == PeriodicityType.ALWAYS
+            if event.periodicity == PeriodicityType.ALWAYS
             else AvailabilityType.SCHEDULED_ACCESS
         )
 
         availability = EventAvailabilityDto(
             oneTimeCompletion=event.one_time_completion,
-            periodicityType=event.periodicity.type,
+            periodicityType=event.periodicity,
             timeFrom=HourMinute(
                 hours=event.start_time.hour if event.start_time else 0,
                 minutes=event.start_time.minute if event.start_time else 0,
@@ -755,8 +752,8 @@ class ScheduleService:
                 minutes=event.end_time.minute if event.end_time else 0,
             ),
             allowAccessBeforeFromTime=event.access_before_schedule,
-            startDate=event.periodicity.start_date,
-            endDate=event.periodicity.end_date,
+            startDate=event.start_date,
+            endDate=event.end_date,
         )
 
         notificationSettings = None
@@ -804,7 +801,7 @@ class ScheduleService:
             timers=timers,
             availabilityType=availabilityType,
             availability=availability,
-            selectedDate=event.periodicity.selected_date,
+            selectedDate=event.selected_date,
             notificationSettings=notificationSettings,
             version=event.version,
         )

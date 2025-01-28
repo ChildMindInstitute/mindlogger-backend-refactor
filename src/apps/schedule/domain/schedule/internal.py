@@ -4,13 +4,12 @@ from datetime import date
 from pydantic import Field, root_validator
 
 from apps.schedule.domain.constants import PeriodicityType
-from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
+from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BaseReminderSetting
 from apps.schedule.errors import SelectedDateRequiredError
 from apps.shared.domain import InternalModel
 
 __all__ = [
     "Event",
-    "Periodicity",
     "UserEvent",
     "ActivityEvent",
     "FlowEvent",
@@ -55,10 +54,6 @@ class EventUpdate(EventCreate):
 class Event(EventCreate, InternalModel):
     id: uuid.UUID
     version: str | None = None
-
-
-class Periodicity(BasePeriodicity, InternalModel):
-    pass
 
 
 class UserEventCreate(InternalModel):
@@ -112,7 +107,13 @@ class ReminderSetting(ReminderSettingCreate, InternalModel):
 
 class EventFull(InternalModel, BaseEvent):
     id: uuid.UUID
-    periodicity: Periodicity
+    periodicity: PeriodicityType
+    start_date: date | None
+    end_date: date | None
+    selected_date: date | None = Field(
+        None,
+        description="If type is WEEKLY, MONTHLY or ONCE," " selectedDate must be set.",
+    )
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None = None
     flow_id: uuid.UUID | None = None
