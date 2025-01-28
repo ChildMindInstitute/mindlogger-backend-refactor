@@ -52,7 +52,7 @@ class IntegrationService:
                         expected_keys=expected_keys,
                         integration_type=AvailableIntegrations.PROLIFIC,
                     )
-                prolific_integration = await ProlificIntegrationService(
+                await ProlificIntegrationService(
                     newIntegration.applet_id,
                     self.session,
                     self.user,
@@ -60,7 +60,7 @@ class IntegrationService:
                 return Integration(
                     integration_type=AvailableIntegrations.PROLIFIC,
                     applet_id=newIntegration.applet_id,
-                    configuration=prolific_integration,
+                    configuration={},
                 )
             case AvailableIntegrations.FUTURE:
                 expected_keys = ["endpoint", "api_key"]

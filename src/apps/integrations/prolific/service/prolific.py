@@ -1,12 +1,12 @@
 import uuid
 
 import requests
-from fastapi import HTTPException
 
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.integrations.db.schemas import IntegrationsSchema
 from apps.integrations.domain import AvailableIntegrations
 from apps.integrations.prolific.domain import ProlificIntegration
+from apps.integrations.prolific.errors import ProlificInvalidApiTokenError
 from apps.users.domain import User
 
 
@@ -24,7 +24,7 @@ class ProlificIntegrationService:
         )
 
         if prolific_response.status_code != 200:
-            raise HTTPException(status_code=prolific_response.status_code, detail="Prolific token is invalid")
+            raise ProlificInvalidApiTokenError()
 
         integration_schema = await IntegrationsCRUD(self.session).create(
             IntegrationsSchema(
