@@ -11,7 +11,6 @@ from apps.schedule.db.schemas import (
     ActivityEventsSchema,
     EventSchema,
     FlowEventsSchema,
-    PeriodicitySchema,
     UserEventsSchema,
 )
 from apps.schedule.domain.constants import PeriodicityType
@@ -129,10 +128,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query: Query = select(
             EventSchema,
-            PeriodicitySchema.start_date,
-            PeriodicitySchema.end_date,
-            PeriodicitySchema.selected_date,
-            PeriodicitySchema.type,
             ActivityEventsSchema.activity_id,
             FlowEventsSchema.flow_id,
         )
@@ -142,11 +137,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 EventSchema.id == UserEventsSchema.event_id,
                 UserEventsSchema.user_id == user_id,
             ),
-        )
-
-        query = query.join(
-            PeriodicitySchema,
-            PeriodicitySchema.id == EventSchema.periodicity_id,
         )
 
         query = query.join(
@@ -179,11 +169,10 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     version=row.EventSchema.version,
                     user_id=user_id,
                     periodicity=Periodicity(
-                        id=row.EventSchema.periodicity_id,
-                        type=row.type,
-                        start_date=row.start_date,
-                        end_date=row.end_date,
-                        selected_date=row.selected_date,
+                        type=row.EventSchema.periodicity,
+                        start_date=row.EventSchema.start_date,
+                        end_date=row.EventSchema.end_date,
+                        selected_date=row.EventSchema.selected_date,
                     ),
                     activity_id=row.activity_id,
                     flow_id=row.flow_id,
@@ -203,10 +192,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query: Query = select(
             EventSchema,
-            PeriodicitySchema.start_date,
-            PeriodicitySchema.end_date,
-            PeriodicitySchema.selected_date,
-            PeriodicitySchema.type,
             ActivityEventsSchema.activity_id,
             FlowEventsSchema.flow_id,
         )
@@ -216,11 +201,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
                 EventSchema.id == UserEventsSchema.event_id,
                 UserEventsSchema.user_id == user_id,
             ),
-        )
-
-        query = query.join(
-            PeriodicitySchema,
-            PeriodicitySchema.id == EventSchema.periodicity_id,
         )
 
         query = query.join(
@@ -239,22 +219,22 @@ class EventCRUD(BaseCRUD[EventSchema]):
         if min_end_date and max_start_date:
             query = query.where(
                 or_(
-                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
+                    EventSchema.periodicity == PeriodicityType.ALWAYS,
                     and_(
-                        PeriodicitySchema.type != PeriodicityType.ONCE,
+                        EventSchema.periodicity != PeriodicityType.ONCE,
                         or_(
-                            PeriodicitySchema.start_date.is_(None),
-                            PeriodicitySchema.start_date <= max_start_date,
+                            EventSchema.start_date.is_(None),
+                            EventSchema.start_date <= max_start_date,
                         ),
                         or_(
-                            PeriodicitySchema.end_date.is_(None),
-                            PeriodicitySchema.end_date >= min_end_date,
+                            EventSchema.end_date.is_(None),
+                            EventSchema.end_date >= min_end_date,
                         ),
                     ),
                     and_(
-                        PeriodicitySchema.type == PeriodicityType.ONCE,
-                        PeriodicitySchema.selected_date <= max_start_date,
-                        PeriodicitySchema.selected_date >= min_end_date,
+                        EventSchema.periodicity == PeriodicityType.ONCE,
+                        EventSchema.selected_date <= max_start_date,
+                        EventSchema.selected_date >= min_end_date,
                     ),
                 )
             )
@@ -278,11 +258,10 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     version=row.EventSchema.version,
                     user_id=user_id,
                     periodicity=Periodicity(
-                        id=row.EventSchema.periodicity_id,
-                        type=row.type,
-                        start_date=row.start_date,
-                        end_date=row.end_date,
-                        selected_date=row.selected_date,
+                        type=row.EventSchema.periodicity,
+                        start_date=row.EventSchema.start_date,
+                        end_date=row.EventSchema.end_date,
+                        selected_date=row.EventSchema.selected_date,
                     ),
                     activity_id=row.activity_id,
                     flow_id=row.flow_id,
@@ -321,20 +300,59 @@ class EventCRUD(BaseCRUD[EventSchema]):
         )
         # select only always available if requested
         if only_always_available:
-            query = query.join(
-                PeriodicitySchema,
-                and_(
-                    EventSchema.periodicity_id == PeriodicitySchema.id,
-                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
-                ),
-            )
+            query.where(EventSchema.periodicity == PeriodicityType.ALWAYS)
         query = query.where(EventSchema.applet_id == applet_id)
-        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query = query.where(EventSchema.is_deleted.is_(False))
 
         query = query.where(UserEventsSchema.user_id == respondent_id)
 
         result = await self._execute(query)
         return result.scalars().all()
+
+    async def validate_existing_always_available(
+        self,
+        applet_id: uuid.UUID,
+        activity_id: uuid.UUID | None,
+        flow_id: uuid.UUID | None,
+        respondent_id: uuid.UUID | None,
+    ) -> bool:
+        """Validate if there is already an always available event."""
+        query: Query = select(1)
+        query = query.select_from(EventSchema)
+
+        if activity_id:
+            query = query.join(
+                ActivityEventsSchema,
+                and_(
+                    EventSchema.id == ActivityEventsSchema.event_id,
+                    ActivityEventsSchema.activity_id == activity_id,
+                ),
+            )
+
+        if flow_id:
+            query = query.join(
+                FlowEventsSchema,
+                and_(
+                    EventSchema.id == FlowEventsSchema.event_id,
+                    FlowEventsSchema.flow_id == flow_id,
+                ),
+            )
+
+        # differentiate general and individual events
+        query = query.join(
+            UserEventsSchema,
+            EventSchema.id == UserEventsSchema.event_id,
+            isouter=True,
+        )
+
+        query.where(EventSchema.periodicity == PeriodicityType.ALWAYS)
+        query = query.where(EventSchema.applet_id == applet_id)
+        query = query.where(EventSchema.is_deleted.is_(False))
+        query = query.where(UserEventsSchema.user_id == respondent_id)
+        query = query.limit(1)
+
+        result = await self._execute(query)
+        return result.fetchone() is not None
 
     async def get_all_by_applet_and_flow(
         self,
@@ -362,16 +380,10 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         # select only always available if requested
         if only_always_available:
-            query = query.join(
-                PeriodicitySchema,
-                and_(
-                    EventSchema.periodicity_id == PeriodicitySchema.id,
-                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
-                ),
-            )
+            query.where(EventSchema.periodicity == PeriodicityType.ALWAYS)
 
         query = query.where(EventSchema.applet_id == applet_id)
-        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query = query.where(EventSchema.is_deleted.is_(False))
 
         query = query.where(UserEventsSchema.user_id == respondent_id)
 
@@ -412,16 +424,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query: Query = select(
             EventSchema,
-            PeriodicitySchema.start_date,
-            PeriodicitySchema.end_date,
-            PeriodicitySchema.selected_date,
-            PeriodicitySchema.type,
             ActivityEventsSchema.activity_id,
             FlowEventsSchema.flow_id,
-        )
-        query = query.join(
-            PeriodicitySchema,
-            PeriodicitySchema.id == EventSchema.periodicity_id,
         )
 
         query = query.join(
@@ -472,11 +476,10 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     version=row.EventSchema.version,
                     user_id=user_id,
                     periodicity=Periodicity(
-                        id=row.EventSchema.periodicity_id,
-                        type=row.type,
-                        start_date=row.start_date,
-                        end_date=row.end_date,
-                        selected_date=row.selected_date,
+                        type=row.EventSchema.periodicity,
+                        start_date=row.EventSchema.start_date,
+                        end_date=row.EventSchema.end_date,
+                        selected_date=row.EventSchema.selected_date,
                     ),
                     activity_id=row.activity_id,
                     flow_id=row.flow_id,
@@ -524,17 +527,8 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         query: Query = select(
             EventSchema,
-            PeriodicitySchema.start_date,
-            PeriodicitySchema.end_date,
-            PeriodicitySchema.selected_date,
-            PeriodicitySchema.type,
             ActivityEventsSchema.activity_id,
             FlowEventsSchema.flow_id,
-        )
-
-        query = query.join(
-            PeriodicitySchema,
-            PeriodicitySchema.id == EventSchema.periodicity_id,
         )
 
         query = query.join(
@@ -571,22 +565,22 @@ class EventCRUD(BaseCRUD[EventSchema]):
         if min_end_date and max_start_date:
             query = query.where(
                 or_(
-                    PeriodicitySchema.type == PeriodicityType.ALWAYS,
+                    EventSchema.periodicity == PeriodicityType.ALWAYS,
                     and_(
-                        PeriodicitySchema.type != PeriodicityType.ONCE,
+                        EventSchema.periodicity != PeriodicityType.ONCE,
                         or_(
-                            PeriodicitySchema.start_date.is_(None),
-                            PeriodicitySchema.start_date <= max_start_date,
+                            EventSchema.start_date.is_(None),
+                            EventSchema.start_date <= max_start_date,
                         ),
                         or_(
-                            PeriodicitySchema.end_date.is_(None),
-                            PeriodicitySchema.end_date >= min_end_date,
+                            EventSchema.end_date.is_(None),
+                            EventSchema.end_date >= min_end_date,
                         ),
                     ),
                     and_(
-                        PeriodicitySchema.type == PeriodicityType.ONCE,
-                        PeriodicitySchema.selected_date <= max_start_date,
-                        PeriodicitySchema.selected_date >= min_end_date,
+                        EventSchema.periodicity == PeriodicityType.ONCE,
+                        EventSchema.selected_date <= max_start_date,
+                        EventSchema.selected_date >= min_end_date,
                     ),
                 )
             )
@@ -610,11 +604,10 @@ class EventCRUD(BaseCRUD[EventSchema]):
                     version=row.EventSchema.version,
                     user_id=user_id,
                     periodicity=Periodicity(
-                        id=row.EventSchema.periodicity_id,
-                        type=row.type,
-                        start_date=row.start_date,
-                        end_date=row.end_date,
-                        selected_date=row.selected_date,
+                        type=row.EventSchema.periodicity,
+                        start_date=row.EventSchema.start_date,
+                        end_date=row.EventSchema.end_date,
+                        selected_date=row.EventSchema.selected_date,
                     ),
                     activity_id=row.activity_id,
                     flow_id=row.flow_id,
@@ -849,14 +842,10 @@ class ActivityEventsCRUD(BaseCRUD[ActivityEventsSchema]):
             isouter=True,
         )
         query = query.join(EventSchema, ActivityEventsSchema.event_id == EventSchema.id)
-        query = query.join(
-            PeriodicitySchema,
-            EventSchema.periodicity_id == PeriodicitySchema.id,
-        )
 
         query = query.filter(ActivitySchema.is_deleted == False)  # noqa: E712
         query = query.filter(ActivitySchema.applet_id == applet_id)
-        query = query.filter(PeriodicitySchema.type != PeriodicityType.ALWAYS)
+        query = query.filter(EventSchema.periodicity != PeriodicityType.ALWAYS)
         query = query.group_by(ActivitySchema.applet_id, ActivitySchema.id)
         result = await self._execute(query)
 
@@ -993,16 +982,12 @@ class FlowEventsCRUD(BaseCRUD[FlowEventsSchema]):
             isouter=True,
         )
         query = query.join(EventSchema, FlowEventsSchema.event_id == EventSchema.id)
-        query = query.join(
-            PeriodicitySchema,
-            EventSchema.periodicity_id == PeriodicitySchema.id,
-        )
 
         query = query.filter(ActivityFlowSchema.applet_id == applet_id)
         query = query.filter(
             ActivityFlowSchema.is_deleted == False  # noqa: E712
         )
-        query = query.filter(PeriodicitySchema.type != PeriodicityType.ALWAYS)
+        query = query.filter(EventSchema.periodicity != PeriodicityType.ALWAYS)
         query = query.group_by(ActivityFlowSchema.applet_id, ActivityFlowSchema.id)
         result = await self._execute(query)
 
