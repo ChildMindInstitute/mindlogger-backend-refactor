@@ -44,8 +44,6 @@ class AppletHistoryService:
                 stream_port=applet.stream_port,
             )
         )
-        await ActivityHistoryService(self.session, applet.id, applet.version).add(applet.activities)
-        await FlowHistoryService(self.session, applet.id, applet.version).add(applet.activity_flows)
 
     async def get_changes(self) -> AppletHistoryChange:
         prev_version = await self.get_prev_version()
