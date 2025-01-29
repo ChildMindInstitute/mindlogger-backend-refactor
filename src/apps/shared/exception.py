@@ -70,6 +70,12 @@ class NotFoundError(BaseError):
     type = ExceptionTypes.NOT_FOUND
 
 
+class UnauthorizedError(BaseError):
+    message = _("Unauthorized.")
+    status_code = status.HTTP_401_UNAUTHORIZED
+    type = ExceptionTypes.ACCESS_DENIED
+
+
 class InternalServerError(BaseError):
     pass
 
