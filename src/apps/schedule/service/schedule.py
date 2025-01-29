@@ -960,12 +960,10 @@ class ScheduleService:
     async def create_schedule_individual(self, applet_id: uuid.UUID, respondent_id: uuid.UUID) -> list[PublicEvent]:
         """Create individual schedule for a user for the first time"""
         # get list of activity ids
-        activity_ids = []
         activities = await ActivitiesCRUD(self.session).get_by_applet_id(applet_id, is_reviewable=False)
         activity_ids = [activity.id for activity in activities if not activity.is_hidden]
 
         # get list of flow ids
-        flow_ids = []
         flows = await FlowsCRUD(self.session).get_by_applet_id(applet_id)
         flow_ids = [flow.id for flow in flows if not flow.is_hidden]
 
