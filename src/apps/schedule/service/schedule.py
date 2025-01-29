@@ -9,7 +9,7 @@ from apps.applets.errors import AppletNotFoundError
 from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD, FlowEventsCRUD, UserEventsCRUD
 from apps.schedule.crud.notification import NotificationCRUD, ReminderCRUD
 from apps.schedule.db.schemas import EventSchema, NotificationSchema
-from apps.schedule.domain.constants import AvailabilityType, DefaultEvent, PeriodicityType, TimerType
+from apps.schedule.domain.constants import DefaultEvent, PeriodicityType
 from apps.schedule.domain.schedule import BaseEvent
 from apps.schedule.domain.schedule.internal import (
     ActivityEventCreate,
@@ -21,13 +21,10 @@ from apps.schedule.domain.schedule.internal import (
     NotificationSetting,
     ReminderSetting,
     ReminderSettingCreate,
+    ScheduleEvent,
     UserEventCreate,
 )
 from apps.schedule.domain.schedule.public import (
-    EventAvailabilityDto,
-    HourMinute,
-    NotificationDTO,
-    NotificationSettingDTO,
     PublicEvent,
     PublicEventByUser,
     PublicEventCount,
@@ -35,9 +32,6 @@ from apps.schedule.domain.schedule.public import (
     PublicNotificationSetting,
     PublicPeriodicity,
     PublicReminderSetting,
-    ReminderSettingDTO,
-    ScheduleEventDto,
-    TimerDto,
 )
 from apps.schedule.domain.schedule.requests import EventRequest, EventUpdateRequest
 from apps.schedule.errors import (
@@ -46,6 +40,7 @@ from apps.schedule.errors import (
     EventAlwaysAvailableExistsError,
     ScheduleNotFoundError,
 )
+from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.query_params import QueryParams
 from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserNotFound
@@ -103,7 +98,7 @@ class ScheduleService:
             )
         )
 
-        # Create event-user
+        # Create user event
         if schedule.respondent_id:
             await UserEventsCRUD(self.session).save(UserEventCreate(event_id=event.id, user_id=schedule.respondent_id))
         # Create event-activity or event-flow
@@ -114,10 +109,17 @@ class ScheduleService:
         else:
             await FlowEventsCRUD(self.session).save(FlowEventCreate(event_id=event.id, flow_id=schedule.flow_id))
 
+        schedule_event = ScheduleEvent(
+            **event.dict(),
+            activity_id=schedule.activity_id,
+            flow_id=schedule.flow_id,
+            user_id=schedule.respondent_id,
+        )
+
         # Create notification and reminder
         if schedule.notification:
-            notifications = None
-            reminder = None
+            notifications: list[NotificationSetting] | None = None
+            reminder: ReminderSetting | None = None
 
             if schedule.notification.notifications:
                 notification_create = []
@@ -133,6 +135,7 @@ class ScheduleService:
                         )
                     )
                 notifications = await NotificationCRUD(self.session).create_many(notification_create)
+                schedule_event.notifications = notifications
 
             if schedule.notification.reminder:
                 reminder = await ReminderCRUD(self.session).create(
@@ -142,6 +145,8 @@ class ScheduleService:
                         reminder_time=schedule.notification.reminder.reminder_time,  # noqa: E501
                     )
                 )
+                schedule_event.reminder = reminder
+
             notification_public = PublicNotification(
                 notifications=[
                     PublicNotificationSetting(
@@ -157,6 +162,10 @@ class ScheduleService:
                 if reminder
                 else None,
             )
+
+        await ScheduleHistoryService(self.session).add_history(
+            event=schedule_event,
+        )
 
         return PublicEvent(
             **event.dict(exclude={"periodicity"}),
@@ -268,11 +277,11 @@ class ScheduleService:
         events = PublicEventByUser(
             applet_id=applet_id,
             events=[
-                self._convert_to_dto(
-                    event=full_event,
+                ScheduleEvent(
+                    **full_event.dict(),
                     notifications=await NotificationCRUD(self.session).get_all_by_event_id(full_event.id),
                     reminder=await ReminderCRUD(self.session).get_by_event_id(full_event.id),
-                )
+                ).to_schedule_event_dto()
                 for full_event in full_events
             ],
         )
@@ -645,11 +654,11 @@ class ScheduleService:
                 PublicEventByUser(
                     applet_id=applet.id,
                     events=[
-                        self._convert_to_dto(
-                            event=event,
+                        ScheduleEvent(
+                            **event.dict(),
                             notifications=await NotificationCRUD(self.session).get_all_by_event_id(event.id),
                             reminder=await ReminderCRUD(self.session).get_by_event_id(event.id),
-                        )
+                        ).to_schedule_event_dto()
                         for event in all_events
                     ],
                 )
@@ -690,11 +699,11 @@ class ScheduleService:
                 PublicEventByUser(
                     applet_id=applet_id,
                     events=[
-                        self._convert_to_dto(
-                            event=event,
+                        ScheduleEvent(
+                            **event.dict(),
                             notifications=notifications_map.get(event.id),
                             reminder=reminders_map.get(event.id),
-                        )
+                        ).to_schedule_event_dto()
                         for event in all_events
                     ],
                 )
@@ -711,100 +720,6 @@ class ScheduleService:
             result.setdefault(k, list())
             result[k] += v
         return result
-
-    def _convert_to_dto(
-        self,
-        event: EventFull,
-        notifications: list[NotificationSetting] | None = None,
-        reminder: ReminderSetting | None = None,
-    ) -> ScheduleEventDto:
-        """Convert event to dto."""
-        timers = TimerDto(
-            timer=HourMinute(
-                hours=event.timer.seconds // 3600 if event.timer else 0,
-                minutes=event.timer.seconds // 60 % 60 if event.timer else 0,
-            )
-            if event.timer_type == TimerType.TIMER
-            else None,
-            idleTimer=HourMinute(
-                hours=event.timer.seconds // 3600 if event.timer else 0,
-                minutes=event.timer.seconds // 60 % 60 if event.timer else 0,
-            )
-            if event.timer_type == TimerType.IDLE
-            else None,
-        )
-
-        availabilityType = (
-            AvailabilityType.ALWAYS_AVAILABLE
-            if event.periodicity == PeriodicityType.ALWAYS
-            else AvailabilityType.SCHEDULED_ACCESS
-        )
-
-        availability = EventAvailabilityDto(
-            oneTimeCompletion=event.one_time_completion,
-            periodicityType=event.periodicity,
-            timeFrom=HourMinute(
-                hours=event.start_time.hour if event.start_time else 0,
-                minutes=event.start_time.minute if event.start_time else 0,
-            ),
-            timeTo=HourMinute(
-                hours=event.end_time.hour if event.end_time else 0,
-                minutes=event.end_time.minute if event.end_time else 0,
-            ),
-            allowAccessBeforeFromTime=event.access_before_schedule,
-            startDate=event.start_date,
-            endDate=event.end_date,
-        )
-
-        notificationSettings = None
-        if notifications or reminder:
-            notificationsDTO = None
-            reminderDTO = None
-            if notifications:
-                notificationsDTO = [
-                    NotificationSettingDTO(
-                        trigger_type=notification.trigger_type,
-                        from_time=HourMinute(
-                            hours=notification.from_time.hour,
-                            minutes=notification.from_time.minute,
-                        )
-                        if notification.from_time
-                        else None,
-                        to_time=HourMinute(
-                            hours=notification.to_time.hour,
-                            minutes=notification.to_time.minute,
-                        )
-                        if notification.to_time
-                        else None,
-                        at_time=HourMinute(
-                            hours=notification.at_time.hour,
-                            minutes=notification.at_time.minute,
-                        )
-                        if notification.at_time
-                        else None,
-                    )
-                    for notification in notifications
-                ]
-            if reminder:
-                reminderDTO = ReminderSettingDTO(
-                    activity_incomplete=reminder.activity_incomplete,
-                    reminder_time=HourMinute(
-                        hours=reminder.reminder_time.hour,
-                        minutes=reminder.reminder_time.minute,
-                    ),
-                )
-            notificationSettings = NotificationDTO(notifications=notificationsDTO, reminder=reminderDTO)
-
-        return ScheduleEventDto(
-            id=event.id,
-            entityId=event.activity_id if event.activity_id else event.flow_id,
-            timers=timers,
-            availabilityType=availabilityType,
-            availability=availability,
-            selectedDate=event.selected_date,
-            notificationSettings=notificationSettings,
-            version=event.version,
-        )
 
     async def get_events_by_user_and_applet(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> PublicEventByUser:
         """Get all events for user in applet."""
@@ -831,11 +746,11 @@ class ScheduleService:
         events = PublicEventByUser(
             applet_id=applet_id,
             events=[
-                self._convert_to_dto(
-                    event=event,
+                ScheduleEvent(
+                    **event.dict(),
                     notifications=await NotificationCRUD(self.session).get_all_by_event_id(event.id),
                     reminder=await ReminderCRUD(self.session).get_by_event_id(event.id),
-                )
+                ).to_schedule_event_dto()
                 for event in (user_events + general_events)
             ],
         )
