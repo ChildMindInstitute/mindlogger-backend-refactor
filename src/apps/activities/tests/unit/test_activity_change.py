@@ -117,7 +117,7 @@ def old_activity(activity_history_id: uuid.UUID, old_applet_id: str, old_id_vers
         is_reviewable=False,
         response_is_editable=False,
         order=1,
-        created_at=datetime.datetime.utcnow(),
+        created_at=datetime.datetime.now(datetime.UTC),
         is_hidden=False,
     )
 
@@ -137,7 +137,7 @@ def new_activity(activity_history_id: uuid.UUID, new_applet_id: str, new_version
         is_reviewable=False,
         response_is_editable=False,
         order=1,
-        created_at=datetime.datetime.utcnow(),
+        created_at=datetime.datetime.now(datetime.UTC),
         is_hidden=False,
     )
 

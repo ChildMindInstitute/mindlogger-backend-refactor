@@ -28,7 +28,7 @@ async def remove_events():
                 assessments = await get_assessments(session)
                 service = ScheduleService(session)
                 for activity in assessments:
-                    print(f"Applet: {activity.applet_id} " f"Activity: {activity.id}")
+                    print(f"Applet: {activity.applet_id} Activity: {activity.id}")
                     await service.delete_by_activity_ids(activity.applet_id, [activity.id])
             except Exception as ex:
                 print(ex)

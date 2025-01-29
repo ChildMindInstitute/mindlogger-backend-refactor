@@ -816,7 +816,7 @@ class TestInvite(BaseTest):
             data,
         )
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        emsg = "value is not a valid enumeration member; " "permitted: 'manager', 'coordinator', 'editor'"
+        emsg = "value is not a valid enumeration member; permitted: 'manager', 'coordinator', 'editor'"
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == emsg

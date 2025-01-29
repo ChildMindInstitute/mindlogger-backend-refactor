@@ -128,7 +128,7 @@ class ActivityEventRawRow(RawRow):
 def is_last_day_of_month(date: datetime.date):
     mdays = calendar.mdays.copy()  # type: ignore[attr-defined]
     if calendar.isleap(date.year):
-        mdays[calendar.February] += 1  # type: ignore[attr-defined]
+        mdays[calendar.FEBRUARY] += 1
     return date.day == mdays[date.month]
 
 
@@ -210,7 +210,7 @@ async def _export_flows(applet_id: uuid.UUID, path_prefix: str):
 
 @app.command(
     short_help=f'Export applet "{APPLET_NAME or "NOT CONFIGURED"}"({APPLET_ID or "NOT CONFIGURED"})'
-    f' flow data as csv file'
+    f" flow data as csv file"
 )
 @coro
 async def export_flows(

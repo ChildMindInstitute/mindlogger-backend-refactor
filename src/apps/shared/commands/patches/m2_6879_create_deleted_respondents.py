@@ -145,7 +145,7 @@ async def main(session: AsyncSession, *args, **kwargs):
                         try:
                             await find_and_create_missing_roles_arbitrary(session, arb_session, workspace.user_id)
                             await session.commit()
-                            print(f"Processing workspace#{i + 1} {workspace.id} " f"finished")
+                            print(f"Processing workspace#{i + 1} {workspace.id} finished")
                         except Exception:
                             await session.rollback()
                             print(f"[bold red]Error: Workspace#{i + 1} {workspace.id} processing error[/bold red]")

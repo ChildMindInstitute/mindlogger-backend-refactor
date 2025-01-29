@@ -636,7 +636,7 @@ class TestActivities:
                         en="Understand how was the morning",
                         fr="Understand how was the morning",
                     ),
-                    items=[dict(activity_key="577dbbda-3afc-" "4962-842b-8d8d11588bfe")],
+                    items=[dict(activity_key="577dbbda-3afc-4962-842b-8d8d11588bfe")],
                 )
             ],
         )

@@ -14,7 +14,7 @@ class RedisCacheTest:
     _storage: dict = {}
 
     async def get(self, key: str):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.UTC)
         value, expiry = self._storage.get(key, [None, None])
 
         if not value or (expiry and now > expiry):
@@ -23,7 +23,7 @@ class RedisCacheTest:
         return value
 
     async def set(self, name, value, ex=None, **kwargs):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.UTC)
         self._storage[name] = [
             value,
             (now + datetime.timedelta(seconds=ex)) if ex else None,
@@ -39,7 +39,7 @@ class RedisCacheTest:
             pattern = ".+"
         filtered_keys = []
         for key, [_, expire] in self._storage.items():
-            if expire and expire < datetime.datetime.utcnow():
+            if expire and expire < datetime.datetime.now(datetime.UTC):
                 continue
             is_match = re.match(pattern, key)
             if is_match:
@@ -50,7 +50,7 @@ class RedisCacheTest:
         results = []
         for key in keys:
             result, expire = self._storage.get(key, [None, None])
-            if expire > datetime.datetime.utcnow():
+            if expire > datetime.datetime.now(datetime.UTC):
                 results.append(result)
         return results
 

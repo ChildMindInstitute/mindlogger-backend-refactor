@@ -184,8 +184,8 @@ async def tom_answer_item_for_applet(tom: User, applet: AppletFull, session: Asy
         respondent_id=tom.id,
         answer=uuid.uuid4().hex,
         item_ids=[str(item.id) for item in applet.activities[0].items],
-        start_datetime=datetime.datetime.utcnow(),
-        end_datetime=datetime.datetime.utcnow(),
+        start_datetime=datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
+        end_datetime=datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
         is_assessment=False,
     )
 
@@ -211,8 +211,8 @@ async def answer_shell_account_target(tom: User, applet: AppletFull, session: As
             activity_id=applet.activities[0].id,
             answer=ItemAnswerCreate(
                 item_ids=[applet.activities[0].items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
@@ -238,8 +238,8 @@ async def answer_shell_account_target(tom: User, applet: AppletFull, session: As
         source_subject_tag="Child",
         source_nickname=shell_account.nickname,
         source_secret_user_id=shell_account.secret_user_id,
-        start_datetime=datetime.datetime.utcnow(),
-        end_datetime=datetime.datetime.utcnow(),
+        start_datetime=datetime.datetime.now(datetime.UTC),
+        end_datetime=datetime.datetime.now(datetime.UTC),
     )
 
 
@@ -256,8 +256,8 @@ async def tom_answer_on_reviewable_applet(
             activity_id=applet_with_reviewable_activity.activities[0].id,
             answer=ItemAnswerCreate(
                 item_ids=[applet_with_reviewable_activity.activities[0].items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
@@ -277,8 +277,8 @@ async def lucy_answer(session: AsyncSession, lucy: User, applet: AppletFull) -> 
             activity_id=applet.activities[0].id,
             answer=ItemAnswerCreate(
                 item_ids=[applet.activities[0].items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(lucy.id),
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
@@ -299,8 +299,8 @@ async def tom_answer_activity_flow(session: AsyncSession, tom: User, applet_with
             activity_id=applet_with_flow.activities[0].id,
             answer=ItemAnswerCreate(
                 item_ids=[applet_with_flow.activities[0].items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
                 identifier="encrypted_identifier",
             ),
@@ -325,8 +325,8 @@ async def tom_answer_activity_flow_incomplete(
             activity_id=applet_with_flow.activities[0].id,
             answer=ItemAnswerCreate(
                 item_ids=[applet_with_flow.activities[0].items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
                 identifier="encrypted_identifier",
             ),
@@ -344,8 +344,8 @@ def applet_with_flow_answer_create(applet_with_flow: AppletFull) -> list[AppletA
         client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
     )
     answer_item_data = dict(
-        start_time=datetime.datetime.utcnow(),
-        end_time=datetime.datetime.utcnow(),
+        start_time=datetime.datetime.now(datetime.UTC),
+        end_time=datetime.datetime.now(datetime.UTC),
         user_public_key=str(uuid.uuid4()),
     )
     answers = [
@@ -429,8 +429,8 @@ async def tom_answer_activity_no_flow(session: AsyncSession, tom: User, applet_w
             activity_id=applet_with_flow.activities[0].id,
             answer=ItemAnswerCreate(
                 item_ids=[applet_with_flow.activities[0].items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
@@ -566,8 +566,8 @@ async def tom_answer_activity_flow_not_completed(
             activity_id=applet_with_flow.activities[0].id,
             answer=ItemAnswerCreate(
                 item_ids=[applet_with_flow.activities[0].items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
                 identifier="encrypted_identifier",
             ),
@@ -594,8 +594,8 @@ async def applet__with_deleted_activities_and_answers(
             activity_id=activity.id,
             answer=ItemAnswerCreate(
                 item_ids=[activity.items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
                 identifier="encrypted_identifier",
             ),
@@ -627,8 +627,8 @@ async def applet__with_deleted_and_order(
             is_flow_completed=True,
             answer=ItemAnswerCreate(
                 item_ids=[activity.items[0].id],
-                start_time=datetime.datetime.utcnow(),
-                end_time=datetime.datetime.utcnow(),
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
                 identifier="encrypted_identifier",
             ),
@@ -763,7 +763,7 @@ class TestAnswerActivityItems(BaseTest):
             self.review_activities_url.format(applet_id=str(answer_with_alert_create.applet_id)),
             dict(
                 targetSubjectId=tom_applet_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
@@ -1518,7 +1518,7 @@ class TestAnswerActivityItems(BaseTest):
             self.review_activities_url.format(applet_id=str(tom_answer.applet_id)),
             dict(
                 targetSubjectId=tom_applet_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
 
@@ -1697,7 +1697,7 @@ class TestAnswerActivityItems(BaseTest):
             )
         )
         assert response.status_code == http.HTTPStatus.OK
-        assessment = response.json()["result"]
+        assessment: dict = response.json()["result"]
         assert assessment["answer"] == assessment_create.answer
         assert assessment["reviewerPublicKey"] == assessment_create.reviewer_public_key
         assert assessment["itemIds"] == [str(i) for i in assessment_create.item_ids]
@@ -1749,7 +1749,7 @@ class TestAnswerActivityItems(BaseTest):
             self.review_activities_url.format(applet_id=str(answer.applet_id)),
             dict(
                 targetSubjectId=tom_applet_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
 
@@ -1928,7 +1928,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 0
 
-        created_at = datetime.datetime.utcnow()
+        created_at = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
         data = answer_create.copy(deep=True)
         data.created_at = created_at
 
@@ -2236,7 +2236,7 @@ class TestAnswerActivityItems(BaseTest):
         "column,value",
         (
             ("activity_id", "00000000-0000-0000-0000-000000000000_99"),
-            ("created_at", datetime.datetime.utcnow().timestamp() * 1000),
+            ("created_at", datetime.datetime.now(datetime.UTC).timestamp() * 1000),
         ),
     )
     async def test_check_existence_answer_does_not_exist(
@@ -2415,8 +2415,8 @@ class TestAnswerActivityItems(BaseTest):
                     activity_id=applet_with_reviewable_activity.activities[0].id,
                     answer=ItemAnswerCreate(
                         item_ids=[applet_with_reviewable_activity.activities[0].items[0].id],
-                        start_time=datetime.datetime.utcnow(),
-                        end_time=datetime.datetime.utcnow(),
+                        start_time=datetime.datetime.now(datetime.UTC),
+                        end_time=datetime.datetime.now(datetime.UTC),
                         user_public_key=str(tom.id),
                     ),
                     client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
@@ -2577,7 +2577,7 @@ class TestAnswerActivityItems(BaseTest):
             url,
             dict(
                 targetSubjectId=tom_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
         assert response.status_code == 200
@@ -2612,7 +2612,7 @@ class TestAnswerActivityItems(BaseTest):
             url,
             dict(
                 targetSubjectId=tom_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
         assert response.status_code == 200
@@ -2644,7 +2644,7 @@ class TestAnswerActivityItems(BaseTest):
             url,
             dict(
                 targetSubjectId=tom_subject.id,
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
         assert response.status_code == 200
@@ -3045,7 +3045,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.get(
             url,
             dict(
-                createdDate=datetime.datetime.utcnow().date(),
+                createdDate=datetime.datetime.now(datetime.UTC).date(),
             ),
         )
         assert response.status_code == 422

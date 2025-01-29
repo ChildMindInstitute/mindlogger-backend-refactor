@@ -16,7 +16,7 @@ from sqlalchemy.sql import Values
 from apps.subjects.db.schemas import SubjectSchema
 
 MARKER_DELETED = "#deleted#"
-UPDATED_AT = datetime.datetime.utcnow().date()
+UPDATED_AT = datetime.datetime.now(datetime.UTC).date()
 
 
 def mongoid_to_uuid(id_):

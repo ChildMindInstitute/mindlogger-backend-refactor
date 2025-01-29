@@ -212,7 +212,7 @@ class LogFileService:
 
     @staticmethod
     def need_to_rotate(first_file_name: str) -> bool:
-        now_ts = datetime.datetime.utcnow()
+        now_ts = datetime.datetime.now(datetime.UTC)
         file_ts_part = first_file_name.split()[-1:]
         if not file_ts_part:
             return False

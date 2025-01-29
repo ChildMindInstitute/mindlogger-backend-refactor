@@ -14,8 +14,8 @@ class TokensService:
         return await TokenBlacklistCRUD(self.session).exists(token)
 
     async def revoke(self, token: InternalToken, type_: TokenPurpose) -> None:
-        now = datetime.datetime.utcnow()
-        ttl = token.payload.exp - int(now.replace(tzinfo=datetime.timezone.utc).timestamp())
+        now = datetime.datetime.now(datetime.UTC)
+        ttl = token.payload.exp - int(now.timestamp())
         if ttl > 1:
             revoked = await self.is_revoked(token)
             if not revoked:

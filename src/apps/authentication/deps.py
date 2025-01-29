@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -44,7 +44,7 @@ async def get_current_user_for_ws(websocket: WebSocket, session=Depends(get_sess
             )
             token_data = TokenPayload(**payload)
 
-            if datetime.utcfromtimestamp(token_data.exp) < datetime.utcnow():
+            if datetime.fromtimestamp(token_data.exp, timezone.utc) < datetime.now(timezone.utc):
                 raise AuthenticationError
         except (jwt.PyJWTError, ValidationError):
             raise AuthenticationError
@@ -75,7 +75,7 @@ def get_current_token(type_: TokenPurpose = TokenPurpose.ACCESS):
 
             token_payload = TokenPayload(**payload)
 
-            if datetime.utcfromtimestamp(token_payload.exp) < datetime.utcnow():
+            if datetime.fromtimestamp(token_payload.exp, timezone.utc) < datetime.now(timezone.utc):
                 raise AuthenticationError
         except (jwt.PyJWTError, ValidationError):
             raise AuthenticationError
