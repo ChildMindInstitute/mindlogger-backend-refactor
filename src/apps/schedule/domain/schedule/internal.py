@@ -131,7 +131,6 @@ class EventFull(InternalModel, BaseEvent):
 
 
 class ScheduleEvent(EventFull):
-    applet_id: uuid.UUID
     notifications: list[NotificationSetting] | None = None
     reminder: ReminderSetting | None = None
 

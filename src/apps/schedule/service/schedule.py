@@ -110,7 +110,7 @@ class ScheduleService:
             await FlowEventsCRUD(self.session).save(FlowEventCreate(event_id=event.id, flow_id=schedule.flow_id))
 
         schedule_event = ScheduleEvent(
-            **event.dict(),
+            **event.dict(exclude={"applet_id"}),
             activity_id=schedule.activity_id,
             flow_id=schedule.flow_id,
             user_id=schedule.respondent_id,
@@ -165,6 +165,7 @@ class ScheduleService:
 
         await ScheduleHistoryService(self.session).add_history(
             event=schedule_event,
+            applet_id=applet_id,
         )
 
         return PublicEvent(

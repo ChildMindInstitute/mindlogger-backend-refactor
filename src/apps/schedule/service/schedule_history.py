@@ -1,5 +1,7 @@
 __all__ = ["ScheduleHistoryService"]
 
+import uuid
+
 from apps.applets.crud import AppletsCRUD
 from apps.schedule.crud.schedule_history import (
     AppletEventsCRUD,
@@ -21,8 +23,8 @@ class ScheduleHistoryService:
     def __init__(self, session):
         self.session = session
 
-    async def add_history(self, event: ScheduleEvent):
-        applet = await AppletsCRUD(self.session).get_by_id(event.applet_id)
+    async def add_history(self, applet_id: uuid.UUID, event: ScheduleEvent):
+        applet = await AppletsCRUD(self.session).get_by_id(applet_id)
 
         event_history = await ScheduleHistoryCRUD(self.session).add(
             EventHistorySchema(
@@ -47,7 +49,7 @@ class ScheduleHistoryService:
         )
 
         await AppletEventsCRUD(self.session).add(
-            AppletEventsSchema(applet_id=f"{applet.id}_{applet.version}", event_id=event_history.id_version)
+            AppletEventsSchema(applet_id=f"{applet_id}_{applet.version}", event_id=event_history.id_version)
         )
 
         if event.notifications:
