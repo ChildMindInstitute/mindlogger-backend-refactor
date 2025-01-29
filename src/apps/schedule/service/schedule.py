@@ -938,21 +938,21 @@ class ScheduleService:
             user_id=user_id,
         )
 
-    async def import_schedule(self, schedules: list[EventRequest], applet_id: uuid.UUID) -> list[PublicEvent]:
+    async def import_schedule(self, event_requests: list[EventRequest], applet_id: uuid.UUID) -> list[PublicEvent]:
         """Import schedule."""
         events = []
-        for schedule in schedules:
-            if schedule.periodicity.type == PeriodicityType.ALWAYS:
+        for event_request in event_requests:
+            if event_request.periodicity.type == PeriodicityType.ALWAYS:
                 # delete alwaysAvailable events of this activity or flow,
                 # if new event type is AA
                 await self._delete_by_activity_or_flow(
                     applet_id=applet_id,
-                    activity_id=schedule.activity_id,
-                    flow_id=schedule.flow_id,
-                    respondent_id=schedule.respondent_id,
+                    activity_id=event_request.activity_id,
+                    flow_id=event_request.flow_id,
+                    respondent_id=event_request.respondent_id,
                     only_always_available=True,
                 )
-            event = await self.create_schedule(applet_id=applet_id, schedule=schedule)
+            event = await self.create_schedule(applet_id=applet_id, schedule=event_request)
             events.append(event)
 
         return events
