@@ -390,6 +390,14 @@ class ScheduleService:
                 selected_date=schedule.periodicity.selected_date,
             ),
         )
+
+        schedule_event = ScheduleEvent(
+            **event.dict(exclude={"applet_id"}),
+            activity_id=activity_id,
+            flow_id=flow_id,
+            user_id=respondent_id,
+        )
+
         # Update notification
         await NotificationCRUD(self.session).delete_by_event_ids([schedule_id])
         await ReminderCRUD(self.session).delete_by_event_ids([schedule_id])
@@ -412,6 +420,7 @@ class ScheduleService:
                         )
                     )
                 notifications = await NotificationCRUD(self.session).create_many(notifications_create)
+                schedule_event.notifications = notifications
 
             if schedule.notification.reminder:
                 reminder = await ReminderCRUD(self.session).create(
@@ -421,6 +430,8 @@ class ScheduleService:
                         reminder_time=schedule.notification.reminder.reminder_time,
                     )
                 )
+                schedule_event.reminder = reminder
+
             notification_public = PublicNotification(
                 notifications=[
                     PublicNotificationSetting(
@@ -436,6 +447,11 @@ class ScheduleService:
                 if reminder
                 else None,
             )
+
+        await ScheduleHistoryService(self.session).add_history(
+            event=schedule_event,
+            applet_id=applet_id,
+        )
 
         return PublicEvent(
             **event.dict(exclude={"periodicity"}),

@@ -1,9 +1,11 @@
 import uuid
 from datetime import date
 
-from sqlalchemy.exc import IntegrityError, MultipleResultsFound
+from sqlalchemy import Integer, update
+from sqlalchemy.exc import IntegrityError, MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import and_, delete, distinct, func, or_, select
+from sqlalchemy.sql.expression import case, cast
 
 from apps.activities.db.schemas import ActivitySchema
 from apps.activity_flows.db.schemas import ActivityFlowSchema
@@ -114,13 +116,39 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
     async def update(self, pk: uuid.UUID, schema: EventUpdate) -> Event:
         """Update event by event id."""
-        instance = await self._update_one(
-            lookup="id",
-            value=pk,
-            schema=EventSchema(**schema.dict()),
+        event_schema = EventSchema(**schema.dict())
+
+        dict_values = dict(event_schema)
+
+        query = (
+            update(EventSchema)
+            .where(EventSchema.id == pk)
+            .values(
+                **dict_values,
+                version=func.concat(
+                    func.to_char(func.current_date(), "YYYYMMDD"),
+                    "-",
+                    case(
+                        (
+                            EventSchema.version.like(func.concat(func.to_char(func.current_date(), "YYYYMMDD"), "-%")),
+                            cast(func.split_part(EventSchema.version, "-", 2), Integer) + 1,
+                        ),
+                        else_=1,
+                    ),
+                ),
+            )
+            .returning(EventSchema)
         )
-        event: Event = Event.from_orm(instance)
-        return event
+
+        db_result = await self._execute(query)
+        rows_as_dict = db_result.mappings().all()
+
+        if len(rows_as_dict) == 0:
+            raise NoResultFound()
+        elif len(rows_as_dict) > 1:
+            raise MultipleResultsFound()
+
+        return Event.from_orm(EventSchema(**rows_as_dict[0]))
 
     async def get_all_by_applet_and_user(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> list[EventFull]:
         """Get events by applet_id and user_id"""
