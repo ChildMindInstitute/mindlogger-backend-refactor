@@ -204,6 +204,7 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     subject_created_at: datetime.datetime
     invitation: InvitationResponse | None = None
     roles: list[Role]
+    team_member_can_view_data: bool = False
 
 
 class PublicWorkspaceRespondent(PublicModel):

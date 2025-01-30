@@ -89,14 +89,14 @@ class SubjectReadResponse(SubjectUpdateRequest):
     last_name: str
 
 
-class SubjectReadResponseWithRoles(SubjectReadResponse):
+class SubjectReadResponseWithDataAccess(SubjectReadResponse):
+    team_member_can_view_data: bool = False
     roles: list[Role]
 
 
-class TargetSubjectByRespondentResponse(SubjectReadResponseWithRoles):
+class TargetSubjectByRespondentResponse(SubjectReadResponseWithDataAccess):
     submission_count: int = 0
     currently_assigned: bool = False
-    team_member_can_view_data: bool = False
 
 
 class SubjectRelation(InternalModel):
