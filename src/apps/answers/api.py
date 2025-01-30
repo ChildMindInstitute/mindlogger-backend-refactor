@@ -59,6 +59,7 @@ from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_p
 from apps.subjects.services import SubjectsService
 from apps.users import UsersCRUD
 from apps.users.domain import User
+from apps.users.services.prolific_user import ProlificUserService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.workspace import WorkspaceService
@@ -96,10 +97,17 @@ async def create_anonymous_answer(
     answer_session=Depends(get_answer_session),
 ) -> None:
     async with atomic(session):
-        anonymous_respondent = await UsersCRUD(session).get_anonymous_respondent()
-        assert anonymous_respondent
+        respondent = None
+        if schema.prolific_params:
+            prolific_service = ProlificUserService(session, schema.prolific_params)
+            respondent = await prolific_service.create_prolific_respondent()
 
-        service = AnswerService(session, anonymous_respondent.id, answer_session)
+            await prolific_service.create_subject_for_prolific_respondent(respondent, schema.applet_id)
+        else:
+            respondent = await UsersCRUD(session).get_anonymous_respondent()
+        assert respondent
+
+        service = AnswerService(session, respondent.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
             schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
