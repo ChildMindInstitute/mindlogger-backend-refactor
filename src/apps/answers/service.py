@@ -135,7 +135,7 @@ class AnswerService:
         return key_generator
 
     async def create_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
-        if self.user_id:
+        if self.user_id and activity_answer.prolific_params is None:
             return await self._create_respondent_answer(activity_answer)
         else:
             return await self._create_anonymous_answer(activity_answer)

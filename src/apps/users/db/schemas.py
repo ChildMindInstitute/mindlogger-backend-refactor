@@ -19,6 +19,7 @@ class UserSchema(Base):
     is_super_admin = Column(Boolean(), default=False, server_default="false")
     is_anonymous_respondent = Column(Boolean(), default=False, server_default="false")
     is_legacy_deleted_respondent = Column(Boolean(), default=False, server_default="false")
+    is_prolific_respondent = Column(Boolean(), default=False, server_default="false")
 
     def __repr__(self) -> str:
         return f"UserSchema(id='{self.id}', email='{self.email}')"  # pragma: no cover # noqa: E501

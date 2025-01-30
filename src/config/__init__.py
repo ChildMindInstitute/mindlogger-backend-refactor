@@ -14,6 +14,7 @@ from config.mailing import MailingSettings
 from config.multiinformant import MultiInformantSettings
 from config.notification import FirebaseCloudMessagingSettings
 from config.opentelemetry import OpenTelemetrySettings
+from config.prolific_respondent import ProlificRespondent
 from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
@@ -81,6 +82,7 @@ class Settings(BaseSettings):
     super_admin = SuperAdmin()
 
     anonymous_respondent = AnonymousRespondent()
+    prolific_respondent = ProlificRespondent()
 
     task_answer_encryption = AnswerEncryption()
     task_audio_file_convert = AudioFileConvert()

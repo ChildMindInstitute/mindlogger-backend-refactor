@@ -18,6 +18,7 @@ import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
 import apps.integrations.loris.router as loris
+import apps.integrations.prolific.router as prolific
 import apps.integrations.router as integrations
 import apps.invitations.router as invitations
 import apps.library.router as library
@@ -71,6 +72,7 @@ routers: Iterable[APIRouter] = (
     activity_assignments.router,
     activity_assignments.user_router,
     loris.router,
+    prolific.router,
     integrations.router,
 )
 
