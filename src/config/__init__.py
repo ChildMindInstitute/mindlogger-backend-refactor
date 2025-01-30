@@ -13,7 +13,6 @@ from config.logs import Logs
 from config.mailing import MailingSettings
 from config.multiinformant import MultiInformantSettings
 from config.notification import FirebaseCloudMessagingSettings
-from config.opentelemetry import OpenTelemetrySettings
 from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
@@ -89,8 +88,6 @@ class Settings(BaseSettings):
     applet_ema = AppletEMASettings()
 
     logs: Logs = Logs()
-
-    opentelemetry: OpenTelemetrySettings = OpenTelemetrySettings()
 
     multi_informant: MultiInformantSettings = MultiInformantSettings()
 
