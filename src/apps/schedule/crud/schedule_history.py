@@ -20,7 +20,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
     async def mark_as_deleted(self, events: list[tuple[uuid.UUID, str]]):
         id_versions = [f"{event[0]}_{event[1]}" for event in events]
 
-        query = update(self.schema_class).where(self.schema_class.id_version.in_(id_versions)).values(is_deleted=True)
+        query = update(EventHistorySchema).where(EventHistorySchema.id_version.in_(id_versions)).values(is_deleted=True)
 
         await self._execute(query)
 
@@ -39,7 +39,7 @@ class AppletEventsCRUD(BaseCRUD[AppletEventsSchema]):
     async def mark_as_deleted(self, events: list[tuple[uuid.UUID, str]]):
         id_versions = [f"{event[0]}_{event[1]}" for event in events]
 
-        query = update(self.schema_class).where(self.schema_class.event_id.in_(id_versions)).values(is_deleted=True)
+        query = update(AppletEventsSchema).where(AppletEventsSchema.event_id.in_(id_versions)).values(is_deleted=True)
 
         await self._execute(query)
 
@@ -54,7 +54,11 @@ class NotificationHistoryCRUD(BaseCRUD[NotificationHistorySchema]):
     async def mark_as_deleted(self, events: list[tuple[uuid.UUID, str]]):
         id_versions = [f"{event[0]}_{event[1]}" for event in events]
 
-        query = update(self.schema_class).where(self.schema_class.event_id.in_(id_versions)).values(is_deleted=True)
+        query = (
+            update(NotificationHistorySchema)
+            .where(NotificationHistorySchema.event_id.in_(id_versions))
+            .values(is_deleted=True)
+        )
 
         await self._execute(query)
 
@@ -66,6 +70,8 @@ class ReminderHistoryCRUD(BaseCRUD[ReminderHistorySchema]):
     async def mark_as_deleted(self, events: list[tuple[uuid.UUID, str]]):
         id_versions = [f"{event[0]}_{event[1]}" for event in events]
 
-        query = update(self.schema_class).where(self.schema_class.event_id.in_(id_versions)).values(is_deleted=True)
+        query = (
+            update(ReminderHistorySchema).where(ReminderHistorySchema.event_id.in_(id_versions)).values(is_deleted=True)
+        )
 
         await self._execute(query)
