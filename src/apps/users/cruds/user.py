@@ -108,6 +108,12 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().one_or_none()
 
+    async def get_prolific_respondent(self, id_: uuid.UUID) -> UserSchema | None:
+        query: Query = select(UserSchema)
+        query = query.where(UserSchema.id == id_ and UserSchema.is_prolific_respondent == true())
+        db_result = await self._execute(query)
+        return db_result.scalars().one_or_none()
+
     async def get_anonymous_respondent(self) -> UserSchema | None:
         query: Query = select(UserSchema)
         query = query.where(UserSchema.is_anonymous_respondent == true())
