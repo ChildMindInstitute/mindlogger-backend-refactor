@@ -89,7 +89,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
             isouter=True,
         )
         query = query.where(EventSchema.applet_id == applet_id)
-        query = query.where(EventSchema.is_deleted == False)  # noqa: E712
+        query = query.where(EventSchema.is_deleted.is_(False))
         if respondent_id:
             query = query.where(UserEventsSchema.user_id == respondent_id)
         else:

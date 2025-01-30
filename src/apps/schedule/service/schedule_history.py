@@ -3,6 +3,7 @@ __all__ = ["ScheduleHistoryService"]
 import uuid
 
 from apps.applets.crud import AppletsCRUD
+from apps.schedule.crud import EventCRUD
 from apps.schedule.crud.schedule_history import (
     AppletEventsCRUD,
     NotificationHistoryCRUD,
@@ -82,3 +83,25 @@ class ScheduleHistoryService:
 
     async def mark_as_deleted(self, events: list[tuple[uuid.UUID, str]]):
         await ScheduleHistoryCRUD(self.session).mark_as_deleted(events)
+
+    async def update_applet_event_links(
+        self,
+        applet_id: uuid.UUID,
+        applet_version: str,
+    ):
+        """
+        Make new entries into `applet_events` to link a new version of an applet to the existing version of its events.
+        This method is useful when an applet has its version bumped and the events are not updated. The previous entries
+        in `applet_events` are not removed to maintain the history of the applet.
+        """
+        events = await EventCRUD(self.session).get_all_by_applet_id_with_filter(applet_id)
+
+        if len(events) > 0:
+            await AppletEventsCRUD(self.session).add_many(
+                [
+                    AppletEventsSchema(
+                        applet_id=f"{applet_id}_{applet_version}",
+                        event_id=f"{event.id}_{event.version}"
+                    ) for event in events
+                ]
+            )
