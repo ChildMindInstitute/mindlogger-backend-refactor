@@ -39,6 +39,7 @@ from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderAppletCRUD, FolderCRUD
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.schedule.service import ScheduleService
+from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.version import (
     INITIAL_VERSION,
     VERSION_DIFFERENCE_ACTIVITY,
@@ -182,6 +183,9 @@ class AppletService:
         await ActivityService(self.session, self.user_id).remove_applet_activities(applet_id)
         applet = await self._update(applet_id, update_data, next_version)
         await AppletHistoryService(self.session, applet.id, applet.version).add_history(self.user_id, applet)
+
+        if next_version != old_applet_schema.version:
+            await ScheduleHistoryService(self.session).update_applet_event_links(applet_id, applet.version)
 
         applet.activities = await ActivityService(self.session, self.user_id).update_create(
             applet_id, update_data.activities
