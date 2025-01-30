@@ -79,3 +79,6 @@ class ScheduleHistoryService:
                     event_id=event_history.id_version,
                 )
             )
+
+    async def mark_as_deleted(self, events: list[tuple[uuid.UUID, str]]):
+        await ScheduleHistoryCRUD(self.session).mark_as_deleted(events)
