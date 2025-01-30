@@ -100,8 +100,8 @@ class ScheduleHistoryService:
             await AppletEventsCRUD(self.session).add_many(
                 [
                     AppletEventsSchema(
-                        applet_id=f"{applet_id}_{applet_version}",
-                        event_id=f"{event.id}_{event.version}"
-                    ) for event in events
+                        applet_id=f"{applet_id}_{applet_version}", event_id=f"{event.id}_{event.version}"
+                    )
+                    for event in events
                 ]
             )

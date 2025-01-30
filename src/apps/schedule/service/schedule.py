@@ -304,9 +304,9 @@ class ScheduleService:
 
         await self._delete_by_ids(event_ids)
 
-        await ScheduleHistoryService(self.session).mark_as_deleted([
-            (event.id, event.version) for event in event_schemas
-        ])
+        await ScheduleHistoryService(self.session).mark_as_deleted(
+            [(event.id, event.version) for event in event_schemas]
+        )
 
         # Create default events for activities and flows
         for activity_id in activity_ids:
@@ -542,9 +542,9 @@ class ScheduleService:
             user_id=user_id,
         )
 
-        await ScheduleHistoryService(self.session).mark_as_deleted([
-            (event.id, event.version) for event in event_schemas
-        ])
+        await ScheduleHistoryService(self.session).mark_as_deleted(
+            [(event.id, event.version) for event in event_schemas]
+        )
 
         # Create AA events for all activities and flows
         await self.create_default_schedules(
@@ -613,9 +613,9 @@ class ScheduleService:
 
         if event_ids:
             await self._delete_by_ids(event_ids=event_ids)
-            await ScheduleHistoryService(self.session).mark_as_deleted([
-                (event.id, event.version) for event in event_schemas
-            ])
+            await ScheduleHistoryService(self.session).mark_as_deleted(
+                [(event.id, event.version) for event in event_schemas]
+            )
 
     async def _delete_by_ids(
         self,
@@ -641,18 +641,14 @@ class ScheduleService:
         events = await EventCRUD(self.session).get_all_by_activity_flow_ids(applet_id, activity_ids, True)
         event_ids = [event.id for event in events]
         await self._delete_by_ids(event_ids)
-        await ScheduleHistoryService(self.session).mark_as_deleted([
-            (event.id, event.version) for event in events
-        ])
+        await ScheduleHistoryService(self.session).mark_as_deleted([(event.id, event.version) for event in events])
 
     async def delete_by_flow_ids(self, applet_id: uuid.UUID, flow_ids: list[uuid.UUID]) -> None:
         """Delete schedules by flow ids."""
         events = await EventCRUD(self.session).get_all_by_activity_flow_ids(applet_id, flow_ids, False)
         event_ids = [event.id for event in events]
         await self._delete_by_ids(event_ids)
-        await ScheduleHistoryService(self.session).mark_as_deleted([
-            (event.id, event.version) for event in events
-        ])
+        await ScheduleHistoryService(self.session).mark_as_deleted([(event.id, event.version) for event in events])
 
     async def create_default_schedules(
         self,
