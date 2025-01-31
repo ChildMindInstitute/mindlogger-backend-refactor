@@ -758,22 +758,3 @@ In case of Azure blob, specify your connection string into field `storage_secret
 Common Public Attribution License Version 1.0 (CPAL-1.0)
 
 Refer to [LICENSE.md](./LICENSE.MD)
-
-## Opentelemtry
-### If app is running in docker
-- Make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://opentelemetry:4317` endpoint has been already set in `.env`. Run docker container with opentelemetry:
-```bash
-docker-compose up -d opentelemetry
-```
-### If app is running locally
-- Make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317` is exported in environment.
-```bash
-export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317
-```
-or if you use pipenv for autoloading envs - make sure that `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4317` is added to `.env` file.
-- The same as for containerized app - up container with opentelemetry
-```
-```bash
-docker-compose up -d opentelemetry
-```
-- Start you app
