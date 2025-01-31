@@ -563,6 +563,7 @@ class TestSchedule:
             "timers",
             "availabilityType",
             "notificationSettings",
+            "version",
         }
 
     async def test_schedule_get_user_by_applet(self, client: TestClient, applet: AppletFull, user: User):
