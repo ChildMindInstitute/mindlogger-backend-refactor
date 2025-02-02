@@ -887,6 +887,10 @@ class ScheduleService:
             user_id=user_id,
         )
 
+        await ScheduleHistoryService(self.session).mark_as_deleted(
+            [(event.id, event.version) for event in event_schemas]
+        )
+
     async def import_schedule(self, event_requests: list[EventRequest], applet_id: uuid.UUID) -> list[PublicEvent]:
         """Import schedule."""
         events = []
