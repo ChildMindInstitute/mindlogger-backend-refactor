@@ -1,0 +1,13 @@
+ERROR    root:schedule.py:384 device id not found
+Traceback (most recent call last):
+  File "/app/src/apps/schedule/api/schedule.py", line 375, in schedule_create_individual
+    await applet_service.send_notification_to_applet_respondents(
+    ...<5 lines>...
+    )
+  File "/app/src/apps/applets/service/applet.py", line 738, in send_notification_to_applet_respondents
+    await FCMNotification().notify(
+    ...<9 lines>...
+    )
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2319, in _execute_mock_call
+    raise effect
+firebase_admin.exceptions.NotFoundError: device id not found
