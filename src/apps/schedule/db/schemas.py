@@ -36,6 +36,9 @@ class _BaseEventSchema:
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     selected_date = Column(Date, nullable=True)
+    event_type = Column(ENUM("activity", "flow", name="event_type_enum", create_type=False), nullable=False)
+    activity_id = Column(UUID(as_uuid=True), nullable=True)
+    activity_flow_id = Column(UUID(as_uuid=True), nullable=True)
 
 
 class EventSchema(_BaseEventSchema, Base):
@@ -47,6 +50,7 @@ class EventSchema(_BaseEventSchema, Base):
         server_default=text("gen_random_uuid()"),
     )
     applet_id = Column(ForeignKey("applets.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
 
 
 class EventHistorySchema(_BaseEventSchema, HistoryAware, Base):
@@ -54,9 +58,6 @@ class EventHistorySchema(_BaseEventSchema, HistoryAware, Base):
 
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
-    event_type = Column(ENUM("activity", "flow", name="event_type_enum", create_type=False), nullable=False)
-    activity_id = Column(UUID(as_uuid=True), nullable=True)
-    activity_flow_id = Column(UUID(as_uuid=True), nullable=True)
     user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
 
 
@@ -72,54 +73,6 @@ class AppletEventsSchema(Base):
             "event_id",
             "is_deleted",
             name="_unique_applet_events",
-        ),
-    )
-
-
-class UserEventsSchema(Base):
-    __tablename__ = "user_events"
-
-    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
-    event_id = Column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
-
-    __table_args__ = (
-        UniqueConstraint(
-            "user_id",
-            "event_id",
-            "is_deleted",
-            name="_unique_user_events",
-        ),
-    )
-
-
-class ActivityEventsSchema(Base):
-    __tablename__ = "activity_events"
-
-    activity_id = Column(UUID(as_uuid=True), nullable=False)
-    event_id = Column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
-
-    __table_args__ = (
-        UniqueConstraint(
-            "activity_id",
-            "event_id",
-            "is_deleted",
-            name="_unique_activity_events",
-        ),
-    )
-
-
-class FlowEventsSchema(Base):
-    __tablename__ = "flow_events"
-
-    flow_id = Column(UUID(as_uuid=True), nullable=False)
-    event_id = Column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
-
-    __table_args__ = (
-        UniqueConstraint(
-            "flow_id",
-            "event_id",
-            "is_deleted",
-            name="_unique_flow_events",
         ),
     )
 
