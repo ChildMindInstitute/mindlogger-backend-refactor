@@ -139,13 +139,13 @@ async def test_create_two_different_sessions_prolific_respondent(session: AsyncS
     srv1 = ProlificUserService(
         session,
         ProlificParamsActivityAnswer(
-            prolific_pid="prolific_respondent_id", session_id="prolific_session_id-1", study_id="prolific_study_id"
+            prolific_pid="prolific_respondent_id-1", session_id="prolific_session_id-1", study_id="prolific_study_id"
         ),
     )
     srv2 = ProlificUserService(
         session,
         ProlificParamsActivityAnswer(
-            prolific_pid="prolific_respondent_id", session_id="prolific_session_id-2", study_id="prolific_study_id"
+            prolific_pid="prolific_respondent_id-2", session_id="prolific_session_id-2", study_id="prolific_study_id"
         ),
     )
 

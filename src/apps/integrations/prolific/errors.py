@@ -7,7 +7,7 @@ class ProlificInvalidApiTokenError(UnauthorizedError):
     message = _("Prolific token is invalid.")
 
 
-class ProlificInvalidStudyError(UnauthorizedError):
+class ProlificInvalidStudyError(ValidationError):
     message = _("Invalid Prolific study id.")
 
 
