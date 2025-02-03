@@ -1,11 +1,10 @@
 import hashlib
 import uuid
 
-from fastapi import HTTPException
-
 from apps.applets.crud.applets import AppletsCRUD
 from apps.authentication.services.security import AuthenticationService
 from apps.integrations.prolific.domain import ProlificParamsActivityAnswer
+from apps.integrations.prolific.errors import ProlificInvalidStudyError
 from apps.shared.hashing import hash_sha224
 from apps.subjects.domain import SubjectCreate
 from apps.subjects.services.subjects import SubjectsService
@@ -45,7 +44,7 @@ class ProlificUserService:
 
         # As the id is generated from the prolific_pid and prolific_session_id
         # that means the user already answered the survey with the session_id
-        raise HTTPException(status_code=400, detail="User already answered the survey")
+        raise ProlificInvalidStudyError(message="User already answered the survey")
 
     async def create_subject_for_prolific_respondent(
         self, prolific_respondent: UserSchema, applet_id: uuid.UUID
