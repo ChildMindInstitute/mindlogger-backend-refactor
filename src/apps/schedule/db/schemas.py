@@ -1,20 +1,10 @@
 import datetime
-import uuid
 
 from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 
 from infrastructure.database.base import Base
 from infrastructure.database.mixins import HistoryAware
-
-
-class PeriodicitySchema(Base):
-    __tablename__ = "periodicity"
-
-    type = Column(String(10), nullable=False)  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
-    start_date = Column(Date, nullable=True)
-    end_date = Column(Date, nullable=True)
-    selected_date = Column(Date, nullable=True)
 
 
 class _BaseEventSchema:
@@ -44,11 +34,6 @@ class _BaseEventSchema:
 class EventSchema(_BaseEventSchema, Base):
     __tablename__ = "events"
 
-    periodicity_id = Column(
-        UUID(as_uuid=True),
-        default=lambda: uuid.uuid4(),
-        server_default=text("gen_random_uuid()"),
-    )
     applet_id = Column(ForeignKey("applets.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
 
