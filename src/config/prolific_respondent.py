@@ -6,4 +6,4 @@ class ProlificRespondent(BaseModel):
     password: str = "prolificRespondentPassword!"
     first_name: str = "Prolific"
     last_name: str = "ChildMindInstitute"
-    secret_user_id: str = "Prolific PID: "
+    secret_user_id: str = "ProlificRespondent: "
