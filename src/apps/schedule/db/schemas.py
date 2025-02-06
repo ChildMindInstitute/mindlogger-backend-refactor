@@ -1,5 +1,3 @@
-import uuid
-
 from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 
@@ -36,11 +34,7 @@ class _BaseEventSchema:
 class EventSchema(_BaseEventSchema, Base):
     __tablename__ = "events"
 
-    periodicity_id = Column(
-        UUID(as_uuid=True),
-        default=lambda: uuid.uuid4(),
-        server_default=text("gen_random_uuid()"),
-    )
+    periodicity_id = Column(ForeignKey("periodicity.id", ondelete="RESTRICT"), nullable=False)
     applet_id = Column(ForeignKey("applets.id", ondelete="CASCADE"), nullable=False)
 
 

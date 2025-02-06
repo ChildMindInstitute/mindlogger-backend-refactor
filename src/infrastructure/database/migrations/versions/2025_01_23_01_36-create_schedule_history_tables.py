@@ -148,32 +148,8 @@ def upgrade() -> None:
     op.add_column("events", sa.Column("end_date", sa.Date(), nullable=True))
     op.add_column("events", sa.Column("selected_date", sa.Date(), nullable=True))
 
-    # Remove foreign key constraint on `periodicity_id` and set a default random UUID for new entries
-    op.drop_constraint("fk_events_periodicity_id_periodicity", "events", type_="foreignkey")
-    op.alter_column("events", "periodicity_id", server_default=sa.text("gen_random_uuid()"))
-
 
 def downgrade() -> None:
-    # Remove the default value for `periodicity_id`
-    op.alter_column("events", "periodicity_id", server_default=None)
-
-    # Add missing entries to the `periodicity` table to prep for the foreign key constraint
-    op.execute("""
-    INSERT INTO periodicity(id, type, start_date, end_date, selected_date, is_deleted)
-    SELECT periodicity_id, periodicity, start_date, end_date, selected_date, false
-    FROM events
-    WHERE periodicity_id NOT IN (SELECT id FROM periodicity); 
-    """)
-
-    # Add back the foreign key constraint on `periodicity_id`
-    op.create_foreign_key(
-        "fk_events_periodicity_id_periodicity",
-        "events",
-        "periodicity",
-        ["periodicity_id"],
-        ["id"]
-    )
-
     # Drop the new columns from the `events` table
     op.drop_column("events", "selected_date")
     op.drop_column("events", "end_date")
