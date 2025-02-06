@@ -202,7 +202,7 @@ sidecars:
       DD_VERSION: ${COPILOT_ENVIRONMENT_NAME}
       DD_LOGS_ENABLED: true
       DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: true
-      DD_CONTAINER_EXCLUDE: name:datadog-agent
+      DD_CONTAINER_EXCLUDE: "name:datadog name:datadog-agent name:fluent-bit name:firelens_log_router name:ecs-agent name:aws-fargate-supervisor"
       DD_APM_ENABLED: true
     secrets:
       DD_API_KEY:
