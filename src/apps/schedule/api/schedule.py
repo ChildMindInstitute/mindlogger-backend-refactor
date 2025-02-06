@@ -74,7 +74,7 @@ async def schedule_get_by_id(
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
         schedule = await ScheduleService(session).get_schedule_by_id(applet_id=applet_id, schedule_id=schedule_id)
-    return Response(result=PublicEvent(**schedule.dict()))
+    return Response(result=schedule)
 
 
 async def schedule_get_all(
@@ -88,19 +88,20 @@ async def schedule_get_all(
     is not provided, it will return only general events for the applet."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        schedules = await ScheduleService(session).get_all_schedules(applet_id, deepcopy(query_params))
 
-    roles: set = set(await UserAppletAccessCRUD(session).get_user_roles_to_applet(user.id, applet_id))
-    accessed_roles: set = {
-        Role.SUPER_ADMIN.value,
-        Role.OWNER.value,
-        Role.MANAGER.value,
-        Role.COORDINATOR.value,
-    }
-    if not roles & accessed_roles:
-        raise UserDoesNotHavePermissionError()
+        roles: set = set(await UserAppletAccessCRUD(session).get_user_roles_to_applet(user.id, applet_id))
+        accessed_roles: set = {
+            Role.SUPER_ADMIN.value,
+            Role.OWNER.value,
+            Role.MANAGER.value,
+            Role.COORDINATOR.value,
+        }
+        if not roles & accessed_roles:
+            raise UserDoesNotHavePermissionError()
 
-    return ResponseMulti(result=schedules, count=len(schedules))
+        public_events = await ScheduleService(session).get_all_schedules(applet_id, deepcopy(query_params))
+
+    return ResponseMulti(result=public_events, count=len(public_events))
 
 
 async def public_schedule_get_all(
@@ -190,12 +191,11 @@ async def schedule_update(
         await applet_service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_schedule_create_access(applet_id)
         service = ScheduleService(session)
-        schedule = await service.update_schedule(applet_id, schedule_id, schema)
+        public_event = await service.update_schedule(applet_id, schedule_id, schema)
 
     try:
-        respondent_ids = None
-        if schedule.respondent_id:
-            respondent_ids = [schedule.respondent_id]
+        if public_event.respondent_id:
+            respondent_ids = [public_event.respondent_id]
         else:
             respondent_ids = await service.get_default_respondents(applet_id)
 
@@ -211,7 +211,7 @@ async def schedule_update(
         # mute error
         logger.exception(e)
 
-    return Response(result=PublicEvent(**schedule.dict()))
+    return Response(result=public_event)
 
 
 async def schedule_count(
@@ -259,9 +259,9 @@ async def schedule_get_all_by_user(
 ) -> ResponseMulti[PublicEventByUser]:
     """Get all schedules for a user."""
     async with atomic(session):
-        schedules = await ScheduleService(session).get_events_by_user(user_id=user.id)
+        public_events_by_user = await ScheduleService(session).get_events_by_user(user_id=user.id)
         count = await ScheduleService(session).count_events_by_user(user_id=user.id)
-    return ResponseMulti(result=schedules, count=count)
+    return ResponseMulti(result=public_events_by_user, count=count)
 
 
 async def schedule_get_all_by_respondent_user(
@@ -290,13 +290,13 @@ async def schedule_get_all_by_respondent_user(
         )
         applet_ids: list[uuid.UUID] = [applet.id for applet in applets]
 
-        schedules = await ScheduleService(session).get_upcoming_events_by_user(
+        public_events_by_user = await ScheduleService(session).get_upcoming_events_by_user(
             user_id=user.id,
             applet_ids=applet_ids,
             min_end_date=min_end_date,
             max_start_date=max_start_date,
         )
-    return ResponseMulti(result=schedules, count=len(schedules))
+    return ResponseMulti(result=public_events_by_user, count=len(public_events_by_user))
 
 
 async def schedule_get_by_user(
@@ -307,8 +307,10 @@ async def schedule_get_by_user(
     """Get all schedules for a respondent per applet id."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        schedules = await ScheduleService(session).get_events_by_user_and_applet(user_id=user.id, applet_id=applet_id)
-    return Response(result=schedules)
+        public_event_by_user = await ScheduleService(session).get_events_by_user_and_applet(
+            user_id=user.id, applet_id=applet_id
+        )
+    return Response(result=public_event_by_user)
 
 
 async def schedule_remove_individual_calendar(
