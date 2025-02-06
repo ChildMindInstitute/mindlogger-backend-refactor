@@ -38,7 +38,7 @@ See MindLogger's [Knowledge Base article](https://mindlogger.atlassian.net/servi
 
 ## Technologies
 
-- ✅ [Python 3.13](https://www.python.org/downloads/release/python-3131/)
+- ✅ [Python 3.13](https://www.python.org/downloads/release/python-3132/)
 - ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
 - ✅ [FastAPI](https://fastapi.tiangolo.com)
 - ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
