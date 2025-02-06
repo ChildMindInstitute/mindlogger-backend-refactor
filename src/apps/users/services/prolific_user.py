@@ -42,8 +42,8 @@ class ProlificUserService:
 
             return await crud.save(prolific_respondent)
 
-        # As the id is generated from the prolific_pid and prolific_session_id
-        # that means the user already answered the survey with the session_id
+        # As the id is generated from the prolific_pid and prolific_study_id
+        # that means the user already answered this survey.
         raise ProlificInvalidStudyError(message="User already answered the survey")
 
     async def create_subject_for_prolific_respondent(
@@ -77,4 +77,4 @@ class ProlificUserService:
 
     def _get_formated_secret_user_id(self):
         base_secret_user_id = settings.prolific_respondent.secret_user_id
-        return f"{base_secret_user_id}{self.prolific_pid}-{self.prolific_study_id}-{self.prolific_session_id}"
+        return f"{base_secret_user_id}{self.prolific_pid}-{self.prolific_study_id}"
