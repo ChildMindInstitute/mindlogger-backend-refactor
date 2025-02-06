@@ -44,7 +44,7 @@ services:
       args:
         - PIPENV_EXTRA_ARGS=--dev
     entrypoint: /fastapi-entrypoint
-    command: /fastapi-start
+    command: /start-backend-datadog
     env_file: .env
     depends_on:
       - postgres
@@ -68,7 +68,7 @@ services:
     image: mindlogger_worker
     container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
-    command: [ 'taskiq', 'worker', 'broker:broker', '-fsd' ]
+    command: ['/start-worker']
     env_file: .env
     volumes:
       - ./:/app/
@@ -85,10 +85,10 @@ services:
       target: base
       args:
         - PIPENV_EXTRA_ARGS=--dev
-    image: mindlogger_webapp
+    image: mindlogger_scheduler
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
-    command: [ 'taskiq', 'scheduler', 'scheduler:scheduler', '-fsd' ]
+    command: ['/start-scheduler']
     env_file: .env
     volumes:
       - ./:/app/
@@ -128,14 +128,7 @@ services:
       - './compose/minio:/etc/minio'
     entrypoint: /etc/minio/create_bucket.sh
 
-  opentelemetry:
-    image: otel/opentelemetry-collector
-    container_name: mindlogger_opentelemetry
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - "./compose/opentelemetry/otel-collector-config.yaml:/etc/otel-collector-config.yaml"
-    ports:
-      - "4317:4317"
+
 
 volumes:
   pg_data: {}
