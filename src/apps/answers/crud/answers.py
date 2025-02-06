@@ -241,11 +241,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.target_subject_id == filters.target_subject_id)
 
         if filters.activity_or_flow_id:
-            activity_or_flow_id = (
-                str(filters.activity_or_flow_id)
-                if isinstance(filters.activity_or_flow_id, uuid.UUID)
-                else filters.activity_or_flow_id
-            )
+            activity_or_flow_id = str(filters.activity_or_flow_id)
 
             query = query.where(
                 or_(
