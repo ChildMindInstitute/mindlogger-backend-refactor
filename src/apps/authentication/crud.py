@@ -13,7 +13,7 @@ class TokenBlacklistCRUD(BaseCRUD):
             TokenBlacklistSchema(
                 jti=token.payload.jti,
                 user_id=token.payload.sub,
-                exp=datetime.datetime.utcfromtimestamp(token.payload.exp),
+                exp=datetime.datetime.fromtimestamp(token.payload.exp, datetime.UTC).replace(tzinfo=None),
                 type=type_,
                 rjti=token.payload.rjti,
             )

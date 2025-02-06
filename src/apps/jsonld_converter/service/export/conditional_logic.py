@@ -64,7 +64,7 @@ class ExpressionSimple(BaseExpression):
         operator = self.simple_operator_map.get(type_)  # type: ignore[call-overload] # noqa: E501
         if isinstance(payload, OptionPayload):
             try:
-                val: int | str = int(payload.option_value)  # TODO actualize on PR merge
+                val: int | str | float = int(payload.option_value)  # TODO actualize on PR merge
             except ValueError:
                 val = f'"{payload.option_value}"'  # TODO actualize on PR merge
         elif isinstance(payload, ValuePayload):

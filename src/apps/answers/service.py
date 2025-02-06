@@ -308,7 +308,7 @@ class AnswerService:
     async def _create_answer(self, applet_answer: AppletAnswerCreate) -> AnswerSchema:
         assert self.user_id
         pk = self._generate_history_id(applet_answer.version)
-        created_at = applet_answer.created_at or datetime.datetime.utcnow()
+        created_at = applet_answer.created_at or datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
         subject_crud = SubjectsCrud(self.session)
 
         respondent_subject = await subject_crud.get_user_subject(
@@ -1036,21 +1036,21 @@ class AnswerService:
                 AnswerItemSchema(
                     id=assessment.id,
                     created_at=assessment.created_at,
-                    updated_at=datetime.datetime.utcnow(),
+                    updated_at=datetime.datetime.now(datetime.UTC),
                     answer_id=answer_id,
                     respondent_id=self.user_id,
                     answer=schema.answer,
                     item_ids=list(map(str, schema.item_ids)),
                     user_public_key=schema.reviewer_public_key,
                     is_assessment=True,
-                    start_datetime=datetime.datetime.utcnow(),
-                    end_datetime=datetime.datetime.utcnow(),
+                    start_datetime=datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
+                    end_datetime=datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
                     assessment_activity_id=schema.assessment_version_id,
                     reviewed_flow_submit_id=submit_id,
                 )
             )
         else:
-            now = datetime.datetime.utcnow()
+            now = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
             await AnswerItemsCRUD(self.answer_session).create(
                 AnswerItemSchema(
                     answer_id=answer_id,
@@ -2136,7 +2136,7 @@ class ReportServerService:
 
         data = dict(
             responses=responses,
-            now=datetime.datetime.utcnow().strftime("%x"),
+            now=datetime.datetime.now(datetime.UTC).strftime("%x"),
             user=user_info,
             applet=applet_full,
         )
@@ -2268,12 +2268,12 @@ class ReportServerService:
             ) as resp:
                 duration = time.time() - start
                 if resp.status == 200:
-                    logger.info(f"Successful request (for LORIS) in {duration:.1f}" "  seconds.")
+                    logger.info(f"Successful request (for LORIS) in {duration:.1f}  seconds.")
                     response_data = await resp.json()
                     # return ReportServerResponse(**response_data)
                     return response_data, answer_versions
                 else:
-                    logger.error(f"Failed request (for LORIS) in {duration:.1f}" "  seconds.")
+                    logger.error(f"Failed request (for LORIS) in {duration:.1f}  seconds.")
                     error_message = await resp.text()
                     raise ReportServerError(message=error_message)
 

@@ -1,9 +1,10 @@
+import datetime
 import json
 import re
 from typing import TypeVar
 
 from pydantic import BaseModel as PBaseModel
-from pydantic import Extra
+from pydantic import Extra, validator
 
 __all__ = [
     "InternalModel",
@@ -81,6 +82,12 @@ class BaseModel(PBaseModel):
     @classmethod
     def field_alias(cls, field_name: str):
         return cls.__fields__[field_name].alias
+
+    @validator("*", pre=True)
+    def remove_timezone(cls, v):
+        if isinstance(v, datetime.datetime):
+            return v.replace(tzinfo=None)
+        return v
 
 
 class InternalModel(BaseModel):
