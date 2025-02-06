@@ -40,12 +40,10 @@ COPY ./ ./
 COPY --chown=code:code ./compose/fastapi/entrypoint /fastapi-entrypoint
 RUN sed -i 's/\r$//g' /fastapi-entrypoint && chmod +x /fastapi-entrypoint
 
-# Legacy startup
-COPY --chown=code:code ./compose/fastapi/start-backend-otel /fastapi-start
-RUN sed -i 's/\r$//g' /fastapi-start && chmod +x /fastapi-start
-
+# Copy to fastapi-start and fastapi-start-datadog to not break current ECS task config
 COPY --chown=code:code ./compose/fastapi/start-backend-datadog /start-backend-datadog
-RUN sed -i 's/\r$//g' /start-backend-datadog && chmod +x /start-backend-datadog
+RUN sed -i 's/\r$//g' /start-backend-datadog && chmod +x /start-backend-datadog && \
+    cp /start-backend-datadog /fastapi-start && cp /start-backend-datadog /fastapi-start-datadog
 
 # Migration script
 COPY --chown=code:code ./compose/fastapi/migrate /fastapi-migrate
