@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint, text
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 
 from infrastructure.database.base import Base
