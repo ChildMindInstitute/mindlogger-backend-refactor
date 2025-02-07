@@ -244,9 +244,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             activity_or_flow_id = str(filters.activity_or_flow_id)
 
             query = query.where(
-                or_(
-                    AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == activity_or_flow_id,
-                    AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == activity_or_flow_id,
+                case(
+                    (
+                        AnswerSchema.flow_history_id.isnot(None),
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id) == activity_or_flow_id,
+                    ),
+                    else_=AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id) == activity_or_flow_id,
                 )
             )
         query = query.order_by(AnswerSchema.created_at.asc())
