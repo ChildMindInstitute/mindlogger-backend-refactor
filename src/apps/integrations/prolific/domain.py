@@ -18,8 +18,8 @@ class ProlificIntegration(BaseModel):
         return "ProlificIntegration()"
 
 
-class PublicProlificIntegration(InternalModel):
-    enabled: bool
+class ProlificStudyValidation(InternalModel):
+    accepted: bool
 
 
 class ProlificParamsActivityAnswer(InternalModel):
