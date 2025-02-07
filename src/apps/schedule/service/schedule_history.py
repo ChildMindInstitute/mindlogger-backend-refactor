@@ -3,7 +3,7 @@ __all__ = ["ScheduleHistoryService"]
 import uuid
 
 from apps.applets.crud import AppletsCRUD
-from apps.schedule.crud import EventCRUD
+from apps.schedule.crud.events import EventCRUD
 from apps.schedule.crud.schedule_history import (
     AppletEventsCRUD,
     NotificationHistoryCRUD,
