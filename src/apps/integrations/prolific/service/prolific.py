@@ -11,7 +11,7 @@ from apps.integrations.domain import AvailableIntegrations
 from apps.integrations.prolific.domain import (
     ProlificCompletionCodeList,
     ProlificIntegration,
-    PublicProlificIntegration,
+    ProlificStudyValidation,
 )
 from apps.integrations.prolific.errors import (
     ProlificIntegrationNotConfiguredError,
@@ -48,7 +48,7 @@ class ProlificIntegrationService:
 
         return ProlificIntegration.from_schema(integration_schema)
 
-    async def get_public_prolific_integration(self, study_id, language) -> PublicProlificIntegration:
+    async def validate_prolific_study(self, study_id, language) -> ProlificStudyValidation:
         applet_service = AppletService(self.session, uuid.UUID("00000000-0000-0000-0000-000000000000"))
         await applet_service.exist_by_key(self.applet_id)
         applet_base_info = await applet_service.get_info_by_key(self.applet_id, language)
@@ -57,13 +57,13 @@ class ProlificIntegrationService:
         api_key = await self._get_prolific_api_key()
 
         if not api_key:
-            return PublicProlificIntegration(enabled=False)
+            return ProlificStudyValidation(accepted=False)
 
         prolific_response = requests.get(
             f"{API_BASE_URL}/studies/{study_id}/", headers={**BASE_HEADERS, "Authorization": f"Token {api_key}"}
         )
 
-        return PublicProlificIntegration(enabled=(prolific_response.status_code == 200))
+        return ProlificStudyValidation(accepted=(prolific_response.status_code == 200))
 
     async def get_completion_codes(self, study_id: str) -> ProlificCompletionCodeList:
         api_key = await self._get_prolific_api_key()
