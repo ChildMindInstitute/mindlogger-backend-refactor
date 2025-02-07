@@ -22,7 +22,7 @@ from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
-from apps.users.domain import PublicUser, User, UserDeviceCreate, AppInfoOS
+from apps.users.domain import AppInfoOS, PublicUser, User, UserDeviceCreate
 from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from config import settings
