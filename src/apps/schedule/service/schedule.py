@@ -9,6 +9,7 @@ from apps.applets.errors import AppletNotFoundError
 from apps.schedule.crud.events import EventCRUD
 from apps.schedule.crud.notification import NotificationCRUD, ReminderCRUD
 from apps.schedule.crud.schedule_history import NotificationHistoryCRUD, ReminderHistoryCRUD
+from apps.schedule.crud.user_device_events import UserDeviceEventsCRUD
 from apps.schedule.db.schemas import EventSchema, NotificationSchema
 from apps.schedule.domain.constants import DefaultEvent, EventType, PeriodicityType
 from apps.schedule.domain.schedule import BaseEvent
@@ -41,6 +42,7 @@ from apps.schedule.errors import (
 from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.query_params import QueryParams
 from apps.users.cruds.user import UsersCRUD
+from apps.users.cruds.user_device import UserDevicesCRUD
 from apps.users.errors import UserNotFound
 from apps.workspaces.domain.constants import Role
 
@@ -675,6 +677,7 @@ class ScheduleService:
         applet_ids: list[uuid.UUID],
         min_end_date: date | None = None,
         max_start_date: date | None = None,
+        device_id: str | None = None,
     ) -> list[PublicEventByUser]:
         """Get all events for user in applets that user is respondent."""
         user_events_map, user_event_ids = await EventCRUD(self.session).get_all_by_applets_and_user(
@@ -689,7 +692,9 @@ class ScheduleService:
             min_end_date=min_end_date,
             max_start_date=max_start_date,
         )
-        full_events_map = self._sum_applets_events_map(user_events_map, general_events_map)
+        full_events_map: dict[uuid.UUID, list[EventFull]] = self._sum_applets_events_map(
+            user_events_map, general_events_map
+        )
 
         event_ids = user_event_ids | general_event_ids
         notifications_map_c = NotificationCRUD(self.session).get_all_by_event_ids(event_ids)
@@ -711,6 +716,15 @@ class ScheduleService:
                     ],
                 )
             )
+
+        if device_id:
+            device = await UserDevicesCRUD(self.session).get_by_device_id(device_id=device_id)
+            if device:
+                all_events = [event for value in full_events_map.values() for event in value]
+                await UserDeviceEventsCRUD(self.session).record_event_versions(
+                    device_id=device.id,
+                    event_versions=[(event.id, event.version) for event in all_events],
+                )
 
         return events
 

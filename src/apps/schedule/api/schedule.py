@@ -1,8 +1,9 @@
 import uuid
 from copy import deepcopy
 from datetime import date, timedelta
+from typing import Annotated
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, Header
 from firebase_admin.exceptions import FirebaseError
 
 # TODO: don't use answers error for schedule
@@ -267,6 +268,7 @@ async def schedule_get_all_by_user(
 async def schedule_get_all_by_respondent_user(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    device_id: Annotated[str | None, Header()] = None,
 ) -> ResponseMulti[PublicEventByUser]:
     """Get all the respondent's schedules for the next 2 weeks."""
     max_date_from_event_delta_days = 15
@@ -295,6 +297,7 @@ async def schedule_get_all_by_respondent_user(
             applet_ids=applet_ids,
             min_end_date=min_end_date,
             max_start_date=max_start_date,
+            device_id=device_id,
         )
     return ResponseMulti(result=public_events_by_user, count=len(public_events_by_user))
 
