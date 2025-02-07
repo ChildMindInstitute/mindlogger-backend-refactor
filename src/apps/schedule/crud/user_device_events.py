@@ -15,7 +15,7 @@ class UserDeviceEventsCRUD(BaseCRUD[UserDeviceEventsSchema]):
         self,
         device_id: uuid.UUID,
         event_versions: list[tuple[uuid.UUID, str]],
-    ) -> UserDeviceEventsSchema:
+    ) -> list[UserDeviceEventsSchema]:
         values = [
             dict(
                 device_id=device_id,
