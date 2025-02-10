@@ -81,7 +81,10 @@ class ScheduleHistoryService:
                 )
             )
 
-    async def mark_as_deleted(self, events: list[tuple[uuid.UUID, str]]):
+    async def mark_as_deleted(self, events: list[tuple[uuid.UUID, str]]) -> None:
+        if len(events) == 0:
+            return
+
         await ScheduleHistoryCRUD(self.session).mark_as_deleted(events)
 
     async def update_applet_event_links(
