@@ -28,7 +28,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
         await asyncio.gather(
             AppletEventsCRUD(self.session).mark_as_deleted(events),
             NotificationHistoryCRUD(self.session).mark_as_deleted(events),
-            ReminderHistoryCRUD(self.session).mark_as_deleted(events)
+            ReminderHistoryCRUD(self.session).mark_as_deleted(events),
         )
 
 
