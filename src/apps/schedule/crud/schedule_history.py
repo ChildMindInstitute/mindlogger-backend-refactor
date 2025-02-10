@@ -1,5 +1,6 @@
 __all__ = ["ScheduleHistoryCRUD", "AppletEventsCRUD", "NotificationHistoryCRUD", "ReminderHistoryCRUD"]
 
+import asyncio
 import uuid
 
 from sqlalchemy import update
@@ -24,9 +25,11 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
 
         await self._execute(query)
 
-        await AppletEventsCRUD(self.session).mark_as_deleted(events)
-        await NotificationHistoryCRUD(self.session).mark_as_deleted(events)
-        await ReminderHistoryCRUD(self.session).mark_as_deleted(events)
+        await asyncio.gather(
+            AppletEventsCRUD(self.session).mark_as_deleted(events),
+            NotificationHistoryCRUD(self.session).mark_as_deleted(events),
+            ReminderHistoryCRUD(self.session).mark_as_deleted(events)
+        )
 
 
 class AppletEventsCRUD(BaseCRUD[AppletEventsSchema]):
