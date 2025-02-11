@@ -1,7 +1,4 @@
-import datetime
-import uuid
-
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint, text
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 
 from infrastructure.database.base import Base
@@ -24,15 +21,11 @@ class _BaseEventSchema:
     one_time_completion = Column(Boolean, nullable=True)
     timer = Column(Interval, nullable=True)
     timer_type = Column(String(10), nullable=False)  # NOT_SET, TIMER, IDLE
-    version = Column(
-        String(13),
-        nullable=True,
-        default=lambda: datetime.datetime.now(datetime.UTC).strftime("%Y%m%d") + "-1",
-        server_default=text("TO_CHAR(timezone('utc', now()), 'YYYYMMDD') || '-1'"),
-    )
+    version = Column(String(13), nullable=True)  # TODO: Remove nullable=True with M2-8494
 
     # Periodicity columns
-    periodicity = Column(String(10))  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
+    # TODO: Remove nullable=True with M2-8494
+    periodicity = Column(String(10), nullable=True)  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     selected_date = Column(Date, nullable=True)
@@ -41,11 +34,7 @@ class _BaseEventSchema:
 class EventSchema(_BaseEventSchema, Base):
     __tablename__ = "events"
 
-    periodicity_id = Column(
-        UUID(as_uuid=True),
-        default=lambda: uuid.uuid4(),
-        server_default=text("gen_random_uuid()"),
-    )
+    periodicity_id = Column(ForeignKey("periodicity.id", ondelete="RESTRICT"), nullable=False)
     applet_id = Column(ForeignKey("applets.id", ondelete="CASCADE"), nullable=False)
 
 

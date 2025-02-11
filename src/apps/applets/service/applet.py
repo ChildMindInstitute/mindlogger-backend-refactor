@@ -5,12 +5,10 @@ from typing import cast
 
 from apps.activities.crud import ActivitiesCRUD, ActivityItemsCRUD
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
-from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity import ActivityService
 from apps.activity_flows.crud import FlowsCRUD
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
-from apps.activity_flows.service.flow_history import FlowHistoryService
 from apps.answers.crud.answers import AnswersCRUD
 from apps.applets.crud import AppletHistoriesCRUD, AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
@@ -39,7 +37,6 @@ from apps.applets.service.applet_history_service import AppletHistoryService
 from apps.folders.crud import FolderAppletCRUD, FolderCRUD
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.schedule.service import ScheduleService
-from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.version import (
     INITIAL_VERSION,
     VERSION_DIFFERENCE_ACTIVITY,
@@ -119,23 +116,19 @@ class AppletService:
     ) -> AppletFull:
         applet = await self._create(create_data, manager_id or self.user_id, applet_id=applet_id)
 
-        await AppletHistoryService(self.session, applet.id, applet.version).add_history(
-            manager_id or self.user_id, applet
-        )
-
         await self._create_applet_accesses(applet.id, self.user_id, manager_id, manager_role)
 
         applet.activities = await ActivityService(self.session, self.user_id).create(applet.id, create_data.activities)
-        await ActivityHistoryService(self.session, applet.id, applet.version).add(applet.activities)
-
         activity_key_id_map = dict()
         for activity in applet.activities:
             activity_key_id_map[activity.key] = activity.id
-
         applet.activity_flows = await FlowService(self.session).create(
             applet.id, create_data.activity_flows, activity_key_id_map
         )
-        await FlowHistoryService(self.session, applet.id, applet.version).add(applet.activity_flows)
+
+        await AppletHistoryService(self.session, applet.id, applet.version).add_history(
+            manager_id or self.user_id, applet
+        )
 
         return applet
 
@@ -182,16 +175,9 @@ class AppletService:
         await FlowService(self.session).remove_applet_flows(applet_id)
         await ActivityService(self.session, self.user_id).remove_applet_activities(applet_id)
         applet = await self._update(applet_id, update_data, next_version)
-        await AppletHistoryService(self.session, applet.id, applet.version).add_history(self.user_id, applet)
-
-        if next_version != old_applet_schema.version:
-            await ScheduleHistoryService(self.session).update_applet_event_links(applet_id, applet.version)
-
         applet.activities = await ActivityService(self.session, self.user_id).update_create(
             applet_id, update_data.activities
         )
-        await ActivityHistoryService(self.session, applet.id, applet.version).add(applet.activities)
-
         activity_key_id_map = dict()
         activity_ids = []
         assessment_id = None
@@ -203,7 +189,8 @@ class AppletService:
         applet.activity_flows = await FlowService(self.session).update_create(
             applet_id, update_data.activity_flows, activity_key_id_map
         )
-        await FlowHistoryService(self.session, applet.id, applet.version).add(applet.activity_flows)
+
+        await AppletHistoryService(self.session, applet.id, applet.version).add_history(self.user_id, applet)
 
         event_serv = ScheduleService(self.session)
         to_await = []
@@ -250,22 +237,19 @@ class AppletService:
         create_data = self._prepare_duplicate(applet_exist, new_name, encryption, include_report_server)
 
         applet = await self._create(create_data, self.user_id)
-        await AppletHistoryService(self.session, applet.id, applet.version).add_history(self.user_id, applet)
 
         await self._create_applet_accesses(applet.id, applet_owner.user_id, self.user_id, manager_role)
 
         applet.activities = await ActivityService(self.session, applet_owner.user_id).create(
             applet.id, create_data.activities
         )
-        await ActivityHistoryService(self.session, applet.id, applet.version).add(applet.activities)
-
         for activity in applet.activities:
             activity_key_id_map[activity.key] = activity.id
-
         applet.activity_flows = await FlowService(self.session).create(
             applet.id, create_data.activity_flows, activity_key_id_map
         )
-        await FlowHistoryService(self.session, applet.id, applet.version).add(applet.activity_flows)
+
+        await AppletHistoryService(self.session, applet.id, applet.version).add_history(self.user_id, applet)
 
         return applet
 

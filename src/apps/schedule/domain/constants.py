@@ -9,7 +9,6 @@ __all__ = [
     "TimerType",
     "DefaultEvent",
     "AvailabilityType",
-    "EventType",
 ]
 
 
@@ -20,11 +19,6 @@ class PeriodicityType(StrEnum):
     WEEKDAYS = "WEEKDAYS"
     MONTHLY = "MONTHLY"
     ALWAYS = "ALWAYS"
-
-
-class EventType(StrEnum):
-    ACTIVITY = "activity"
-    FLOW = "flow"
 
 
 class TimerType(StrEnum):

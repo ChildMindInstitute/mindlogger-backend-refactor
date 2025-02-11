@@ -343,14 +343,14 @@ async def schedule_remove_individual_calendar(
 # TODO: Restrict by admin
 async def schedule_import(
     applet_id: uuid.UUID,
-    event_requests: list[EventRequest] = Body(...),
+    schemas: list[EventRequest] = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> ResponseMulti[PublicEvent]:
     """Create a new event for an applet."""
     async with atomic(session):
         await AppletService(session, user.id).exist_by_id(applet_id)
-        schedules = await ScheduleService(session).import_schedule(event_requests, applet_id)
+        schedules = await ScheduleService(session).import_schedule(schemas, applet_id)
     return ResponseMulti(
         result=schedules,
         count=len(schedules),
