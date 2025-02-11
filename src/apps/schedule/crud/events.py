@@ -318,7 +318,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
             .select_from(EventSchema)
             .where(EventSchema.user_id == user_id, EventSchema.applet_id == applet_id)
             .group_by("entity_id")
-        ).cte("ids")
+        )
 
         query: Query = select(EventSchema)
         query = query.where(
@@ -378,7 +378,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
             .select_from(EventSchema)
             .where(EventSchema.user_id == user_id, EventSchema.applet_id.in_(applet_ids))
             .group_by("entity_id")
-        ).cte("ids")
+        )
 
         query: Query = select(EventSchema)
 
@@ -459,7 +459,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
             .select_from(EventSchema)
             .where(EventSchema.user_id == user_id, EventSchema.applet_id == applet_id)
             .group_by("entity_id")
-        ).cte("ids")
+        )
 
         query: Query = select(
             func.count(EventSchema.id).label("count"),
