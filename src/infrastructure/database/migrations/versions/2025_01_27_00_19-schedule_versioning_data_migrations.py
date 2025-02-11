@@ -97,11 +97,12 @@ def upgrade() -> None:
     op.execute("""
     INSERT INTO applet_events (is_deleted, applet_id, event_id)
     SELECT FALSE AS is_deleted,
-       e.applet_id || '_' || a.version as applet_id,
+       ah.id_version as applet_id,
        eh.id_version AS event_id
     FROM events e
     JOIN event_histories eh ON eh.id_version = (e.id || '_' || e.version)
-    JOIN applets a ON a.id = e.applet_id;
+    JOIN applets a ON a.id = e.applet_id
+    JOIN applet_histories ah ON ah.id = a.id AND ah.version = a.version;
     """)
 
     # Populate `notification_histories`
@@ -120,9 +121,10 @@ def upgrade() -> None:
             n."order",
             n.id || '_' || e.version as id_version,
             n.id,
-            e.id || '_' || e.version as event_id
+            eh.id_version as event_id
     FROM notifications n
-    JOIN events e ON e.id = n.event_id;
+    JOIN events e ON e.id = n.event_id
+    JOIN event_histories eh ON eh.id = e.id AND eh.version = e.version;
     """)
 
     # Populate `reminder_histories`
@@ -138,9 +140,10 @@ def upgrade() -> None:
        r.reminder_time,
        r.id || '_' || e.version as id_version,
        r.id,
-       e.id || '_' || e.version as event_id
+       eh.id_version as event_id
     FROM reminders r
-    JOIN events e ON e.id = r.event_id;
+    JOIN events e ON e.id = r.event_id
+    JOIN event_histories eh ON eh.id = e.id AND eh.version = e.version;
     """)
 
 
