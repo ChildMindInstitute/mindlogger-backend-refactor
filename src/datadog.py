@@ -9,9 +9,17 @@ logger = logging.getLogger("startup")
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
+if os.getenv("DD_PROFILING_ENABLED", "false").lower() == "true":
+    from ddtrace.profiling import Profiler
+
+    prof = Profiler()
+    prof.start()  # Should be as early as possible, eg before other imports, to ensure everything is profiled
+
+    logger.info("Datadog profiling started")
+
+
 # Import DataDog tracer ASAP
 if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
-
     logger.info("Enabling Datadog")
     from ddtrace import config, patch
 
@@ -37,11 +45,3 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
     setup_structured_logging(json_logs=LOG_JSON_FORMAT, log_level=LOG_LEVEL)
 
     logger.info("Structured logging configured")
-
-if os.getenv("DD_PROFILING_ENABLED", "false").lower() == "true":
-    from ddtrace.profiling import Profiler
-
-    prof = Profiler()
-    prof.start()  # Should be as early as possible, eg before other imports, to ensure everything is profiled
-
-    logger.info("Datadog profiling started")
