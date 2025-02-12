@@ -107,8 +107,7 @@ async def create_anonymous_answer(
             respondent = await UsersCRUD(session).get_anonymous_respondent()
         assert respondent
 
-        is_prolific_respondant = schema.prolific_params and respondent.is_prolific_respondent
-        service = AnswerService(session, respondent.id, answer_session, is_prolific_respondant=is_prolific_respondant)
+        service = AnswerService(session, respondent.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
             schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
