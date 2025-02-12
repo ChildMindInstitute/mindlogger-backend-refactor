@@ -118,11 +118,10 @@ from infrastructure.utility import CDNClient, RedisCache
 
 
 class AnswerService:
-    def __init__(self, session, user_id: uuid.UUID | None = None, arbitrary_session=None, is_prolific_respondant=False):
+    def __init__(self, session, user_id: uuid.UUID | None = None, arbitrary_session=None):
         self.user_id = user_id
         self.session = session
         self._answer_session = arbitrary_session
-        self.is_prolific_respondant = is_prolific_respondant
 
     @property
     def answer_session(self):
@@ -136,7 +135,9 @@ class AnswerService:
         return key_generator
 
     async def create_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
-        if self.user_id and not self.is_prolific_respondant:
+        # Check for prolific parameters in the answer helping to identify whether the respondent comes from prolific
+        is_prolific_respondent = activity_answer.prolific_params is not None
+        if self.user_id and not is_prolific_respondent:
             return await self._create_respondent_answer(activity_answer)
         else:
             return await self._create_anonymous_answer(activity_answer)

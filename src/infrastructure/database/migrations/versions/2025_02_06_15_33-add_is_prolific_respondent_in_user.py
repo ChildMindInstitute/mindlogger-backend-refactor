@@ -1,4 +1,4 @@
-"""Add is Prolific Respondant in User
+"""Add is Prolific Respondent in User
 
 Revision ID: 9bea4ebfef81
 Revises: 032d8458aa63
@@ -8,7 +8,6 @@ Create Date: 2025-02-06 15:33:43.219568
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "9bea4ebfef81"
