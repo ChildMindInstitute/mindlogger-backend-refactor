@@ -162,6 +162,7 @@ class _SelectionConfig(_ScreenConfig, PublicModel):
 class SingleSelectionConfig(_SelectionConfig, PublicModel):
     type: Literal[ResponseType.SINGLESELECT] | None
     auto_advance: bool = False
+    response_data_identifier: bool = False
 
 
 class MultiSelectionConfig(_SelectionConfig, PublicModel):
