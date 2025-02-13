@@ -2062,11 +2062,12 @@
                 "reload"
             ],
             "hashes": [
-                "sha256:2b656c34231bf6947a6020098c94f93d6c45d15688d9e6bb8b3fbf54088e7717",
-                "sha256:d3ce40ccf399b38aa656614ecab6e5bbcc222b61fee654927822fc97ef4418a6"
+                "sha256:41c2f27355c90924e6fcd693aade7d21bb974a7bbc71bd54d3026cece9e806a2",
+                "sha256:c2c10eac817c230b338e0059873c75236efa38700495206424f0fae18228c426"
             ],
+            "index": "pypi",
             "markers": "python_full_version >= '3.8.1' and python_full_version < '4.0.0'",
-            "version": "==0.11.10"
+            "version": "==0.11.11"
         },
         "taskiq-aio-pika": {
             "hashes": [
