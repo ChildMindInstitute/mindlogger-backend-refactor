@@ -5,11 +5,21 @@ from pydantic.tools import parse_obj_as
 
 from infrastructure.dependency.structured_logs import setup_structured_logging
 
+logger = logging.getLogger("startup")
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+
+if os.getenv("DD_PROFILING_ENABLED", "false").lower() == "true":
+    from ddtrace.profiling import Profiler
+
+    prof = Profiler()
+    prof.start()  # Should be as early as possible, eg before other imports, to ensure everything is profiled
+
+    logger.info("Datadog profiling started")
+
+
 # Import DataDog tracer ASAP
 if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
-    logger = logging.getLogger("startup")
-    logger.setLevel(logging.INFO)
-    logger.addHandler(logging.StreamHandler())
     logger.info("Enabling Datadog")
     from ddtrace import config, patch
 
