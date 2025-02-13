@@ -102,7 +102,7 @@ class FolderCRUD(BaseCRUD):
         query: Query = update(FolderAppletSchema)
         query = query.where(FolderAppletSchema.folder_id == folder_id)
         query = query.where(FolderAppletSchema.applet_id == applet_id)
-        query = query.values(pinned_at=datetime.datetime.utcnow())
+        query = query.values(pinned_at=datetime.datetime.now(datetime.UTC).replace(tzinfo=None))
 
         await self._execute(query)
 

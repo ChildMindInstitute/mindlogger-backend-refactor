@@ -109,7 +109,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
 
         if not isinstance(value, int):
             raise Exception(
-                "For some reason count function returned not an integer." f"Value: {value}",
+                f"For some reason count function returned not an integer.Value: {value}",
             )
 
         return value

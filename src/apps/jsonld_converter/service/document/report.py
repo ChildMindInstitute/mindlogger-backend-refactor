@@ -151,6 +151,7 @@ class ReproActivityScore(ReportBase, ResolvesConditionalLogic):
 
     @property
     def calculation_type(self) -> CalculationType:
+        assert self.ld_output_type
         if self.ld_output_type == "cumulative":
             return CalculationType.SUM
         return CalculationType(self.ld_output_type)

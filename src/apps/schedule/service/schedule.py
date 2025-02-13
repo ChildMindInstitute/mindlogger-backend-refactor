@@ -247,6 +247,7 @@ class ScheduleService:
                     periodicity=periodicity,
                     activity_id=activity_id,
                     flow_id=flow_id,
+                    version=event.version,
                 )
             )
 
@@ -620,21 +621,20 @@ class ScheduleService:
             roles=Role.as_list(),
             query_params=QueryParams(),
         )
-        applet_ids = [applet.id for applet in applets]
         events = []
 
-        for applet_id in applet_ids:
-            user_events: list = await EventCRUD(self.session).get_all_by_applet_and_user(
-                applet_id=applet_id,
+        for applet in applets:
+            user_events = await EventCRUD(self.session).get_all_by_applet_and_user(
+                applet_id=applet.id,
                 user_id=user_id,
             )
-            general_events: list = await EventCRUD(self.session).get_general_events_by_user(
-                applet_id=applet_id, user_id=user_id
+            general_events = await EventCRUD(self.session).get_general_events_by_user(
+                applet_id=applet.id, user_id=user_id
             )
             all_events = user_events + general_events
             events.append(
                 PublicEventByUser(
-                    applet_id=applet_id,
+                    applet_id=applet.id,
                     events=[
                         self._convert_to_dto(
                             event=event,
@@ -794,6 +794,7 @@ class ScheduleService:
             availability=availability,
             selectedDate=event.periodicity.selected_date,
             notificationSettings=notificationSettings,
+            version=event.version,
         )
 
     async def get_events_by_user_and_applet(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> PublicEventByUser:

@@ -197,7 +197,7 @@ class LorisIntegrationService:
                     headers, candidate_id, filtered_answers, activities_ids, users_and_visits[user]
                 )
 
-            logger.info(f"Successfully send data for user: {user}," f" with loris id: {candidate_id}")
+            logger.info(f"Successfully send data for user: {user}, with loris id: {candidate_id}")
 
         await self._create_integration_alerts(self.applet_id, message=LorisIntegrationAlertMessages.SUCCESS.value)
         logger.info("All finished")
@@ -644,7 +644,7 @@ class LorisIntegrationService:
                             else:
                                 logger.info(f"Failed request in {duration:.1f} seconds.")
                                 error_message = await resp.text()
-                                logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
+                                logger.info(f"response is: {error_message}\nstatus is: {resp.status}")
                                 await self._create_integration_alerts(
                                     self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
                                 )
@@ -696,7 +696,7 @@ class LorisIntegrationService:
                                 else:
                                     logger.info(f"Failed request in {duration:.1f} seconds.")
                                     error_message = await resp.text()
-                                    logger.info(f"response is: " f"{error_message}\nstatus is: {resp.status}")
+                                    logger.info(f"response is: {error_message}\nstatus is: {resp.status}")
                                     await self._create_integration_alerts(
                                         self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
                                     )

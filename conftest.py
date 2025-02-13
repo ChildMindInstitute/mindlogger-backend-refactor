@@ -61,12 +61,12 @@ async def global_session(global_engine: AsyncEngine):
 
 
 # TODO: Instead of custom faketime for tests add function wrapper `now`
-# to use it instead of builtin datetime.datetime.utcnow
+# to use it instead of builtin datetime.datetime.now
 class FakeTime(datetime.datetime):
     current_utc = datetime.datetime(2024, 1, 1, 0, 0, 0)
 
     @classmethod
-    def utcnow(cls):
+    def now(cls, tzinfo=None):
         return cls.current_utc
 
 

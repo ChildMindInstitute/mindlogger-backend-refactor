@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from asyncpg import UniqueViolationError
 from sqlalchemy import and_, delete, func, or_, select, update
@@ -168,8 +168,8 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
             index_elements=[SubjectSchema.user_id, SubjectSchema.applet_id],
             set_={
                 **values,
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
             },
             where=SubjectSchema.soft_exists(exists=False),
         ).returning(SubjectSchema.id)

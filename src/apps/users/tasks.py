@@ -81,7 +81,7 @@ async def reencrypt_answers(
                             page += 1
 
             except Exception as e:
-                msg = f"Reencryption {user_id}: cannot process applet " f"{applet.applet_id}, skip"
+                msg = f"Reencryption {user_id}: cannot process applet {applet.applet_id}, skip"
                 logger.error(msg)
                 logger.exception(str(e))
                 async with default_session_maker() as session:

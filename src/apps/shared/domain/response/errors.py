@@ -24,7 +24,7 @@ class ErrorResponseMessage(PublicModel):
 class ErrorResponse(PublicModel):
     """Error response model."""
 
-    message: str = Field(description="This field represent the objects " "with language-specific errors")
+    message: str = Field(description="This field represent the objects with language-specific errors")
     type: str = Field(
         description="This field represents the business-specific error type",
         default=ErrorResponseType.UNDEFINED,

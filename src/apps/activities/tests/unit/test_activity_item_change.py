@@ -342,7 +342,7 @@ def test_conditional_logic_added(conditional_logic: ConditionalLogic):
     condition_type = condition.type.lower().replace("_", " ")
     item_name = condition.item_name
     value = condition.payload.value  # type: ignore
-    assert changes == [f"{parent_name}: If All: " f"{item_name} {condition_type} {value} was added"]
+    assert changes == [f"{parent_name}: If All: {item_name} {condition_type} {value} was added"]
 
 
 def test_conditional_logic_changed(conditional_logic: ConditionalLogic):
@@ -356,9 +356,7 @@ def test_conditional_logic_changed(conditional_logic: ConditionalLogic):
     condition_type = condition.type.lower().replace("_", " ")
     item_name = condition.item_name
     value = condition.payload.value  # type: ignore
-    assert changes == [
-        f"{parent_name}: If {new.match.capitalize()}: " f"{item_name} {condition_type} {value} was updated"
-    ]
+    assert changes == [f"{parent_name}: If {new.match.capitalize()}: {item_name} {condition_type} {value} was updated"]
 
 
 def test_conditional_logic_removed(

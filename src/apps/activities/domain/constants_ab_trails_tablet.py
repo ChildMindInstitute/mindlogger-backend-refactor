@@ -109,13 +109,12 @@ TABLET_NODES_FOURTH: ABTrailsNodes = ABTrailsNodes(
 TABLET_TUTORIALS_FIRST: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(text="There are numbers in circles on this screen."),
-        Tutorial(text="You will take a pen and draw a line from one number " "to the next, in order."),
+        Tutorial(text="You will take a pen and draw a line from one number to the next, in order."),
         Tutorial(text="Start at 1.", node_label="1"),
         Tutorial(text="Then go to 2.", node_label="2"),
         Tutorial(text="Then 3, and so on.", node_label="3"),
         Tutorial(
-            text="Please try not to lift the pen as you move from one "
-            "number to the next. Work as quickly as you can."
+            text="Please try not to lift the pen as you move from one number to the next. Work as quickly as you can."
         ),
         Tutorial(text="Begin here.", node_label="1"),
         Tutorial(text="And end here.", node_label="8"),
@@ -126,10 +125,10 @@ TABLET_TUTORIALS_FIRST: ABTrailsTutorial = ABTrailsTutorial(
 TABLET_TUTORIALS_SECOND: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(text="On this screen are more numbers in circles."),
-        Tutorial(text="You will take a pen and draw a line from one circle to " "the next, in order."),
+        Tutorial(text="You will take a pen and draw a line from one circle to the next, in order."),
         Tutorial(text="Start at 1.", node_label="1"),
         Tutorial(text="And End here.", node_label="25"),
-        Tutorial(text="Please try not to lift the pen as you move from one " "circle to the next."),
+        Tutorial(text="Please try not to lift the pen as you move from one circle to the next."),
         Tutorial(text="Work as quickly as you can."),
         Tutorial(
             text="Click next to start",
@@ -140,14 +139,13 @@ TABLET_TUTORIALS_SECOND: ABTrailsTutorial = ABTrailsTutorial(
 TABLET_TUTORIALS_THIRD: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
         Tutorial(text="There are numbers and letters in circles on this screen."),
-        Tutorial(text="You will take a pen and draw a line alternating in " "order between the numbers and letters."),
+        Tutorial(text="You will take a pen and draw a line alternating in order between the numbers and letters."),
         Tutorial(text="Start at number 1.", node_label="1"),
         Tutorial(text="Then go to the first letter A.", node_label="A"),
         Tutorial(text="Then go to the next number 2.", node_label="2"),
         Tutorial(text="Then go to the next letter B, and so on.", node_label="B"),
         Tutorial(
-            text="Please try not to lift the pen as you move from one "
-            "number to the next. Work as quickly as you can."
+            text="Please try not to lift the pen as you move from one number to the next. Work as quickly as you can."
         ),
         Tutorial(text="Begin here.", node_label="1"),
         Tutorial(text="And end here.", node_label="D"),
@@ -159,12 +157,12 @@ TABLET_TUTORIALS_THIRD: ABTrailsTutorial = ABTrailsTutorial(
 
 TABLET_TUTORIALS_FOURTH: ABTrailsTutorial = ABTrailsTutorial(
     tutorials=[
-        Tutorial(text="On this screen there are more numbers and letters " "in circles."),
-        Tutorial(text="You will take a pen and draw a line from one circle " "to the next."),
+        Tutorial(text="On this screen there are more numbers and letters in circles."),
+        Tutorial(text="You will take a pen and draw a line from one circle to the next."),
         Tutorial(text="Alternating in order between the numbers and letters."),
         Tutorial(text="Start at 1.", node_label="1"),
         Tutorial(text="And end here.", node_label="13"),
-        Tutorial(text="Please try not to lift the pen as you move from one " "circle to the next."),
+        Tutorial(text="Please try not to lift the pen as you move from one circle to the next."),
         Tutorial(text="Work as quickly as you can."),
         Tutorial(
             text="Click next to start",
