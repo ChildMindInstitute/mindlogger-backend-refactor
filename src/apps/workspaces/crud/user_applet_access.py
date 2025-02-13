@@ -29,7 +29,7 @@ from sqlalchemy_utils import StringEncryptedType
 from apps.applets.db.schemas import AppletSchema
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
-from apps.schedule.db.schemas import EventSchema, UserEventsSchema
+from apps.schedule.db.schemas import EventSchema
 from apps.shared.encryption import get_key
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
@@ -402,10 +402,9 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         workspace_applets_sq = self.workspace_applets_subquery(owner_id, applet_id)
 
         schedule_exists = (
-            select(UserEventsSchema)
-            .join(EventSchema, EventSchema.id == UserEventsSchema.event_id)
+            select(EventSchema)
             .where(
-                UserEventsSchema.user_id == UserAppletAccessSchema.user_id,
+                EventSchema.user_id == UserAppletAccessSchema.user_id,
                 EventSchema.applet_id == UserAppletAccessSchema.applet_id,
             )
             .exists()
@@ -1047,12 +1046,11 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         page: int,
         limit: int,
     ) -> list[RespondentAppletAccess]:
-        individual_event_query: Query = select(UserEventsSchema.id)
-        individual_event_query = individual_event_query.join(EventSchema, EventSchema.id == UserEventsSchema.event_id)
+        individual_event_query: Query = select(EventSchema.id)
         individual_event_query = individual_event_query.where(
-            UserEventsSchema.user_id == UserAppletAccessSchema.user_id
+            EventSchema.user_id == UserAppletAccessSchema.user_id,
+            EventSchema.applet_id == UserAppletAccessSchema.applet_id,
         )
-        individual_event_query = individual_event_query.where(EventSchema.applet_id == UserAppletAccessSchema.applet_id)
 
         query: Query = select(
             SubjectSchema.secret_user_id,
