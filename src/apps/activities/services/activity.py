@@ -161,6 +161,7 @@ class ActivityService:
                 if item.name in ["age_screen", "gender_screen"] and item.id is None:
                     # Implement logging for the age_screen and gender_screen items to trigger alerts
                     # in Datadog for the Greek version of the applet after translations were rolled back.
+                    # TODO: Remove when full Greek support is available in Admin Panel [M2-8678](https://mindlogger.atlassian.net/browse/M2-8678)
                     logger.info(  # type: ignore
                         f"Creating {item.name} item for activity {activity_id} in applet_id {applet_id}",
                         applet_id=str(applet_id),
