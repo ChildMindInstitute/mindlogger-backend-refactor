@@ -136,7 +136,7 @@ jobs:
 
   comment-e2e-tests:
     name: Comment on test outcome
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.run-e2e-tests.result != 'skipped' }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -145,7 +145,7 @@ jobs:
     needs: [run-e2e-tests]
     steps:
       - name: "Send Slack message on failure"
-        if: ${{ needs.run-e2e-tests.result != 'success' }}
+        if: ${{ needs.run-e2e-tests.result != 'success'  }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
