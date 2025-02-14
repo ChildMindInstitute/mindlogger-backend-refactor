@@ -229,11 +229,8 @@ set -o allexport; source .env; set +o allexport
 
 > 🛑 **NOTE 2:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
 
-> 🛑 **NOTE 3:** If you get an error running `pipenv sync --dev` related to the dependency `greenlet`, install it by running:
-```bash
-pipenv install greenlet
-```
-> 🛑 **NOTE 4:** If the application can't find the `RabbitMQ` service even though it's running normally, change your `RABBITMQ__URL` to your local ip address instead of `localhost`
+> 🛑 **NOTE 3:** If the application can't find the `RabbitMQ` service even though it's running normally, change your
+`RABBITMQ__URL` to your local ip address instead of `localhost`
 
 ## Run the migrations
 ```bash
@@ -328,6 +325,9 @@ make run
 
 # Check the code quality
 make cq
+
+# Check and fix code quality
+make cqf
 
 # Check tests passing
 make test
@@ -477,6 +477,12 @@ delete from alembic_version;
 
 ```bash
 alembic -c alembic_arbitrary.ini upgrade head
+```
+
+### Update gender_screen and age_screen activity items strings to greek for an applet
+
+```bash
+python src/cli.py patch exec M2-8568 -a <applet_id> 
 ```
 
 #### Database relation structure

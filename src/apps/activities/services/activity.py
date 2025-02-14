@@ -26,6 +26,7 @@ from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD
 from apps.schedule.service.schedule import ScheduleService
 from apps.workspaces.domain.constants import Role
+from infrastructure.logger import logger
 
 
 class ActivityService:
@@ -157,6 +158,16 @@ class ActivityService:
             )
 
             for item in activity_data.items:
+                if item.name in ["age_screen", "gender_screen"] and item.id is None:
+                    # Implement logging for the age_screen and gender_screen items to trigger alerts
+                    # in Datadog for the Greek version of the applet after translations were rolled back.
+                    # TODO: Remove when full Greek support is available in Admin Panel [M2-8678](https://mindlogger.atlassian.net/browse/M2-8678)
+                    logger.info(  # type: ignore
+                        f"Creating {item.name} item for activity {activity_id} in applet_id {applet_id}",
+                        applet_id=str(applet_id),
+                        operation=f"update_{item.name}",
+                    )
+
                 prepared_activity_items.append(
                     PreparedActivityItemUpdate(
                         id=item.id or uuid.uuid4(),
