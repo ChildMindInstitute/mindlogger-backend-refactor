@@ -50,6 +50,7 @@ def single_select_config(default_config: DefaultConfig) -> SingleSelectionConfig
         set_alerts=False,
         add_tooltip=False,
         set_palette=False,
+        response_data_identifier=False,
         **default_config.dict(),
         type=ResponseType.SINGLESELECT,
     )
