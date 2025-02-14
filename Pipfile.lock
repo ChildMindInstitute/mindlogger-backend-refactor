@@ -2863,11 +2863,12 @@
         },
         "faker": {
             "hashes": [
-                "sha256:aa0b93487d3adf7cd89953d172e3df896cb7b35d8a5222c0da873edbe2f7adf5",
-                "sha256:f40510350aecfe006f45cb3f8879b35e861367cf347f51a7f2ca2c0571fdcc0b"
+                "sha256:7cb2bbd4c8f040e4a340ae4019e9a48b6cf1db6a71bda4e5a61d8d13b7bef28d",
+                "sha256:ad1f1be7fd692ec0256517404a9d7f007ab36ac5d4674082fa72404049725eaa"
             ],
+            "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==36.1.0"
+            "version": "==36.1.1"
         },
         "filelock": {
             "hashes": [
