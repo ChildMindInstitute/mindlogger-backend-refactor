@@ -358,7 +358,9 @@ class ReproFieldRadio(ReproFieldBase):
         self.ld_randomize_options = self.attr_processor.get_attr_value(options_doc, "reproschema:randomizeOptions")
         self.ld_scoring = self.attr_processor.get_attr_value(options_doc, "reproschema:scoring")
         self.ld_response_alert = self.attr_processor.get_attr_value(options_doc, "reproschema:responseAlert")
-
+        self.ld_is_response_identifier = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:isResponseIdentifier"
+        )
         self.choices = self._get_ld_choices_formatted(options_doc)
 
     def _build_config(self, _cls: Type | None, **attrs):
