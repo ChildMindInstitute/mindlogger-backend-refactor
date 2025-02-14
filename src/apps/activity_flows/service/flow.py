@@ -15,7 +15,8 @@ from apps.activity_flows.domain.flow_update import ActivityFlowReportConfigurati
 from apps.activity_flows.service.flow_item import FlowItemService
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain.applet_history import Version
-from apps.schedule.crud.events import EventCRUD, FlowEventsCRUD
+from apps.schedule.crud.events import EventCRUD
+from apps.schedule.domain.constants import EventType
 from apps.schedule.service.schedule import ScheduleService
 from apps.workspaces.domain.constants import Role
 
@@ -89,7 +90,9 @@ class FlowService:
         schemas = list()
         prepared_flow_items = list()
 
-        all_flows = [flow.flow_id for flow in await FlowEventsCRUD(self.session).get_by_applet_id(applet_id)]
+        flow_events = await EventCRUD(self.session).get_by_type_and_applet_id(applet_id, EventType.FLOW)
+
+        all_flows = [flow_event.activity_flow_id for flow_event in flow_events if flow_event.activity_flow_id]
 
         # Save new flow ids
         new_flows = []
