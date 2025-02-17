@@ -25,7 +25,7 @@ pymongo = "==4.11.*"
 pyOpenSSL = "==25.0.*"
 python-multipart = "==0.0.20"
 redis = "==5.2.*"
-sentry-sdk = "~=2.13"
+sentry-sdk = "~=2.22"
 sqlalchemy = { extras = ["asyncio"], version = "==1.4.53" }
 sqlalchemy-utils = "==0.41.2"
 taskiq = { extras = ["reload"], version = "==0.11.*" }
