@@ -22,6 +22,11 @@ class ProlificStudyValidation(InternalModel):
     accepted: bool
 
 
+class ProlificUserInfo(InternalModel):
+    prolific_pid: str
+    study_id: str
+
+
 class ProlificParamsActivityAnswer(InternalModel):
     prolific_pid: str
     session_id: str

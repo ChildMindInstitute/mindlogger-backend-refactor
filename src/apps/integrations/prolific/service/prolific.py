@@ -48,11 +48,16 @@ class ProlificIntegrationService:
 
         return ProlificIntegration.from_schema(integration_schema)
 
-    async def validate_prolific_study(self, study_id, language) -> ProlificStudyValidation:
+    async def validate_prolific_study(self, study_id, language, is_private_applet_id=False) -> ProlificStudyValidation:
         applet_service = AppletService(self.session, uuid.UUID("00000000-0000-0000-0000-000000000000"))
-        await applet_service.exist_by_key(self.applet_id)
-        applet_base_info = await applet_service.get_info_by_key(self.applet_id, language)
-        self.applet_id = applet_base_info.id  # Update the public applet key to be the real applet id
+        applet_base_info = None
+        if not is_private_applet_id:
+            await applet_service.exist_by_key(self.applet_id)
+            applet_base_info = await applet_service.get_info_by_key(self.applet_id, language)
+            self.applet_id = applet_base_info.id  # Update the public applet key to be the real applet id
+        else:
+            await applet_service.exist_by_id(self.applet_id)
+            applet_base_info = await applet_service.get_info_by_id(self.applet_id, language)
 
         api_key = await self._get_prolific_api_key()
 

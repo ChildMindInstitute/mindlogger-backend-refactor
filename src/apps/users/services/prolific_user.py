@@ -3,26 +3,34 @@ import uuid
 
 from apps.applets.crud.applets import AppletsCRUD
 from apps.authentication.services.security import AuthenticationService
-from apps.integrations.prolific.domain import ProlificParamsActivityAnswer
+from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.integrations.prolific.errors import ProlificInvalidStudyError
 from apps.shared.hashing import hash_sha224
 from apps.subjects.domain import SubjectCreate
 from apps.subjects.services.subjects import SubjectsService
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
+from apps.users.domain import ProlificPublicUser
 from config import settings
 
 
 class ProlificUserService:
-    def __init__(self, session, prolific_participant: ProlificParamsActivityAnswer) -> None:
+    def __init__(self, session, prolific_participant: ProlificUserInfo) -> None:
         self.session = session
         self.prolific_pid = prolific_participant.prolific_pid
-        self.prolific_session_id = prolific_participant.session_id
         self.prolific_study_id = prolific_participant.study_id
 
+    async def user_exists(self) -> ProlificPublicUser:
+        print("ProlificUserService.user_exists")
+        prolific_respondent_id = self._get_id_by_prolific_params()
+        crud = UsersCRUD(self.session)
+
+        prolific_respondent = await crud.get_prolific_respondent(prolific_respondent_id)
+
+        return ProlificPublicUser(exists=prolific_respondent is not None)
+
     async def create_prolific_respondent(self) -> UserSchema:
-        hash_object = hashlib.sha256(f"{self.prolific_pid}-{self.prolific_study_id}".encode("utf-8"))
-        prolific_respondent_id = uuid.UUID(hash_object.hexdigest()[:32])
+        prolific_respondent_id = self._get_id_by_prolific_params()
 
         crud = UsersCRUD(self.session)
 
@@ -64,16 +72,19 @@ class ProlificUserService:
                     secret_user_id=self._get_formated_secret_user_id(),
                     email=self._get_formated_email(),
                     # Storing prolific params as JSON for easy parse.
-                    nickname=ProlificParamsActivityAnswer(
+                    nickname=ProlificUserInfo(
                         prolific_pid=self.prolific_pid,
-                        session_id=self.prolific_session_id,
                         study_id=self.prolific_study_id,
                     ).json(),
                 )
             )
 
+    def _get_id_by_prolific_params(self) -> uuid.UUID:
+        hash_object = hashlib.sha256(f"{self.prolific_pid}-{self.prolific_study_id}".encode("utf-8"))
+        return uuid.UUID(hash_object.hexdigest()[:32])
+
     def _get_formated_email(self):
-        return f"{self.prolific_pid}-{self.prolific_session_id}@{settings.prolific_respondent.domain}"
+        return f"{self.prolific_pid}-{self.prolific_study_id}@{settings.prolific_respondent.domain}"
 
     def _get_formated_secret_user_id(self):
         base_secret_user_id = settings.prolific_respondent.secret_user_id
