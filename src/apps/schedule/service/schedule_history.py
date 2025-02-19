@@ -27,6 +27,9 @@ class ScheduleHistoryService:
     async def add_history(self, applet_id: uuid.UUID, event: ScheduleEvent):
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
 
+        # Refresh the applet so we don't get the old version number, in case the version has changed
+        await self.session.refresh(applet)
+
         event_history = await ScheduleHistoryCRUD(self.session).add(
             EventHistorySchema(
                 start_time=event.start_time,
