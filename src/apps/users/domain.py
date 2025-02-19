@@ -107,6 +107,10 @@ class PublicUser(PublicModel):
         return f"{self.first_name} {self.last_name}" if self.last_name else self.first_name
 
 
+class ProlificPublicUser(InternalModel):
+    exists: bool
+
+
 class ChangePasswordRequest(InternalModel):
     """This model represents change password data model."""
 
