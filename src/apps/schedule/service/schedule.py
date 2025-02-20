@@ -8,6 +8,7 @@ from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.errors import AppletNotFoundError
 from apps.schedule.crud.events import EventCRUD
 from apps.schedule.crud.notification import NotificationCRUD, ReminderCRUD
+from apps.schedule.crud.schedule_history import NotificationHistoryCRUD, ReminderHistoryCRUD
 from apps.schedule.db.schemas import EventSchema, NotificationSchema
 from apps.schedule.domain.constants import DefaultEvent, EventType, PeriodicityType
 from apps.schedule.domain.schedule import BaseEvent
@@ -355,6 +356,8 @@ class ScheduleService:
                 except_event_id=schedule_id,
             )
 
+        old_event_version = event.version
+
         # Update event
         event = await EventCRUD(self.session).update(
             pk=schedule_id,
@@ -385,6 +388,11 @@ class ScheduleService:
         # Update notification
         await NotificationCRUD(self.session).delete_by_event_ids([schedule_id])
         await ReminderCRUD(self.session).delete_by_event_ids([schedule_id])
+
+        await asyncio.gather(
+            NotificationHistoryCRUD(self.session).mark_as_deleted([(event.id, old_event_version)]),
+            ReminderHistoryCRUD(self.session).mark_as_deleted([(event.id, old_event_version)]),
+        )
 
         notification_public = None
         if schedule.notification:
