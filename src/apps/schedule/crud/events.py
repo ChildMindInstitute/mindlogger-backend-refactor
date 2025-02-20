@@ -331,7 +331,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         )
         # select only always available if requested
         if only_always_available:
-            query.where(EventSchema.periodicity == PeriodicityType.ALWAYS)
+            query = query.where(EventSchema.periodicity == PeriodicityType.ALWAYS)
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted.is_(False))
 
@@ -376,10 +376,12 @@ class EventCRUD(BaseCRUD[EventSchema]):
             isouter=True,
         )
 
-        query.where(EventSchema.periodicity == PeriodicityType.ALWAYS)
-        query = query.where(EventSchema.applet_id == applet_id)
-        query = query.where(EventSchema.is_deleted.is_(False))
-        query = query.where(UserEventsSchema.user_id == respondent_id)
+        query = query.where(
+            EventSchema.periodicity == PeriodicityType.ALWAYS,
+            EventSchema.applet_id == applet_id,
+            EventSchema.is_deleted.is_(False),
+            UserEventsSchema.user_id == respondent_id,
+        )
         query = query.limit(1)
 
         result = await self._execute(query)
@@ -411,7 +413,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
         # select only always available if requested
         if only_always_available:
-            query.where(EventSchema.periodicity == PeriodicityType.ALWAYS)
+            query = query.where(EventSchema.periodicity == PeriodicityType.ALWAYS)
 
         query = query.where(EventSchema.applet_id == applet_id)
         query = query.where(EventSchema.is_deleted.is_(False))
