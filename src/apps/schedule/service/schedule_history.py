@@ -100,7 +100,7 @@ class ScheduleHistoryService:
         This method is useful when an applet has its version bumped and the events are not updated. The previous entries
         in `applet_events` are not removed to maintain the history of the applet.
         """
-        events = await EventCRUD(self.session).get_all_by_applet_id_with_filter(applet_id)
+        events = await EventCRUD(self.session).get_all_by_applet_id(applet_id)
 
         if len(events) > 0:
             await AppletEventsCRUD(self.session).add_many(
