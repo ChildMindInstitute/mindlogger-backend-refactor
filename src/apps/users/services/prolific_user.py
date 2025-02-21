@@ -3,6 +3,7 @@ import uuid
 
 from apps.applets.crud.applets import AppletsCRUD
 from apps.authentication.services.security import AuthenticationService
+from apps.integrations.domain import AvailableIntegrations
 from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.integrations.prolific.errors import ProlificInvalidStudyError
 from apps.shared.hashing import hash_sha224
@@ -21,7 +22,6 @@ class ProlificUserService:
         self.prolific_study_id = prolific_participant.study_id
 
     async def user_exists(self) -> ProlificPublicUser:
-        print("ProlificUserService.user_exists")
         prolific_respondent_id = self._get_id_by_prolific_params()
         crud = UsersCRUD(self.session)
 
@@ -29,7 +29,13 @@ class ProlificUserService:
 
         return ProlificPublicUser(exists=prolific_respondent is not None)
 
-    async def create_prolific_respondent(self) -> UserSchema:
+    async def create_prolific_respondant(self, applet_id: uuid.UUID):
+        prolific_respondent = await self.create_prolific_user()
+        await self.create_subject(prolific_respondent, applet_id)
+
+        return prolific_respondent
+
+    async def create_prolific_user(self) -> UserSchema:
         prolific_respondent_id = self._get_id_by_prolific_params()
 
         crud = UsersCRUD(self.session)
@@ -42,10 +48,9 @@ class ProlificUserService:
                 first_name=settings.prolific_respondent.first_name,
                 last_name=settings.prolific_respondent.last_name,
                 hashed_password=AuthenticationService(self.session).get_password_hash(
-                    settings.anonymous_respondent.password
+                    settings.prolific_respondent.password
                 ),
                 email_encrypted=self._get_formated_email(),
-                is_prolific_respondent=True,
             )
 
             return await crud.save(prolific_respondent)
@@ -54,9 +59,7 @@ class ProlificUserService:
         # that means the user already answered this survey.
         raise ProlificInvalidStudyError(message="User already answered the survey")
 
-    async def create_subject_for_prolific_respondent(
-        self, prolific_respondent: UserSchema, applet_id: uuid.UUID
-    ) -> None:
+    async def create_subject(self, prolific_respondent: UserSchema, applet_id: uuid.UUID) -> None:
         subject_service = SubjectsService(self.session, prolific_respondent.id)
         subject = await subject_service.get_by_user_and_applet(prolific_respondent.id, applet_id)
         applet = await AppletsCRUD(session=self.session).get_by_id(applet_id)
@@ -71,11 +74,7 @@ class ProlificUserService:
                     last_name=prolific_respondent.last_name,
                     secret_user_id=self._get_formated_secret_user_id(),
                     email=self._get_formated_email(),
-                    # Storing prolific params as JSON for easy parse.
-                    nickname=ProlificUserInfo(
-                        prolific_pid=self.prolific_pid,
-                        study_id=self.prolific_study_id,
-                    ).json(),
+                    integration_source=AvailableIntegrations.PROLIFIC,
                 )
             )
 

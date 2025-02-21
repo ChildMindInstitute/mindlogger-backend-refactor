@@ -43,7 +43,7 @@ router.get(
 )(get_study_completion_codes)
 
 router.get(
-    "/pid/{prolific_pid}/study_id/{study_id}",
+    "/applet/pid/{prolific_pid}/study_id/{study_id}",
     description="This endpoint is used to check the existance of the prolific user",
     response_model=None,
     status_code=status.HTTP_200_OK,
