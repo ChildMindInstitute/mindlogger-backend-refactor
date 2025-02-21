@@ -36,6 +36,7 @@ class AppletSubmitDateFilter(BaseQueryParams):
     target_subject_id: uuid.UUID | None
     from_date: datetime.date
     to_date: datetime.date
+    activity_or_flow_id: uuid.UUID | None = None
 
     @classmethod
     @root_validator
