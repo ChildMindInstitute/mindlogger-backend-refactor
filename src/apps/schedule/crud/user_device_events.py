@@ -30,7 +30,6 @@ class UserDeviceEventsCRUD(BaseCRUD[UserDeviceEventsSchema]):
         upsert = upsert.on_conflict_do_update(
             constraint=UserDeviceEventsSchema.unique_constraint,
             set_={
-                "version": upsert.excluded.version,
                 "updated_at": datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
             },
         )

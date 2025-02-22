@@ -116,6 +116,7 @@ class UserDeviceEventsSchema(Base):
         UniqueConstraint(
             "device_id",
             "event_id",
+            "version",
             name=unique_constraint,
         ),
     )

@@ -38,7 +38,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["event_id"], ["events.id"], name=op.f("fk_user_device_events_event_id_events"), ondelete="CASCADE"
         ),
-        sa.UniqueConstraint("device_id", "event_id", name="_unique_user_device_events"),
+        sa.UniqueConstraint("device_id", "event_id", "version", name="_unique_user_device_events"),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_user_device_events")),
     )
 
