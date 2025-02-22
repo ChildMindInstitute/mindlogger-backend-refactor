@@ -18,9 +18,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create the `user_device_events` table
+    # Create the `user_device_events_history` table
     op.create_table(
-        "user_device_events",
+        "user_device_events_history",
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("created_at", sa.DateTime(), server_default=sa.text("timezone('utc', now())"), nullable=True),
         sa.Column("updated_at", sa.DateTime(), server_default=sa.text("timezone('utc', now())"), nullable=True),
@@ -31,18 +31,11 @@ def upgrade() -> None:
         sa.Column("device_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("event_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("version", sa.String(length=13), nullable=False),
-
-        sa.ForeignKeyConstraint(
-            ["device_id"], ["user_devices.id"], name=op.f("fk_user_device_events_device_id_user_devices"), ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["event_id"], ["events.id"], name=op.f("fk_user_device_events_event_id_events"), ondelete="CASCADE"
-        ),
-        sa.UniqueConstraint("device_id", "event_id", "version", name="_unique_user_device_events"),
-        sa.PrimaryKeyConstraint("id", name=op.f("pk_user_device_events")),
+        sa.UniqueConstraint("device_id", "event_id", "version", name="_unique_user_device_events_history"),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_user_device_events_history")),
     )
 
 
 def downgrade() -> None:
-    # Drop the `user_device_events` table
-    op.drop_table("user_device_events")
+    # Drop the `user_device_events_history` table
+    op.drop_table("user_device_events_history")
