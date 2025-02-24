@@ -9,7 +9,7 @@ from apps.applets.errors import AppletNotFoundError
 from apps.schedule.crud.events import EventCRUD
 from apps.schedule.crud.notification import NotificationCRUD, ReminderCRUD
 from apps.schedule.crud.schedule_history import NotificationHistoryCRUD, ReminderHistoryCRUD
-from apps.schedule.crud.user_device_events import UserDeviceEventsCRUD
+from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.db.schemas import EventSchema, NotificationSchema
 from apps.schedule.domain.constants import DefaultEvent, EventType, PeriodicityType
 from apps.schedule.domain.schedule import BaseEvent
@@ -721,7 +721,8 @@ class ScheduleService:
             device = await UserDevicesCRUD(self.session).get_by_device_id(device_id=device_id)
             if device:
                 all_events = [event for value in full_events_map.values() for event in value]
-                await UserDeviceEventsCRUD(self.session).record_event_versions(
+                await UserDeviceEventsHistoryCRUD(self.session).record_event_versions(
+                    user_id=user_id,
                     device_id=device.id,
                     event_versions=[(event.id, event.version) for event in all_events],
                 )

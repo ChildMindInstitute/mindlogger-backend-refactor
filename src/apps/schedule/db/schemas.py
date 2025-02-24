@@ -103,17 +103,19 @@ class ReminderHistorySchema(_BaseReminderSchema, HistoryAware, Base):
     event_id = Column(ForeignKey("event_histories.id_version", ondelete="RESTRICT"), nullable=False)
 
 
-class UserDeviceEventsSchema(Base):
+class UserDeviceEventsHistorySchema(Base):
     __tablename__ = "user_device_events_history"
 
     unique_constraint = "_unique_user_device_events_history"
 
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
     device_id = Column(UUID(as_uuid=True), nullable=False)
     event_id = Column(UUID(as_uuid=True), nullable=False)
     version = Column(String(13), nullable=False)
 
     __table_args__ = (
         UniqueConstraint(
+            "user_id",
             "device_id",
             "event_id",
             "version",
