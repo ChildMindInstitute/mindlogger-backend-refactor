@@ -23,8 +23,7 @@ from apps.activities.services.activity_item import ActivityItemService
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.crud import FlowsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.schedule.crud.events import EventCRUD
-from apps.schedule.domain.constants import EventType
+from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD
 from apps.schedule.service.schedule import ScheduleService
 from apps.workspaces.domain.constants import Role
 from infrastructure.logger import logger
@@ -116,9 +115,9 @@ class ActivityService:
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
         prepared_activity_items = list()
 
-        activity_events = await EventCRUD(self.session).get_by_type_and_applet_id(applet_id, EventType.ACTIVITY)
+        all_activities = await ActivityEventsCRUD(self.session).get_by_applet_id(applet_id)
 
-        all_activity_ids = [activity.activity_id for activity in activity_events if activity.activity_id is not None]
+        all_activity_ids = [activity.activity_id for activity in all_activities]
 
         # Save new activity ids
         new_activities = []
