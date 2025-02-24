@@ -24,13 +24,7 @@ from apps.applets.db.schemas import AppletSchema
 from apps.job.constants import JobStatus
 from apps.job.errors import JobStatusError
 from apps.job.service import JobService
-from apps.schedule.db.schemas import (
-    ActivityEventsSchema,
-    EventSchema,
-    FlowEventsSchema,
-    PeriodicitySchema,
-    UserEventsSchema,
-)
+from apps.schedule.db.schemas import EventSchema
 from apps.schedule.domain.constants import PeriodicityType
 from apps.shared.domain.base import PublicModel
 from apps.subjects.db.schemas import SubjectSchema
@@ -239,27 +233,24 @@ async def get_user_flow_events(
         select(
             EventSchema.applet_id,
             EventSchema.id.label("event_id"),
-            UserEventsSchema.user_id,
-            FlowEventsSchema.flow_id,
-            PeriodicitySchema.type.label("event_type"),
+            EventSchema.user_id,
+            EventSchema.activity_flow_id.label("flow_id"),
+            EventSchema.periodicity.label("event_type"),
             case(
                 (
-                    PeriodicitySchema.type.in_(("WEEKDAYS", "DAILY")),
+                    EventSchema.periodicity.in_(("WEEKDAYS", "DAILY")),
                     scheduled_date,
                 ),
-                (PeriodicitySchema.type.in_(("WEEKLY", "MONTHLY")), PeriodicitySchema.start_date),
-                else_=PeriodicitySchema.selected_date,
+                (EventSchema.periodicity.in_(("WEEKLY", "MONTHLY")), EventSchema.start_date),
+                else_=EventSchema.selected_date,
             ).label("selected_date"),
-            PeriodicitySchema.start_date,
-            PeriodicitySchema.end_date,
+            EventSchema.start_date,
+            EventSchema.end_date,
             EventSchema.start_time,
             EventSchema.end_time,
         )
         .select_from(EventSchema)
-        .join(UserEventsSchema, UserEventsSchema.event_id == EventSchema.id)
-        .join(PeriodicitySchema, PeriodicitySchema.id == EventSchema.periodicity_id)
-        .join(FlowEventsSchema, FlowEventsSchema.event_id == EventSchema.id)
-        .where(EventSchema.is_deleted == false(), PeriodicitySchema.type != PeriodicityType.ALWAYS)
+        .where(EventSchema.is_deleted == false(), EventSchema.periodicity != PeriodicityType.ALWAYS)
     ).cte("user_flow_events")
 
     query = (
@@ -327,14 +318,14 @@ def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) 
             case PeriodicityType.DAILY:
                 if row.is_crossday_event:
                     row.end_date += datetime.timedelta(days=1)
-                if schedule_date >= row.start_date and schedule_date <= row.end_date:
+                if row.start_date <= schedule_date <= row.end_date:
                     filtered.append(row)
             case PeriodicityType.ONCE:
                 schedule_start_date = row.selected_date
                 row.end_date = row.selected_date
                 if row.is_crossday_event:
                     row.end_date += datetime.timedelta(days=1)
-                if schedule_date >= schedule_start_date and schedule_date <= row.end_date:
+                if schedule_start_date <= schedule_date <= row.end_date:
                     filtered.append(row)
             case PeriodicityType.WEEKDAYS:
                 last_weekday = FRIDAY_WEEKDAY
@@ -342,11 +333,7 @@ def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) 
                     last_weekday = SATURDAY_WEEKDAY
                     if row.end_date.weekday() == FRIDAY_WEEKDAY:
                         row.end_date += datetime.timedelta(days=1)
-                if (
-                    schedule_date.weekday() <= last_weekday
-                    and schedule_date >= row.start_date
-                    and schedule_date <= row.end_date
-                ):
+                if schedule_date.weekday() <= last_weekday and row.start_date <= schedule_date <= row.end_date:
                     filtered.append(row)
             case PeriodicityType.WEEKLY:
                 scheduled_weekday = row.start_date.weekday()
@@ -362,10 +349,8 @@ def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) 
                     if row.start_date.weekday() == row.end_date.weekday():
                         row.end_date += datetime.timedelta(days=1)
                 if (
-                    (schedule_date.weekday() == scheduled_weekday or schedule_date.weekday() == following_weekday)
-                    and schedule_date >= row.start_date
-                    and schedule_date <= row.end_date
-                ):
+                    schedule_date.weekday() == scheduled_weekday or schedule_date.weekday() == following_weekday
+                ) and row.start_date <= schedule_date <= row.end_date:
                     filtered.append(row)
             case PeriodicityType.MONTHLY:
                 scheduled_monthday = row.start_date.day
@@ -382,14 +367,10 @@ def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) 
                     ):
                         row.end_date += datetime.timedelta(days=1)
                 if (
-                    (
-                        schedule_date.day == scheduled_monthday
-                        or schedule_date.day == following_monthday
-                        or (is_last_day_of_month(schedule_date) and row.start_date)
-                    )
-                    and schedule_date >= row.start_date
-                    and schedule_date <= row.end_date
-                ):
+                    schedule_date.day == scheduled_monthday
+                    or schedule_date.day == following_monthday
+                    or (is_last_day_of_month(schedule_date) and row.start_date)
+                ) and row.start_date <= schedule_date <= row.end_date:
                     filtered.append(row)
     return filtered
 
@@ -505,27 +486,24 @@ async def get_user_activity_events(
         select(
             EventSchema.applet_id,
             EventSchema.id.label("event_id"),
-            UserEventsSchema.user_id,
-            ActivityEventsSchema.activity_id,
-            PeriodicitySchema.type.label("event_type"),
+            EventSchema.user_id,
+            EventSchema.activity_id,
+            EventSchema.periodicity.label("event_type"),
             case(
                 (
-                    PeriodicitySchema.type.in_(("WEEKDAYS", "DAILY")),
+                    EventSchema.periodicity.in_(("WEEKDAYS", "DAILY")),
                     scheduled_date,
                 ),
-                (PeriodicitySchema.type.in_(("WEEKLY", "MONTHLY")), PeriodicitySchema.start_date),
-                else_=PeriodicitySchema.selected_date,
+                (EventSchema.periodicity.in_(("WEEKLY", "MONTHLY")), EventSchema.start_date),
+                else_=EventSchema.selected_date,
             ).label("selected_date"),
-            PeriodicitySchema.start_date,
-            PeriodicitySchema.end_date,
+            EventSchema.start_date,
+            EventSchema.end_date,
             EventSchema.start_time,
             EventSchema.end_time,
         )
         .select_from(EventSchema)
-        .join(UserEventsSchema, UserEventsSchema.event_id == EventSchema.id)
-        .join(PeriodicitySchema, PeriodicitySchema.id == EventSchema.periodicity_id)
-        .join(ActivityEventsSchema, ActivityEventsSchema.event_id == EventSchema.id)
-        .where(EventSchema.is_deleted == false(), PeriodicitySchema.type != PeriodicityType.ALWAYS)
+        .where(EventSchema.is_deleted == false(), EventSchema.periodicity != PeriodicityType.ALWAYS)
     ).cte("user_activity_events")
 
     query = (
