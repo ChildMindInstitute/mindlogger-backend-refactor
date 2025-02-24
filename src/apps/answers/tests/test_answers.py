@@ -25,6 +25,8 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
 from apps.applets.service import AppletService
 from apps.mailing.services import TestMail
+from apps.schedule.domain.schedule import PublicEvent
+from apps.schedule.service import ScheduleService
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.subjects.constants import Relation
@@ -673,6 +675,13 @@ async def applet_one_user_subject(session: AsyncSession, applet_one: AppletFull,
     )
 
 
+@pytest.fixture
+async def applet_default_events(session: AsyncSession, applet: AppletFull) -> list[PublicEvent]:
+    srv = ScheduleService(session)
+    events = await srv.get_all_schedules(applet_id=applet.id)
+    return events
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -811,6 +820,28 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == InvalidVersionError.message
+
+    async def test_create_answer__with_device_id_and_event_history_id(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_default_events
+    ):
+        client.login(tom)
+        data = answer_create.copy(deep=True)
+        data.event_history_id = applet_default_events[0].id
+        data.device_id = "test_device_id"
+        response = await client.post(self.answer_url, data=data)
+
+        assert response.status_code == http.HTTPStatus.CREATED
+
+    async def test_create_answer_with_wrong_event_history_id(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate
+    ):
+        client.login(tom)
+        data = answer_create.copy(deep=True)
+        data.event_history_id = uuid.uuid4()
+        response = await client.post(self.answer_url, data=data)
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert response.json()["result"][0]["message"] == "Event not found."
 
     async def test_create_activity_answers__submit_duplicate(
         self,

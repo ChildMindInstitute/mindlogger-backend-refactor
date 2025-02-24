@@ -53,6 +53,7 @@ from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
 from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.integrations.prolific.service.prolific import ProlificIntegrationService
+from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.deps import get_client_ip, get_i18n
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
@@ -85,6 +86,12 @@ async def create_answer(
             await AppletHistoryService(session, schema.applet_id, schema.version).get()
         except NotValidAppletHistory:
             raise InvalidVersionError()
+
+        if schema.event_history_id:
+            event = await ScheduleHistoryService(session).get_by_id(schema.event_history_id)
+            if not event:
+                raise NotFoundError("Event not found.")
+
         service = AnswerService(session, user.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
             schema.answer.tz_offset = tz_offset // 60  # value in minutes

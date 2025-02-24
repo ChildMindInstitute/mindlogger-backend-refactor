@@ -384,6 +384,8 @@ class AnswerService:
                 input_subject_id=input_subject.id,
                 relation=relation,
                 consent_to_share=applet_answer.consent_to_share,
+                event_history_id=applet_answer.event_history_id,
+                device_id=applet_answer.device_id,
             )
         )
         item_answer = applet_answer.answer

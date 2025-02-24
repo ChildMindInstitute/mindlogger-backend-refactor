@@ -42,6 +42,8 @@ class AnswerSchema(HistoryAware, Base):
     input_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     relation = Column(String(length=20), nullable=True)
     consent_to_share = Column(Boolean(), default=False)
+    event_history_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    device_id = Column(Text(), nullable=True, index=True)
 
     answer_item = relationship(
         "AnswerItemSchema",

@@ -115,6 +115,8 @@ class AppletAnswerCreate(InternalModel):
     input_subject_id: uuid.UUID | None = None
     consent_to_share: bool | None = False
     prolific_params: ProlificParamsActivityAnswer | None = None
+    event_history_id: uuid.UUID | None = None
+    device_id: str | None = None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
