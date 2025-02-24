@@ -47,6 +47,9 @@ def upgrade() -> None:
     # Drop the `periodicity_id` column from the `events` table
     op.drop_column("events", "periodicity_id")
 
+    # Drop the periodicity table
+    op.drop_table("periodicity")
+
 
 def downgrade() -> None:
     # Recreate the dropped tables
