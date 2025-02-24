@@ -3,7 +3,7 @@ from datetime import date
 
 from pydantic import Field, NonNegativeInt, root_validator
 
-from apps.schedule.domain.constants import AvailabilityType, EventType, PeriodicityType, TimerType
+from apps.schedule.domain.constants import AvailabilityType, PeriodicityType, TimerType
 from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BaseReminderSetting
 from apps.schedule.domain.schedule.public import (
     EventAvailabilityDto,
@@ -20,8 +20,14 @@ from apps.shared.domain import InternalModel
 __all__ = [
     "Event",
     "ScheduleEvent",
+    "UserEvent",
+    "ActivityEvent",
+    "FlowEvent",
     "EventCreate",
     "EventUpdate",
+    "UserEventCreate",
+    "ActivityEventCreate",
+    "FlowEventCreate",
     "EventFull",
     "NotificationSettingCreate",
     "NotificationSetting",
@@ -39,10 +45,6 @@ class EventCreate(BaseEvent, InternalModel):
         None,
         description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
     )
-    user_id: uuid.UUID | None = None
-    activity_id: uuid.UUID | None = None
-    activity_flow_id: uuid.UUID | None = None
-    event_type: EventType
 
     @root_validator
     def validate_periodicity(cls, values):
@@ -62,6 +64,39 @@ class EventUpdate(EventCreate):
 class Event(EventCreate, InternalModel):
     id: uuid.UUID
     version: str
+
+
+class UserEventCreate(InternalModel):
+    user_id: uuid.UUID
+    event_id: uuid.UUID
+
+
+class UserEvent(UserEventCreate, InternalModel):
+    """UserEvent of a schedule"""
+
+    id: uuid.UUID
+
+
+class ActivityEventCreate(InternalModel):
+    activity_id: uuid.UUID
+    event_id: uuid.UUID
+
+
+class ActivityEvent(ActivityEventCreate, InternalModel):
+    """ActivityEvent of a schedule"""
+
+    id: uuid.UUID
+
+
+class FlowEventCreate(InternalModel):
+    flow_id: uuid.UUID
+    event_id: uuid.UUID
+
+
+class FlowEvent(FlowEventCreate, InternalModel):
+    """FlowEvent of a schedule"""
+
+    id: uuid.UUID
 
 
 class NotificationSettingCreate(BaseNotificationSetting, InternalModel):
@@ -93,7 +128,6 @@ class EventFull(InternalModel, BaseEvent):
     activity_id: uuid.UUID | None = None
     flow_id: uuid.UUID | None = None
     version: str
-    event_type: EventType
 
 
 class ScheduleEvent(EventFull):
