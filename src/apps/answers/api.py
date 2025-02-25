@@ -90,7 +90,7 @@ async def create_answer(
         if schema.event_history_id:
             event = await ScheduleHistoryService(session).get_by_id(schema.event_history_id)
             if not event:
-                raise NotFoundError("Event not found.")
+                raise NotFoundError("Invalid event_history_id provided")
 
         service = AnswerService(session, user.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:

@@ -18,7 +18,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("answers", sa.Column("event_history_id", postgresql.UUID(as_uuid=True), nullable=True))
+    op.add_column("answers", sa.Column("event_history_id", sa.String(), nullable=True))
     op.add_column("answers", sa.Column("device_id", sa.Text(), nullable=True))
 
 

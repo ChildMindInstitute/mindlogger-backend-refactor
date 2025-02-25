@@ -826,7 +826,8 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         data = answer_create.copy(deep=True)
-        data.event_history_id = applet_default_events[0].id
+        event = applet_default_events[0]
+        data.event_history_id = f"{event.id}_{event.version}"
         data.device_id = "test_device_id"
         response = await client.post(self.answer_url, data=data)
 
@@ -837,11 +838,11 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         data = answer_create.copy(deep=True)
-        data.event_history_id = uuid.uuid4()
+        data.event_history_id = str(uuid.uuid4())
         response = await client.post(self.answer_url, data=data)
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
-        assert response.json()["result"][0]["message"] == "Event not found."
+        assert response.json()["result"][0]["message"] == "Invalid event_history_id provided"
 
     async def test_create_activity_answers__submit_duplicate(
         self,

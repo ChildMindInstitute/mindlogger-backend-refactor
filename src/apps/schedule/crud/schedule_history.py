@@ -17,8 +17,8 @@ from infrastructure.database import BaseCRUD
 class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
     schema_class = EventHistorySchema
 
-    async def get_by_id(self, id: uuid.UUID) -> EventHistorySchema | None:
-        return await self._get("id", id)
+    async def get_by_id(self, id_version: str) -> EventHistorySchema | None:
+        return await self._get("id_version", id)
 
     async def add(self, event: EventHistorySchema) -> EventHistorySchema:
         return await self._create(event)
