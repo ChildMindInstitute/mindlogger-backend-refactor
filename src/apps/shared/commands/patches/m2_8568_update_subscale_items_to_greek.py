@@ -39,7 +39,7 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
     new_question_value = {"el": "Ποιο φύλο σας αποδόθηκε κατά την γέννησή σας;"}
 
     translations = {
-        "Male": "Ανδρας",
+        "Male": "Άντρας",
         "Female": "Γυναίκα",
     }
 
