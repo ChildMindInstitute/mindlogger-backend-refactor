@@ -42,7 +42,6 @@ from apps.schedule.errors import (
 from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.query_params import QueryParams
 from apps.users.cruds.user import UsersCRUD
-from apps.users.cruds.user_device import UserDevicesCRUD
 from apps.users.errors import UserNotFound
 from apps.workspaces.domain.constants import Role
 
@@ -678,6 +677,9 @@ class ScheduleService:
         min_end_date: date | None = None,
         max_start_date: date | None = None,
         device_id: str | None = None,
+        os_name: str | None = None,
+        os_version: str | None = None,
+        app_version: str | None = None,
     ) -> list[PublicEventByUser]:
         """Get all events for user in applets that user is respondent."""
         user_events_map, user_event_ids = await EventCRUD(self.session).get_all_by_applets_and_user(
@@ -718,14 +720,15 @@ class ScheduleService:
             )
 
         if device_id:
-            device = await UserDevicesCRUD(self.session).get_by_device_id(device_id=device_id)
-            if device:
-                all_events = [event for value in full_events_map.values() for event in value]
-                await UserDeviceEventsHistoryCRUD(self.session).record_event_versions(
-                    user_id=user_id,
-                    device_id=device.id,
-                    event_versions=[(event.id, event.version) for event in all_events],
-                )
+            all_events = [event for value in full_events_map.values() for event in value]
+            await UserDeviceEventsHistoryCRUD(self.session).record_event_versions(
+                user_id=user_id,
+                device_id=device_id,
+                event_versions=[(event.id, event.version) for event in all_events],
+                os_name=os_name,
+                os_version=os_version,
+                app_version=app_version,
+            )
 
         return events
 

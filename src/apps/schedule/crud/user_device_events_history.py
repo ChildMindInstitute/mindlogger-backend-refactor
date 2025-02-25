@@ -14,15 +14,21 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
     async def record_event_versions(
         self,
         user_id: uuid.UUID,
-        device_id: uuid.UUID,
+        device_id: str,
         event_versions: list[tuple[uuid.UUID, str]],
+        os_name: str | None = None,
+        os_version: str | None = None,
+        app_version: str | None = None,
     ) -> list[UserDeviceEventsHistorySchema]:
         values = [
             dict(
                 user_id=user_id,
                 device_id=device_id,
                 event_id=event_id,
-                version=event_version,
+                event_version=event_version,
+                os_name=os_name,
+                os_version=os_version,
+                app_version=app_version,
             )
             for event_id, event_version in event_versions
         ]

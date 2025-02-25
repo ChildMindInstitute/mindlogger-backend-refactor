@@ -30,16 +30,19 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=True),
 
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("device_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("device_id", sa.String(length=255), nullable=False),
         sa.Column("event_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("version", sa.String(length=13), nullable=False),
+        sa.Column("event_version", sa.String(length=13), nullable=False),
+        sa.Column('os_name', sa.Text(), nullable=True),
+        sa.Column('os_version', sa.Text(), nullable=True),
+        sa.Column('app_version', sa.Text(), nullable=True),
 
         sa.ForeignKeyConstraint(
             ["user_id"], ["users.id"], name=op.f("fk_user_device_events_history_user_id_users"),
             ondelete="CASCADE"
         ),
 
-        sa.UniqueConstraint("device_id", "event_id", "version", name="_unique_user_device_events_history"),
+        sa.UniqueConstraint("device_id", "event_id", "event_version", name="_unique_user_device_events_history"),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_user_device_events_history")),
     )
 

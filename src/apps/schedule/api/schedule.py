@@ -269,6 +269,9 @@ async def schedule_get_all_by_respondent_user(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     device_id: Annotated[str | None, Header()] = None,
+    os_name: Annotated[str | None, Header()] = None,
+    os_version: Annotated[str | None, Header()] = None,
+    app_version: Annotated[str | None, Header()] = None,
 ) -> ResponseMulti[PublicEventByUser]:
     """Get all the respondent's schedules for the next 2 weeks."""
     max_date_from_event_delta_days = 15
@@ -298,6 +301,9 @@ async def schedule_get_all_by_respondent_user(
             min_end_date=min_end_date,
             max_start_date=max_start_date,
             device_id=device_id,
+            os_name=os_name,
+            os_version=os_version,
+            app_version=app_version,
         )
     return ResponseMulti(result=public_events_by_user, count=len(public_events_by_user))
 
