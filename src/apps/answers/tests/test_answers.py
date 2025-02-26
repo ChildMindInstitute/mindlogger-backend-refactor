@@ -35,7 +35,8 @@ from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.cruds.user import UsersCRUD
-from apps.users.domain import UserCreate
+from apps.users.domain import AppInfoOS, UserCreate, UserDeviceCreate
+from apps.users.router import router as user_router
 from apps.users.tests.fixtures.users import _get_or_create_user
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
@@ -682,6 +683,11 @@ async def applet_default_events(session: AsyncSession, applet: AppletFull) -> li
     return events
 
 
+@pytest.fixture
+def device_create_data() -> UserDeviceCreate:
+    return UserDeviceCreate(os=AppInfoOS(name="os1", version="1.0.0"), app_version="51.0.0", device_id="device_id")
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -822,14 +828,25 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["message"] == InvalidVersionError.message
 
     async def test_create_answer__with_device_id_and_event_history_id(
-        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_default_events
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_default_events,
+        device_create_data,
     ):
         client.login(tom)
+
+        response = await client.post(
+            user_router.url_path_for("user_save_device"), data=device_create_data.dict(include={"device_id"})
+        )
+        assert response.status_code == http.HTTPStatus.OK
+
         data = answer_create.copy(deep=True)
-        event = applet_default_events[0]
+        event = next((event for event in applet_default_events if event.activity_id == answer_create.activity_id), None)
+        assert event
         data.event_history_id = f"{event.id}_{event.version}"
-        data.device_id = "test_device_id"
-        response = await client.post(self.answer_url, data=data)
+        response = await client.post(self.answer_url, data=data, headers={"Device-Id": device_create_data.device_id})
 
         assert response.status_code == http.HTTPStatus.CREATED
 
@@ -843,6 +860,16 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
         assert response.json()["result"][0]["message"] == "Invalid event_history_id provided"
+
+    async def test_create_answer_with_wrong_device_id(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate
+    ):
+        client.login(tom)
+        data = answer_create.copy(deep=True)
+        response = await client.post(self.answer_url, data=data, headers={"Device-Id": "wrong_device_id"})
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert response.json()["result"][0]["message"] == "Invalid device_id provided"
 
     async def test_create_activity_answers__submit_duplicate(
         self,

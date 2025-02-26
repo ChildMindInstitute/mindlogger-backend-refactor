@@ -134,21 +134,25 @@ class AnswerService:
 
         return key_generator
 
-    async def create_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
+    async def create_answer(self, activity_answer: AppletAnswerCreate, device_id: str | None = None) -> AnswerSchema:
         # Check for prolific parameters in the answer helping to identify whether the respondent comes from prolific
         is_prolific_respondent = activity_answer.prolific_params is not None
         if self.user_id and not is_prolific_respondent:
-            return await self._create_respondent_answer(activity_answer)
+            return await self._create_respondent_answer(activity_answer, device_id)
         else:
-            return await self._create_anonymous_answer(activity_answer)
+            return await self._create_anonymous_answer(activity_answer, device_id)
 
-    async def _create_respondent_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
+    async def _create_respondent_answer(
+        self, activity_answer: AppletAnswerCreate, device_id: str | None
+    ) -> AnswerSchema:
         await self._validate_respondent_answer(activity_answer)
-        return await self._create_answer(activity_answer)
+        return await self._create_answer(activity_answer, device_id)
 
-    async def _create_anonymous_answer(self, activity_answer: AppletAnswerCreate) -> AnswerSchema:
+    async def _create_anonymous_answer(
+        self, activity_answer: AppletAnswerCreate, device_id: str | None
+    ) -> AnswerSchema:
         await self._validate_anonymous_answer(activity_answer)
-        return await self._create_answer(activity_answer)
+        return await self._create_answer(activity_answer, device_id)
 
     async def _validate_respondent_answer(self, activity_answer: AppletAnswerCreate) -> None:
         await self._validate_answer(activity_answer)
@@ -307,7 +311,7 @@ class AnswerService:
 
         return relation.relation
 
-    async def _create_answer(self, applet_answer: AppletAnswerCreate) -> AnswerSchema:
+    async def _create_answer(self, applet_answer: AppletAnswerCreate, device_id: str | None) -> AnswerSchema:
         assert self.user_id
         pk = self._generate_history_id(applet_answer.version)
         created_at = applet_answer.created_at or datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
@@ -385,7 +389,7 @@ class AnswerService:
                 relation=relation,
                 consent_to_share=applet_answer.consent_to_share,
                 event_history_id=applet_answer.event_history_id,
-                device_id=applet_answer.device_id,
+                device_id=device_id,
             )
         )
         item_answer = applet_answer.answer

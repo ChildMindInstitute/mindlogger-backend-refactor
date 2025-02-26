@@ -18,7 +18,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
     schema_class = EventHistorySchema
 
     async def get_by_id(self, id_version: str) -> EventHistorySchema | None:
-        return await self._get("id_version", id)
+        return await self._get("id_version", id_version)
 
     async def add(self, event: EventHistorySchema) -> EventHistorySchema:
         return await self._create(event)

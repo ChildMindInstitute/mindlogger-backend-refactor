@@ -2,8 +2,9 @@ import asyncio
 import base64
 import datetime
 import uuid
+from typing import Annotated
 
-from fastapi import Body, Depends, Query
+from fastapi import Body, Depends, Header, Query
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
@@ -63,6 +64,7 @@ from apps.subjects.services import SubjectsService
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.prolific_user import ProlificUserService
+from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.workspace import WorkspaceService
@@ -79,6 +81,7 @@ async def create_answer(
     tz_offset: int | None = Depends(get_tz_utc_offset()),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
+    device_id: Annotated[str | None, Header()] = None,
 ) -> None:
     async with atomic(session):
         await CheckAccessService(session, user.id).check_answer_create_access(schema.applet_id)
@@ -87,16 +90,26 @@ async def create_answer(
         except NotValidAppletHistory:
             raise InvalidVersionError()
 
+        if device_id:
+            device = await UserDeviceService(session, user.id).get_by_device_id(device_id)
+            if device is None or device.user_id != user.id:
+                raise NotFoundError("Invalid device_id provided")
+
         if schema.event_history_id:
             event = await ScheduleHistoryService(session).get_by_id(schema.event_history_id)
-            if not event:
+            if (
+                event is None
+                or event.activity_flow_id != schema.flow_id
+                or event.activity_id != schema.activity_id
+                or (event.user_id is not None and event.user_id != user.id)
+            ):
                 raise NotFoundError("Invalid event_history_id provided")
 
         service = AnswerService(session, user.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
             schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
-            answer = await service.create_answer(schema)
+            answer = await service.create_answer(schema, device_id)
         await service.create_report_from_answer(answer)
 
 
