@@ -43,7 +43,7 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
         .join(ActivityItemSchema, ActivityHistorySchema.id == ActivityItemSchema.activity_id)
         .join(ActivitySchema, ActivityItemSchema.activity_id == ActivitySchema.id)
         .where(ActivityItemSchema.name == "age_screen", ActivitySchema.applet_id == applet_id)
-        .order_by(desc(ActivityHistorySchema.id_version))
+        .order_by(desc(ActivityHistorySchema.updated_at))
         .limit(1)
     )
 
@@ -136,7 +136,7 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
         subquery = (
             select(ActivityHistorySchema.id_version)
             .where(ActivityHistorySchema.id == item.activity_id)
-            .order_by(desc(ActivityHistorySchema.id_version))
+            .order_by(desc(ActivityHistorySchema.updated_at))
             .limit(1)
         )
 
