@@ -50,6 +50,8 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
     current_version_activity_id = await session.execute(subquery)
     current_version_activity_id = current_version_activity_id.scalar()
 
+    print("Current activity version id: ", current_version_activity_id)
+
     # Update the ActivityItemHistorySchema table
     update_history_query = (
         update(ActivityItemHistorySchema)
@@ -142,6 +144,8 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
 
         current_version_activity_id = await session.execute(subquery)
         current_version_activity_id = current_version_activity_id.scalar()
+
+        print("Current activity version id: ", current_version_activity_id)
 
         # Update the ActivityItemHistorySchema table
         update_history_response_values = func.jsonb_set(
