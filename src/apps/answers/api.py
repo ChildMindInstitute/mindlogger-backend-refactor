@@ -54,6 +54,7 @@ from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
 from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.integrations.prolific.service.prolific import ProlificIntegrationService
+from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.deps import get_client_ip, get_i18n
 from apps.shared.domain import Response, ResponseMulti
@@ -64,7 +65,6 @@ from apps.subjects.services import SubjectsService
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.prolific_user import ProlificUserService
-from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.workspace import WorkspaceService
@@ -90,11 +90,6 @@ async def create_answer(
         except NotValidAppletHistory:
             raise InvalidVersionError()
 
-        if device_id:
-            device = await UserDeviceService(session, user.id).get_by_device_id(device_id)
-            if device is None or device.user_id != user.id:
-                raise NotFoundError("Invalid device_id provided")
-
         if schema.event_history_id:
             event = await ScheduleHistoryService(session).get_by_id(schema.event_history_id)
             if (
@@ -105,11 +100,21 @@ async def create_answer(
             ):
                 raise NotFoundError("Invalid event_history_id provided")
 
+        device = None
+        if device_id and schema.event_history_id:
+            event_id = uuid.UUID(schema.event_history_id.split("_")[0])
+            event_version = schema.event_history_id.split("_")[1]
+            device = await UserDeviceEventsHistoryCRUD(session).get_device(
+                device_id=device_id, user_id=user.id, event_id=event_id, event_version=event_version
+            )
+            if device is None:
+                raise NotFoundError("Invalid device_id provided")
+
         service = AnswerService(session, user.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
             schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
-            answer = await service.create_answer(schema, device_id)
+            answer = await service.create_answer(schema, device.device_id if device else None)
         await service.create_report_from_answer(answer)
 
 

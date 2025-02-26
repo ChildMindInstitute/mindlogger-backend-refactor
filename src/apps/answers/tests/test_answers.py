@@ -36,7 +36,6 @@ from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import AppInfoOS, UserCreate, UserDeviceCreate
-from apps.users.router import router as user_router
 from apps.users.tests.fixtures.users import _get_or_create_user
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
@@ -837,9 +836,16 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
 
-        response = await client.post(
-            user_router.url_path_for("user_save_device"), data=device_create_data.dict(include={"device_id"})
+        response = await client.get(
+            url="/users/me/respondent/current_events",
+            headers={
+                "Device-Id": device_create_data.device_id,
+                "OS-Name": device_create_data.os.name,
+                "OS-Version": device_create_data.os.version,
+                "App-Version": device_create_data.app_version,
+            },
         )
+
         assert response.status_code == http.HTTPStatus.OK
 
         data = answer_create.copy(deep=True)
@@ -862,10 +868,13 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["result"][0]["message"] == "Invalid event_history_id provided"
 
     async def test_create_answer_with_wrong_device_id(
-        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_default_events
     ):
         client.login(tom)
         data = answer_create.copy(deep=True)
+        event = next((event for event in applet_default_events if event.activity_id == answer_create.activity_id), None)
+        assert event
+        data.event_history_id = f"{event.id}_{event.version}"
         response = await client.post(self.answer_url, data=data, headers={"Device-Id": "wrong_device_id"})
 
         assert response.status_code == http.HTTPStatus.NOT_FOUND
