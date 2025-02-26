@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint, text
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Text, Time, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 
 from infrastructure.database.base import Base
@@ -101,3 +101,27 @@ class ReminderHistorySchema(_BaseReminderSchema, HistoryAware, Base):
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
     event_id = Column(ForeignKey("event_histories.id_version", ondelete="RESTRICT"), nullable=False)
+
+
+class UserDeviceEventsHistorySchema(Base):
+    __tablename__ = "user_device_events_history"
+
+    unique_constraint = "_unique_user_device_events_history"
+
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    device_id = Column(String(255), nullable=False)
+    os_name = Column(Text, nullable=True)
+    os_version = Column(Text, nullable=True)
+    app_version = Column(Text, nullable=True)
+    event_id = Column(UUID(as_uuid=True), nullable=False)
+    event_version = Column(String(13), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "device_id",
+            "event_id",
+            "event_version",
+            name=unique_constraint,
+        ),
+    )
