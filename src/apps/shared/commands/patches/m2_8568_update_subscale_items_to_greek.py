@@ -1,12 +1,17 @@
 import uuid
 from uuid import UUID
 
-from sqlalchemy import cast, func, select, update, desc
+from sqlalchemy import cast, desc, func, select, update
 from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.activities.db.schemas import ActivityItemSchema, ActivitySchema, ActivityHistorySchema, ActivityItemHistorySchema
+from apps.activities.db.schemas import (
+    ActivityHistorySchema,
+    ActivityItemHistorySchema,
+    ActivityItemSchema,
+    ActivitySchema,
+)
 
 
 async def update_age_screen(session: AsyncSession, applet_id: UUID):
@@ -37,10 +42,7 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
         select(ActivityHistorySchema.id_version)
         .join(ActivityItemSchema, ActivityHistorySchema.id == ActivityItemSchema.activity_id)
         .join(ActivitySchema, ActivityItemSchema.activity_id == ActivitySchema.id)
-        .where(
-            ActivityItemSchema.name == "age_screen",
-            ActivitySchema.applet_id == applet_id
-        )
+        .where(ActivityItemSchema.name == "age_screen", ActivitySchema.applet_id == applet_id)
         .order_by(desc(ActivityHistorySchema.id_version))
         .limit(1)
     )
