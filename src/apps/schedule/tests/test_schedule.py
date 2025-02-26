@@ -207,7 +207,7 @@ class TestSchedule:
     schedule_user_url = "users/me/events"
     schedule_detail_user_url = f"{schedule_user_url}/{{applet_id}}"
 
-    erspondent_schedules_user_two_weeks_url = "/users/me/respondent/current_events"
+    respondent_schedules_user_two_weeks_url = "/users/me/respondent/current_events"
 
     schedule_url = f"{applet_detail_url}/events"
     schedule_import_url = f"{applet_detail_url}/events/import"
@@ -549,7 +549,7 @@ class TestSchedule:
     async def test_respondent_schedules_get_user_two_weeks(self, client: TestClient, applet: AppletFull, user: User):
         client.login(user)
 
-        response = await client.get(self.erspondent_schedules_user_two_weeks_url)
+        response = await client.get(self.respondent_schedules_user_two_weeks_url)
 
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["count"] == 1
