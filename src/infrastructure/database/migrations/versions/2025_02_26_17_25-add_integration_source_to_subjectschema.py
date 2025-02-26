@@ -1,7 +1,7 @@
 """Add integration_source to SubjectSchema
 
 Revision ID: 11b5cd083450
-Revises: 3059a8ad6ec5
+Revises: 70987d489b17
 Create Date: 2025-02-20 17:17:52.052078
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "11b5cd083450"
-down_revision = "3059a8ad6ec5"
+down_revision = "70987d489b17"
 branch_labels = None
 depends_on = None
 

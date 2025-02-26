@@ -29,7 +29,7 @@ class ProlificUserService:
 
         return ProlificPublicUser(exists=prolific_respondent is not None)
 
-    async def create_prolific_respondant(self, applet_id: uuid.UUID):
+    async def create_prolific_respondent(self, applet_id: uuid.UUID):
         prolific_respondent = await self.create_prolific_user()
         await self.create_subject(prolific_respondent, applet_id)
 

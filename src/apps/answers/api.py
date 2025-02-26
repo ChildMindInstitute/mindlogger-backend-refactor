@@ -114,7 +114,7 @@ async def create_anonymous_answer(
                         study_id=schema.prolific_params.study_id, prolific_pid=schema.prolific_params.prolific_pid
                     ),
                 )
-                respondent = await prolific_service.create_prolific_respondant(schema.applet_id)
+                respondent = await prolific_service.create_prolific_respondent(schema.applet_id)
         else:
             respondent = await UsersCRUD(session).get_anonymous_respondent()
         assert respondent

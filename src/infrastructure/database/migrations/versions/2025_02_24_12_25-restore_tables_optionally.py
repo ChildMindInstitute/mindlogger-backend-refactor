@@ -1,7 +1,7 @@
 """Restore tables optionally
 
 Revision ID: 70987d489b17
-Revises: 11b5cd083450
+Revises: 3059a8ad6ec5
 Create Date: 2025-02-24 12:25:54.170519
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "70987d489b17"
-down_revision = "11b5cd083450"
+down_revision = "3059a8ad6ec5"
 branch_labels = None
 depends_on = None
 
