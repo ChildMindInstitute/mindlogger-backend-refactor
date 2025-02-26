@@ -5,12 +5,18 @@ import uuid
 
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import Query
+from sqlalchemy.sql.expression import select
 
 from apps.schedule.db.schemas import UserDeviceEventsHistorySchema
 from infrastructure.database import BaseCRUD
 
 
 class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
+    def __init__(self, session):
+        super().__init__(session)
+        self.schema_class = UserDeviceEventsHistorySchema
+
     async def record_event_versions(
         self,
         user_id: uuid.UUID,
@@ -48,3 +54,12 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
         model = [UserDeviceEventsHistorySchema(**row) for row in rows]
 
         return model
+
+    async def get_all_by_device_id(self, device_id: str) -> list[UserDeviceEventsHistorySchema]:
+        query: Query = select(UserDeviceEventsHistorySchema)
+        query = query.where(UserDeviceEventsHistorySchema.device_id == device_id)
+        result = await self._execute(query)
+        return result.scalars().all()
+
+    async def get_all(self) -> list[UserDeviceEventsHistorySchema]:
+        return await self._all()

@@ -16,9 +16,13 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.errors import AppletNotFoundError
 from apps.applets.service.applet import AppletService
+from apps.schedule.crud.events import EventCRUD
+from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.domain import constants
+from apps.schedule.domain.constants import EventType
 from apps.schedule.domain.schedule import (
     EventRequest,
+    EventUpdate,
     EventUpdateRequest,
     Notification,
     NotificationSettingRequest,
@@ -35,6 +39,7 @@ from apps.schedule.errors import (
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
+from apps.shared.util import assert_not_none
 from apps.users.domain import User, UserDeviceCreate
 from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
@@ -85,10 +90,24 @@ async def applet(session: AsyncSession, user: User, applet_data: AppletCreate) -
 
 
 @pytest.fixture
+async def minimal_applet(session: AsyncSession, user: User, applet_minimal_data: AppletCreate) -> AppletFull:
+    srv = AppletService(session, user.id)
+    applet = await srv.create(applet_minimal_data)
+    return applet
+
+
+@pytest.fixture
 async def applet_default_events(session: AsyncSession, applet: AppletFull) -> list[PublicEvent]:
     srv = ScheduleService(session)
     events = await srv.get_all_schedules(applet_id=applet.id)
     return events
+
+
+@pytest.fixture
+async def minimal_applet_default_event(session: AsyncSession, minimal_applet: AppletFull) -> PublicEvent:
+    srv = ScheduleService(session)
+    events = await srv.get_all_schedules(applet_id=minimal_applet.id)
+    return events[0]
 
 
 @pytest.fixture
@@ -565,6 +584,238 @@ class TestSchedule:
             "notificationSettings",
             "version",
         }
+
+    async def test_schedule_get_all_by_respondent_user__store_device_properties(
+        self,
+        client: TestClient,
+        minimal_applet: AppletFull,
+        user: User,
+        session: AsyncSession,
+        minimal_applet_default_event: PublicEvent,
+    ):
+        client.login(user)
+
+        device_id = "elyVxFQMQVa9FoT5vv0nWJ:APA91bHmm-kHlHY_6M0gHD4AheTDcRpR9rvet5dr9dYTcs8RLJEHXBTzN7S7265jXL"
+        "OKdE8zo5VmU9ALOuoHO1Tg-3OvWhw1CURSO6jB01TT9RYsDSLi7CQ"
+
+        response = await client.get(
+            url=self.respondent_schedules_user_two_weeks_url,
+            headers={
+                "Device-Id": device_id,
+                "OS-Name": "android",
+                "OS-Version": "13",
+                "App-Version": "2025.01.1",
+            },
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+
+        device_records = await UserDeviceEventsHistoryCRUD(session).get_all_by_device_id(device_id=device_id)
+
+        device_records_for_event = [
+            record for record in device_records if record.event_id == minimal_applet_default_event.id
+        ]
+
+        assert len(device_records_for_event) == 1
+        device_record = device_records_for_event[0]
+        assert device_record.device_id == device_id
+        assert device_record.os_name == "android"
+        assert device_record.os_version == "13"
+        assert device_record.app_version == "2025.01.1"
+        assert device_record.event_id == minimal_applet_default_event.id
+        assert device_record.event_version == minimal_applet_default_event.version
+
+    async def test_schedule_get_all_by_respondent_user__store_device_properties_device_id_only(
+        self,
+        client: TestClient,
+        minimal_applet: AppletFull,
+        user: User,
+        session: AsyncSession,
+        minimal_applet_default_event: PublicEvent,
+    ):
+        client.login(user)
+
+        device_id = "elyVxFQMQVa9FoT5vv0nWJ:APA91bHmm-kHlHY_6M0gHD4AheTDcRpR9rvet5dr9dYTcs8RLJEHXBTzN7S7265jXL"
+        "OKdE8zo5VmU9ALOuoHO1Tg-3OvWhw1CURSO6jB01TT9RYsDSLi7CQ"
+
+        response = await client.get(
+            url=self.respondent_schedules_user_two_weeks_url,
+            headers={"Device-Id": device_id},
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+
+        device_records = await UserDeviceEventsHistoryCRUD(session).get_all_by_device_id(device_id=device_id)
+
+        device_records_for_event = [
+            record for record in device_records if record.event_id == minimal_applet_default_event.id
+        ]
+
+        assert len(device_records_for_event) == 1
+        device_record = device_records_for_event[0]
+        assert device_record.device_id == device_id
+        assert device_record.event_id == minimal_applet_default_event.id
+        assert device_record.event_version == minimal_applet_default_event.version
+        assert device_record.os_name is None
+        assert device_record.os_version is None
+        assert device_record.app_version is None
+
+    async def test_schedule_get_all_by_respondent_user__store_device_properties_no_device_id(
+        self,
+        client: TestClient,
+        minimal_applet: AppletFull,
+        user: User,
+        session: AsyncSession,
+        minimal_applet_default_event: PublicEvent,
+    ):
+        client.login(user)
+
+        response = await client.get(url=self.respondent_schedules_user_two_weeks_url)
+
+        assert response.status_code == http.HTTPStatus.OK
+
+        device_records = await UserDeviceEventsHistoryCRUD(session).get_all()
+
+        assert len(device_records) == 0
+
+    async def test_schedule_get_all_by_respondent_user__store_device_properties_existing_record(
+        self,
+        client: TestClient,
+        minimal_applet: AppletFull,
+        user: User,
+        session: AsyncSession,
+        minimal_applet_default_event: PublicEvent,
+    ):
+        client.login(user)
+
+        crud = UserDeviceEventsHistoryCRUD(session)
+
+        device_id = "elyVxFQMQVa9FoT5vv0nWJ:APA91bHmm-kHlHY_6M0gHD4AheTDcRpR9rvet5dr9dYTcs8RLJEHXBTzN7S7265jXL"
+        "OKdE8zo5VmU9ALOuoHO1Tg-3OvWhw1CURSO6jB01TT9RYsDSLi7CQ"
+
+        existing_records = await crud.record_event_versions(
+            user_id=user.id,
+            device_id=device_id,
+            event_versions=[(minimal_applet_default_event.id, assert_not_none(minimal_applet_default_event.version))],
+            os_name="android",
+            os_version="13",
+            app_version="2025.01.1",
+        )
+
+        assert len(existing_records) == 1
+
+        existing_record = existing_records[0]
+
+        response = await client.get(
+            url=self.respondent_schedules_user_two_weeks_url,
+            # OS version and app version have changed
+            headers={
+                "Device-Id": device_id,
+                "OS-Name": "android",
+                "OS-Version": "14",
+                "App-Version": "2025.02.1",
+            },
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+
+        device_records = await UserDeviceEventsHistoryCRUD(session).get_all_by_device_id(device_id=device_id)
+
+        device_records_for_event = [
+            record for record in device_records if record.event_id == minimal_applet_default_event.id
+        ]
+
+        assert len(device_records_for_event) == 1
+        device_record = device_records_for_event[0]
+        assert device_record.device_id == device_id
+        assert device_record.os_name == existing_record.os_name
+        assert device_record.os_version == existing_record.os_version  # Has *not* been updated
+        assert device_record.app_version == existing_record.app_version  # Has *not* been updated
+        assert device_record.event_id == minimal_applet_default_event.id
+        assert device_record.event_version == minimal_applet_default_event.version
+        assert device_record.updated_at != existing_record.updated_at  # Has been updated
+
+    async def test_schedule_get_all_by_respondent_user__store_device_properties_new_event_version(
+        self,
+        client: TestClient,
+        minimal_applet: AppletFull,
+        user: User,
+        session: AsyncSession,
+        minimal_applet_default_event: PublicEvent,
+    ):
+        client.login(user)
+
+        crud = UserDeviceEventsHistoryCRUD(session)
+
+        device_id = "elyVxFQMQVa9FoT5vv0nWJ:APA91bHmm-kHlHY_6M0gHD4AheTDcRpR9rvet5dr9dYTcs8RLJEHXBTzN7S7265jXL"
+        "OKdE8zo5VmU9ALOuoHO1Tg-3OvWhw1CURSO6jB01TT9RYsDSLi7CQ"
+
+        existing_records = await crud.record_event_versions(
+            user_id=user.id,
+            device_id=device_id,
+            event_versions=[(minimal_applet_default_event.id, assert_not_none(minimal_applet_default_event.version))],
+            os_name="android",
+            os_version="13",
+            app_version="2025.01.1",
+        )
+
+        assert len(existing_records) == 1
+
+        existing_record = existing_records[0]
+
+        # Update the event version
+        updated_event = await EventCRUD(session).update(
+            pk=minimal_applet_default_event.id,
+            schema=EventUpdate(
+                start_time=minimal_applet_default_event.start_time,
+                end_time=minimal_applet_default_event.end_time,
+                access_before_schedule=minimal_applet_default_event.access_before_schedule,
+                one_time_completion=True,
+                timer=minimal_applet_default_event.timer,
+                timer_type=minimal_applet_default_event.timer_type,
+                applet_id=minimal_applet.id,
+                periodicity=minimal_applet_default_event.periodicity.type,
+                start_date=minimal_applet_default_event.periodicity.start_date,
+                end_date=minimal_applet_default_event.periodicity.end_date,
+                selected_date=minimal_applet_default_event.periodicity.selected_date,
+                event_type=EventType.ACTIVITY if minimal_applet_default_event.activity_id else EventType.FLOW,
+                activity_id=minimal_applet_default_event.activity_id,
+                activity_flow_id=minimal_applet_default_event.flow_id,
+                user_id=None,
+            ),
+        )
+
+        response = await client.get(
+            url=self.respondent_schedules_user_two_weeks_url,
+            # OS version and app version have changed
+            headers={
+                "Device-Id": device_id,
+                "OS-Name": "android",
+                "OS-Version": "14",
+                "App-Version": "2025.02.1",
+            },
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+
+        device_records = await UserDeviceEventsHistoryCRUD(session).get_all_by_device_id(device_id=device_id)
+
+        device_records_for_event = [
+            record for record in device_records if record.event_id == minimal_applet_default_event.id
+        ]
+
+        assert len(device_records_for_event) == 2
+
+        device_record_1 = device_records_for_event[0]
+        assert dict(device_record_1) == dict(existing_record)
+
+        device_record_2 = device_records_for_event[1]
+        assert device_record_2.device_id == device_id
+        assert device_record_2.os_name == "android"
+        assert device_record_2.os_version == "14"
+        assert device_record_2.app_version == "2025.02.1"
+        assert device_record_2.event_id == minimal_applet_default_event.id
+        assert device_record_2.event_version == updated_event.version
 
     async def test_schedule_get_user_by_applet(self, client: TestClient, applet: AppletFull, user: User):
         client.login(user)
