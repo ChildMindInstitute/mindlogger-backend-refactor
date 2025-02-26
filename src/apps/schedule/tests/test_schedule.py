@@ -719,7 +719,7 @@ class TestSchedule:
 
         assert response.status_code == http.HTTPStatus.OK
 
-        device_records = await UserDeviceEventsHistoryCRUD(session).get_all_by_device_id(device_id=device_id)
+        device_records = await crud.get_all_by_device_id(device_id=device_id)
 
         device_records_for_event = [
             record for record in device_records if record.event_id == minimal_applet_default_event.id
@@ -798,7 +798,7 @@ class TestSchedule:
 
         assert response.status_code == http.HTTPStatus.OK
 
-        device_records = await UserDeviceEventsHistoryCRUD(session).get_all_by_device_id(device_id=device_id)
+        device_records = await crud.get_all_by_device_id(device_id=device_id)
 
         device_records_for_event = [
             record for record in device_records if record.event_id == minimal_applet_default_event.id
