@@ -55,7 +55,6 @@ class IntegrationService:
                 await ProlificIntegrationService(
                     newIntegration.applet_id,
                     self.session,
-                    self.user,
                 ).create_prolific_integration(api_key=newIntegration.configuration["api_key"])
                 return Integration(
                     integration_type=AvailableIntegrations.PROLIFIC,

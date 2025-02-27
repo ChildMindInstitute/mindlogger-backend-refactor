@@ -6,11 +6,14 @@ from pydantic import EmailStr
 from sqlalchemy import true
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.integrations.prolific.domain import ProlificUserInfo
+from apps.integrations.prolific.errors import ProlificInvalidStudyError
 from apps.shared.hashing import hash_sha224
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User, UserCreate
 from apps.users.errors import UserNotFound
+from apps.users.services.prolific_user import ProlificUserService
 from apps.users.services.user import UserService
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from config import settings
@@ -90,6 +93,66 @@ async def test_create_anonymous_respondent__created_only_once(
     crud = UsersCRUD(session)
     count = await crud.count(is_anonymous_respondent=True)
     assert count == 1
+
+
+async def test_create_prolific_respondent(session: AsyncSession):
+    crud = UsersCRUD(session)
+
+    srv = ProlificUserService(
+        session,
+        ProlificUserInfo(prolific_pid="prolific_respondent_id", study_id="prolific_study_id"),
+    )
+    prolific_respondent = await srv.create_prolific_user()
+    assert (
+        prolific_respondent.email_encrypted
+        == f"{srv.prolific_pid}-{srv.prolific_study_id}@{settings.prolific_respondent.domain}"
+    )
+    assert prolific_respondent.first_name == settings.prolific_respondent.first_name
+    assert prolific_respondent.last_name == settings.prolific_respondent.last_name
+
+    await crud.delete(prolific_respondent.id)
+    await session.commit()
+
+
+async def test_create_prolific_respondent__created_only_once(session: AsyncSession):
+    srv1 = ProlificUserService(
+        session,
+        ProlificUserInfo(prolific_pid="prolific_respondent_id", study_id="prolific_study_id"),
+    )
+    srv2 = ProlificUserService(
+        session,
+        ProlificUserInfo(prolific_pid="prolific_respondent_id", study_id="prolific_study_id"),
+    )
+
+    prolific_respondent = await srv1.create_prolific_user()
+    with pytest.raises(ProlificInvalidStudyError):
+        await srv2.create_prolific_user()
+    crud = UsersCRUD(session)
+    assert await crud.get_by_id(prolific_respondent.id)
+
+    await crud.delete(prolific_respondent.id)
+    await session.commit()
+
+
+async def test_create_two_different_sessions_prolific_respondent(session: AsyncSession):
+    srv1 = ProlificUserService(
+        session,
+        ProlificUserInfo(prolific_pid="prolific_respondent_id-1", study_id="prolific_study_id"),
+    )
+    srv2 = ProlificUserService(
+        session,
+        ProlificUserInfo(prolific_pid="prolific_respondent_id-2", study_id="prolific_study_id"),
+    )
+
+    prolific_respondent1 = await srv1.create_prolific_user()
+    prolific_respondent2 = await srv2.create_prolific_user()
+    crud = UsersCRUD(session)
+    assert await crud.get_by_id(prolific_respondent1.id)
+    assert await crud.get_by_id(prolific_respondent2.id)
+
+    await crud.delete(prolific_respondent1.id)
+    await crud.delete(prolific_respondent2.id)
+    await session.commit()
 
 
 async def test_create_user(session: AsyncSession):
