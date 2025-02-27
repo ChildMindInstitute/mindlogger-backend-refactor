@@ -37,39 +37,48 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
 
     await session.execute(update_query, execution_options=immutabledict({"synchronize_session": "fetch"}))
 
-    # Determine the current version of the activity_id
-    subquery = (
-        select(ActivityHistorySchema.id_version)
-        .join(ActivityItemSchema, ActivityHistorySchema.id == ActivityItemSchema.activity_id)
-        .join(ActivitySchema, ActivityItemSchema.activity_id == ActivitySchema.id)
-        .where(ActivityItemSchema.name == "age_screen", ActivitySchema.applet_id == applet_id)
-        .order_by(desc(ActivityHistorySchema.updated_at))
-        .limit(1)
+    query = select(ActivityItemSchema.activity_id).where(
+        ActivityItemSchema.name == "age_screen",
+        ActivityItemSchema.activity_id.in_(select(ActivitySchema.id).where(ActivitySchema.applet_id == applet_id)),
     )
 
-    current_version_activity_id = await session.execute(subquery)
-    current_version_activity_id = current_version_activity_id.scalar()
+    res = await session.execute(query)
 
-    print("Current activity version id: ", current_version_activity_id)
+    for item in res.mappings().all():
+        print(f"Updating activity id: {item.activity_id}")
 
-    # Update the ActivityItemHistorySchema table
-    update_history_query = (
-        update(ActivityItemHistorySchema)
-        .where(
-            ActivityItemHistorySchema.name == "age_screen",
-            ActivityItemHistorySchema.activity_id == current_version_activity_id,
+        # Determine the current version of the activity_id
+        subquery = (
+            select(ActivityHistorySchema.id_version)
+            .where(ActivityHistorySchema.id == item.activity_id)
+            .order_by(desc(ActivityHistorySchema.updated_at))
+            .limit(1)
         )
-        .values(
-            question=func.jsonb_set(
-                ActivityItemHistorySchema.question,
-                ["en"],
-                cast(new_question_value["el"], JSONB),
-                True,
+
+        current_version_activity_id = await session.execute(subquery)
+        current_version_activity_id = current_version_activity_id.scalar()
+
+        print("Current activity version id: ", current_version_activity_id)
+
+        # Update the ActivityItemHistorySchema table
+        update_history_query = (
+            update(ActivityItemHistorySchema)
+            .where(
+                ActivityItemHistorySchema.name == "age_screen",
+                ActivityItemHistorySchema.activity_id == current_version_activity_id,
+            )
+            .values(
+                question=func.jsonb_set(
+                    ActivityItemHistorySchema.question,
+                    ["en"],
+                    cast(new_question_value["el"], JSONB),
+                    True,
+                )
             )
         )
-    )
 
-    await session.execute(update_history_query, execution_options=immutabledict({"synchronize_session": "fetch"}))
+        await session.execute(update_history_query, execution_options=immutabledict({"synchronize_session": "fetch"}))
+
     print(f"Updated age screen for applet_id: {applet_id}")
 
 
