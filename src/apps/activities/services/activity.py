@@ -23,9 +23,11 @@ from apps.activities.services.activity_item import ActivityItemService
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.activity_flows.crud import FlowsCRUD
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
-from apps.schedule.crud.events import ActivityEventsCRUD, EventCRUD
+from apps.schedule.crud.events import EventCRUD
+from apps.schedule.domain.constants import EventType
 from apps.schedule.service.schedule import ScheduleService
 from apps.workspaces.domain.constants import Role
+from infrastructure.logger import logger
 
 
 class ActivityService:
@@ -114,9 +116,9 @@ class ActivityService:
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
         prepared_activity_items = list()
 
-        all_activities = await ActivityEventsCRUD(self.session).get_by_applet_id(applet_id)
+        activity_events = await EventCRUD(self.session).get_by_type_and_applet_id(applet_id, EventType.ACTIVITY)
 
-        all_activity_ids = [activity.activity_id for activity in all_activities]
+        all_activity_ids = [activity.activity_id for activity in activity_events if activity.activity_id is not None]
 
         # Save new activity ids
         new_activities = []
@@ -157,6 +159,16 @@ class ActivityService:
             )
 
             for item in activity_data.items:
+                if item.name in ["age_screen", "gender_screen"] and item.id is None:
+                    # Implement logging for the age_screen and gender_screen items to trigger alerts
+                    # in Datadog for the Greek version of the applet after translations were rolled back.
+                    # TODO: Remove when full Greek support is available in Admin Panel [M2-8678](https://mindlogger.atlassian.net/browse/M2-8678)
+                    logger.info(  # type: ignore
+                        f"Creating {item.name} item for activity {activity_id} in applet_id {applet_id}",
+                        applet_id=str(applet_id),
+                        operation=f"update_{item.name}",
+                    )
+
                 prepared_activity_items.append(
                     PreparedActivityItemUpdate(
                         id=item.id or uuid.uuid4(),

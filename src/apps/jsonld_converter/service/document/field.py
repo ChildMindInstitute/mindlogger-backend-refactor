@@ -342,6 +342,7 @@ class ReproFieldRadio(ReproFieldBase):
     ld_randomize_options: bool | None = None
     ld_scoring: bool | None = None
     ld_response_alert: bool | None = None
+    ld_is_response_identifier: bool | None = None
 
     is_multiple: bool = False
     choices: list[dict] | None = None
@@ -357,7 +358,9 @@ class ReproFieldRadio(ReproFieldBase):
         self.ld_randomize_options = self.attr_processor.get_attr_value(options_doc, "reproschema:randomizeOptions")
         self.ld_scoring = self.attr_processor.get_attr_value(options_doc, "reproschema:scoring")
         self.ld_response_alert = self.attr_processor.get_attr_value(options_doc, "reproschema:responseAlert")
-
+        self.ld_is_response_identifier = self.attr_processor.get_attr_value(
+            options_doc, "reproschema:isResponseIdentifier"
+        )
         self.choices = self._get_ld_choices_formatted(options_doc)
 
     def _build_config(self, _cls: Type | None, **attrs):
@@ -367,6 +370,7 @@ class ReproFieldRadio(ReproFieldBase):
             set_alerts=bool(self.ld_response_alert),
             add_tooltip=False,  # TODO
             set_palette=bool(self.ld_color_palette),  # TODO
+            response_data_identifier=bool(self.ld_is_response_identifier) if not self.is_multiple else None,
         )
         cfg_cls = MultiSelectionConfig if self.is_multiple else SingleSelectionConfig
 
