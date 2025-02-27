@@ -24,6 +24,9 @@ class ScheduleHistoryService:
     def __init__(self, session):
         self.session = session
 
+    async def get_by_id(self, id_version: str) -> EventHistorySchema | None:
+        return await ScheduleHistoryCRUD(self.session).get_by_id(id_version)
+
     async def add_history(self, applet_id: uuid.UUID, event: ScheduleEvent):
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
 

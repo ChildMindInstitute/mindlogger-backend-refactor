@@ -17,6 +17,22 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
         super().__init__(session)
         self.schema_class = UserDeviceEventsHistorySchema
 
+    async def get_device(
+        self,
+        device_id: str,
+        user_id: uuid.UUID,
+        event_id: uuid.UUID,
+        event_version: str,
+    ) -> UserDeviceEventsHistorySchema:
+        query: Query = select(UserDeviceEventsHistorySchema)
+        query = query.where(UserDeviceEventsHistorySchema.device_id == device_id)
+        query = query.where(UserDeviceEventsHistorySchema.user_id == user_id)
+        query = query.where(UserDeviceEventsHistorySchema.event_id == event_id)
+        query = query.where(UserDeviceEventsHistorySchema.event_version == event_version)
+
+        result = await self._execute(query)
+        return result.scalars().first()
+
     async def record_event_versions(
         self,
         user_id: uuid.UUID,

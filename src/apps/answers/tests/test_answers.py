@@ -25,6 +25,8 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
 from apps.applets.service import AppletService
 from apps.mailing.services import TestMail
+from apps.schedule.domain.schedule import PublicEvent
+from apps.schedule.service import ScheduleService
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.subjects.constants import Relation
@@ -33,7 +35,7 @@ from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.cruds.user import UsersCRUD
-from apps.users.domain import UserCreate
+from apps.users.domain import AppInfoOS, UserCreate, UserDeviceCreate
 from apps.users.tests.fixtures.users import _get_or_create_user
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
@@ -673,6 +675,18 @@ async def applet_one_user_subject(session: AsyncSession, applet_one: AppletFull,
     )
 
 
+@pytest.fixture
+async def applet_default_events(session: AsyncSession, applet: AppletFull) -> list[PublicEvent]:
+    srv = ScheduleService(session)
+    events = await srv.get_all_schedules(applet_id=applet.id)
+    return events
+
+
+@pytest.fixture
+def device_create_data() -> UserDeviceCreate:
+    return UserDeviceCreate(os=AppInfoOS(name="os1", version="1.0.0"), app_version="51.0.0", device_id="device_id")
+
+
 @pytest.mark.usefixtures("mock_kiq_report")
 class TestAnswerActivityItems(BaseTest):
     fixtures = [
@@ -811,6 +825,60 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert response.json()["result"][0]["message"] == InvalidVersionError.message
+
+    async def test_create_answer__with_device_id_and_event_history_id(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_default_events,
+        device_create_data,
+    ):
+        client.login(tom)
+
+        response = await client.get(
+            url="/users/me/respondent/current_events",
+            headers={
+                "Device-Id": device_create_data.device_id,
+                "OS-Name": device_create_data.os.name,
+                "OS-Version": device_create_data.os.version,
+                "App-Version": device_create_data.app_version,
+            },
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+
+        data = answer_create.copy(deep=True)
+        event = next((event for event in applet_default_events if event.activity_id == answer_create.activity_id), None)
+        assert event
+        data.event_history_id = f"{event.id}_{event.version}"
+        response = await client.post(self.answer_url, data=data, headers={"Device-Id": device_create_data.device_id})
+
+        assert response.status_code == http.HTTPStatus.CREATED
+
+    async def test_create_answer_with_wrong_event_history_id(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate
+    ):
+        client.login(tom)
+        data = answer_create.copy(deep=True)
+        data.event_history_id = str(uuid.uuid4())
+        response = await client.post(self.answer_url, data=data)
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert response.json()["result"][0]["message"] == "Invalid event_history_id provided"
+
+    async def test_create_answer_with_wrong_device_id(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_default_events
+    ):
+        client.login(tom)
+        data = answer_create.copy(deep=True)
+        event = next((event for event in applet_default_events if event.activity_id == answer_create.activity_id), None)
+        assert event
+        data.event_history_id = f"{event.id}_{event.version}"
+        response = await client.post(self.answer_url, data=data, headers={"Device-Id": "wrong_device_id"})
+
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        assert response.json()["result"][0]["message"] == "Invalid device_id provided"
 
     async def test_create_activity_answers__submit_duplicate(
         self,

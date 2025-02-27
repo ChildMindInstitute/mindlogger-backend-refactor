@@ -9,6 +9,11 @@ class UserDeviceService:
         self.session = session
         self.user_id = user_id
 
+    async def get_by_device_id(self, device_id: str) -> UserDevice | None:
+        schema = await UserDevicesCRUD(self.session).get_by_device_id(device_id)
+
+        return UserDevice.from_schema(schema) if schema else None
+
     async def add_device(self, data: UserDeviceCreate) -> UserDevice:
         app_data = dict(
             app_version=data.app_version,
