@@ -125,7 +125,7 @@ async def applet_activities_for_subject(
         activities_future = ActivityService(session, user.id).get_single_language_with_items_by_applet_id(
             applet_id, language
         )
-        flows_future = FlowService(session).get_single_language_by_applet_id(applet_id, language)
+        flows_future = FlowService(session, admin_user_id=user.id).get_single_language_by_applet_id(applet_id, language)
 
         query_params = QueryParams(filters={"respondent_subject_id": subject_id, "target_subject_id": subject_id})
         assignments_future = ActivityAssignmentService(session).get_all_with_subject_entities(applet_id, query_params)
@@ -301,7 +301,7 @@ async def applet_activities_and_flows(
         activities_future = ActivityService(session, user.id).get_single_language_with_items_by_applet_id(
             applet_id, language
         )
-        flows_future = FlowService(session).get_full_flows(applet_id)
+        flows_future = FlowService(session, admin_user_id=user.id).get_full_flows(applet_id)
 
         activities, flows = await asyncio.gather(activities_future, flows_future)
 

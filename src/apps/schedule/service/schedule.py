@@ -49,8 +49,9 @@ __all__ = ["ScheduleService"]
 
 
 class ScheduleService:
-    def __init__(self, session):
+    def __init__(self, session, admin_user_id: uuid.UUID | None = None):
         self.session = session
+        self.admin_user_id = admin_user_id
 
     async def create_schedule(self, schedule: EventRequest, applet_id: uuid.UUID) -> PublicEvent:
         # Validate schedule data before saving
@@ -154,8 +155,7 @@ class ScheduleService:
             )
 
         await ScheduleHistoryService(self.session).add_history(
-            event=schedule_event,
-            applet_id=applet_id,
+            event=schedule_event, applet_id=applet_id, updated_by=self.admin_user_id
         )
 
         return PublicEvent(
@@ -444,6 +444,7 @@ class ScheduleService:
         await ScheduleHistoryService(self.session).add_history(
             event=schedule_event,
             applet_id=applet_id,
+            updated_by=self.admin_user_id,
         )
 
         return PublicEvent(

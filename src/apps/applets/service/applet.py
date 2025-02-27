@@ -132,7 +132,7 @@ class AppletService:
         for activity in applet.activities:
             activity_key_id_map[activity.key] = activity.id
 
-        applet.activity_flows = await FlowService(self.session).create(
+        applet.activity_flows = await FlowService(self.session, self.user_id).create(
             applet.id, create_data.activity_flows, activity_key_id_map
         )
         await FlowHistoryService(self.session, applet.id, applet.version).add(applet.activity_flows)
@@ -179,7 +179,8 @@ class AppletService:
 
         next_version = await self.get_next_version(old_applet_schema.version, update_data, applet_id)
 
-        await FlowService(self.session).remove_applet_flows(applet_id)
+        flow_service = FlowService(self.session, self.user_id)
+        await flow_service.remove_applet_flows(applet_id)
         await ActivityService(self.session, self.user_id).remove_applet_activities(applet_id)
         applet = await self._update(applet_id, update_data, next_version)
         await AppletHistoryService(self.session, applet.id, applet.version).add_history(self.user_id, applet)
@@ -200,12 +201,12 @@ class AppletService:
             activity_ids.append(activity.id)
             if activity.is_reviewable:
                 assessment_id = activity.id
-        applet.activity_flows = await FlowService(self.session).update_create(
+        applet.activity_flows = await flow_service.update_create(
             applet_id, update_data.activity_flows, activity_key_id_map
         )
         await FlowHistoryService(self.session, applet.id, applet.version).add(applet.activity_flows)
 
-        event_serv = ScheduleService(self.session)
+        event_serv = ScheduleService(self.session, admin_user_id=self.user_id)
         to_await = []
         if assessment_id:
             to_await.append(event_serv.delete_by_activity_ids(applet_id, [assessment_id]))
@@ -262,7 +263,7 @@ class AppletService:
         for activity in applet.activities:
             activity_key_id_map[activity.key] = activity.id
 
-        applet.activity_flows = await FlowService(self.session).create(
+        applet.activity_flows = await FlowService(self.session, self.user_id).create(
             applet.id, create_data.activity_flows, activity_key_id_map
         )
         await FlowHistoryService(self.session, applet.id, applet.version).add(applet.activity_flows)
@@ -514,7 +515,7 @@ class AppletService:
             stream_port=schema.stream_port,
         )
         activities = ActivityService(self.session, self.user_id).get_single_language_by_applet_id(applet_id, language)
-        activity_flows = FlowService(self.session).get_single_language_by_applet_id(applet_id, language)
+        activity_flows = FlowService(self.session, self.user_id).get_single_language_by_applet_id(applet_id, language)
         integrations = IntegrationsCRUD(self.session).retrieve_list_by_applet(schema.id)
         futures = await asyncio.gather(activities, activity_flows, integrations)
         applet.activities = futures[0]
@@ -557,7 +558,9 @@ class AppletService:
         applet.activities = await ActivityService(self.session, self.user_id).get_single_language_by_applet_id(
             applet.id, language
         )
-        applet.activity_flows = await FlowService(self.session).get_single_language_by_applet_id(applet.id, language)
+        applet.activity_flows = await FlowService(self.session, self.user_id).get_single_language_by_applet_id(
+            applet.id, language
+        )
         return applet
 
     async def get_by_id_for_duplicate(self, applet_id: uuid.UUID) -> AppletDuplicate:
@@ -588,7 +591,7 @@ class AppletService:
             retention_type=schema.retention_type,
         )
         applet.activities = await ActivityService(self.session, self.user_id).get_by_applet_id_for_duplicate(applet_id)
-        applet.activity_flows = await FlowService(self.session).get_by_applet_id_duplicate(applet_id)
+        applet.activity_flows = await FlowService(self.session, self.user_id).get_by_applet_id_duplicate(applet_id)
         return applet
 
     async def delete_applet_by_id(self, applet_id: uuid.UUID):
@@ -719,7 +722,7 @@ class AppletService:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
         applet = AppletFull.from_orm(schema)
         applet.activities = await ActivityService(self.session, self.user_id).get_full_activities(applet_id)
-        applet.activity_flows = await FlowService(self.session).get_full_flows(applet_id)
+        applet.activity_flows = await FlowService(self.session, self.user_id).get_full_flows(applet_id)
         applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
         applet.owner_id = applet_owner.owner_id
 
@@ -788,7 +791,7 @@ class AppletService:
             activity_flows=[],
         )
         activities = ActivityService(self.session, self.user_id).get_info_by_applet_id(schema.id, language)
-        activity_flows = FlowService(self.session).get_info_by_applet_id(schema.id, language)
+        activity_flows = FlowService(self.session, self.user_id).get_info_by_applet_id(schema.id, language)
         subject = SubjectsService(self.session, self.user_id).get_by_user_and_applet(self.user_id, schema.id)
         futures = await asyncio.gather(activities, activity_flows, subject)
         applet.activities = futures[0]
