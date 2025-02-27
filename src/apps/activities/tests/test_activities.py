@@ -876,7 +876,7 @@ class TestActivities:
             ],
         )
 
-        flows = await FlowService(session).update_create(
+        flows = await FlowService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
                 FlowUpdate(
@@ -1005,7 +1005,7 @@ class TestActivities:
             ],
         )
 
-        flows = await FlowService(session).update_create(
+        flows = await FlowService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
                 FlowUpdate(
@@ -1462,7 +1462,7 @@ class TestActivities:
             ],
         )
 
-        flows = await FlowService(session).update_create(
+        flows = await FlowService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
                 FlowUpdate(
@@ -1825,7 +1825,7 @@ class TestActivities:
             ],
         )
 
-        flows = await FlowService(session).update_create(
+        flows = await FlowService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
                 FlowUpdate(
