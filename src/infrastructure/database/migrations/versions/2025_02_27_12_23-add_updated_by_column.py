@@ -1,7 +1,7 @@
 """Add updated_by column
 
 Revision ID: a9cd537fa8b4
-Revises: 4e2b42e69c39
+Revises: a620e11dda13
 Create Date: 2025-02-27 06:57:54.848199
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "a9cd537fa8b4"
-down_revision = "4e2b42e69c39"
+down_revision = "a620e11dda13"
 branch_labels = None
 depends_on = None
 
