@@ -20,6 +20,8 @@ class SubjectSchema(Base):
     tag = Column(String, default=None, nullable=True)
     secret_user_id = Column(String, nullable=False)
     language = Column(String(length=5))
+    integration_source = Column(String(length=20), nullable=True, default=None)
+
     __table_args__ = (
         Index(
             None,
