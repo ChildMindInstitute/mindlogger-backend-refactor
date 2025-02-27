@@ -84,14 +84,6 @@ class EventCRUD(BaseCRUD[EventSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def get_all_by_applet_id(self, applet_id: uuid.UUID) -> list[EventSchema]:
-        """Return all events linked to a specific applet"""
-        query: Query = select(EventSchema)
-        query = query.where(EventSchema.applet_id == applet_id, EventSchema.is_deleted.is_(False))
-
-        result = await self._execute(query)
-        return result.scalars().all()
-
     async def get_public_by_applet_id(self, applet_id: uuid.UUID) -> list[EventSchema]:
         """Return event instance."""
         query: Query = select(EventSchema)
