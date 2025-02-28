@@ -20,6 +20,7 @@ class SubjectCreate(InternalModel):
     nickname: str | None = None
     is_deleted: bool = False
     tag: str | None = None
+    integration_source: str | None = None
 
 
 class Subject(SubjectCreate):

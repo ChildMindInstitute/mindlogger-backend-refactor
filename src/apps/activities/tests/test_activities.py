@@ -876,7 +876,7 @@ class TestActivities:
             ],
         )
 
-        flows = await FlowService(session).update_create(
+        flows = await FlowService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
                 FlowUpdate(
@@ -942,7 +942,14 @@ class TestActivities:
         assert len(activity_result["items"]) == 1
         assert len(activity_result["assignments"]) == 3
 
-        activity_assignment = activity_result["assignments"][0]
+        # With postgres the order of the assignments is not guaranteed if the query does not have an ORDER BY clause
+        # Changing the schema might change the order of the results
+        activity_assignments_seq = (
+            elt
+            for elt in activity_result["assignments"]
+            if elt["respondentSubject"]["id"] == elt["targetSubject"]["id"]
+        )
+        activity_assignment = next(activity_assignments_seq, activity_result["assignments"][0])
         assert activity_assignment["activityId"] == str(manual_activity.id)
         assert activity_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
         assert activity_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
@@ -956,7 +963,10 @@ class TestActivities:
         assert len(flow_result["assignments"]) == 3
         assert flow_result["activityIds"][0] == str(manual_flow.items[0].activity_id)
 
-        flow_assignment = flow_result["assignments"][0]
+        flow_assignments_seq = (
+            elt for elt in flow_result["assignments"] if elt["respondentSubject"]["id"] == elt["targetSubject"]["id"]
+        )
+        flow_assignment = next(flow_assignments_seq, flow_result["assignments"][0])
         assert flow_assignment["activityFlowId"] == str(manual_flow.id)
         assert flow_assignment["respondentSubject"]["id"] == str(user_empty_applet_subject.id)
         assert flow_assignment["targetSubject"]["id"] == str(user_empty_applet_subject.id)
@@ -995,7 +1005,7 @@ class TestActivities:
             ],
         )
 
-        flows = await FlowService(session).update_create(
+        flows = await FlowService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
                 FlowUpdate(
@@ -1452,7 +1462,7 @@ class TestActivities:
             ],
         )
 
-        flows = await FlowService(session).update_create(
+        flows = await FlowService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
                 FlowUpdate(
@@ -1815,7 +1825,7 @@ class TestActivities:
             ],
         )
 
-        flows = await FlowService(session).update_create(
+        flows = await FlowService(session, lucy.id).update_create(
             empty_applet_lucy_manager.id,
             [
                 FlowUpdate(

@@ -2,8 +2,9 @@ import asyncio
 import base64
 import datetime
 import uuid
+from typing import Annotated
 
-from fastapi import Body, Depends, Query
+from fastapi import Body, Depends, Header, Query
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
@@ -51,6 +52,10 @@ from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
+from apps.integrations.prolific.domain import ProlificUserInfo
+from apps.integrations.prolific.service.prolific import ProlificIntegrationService
+from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
+from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.deps import get_client_ip, get_i18n
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
@@ -59,12 +64,14 @@ from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_p
 from apps.subjects.services import SubjectsService
 from apps.users import UsersCRUD
 from apps.users.domain import User
+from apps.users.services.prolific_user import ProlificUserService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_tz_utc_offset
+from infrastructure.http.deps import get_language
 from infrastructure.logger import logger
 
 
@@ -74,6 +81,7 @@ async def create_answer(
     tz_offset: int | None = Depends(get_tz_utc_offset()),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
+    device_id: Annotated[str | None, Header()] = None,
 ) -> None:
     async with atomic(session):
         await CheckAccessService(session, user.id).check_answer_create_access(schema.applet_id)
@@ -81,11 +89,32 @@ async def create_answer(
             await AppletHistoryService(session, schema.applet_id, schema.version).get()
         except NotValidAppletHistory:
             raise InvalidVersionError()
+
+        if schema.event_history_id:
+            event = await ScheduleHistoryService(session).get_by_id(schema.event_history_id)
+            if (
+                event is None
+                or event.activity_flow_id != schema.flow_id
+                or event.activity_id != schema.activity_id
+                or (event.user_id is not None and event.user_id != user.id)
+            ):
+                raise NotFoundError("Invalid event_history_id provided")
+
+        device = None
+        if device_id and schema.event_history_id:
+            event_id = uuid.UUID(schema.event_history_id.split("_")[0])
+            event_version = schema.event_history_id.split("_")[1]
+            device = await UserDeviceEventsHistoryCRUD(session).get_device(
+                device_id=device_id, user_id=user.id, event_id=event_id, event_version=event_version
+            )
+            if device is None:
+                raise NotFoundError("Invalid device_id provided")
+
         service = AnswerService(session, user.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
             schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):
-            answer = await service.create_answer(schema)
+            answer = await service.create_answer(schema, device.device_id if device else None)
         await service.create_report_from_answer(answer)
 
 
@@ -94,12 +123,28 @@ async def create_anonymous_answer(
     tz_offset: int | None = Depends(get_tz_utc_offset()),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
+    language=Depends(get_language),
 ) -> None:
     async with atomic(session):
-        anonymous_respondent = await UsersCRUD(session).get_anonymous_respondent()
-        assert anonymous_respondent
+        respondent = None
+        if schema.prolific_params:
+            study_validation = await ProlificIntegrationService(
+                session=session, applet_id=schema.applet_id
+            ).validate_prolific_study(schema.prolific_params.study_id, language, is_private_applet_id=True)
 
-        service = AnswerService(session, anonymous_respondent.id, answer_session)
+            if study_validation.accepted:
+                prolific_service = ProlificUserService(
+                    session,
+                    ProlificUserInfo(
+                        study_id=schema.prolific_params.study_id, prolific_pid=schema.prolific_params.prolific_pid
+                    ),
+                )
+                respondent = await prolific_service.create_prolific_respondent(schema.applet_id)
+        else:
+            respondent = await UsersCRUD(session).get_anonymous_respondent()
+        assert respondent
+
+        service = AnswerService(session, respondent.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
             schema.answer.tz_offset = tz_offset // 60  # value in minutes
         async with atomic(answer_session):

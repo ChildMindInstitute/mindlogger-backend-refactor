@@ -214,7 +214,7 @@ async def flow_report_config_update(
     schema: ActivityFlowReportConfiguration = Body(...),
     session=Depends(get_session),
 ):
-    service = FlowService(session)
+    service = FlowService(session, admin_user_id=user.id)
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
     flow = await service.get_by_id(flow_id)
@@ -294,7 +294,7 @@ async def applet_flow_versions_data_retrieve(
 ) -> ResponseMulti[VersionPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
-    service = FlowService(session=session)
+    service = FlowService(session=session, admin_user_id=user.id)
     versions = await service.get_versions(applet_id, flow_id)
     return ResponseMulti(
         result=versions,

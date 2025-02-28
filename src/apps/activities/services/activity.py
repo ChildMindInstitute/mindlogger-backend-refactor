@@ -102,7 +102,7 @@ class ActivityService:
             activity_id_map[activity_item.activity_id].items.append(activity_item)
 
         # add default schedule for activities
-        await ScheduleService(self.session).create_default_schedules(
+        await ScheduleService(self.session, admin_user_id=self.user_id).create_default_schedules(
             applet_id=applet_id,
             activity_ids=[activity.id for activity in activities if not activity.is_reviewable],
             is_activity=True,
@@ -201,15 +201,15 @@ class ActivityService:
         # Remove events for deleted activities
         deleted_activity_ids = set(all_activity_ids) - set(existing_activities)
 
+        schedule_service = ScheduleService(self.session, admin_user_id=self.user_id)
+
         if deleted_activity_ids:
-            await ScheduleService(self.session).delete_by_activity_ids(
-                applet_id=applet_id, activity_ids=list(deleted_activity_ids)
-            )
+            await schedule_service.delete_by_activity_ids(applet_id=applet_id, activity_ids=list(deleted_activity_ids))
             await ActivityAssignmentService(self.session).delete_by_activity_or_flow_ids(list(deleted_activity_ids))
 
         # Create default events for new activities
         if new_activities:
-            await ScheduleService(self.session).create_default_schedules(
+            await schedule_service.create_default_schedules(
                 applet_id=applet_id,
                 activity_ids=list(new_activities),
                 is_activity=True,
@@ -230,7 +230,7 @@ class ActivityService:
 
             if respondents_with_indvdl_schdl:
                 for respondent_uuid in respondents_with_indvdl_schdl:
-                    await ScheduleService(self.session).create_default_schedules(
+                    await schedule_service.create_default_schedules(
                         applet_id=applet_id,
                         activity_ids=list(new_activities),
                         is_activity=True,

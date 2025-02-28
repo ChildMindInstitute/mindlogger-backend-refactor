@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Annotated
 
 import jwt
-from fastapi import Body, Depends
+from fastapi import Body, Depends, Header
 from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
@@ -21,7 +22,7 @@ from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
-from apps.users.domain import PublicUser, User, UserDeviceCreate
+from apps.users.domain import AppInfoOS, PublicUser, User, UserDeviceCreate
 from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from config import settings
@@ -32,6 +33,9 @@ from infrastructure.database.deps import get_session
 async def get_token(
     user_login_schema: UserLoginRequest = Body(...),
     session=Depends(get_session),
+    os_name: Annotated[str | None, Header()] = None,
+    os_version: Annotated[str | None, Header()] = None,
+    app_version: Annotated[str | None, Header()] = None,
 ) -> Response[UserLogin]:
     """Generate the JWT access token."""
     async with atomic(session):
@@ -39,7 +43,11 @@ async def get_token(
             user: User = await AuthenticationService(session).authenticate_user(user_login_schema)
             if user_login_schema.device_id:
                 await UserDeviceService(session, user.id).add_device(
-                    UserDeviceCreate(device_id=user_login_schema.device_id)
+                    UserDeviceCreate(
+                        device_id=user_login_schema.device_id,
+                        os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
+                        app_version=app_version,
+                    )
                 )
         except UserNotFound:
             raise InvalidCredentials(email=user_login_schema.email)
