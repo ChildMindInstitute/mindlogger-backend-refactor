@@ -1,4 +1,4 @@
-"""empty message
+"""Merge heads after periodicity table restoration
 
 Revision ID: 5658857a84dc
 Revises: a9cd537fa8b4, 8fa31d7d9831
