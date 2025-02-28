@@ -11,6 +11,7 @@ from apps.schedule.db.schemas import (
     NotificationHistorySchema,
     ReminderHistorySchema,
 )
+from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
 
 
@@ -35,6 +36,11 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             NotificationHistoryCRUD(self.session).mark_as_deleted(events),
             ReminderHistoryCRUD(self.session).mark_as_deleted(events),
         )
+
+    async def retrieve_applet_all_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> list[EventHistorySchema]:
+        return []
 
 
 class AppletEventsCRUD(BaseCRUD[AppletEventsSchema]):

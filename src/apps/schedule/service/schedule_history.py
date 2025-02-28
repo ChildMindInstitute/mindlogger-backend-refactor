@@ -18,6 +18,8 @@ from apps.schedule.db.schemas import (
 )
 from apps.schedule.domain.constants import EventType
 from apps.schedule.domain.schedule.internal import ScheduleEvent
+from apps.schedule.domain.schedule.public import ExportEventHistoryDto
+from apps.shared.query_params import QueryParams
 
 
 class ScheduleHistoryService:
@@ -115,3 +117,12 @@ class ScheduleHistoryService:
                     for event in events
                 ]
             )
+
+    async def retrieve_applet_all_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportEventHistoryDto], int]:
+        event_history, total = await ScheduleHistoryCRUD(self.session).retrieve_applet_all_events_history(
+            applet_id, query_params
+        )
+
+        return event_history, total

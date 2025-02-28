@@ -9,6 +9,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.sql.expression import select
 
 from apps.schedule.db.schemas import UserDeviceEventsHistorySchema
+from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
 
 
@@ -79,3 +80,6 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
 
     async def get_all(self) -> list[UserDeviceEventsHistorySchema]:
         return await self._all()
+
+    async def retrieve_applet_all_device_events_history(self, applet_id: uuid.UUID, query_params: QueryParams):
+        pass

@@ -24,6 +24,8 @@ from apps.schedule.domain.schedule.internal import (
     ScheduleEvent,
 )
 from apps.schedule.domain.schedule.public import (
+    ExportDeviceHistoryDto,
+    ExportEventHistoryDto,
     PublicEvent,
     PublicEventByUser,
     PublicEventCount,
@@ -942,3 +944,15 @@ class ScheduleService:
     async def get_default_respondents(self, applet_id: uuid.UUID) -> list[uuid.UUID]:
         default_respondents = await EventCRUD(self.session).get_default_schedule_user_ids_by_applet_id(applet_id)
         return default_respondents
+
+    async def retrieve_applet_all_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportEventHistoryDto], int]:
+        return await ScheduleHistoryService(self.session).retrieve_applet_all_events_history(applet_id, query_params)
+
+    async def retrieve_applet_all_device_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportDeviceHistoryDto], int]:
+        return await UserDeviceEventsHistoryCRUD(self.session).retrieve_applet_all_device_events_history(
+            applet_id, query_params
+        )

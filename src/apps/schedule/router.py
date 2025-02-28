@@ -16,9 +16,17 @@ from apps.schedule.api.schedule import (
     schedule_get_by_user,
     schedule_import,
     schedule_remove_individual_calendar,
+    schedule_retrieve_applet_all_device_events_history,
+    schedule_retrieve_applet_all_events_history,
     schedule_update,
 )
-from apps.schedule.domain.schedule.public import PublicEvent, PublicEventByUser, PublicEventCount
+from apps.schedule.domain.schedule.public import (
+    ExportDeviceHistoryDto,
+    ExportEventHistoryDto,
+    PublicEvent,
+    PublicEventByUser,
+    PublicEventCount,
+)
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
     DEFAULT_OPENAPI_RESPONSE,
@@ -216,3 +224,23 @@ user_router.get(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(schedule_get_all_by_respondent_user)
+
+router.get(
+    "/{applet_id}/events/history",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[ExportEventHistoryDto]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(schedule_retrieve_applet_all_events_history)
+
+router.get(
+    "/{applet_id}/events/device_history",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[ExportDeviceHistoryDto]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(schedule_retrieve_applet_all_device_events_history)
