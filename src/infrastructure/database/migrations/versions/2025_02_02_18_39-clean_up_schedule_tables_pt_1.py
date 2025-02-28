@@ -44,57 +44,8 @@ def upgrade() -> None:
     # Make sure that the `event_type` column is not null
     op.alter_column("events", "event_type", nullable=False)
 
-    # Drop the `periodicity_id` column from the `events` table
-    op.drop_column("events", "periodicity_id")
-
-    # Drop the periodicity table
-    op.drop_table("periodicity")
-
 
 def downgrade() -> None:
-    # Recreate the dropped tables
-    op.create_table(
-        "periodicity",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("is_deleted", sa.Boolean(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("timezone('utc', now())"), nullable=True),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("timezone('utc', now())"), nullable=True),
-        sa.Column("migrated_date", sa.DateTime(), nullable=True),
-        sa.Column("migrated_updated", sa.DateTime(), nullable=True),
-        sa.Column("type", sa.String(10), nullable=False),
-        sa.Column("start_date", sa.Date(), nullable=True),
-        sa.Column("end_date", sa.Date(), nullable=True),
-        sa.Column("selected_date", sa.Date(), nullable=True),
-        sa.PrimaryKeyConstraint("id", name=op.f("pk_periodicity")),
-    )
-
-    # Add the `periodicity_id` column back to the `events` table
-    op.add_column(
-        "events",
-        sa.Column(
-            "periodicity_id",
-            postgresql.UUID(as_uuid=True),
-            server_default=sa.text("gen_random_uuid()"),
-            nullable=False
-        )
-    )
-
-    # Generate periodicity IDs for existing events
-    op.execute("""
-    UPDATE events
-    SET periodicity_id = gen_random_uuid()
-    WHERE periodicity_id IS NULL
-    """)
-
-    # Repopulate the `periodicity` table
-    # We do lose some data here (e.g. the original `id`, `created_at`, `updated_at`, `migrated_date`, `migrated_updated`),
-    # because we can't recover that data from the `events` table
-    op.execute("""
-    INSERT INTO periodicity (id, is_deleted, type, start_date, end_date, selected_date)
-    SELECT e.periodicity_id, e.is_deleted, e.periodicity, e.start_date, e.end_date, e.selected_date
-    FROM events e
-    """)
-
     # Drop the new columns from the `events` table
     op.drop_column("events", "activity_id")
     op.drop_column("events", "activity_flow_id")
