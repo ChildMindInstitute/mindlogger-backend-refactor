@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "055e08b18eef38da3b591b58e702fb1c237180ff7b4b89332842ec5c1aa5fd3e"
+            "sha256": "54aa973247726a3f5e3d75fc708b1c69de7c9ae04cb0daac0a0f62ab9273c674"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -2110,11 +2110,12 @@
         },
         "taskiq-dependencies": {
             "hashes": [
-                "sha256:5756690fd9f1f9efac34aac5959f173724e898a852de790238f97090467c4e3c",
-                "sha256:fba4dbaac47dfc8817fd2efeb13cefe41f45790b4871ba65fcdfd3c74f7121dc"
+                "sha256:0d3b240872ef152b719153b9526d866d2be978aeeaea6600e878414babc2dcb4",
+                "sha256:6fcee5d159bdb035ef915d4d848826169b6f06fe57cc2297a39b62ea3e76036f"
             ],
+            "index": "pypi",
             "markers": "python_version >= '3.9' and python_version < '4.0'",
-            "version": "==1.5.6"
+            "version": "==1.5.7"
         },
         "taskiq-fastapi": {
             "hashes": [
