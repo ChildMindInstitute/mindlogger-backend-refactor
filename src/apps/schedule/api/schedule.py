@@ -12,10 +12,11 @@ from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.db.schemas import AppletSchema
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
-from apps.schedule.domain.schedule.filters import EventQueryParams
+from apps.schedule.domain.schedule.filters import EventQueryParams, ScheduleEventsExportParams
 from apps.schedule.domain.schedule.public import PublicEvent, PublicEventByUser, PublicEventCount
 from apps.schedule.domain.schedule.requests import EventRequest, EventUpdateRequest
 from apps.schedule.service.schedule import ScheduleService
+from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
@@ -401,3 +402,20 @@ async def schedule_create_individual(
         logger.exception(e)
 
     return ResponseMulti(result=schedules, count=len(schedules))
+
+
+async def schedule_retrieve_applet_all_events_history(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(parse_query_params(ScheduleEventsExportParams)),
+    session=Depends(get_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_manager_list_access(applet_id)
+
+        events_history, total = await ScheduleHistoryService(
+            session
+        ).retrieve_applet_all_events_history(applet_id, query_params)
+
+    return ResponseMulti(result=events_history, count=total)
