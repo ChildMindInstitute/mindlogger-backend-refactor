@@ -1,7 +1,7 @@
 """Add user device events history table
 
 Revision ID: 4e2b42e69c39
-Revises: 70987d489b17
+Revises: 067a2c34ff2f
 Create Date: 2025-02-24 14:32:44.814120
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "4e2b42e69c39"
-down_revision = "70987d489b17"
+down_revision = "067a2c34ff2f"
 branch_labels = None
 depends_on = None
 
