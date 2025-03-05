@@ -138,6 +138,26 @@ router.delete(
     },
 )(schedule_remove_individual_calendar)
 
+router.get(
+    "/{applet_id}/events/history",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[ExportEventHistoryDto]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(schedule_retrieve_applet_all_events_history)
+
+router.get(
+    "/{applet_id}/events/device_history",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[ExportDeviceHistoryDto]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(schedule_retrieve_applet_all_device_events_history)
+
 # Get schedule by id
 router.get(
     "/{applet_id}/events/{schedule_id}",
@@ -185,26 +205,6 @@ router.put(
         **NO_CONTENT_ERROR_RESPONSES,
     },
 )(schedule_update)
-
-router.get(
-    "/{applet_id}/events/history",
-    status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[ExportEventHistoryDto]},
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(schedule_retrieve_applet_all_events_history)
-
-router.get(
-    "/{applet_id}/events/device_history",
-    status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_200_OK: {"model": ResponseMulti[ExportDeviceHistoryDto]},
-        **DEFAULT_OPENAPI_RESPONSE,
-        **AUTHENTICATION_ERROR_RESPONSES,
-    },
-)(schedule_retrieve_applet_all_device_events_history)
 
 # Add route to User router
 user_router = APIRouter(prefix="/users", tags=["Users"])
