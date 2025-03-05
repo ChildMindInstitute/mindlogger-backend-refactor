@@ -24,7 +24,8 @@ from apps.applets.api.applets import (
     applet_version_changes_retrieve,
     applet_version_retrieve,
     applet_versions_retrieve,
-    flow_report_config_update, flow_item_history,
+    flow_item_history,
+    flow_report_config_update,
 )
 from apps.applets.domain import AppletUniqueName, PublicAppletHistoryChange, PublicHistory
 from apps.applets.domain.applet import (

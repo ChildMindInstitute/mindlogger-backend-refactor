@@ -3,9 +3,9 @@ __all__ = ["ScheduleHistoryCRUD", "AppletEventsCRUD", "NotificationHistoryCRUD",
 import asyncio
 import uuid
 
-from sqlalchemy import update, select, or_
-from sqlalchemy.sql import func
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Query
+from sqlalchemy.sql import func
 
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
@@ -17,7 +17,7 @@ from apps.schedule.db.schemas import (
     ReminderHistorySchema,
 )
 from apps.schedule.domain.schedule.public import ExportEventHistoryDto
-from apps.shared.filtering import FilterField, Comparisons, Filtering
+from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
 
