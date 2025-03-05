@@ -150,3 +150,15 @@ class ExportEventHistoryDto(PublicModel):
     end_date: date | None = None
     end_time: datetime.time
     selected_date: date | None = None
+
+
+class ExportDeviceHistoryDto(PublicModel):
+    user_id: uuid.UUID
+    device_id: str
+    event_id: uuid.UUID
+    event_version: str
+    start_date: date | None = None
+    start_time: datetime.time
+    end_date: date | None = None
+    end_time: datetime.time
+    created_at: datetime.datetime
