@@ -24,7 +24,7 @@ from apps.applets.api.applets import (
     applet_version_changes_retrieve,
     applet_version_retrieve,
     applet_versions_retrieve,
-    flow_report_config_update,
+    flow_report_config_update, flow_item_history,
 )
 from apps.applets.domain import AppletUniqueName, PublicAppletHistoryChange, PublicHistory
 from apps.applets.domain.applet import (
@@ -253,6 +253,16 @@ router.put(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(flow_report_config_update)
+
+
+router.get(
+    "/{applet_id}/flows/item_history",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(flow_item_history)
 
 router.get(
     "/{applet_id}/base_info",

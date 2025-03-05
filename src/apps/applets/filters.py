@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from apps.applets.domain import Role
@@ -14,3 +15,9 @@ class AppletQueryParams(BaseQueryParams):
 
 class AppletUsersQueryParams(BaseQueryParams):
     role: Role | None = None
+
+
+class FlowItemHistoryExportQueryParams(BaseQueryParams):
+    from_date: datetime.datetime | None = None
+    to_date: datetime.datetime | None = None
+    limit: int = 10000
