@@ -3,15 +3,33 @@ __all__ = ["ScheduleHistoryCRUD", "AppletEventsCRUD", "NotificationHistoryCRUD",
 import asyncio
 import uuid
 
-from sqlalchemy import update
+from sqlalchemy import or_, select, update
+from sqlalchemy.orm import Query
+from sqlalchemy.sql import func
 
+from apps.activities.db.schemas import ActivityHistorySchema
+from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
+from apps.applets.db.schemas import AppletHistorySchema
 from apps.schedule.db.schemas import (
     AppletEventsSchema,
     EventHistorySchema,
     NotificationHistorySchema,
     ReminderHistorySchema,
 )
+from apps.schedule.domain.schedule.public import ExportEventHistoryDto
+from apps.shared.filtering import Comparisons, FilterField, Filtering
+from apps.shared.paging import paging
+from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
+
+
+class _ScheduleHistoryExportFilters(Filtering):
+    respondent_ids = FilterField(EventHistorySchema.user_id, method_name="filter_respondent_ids")
+    from_date = FilterField(EventHistorySchema.created_at, Comparisons.GREAT_OR_EQUAL)
+    to_date = FilterField(EventHistorySchema.created_at, Comparisons.LESS_OR_EQUAL)
+
+    def filter_respondent_ids(self, field, value):
+        return or_(field.in_(value), EventHistorySchema.user_id.is_(None))
 
 
 class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
@@ -35,6 +53,71 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             NotificationHistoryCRUD(self.session).mark_as_deleted(events),
             ReminderHistoryCRUD(self.session).mark_as_deleted(events),
         )
+
+    async def retrieve_applet_all_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportEventHistoryDto], int]:
+        query: Query = select(
+            AppletHistorySchema.id.label("applet_id"),
+            AppletHistorySchema.version.label("applet_version"),
+            AppletHistorySchema.display_name.label("applet_name"),
+            EventHistorySchema.user_id,
+            EventHistorySchema.id.label("event_id"),
+            EventHistorySchema.event_type,
+            EventHistorySchema.version.label("event_version"),
+            EventHistorySchema.created_at.label("event_version_created_at"),
+            AppletHistorySchema.created_at.label("linked_with_applet_at"),
+            EventHistorySchema.updated_by.label("event_updated_by"),
+            func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id).label(
+                "activity_or_flow_id"
+            ),
+            func.coalesce(ActivityFlowHistoriesSchema.name, ActivityHistorySchema.name).label("activity_or_flow_name"),
+            EventHistorySchema.periodicity,
+            EventHistorySchema.start_date,
+            EventHistorySchema.start_time,
+            EventHistorySchema.end_date,
+            EventHistorySchema.end_time,
+            EventHistorySchema.selected_date,
+        )
+        query = query.select_from(EventHistorySchema)
+        query = query.join(
+            AppletEventsSchema,
+            EventHistorySchema.id_version == AppletEventsSchema.event_id,
+        )
+        query = query.join(
+            AppletHistorySchema,
+            AppletEventsSchema.applet_id == AppletHistorySchema.id_version,
+        )
+        query = query.outerjoin(
+            ActivityHistorySchema,
+            EventHistorySchema.activity_id == ActivityHistorySchema.id,
+        )
+        query = query.outerjoin(
+            ActivityFlowHistoriesSchema,
+            EventHistorySchema.activity_flow_id == ActivityFlowHistoriesSchema.id,
+        )
+        query = query.where(AppletHistorySchema.id == applet_id)
+
+        _filters = _ScheduleHistoryExportFilters().get_clauses(**query_params.filters)
+        if _filters:
+            query = query.where(*_filters)
+
+        query_count: Query = query.with_only_columns(func.count())
+
+        query = query.order_by(EventHistorySchema.created_at, AppletEventsSchema.created_at)
+        query = paging(query, query_params.page, query_params.limit)
+
+        coro_data, coro_count = (
+            self._execute(query),
+            self._execute(query_count),
+        )
+
+        res, res_count = await asyncio.gather(coro_data, coro_count)
+
+        data = [ExportEventHistoryDto(**row) for row in res]
+        total = res_count.scalars().one()
+
+        return data, total
 
 
 class AppletEventsCRUD(BaseCRUD[AppletEventsSchema]):
