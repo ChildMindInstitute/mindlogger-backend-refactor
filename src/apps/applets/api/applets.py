@@ -450,6 +450,7 @@ async def applet_retrieve_base_info_by_key(
     applet = await service.get_info_by_key(key_guid, language)
     return Response(result=AppletActivitiesBaseInfo.from_orm(applet))
 
+
 async def flow_item_history(
     applet_id: uuid.UUID,
     user: User = Depends(get_current_user),

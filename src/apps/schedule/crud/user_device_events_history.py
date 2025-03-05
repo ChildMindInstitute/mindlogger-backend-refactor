@@ -1,17 +1,20 @@
 __all__ = ["UserDeviceEventsHistoryCRUD"]
 
+import asyncio
 import datetime
 import uuid
 
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Query
+from sqlalchemy.sql import func
 from sqlalchemy.sql.expression import and_, select
 
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.schedule.db.schemas import AppletEventsSchema, EventHistorySchema, UserDeviceEventsHistorySchema
 from apps.schedule.domain.schedule.public import ExportDeviceHistoryDto
 from apps.shared.filtering import Comparisons, FilterField, Filtering
+from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
 
@@ -20,6 +23,7 @@ class _UserDeviceEventsHistoryExportFilters(Filtering):
     respondent_ids = FilterField(UserDeviceEventsHistorySchema.user_id, Comparisons.IN)
     from_date = FilterField(EventHistorySchema.created_at, Comparisons.GREAT_OR_EQUAL)
     to_date = FilterField(EventHistorySchema.created_at, Comparisons.LESS_OR_EQUAL)
+
 
 class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
     def __init__(self, session):
@@ -108,7 +112,7 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
             EventHistorySchema,
             and_(
                 UserDeviceEventsHistorySchema.event_id == EventHistorySchema.id,
-                UserDeviceEventsHistorySchema.event_version == EventHistorySchema.version
+                UserDeviceEventsHistorySchema.event_version == EventHistorySchema.version,
             ),
         )
         query = query.join(
@@ -136,9 +140,33 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
             EventHistorySchema.end_time,
             UserDeviceEventsHistorySchema.created_at,
         )
+
         query = query.order_by(UserDeviceEventsHistorySchema.created_at)
 
-        result = await self._execute(query)
+        query_count: Query = select(func.count()).select_from(
+            query.with_only_columns(
+                UserDeviceEventsHistorySchema.user_id,
+                UserDeviceEventsHistorySchema.device_id,
+                UserDeviceEventsHistorySchema.event_id,
+                UserDeviceEventsHistorySchema.event_version,
+                EventHistorySchema.start_date,
+                EventHistorySchema.start_time,
+                EventHistorySchema.end_date,
+                EventHistorySchema.end_time,
+                UserDeviceEventsHistorySchema.created_at,
+            ).subquery()
+        )
 
-        # TODO: Paginate
-        return [ExportDeviceHistoryDto(**row) for row in result], 0
+        query = paging(query, query_params.page, query_params.limit)
+
+        coro_data, coro_count = (
+            self._execute(query),
+            self._execute(query_count),
+        )
+
+        res, res_count = await asyncio.gather(coro_data, coro_count)
+
+        data = [ExportDeviceHistoryDto(**row) for row in res]
+        total = res_count.scalars().one()
+
+        return data, total
