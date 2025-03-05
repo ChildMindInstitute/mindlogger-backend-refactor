@@ -24,7 +24,10 @@ class ScheduleHistoryService:
     def __init__(self, session):
         self.session = session
 
-    async def add_history(self, applet_id: uuid.UUID, event: ScheduleEvent):
+    async def get_by_id(self, id_version: str) -> EventHistorySchema | None:
+        return await ScheduleHistoryCRUD(self.session).get_by_id(id_version)
+
+    async def add_history(self, applet_id: uuid.UUID, event: ScheduleEvent, updated_by: uuid.UUID | None) -> None:
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
 
         # Refresh the applet so we don't get the old version number, in case the version has changed
@@ -49,6 +52,7 @@ class ScheduleHistoryService:
                 activity_id=event.activity_id,
                 activity_flow_id=event.flow_id,
                 user_id=event.user_id,
+                updated_by=updated_by,
             )
         )
 
