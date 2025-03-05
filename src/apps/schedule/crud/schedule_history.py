@@ -18,6 +18,7 @@ from apps.schedule.db.schemas import (
 )
 from apps.schedule.domain.schedule.public import ExportEventHistoryDto
 from apps.shared.filtering import Comparisons, FilterField, Filtering
+from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
 
@@ -57,22 +58,20 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
         self, applet_id: uuid.UUID, query_params: QueryParams
     ) -> tuple[list[ExportEventHistoryDto], int]:
         query: Query = select(
-            AppletHistorySchema.id.label('applet_id'),
-            AppletHistorySchema.version.label('applet_version'),
-            AppletHistorySchema.display_name.label('applet_name'),
+            AppletHistorySchema.id.label("applet_id"),
+            AppletHistorySchema.version.label("applet_version"),
+            AppletHistorySchema.display_name.label("applet_name"),
             EventHistorySchema.user_id,
-            EventHistorySchema.id.label('event_id'),
+            EventHistorySchema.id.label("event_id"),
             EventHistorySchema.event_type,
-            EventHistorySchema.version.label('event_version'),
-            EventHistorySchema.created_at.label('event_version_created_at'),
-            AppletHistorySchema.created_at.label('linked_with_applet_at'),
-            EventHistorySchema.updated_by.label('event_updated_by'),
-            func.coalesce(
-                EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id
-            ).label('activity_or_flow_id'),
-            func.coalesce(
-                ActivityFlowHistoriesSchema.name, ActivityHistorySchema.name
-            ).label('activity_or_flow_name'),
+            EventHistorySchema.version.label("event_version"),
+            EventHistorySchema.created_at.label("event_version_created_at"),
+            AppletHistorySchema.created_at.label("linked_with_applet_at"),
+            EventHistorySchema.updated_by.label("event_updated_by"),
+            func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id).label(
+                "activity_or_flow_id"
+            ),
+            func.coalesce(ActivityFlowHistoriesSchema.name, ActivityHistorySchema.name).label("activity_or_flow_name"),
             EventHistorySchema.periodicity,
             EventHistorySchema.start_date,
             EventHistorySchema.start_time,
@@ -103,12 +102,22 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
         if _filters:
             query = query.where(*_filters)
 
+        query_count: Query = query.with_only_columns(func.count())
+
         query = query.order_by(EventHistorySchema.created_at, AppletEventsSchema.created_at)
+        query = paging(query, query_params.page, query_params.limit)
 
-        result = await self._execute(query)
+        coro_data, coro_count = (
+            self._execute(query),
+            self._execute(query_count),
+        )
 
-        # TODO: Implement pagination
-        return [ExportEventHistoryDto(**row) for row in result], 0
+        res, res_count = await asyncio.gather(coro_data, coro_count)
+
+        data = [ExportEventHistoryDto(**row) for row in res]
+        total = res_count.scalars().one()
+
+        return data, total
 
 
 class AppletEventsCRUD(BaseCRUD[AppletEventsSchema]):

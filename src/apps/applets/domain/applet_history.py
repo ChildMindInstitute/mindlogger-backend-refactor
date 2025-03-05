@@ -32,6 +32,7 @@ class History(Version):
 class PublicHistory(VersionPublic):
     creator: UserPublic
 
+
 class FlowItemHistoryDto(PublicModel):
     applet_id: uuid.UUID
     applet_version: str
