@@ -7,7 +7,7 @@ from apps.activities.crud import ActivitiesCRUD, ActivityItemsCRUD
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity import ActivityService
-from apps.activity_flows.crud import FlowsCRUD, FlowItemHistoriesCRUD
+from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsCRUD
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
 from apps.activity_flows.service.flow_history import FlowHistoryService
@@ -73,7 +73,9 @@ class AppletService:
         self.user_id = user_id
         self.session = session
 
-    async def get_flow_history(self, applet_id: uuid.UUID, query_params: QueryParams) -> tuple[list[FlowItemHistoryDto], int]:
+    async def get_flow_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[FlowItemHistoryDto], int]:
         return await FlowItemHistoriesCRUD(self.session).get_flow_item_history_by_applet(applet_id, query_params)
 
     async def exist_by_id(self, applet_id: uuid.UUID):

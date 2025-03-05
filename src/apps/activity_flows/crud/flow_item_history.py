@@ -9,7 +9,7 @@ from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, Activity
 from apps.activity_flows.domain.flow_full import FlowItemHistoryFull
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import FlowItemHistoryDto
-from apps.shared.filtering import Filtering, FilterField, Comparisons
+from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
 

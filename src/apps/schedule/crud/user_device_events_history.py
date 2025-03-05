@@ -6,12 +6,12 @@ import uuid
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Query
-from sqlalchemy.sql.expression import select, and_
+from sqlalchemy.sql.expression import and_, select
 
 from apps.applets.db.schemas import AppletHistorySchema
-from apps.schedule.db.schemas import UserDeviceEventsHistorySchema, EventHistorySchema, AppletEventsSchema
+from apps.schedule.db.schemas import AppletEventsSchema, EventHistorySchema, UserDeviceEventsHistorySchema
 from apps.schedule.domain.schedule.public import ExportDeviceHistoryDto
-from apps.shared.filtering import Filtering, FilterField, Comparisons
+from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
 
