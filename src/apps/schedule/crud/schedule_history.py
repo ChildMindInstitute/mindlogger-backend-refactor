@@ -66,7 +66,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             EventHistorySchema.event_type,
             EventHistorySchema.version.label("event_version"),
             EventHistorySchema.created_at.label("event_version_created_at"),
-            AppletHistorySchema.created_at.label("linked_with_applet_at"),
+            AppletEventsSchema.created_at.label("linked_with_applet_at"),
             EventHistorySchema.updated_by.label("event_updated_by"),
             func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id).label(
                 "activity_or_flow_id"

@@ -141,6 +141,7 @@ class ExportEventHistoryDto(PublicModel):
     event_type: str
     event_version: str
     event_version_created_at: datetime.datetime
+    linked_with_applet_at: datetime.datetime
     event_updated_by: uuid.UUID | None = None
     activity_or_flow_id: uuid.UUID
     activity_or_flow_name: str
