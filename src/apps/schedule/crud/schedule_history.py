@@ -5,7 +5,7 @@ import uuid
 
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Query
-from sqlalchemy.sql import func
+from sqlalchemy.sql import and_, func
 
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
@@ -20,6 +20,7 @@ from apps.schedule.domain.schedule.public import ExportEventHistoryDto
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
+from apps.subjects.db.schemas import SubjectSchema
 from infrastructure.database import BaseCRUD
 
 
@@ -62,6 +63,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             AppletHistorySchema.version.label("applet_version"),
             AppletHistorySchema.display_name.label("applet_name"),
             EventHistorySchema.user_id,
+            SubjectSchema.id.label("subject_id"),
             EventHistorySchema.id.label("event_id"),
             EventHistorySchema.event_type,
             EventHistorySchema.version.label("event_version"),
@@ -89,6 +91,13 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             AppletEventsSchema.applet_id == AppletHistorySchema.id_version,
         )
         query = query.outerjoin(
+            SubjectSchema,
+            and_(
+                EventHistorySchema.user_id == SubjectSchema.user_id,
+                AppletHistorySchema.id == SubjectSchema.applet_id,
+            ),
+        )
+        query = query.outerjoin(
             ActivityHistorySchema,
             EventHistorySchema.activity_id == ActivityHistorySchema.id,
         )
@@ -107,6 +116,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             AppletHistorySchema.version,
             AppletHistorySchema.display_name,
             EventHistorySchema.user_id,
+            SubjectSchema.id,
             EventHistorySchema.id,
             EventHistorySchema.event_type,
             EventHistorySchema.version,
@@ -130,6 +140,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
                 AppletHistorySchema.version,
                 AppletHistorySchema.display_name,
                 EventHistorySchema.user_id,
+                SubjectSchema.id,
                 EventHistorySchema.id,
                 EventHistorySchema.event_type,
                 EventHistorySchema.version,

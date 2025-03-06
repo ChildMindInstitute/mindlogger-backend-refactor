@@ -137,6 +137,7 @@ class ExportEventHistoryDto(PublicModel):
     applet_version: str
     applet_name: str
     user_id: uuid.UUID | None = None
+    subject_id: uuid.UUID | None = None
     event_id: uuid.UUID
     event_type: str
     event_version: str
