@@ -102,9 +102,51 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
         if _filters:
             query = query.where(*_filters)
 
-        query_count: Query = query.with_only_columns(func.count())
-
+        query = query.group_by(
+            AppletHistorySchema.id,
+            AppletHistorySchema.version,
+            AppletHistorySchema.display_name,
+            EventHistorySchema.user_id,
+            EventHistorySchema.id,
+            EventHistorySchema.event_type,
+            EventHistorySchema.version,
+            EventHistorySchema.created_at,
+            AppletEventsSchema.created_at,
+            EventHistorySchema.updated_by,
+            func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id),
+            func.coalesce(ActivityFlowHistoriesSchema.name, ActivityHistorySchema.name),
+            EventHistorySchema.periodicity,
+            EventHistorySchema.start_date,
+            EventHistorySchema.start_time,
+            EventHistorySchema.end_date,
+            EventHistorySchema.end_time,
+            EventHistorySchema.selected_date,
+        )
         query = query.order_by(EventHistorySchema.created_at, AppletEventsSchema.created_at)
+
+        query_count: Query = select(func.count()).select_from(
+            query.with_only_columns(
+                AppletHistorySchema.id,
+                AppletHistorySchema.version,
+                AppletHistorySchema.display_name,
+                EventHistorySchema.user_id,
+                EventHistorySchema.id,
+                EventHistorySchema.event_type,
+                EventHistorySchema.version,
+                EventHistorySchema.created_at,
+                AppletEventsSchema.created_at,
+                EventHistorySchema.updated_by,
+                func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id),
+                func.coalesce(ActivityFlowHistoriesSchema.name, ActivityHistorySchema.name),
+                EventHistorySchema.periodicity,
+                EventHistorySchema.start_date,
+                EventHistorySchema.start_time,
+                EventHistorySchema.end_date,
+                EventHistorySchema.end_time,
+                EventHistorySchema.selected_date,
+            ).subquery()
+        )
+
         query = paging(query, query_params.page, query_params.limit)
 
         coro_data, coro_count = (
