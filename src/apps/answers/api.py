@@ -94,8 +94,7 @@ async def create_answer(
             event = await ScheduleHistoryService(session).get_by_id(schema.event_history_id)
             if (
                 event is None
-                or event.activity_flow_id != schema.flow_id
-                or event.activity_id != schema.activity_id
+                or (event.activity_flow_id != schema.flow_id and event.activity_id != schema.activity_id)
                 or (event.user_id is not None and event.user_id != user.id)
             ):
                 raise NotFoundError("Invalid event_history_id provided")
