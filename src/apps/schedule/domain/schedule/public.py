@@ -146,6 +146,8 @@ class ExportEventHistoryDto(PublicModel):
     event_updated_by: uuid.UUID | None = None
     activity_or_flow_id: uuid.UUID
     activity_or_flow_name: str
+    access_before_schedule: bool | None = None
+    one_time_completion: bool | None = None
     periodicity: str
     start_date: date | None = None
     start_time: datetime.time
