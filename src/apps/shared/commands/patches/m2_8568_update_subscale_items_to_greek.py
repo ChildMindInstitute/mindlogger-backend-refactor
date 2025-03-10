@@ -17,7 +17,7 @@ from apps.activities.db.schemas import (
 async def update_age_screen(session: AsyncSession, applet_id: UUID):
     print(f"Updating age screen for applet_id: {applet_id}")
 
-    new_question_value = {"el": "Πόσων χρονών είστε;"}
+    new_question_value = {"el": "Ηλικία:"}
 
     update_query = (
         update(ActivityItemSchema)
@@ -84,7 +84,7 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
 
 async def update_gender_screen(session: AsyncSession, applet_id: UUID):
     print(f"Updating gender screen for applet_id: {applet_id}")
-    new_question_value = {"el": "Ποιο φύλο σας αποδόθηκε κατά την γέννησή σας;"}
+    new_question_value = {"el": "Φύλο:"}
 
     translations = {
         "Male": "Άντρας",
@@ -101,12 +101,26 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
     for item in res.mappings().all():
         print(f"Updating item id: {item.id}")
 
+        # Checking for male/female index response_values, even for already translated items,
+        # this will make sure this script always update items to new translations
         male_index = next(
-            (index for (index, option) in enumerate(item.response_values["options"]) if option["text"] == "Male"), -1
+            (
+                index
+                for (index, option) in enumerate(item.response_values["options"])
+                if option["text"] == "Male"
+                or option["text"] == translations["Male"]
+                or option["text"] == "Ανδρας"  # This will fix typo for "male" in previous versions
+            ),
+            -1,
         )
 
         female_index = next(
-            (index for (index, option) in enumerate(item.response_values["options"]) if option["text"] == "Female"), -1
+            (
+                index
+                for (index, option) in enumerate(item.response_values["options"])
+                if option["text"] == "Female" or option["text"] == translations["Female"]
+            ),
+            -1,
         )
 
         if (male_index == -1) or (female_index == -1):
