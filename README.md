@@ -487,13 +487,12 @@ python src/cli.py patch exec M2-8568 -a <applet_id>
 
 #### Note: You can use environment variables to overwrite default values.
 
-#### AGE_SCREEN_QUESTION_TRANSLATION to update the question value for the age screen.
-
-#### GENDER_SCREEN_QUESTION_TRANSLATION to update the question value for the gender screen.
-
-#### GENDER_SCREEN_RESPONSE_MALE_TRANSLATION to update the response value for the male option.
-
-#### GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION to update the response value for the female option.
+| Environment variable | Text string |
+| - | - |
+| `AGE_SCREEN_QUESTION_TRANSLATION` | Question text for the Age screen |
+| `GENDER_SCREEN_QUESTION_TRANSLATION` | Question text for the Gender screen |
+| `GENDER_SCREEN_RESPONSE_MALE_TRANSLATION` | "Male" response text |
+| `GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION` | "Female" response text |
 
 ### Database relation structure
 

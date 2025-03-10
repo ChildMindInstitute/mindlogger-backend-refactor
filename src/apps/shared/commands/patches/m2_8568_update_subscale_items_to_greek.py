@@ -114,9 +114,7 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
             (
                 index
                 for (index, option) in enumerate(item.response_values["options"])
-                if option["text"] == "Male"
-                or option["text"] == translations["Male"]
-                or option["text"] == "Ανδρας"  # This will fix typo for "male" in previous versions
+                if option["value"] == 0  # male option will always have value 0
             ),
             -1,
         )
@@ -125,7 +123,7 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
             (
                 index
                 for (index, option) in enumerate(item.response_values["options"])
-                if option["text"] == "Female" or option["text"] == translations["Female"]
+                if option["value"] == 1  # female option will always have value 1
             ),
             -1,
         )
