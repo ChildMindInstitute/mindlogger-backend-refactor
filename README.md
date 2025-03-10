@@ -479,13 +479,23 @@ delete from alembic_version;
 alembic -c alembic_arbitrary.ini upgrade head
 ```
 
-### Update gender_screen and age_screen activity items strings to greek for an applet
+#### Update gender_screen and age_screen activity items strings to greek for an applet
 
 ```bash
 python src/cli.py patch exec M2-8568 -a <applet_id> 
 ```
 
-#### Database relation structure
+#### Note: You can use environment variables to overwrite default values.
+
+#### AGE_SCREEN_QUESTION_TRANSLATION to update the question value for the age screen.
+
+#### GENDER_SCREEN_QUESTION_TRANSLATION to update the question value for the gender screen.
+
+#### GENDER_SCREEN_RESPONSE_MALE_TRANSLATION to update the response value for the male option.
+
+#### GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION to update the response value for the female option.
+
+### Database relation structure
 
 ```mermaid
 
