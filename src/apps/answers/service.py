@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activities.domain.activity_history import ActivityHistoryFull
+from apps.activities.domain.response_type_config import ResponseType
 from apps.activities.errors import ActivityDoeNotExist, ActivityHistoryDoeNotExist, FlowDoesNotExist
 from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
 from apps.activity_assignments.service import ActivityAssignmentService
@@ -66,6 +67,7 @@ from apps.answers.domain.answers import (
     AnswersCopyCheckResult,
     AppletSubmission,
     FilesCopyCheckResult,
+    ItemType,
     RespondentAnswerData,
     SubmissionsActivityMetadataBySubject,
     SubmissionsSubjectCounters,
@@ -1319,6 +1321,59 @@ class AnswerService:
             activities=activities_result,
             total_answers=total,
         )
+
+    async def map_answer_item_types(  # noqa: C901
+        self, answers: list[RespondentAnswerData], activities: list[ActivityHistoryFull]
+    ) -> None:
+        activity_items_map = {}
+        for activity in activities:
+            for item in activity.items:
+                activity_items_map[str(item.id)] = item
+
+        for answer in answers:
+            if not hasattr(answer, "item_type") or answer.item_type is None:
+                answer.item_type = {}
+
+            for item_id in answer.item_ids:
+                if item := activity_items_map.get(item_id):
+                    config = item.config
+                    response_type = item.response_type
+
+                    if response_type == ResponseType.SLIDER:
+                        if getattr(config, "is_discrete", False):
+                            answer.item_type[item_id] = ItemType.DISCRETE_SLIDER
+                        else:
+                            answer.item_type[item_id] = ItemType.CONTINUOUS_SLIDER
+                    elif response_type == ResponseType.SINGLESELECT:
+                        if getattr(config, "is_per_row", False):
+                            answer.item_type[item_id] = ItemType.SINGLE_SELECTION_PER_ROW
+                        else:
+                            answer.item_type[item_id] = ItemType.SINGLE_SELECTION
+                    elif response_type == ResponseType.MULTISELECT:
+                        if getattr(config, "is_per_row", False):
+                            answer.item_type[item_id] = ItemType.MULTIPLE_SELECTION_PER_ROW
+                        else:
+                            answer.item_type[item_id] = ItemType.MULTIPLE_SELECTION
+                    elif response_type == ResponseType.DATE:
+                        answer.item_type[item_id] = ItemType.DATE
+                    elif response_type == ResponseType.TIME:
+                        answer.item_type[item_id] = ItemType.TIME
+                    elif response_type == ResponseType.TIME_RANGE:
+                        answer.item_type[item_id] = ItemType.TIME_RANGE
+                    elif response_type == ResponseType.TEXT:
+                        answer.item_type[item_id] = ItemType.TEXT
+                    elif response_type == ResponseType.DRAWING:
+                        answer.item_type[item_id] = ItemType.DRAWING
+                    elif response_type == ResponseType.PHOTO:
+                        answer.item_type[item_id] = ItemType.PHOTO
+                    elif response_type == ResponseType.VIDEO:
+                        answer.item_type[item_id] = ItemType.VIDEO
+                    elif response_type == ResponseType.GEOLOCATION:
+                        answer.item_type[item_id] = ItemType.GEOLOCATION
+                    elif response_type == ResponseType.AUDIO:
+                        answer.item_type[item_id] = ItemType.AUDIO
+                    elif response_type == ResponseType.AUDIO_PLAYER:
+                        answer.item_type[item_id] = ItemType.AUDIO_PLAYER
 
     async def get_activity_identifiers(
         self, activity_id: uuid.UUID, filters: IdentifiersQueryParams
