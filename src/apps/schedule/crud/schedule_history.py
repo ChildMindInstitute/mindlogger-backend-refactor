@@ -104,11 +104,17 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
         )
         query = query.outerjoin(
             ActivityHistorySchema,
-            EventHistorySchema.activity_id == ActivityHistorySchema.id,
+            and_(
+                EventHistorySchema.activity_id == ActivityHistorySchema.id,
+                AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
+            ),
         )
         query = query.outerjoin(
             ActivityFlowHistoriesSchema,
-            EventHistorySchema.activity_flow_id == ActivityFlowHistoriesSchema.id,
+            and_(
+                EventHistorySchema.activity_flow_id == ActivityFlowHistoriesSchema.id,
+                AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id,
+            ),
         )
         query = query.where(AppletHistorySchema.id == applet_id)
 
