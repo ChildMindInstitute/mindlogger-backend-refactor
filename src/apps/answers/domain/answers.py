@@ -1,6 +1,7 @@
 import datetime
 import uuid
 from copy import deepcopy
+from enum import Enum
 from typing import Any, Generic
 
 from pydantic import BaseModel, Field, root_validator, validator
@@ -23,6 +24,27 @@ from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.domain.types import _BaseModel
 from apps.shared.locale import I18N
 from apps.subjects.domain import SubjectReadResponse
+
+
+class ItemType(str, Enum):
+    SINGLE_SELECTION = "single_selection"
+    MULTIPLE_SELECTION = "multiple_selection"
+    DISCRETE_SLIDER = "discrete_slider"
+    CONTINUOUS_SLIDER = "continuous_slider"
+    DATE = "date"
+    TIME = "time"
+    TIME_RANGE = "time_range"
+    SINGLE_SELECTION_PER_ROW = "single_selection_per_row"
+    MULTIPLE_SELECTION_PER_ROW = "multiple_selection_per_row"
+    DISCRETE_SLIDER_PER_ROW = "discrete_slider_per_row"
+    CONTINUOUS_SLIDER_PER_ROW = "continuous_slider_per_row"
+    TEXT = "text"
+    DRAWING = "drawing"
+    PHOTO = "photo"
+    VIDEO = "video"
+    GEOLOCATION = "geolocation"
+    AUDIO = "audio"
+    AUDIO_PLAYER = "audio_player"
 
 
 class ClientMeta(InternalModel):
