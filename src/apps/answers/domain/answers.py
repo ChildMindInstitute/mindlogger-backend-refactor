@@ -585,6 +585,7 @@ class UserAnswerDataBase(BaseModel):
     created_at: datetime.datetime
     migrated_data: dict | None = None
     client: ClientMeta | None = None
+    item_type: dict[str, ItemType] = {}
 
 
 class RespondentAnswerData(UserAnswerDataBase, InternalModel):
