@@ -1331,9 +1331,6 @@ class AnswerService:
                 activity_items_map[str(item.id)] = item
 
         for answer in answers:
-            if not hasattr(answer, "item_type") or answer.item_type is None:
-                answer.item_type = {}
-
             for item_id in answer.item_ids:
                 if item := activity_items_map.get(item_id):
                     config = item.config
