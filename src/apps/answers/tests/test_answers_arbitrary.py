@@ -697,7 +697,7 @@ class TestAnswerActivityItems(BaseTest):
         expected_keys = {
             "activityHistoryId", "activityId", "answer", "appletHistoryId",
             "appletId", "createdAt", "events", "flowHistoryId", "flowId",
-            "flowName", "id", "itemIds", "migratedData", "respondentId",
+            "flowName", "id", "itemIds", "itemType", "migratedData", "respondentId",
             "respondentSecretId", "reviewedAnswerId", "userPublicKey",
             "version", "submitId", "scheduledDatetime", "startDatetime",
             "endDatetime", "legacyProfileId", "migratedDate", "relation",
