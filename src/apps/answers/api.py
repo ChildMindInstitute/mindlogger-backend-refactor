@@ -735,6 +735,7 @@ async def applet_answers_export(
         applet_id, query_params, activities_last_version
     )
     total_answers = data.total_answers
+    await AnswerService(session, user.id, answer_session).map_answer_item_types(data.answers, data.activities)
     for answer in data.answers:
         if answer.is_manager:
             answer.respondent_secret_id = f"[admin account] ({answer.respondent_secret_id})"
