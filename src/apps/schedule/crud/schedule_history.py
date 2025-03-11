@@ -59,7 +59,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
     async def retrieve_applet_all_events_history(
         self, applet_id: uuid.UUID, query_params: QueryParams
     ) -> tuple[list[ExportEventHistoryDto], int]:
-        query: Query = select(
+        columns = [
             AppletHistorySchema.id.label("applet_id"),
             AppletHistorySchema.version.label("applet_version"),
             AppletHistorySchema.display_name.label("applet_name"),
@@ -83,7 +83,9 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             EventHistorySchema.end_date,
             EventHistorySchema.end_time,
             EventHistorySchema.selected_date,
-        )
+        ]
+
+        query: Query = select(*columns)
         query = query.select_from(EventHistorySchema)
         query = query.join(
             AppletEventsSchema,
@@ -114,56 +116,12 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
         if _filters:
             query = query.where(*_filters)
 
-        query = query.group_by(
-            AppletHistorySchema.id,
-            AppletHistorySchema.version,
-            AppletHistorySchema.display_name,
-            EventHistorySchema.user_id,
-            SubjectSchema.id,
-            EventHistorySchema.id,
-            EventHistorySchema.event_type,
-            EventHistorySchema.version,
-            EventHistorySchema.created_at,
-            AppletEventsSchema.created_at,
-            EventHistorySchema.updated_by,
-            func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id),
-            func.coalesce(ActivityFlowHistoriesSchema.name, ActivityHistorySchema.name),
-            EventHistorySchema.access_before_schedule,
-            EventHistorySchema.one_time_completion,
-            EventHistorySchema.periodicity,
-            EventHistorySchema.start_date,
-            EventHistorySchema.start_time,
-            EventHistorySchema.end_date,
-            EventHistorySchema.end_time,
-            EventHistorySchema.selected_date,
-        )
+        unlabeled_columns = [col.element if hasattr(col, "element") else col for col in columns]
+
+        query = query.group_by(*unlabeled_columns)
         query = query.order_by(EventHistorySchema.created_at, AppletEventsSchema.created_at)
 
-        query_count: Query = select(func.count()).select_from(
-            query.with_only_columns(
-                AppletHistorySchema.id,
-                AppletHistorySchema.version,
-                AppletHistorySchema.display_name,
-                EventHistorySchema.user_id,
-                SubjectSchema.id,
-                EventHistorySchema.id,
-                EventHistorySchema.event_type,
-                EventHistorySchema.version,
-                EventHistorySchema.created_at,
-                AppletEventsSchema.created_at,
-                EventHistorySchema.updated_by,
-                func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id),
-                func.coalesce(ActivityFlowHistoriesSchema.name, ActivityHistorySchema.name),
-                EventHistorySchema.access_before_schedule,
-                EventHistorySchema.one_time_completion,
-                EventHistorySchema.periodicity,
-                EventHistorySchema.start_date,
-                EventHistorySchema.start_time,
-                EventHistorySchema.end_date,
-                EventHistorySchema.end_time,
-                EventHistorySchema.selected_date,
-            ).subquery()
-        )
+        query_count: Query = select(func.count()).select_from(query.with_only_columns(*unlabeled_columns).subquery())
 
         query = paging(query, query_params.page, query_params.limit)
 

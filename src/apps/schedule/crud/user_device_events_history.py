@@ -96,7 +96,7 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
     async def retrieve_applet_all_device_events_history(
         self, applet_id: uuid.UUID, query_params: QueryParams
     ) -> tuple[list[ExportDeviceHistoryDto], int]:
-        query: Query = select(
+        columns = [
             UserDeviceEventsHistorySchema.user_id,
             UserDeviceEventsHistorySchema.device_id,
             UserDeviceEventsHistorySchema.event_id,
@@ -106,7 +106,9 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
             EventHistorySchema.end_date,
             EventHistorySchema.end_time,
             UserDeviceEventsHistorySchema.created_at,
-        )
+        ]
+
+        query: Query = select(*columns)
         query = query.select_from(UserDeviceEventsHistorySchema)
         query = query.join(
             EventHistorySchema,
@@ -129,33 +131,12 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
         if _filters:
             query = query.where(*_filters)
 
-        query = query.group_by(
-            UserDeviceEventsHistorySchema.user_id,
-            UserDeviceEventsHistorySchema.device_id,
-            UserDeviceEventsHistorySchema.event_id,
-            UserDeviceEventsHistorySchema.event_version,
-            EventHistorySchema.start_date,
-            EventHistorySchema.start_time,
-            EventHistorySchema.end_date,
-            EventHistorySchema.end_time,
-            UserDeviceEventsHistorySchema.created_at,
-        )
+        unlabeled_columns = [col.element if hasattr(col, "element") else col for col in columns]
+        query = query.group_by(*unlabeled_columns)
 
         query = query.order_by(UserDeviceEventsHistorySchema.created_at)
 
-        query_count: Query = select(func.count()).select_from(
-            query.with_only_columns(
-                UserDeviceEventsHistorySchema.user_id,
-                UserDeviceEventsHistorySchema.device_id,
-                UserDeviceEventsHistorySchema.event_id,
-                UserDeviceEventsHistorySchema.event_version,
-                EventHistorySchema.start_date,
-                EventHistorySchema.start_time,
-                EventHistorySchema.end_date,
-                EventHistorySchema.end_time,
-                UserDeviceEventsHistorySchema.created_at,
-            ).subquery()
-        )
+        query_count: Query = select(func.count()).select_from(query.with_only_columns(*unlabeled_columns).subquery())
 
         query = paging(query, query_params.page, query_params.limit)
 
