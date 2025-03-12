@@ -1332,48 +1332,46 @@ class AnswerService:
 
         for answer in answers:
             for item_id in answer.item_ids:
-                item = activity_items_map.get(item_id)
-                if not item:
-                    continue
+                if (_item := activity_items_map.get(item_id)) is not None:
+                    item = _item
+                    config = item.config
+                    response_type = item.response_type
 
-                config = item.config
-                response_type = item.response_type
-
-                if response_type == ResponseType.SLIDER:
-                    if getattr(config, "is_discrete", False):
-                        answer.item_type[item_id] = ItemType.DISCRETE_SLIDER
-                    else:
-                        answer.item_type[item_id] = ItemType.CONTINUOUS_SLIDER
-                elif response_type == ResponseType.SINGLESELECT:
-                    if getattr(config, "is_per_row", False):
-                        answer.item_type[item_id] = ItemType.SINGLE_SELECTION_PER_ROW
-                    else:
-                        answer.item_type[item_id] = ItemType.SINGLE_SELECTION
-                elif response_type == ResponseType.MULTISELECT:
-                    if getattr(config, "is_per_row", False):
-                        answer.item_type[item_id] = ItemType.MULTIPLE_SELECTION_PER_ROW
-                    else:
-                        answer.item_type[item_id] = ItemType.MULTIPLE_SELECTION
-                elif response_type == ResponseType.DATE:
-                    answer.item_type[item_id] = ItemType.DATE
-                elif response_type == ResponseType.TIME:
-                    answer.item_type[item_id] = ItemType.TIME
-                elif response_type == ResponseType.TIMERANGE:
-                    answer.item_type[item_id] = ItemType.TIME_RANGE
-                elif response_type == ResponseType.TEXT:
-                    answer.item_type[item_id] = ItemType.TEXT
-                elif response_type == ResponseType.DRAWING:
-                    answer.item_type[item_id] = ItemType.DRAWING
-                elif response_type == ResponseType.PHOTO:
-                    answer.item_type[item_id] = ItemType.PHOTO
-                elif response_type == ResponseType.VIDEO:
-                    answer.item_type[item_id] = ItemType.VIDEO
-                elif response_type == ResponseType.GEOLOCATION:
-                    answer.item_type[item_id] = ItemType.GEOLOCATION
-                elif response_type == ResponseType.AUDIO:
-                    answer.item_type[item_id] = ItemType.AUDIO
-                elif response_type == ResponseType.AUDIOPLAYER:
-                    answer.item_type[item_id] = ItemType.AUDIO_PLAYER
+                    if response_type == ResponseType.SLIDER:
+                        if getattr(config, "is_discrete", False):
+                            answer.item_type[item_id] = ItemType.DISCRETE_SLIDER
+                        else:
+                            answer.item_type[item_id] = ItemType.CONTINUOUS_SLIDER
+                    elif response_type == ResponseType.SINGLESELECT:
+                        if getattr(config, "is_per_row", False):
+                            answer.item_type[item_id] = ItemType.SINGLE_SELECTION_PER_ROW
+                        else:
+                            answer.item_type[item_id] = ItemType.SINGLE_SELECTION
+                    elif response_type == ResponseType.MULTISELECT:
+                        if getattr(config, "is_per_row", False):
+                            answer.item_type[item_id] = ItemType.MULTIPLE_SELECTION_PER_ROW
+                        else:
+                            answer.item_type[item_id] = ItemType.MULTIPLE_SELECTION
+                    elif response_type == ResponseType.DATE:
+                        answer.item_type[item_id] = ItemType.DATE
+                    elif response_type == ResponseType.TIME:
+                        answer.item_type[item_id] = ItemType.TIME
+                    elif response_type == ResponseType.TIMERANGE:
+                        answer.item_type[item_id] = ItemType.TIME_RANGE
+                    elif response_type == ResponseType.TEXT:
+                        answer.item_type[item_id] = ItemType.TEXT
+                    elif response_type == ResponseType.DRAWING:
+                        answer.item_type[item_id] = ItemType.DRAWING
+                    elif response_type == ResponseType.PHOTO:
+                        answer.item_type[item_id] = ItemType.PHOTO
+                    elif response_type == ResponseType.VIDEO:
+                        answer.item_type[item_id] = ItemType.VIDEO
+                    elif response_type == ResponseType.GEOLOCATION:
+                        answer.item_type[item_id] = ItemType.GEOLOCATION
+                    elif response_type == ResponseType.AUDIO:
+                        answer.item_type[item_id] = ItemType.AUDIO
+                    elif response_type == ResponseType.AUDIOPLAYER:
+                        answer.item_type[item_id] = ItemType.AUDIO_PLAYER
 
     async def get_activity_identifiers(
         self, activity_id: uuid.UUID, filters: IdentifiersQueryParams
