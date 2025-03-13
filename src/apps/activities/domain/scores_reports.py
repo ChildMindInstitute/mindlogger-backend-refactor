@@ -173,6 +173,7 @@ class ScoreConditionalLogicMobile(PublicModel):
 class SubscaleCalculationType(enum.StrEnum):
     SUM = "sum"
     AVERAGE = "average"
+    PERCENTAGE = "percentage"
 
 
 class SubScaleLookupTable(PublicModel):
