@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - develop
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
   workflow_dispatch: {}
 
 
@@ -33,12 +39,12 @@ env:
 
 
 jobs:
-  build_job:
+  build:
     name: Docker Build and Push
     runs-on: ubuntu-latest
     outputs:
-      IMAGE_NAME: ${{ steps.sha.outputs.IMAGE_NAME }}
-      IMAGE_SHA: ${{ steps.sha.outputs.SHORT_SHA }}
+      image-name: ${{ steps.sha.outputs.IMAGE_NAME }}
+      image-sha: ${{ steps.sha.outputs.SHORT_SHA }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -79,16 +85,17 @@ jobs:
         run: |
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_ADDRESS }}
 
-      - name: configure aws DR credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role
-          role-session-name: gha-oidc-runner
-          aws-region: ${{ env.DR_AWS_REGION }}
+#      - name: configure aws DR credentials
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role
+#          role-session-name: gha-oidc-runner
+#          aws-region: ${{ env.DR_AWS_REGION }}
 
-      - name: Login to DR ECR
-        run: |
-          aws ecr get-login-password --region ${{ env.DR_AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.DR_ECR_ADDRESS }}
+      # Not needed.  ECR replicates to DR
+#      - name: Login to DR ECR
+#        run: |
+#          aws ecr get-login-password --region ${{ env.DR_AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.DR_ECR_ADDRESS }}
 
       - name: Generate short sha
         id: sha
@@ -112,8 +119,8 @@ jobs:
           tags: |
             ${{ env.ECR_REPO }}:latest
             ${{ env.ECR_REPO }}:${{ steps.sha.outputs.SHORT_SHA }}
-            ${{ env.DR_ECR_REPO }}:latest
-            ${{ env.DR_ECR_REPO }}:${{ steps.sha.outputs.SHORT_SHA }}
+#            ${{ env.DR_ECR_REPO }}:latest
+#            ${{ env.DR_ECR_REPO }}:${{ steps.sha.outputs.SHORT_SHA }}
           platforms: linux/amd64,linux/arm64
 
       - name: Upload artifacts
@@ -124,14 +131,18 @@ jobs:
             ${GITHUB_REPO_NAME}/${OUT_DIR}/build.yml
             ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
 
-  deploy_to_dev:
+  deploy-dev:
     name: Deploy to Dev
-    needs: build_job
+    needs: [build]
 #    environment: dev
     #if: ${{ github.event.pull_request.merged }}
-    uses: ./.github/workflows/run_deploy_dev.yaml
+#    uses: ./.github/workflows/run_deploy_dev.yaml
+    uses: ./.github/workflows/_run_deploy.yaml
     with:
+      image: ${{ env.ECR_REPO }}
+      image-tag: ${{ needs.build_job.outputs.image-sha }}
       IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
+      env-name: dev
 
 #  deploy_to_uat:
 #    needs: build_job

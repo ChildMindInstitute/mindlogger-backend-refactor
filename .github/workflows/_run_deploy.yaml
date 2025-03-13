@@ -1,0 +1,237 @@
+name: Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        required: true
+        type: string
+        description: Image
+      image-tag:
+        required: true
+        type: string
+        description: Docker tag
+      env-name:
+        required: true
+        type: choice
+        description: Environment name
+        options:
+          - dev
+          - test
+          - uat
+          - stage
+          - prod
+          - prod-dr
+
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
+      env-name:
+        required: true
+        type: string
+      image-tag:
+        required: true
+        type: string
+        description: Docker tag
+
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+
+jobs:
+  setup-vars:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Map env to AWS Role
+        id: role
+        run: |
+          ENV_NAME="${{ inputs.env-name }}"
+          case "$ENV_NAME" in
+            "dev")
+              echo 'role="arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role"' >> "$GITHUB_OUTPUT"
+            ;;
+            "test")
+              echo 'role="arn:aws:iam::641513112151:role/cmiml-test-oidc-github-role"' >> "$GITHUB_OUTPUT"
+            ;;
+            "uat")
+              echo 'role="arn:aws:iam::641513112151:role/cmiml-uat-oidc-github-role"' >> "$GITHUB_OUTPUT"
+            ;;
+            "stage")
+              echo 'role="arn:aws:iam::641513112151:role/cmiml-stage-oidc-github-role"' >> "$GITHUB_OUTPUT"
+            ;;
+            "prod")
+              echo 'role="arn:aws:iam::641513112151:role/cmiml-prod-oidc-github-role"' >> "$GITHUB_OUTPUT"
+            ;;
+            "prod-dr")
+              echo 'role="arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role"' >> "$GITHUB_OUTPUT"
+            ;;
+            *)
+              echo "Bad environment name"
+              exit 1;
+          esac
+
+      - name: Map env to AWS Region
+        id: region
+        run: |
+          ENV_NAME="${{ inputs.env-name }}"
+          case "$ENV_NAME" in
+            "prod-dr")
+              echo "region=us-west-2" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "region=us-east-1" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+      - name: Map env to ECS cluster
+        id: cluster
+        run: |
+          ENV_NAME="${{ inputs.env-name }}"
+          case "$ENV_NAME" in
+            "prod-dr")
+              echo "cluster=prod-dr-us-west-2" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "cluster=cmiml-${ENV_NAME}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+    outputs:
+      role: ${{ steps.role.outputs.role }}
+      region: ${{ steps.region.outputs.role }}
+      cluster: ${{ steps.cluster.outputs.cluster }}
+
+
+  run-migration:
+    runs-on: ubuntu-latest
+    needs: [setup-vars]
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ needs.setup-vars.outputs.role }}
+          role-session-name: OIDC-GHA-migration-session
+          aws-region: ${{ steps.region.outputs.role }}
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition migration --query taskDefinition > task-definition.json
+
+      - name: Render Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: mind_logger
+          image: ${{ inputs.image }}:${{ inputs.image-tag }}
+          environment-variables: |
+            DD_VERSION=${{ inputs.image-tag }}
+          docker-labels: |
+            com.datadoghq.tags.version=${{ inputs.image-tag }}
+      - name: Update Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+#          cluster: ${{ needs.setup-vars.outputs.cluster }}
+
+      # TODO exec task
+            
+            
+
+  deploy_to_ecs:
+    runs-on: ubuntu-latest
+    needs: [setup-vars, run-migration]
+
+    name: Deploy ${{ matrix.apps.name }}
+    strategy:
+      fail-fast: true
+      matrix:
+        apps:
+          - { name: api, task-def: backend_api, service: backend, container: mind_logger }
+          - { name: worker, task-def: backend_worker, service: backend-worker, container: mind_logger_worker }
+          - { name: scheduler, task-def: backend_scheduler, service: backend-scheduler, container: mind_logger_scheduler }
+
+    env:
+      AWS_REGION: ${{ needs.setup-vars.outputs.region }}
+
+    steps:
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ needs.setup-vars.outputs.role }}
+          role-session-name: OIDC-GHA-session
+          aws-region: ${{ needs.setup-vars.outputs.region }}
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ matrix.apps.task-def }} --query taskDefinition > task-definition.json
+
+      - name: Render Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ matrix.apps.container }}
+          image: ${{ inputs.image }}:${{ inputs.image-tag }}
+
+      - name: Update Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ matrix.apps.service }}
+          cluster: ${{ needs.setup-vars.outputs.cluster }}
+          wait-for-service-stability: true
+
+#      - name: change image and register task definitions
+#        run: |
+#          for app in api worker scheduler; do
+#            export NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$IMAGE_NAME" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+#            aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINITION"
+#          done
+#
+#      - name: update services
+#        run: |
+#          for app in scheduler worker; do
+#            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}-${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
+#          done
+#
+#          #this step is separate because api service and task definition names are different, need to be changed
+#          aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_api
+
+
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && (needs.deploy_to_ecs.result == 'failure' || needs.deploy_to_ecs.result == 'timed_out') }}
+    needs:
+      - deploy_to_ecs
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on failure"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: failure
+          SLACK_WEBHOOK: ${{ secrets.DEV_SLACK_WEBHOOK }}
+          SLACK_CHANNEL: gha-deploy-to-dev
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TITLE: Deployment to DEV environment
+          SLACK_MESSAGE: 'Error when executing deployment!'
+
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && (needs.deploy_to_ecs.result == 'success') }}
+    needs:
+      - deploy_to_ecs
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Send Slack message on success"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.DEV_SLACK_WEBHOOK }}
+          SLACK_CHANNEL: gha-deploy-to-dev
+          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_TITLE: Deployment to DEV environment
+          SLACK_MESSAGE: 'Deployment is successfull!'
