@@ -143,7 +143,6 @@ jobs:
     with:
       image: ${{ needs.build_job.outputs.ecr-repo }}
       image-tag: ${{ needs.build_job.outputs.image-sha }}
-      IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
       env-name: dev
 
 #  deploy_to_uat:
