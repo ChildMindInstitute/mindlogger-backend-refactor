@@ -81,10 +81,10 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
 
     structlog.configure(
         processors=shared_processors
-        + [
-            # Prepare event dict for `ProcessorFormatter`.
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
+                   + [
+                       # Prepare event dict for `ProcessorFormatter`.
+                       structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+                   ],
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
@@ -188,8 +188,6 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                 logger_fn = access_logger.warn
             elif 600 > status_code >= 500:
                 logger_fn = access_logger.error
-
-
 
             # Recreate the Uvicorn access log format, but add all parameters as structured information
             logger_fn(
