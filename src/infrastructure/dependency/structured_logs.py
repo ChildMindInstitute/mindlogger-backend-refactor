@@ -165,6 +165,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         except Exception as e:
             structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
+            # Re-raise to let FastAPI/Starlette do its thing with exceptions in other middlewares
             raise e
         finally:
             access_logger = structlog.stdlib.get_logger("api.access")
@@ -178,8 +179,19 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             http_method = request.method
             http_version = request.scope["http_version"]
 
+            # Pick the right log level based on status code:
+            # - Info: 2XX, 3XX
+            # - Warn: 4XX (user/client error)
+            # - Error: 5XX (Backend error)
+            logger_fn = access_logger.info
+            if 400 <= status_code > 500:
+                logger_fn = access_logger.warn
+            elif 600 > status_code >= 500:
+                logger_fn = access_logger.error
+
+
+
             # Recreate the Uvicorn access log format, but add all parameters as structured information
-            logger_fn = access_logger.warn if 400 < status_code < 500 else access_logger.info
             logger_fn(
                 f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
                 http={

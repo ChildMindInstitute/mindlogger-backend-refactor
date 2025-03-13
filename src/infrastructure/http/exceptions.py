@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse
 
 from apps.shared.domain import ErrorResponse, ErrorResponseMulti
 from apps.shared.exception import BaseError
+from config import settings
 from infrastructure.logger import logger
 
 
@@ -16,7 +17,8 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
     # TODO Some unit tests check for error messages.  Might be bad?  If the erroring endpoint doesn't log anything
     # TODO then there is nothing in the log.  Logging here ensures errors actually get logged.
-    # logger.error(error)
+    if settings.env != "testing":
+        logger.warning(error)
 
     response = ErrorResponseMulti(
         result=[
