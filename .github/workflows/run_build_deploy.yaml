@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
   pull_request:
     types:
       - opened
