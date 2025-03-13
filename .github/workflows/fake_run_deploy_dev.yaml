@@ -1,0 +1,131 @@
+name: Testing Build and Deploy
+on:
+  push:
+    branches:
+      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
+  workflow_dispatch: {}
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER_NAME: cmiml-dev
+  IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+
+jobs:
+  fbuild:
+    runs-on: ubuntu-latest
+    outputs:
+      ecr-repo: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
+      image-sha: latest
+    steps:
+      - name: Nothing
+        run: |
+          echo 1
+
+  deploy-dev:
+    name: Deploy to Dev
+    needs: [fake-build]
+#    environment: dev
+    #if: ${{ github.event.pull_request.merged }}
+#    uses: ./.github/workflows/run_deploy_dev.yaml
+    uses: ./.github/workflows/_run_deploy.yaml
+    with:
+      image: ${{ needs.build.outputs.ecr-repo }}
+      image-tag: ${{ needs.build.outputs.image-sha }}
+      env-name: dev
+
+#  deploy_to_ecs:
+#    runs-on: ubuntu-latest
+##    needs: run_migration
+#
+#    name: Deploy ${{ matrix.apps.name }}
+#    strategy:
+#      fail-fast: true
+#
+#      matrix:
+#        apps:
+#          - { name: api, task-def: backend_api, service: backend, container: mind_logger }
+#          - { name: worker, task-def: backend_worker, service: backend-worker, container: mind_logger_worker }
+#          - { name: scheduler, task-def: backend_scheduler, service: backend-scheduler, container: mind_logger_scheduler }
+#
+#    steps:
+#      - name: configure aws credentials
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role
+#          role-session-name: OIDC-GHA-session
+#          aws-region: ${{ env.AWS_REGION }}
+#
+#      - name: Download task definition
+#        run: |
+#          aws ecs describe-task-definition --task-definition ${{ matrix.apps.task-def }} --query taskDefinition > task-definition.json
+#
+#      - name: Render Amazon ECS task definition
+#        id: task-def
+#        uses: aws-actions/amazon-ecs-render-task-definition@v1
+#        with:
+#          task-definition: task-definition.json
+#          container-name: ${{ matrix.apps.container }}
+#          image: ${{ inputs.IMAGE_NAME }}
+#
+#      - name: Update Task Definition
+#        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+#        with:
+#          task-definition: ${{ steps.task-def.outputs.task-definition }}
+#          service: ${{ matrix.apps.service }}
+#          cluster: cmiml-dev
+#          wait-for-service-stability: true
+#
+##      - name: change image and register task definitions
+##        run: |
+##          for app in api worker scheduler; do
+##            export NEW_TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition ${TASK_FAMILY_PREFIX}_${app} --region ${AWS_REGION} | jq --arg IMAGE "$IMAGE_NAME" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+##            aws ecs register-task-definition --region ${AWS_REGION} --cli-input-json "$NEW_TASK_DEFINITION"
+##          done
+##
+##      - name: update services
+##        run: |
+##          for app in scheduler worker; do
+##            aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME}-${app} --task-definition ${TASK_FAMILY_PREFIX}_${app}
+##          done
+##
+##          #this step is separate because api service and task definition names are different, need to be changed
+##          aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --task-definition ${TASK_FAMILY_PREFIX}_api
+#
+#
+#  on-failure:
+#    runs-on: ubuntu-latest
+#    if: ${{ !cancelled() && (needs.deploy_to_ecs.result == 'failure' || needs.deploy_to_ecs.result == 'timed_out') }}
+#    needs:
+#      - deploy_to_ecs
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: "Send Slack message on failure"
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: failure
+#          SLACK_WEBHOOK: ${{ secrets.DEV_SLACK_WEBHOOK }}
+#          SLACK_CHANNEL: gha-deploy-to-dev
+#          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+#          SLACK_TITLE: Deployment to DEV environment
+#          SLACK_MESSAGE: 'Error when executing deployment!'
+#
+#  on-success:
+#    runs-on: ubuntu-latest
+#    if: ${{ !cancelled() && (needs.deploy_to_ecs.result == 'success') }}
+#    needs:
+#      - deploy_to_ecs
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: "Send Slack message on success"
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: success
+#          SLACK_WEBHOOK: ${{ secrets.DEV_SLACK_WEBHOOK }}
+#          SLACK_CHANNEL: gha-deploy-to-dev
+#          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+#          SLACK_TITLE: Deployment to DEV environment
+#          SLACK_MESSAGE: 'Deployment is successfull!'

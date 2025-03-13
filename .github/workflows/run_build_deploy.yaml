@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - develop
-      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
-  pull_request:
-    types:
-      - opened
-      - synchronize
-    branches:
-      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
+#      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
+#  pull_request:
+#    types:
+#      - opened
+#      - synchronize
+#    branches:
+#      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
   workflow_dispatch: {}
 
 
@@ -141,8 +141,8 @@ jobs:
 #    uses: ./.github/workflows/run_deploy_dev.yaml
     uses: ./.github/workflows/_run_deploy.yaml
     with:
-      image: ${{ needs.build_job.outputs.ecr-repo }}
-      image-tag: ${{ needs.build_job.outputs.image-sha }}
+      image: ${{ needs.build.outputs.ecr-repo }}
+      image-tag: ${{ needs.build.outputs.image-sha }}
       env-name: dev
 
 #  deploy_to_uat:
