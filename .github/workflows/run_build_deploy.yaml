@@ -46,6 +46,7 @@ jobs:
     outputs:
       image-name: ${{ steps.sha.outputs.IMAGE_NAME }}
       image-sha: ${{ steps.sha.outputs.SHORT_SHA }}
+      ecr-repo: ${{ env.ECR_REPO }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -140,7 +141,7 @@ jobs:
 #    uses: ./.github/workflows/run_deploy_dev.yaml
     uses: ./.github/workflows/_run_deploy.yaml
     with:
-      image: ${{ env.ECR_REPO }}
+      image: ${{ needs.build_job.outputs.ecr-repo }}
       image-tag: ${{ needs.build_job.outputs.image-sha }}
       IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
       env-name: dev
