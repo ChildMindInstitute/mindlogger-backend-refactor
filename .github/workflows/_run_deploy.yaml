@@ -53,22 +53,22 @@ jobs:
           ENV_NAME="${{ inputs.env-name }}"
           case "$ENV_NAME" in
             "dev")
-              echo 'role="arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role"' >> "$GITHUB_OUTPUT"
+              echo 'role=arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             "test")
-              echo 'role="arn:aws:iam::641513112151:role/cmiml-test-oidc-github-role"' >> "$GITHUB_OUTPUT"
+              echo 'role=arn:aws:iam::641513112151:role/cmiml-test-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             "uat")
-              echo 'role="arn:aws:iam::641513112151:role/cmiml-uat-oidc-github-role"' >> "$GITHUB_OUTPUT"
+              echo 'role=arn:aws:iam::641513112151:role/cmiml-uat-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             "stage")
-              echo 'role="arn:aws:iam::641513112151:role/cmiml-stage-oidc-github-role"' >> "$GITHUB_OUTPUT"
+              echo 'role=arn:aws:iam::641513112151:role/cmiml-stage-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             "prod")
-              echo 'role="arn:aws:iam::641513112151:role/cmiml-prod-oidc-github-role"' >> "$GITHUB_OUTPUT"
+              echo 'role=arn:aws:iam::641513112151:role/cmiml-prod-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             "prod-dr")
-              echo 'role="arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role"' >> "$GITHUB_OUTPUT"
+              echo 'role=arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             *)
               echo "Bad environment name"
