@@ -1,15 +1,28 @@
 __all__ = ["UserDeviceEventsHistoryCRUD"]
 
+import asyncio
 import datetime
 import uuid
 
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Query
-from sqlalchemy.sql.expression import select
+from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import and_, select
 
-from apps.schedule.db.schemas import UserDeviceEventsHistorySchema
+from apps.applets.db.schemas import AppletHistorySchema
+from apps.schedule.db.schemas import AppletEventsSchema, EventHistorySchema, UserDeviceEventsHistorySchema
+from apps.schedule.domain.schedule.public import ExportDeviceHistoryDto
+from apps.shared.filtering import Comparisons, FilterField, Filtering
+from apps.shared.paging import paging
+from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
+
+
+class _UserDeviceEventsHistoryExportFilters(Filtering):
+    respondent_ids = FilterField(UserDeviceEventsHistorySchema.user_id, Comparisons.IN)
+    from_date = FilterField(EventHistorySchema.created_at, Comparisons.GREAT_OR_EQUAL)
+    to_date = FilterField(EventHistorySchema.created_at, Comparisons.LESS_OR_EQUAL)
 
 
 class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
@@ -79,3 +92,62 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
 
     async def get_all(self) -> list[UserDeviceEventsHistorySchema]:
         return await self._all()
+
+    async def retrieve_applet_all_device_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportDeviceHistoryDto], int]:
+        columns = [
+            UserDeviceEventsHistorySchema.user_id,
+            UserDeviceEventsHistorySchema.device_id,
+            UserDeviceEventsHistorySchema.event_id,
+            UserDeviceEventsHistorySchema.event_version,
+            EventHistorySchema.start_date,
+            EventHistorySchema.start_time,
+            EventHistorySchema.end_date,
+            EventHistorySchema.end_time,
+            UserDeviceEventsHistorySchema.created_at,
+        ]
+
+        query: Query = select(*columns)
+        query = query.select_from(UserDeviceEventsHistorySchema)
+        query = query.join(
+            EventHistorySchema,
+            and_(
+                UserDeviceEventsHistorySchema.event_id == EventHistorySchema.id,
+                UserDeviceEventsHistorySchema.event_version == EventHistorySchema.version,
+            ),
+        )
+        query = query.join(
+            AppletEventsSchema,
+            EventHistorySchema.id_version == AppletEventsSchema.event_id,
+        )
+        query = query.join(
+            AppletHistorySchema,
+            AppletEventsSchema.applet_id == AppletHistorySchema.id_version,
+        )
+        query = query.where(AppletHistorySchema.id == applet_id)
+
+        _filters = _UserDeviceEventsHistoryExportFilters().get_clauses(**query_params.filters)
+        if _filters:
+            query = query.where(*_filters)
+
+        unlabeled_columns = [col.element if hasattr(col, "element") else col for col in columns]
+        query = query.group_by(*unlabeled_columns)
+
+        query = query.order_by(UserDeviceEventsHistorySchema.created_at)
+
+        query_count: Query = select(func.count()).select_from(query.with_only_columns(*unlabeled_columns).subquery())
+
+        query = paging(query, query_params.page, query_params.limit)
+
+        coro_data, coro_count = (
+            self._execute(query),
+            self._execute(query_count),
+        )
+
+        res, res_count = await asyncio.gather(coro_data, coro_count)
+
+        data = [ExportDeviceHistoryDto(**row) for row in res]
+        total = res_count.scalars().one()
+
+        return data, total

@@ -1,7 +1,11 @@
+import datetime
 import uuid
+
+from pydantic import Field
 
 from apps.applets.domain import Role
 from apps.shared.query_params import BaseQueryParams
+from config import settings
 
 
 class AppletQueryParams(BaseQueryParams):
@@ -14,3 +18,9 @@ class AppletQueryParams(BaseQueryParams):
 
 class AppletUsersQueryParams(BaseQueryParams):
     role: Role | None = None
+
+
+class FlowItemHistoryExportQueryParams(BaseQueryParams):
+    from_date: datetime.datetime | None = None
+    to_date: datetime.datetime | None = None
+    limit: int = Field(gt=0, default=settings.service.result_limit, le=settings.service.result_limit)

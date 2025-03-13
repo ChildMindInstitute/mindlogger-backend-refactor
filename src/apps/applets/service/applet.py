@@ -7,7 +7,7 @@ from apps.activities.crud import ActivitiesCRUD, ActivityItemsCRUD
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity import ActivityService
-from apps.activity_flows.crud import FlowsCRUD
+from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsCRUD
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
 from apps.activity_flows.service.flow_history import FlowHistoryService
@@ -26,6 +26,7 @@ from apps.applets.domain.applet import Applet, AppletDataRetention
 from apps.applets.domain.applet_create_update import AppletCreate, AppletReportConfiguration, AppletUpdate
 from apps.applets.domain.applet_duplicate import AppletDuplicate
 from apps.applets.domain.applet_full import AppletFull
+from apps.applets.domain.applet_history import FlowItemHistoryDto
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
 from apps.applets.errors import (
@@ -71,6 +72,11 @@ class AppletService:
     def __init__(self, session, user_id: uuid.UUID):
         self.user_id = user_id
         self.session = session
+
+    async def get_flow_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[FlowItemHistoryDto], int]:
+        return await FlowItemHistoriesCRUD(self.session).get_flow_item_history_by_applet(applet_id, query_params)
 
     async def exist_by_id(self, applet_id: uuid.UUID):
         exists = await AppletsCRUD(self.session).exist_by_key("id", applet_id)
