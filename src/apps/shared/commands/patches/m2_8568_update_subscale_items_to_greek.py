@@ -1,3 +1,4 @@
+import os
 import uuid
 from uuid import UUID
 
@@ -13,11 +14,17 @@ from apps.activities.db.schemas import (
     ActivitySchema,
 )
 
+# Note: You can use environment variables to overwrite default values.
+# AGE_SCREEN_QUESTION_TRANSLATION to update the question value for the age screen.
+# GENDER_SCREEN_QUESTION_TRANSLATION to update the question value for the gender screen.
+# GENDER_SCREEN_RESPONSE_MALE_TRANSLATION to update the response value for the male option.
+# GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION to update the response value for the female option.
+
 
 async def update_age_screen(session: AsyncSession, applet_id: UUID):
     print(f"Updating age screen for applet_id: {applet_id}")
 
-    new_question_value = {"el": "Πόσων χρονών είστε;"}
+    new_question_value = os.environ.get("AGE_SCREEN_QUESTION_TRANSLATION", "Ηλικία:")
 
     update_query = (
         update(ActivityItemSchema)
@@ -29,7 +36,7 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
             question=func.jsonb_set(
                 ActivityItemSchema.question,
                 ["en"],
-                cast(new_question_value["el"], JSONB),
+                cast(new_question_value, JSONB),
                 True,
             )
         )
@@ -71,7 +78,7 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
                 question=func.jsonb_set(
                     ActivityItemHistorySchema.question,
                     ["en"],
-                    cast(new_question_value["el"], JSONB),
+                    cast(new_question_value, JSONB),
                     True,
                 )
             )
@@ -84,11 +91,11 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
 
 async def update_gender_screen(session: AsyncSession, applet_id: UUID):
     print(f"Updating gender screen for applet_id: {applet_id}")
-    new_question_value = {"el": "Ποιο φύλο σας αποδόθηκε κατά την γέννησή σας;"}
+    new_question_value = os.environ.get("GENDER_SCREEN_QUESTION_TRANSLATION", "Φύλο:")
 
     translations = {
-        "Male": "Άντρας",
-        "Female": "Γυναίκα",
+        "Male": os.environ.get("GENDER_SCREEN_RESPONSE_MALE_TRANSLATION", "Άντρας"),
+        "Female": os.environ.get("GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION", "Γυναίκα"),
     }
 
     query = select(ActivityItemSchema.id, ActivityItemSchema.response_values, ActivityItemSchema.activity_id).where(
@@ -101,12 +108,24 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
     for item in res.mappings().all():
         print(f"Updating item id: {item.id}")
 
+        # Checking for male/female index response_values, even for already translated items,
+        # this will make sure this script always update items to new translations
         male_index = next(
-            (index for (index, option) in enumerate(item.response_values["options"]) if option["text"] == "Male"), -1
+            (
+                index
+                for (index, option) in enumerate(item.response_values["options"])
+                if option["value"] == 0  # male option will always have value 0
+            ),
+            -1,
         )
 
         female_index = next(
-            (index for (index, option) in enumerate(item.response_values["options"]) if option["text"] == "Female"), -1
+            (
+                index
+                for (index, option) in enumerate(item.response_values["options"])
+                if option["value"] == 1  # female option will always have value 1
+            ),
+            -1,
         )
 
         if (male_index == -1) or (female_index == -1):
@@ -134,7 +153,7 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
                 question=func.jsonb_set(
                     ActivityItemSchema.question,
                     ["en"],
-                    cast(new_question_value["el"], JSONB),
+                    cast(new_question_value, JSONB),
                     True,
                 ),
                 response_values=update_response_values,
@@ -179,7 +198,7 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
                 question=func.jsonb_set(
                     ActivityItemHistorySchema.question,
                     ["en"],
-                    cast(new_question_value["el"], JSONB),
+                    cast(new_question_value, JSONB),
                     True,
                 ),
                 response_values=update_history_response_values,
