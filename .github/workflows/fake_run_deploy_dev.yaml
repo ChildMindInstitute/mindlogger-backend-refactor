@@ -15,7 +15,7 @@ env:
   IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
 
 jobs:
-  fbuild:
+  build:
     runs-on: ubuntu-latest
     outputs:
       ecr-repo: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
