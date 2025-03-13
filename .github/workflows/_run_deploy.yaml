@@ -109,13 +109,15 @@ jobs:
   run-migration:
     runs-on: ubuntu-latest
     needs: [setup-vars]
+    env:
+      AWS_REGION: ${{ needs.setup-vars.outputs.region }}
     steps:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ needs.setup-vars.outputs.role }}
           role-session-name: OIDC-GHA-migration-session
-          aws-region: ${{ steps.region.outputs.region }}
+          aws-region: ${{ needs.setup-vars.outputs.region }}
       - name: Download task definition
         run: |
           aws ecs describe-task-definition --task-definition migration --query taskDefinition > task-definition.json
