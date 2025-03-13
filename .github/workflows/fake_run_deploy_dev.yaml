@@ -27,7 +27,7 @@ jobs:
 
   deploy-dev:
     name: Deploy to Dev
-    needs: [fake-build]
+    needs: [build]
 #    environment: dev
     #if: ${{ github.event.pull_request.merged }}
 #    uses: ./.github/workflows/run_deploy_dev.yaml
