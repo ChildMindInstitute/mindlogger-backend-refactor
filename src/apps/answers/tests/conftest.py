@@ -310,19 +310,19 @@ def public_answer_create(
 
 @pytest.fixture
 def answer_with_flow_create(
-    applet: AppletFull,
+    applet_with_flow: AppletFull,
     answer_item_create: ItemAnswerCreate,
     client_meta: ClientMeta,
 ) -> AppletAnswerCreate:
     return AppletAnswerCreate(
-        applet_id=applet.id,
-        version=applet.version,
+        applet_id=applet_with_flow.id,
+        version=applet_with_flow.version,
         submit_id=uuid.uuid4(),
-        activity_id=applet.activities[0].id,
+        activity_id=applet_with_flow.activities[0].id,
         answer=answer_item_create,
         created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
         client=client_meta,
-        flow_id=applet.activity_flows[0].id,
+        flow_id=applet_with_flow.activity_flows[0].id,
         is_flow_completed=True,
         consent_to_share=False,
     )

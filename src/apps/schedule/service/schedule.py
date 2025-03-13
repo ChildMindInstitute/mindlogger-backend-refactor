@@ -9,6 +9,7 @@ from apps.applets.errors import AppletNotFoundError
 from apps.schedule.crud.events import EventCRUD
 from apps.schedule.crud.notification import NotificationCRUD, ReminderCRUD
 from apps.schedule.crud.schedule_history import NotificationHistoryCRUD, ReminderHistoryCRUD
+from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.db.schemas import EventSchema, NotificationSchema
 from apps.schedule.domain.constants import DefaultEvent, EventType, PeriodicityType
 from apps.schedule.domain.schedule import BaseEvent
@@ -48,8 +49,9 @@ __all__ = ["ScheduleService"]
 
 
 class ScheduleService:
-    def __init__(self, session):
+    def __init__(self, session, admin_user_id: uuid.UUID | None = None):
         self.session = session
+        self.admin_user_id = admin_user_id
 
     async def create_schedule(self, schedule: EventRequest, applet_id: uuid.UUID) -> PublicEvent:
         # Validate schedule data before saving
@@ -153,8 +155,7 @@ class ScheduleService:
             )
 
         await ScheduleHistoryService(self.session).add_history(
-            event=schedule_event,
-            applet_id=applet_id,
+            event=schedule_event, applet_id=applet_id, updated_by=self.admin_user_id
         )
 
         return PublicEvent(
@@ -443,6 +444,7 @@ class ScheduleService:
         await ScheduleHistoryService(self.session).add_history(
             event=schedule_event,
             applet_id=applet_id,
+            updated_by=self.admin_user_id,
         )
 
         return PublicEvent(
@@ -675,6 +677,10 @@ class ScheduleService:
         applet_ids: list[uuid.UUID],
         min_end_date: date | None = None,
         max_start_date: date | None = None,
+        device_id: str | None = None,
+        os_name: str | None = None,
+        os_version: str | None = None,
+        app_version: str | None = None,
     ) -> list[PublicEventByUser]:
         """Get all events for user in applets that user is respondent."""
         user_events_map, user_event_ids = await EventCRUD(self.session).get_all_by_applets_and_user(
@@ -689,7 +695,9 @@ class ScheduleService:
             min_end_date=min_end_date,
             max_start_date=max_start_date,
         )
-        full_events_map = self._sum_applets_events_map(user_events_map, general_events_map)
+        full_events_map: dict[uuid.UUID, list[EventFull]] = self._sum_applets_events_map(
+            user_events_map, general_events_map
+        )
 
         event_ids = user_event_ids | general_event_ids
         notifications_map_c = NotificationCRUD(self.session).get_all_by_event_ids(event_ids)
@@ -710,6 +718,17 @@ class ScheduleService:
                         for event in all_events
                     ],
                 )
+            )
+
+        if device_id:
+            all_events = [event for value in full_events_map.values() for event in value]
+            await UserDeviceEventsHistoryCRUD(self.session).record_event_versions(
+                user_id=user_id,
+                device_id=device_id,
+                event_versions=[(event.id, event.version) for event in all_events],
+                os_name=os_name,
+                os_version=os_version,
+                app_version=app_version,
             )
 
         return events
