@@ -102,7 +102,7 @@ jobs:
 
     outputs:
       role: ${{ steps.role.outputs.role }}
-      region: ${{ steps.region.outputs.role }}
+      region: ${{ steps.region.outputs.region }}
       cluster: ${{ steps.cluster.outputs.cluster }}
 
 
@@ -115,7 +115,7 @@ jobs:
         with:
           role-to-assume: ${{ needs.setup-vars.outputs.role }}
           role-session-name: OIDC-GHA-migration-session
-          aws-region: ${{ steps.region.outputs.role }}
+          aws-region: ${{ steps.region.outputs.region }}
       - name: Download task definition
         run: |
           aws ecs describe-task-definition --task-definition migration --query taskDefinition > task-definition.json
