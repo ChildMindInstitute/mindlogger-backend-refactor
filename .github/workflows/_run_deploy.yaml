@@ -140,7 +140,7 @@ jobs:
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
       - name: Run migration
-        run: |
+        run: |-
           CONTAINER_NAME=migrate
           
           echo "Starting migration task"
