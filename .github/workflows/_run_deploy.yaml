@@ -156,7 +156,13 @@ jobs:
           runtime=$((end-start))
           
           echo "Task finished with exit code $TASK_EXIT_CODE after $runtime"
-            
+          
+          echo "exit-code=${TASK_EXIT_CODE}" >> $GITHUB_OUTPUT
+          echo "task-time=${runtime}" >> $GITHUB_OUTPUT
+          
+          if [ $TASK_EXIT_CODE -gt 0]; then
+            exit 1;
+          fi
 
 #  deploy_to_ecs:
 #    runs-on: ubuntu-latest
