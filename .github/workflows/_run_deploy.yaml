@@ -142,7 +142,8 @@ jobs:
       - name: Run migration
         run: |-
           CONTAINER_NAME=migrate
-          
+          start=`date +%s`
+
           echo "Starting migration task"
           TASK_ID=$(aws ecs run-task --task-definition "${{ steps.taskdef.outputs.task-definition-arn }}" --cluster ${{ needs.setup-vars.outputs.cluster }} | jq -r '.tasks[0].taskArn')
           
@@ -151,7 +152,10 @@ jobs:
           
           TASK_EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ needs.setup-vars.outputs.cluster }} --tasks "$TASK_ID" --query "tasks[0].containers[?name=='$CONTAINER_NAME'].exitCode" --output text)
           
-          echo "Task finished with exit code $TASK_EXIT_CODE"
+          end=`date +%s`
+          runtime=$((end-start))
+          
+          echo "Task finished with exit code $TASK_EXIT_CODE after $runtime"
             
 
 #  deploy_to_ecs:
