@@ -147,9 +147,9 @@ jobs:
           TASK_ID=$(aws ecs run-task --task-definition "${{ steps.taskdef.outputs.task-definition-arn }}" --cluster ${{ needs.setup-vars.outputs.cluster }} | jq -r '.tasks[0].taskArn')
           
           echo "Waiting for task ${{ steps.taskdef.outputs.task-definition-arn }} to finish..." 
-          aws ecs wait tasks-stopped --cluster ${{ needs.setup-vars.outputs.cluster }} --tasks "${{ steps.taskdef.outputs.task-definition-arn }}"
+          aws ecs wait tasks-stopped --cluster ${{ needs.setup-vars.outputs.cluster }} --tasks "$TASK_ID"
           
-          TASK_EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ needs.setup-vars.outputs.cluster }} --tasks "${{ steps.taskdef.outputs.task-definition-arn }}" --query "tasks[0].containers[?name=='$CONTAINER_NAME'].exitCode" --output text)
+          TASK_EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ needs.setup-vars.outputs.cluster }} --tasks "$TASK_ID" --query "tasks[0].containers[?name=='$CONTAINER_NAME'].exitCode" --output text)
           
           echo "Task finished with exit code $TASK_EXIT_CODE"
             
