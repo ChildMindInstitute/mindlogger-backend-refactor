@@ -160,7 +160,7 @@ jobs:
           echo "exit-code=${TASK_EXIT_CODE}" >> $GITHUB_OUTPUT
           echo "task-time=${runtime}" >> $GITHUB_OUTPUT
           
-          if [ $TASK_EXIT_CODE -gt 0]; then
+          if [ $TASK_EXIT_CODE -gt 0 ]; then
             exit 1;
           fi
 
@@ -181,11 +181,11 @@ jobs:
           SLACK_TITLE: Database Migration in DEV environment
           SLACK_MESSAGE: '🚨 Error when executing migration!'
 
-  on-success:
+  on-migration-success:
     runs-on: ubuntu-latest
     if: ${{ !cancelled() && (needs.run-migration.result == 'success') }}
     needs:
-      - deploy
+      - run-migration
     steps:
       - uses: actions/checkout@v4
       - name: "Send Slack message on success"
