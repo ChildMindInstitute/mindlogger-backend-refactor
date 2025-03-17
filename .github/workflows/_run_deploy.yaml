@@ -176,9 +176,7 @@ jobs:
         env:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: commit,url
-#          SLACK_CHANNEL: gha-deploy-to-dev
-  #          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          MSG_MINIMAL: commit,actions url
           SLACK_TITLE: Database Migration in DEV environment
           SLACK_MESSAGE: '🚨 Error when executing migration!'
 
@@ -194,9 +192,7 @@ jobs:
         env:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: commit,url
-#          SLACK_CHANNEL: gha-deploy-to-dev
-  #         SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          MSG_MINIMAL: commit,actions url
           SLACK_TITLE: Database Migration in DEV environment
           SLACK_MESSAGE: '🎉 Migration was successful!'
 
@@ -257,9 +253,7 @@ jobs:
         env:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: commit,url
-#          SLACK_CHANNEL: gha-deploy-to-dev
-#          SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          MSG_MINIMAL: commit,actions url
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: '🚨 Error when executing deployment!'
 
@@ -275,8 +269,6 @@ jobs:
         env:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: commit,url
-#          SLACK_CHANNEL: gha-deploy-to-dev
- #         SLACK_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          MSG_MINIMAL: commit,actions url
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: '🚀 Deployment was successful!'
