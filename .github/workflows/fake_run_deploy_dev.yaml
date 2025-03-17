@@ -32,10 +32,12 @@ jobs:
     #if: ${{ github.event.pull_request.merged }}
 #    uses: ./.github/workflows/run_deploy_dev.yaml
     uses: ./.github/workflows/_run_deploy.yaml
+    secrets: inherit
     with:
       image: ${{ needs.build.outputs.ecr-repo }}
       image-tag: ${{ needs.build.outputs.image-sha }}
       env-name: dev
+
 
 #  deploy_to_ecs:
 #    runs-on: ubuntu-latest
