@@ -247,7 +247,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !cancelled() && (needs.deploy.result == 'failure' || needs.deploy.result == 'timed_out') }}
     needs:
-      - deploy_to_ecs
+      - deploy
     steps:
       - uses: actions/checkout@v4
       - name: "Send Slack message on failure"
