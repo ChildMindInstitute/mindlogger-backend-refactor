@@ -2,10 +2,6 @@ name: Deploy
 on:
   workflow_dispatch:
     inputs:
-      image:
-        required: true
-        type: string
-        description: Image
       image-tag:
         required: true
         type: string
@@ -24,9 +20,6 @@ on:
 
   workflow_call:
     inputs:
-      image:
-        required: true
-        type: string
       env-name:
         required: true
         type: string
@@ -131,7 +124,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: migrate
-          image: ${{ inputs.image }}:${{ inputs.image-tag }}
+          image: ${{ env.ECR_REPO }}:${{ inputs.image-tag }}
           command: /fastapi-migrate
           environment-variables: |
             DD_VERSION=${{ inputs.image-tag }}
