@@ -28,7 +28,7 @@ jobs:
     uses: ./.github/workflows/_deploy.yaml
     secrets: inherit
     with:
-      image: ${{ env.ECR_REPO }}
+      image: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
       image-tag: latest
       env-name: dev
 
