@@ -226,7 +226,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ matrix.apps.container }}
-          image: ${{ inputs.image }}:${{ inputs.image-tag }}
+          image: ${{ env.ECR_REPO }}:${{ inputs.image-tag }}
 
       - name: Update Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
