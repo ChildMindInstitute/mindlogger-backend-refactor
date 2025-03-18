@@ -16,22 +16,13 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    outputs:
-      ecr-repo: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-      image-sha: latest
-    steps:
-      - name: Nothing
-        run: |
-          echo 1
+    name: Docker Build and Push
+    uses: ./.github/workflows/_build.yaml
 
   deploy-dev:
     name: Deploy to Dev
     needs: [build]
-#    environment: dev
-    #if: ${{ github.event.pull_request.merged }}
-#    uses: ./.github/workflows/run_deploy_dev.yaml
-    uses: ./.github/workflows/_run_deploy.yaml
+    uses: ./.github/workflows/_deploy.yaml
     secrets: inherit
     with:
       image: ${{ needs.build.outputs.ecr-repo }}
