@@ -41,6 +41,9 @@ permissions:
   contents: read
   issues: write
 
+env:
+  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
+  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
 
 jobs:
   setup-vars:
@@ -176,7 +179,7 @@ jobs:
         env:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: commit,actions url
+          MSG_MINIMAL: actions url
           SLACK_TITLE: Database Migration in DEV environment
           SLACK_MESSAGE: '🚨 Error when executing migration!'
 
@@ -192,7 +195,7 @@ jobs:
         env:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: commit,actions url
+          MSG_MINIMAL: actions url
           SLACK_TITLE: Database Migration in DEV environment
           SLACK_MESSAGE: '🎉 Migration was successful!'
 
@@ -253,7 +256,7 @@ jobs:
         env:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: commit,actions url
+          MSG_MINIMAL: actions url
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: '🚨 Error when executing deployment!'
 
@@ -269,6 +272,6 @@ jobs:
         env:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: commit,actions url
+          MSG_MINIMAL: actions url
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: '🚀 Deployment was successful!'

@@ -19,7 +19,6 @@ permissions:
   issues: write
 
 env:
-  GITHUB_ORGANIZATION: ${{ github.repository_owner }}
   GITHUB_REPO_NAME: ${{ github.event.repository.name }}
   GITHUB_BRANCH_OR_TAG: ${{ github.ref_name }}
   GITHUB_REF: ${{ github.ref }}
@@ -28,9 +27,6 @@ env:
 
   OUT_DIR: ./out
   AWS_REGION : "us-east-1"
-
-  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
 
 
 jobs:

@@ -13,11 +13,14 @@ env:
   AWS_REGION: us-east-1
   ECS_CLUSTER_NAME: cmiml-dev
   IMAGE_NAME: ${{ inputs.IMAGE_NAME }}
+  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
+  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
 
 jobs:
   build:
     name: Docker Build and Push
     uses: ./.github/workflows/_build.yaml
+
 
   deploy-dev:
     name: Deploy to Dev
@@ -25,7 +28,7 @@ jobs:
     uses: ./.github/workflows/_deploy.yaml
     secrets: inherit
     with:
-      image: ${{ needs.build.outputs.ecr-repo }}
+      image: ${{ env.ECR_REPO }}
       image-tag: latest
       env-name: dev
 
