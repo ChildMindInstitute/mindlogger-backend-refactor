@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from datetime import date
 
@@ -129,3 +130,41 @@ class ScheduleEventDto(PublicModel):
 class PublicEventByUser(PublicModel):
     applet_id: uuid.UUID
     events: list[ScheduleEventDto] | None = None
+
+
+class ExportEventHistoryDto(PublicModel):
+    applet_id: uuid.UUID
+    applet_version: str
+    applet_name: str
+    user_id: uuid.UUID | None = None
+    subject_id: uuid.UUID | None = None
+    event_id: uuid.UUID
+    event_type: str
+    event_version: str
+    event_version_created_at: datetime.datetime
+    event_version_updated_at: datetime.datetime
+    event_version_is_deleted: bool
+    linked_with_applet_at: datetime.datetime
+    event_updated_by: uuid.UUID | None = None
+    activity_or_flow_id: uuid.UUID
+    activity_or_flow_name: str
+    access_before_schedule: bool | None = None
+    one_time_completion: bool | None = None
+    periodicity: str
+    start_date: date | None = None
+    start_time: datetime.time
+    end_date: date | None = None
+    end_time: datetime.time
+    selected_date: date | None = None
+
+
+class ExportDeviceHistoryDto(PublicModel):
+    user_id: uuid.UUID
+    device_id: str
+    event_id: uuid.UUID
+    event_version: str
+    start_date: date | None = None
+    start_time: datetime.time
+    end_date: date | None = None
+    end_time: datetime.time
+    created_at: datetime.datetime
