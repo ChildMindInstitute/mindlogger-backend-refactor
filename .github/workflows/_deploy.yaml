@@ -1,22 +1,23 @@
 name: Deploy
 on:
-  workflow_dispatch:
-    inputs:
-      image-tag:
-        required: true
-        type: string
-        description: Docker tag
-      env-name:
-        required: true
-        type: choice
-        description: Environment name
-        options:
-          - dev
-          - test
-          - uat
-          - stage
-          - prod
-          - prod-dr
+  # Keep this for someday in the future
+#  workflow_dispatch:
+#    inputs:
+#      image-tag:
+#        required: true
+#        type: string
+#        description: Docker tag
+#      env-name:
+#        required: true
+#        type: choice
+#        description: Environment name
+#        options:
+#          - dev
+#          - test
+#          - uat
+#          - stage
+#          - prod
+#          - prod-dr
 
   workflow_call:
     inputs:
