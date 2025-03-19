@@ -28,6 +28,10 @@ on:
         type: string
         description: Docker tag
 
+# Wait for other deploys to finish
+concurrency:
+  cancel-in-progress: false
+  group: api-build
 
 permissions:
   id-token: write

@@ -9,6 +9,7 @@ on:
         default: latest
         type: string
 
+# Safe to cancel builds in progress
 concurrency:
   cancel-in-progress: true
   group: api-build
@@ -107,5 +108,4 @@ jobs:
         with:
           name: build-artifacts
           path: |
-            ${GITHUB_REPO_NAME}/${OUT_DIR}/build.yml
             ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json

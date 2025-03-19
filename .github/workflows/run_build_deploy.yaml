@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - develop
-#      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
-#  pull_request:
-#    types:
-#      - opened
-#      - synchronize
-#    branches:
-#      - "M2-8819-Deployment-Improvement-Have-migrations-run-automatically-in-a-separate-task-on-DEV"
   workflow_dispatch: {}
 
 
@@ -42,22 +35,16 @@ env:
 jobs:
   build:
     name: Docker Build and Push
+    secrets: inherit
     uses: ./.github/workflows/_build.yaml
-#    outputs:
-#      image-name: ${{ steps.sha.outputs.IMAGE_NAME }}
-#      image-sha: ${{ steps.sha.outputs.SHORT_SHA }}
-#      ecr-repo: ${{ env.ECR_REPO }}
 
 
   deploy-dev:
     name: Deploy to Dev
-    needs: [build]
-#    environment: dev
-    #if: ${{ github.event.pull_request.merged }}
-#    uses: ./.github/workflows/run_deploy_dev.yaml
+    needs: [ build ]
+    secrets: inherit
     uses: ./.github/workflows/_deploy.yaml
     with:
-      image: ${{ needs.build.outputs.ecr-repo }}
       image-tag: latest
       env-name: dev
 
