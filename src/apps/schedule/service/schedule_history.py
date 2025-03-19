@@ -10,6 +10,7 @@ from apps.schedule.crud.schedule_history import (
     ReminderHistoryCRUD,
     ScheduleHistoryCRUD,
 )
+from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.db.schemas import (
     AppletEventsSchema,
     EventHistorySchema,
@@ -18,6 +19,8 @@ from apps.schedule.db.schemas import (
 )
 from apps.schedule.domain.constants import EventType
 from apps.schedule.domain.schedule.internal import ScheduleEvent
+from apps.schedule.domain.schedule.public import ExportDeviceHistoryDto, ExportEventHistoryDto
+from apps.shared.query_params import QueryParams
 
 
 class ScheduleHistoryService:
@@ -115,3 +118,19 @@ class ScheduleHistoryService:
                     for event in events
                 ]
             )
+
+    async def retrieve_applet_all_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportEventHistoryDto], int]:
+        event_history, total = await ScheduleHistoryCRUD(self.session).retrieve_applet_all_events_history(
+            applet_id, query_params
+        )
+
+        return event_history, total
+
+    async def retrieve_applet_all_device_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportDeviceHistoryDto], int]:
+        return await UserDeviceEventsHistoryCRUD(self.session).retrieve_applet_all_device_events_history(
+            applet_id, query_params
+        )
