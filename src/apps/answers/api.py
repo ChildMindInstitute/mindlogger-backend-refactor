@@ -70,7 +70,6 @@ from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_tz_utc_offset
-from infrastructure.http.deps import get_language
 from infrastructure.logger import logger
 
 
