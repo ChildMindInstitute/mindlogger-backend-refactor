@@ -77,6 +77,9 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
                 "activity_or_flow_id"
             ),
             func.coalesce(ActivityFlowHistoriesSchema.name, ActivityHistorySchema.name).label("activity_or_flow_name"),
+            func.coalesce(ActivityFlowHistoriesSchema.is_hidden, ActivityHistorySchema.is_hidden).label(
+                "activity_or_flow_hidden"
+            ),
             EventHistorySchema.access_before_schedule,
             EventHistorySchema.one_time_completion,
             EventHistorySchema.periodicity,
