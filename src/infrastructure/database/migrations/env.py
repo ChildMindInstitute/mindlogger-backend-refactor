@@ -1,13 +1,16 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
+from pydantic.tools import parse_obj_as
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from config import settings
 from infrastructure.database.migrations.base import Base
+from infrastructure.dependency.structured_logs import setup_structured_logging
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -17,6 +20,9 @@ config = context.config
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))
+setup_structured_logging(LOG_JSON_FORMAT)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
