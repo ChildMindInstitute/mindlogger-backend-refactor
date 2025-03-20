@@ -19,6 +19,7 @@ from apps.activities.domain.response_type_config import (
     ParagraphTextConfig,
     PhotoConfig,
     PhrasalTemplateConfig,
+    RequestHealthRecordDataConfig,
     ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
@@ -388,6 +389,11 @@ class PhrasalTemplateValues(PublicModel):
     phrases: list[PhrasalTemplatePhrase]
 
 
+class RequestHealthRecordDataValues(PublicModel):
+    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
+    import_additional_docs: bool = Field(default=False)
+
+
 ResponseValueConfigOptions = [
     TextValues,
     ParagraphTextValues,
@@ -413,6 +419,7 @@ ResponseValueConfigOptions = [
     ABTrailsValues,
     UnityValues,
     PhrasalTemplateValues,
+    RequestHealthRecordDataValues,
 ]
 
 
@@ -430,6 +437,7 @@ ResponseValueConfig = (
     | TimeValues
     | UnityValues
     | PhrasalTemplateValues
+    | RequestHealthRecordDataValues
 )
 
 
@@ -486,6 +494,7 @@ ResponseTypeConfigOptions = [
     ABTrailsConfig,
     UnityConfig,
     PhrasalTemplateConfig,
+    RequestHealthRecordDataConfig,
 ]
 
 ResponseTypeValueConfig = {}

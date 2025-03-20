@@ -94,6 +94,7 @@ class TestActivityItems:
             "message_item_create",
             "audio_player_item_create",
             "paragraph_text_item_create",
+            "request_health_record_data_create",
         ),
     )
     async def test_create_applet_with_each_activity_item(
