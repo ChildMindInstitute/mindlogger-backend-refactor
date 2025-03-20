@@ -138,6 +138,12 @@ PatchRegister.register(
     description="Update subscale items to greek",
 )
 
+PatchRegister.register(
+    file_path="m2_8175_library_cleanup_for_camhi.py",
+    task_id="M2-8175",
+    description="Library cleanup for CAMHI applets",
+)
+
 app = typer.Typer()
 
 
