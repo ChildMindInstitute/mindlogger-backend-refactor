@@ -168,4 +168,6 @@ class ExportDeviceHistoryDto(PublicModel):
     start_time: datetime.time
     end_date: date | None = None
     end_time: datetime.time
+    access_before_schedule: bool | None = None
     created_at: datetime.datetime
+    user_time_zone: str | None = None

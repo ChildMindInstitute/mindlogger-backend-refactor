@@ -107,7 +107,9 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
             EventHistorySchema.start_time,
             EventHistorySchema.end_date,
             EventHistorySchema.end_time,
+            EventHistorySchema.access_before_schedule,
             UserDeviceEventsHistorySchema.created_at,
+            UserDeviceEventsHistorySchema.time_zone.label("user_time_zone"),
         ]
 
         query: Query = select(*columns)
