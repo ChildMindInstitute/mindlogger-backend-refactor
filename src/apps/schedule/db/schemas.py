@@ -108,13 +108,14 @@ class UserDeviceEventsHistorySchema(Base):
 
     unique_constraint = "_unique_user_device_events_history"
 
-    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"))
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     device_id = Column(String(255), nullable=False)
     os_name = Column(Text, nullable=True)
     os_version = Column(Text, nullable=True)
     app_version = Column(Text, nullable=True)
     event_id = Column(UUID(as_uuid=True), nullable=False)
     event_version = Column(String(13), nullable=False)
+    time_zone = Column(Text, nullable=True)
 
     __table_args__ = (
         UniqueConstraint(
