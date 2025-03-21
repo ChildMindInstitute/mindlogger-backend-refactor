@@ -56,6 +56,7 @@ class ResponseType(StrEnum):
     ABTRAILS = "ABTrails"
     UNITY = "unity"
     PHRASAL_TEMPLATE = "phrasalTemplate"
+    REQUEST_HEALTH_RECORD_DATA = "requestHealthRecordData"
 
     @classmethod
     def get_non_response_types(cls):
@@ -260,6 +261,11 @@ class AudioPlayerConfig(_ScreenConfig, PublicModel):
 
 class PhrasalTemplateConfig(PublicModel):
     type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
+    remove_back_button: bool
+
+
+class RequestHealthRecordDataConfig(PublicModel):
+    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
     remove_back_button: bool
 
 
@@ -472,4 +478,5 @@ ResponseTypeConfig = (
     | ABTrailsConfig
     | PhrasalTemplateConfig
     | UnityConfig
+    | RequestHealthRecordDataConfig
 )
