@@ -97,7 +97,8 @@ async def create_answer(
                 or (event.activity_flow_id != schema.flow_id and event.activity_id != schema.activity_id)
                 or (event.user_id is not None and event.user_id != user.id)
             ):
-                raise NotFoundError("Invalid event_history_id provided")
+                logger.info(f"Invalid event_history_id {schema.event_history_id} provided")
+                schema.event_history_id = None
 
         device = None
         if device_id and schema.event_history_id:
@@ -107,7 +108,7 @@ async def create_answer(
                 device_id=device_id, user_id=user.id, event_id=event_id, event_version=event_version
             )
             if device is None:
-                raise NotFoundError("Invalid device_id provided")
+                logger.info(f"Invalid device_id {device_id} provided")
 
         service = AnswerService(session, user.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
