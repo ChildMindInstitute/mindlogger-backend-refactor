@@ -917,8 +917,8 @@ class TestAnswerActivityItems(BaseTest):
         data.event_history_id = f"{event.id}_{event.version}"
         response = await client.post(self.answer_url, data=data, headers={"Device-Id": "wrong_device_id"})
 
-        assert response.status_code == http.HTTPStatus.NOT_FOUND
-        assert response.json()["result"][0]["message"] == "Invalid device_id provided"
+        # The validation on the device ID has been removed
+        assert response.status_code == http.HTTPStatus.CREATED
 
     async def test_create_activity_answers__submit_duplicate(
         self,
