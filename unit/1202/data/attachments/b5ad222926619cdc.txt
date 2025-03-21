@@ -1,0 +1,41 @@
+ERROR    root:tasks.py:85 Reencryption 7c5396e8-29f2-433f-825f-b6dcb7c137dd: cannot process applet 45a06b68-f59d-4f04-ae70-69bcbbd7345b, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+               ~~~~~~^^^^^^^^^
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2319, in _execute_mock_call
+    raise effect
+Exception: ERROR
+ERROR    root:tasks.py:85 Reencryption 7c5396e8-29f2-433f-825f-b6dcb7c137dd: cannot process applet 45a06b68-f59d-4f04-ae70-69bcbbd7345b, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+               ~~~~~~^^^^^^^^^
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2319, in _execute_mock_call
+    raise effect
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+               ~~~~~~^^^^^^^^^
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2319, in _execute_mock_call
+    raise effect
+Exception: ERROR
