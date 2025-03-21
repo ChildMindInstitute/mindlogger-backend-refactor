@@ -17,6 +17,7 @@ from apps.activities.domain.response_values import (
     PhrasalTemplateField,
     PhrasalTemplatePhrase,
     PhrasalTemplateValues,
+    RequestHealthRecordDataOption,
     RequestHealthRecordDataValues,
     SingleSelectionRowsValues,
     SingleSelectionValues,
@@ -268,4 +269,17 @@ def phrasal_template_with_paragraph_response_values(
 
 @pytest.fixture
 def request_health_record_data_response_values() -> RequestHealthRecordDataValues:
-    return RequestHealthRecordDataValues(type=ResponseType.REQUEST_HEALTH_RECORD_DATA, import_additional_docs=True)
+    opt_in_out_options = [
+        RequestHealthRecordDataOption(
+            id="Opt In",
+            label="Opt In label",
+        ),
+        RequestHealthRecordDataOption(
+            id="Opt Out",
+            label="Opt Out label",
+        ),
+    ]
+
+    return RequestHealthRecordDataValues(
+        type=ResponseType.REQUEST_HEALTH_RECORD_DATA, opt_in_out_options=opt_in_out_options
+    )

@@ -389,9 +389,14 @@ class PhrasalTemplateValues(PublicModel):
     phrases: list[PhrasalTemplatePhrase]
 
 
+class RequestHealthRecordDataOption(PublicModel):
+    id: str
+    label: str
+
+
 class RequestHealthRecordDataValues(PublicModel):
     type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
-    import_additional_docs: bool = Field(default=False)
+    opt_in_out_options: list[RequestHealthRecordDataOption]
 
 
 ResponseValueConfigOptions = [
