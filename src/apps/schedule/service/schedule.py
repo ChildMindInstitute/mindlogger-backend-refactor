@@ -677,6 +677,7 @@ class ScheduleService:
         applet_ids: list[uuid.UUID],
         min_end_date: date | None = None,
         max_start_date: date | None = None,
+        time_zone: str | None = None,
         device_id: str | None = None,
         os_name: str | None = None,
         os_version: str | None = None,
@@ -722,14 +723,16 @@ class ScheduleService:
 
         if device_id:
             all_events = [event for value in full_events_map.values() for event in value]
-            await UserDeviceEventsHistoryCRUD(self.session).record_event_versions(
-                user_id=user_id,
-                device_id=device_id,
-                event_versions=[(event.id, event.version) for event in all_events],
-                os_name=os_name,
-                os_version=os_version,
-                app_version=app_version,
-            )
+            if len(all_events) > 0:
+                await UserDeviceEventsHistoryCRUD(self.session).record_event_versions(
+                    user_id=user_id,
+                    device_id=device_id,
+                    event_versions=[(event.id, event.version) for event in all_events],
+                    os_name=os_name,
+                    os_version=os_version,
+                    app_version=app_version,
+                    time_zone=time_zone,
+                )
 
         return events
 

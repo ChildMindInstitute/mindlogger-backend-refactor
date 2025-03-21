@@ -54,6 +54,7 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
         os_name: str | None = None,
         os_version: str | None = None,
         app_version: str | None = None,
+        time_zone: str | None = None,
     ) -> list[UserDeviceEventsHistorySchema]:
         values = [
             dict(
@@ -64,6 +65,7 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
                 os_name=os_name,
                 os_version=os_version,
                 app_version=app_version,
+                time_zone=time_zone,
             )
             for event_id, event_version in event_versions
         ]
