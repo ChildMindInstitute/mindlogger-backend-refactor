@@ -904,8 +904,8 @@ class TestAnswerActivityItems(BaseTest):
         data.event_history_id = str(uuid.uuid4())
         response = await client.post(self.answer_url, data=data)
 
-        assert response.status_code == http.HTTPStatus.NOT_FOUND
-        assert response.json()["result"][0]["message"] == "Invalid event_history_id provided"
+        # The validation on the event history ID has been removed
+        assert response.status_code == http.HTTPStatus.CREATED
 
     async def test_create_answer_with_wrong_device_id(
         self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_default_events

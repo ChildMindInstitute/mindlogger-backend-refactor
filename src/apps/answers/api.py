@@ -95,7 +95,8 @@ async def create_answer(
                 or (event.activity_flow_id != schema.flow_id and event.activity_id != schema.activity_id)
                 or (event.user_id is not None and event.user_id != user.id)
             ):
-                raise NotFoundError("Invalid event_history_id provided")
+                logger.info(f"Invalid event_history_id {schema.event_history_id} provided")
+                schema.event_history_id = None
 
         device = None
         if device_id and schema.event_history_id:
