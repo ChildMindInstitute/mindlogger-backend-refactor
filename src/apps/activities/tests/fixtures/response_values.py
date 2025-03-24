@@ -18,6 +18,7 @@ from apps.activities.domain.response_values import (
     PhrasalTemplatePhrase,
     PhrasalTemplateValues,
     RequestHealthRecordDataOption,
+    RequestHealthRecordDataOptType,
     RequestHealthRecordDataValues,
     SingleSelectionRowsValues,
     SingleSelectionValues,
@@ -271,11 +272,11 @@ def phrasal_template_with_paragraph_response_values(
 def request_health_record_data_response_values() -> RequestHealthRecordDataValues:
     opt_in_out_options = [
         RequestHealthRecordDataOption(
-            id="Opt In",
+            id=RequestHealthRecordDataOptType.OPT_IN,
             label="Opt In label",
         ),
         RequestHealthRecordDataOption(
-            id="Opt Out",
+            id=RequestHealthRecordDataOptType.OPT_OUT,
             label="Opt Out label",
         ),
     ]

@@ -42,6 +42,11 @@ from apps.activities.errors import (
 from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
 
 
+class RequestHealthRecordDataOptType(StrEnum):
+    OPT_IN = "opt_in"
+    OPT_OUT = "opt_out"
+
+
 class PhrasalTemplateFieldType(StrEnum):
     SENTENCE = "sentence"
     ITEM_RESPONSE = "item_response"
@@ -390,8 +395,8 @@ class PhrasalTemplateValues(PublicModel):
 
 
 class RequestHealthRecordDataOption(PublicModel):
-    id: str
-    label: str
+    id: RequestHealthRecordDataOptType = Field(default=...)  # ellipsis indicates that the field is required
+    label: str = Field(default=...)
 
 
 class RequestHealthRecordDataValues(PublicModel):
