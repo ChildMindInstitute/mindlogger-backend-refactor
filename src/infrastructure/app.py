@@ -18,6 +18,7 @@ import apps.file.router as files
 import apps.folders.router as folders
 import apps.healthcheck.router as healthcheck
 import apps.integrations.loris.router as loris
+import apps.integrations.oneup_health.router as oneup_health
 import apps.integrations.prolific.router as prolific
 import apps.integrations.router as integrations
 import apps.invitations.router as invitations
@@ -74,6 +75,7 @@ routers: Iterable[APIRouter] = (
     loris.router,
     prolific.router,
     integrations.router,
+    oneup_health.router,
 )
 
 # Declare your middlewares here
