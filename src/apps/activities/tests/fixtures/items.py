@@ -14,6 +14,7 @@ from apps.activities.domain.response_type_config import (
     ParagraphTextConfig,
     PhotoConfig,
     PhrasalTemplateConfig,
+    RequestHealthRecordDataConfig,
     ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
@@ -32,6 +33,7 @@ from apps.activities.domain.response_values import (
     MultiSelectionValues,
     NumberSelectionValues,
     PhrasalTemplateValues,
+    RequestHealthRecordDataValues,
     SingleSelectionRowsValues,
     SingleSelectionValues,
     SliderRowsValues,
@@ -334,3 +336,17 @@ def phrasal_template_with_paragraph_create(
     )
 
     return [paragraph_text_item_create, phrasal_item]
+
+
+@pytest.fixture
+def request_health_record_data_create(
+    request_health_record_data_config: RequestHealthRecordDataConfig,
+    request_health_record_data_response_values: RequestHealthRecordDataValues,
+    base_item_data: BaseItemData,
+) -> ActivityItemCreate:
+    return ActivityItemCreate(
+        **base_item_data.dict(),
+        response_type=ResponseType.REQUEST_HEALTH_RECORD_DATA,
+        config=request_health_record_data_config,
+        response_values=request_health_record_data_response_values,
+    )

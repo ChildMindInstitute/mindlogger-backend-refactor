@@ -94,6 +94,7 @@ class TestActivityItems:
             "message_item_create",
             "audio_player_item_create",
             "paragraph_text_item_create",
+            "request_health_record_data_create",
         ),
     )
     async def test_create_applet_with_each_activity_item(
@@ -210,6 +211,38 @@ class TestActivityItems:
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["activities"][0]["isPerformanceTask"]
         assert resp.json()["result"]["activities"][0]["performanceTaskType"] == performance_task_type
+
+    async def test_create_applet_with_request_health_record_data_invalid(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_minimal_data: AppletCreate,
+        request_health_record_data_create: ActivityItemCreate,
+    ):
+        client.login(tom)
+        data = applet_minimal_data.copy(deep=True)
+        data.activities[0].items = [request_health_record_data_create]
+
+        data_dict = data.dict(by_alias=True)
+        data_dict["activities"][0]["items"][0]["responseValues"]["optInOutOptions"][1]["id"] = "opt_in"
+
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert resp.json()["result"][0]["message"] == "Request Health Record Data item must have opt-out option"
+
+        data_dict = data.dict(by_alias=True)
+        data_dict["activities"][0]["items"][0]["responseValues"]["optInOutOptions"][0]["id"] = "opt_out"
+
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert resp.json()["result"][0]["message"] == "Request Health Record Data item must have opt-in option"
+
+        data_dict = data.dict(by_alias=True)
+        data_dict["activities"][0]["items"][0]["responseValues"]["optInOutOptions"] = []
+
+        resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
+        assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert resp.json()["result"][0]["message"] == "Request Health Record Data item must have 2 opt-in/out options"
 
     async def test_creating_applet_with_activity_items_condition(
         self,

@@ -1,5 +1,5 @@
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
-from apps.activities.domain.response_values import PhrasalTemplateFieldType
+from apps.activities.domain.response_values import PhrasalTemplateFieldType, RequestHealthRecordDataOptType
 from apps.activities.domain.scores_reports import ReportType, Score, SubscaleItemType, SubscaleSetting
 from apps.activities.errors import (
     IncorrectConditionItemError,
@@ -272,5 +272,35 @@ def validate_phrasal_templates(values: dict):
 
                         if referenced_item.response_type in [ResponseType.SLIDERROWS] and field.item_index is None:
                             raise IncorrectPhrasalTemplateItemIndexError()
+
+    return values
+
+
+def validate_request_health_record_data(values: dict):
+    items = values.get("items", [])
+    for item in items:
+        if item.response_type == ResponseType.REQUEST_HEALTH_RECORD_DATA:
+            if item.response_values.opt_in_out_options is None or len(item.response_values.opt_in_out_options) != 2:
+                raise ValueError("Request Health Record Data item must have 2 opt-in/out options")
+            opt_in_item = next(
+                (
+                    option
+                    for option in item.response_values.opt_in_out_options
+                    if option.id == RequestHealthRecordDataOptType.OPT_IN
+                ),
+                None,
+            )
+            if opt_in_item is None:
+                raise ValueError("Request Health Record Data item must have opt-in option")
+            opt_out_item = next(
+                (
+                    option
+                    for option in item.response_values.opt_in_out_options
+                    if option.id == RequestHealthRecordDataOptType.OPT_OUT
+                ),
+                None,
+            )
+            if opt_out_item is None:
+                raise ValueError("Request Health Record Data item must have opt-out option")
 
     return values
