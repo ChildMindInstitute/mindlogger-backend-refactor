@@ -1,13 +1,27 @@
+import asyncio
+import uuid
+
 from pydantic import parse_obj_as
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Query
+from sqlalchemy.sql import func
 
 from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, ActivityFlowItemHistorySchema
 from apps.activity_flows.domain.flow_full import FlowItemHistoryFull
+from apps.applets.db.schemas import AppletHistorySchema
+from apps.applets.domain.applet_history import FlowItemHistoryDto
+from apps.shared.filtering import Comparisons, FilterField, Filtering
+from apps.shared.paging import paging
+from apps.shared.query_params import QueryParams
 from infrastructure.database import BaseCRUD
 
 __all__ = ["FlowItemHistoriesCRUD"]
+
+
+class _FlowItemHistoryFilters(Filtering):
+    from_date = FilterField(ActivityFlowItemHistorySchema.created_at, Comparisons.GREAT_OR_EQUAL)
+    to_date = FilterField(ActivityFlowItemHistorySchema.created_at, Comparisons.LESS_OR_EQUAL)
 
 
 class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
@@ -78,3 +92,62 @@ class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
         db_result = await self._execute(query)
         res = db_result.all()
         return [parse_obj_as(FlowItemHistoryFull, row) for row in res]
+
+    async def get_flow_item_history_by_applet(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[FlowItemHistoryDto], int]:
+        query: Query = select(
+            AppletHistorySchema.id.label("applet_id"),
+            AppletHistorySchema.version.label("applet_version"),
+            AppletHistorySchema.display_name.label("applet_name"),
+            ActivityFlowHistoriesSchema.id.label("flow_id"),
+            ActivityFlowHistoriesSchema.name.label("flow_name"),
+            ActivityHistorySchema.id.label("activity_id"),
+            ActivityHistorySchema.name.label("activity_name"),
+            ActivityFlowItemHistorySchema.created_at,
+        )
+
+        query = query.select_from(ActivityFlowItemHistorySchema)
+        query = query.join(
+            ActivityFlowHistoriesSchema,
+            ActivityFlowHistoriesSchema.id_version == ActivityFlowItemHistorySchema.activity_flow_id,
+        )
+        query = query.join(
+            ActivityHistorySchema,
+            ActivityFlowItemHistorySchema.activity_id == ActivityHistorySchema.id_version,
+        )
+        query = query.join(
+            AppletHistorySchema,
+            and_(
+                AppletHistorySchema.id_version == ActivityFlowHistoriesSchema.applet_id,
+                AppletHistorySchema.id_version == ActivityHistorySchema.applet_id,
+            ),
+        )
+
+        query = query.where(AppletHistorySchema.id == applet_id)
+
+        _filters = _FlowItemHistoryFilters().get_clauses(**query_params.filters)
+        if _filters:
+            query = query.where(*_filters)
+
+        query_count: Query = query.with_only_columns(func.count())
+
+        query = query.order_by(
+            ActivityFlowItemHistorySchema.created_at,
+            AppletHistorySchema.id,
+            ActivityFlowHistoriesSchema.id,
+            ActivityHistorySchema.id,
+        )
+        query = paging(query, query_params.page, query_params.limit)
+
+        coro_data, coro_count = (
+            self._execute(query),
+            self._execute(query_count),
+        )
+
+        res, res_count = await asyncio.gather(coro_data, coro_count)
+
+        data = [FlowItemHistoryDto(**row) for row in res]
+        total = res_count.scalars().one()
+
+        return data, total
