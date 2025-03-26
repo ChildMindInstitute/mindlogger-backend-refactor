@@ -7,8 +7,6 @@ from config import settings
 
 __all__ = ["OneupHealthService"]
 
-from infrastructure.logger import logger
-
 
 class OneupHealthAPIClient:
     def __init__(self):
@@ -26,8 +24,9 @@ class OneupHealthAPIClient:
                 raise InternalServerError(resp.text)
 
             result = resp.json()
+            if result["success"] is False:
+                raise InternalServerError(result["error"])
 
-            logger.info(result)
             return result
 
     async def postAuth(self, url_path, data=None):
@@ -38,16 +37,19 @@ class OneupHealthAPIClient:
 
             result = resp.json()
 
-            logger.info(result)
             return result
 
     async def get(self, url_path, params=None):
         async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
             resp = await client.get(url=url_path, params=params)
-            if resp.status_code != 201 and resp.status_code != 400 and resp.status_code != 200:
+            if resp.status_code != 400 and resp.status_code != 200:
                 raise InternalServerError(resp.text)
 
-            return resp.json()
+            result = resp.json()
+            if result["success"] is False:
+                raise InternalServerError(result["error"])
+
+            return result
 
 
 class OneupHealthService:
@@ -56,21 +58,8 @@ class OneupHealthService:
         self._user = user
         self._client = OneupHealthAPIClient()
 
-    async def create_user(self, subject_id: uuid.UUID) -> dict[str, str]:
-        result = await self._client.post("/user-management/v1/user", params={"app_user_id": str(subject_id)})
-        if result["success"] is False:
-            if result["error"] == "this user already exists":
-                oneup_user_id = await self._get_user_id(subject_id=subject_id)
-                return {"oneup_user_id": oneup_user_id}
-
-            raise InternalServerError(result["error"])
-
-        return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
-
     async def _generate_auth_code(self, subject_id: uuid.UUID) -> str:
         result = await self._client.post("/user-management/v1/user/auth-code", params={"app_user_id": str(subject_id)})
-        if result["success"] is False:
-            raise InternalServerError(result["error"])
 
         code = result.get("code")
         return code
@@ -86,12 +75,20 @@ class OneupHealthService:
     async def _get_user_id(self, subject_id: uuid.UUID):
         result = await self._client.get("/user-management/v1/user", params={"app_user_id": str(subject_id)})
 
-        if result["success"] is False:
-            raise InternalServerError(result["error"])
-
         oneup_user_id = result.get("entry", [])[0].get("oneup_user_id")
 
         return oneup_user_id
+
+    async def create_user(self, subject_id: uuid.UUID) -> dict[str, str]:
+        try:
+            result = await self._client.post("/user-management/v1/user", params={"app_user_id": str(subject_id)})
+            return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
+        except InternalServerError as ise:
+            if ise.message == "this user already exists":
+                oneup_user_id = await self._get_user_id(subject_id=subject_id)
+                return {"oneup_user_id": oneup_user_id}
+
+            raise ise
 
     async def retrieve_token(self, subject_id: uuid.UUID, code: str | None = None):
         if not code:
