@@ -677,6 +677,7 @@ class ScheduleService:
         applet_ids: list[uuid.UUID],
         min_end_date: date | None = None,
         max_start_date: date | None = None,
+        time_zone: str | None = None,
         device_id: str | None = None,
         os_name: str | None = None,
         os_version: str | None = None,
@@ -730,6 +731,7 @@ class ScheduleService:
                     os_name=os_name,
                     os_version=os_version,
                     app_version=app_version,
+                    time_zone=time_zone,
                 )
 
         return events
