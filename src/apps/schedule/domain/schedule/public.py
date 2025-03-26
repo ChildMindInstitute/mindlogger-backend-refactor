@@ -148,6 +148,7 @@ class ExportEventHistoryDto(PublicModel):
     event_updated_by: uuid.UUID | None = None
     activity_or_flow_id: uuid.UUID
     activity_or_flow_name: str
+    activity_or_flow_hidden: bool
     access_before_schedule: bool | None = None
     one_time_completion: bool | None = None
     periodicity: str
@@ -167,4 +168,6 @@ class ExportDeviceHistoryDto(PublicModel):
     start_time: datetime.time
     end_date: date | None = None
     end_time: datetime.time
+    access_before_schedule: bool | None = None
     created_at: datetime.datetime
+    user_time_zone: str | None = None

@@ -19,6 +19,7 @@ from apps.activities.domain.response_type_config import (
     ParagraphTextConfig,
     PhotoConfig,
     PhrasalTemplateConfig,
+    RequestHealthRecordDataConfig,
     ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
@@ -39,6 +40,11 @@ from apps.activities.errors import (
     MultiSelectNoneOptionError,
 )
 from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
+
+
+class RequestHealthRecordDataOptType(StrEnum):
+    OPT_IN = "opt_in"
+    OPT_OUT = "opt_out"
 
 
 class PhrasalTemplateFieldType(StrEnum):
@@ -388,6 +394,16 @@ class PhrasalTemplateValues(PublicModel):
     phrases: list[PhrasalTemplatePhrase]
 
 
+class RequestHealthRecordDataOption(PublicModel):
+    id: RequestHealthRecordDataOptType = Field(default=...)  # ellipsis indicates that the field is required
+    label: str = Field(default=...)
+
+
+class RequestHealthRecordDataValues(PublicModel):
+    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
+    opt_in_out_options: list[RequestHealthRecordDataOption]
+
+
 ResponseValueConfigOptions = [
     TextValues,
     ParagraphTextValues,
@@ -413,6 +429,7 @@ ResponseValueConfigOptions = [
     ABTrailsValues,
     UnityValues,
     PhrasalTemplateValues,
+    RequestHealthRecordDataValues,
 ]
 
 
@@ -430,6 +447,7 @@ ResponseValueConfig = (
     | TimeValues
     | UnityValues
     | PhrasalTemplateValues
+    | RequestHealthRecordDataValues
 )
 
 
@@ -486,6 +504,7 @@ ResponseTypeConfigOptions = [
     ABTrailsConfig,
     UnityConfig,
     PhrasalTemplateConfig,
+    RequestHealthRecordDataConfig,
 ]
 
 ResponseTypeValueConfig = {}
