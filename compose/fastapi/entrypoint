@@ -49,15 +49,15 @@ END
 }
 
 until redis_ready; do
-  >&2 echo 'Waiting for Redis to become available...'
+  >&2 echo 'INFO: Waiting for Redis to become available...'
   sleep 1
 done
->&2 echo '>>> Redis is available <<<'
+>&2 echo 'INFO: >>> Redis is available <<<'
 
 until rabbit_ready; do
-  >&2 echo 'Waiting for RabbitMQ to become available...'
+  >&2 echo 'INFO: Waiting for RabbitMQ to become available...'
   sleep 1
 done
->&2 echo '>>> RabbitMQ is available <<<'
+>&2 echo 'INFO: >>> RabbitMQ is available <<<'
 
 exec "$@"
