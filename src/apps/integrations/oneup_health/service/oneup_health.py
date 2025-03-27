@@ -2,10 +2,17 @@ import uuid
 
 import httpx
 
-from apps.shared.exception import InternalServerError
+from apps.integrations.oneup_health.errors import (
+    OneUpHealthAPIError,
+    OneUpHealthAPIErrorMessageMap,
+    OneUpHealthAPIForbiddenError,
+    OneUpHealthUserAlreadyExists,
+)
 from config import settings
 
 __all__ = ["OneupHealthService"]
+
+from infrastructure.logger import logger
 
 
 class OneupHealthAPIClient:
@@ -21,11 +28,17 @@ class OneupHealthAPIClient:
         async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
             resp = await client.post(url=url_path, data=data, params=params)
             if resp.status_code != 201 and resp.status_code != 400 and resp.status_code != 200:
-                raise InternalServerError(resp.text)
+                logger.error(
+                    f"Error requesting to OneUp health API {url_path}", error=resp.text, status_code=resp.status_code
+                )
+                if resp.status_code == 403:
+                    raise OneUpHealthAPIForbiddenError()
+                raise OneUpHealthAPIError(resp.text)
 
             result = resp.json()
             if result["success"] is False:
-                raise InternalServerError(result["error"])
+                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path}", error=result["error"])
+                raise OneUpHealthAPIErrorMessageMap.get(result["error"], OneUpHealthAPIError)()
 
             return result
 
@@ -33,7 +46,12 @@ class OneupHealthAPIClient:
         async with httpx.AsyncClient(base_url=self._auth_base_url) as client:
             resp = await client.post(url=url_path, data={**data, **self._default_headers})
             if resp.status_code != 201 and resp.status_code != 400 and resp.status_code != 200:
-                raise InternalServerError(resp.text)
+                logger.error(
+                    f"Error requesting to OneUp health API {url_path}", error=resp.text, status_code=resp.status_code
+                )
+                if resp.status_code == 403:
+                    raise OneUpHealthAPIForbiddenError()
+                raise OneUpHealthAPIError(resp.text)
 
             result = resp.json()
 
@@ -43,19 +61,23 @@ class OneupHealthAPIClient:
         async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
             resp = await client.get(url=url_path, params=params)
             if resp.status_code != 400 and resp.status_code != 200:
-                raise InternalServerError(resp.text)
+                logger.error(
+                    f"Error requesting to OneUp health API {url_path}", error=resp.text, status_code=resp.status_code
+                )
+                if resp.status_code == 403:
+                    raise OneUpHealthAPIForbiddenError()
+                raise OneUpHealthAPIError()
 
             result = resp.json()
             if result["success"] is False:
-                raise InternalServerError(result["error"])
+                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path}", error=result["error"])
+                raise OneUpHealthAPIErrorMessageMap.get(result["error"], OneUpHealthAPIError)()
 
             return result
 
 
 class OneupHealthService:
-    def __init__(self, session, user):
-        self._session = session
-        self._user = user
+    def __init__(self):
         self._client = OneupHealthAPIClient()
 
     async def _generate_auth_code(self, subject_id: uuid.UUID) -> str:
@@ -83,12 +105,10 @@ class OneupHealthService:
         try:
             result = await self._client.post("/user-management/v1/user", params={"app_user_id": str(subject_id)})
             return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
-        except InternalServerError as ise:
-            if ise.message == "this user already exists":
-                oneup_user_id = await self._get_user_id(subject_id=subject_id)
+        except OneUpHealthUserAlreadyExists:
+            if oneup_user_id := await self._get_user_id(subject_id=subject_id):
                 return {"oneup_user_id": oneup_user_id}
-
-            raise ise
+            raise
 
     async def retrieve_token(self, subject_id: uuid.UUID, code: str | None = None):
         if not code:
