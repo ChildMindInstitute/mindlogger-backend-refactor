@@ -1,7 +1,7 @@
 """Add meta column to subject
 
 Revision ID: 795b9d9844ed
-Revises: 5658857a84dc
+Revises: 6fb25329f7b1
 Create Date: 2025-03-25 19:25:30.372404
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "795b9d9844ed"
-down_revision = "5658857a84dc"
+down_revision = "6fb25329f7b1"
 branch_labels = None
 depends_on = None
 
