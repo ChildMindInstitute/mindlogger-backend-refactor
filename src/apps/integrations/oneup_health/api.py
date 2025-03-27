@@ -26,7 +26,7 @@ async def retrieve_token(
         subject = await subjects_service.get_by_user_and_applet(user.id, applet_id)
         assert subject
 
-        oneup_health_service = OneupHealthService(session, user)
+        oneup_health_service = OneupHealthService()
 
         code = None
         oneup_user_id = subject.meta.get("oneup_user_id") if subject.meta else None
