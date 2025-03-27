@@ -25,6 +25,7 @@ class SubjectCreate(InternalModel):
 
 class Subject(SubjectCreate):
     id: uuid.UUID
+    meta: dict | None = None
 
 
 class SubjectRespondent(PublicModel):
