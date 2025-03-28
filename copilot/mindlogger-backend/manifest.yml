@@ -42,6 +42,7 @@ network:
   connect: false # Enable Service Connect for intra-environment traffic between services.
   vpc:
     security_groups:
+      # This security group allows access to rabbit and redis
       - sg-0fe1e219a0c0c5afb
 
 storage:
