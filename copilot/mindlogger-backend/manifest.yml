@@ -40,9 +40,10 @@ count: 1       # Number of tasks that should be running in your service.
 exec: true     # Enable running commands in your container.
 network:
   connect: false # Enable Service Connect for intra-environment traffic between services.
-#  vpc:
-#    security_groups:
-#      - sg-0fe1e219a0c0c5afb
+  vpc:
+    security_groups:
+      # This security group allows access to rabbit and redis
+      - sg-0fe1e219a0c0c5afb
 
 storage:
   readonly_fs: false
