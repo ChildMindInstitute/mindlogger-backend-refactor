@@ -20,7 +20,7 @@ for PR_NUM in $(aws ecs list-clusters --output text | grep -E -o 'pr\-[0-9]+' | 
   DD_VERSION="pr-${PR_NUM}"
   aws elbv2 add-tags \
     --resource-arns "${ARN}" \
-    --tags Key=datadog:env,Value=feature Key=datadog:service,Value=backend-api Key=datadog:version,Value=${DD_VERSION}
+    --tags Key=env,Value=feature Key=service,Value=backend-api Key=version,Value=${DD_VERSION}
 
 
   # GDPR and HIPAA security group rules
