@@ -1,8 +1,12 @@
 import uuid
 
 import typer
+import yaml
+from pydantic import ValidationError
 from rich import print
 
+from apps.applets.commands.applet.seed.applet_config_file_v1 import AppletConfigFileV1
+from apps.applets.commands.applet.seed.command import seed_applet_v1
 from apps.applets.service import AppletService
 from apps.transfer_ownership.service import TransferService
 from apps.users import User
@@ -78,3 +82,37 @@ async def transfer_ownership(
                 transfer = await service_from.save_transfer_request(applet_id, target_owner_email, target_user.id)
                 await service_to.accept_transfer(applet_id, transfer.key)
                 print(f"[green]Transfer ownership for applet {applet_id} finished[/green]")
+
+
+@app.command(help="Seed applet data from a YAML config file")
+@coro
+async def seed(config: str = typer.Argument(..., help="Path to YAML config file")):
+    try:
+        with open(config, "r") as f:
+            data = yaml.safe_load(f)
+        config = AppletConfigFileV1(**data)
+        typer.echo("Config loaded successfully")
+        await seed_applet_v1(config)
+    except FileNotFoundError:
+        typer.echo(f"Config file not found: {config}")
+    except yaml.YAMLError as e:
+        typer.echo(f"Error parsing config file: {e}")
+    except (ValidationError, ValueError) as e:
+        typer.echo("Validation error while parsing config file")
+        typer.echo(str(e))
+
+
+@app.command(help="Generate YAML schema for seed config")
+def generate_schema(
+    output_path: str = typer.Argument(
+        ...,
+        help="Path to output file",
+    ),
+) -> None:
+    """
+    Generate YAML schema for seed config
+    """
+    schema = AppletConfigFileV1.schema()
+    with open(output_path, "w") as f:
+        yaml.dump(schema, f)
+    typer.echo(f"Schema saved to {output_path}")

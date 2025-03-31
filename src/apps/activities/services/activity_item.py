@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from apps.activities.crud import ActivityItemsCRUD
 from apps.activities.db.schemas import ActivityItemSchema
-from apps.activities.domain.activity_create import PreparedActivityItemCreate
+from apps.activities.domain.activity_create import PreparedActivityItemCreate, SeededPreparedActivityItemCreate
 from apps.activities.domain.activity_full import ActivityItemFull
 from apps.activities.domain.activity_item import (
     ActivityItemDuplicate,
@@ -18,7 +18,9 @@ class ActivityItemService:
     def __init__(self, session):
         self.session = session
 
-    async def create(self, activity_items: list[PreparedActivityItemCreate]) -> list[ActivityItemFull]:
+    async def create(
+        self, activity_items: list[PreparedActivityItemCreate | SeededPreparedActivityItemCreate]
+    ) -> list[ActivityItemFull]:
         schemas = list()
         activity_id_ordering_map: dict[uuid.UUID, int] = defaultdict(int)
 

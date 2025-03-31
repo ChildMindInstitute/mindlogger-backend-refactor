@@ -1,8 +1,9 @@
+import datetime
 from typing import Any
 
 from pydantic import Field, root_validator
 
-from apps.activities.domain.activity_create import ActivityCreate
+from apps.activities.domain.activity_create import ActivityCreate, SeededActivity
 from apps.activities.domain.activity_update import ActivityUpdate
 from apps.activities.domain.custom_validation import validate_performance_task_type
 from apps.activities.errors import (
@@ -55,6 +56,11 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
     @root_validator
     def validate_performance_task_type(cls, values):
         return validate_performance_task_type(values)
+
+
+class SeededApplet(AppletCreate):
+    created_at: datetime.datetime
+    activities: list[SeededActivity]
 
 
 class AppletUpdate(AppletBase, PublicModel):

@@ -34,9 +34,7 @@ class UserAppletAccessService:
         meta: dict = {}
         return meta
 
-    async def add_role(
-        self, user_id: uuid.UUID, role: Role, meta: dict | None = None, nickname: str | None = None
-    ) -> UserAppletAccess:
+    async def add_role(self, user_id: uuid.UUID, role: Role, meta: dict | None = None) -> UserAppletAccess:
         access_schema = await UserAppletAccessCRUD(self.session).get_applet_role_by_user_id(
             self._applet_id, user_id, role
         )

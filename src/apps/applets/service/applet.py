@@ -23,7 +23,7 @@ from apps.applets.domain import (
     Role,
 )
 from apps.applets.domain.applet import Applet, AppletDataRetention
-from apps.applets.domain.applet_create_update import AppletCreate, AppletReportConfiguration, AppletUpdate
+from apps.applets.domain.applet_create_update import AppletCreate, AppletReportConfiguration, AppletUpdate, SeededApplet
 from apps.applets.domain.applet_duplicate import AppletDuplicate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_history import FlowItemHistoryDto
@@ -118,7 +118,7 @@ class AppletService:
 
     async def create(
         self,
-        create_data: AppletCreate,
+        create_data: AppletCreate | SeededApplet,
         manager_id: uuid.UUID | None = None,
         manager_role: Role | None = None,
         applet_id: uuid.UUID | None = None,
@@ -146,7 +146,7 @@ class AppletService:
         return applet
 
     async def _create(
-        self, create_data: AppletCreate, creator_id: uuid.UUID, applet_id: uuid.UUID | None = None
+        self, create_data: AppletCreate | SeededApplet, creator_id: uuid.UUID, applet_id: uuid.UUID | None = None
     ) -> AppletFull:
         if applet_id is None:
             applet_id = uuid.uuid4()
@@ -154,30 +154,33 @@ class AppletService:
         if not create_data.theme_id:
             theme = await ThemeService(self.session, self.user_id).get_default()
             create_data.theme_id = theme.id
-        schema = await AppletsCRUD(self.session).save(
-            AppletSchema(
-                id=applet_id,
-                display_name=create_data.display_name,
-                description=create_data.description,
-                about=create_data.about,
-                image=create_data.image,
-                watermark=create_data.watermark,
-                theme_id=create_data.theme_id,
-                version=await self.get_next_version(),
-                report_server_ip=create_data.report_server_ip,
-                report_public_key=create_data.report_public_key,
-                report_recipients=create_data.report_recipients,
-                report_include_user_id=create_data.report_include_user_id,
-                report_include_case_id=create_data.report_include_case_id,
-                report_email_body=create_data.report_email_body,
-                encryption=create_data.encryption.dict() if create_data.encryption else None,
-                extra_fields=create_data.extra_fields,
-                creator_id=creator_id,
-                stream_enabled=create_data.stream_enabled,
-                stream_ip_address=create_data.stream_ip_address,
-                stream_port=create_data.stream_port,
-            )
+        data = AppletSchema(
+            id=applet_id,
+            display_name=create_data.display_name,
+            description=create_data.description,
+            about=create_data.about,
+            image=create_data.image,
+            watermark=create_data.watermark,
+            theme_id=create_data.theme_id,
+            version=await self.get_next_version(),
+            report_server_ip=create_data.report_server_ip,
+            report_public_key=create_data.report_public_key,
+            report_recipients=create_data.report_recipients,
+            report_include_user_id=create_data.report_include_user_id,
+            report_include_case_id=create_data.report_include_case_id,
+            report_email_body=create_data.report_email_body,
+            encryption=create_data.encryption.dict() if create_data.encryption else None,
+            extra_fields=create_data.extra_fields,
+            creator_id=creator_id,
+            stream_enabled=create_data.stream_enabled,
+            stream_ip_address=create_data.stream_ip_address,
+            stream_port=create_data.stream_port,
         )
+
+        if create_data.created_at:
+            data.created_at = create_data.created_at
+
+        schema = await AppletsCRUD(self.session).save(data)
         return AppletFull.from_orm(schema)
 
     async def update(self, applet_id: uuid.UUID, update_data: AppletUpdate) -> AppletFull:
