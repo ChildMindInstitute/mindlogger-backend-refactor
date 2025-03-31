@@ -28,16 +28,14 @@ class OneupHealthAPIClient:
         async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
             resp = await client.post(url=url_path, data=data, params=params)
             if resp.status_code != 201 and resp.status_code != 400 and resp.status_code != 200:
-                logger.error(
-                    f"Error requesting to OneUp health API {url_path}", error=resp.text, status_code=resp.status_code
-                )
+                logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
                 if resp.status_code == 403:
                     raise OneUpHealthAPIForbiddenError()
                 raise OneUpHealthAPIError(resp.text)
 
             result = resp.json()
             if result["success"] is False:
-                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path}", error=result["error"])
+                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result['error']}")
                 raise OneUpHealthAPIErrorMessageMap.get(result["error"], OneUpHealthAPIError)()
 
             return result
@@ -46,9 +44,7 @@ class OneupHealthAPIClient:
         async with httpx.AsyncClient(base_url=self._auth_base_url) as client:
             resp = await client.post(url=url_path, data={**data, **self._default_headers})
             if resp.status_code != 201 and resp.status_code != 400 and resp.status_code != 200:
-                logger.error(
-                    f"Error requesting to OneUp health API {url_path}", error=resp.text, status_code=resp.status_code
-                )
+                logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
                 if resp.status_code == 403:
                     raise OneUpHealthAPIForbiddenError()
                 raise OneUpHealthAPIError(resp.text)
@@ -61,16 +57,14 @@ class OneupHealthAPIClient:
         async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
             resp = await client.get(url=url_path, params=params)
             if resp.status_code != 400 and resp.status_code != 200:
-                logger.error(
-                    f"Error requesting to OneUp health API {url_path}", error=resp.text, status_code=resp.status_code
-                )
+                logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
                 if resp.status_code == 403:
                     raise OneUpHealthAPIForbiddenError()
                 raise OneUpHealthAPIError()
 
             result = resp.json()
             if result["success"] is False:
-                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path}", error=result["error"])
+                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result['error']}")
                 raise OneUpHealthAPIErrorMessageMap.get(result["error"], OneUpHealthAPIError)()
 
             return result
@@ -97,7 +91,11 @@ class OneupHealthService:
     async def _get_user_id(self, subject_id: uuid.UUID):
         result = await self._client.get("/user-management/v1/user", params={"app_user_id": str(subject_id)})
 
-        oneup_user_id = result.get("entry", [])[0].get("oneup_user_id")
+        entries = result.get("entry", [])
+        if len(entries) == 0:
+            return None
+
+        oneup_user_id = entries[0].get("oneup_user_id")
 
         return oneup_user_id
 
