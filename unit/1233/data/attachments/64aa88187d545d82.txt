@@ -1,0 +1,14 @@
+ERROR    root:applets.py:352 device id not found
+Traceback (most recent call last):
+  File "/app/src/apps/applets/api/applets.py", line 343, in applet_delete
+    await service.send_notification_to_applet_respondents(
+    ...<5 lines>...
+    )
+  File "/app/src/apps/applets/service/applet.py", line 763, in send_notification_to_applet_respondents
+    await FCMNotification().notify(
+    ...<9 lines>...
+    )
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2319, in _execute_mock_call
+    raise effect
+firebase_admin.exceptions.NotFoundError: device id not found
+INFO     api.access:structured_logs.py:183 {'http': {'url': 'http://test.com/applets/92917a56-d586-4613-b7aa-991f2c4b15b1', 'request_path': '/applets/92917a56-d586-4613-b7aa-991f2c4b15b1', 'status_code': 204, 'method': 'DELETE', 'request_id': '6366dc09b0f548b79ebfb9164fefc867', 'version': '1.1'}, 'network': {'client': {'ip': '127.0.0.1', 'port': 123}}, 'duration': 25286141, 'event': '127.0.0.1:123 - "DELETE http://test.com/applets/92917a56-d586-4613-b7aa-991f2c4b15b1 HTTP/1.1" 204', 'request_id': '6366dc09b0f548b79ebfb9164fefc867', 'logger': 'api.access', 'level': 'info', 'timestamp': '2025-03-31T19:10:00.251650Z'}
