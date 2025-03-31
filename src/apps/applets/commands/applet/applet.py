@@ -103,7 +103,7 @@ async def seed(path_to_config: str = typer.Argument(..., help="Path to YAML conf
 
 
 @app.command(help="Generate YAML schema for seed config")
-def generate_schema(
+def generate_seed_file_schema(
     output_path: str = typer.Argument(
         ...,
         help="Path to output file",
