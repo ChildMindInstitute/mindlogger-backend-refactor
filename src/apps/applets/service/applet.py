@@ -177,7 +177,7 @@ class AppletService:
             stream_port=create_data.stream_port,
         )
 
-        if hasattr(create_data, 'created_at'):
+        if hasattr(create_data, "created_at"):
             data.created_at = create_data.created_at
 
         schema = await AppletsCRUD(self.session).save(data)

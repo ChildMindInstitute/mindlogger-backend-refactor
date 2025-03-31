@@ -86,15 +86,15 @@ async def transfer_ownership(
 
 @app.command(help="Seed applet data from a YAML config file")
 @coro
-async def seed(config: str = typer.Argument(..., help="Path to YAML config file")):
+async def seed(path_to_config: str = typer.Argument(..., help="Path to YAML config file")):
     try:
-        with open(config, "r") as f:
+        with open(path_to_config, "r") as f:
             data = yaml.safe_load(f)
         config = AppletConfigFileV1(**data)
         typer.echo("Config loaded successfully")
         await seed_applet_v1(config)
     except FileNotFoundError:
-        typer.echo(f"Config file not found: {config}")
+        typer.echo(f"Config file not found: {path_to_config}")
     except yaml.YAMLError as e:
         typer.echo(f"Error parsing config file: {e}")
     except (ValidationError, ValueError) as e:
