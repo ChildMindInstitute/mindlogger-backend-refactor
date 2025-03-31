@@ -13,12 +13,12 @@ PR_NUM=${ENV_NAME}
 
 # Add Datadog tags to ALB
 echo "Working with ${PR_NUM}"
-ALL_ALBS=$(aws elbv2 describe-load-balancers --query "LoadBalancers[*].LoadBalancerArn" --output text)
+ALL_ALBS=$(aws elbv2 describe-load-balancers --query "LoadBalancers[*].LoadBalancerArn" --output text | tr '\t' ' ')
 ALB_ARNS=$(IFS=, ; echo "${ALL_ALBS[*]}")
-ARN=$(aws elbv2 describe-tags --resource-arns "${ALB_ARNS}" --query "TagDescriptions[?Tags[?Key=='copilot-environment' && Value=='pr-${PR_NUM}']].ResourceArn" --output text)
+ARN=$(aws elbv2 describe-tags --resource-arns "${ALB_ARNS}" --query "TagDescriptions[?Tags[?Key=='copilot-environment' && Value=='${PR_NUM}']].ResourceArn" --output text)
 echo "ALB ARN: ${ARN}"
 
-DD_VERSION="pr-${PR_NUM}"
+DD_VERSION="${PR_NUM}"
 aws elbv2 add-tags \
   --resource-arns "${ARN}" \
   --tags Key=env,Value=feature Key=service,Value=backend-api Key=version,Value="${DD_VERSION}"
@@ -29,7 +29,7 @@ ALB_SG_ID=$(aws elbv2 describe-load-balancers --load-balancer-arns "${ARN}" --qu
 
 CLUSTERS=$(aws ecs list-clusters --query "clusterArns" --output text)
 for CLUSTER in ${CLUSTERS}; do
-  TAGS=$(aws ecs list-tags-for-resource --resource-arn ${CLUSTER} --query "tags[?key=='copilot-environment' && value=='pr-${PR_NUM}']" --output text)
+  TAGS=$(aws ecs list-tags-for-resource --resource-arn ${CLUSTER} --query "tags[?key=='copilot-environment' && value=='${PR_NUM}']" --output text)
 
   if [ -n "${TAGS}" ]; then
     echo "Cluster ARN: ${CLUSTER}"
@@ -44,12 +44,19 @@ for CLUSTER in ${CLUSTERS}; do
 
       aws ec2 revoke-security-group-ingress --group-id "${SG}" --ip-permissions "${IP_PERMS}" > /dev/null
 
-      echo "Creating new ingress rule"
+      echo "Creating new ingress rules"
+      # Health check
       aws ec2 authorize-security-group-ingress \
         --group-id "${SG}" \
         --protocol tcp \
         --port 1024-65535 \
         --source-group "${ALB_SG_ID}" > /dev/null
+      # App
+      aws ec2 authorize-security-group-ingress \
+          --group-id "${SG}" \
+          --protocol tcp \
+          --port 80 \
+          --source-group "${ALB_SG_ID}" > /dev/null
     done
   fi
 done
