@@ -49,7 +49,7 @@ class ActivityService:
         prepared_activity_items = list()
 
         for index, activity_data in enumerate(activities_create):
-            activity_id = activity_data.id if activity_data.id else uuid.uuid4()
+            activity_id = activity_data.id if hasattr(activity_data, 'id') else uuid.uuid4()
             activity_key_id_map[activity_data.key] = activity_id
             activity_id_key_map[activity_id] = activity_data.key
 
@@ -76,7 +76,7 @@ class ActivityService:
                 auto_assign=activity_data.auto_assign,
             )
 
-            if activity_data.created_at:
+            if hasattr(activity_data, 'created_at'):
                 schema.created_at = activity_data.created_at
 
             schemas.append(schema)
@@ -95,7 +95,7 @@ class ActivityService:
                     extra_fields=item.extra_fields,
                 )
 
-                if item.created_at:
+                if hasattr(item, 'created_at'):
                     prepared_activity_item = SeededPreparedActivityItemCreate(
                         **prepared_activity_item.dict(),
                         created_at=item.created_at,
