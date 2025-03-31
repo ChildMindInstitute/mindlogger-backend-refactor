@@ -1,0 +1,2 @@
+INFO     root:api.py:109 Invalid device_id wrong_device_id provided
+INFO     api.access:structured_logs.py:183 {'http': {'url': 'http://test.com/answers', 'request_path': '/answers', 'status_code': 201, 'method': 'POST', 'request_id': '7727b654b6d34b11b0968b487217d00d', 'version': '1.1'}, 'network': {'client': {'ip': '127.0.0.1', 'port': 123}}, 'duration': 49045656, 'event': '127.0.0.1:123 - "POST http://test.com/answers HTTP/1.1" 201', 'request_id': '7727b654b6d34b11b0968b487217d00d', 'logger': 'api.access', 'level': 'info', 'timestamp': '2025-03-31T14:51:10.070750Z'}
