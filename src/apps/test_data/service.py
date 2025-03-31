@@ -181,6 +181,7 @@ class TestDataService:
             )
 
             result["response_values"] = None  # type: ignore  # noqa: E501
+
         elif type_ == ResponseType.SINGLESELECT:
             result["config"] = dict(
                 remove_back_button=False,
@@ -191,11 +192,13 @@ class TestDataService:
                 set_alerts=False,
                 add_tooltip=False,
                 set_palette=False,
+                response_data_identifier=False,
                 additional_response_option=dict(  # type: ignore  # noqa: E501
                     text_input_option=False,
                     text_input_required=False,
                 ),
             )
+
             result["response_values"] = {
                 "options": [  # type: ignore  # noqa: E501
                     {

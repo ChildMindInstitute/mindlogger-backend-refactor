@@ -15,14 +15,16 @@ from apps.activity_flows.domain.flow_update import ActivityFlowReportConfigurati
 from apps.activity_flows.service.flow_item import FlowItemService
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain.applet_history import Version
-from apps.schedule.crud.events import EventCRUD, FlowEventsCRUD
+from apps.schedule.crud.events import EventCRUD
+from apps.schedule.domain.constants import EventType
 from apps.schedule.service.schedule import ScheduleService
 from apps.workspaces.domain.constants import Role
 
 
 class FlowService:
-    def __init__(self, session):
+    def __init__(self, session, admin_user_id: uuid.UUID):
         self.session = session
+        self.admin_user_id = admin_user_id
 
     async def create(
         self,
@@ -72,7 +74,7 @@ class FlowService:
             flow_id_map[flow_item.activity_flow_id].items.append(flow_item)
 
         # add default schedule for flows
-        await ScheduleService(self.session).create_default_schedules(
+        await ScheduleService(self.session, self.admin_user_id).create_default_schedules(
             applet_id=applet_id,
             activity_ids=[flow.id for flow in flows],
             is_activity=False,
@@ -89,7 +91,9 @@ class FlowService:
         schemas = list()
         prepared_flow_items = list()
 
-        all_flows = [flow.flow_id for flow in await FlowEventsCRUD(self.session).get_by_applet_id(applet_id)]
+        flow_events = await EventCRUD(self.session).get_by_type_and_applet_id(applet_id, EventType.FLOW)
+
+        all_flows = [flow_event.activity_flow_id for flow_event in flow_events if flow_event.activity_flow_id]
 
         # Save new flow ids
         new_flows = []
@@ -140,15 +144,17 @@ class FlowService:
         for flow_item in flow_items:
             flow_id_map[flow_item.activity_flow_id].items.append(flow_item)
 
+        schedule_service = ScheduleService(self.session, self.admin_user_id)
+
         # Remove events for deleted flows
         deleted_flow_ids = set(all_flows) - set(existing_flows)
         if deleted_flow_ids:
-            await ScheduleService(self.session).delete_by_flow_ids(applet_id=applet_id, flow_ids=list(deleted_flow_ids))
+            await schedule_service.delete_by_flow_ids(applet_id=applet_id, flow_ids=list(deleted_flow_ids))
             await ActivityAssignmentService(self.session).delete_by_activity_or_flow_ids(list(deleted_flow_ids))
 
         # Create default events for new activities
         if new_flows:
-            await ScheduleService(self.session).create_default_schedules(
+            await schedule_service.create_default_schedules(
                 applet_id=applet_id,
                 activity_ids=list(new_flows),
                 is_activity=False,
@@ -169,7 +175,7 @@ class FlowService:
 
             if respondents_with_indvdl_schdl:
                 for respondent_uuid in respondents_with_indvdl_schdl:
-                    await ScheduleService(self.session).create_default_schedules(
+                    await schedule_service.create_default_schedules(
                         applet_id=applet_id,
                         activity_ids=list(new_flows),
                         is_activity=False,

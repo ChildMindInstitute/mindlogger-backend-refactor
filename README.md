@@ -229,11 +229,8 @@ set -o allexport; source .env; set +o allexport
 
 > 🛑 **NOTE 2:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
 
-> 🛑 **NOTE 3:** If you get an error running `pipenv sync --dev` related to the dependency `greenlet`, install it by running:
-```bash
-pipenv install greenlet
-```
-> 🛑 **NOTE 4:** If the application can't find the `RabbitMQ` service even though it's running normally, change your `RABBITMQ__URL` to your local ip address instead of `localhost`
+> 🛑 **NOTE 3:** If the application can't find the `RabbitMQ` service even though it's running normally, change your
+`RABBITMQ__URL` to your local ip address instead of `localhost`
 
 ## Run the migrations
 ```bash
@@ -328,6 +325,9 @@ make run
 
 # Check the code quality
 make cq
+
+# Check and fix code quality
+make cqf
 
 # Check tests passing
 make test
@@ -479,7 +479,22 @@ delete from alembic_version;
 alembic -c alembic_arbitrary.ini upgrade head
 ```
 
-#### Database relation structure
+#### Update gender_screen and age_screen activity items strings to greek for an applet
+
+```bash
+python src/cli.py patch exec M2-8568 -a <applet_id> 
+```
+
+#### Note: You can use environment variables to overwrite default values.
+
+| Environment variable | Text string |
+| - | - |
+| `AGE_SCREEN_QUESTION_TRANSLATION` | Question text for the Age screen |
+| `GENDER_SCREEN_QUESTION_TRANSLATION` | Question text for the Gender screen |
+| `GENDER_SCREEN_RESPONSE_MALE_TRANSLATION` | "Male" response text |
+| `GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION` | "Female" response text |
+
+### Database relation structure
 
 ```mermaid
 

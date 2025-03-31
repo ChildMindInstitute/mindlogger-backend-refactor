@@ -17,6 +17,7 @@ from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.activity_flows.domain.flow_full import FlowFull, FlowHistoryWithActivityFlat, FlowHistoryWithActivityFull
 from apps.answers.domain.answer_items import AnswerItem, ItemAnswerCreate
 from apps.applets.domain.base import AppletBaseInfo
+from apps.integrations.prolific.domain import ProlificParamsActivityAnswer
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.domain.types import _BaseModel
@@ -113,6 +114,8 @@ class AppletAnswerCreate(InternalModel):
     source_subject_id: uuid.UUID | None = None
     input_subject_id: uuid.UUID | None = None
     consent_to_share: bool | None = False
+    prolific_params: ProlificParamsActivityAnswer | None = None
+    event_history_id: str | None = None
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 

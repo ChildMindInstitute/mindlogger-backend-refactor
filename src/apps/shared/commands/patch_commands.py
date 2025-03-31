@@ -132,6 +132,18 @@ PatchRegister.register(
     description="Set alert type to default value 'answer'",
 )
 
+PatchRegister.register(
+    file_path="m2_8568_update_subscale_items_to_greek.py",
+    task_id="M2-8568",
+    description="Update subscale items to greek",
+)
+
+PatchRegister.register(
+    file_path="m2_8175_library_cleanup_for_camhi.py",
+    task_id="M2-8175",
+    description="Library cleanup for CAMHI applets",
+)
+
 app = typer.Typer()
 
 
@@ -178,17 +190,18 @@ async def exec(
         "-o",
         help="Workspace owner id",
     ),
+    applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a", help="Patch arguments"),
 ):
     patch = PatchRegister.get_by_task_id(task_id)
     if not patch:
         print(wrap_error_msg("Patch not registered"))
     else:
-        await exec_patch(patch, owner_id)
+        await exec_patch(patch, owner_id, applet_id)
 
     return
 
 
-async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
+async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID], applet_id: Optional[uuid.UUID]):
     session_maker = session_manager.get_session()
     arbitrary = None
     async with session_maker() as session:
@@ -241,16 +254,16 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID]):
 
             # if manage_session is True, pass sessions to patch_file main
             if patch.manage_session:
-                await patch_file.main(session_maker, arbitrary_session_maker)
+                await patch_file.main(session_maker, arbitrary_session_maker, applet_id=applet_id)
             else:
                 async with session_maker() as session:
                     async with atomic(session):
                         if arbitrary_session_maker:
                             async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
                                 async with atomic(arbitrary_session):
-                                    await patch_file.main(session, arbitrary_session)
+                                    await patch_file.main(session, arbitrary_session, applet_id=applet_id)
                         else:
-                            await patch_file.main(session)
+                            await patch_file.main(session, applet_id=applet_id)
 
             print(
                 f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501

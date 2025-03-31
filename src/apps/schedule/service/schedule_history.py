@@ -10,6 +10,7 @@ from apps.schedule.crud.schedule_history import (
     ReminderHistoryCRUD,
     ScheduleHistoryCRUD,
 )
+from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.db.schemas import (
     AppletEventsSchema,
     EventHistorySchema,
@@ -18,14 +19,22 @@ from apps.schedule.db.schemas import (
 )
 from apps.schedule.domain.constants import EventType
 from apps.schedule.domain.schedule.internal import ScheduleEvent
+from apps.schedule.domain.schedule.public import ExportDeviceHistoryDto, ExportEventHistoryDto
+from apps.shared.query_params import QueryParams
 
 
 class ScheduleHistoryService:
     def __init__(self, session):
         self.session = session
 
-    async def add_history(self, applet_id: uuid.UUID, event: ScheduleEvent):
+    async def get_by_id(self, id_version: str) -> EventHistorySchema | None:
+        return await ScheduleHistoryCRUD(self.session).get_by_id(id_version)
+
+    async def add_history(self, applet_id: uuid.UUID, event: ScheduleEvent, updated_by: uuid.UUID | None) -> None:
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
+
+        # Refresh the applet so we don't get the old version number, in case the version has changed
+        await self.session.refresh(applet)
 
         event_history = await ScheduleHistoryCRUD(self.session).add(
             EventHistorySchema(
@@ -46,6 +55,7 @@ class ScheduleHistoryService:
                 activity_id=event.activity_id,
                 activity_flow_id=event.flow_id,
                 user_id=event.user_id,
+                updated_by=updated_by,
             )
         )
 
@@ -97,7 +107,7 @@ class ScheduleHistoryService:
         This method is useful when an applet has its version bumped and the events are not updated. The previous entries
         in `applet_events` are not removed to maintain the history of the applet.
         """
-        events = await EventCRUD(self.session).get_all_by_applet_id_with_filter(applet_id)
+        events = await EventCRUD(self.session).get_all_by_applet_id(applet_id)
 
         if len(events) > 0:
             await AppletEventsCRUD(self.session).add_many(
@@ -108,3 +118,19 @@ class ScheduleHistoryService:
                     for event in events
                 ]
             )
+
+    async def retrieve_applet_all_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportEventHistoryDto], int]:
+        event_history, total = await ScheduleHistoryCRUD(self.session).retrieve_applet_all_events_history(
+            applet_id, query_params
+        )
+
+        return event_history, total
+
+    async def retrieve_applet_all_device_events_history(
+        self, applet_id: uuid.UUID, query_params: QueryParams
+    ) -> tuple[list[ExportDeviceHistoryDto], int]:
+        return await UserDeviceEventsHistoryCRUD(self.session).retrieve_applet_all_device_events_history(
+            applet_id, query_params
+        )

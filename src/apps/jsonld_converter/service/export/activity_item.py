@@ -144,6 +144,7 @@ class ActivityItemSingleSelectExport(ActivityItemBaseExport):
                 "valueType": "xsd:anyURI",  # todo tokens
                 "randomizeOptions": config.randomize_options,
                 "scoring": config.add_scores,
+                "isResponseIdentifier": config.response_data_identifier,
                 "responseAlert": config.set_alerts,
                 "colorPalette": config.set_palette,
                 "multipleChoice": False,

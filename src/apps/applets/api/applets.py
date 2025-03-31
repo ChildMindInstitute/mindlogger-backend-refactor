@@ -32,7 +32,7 @@ from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.domain.applet_link import AppletLink, CreateAccessLink
 from apps.applets.domain.applets import public_detail, public_history_detail
 from apps.applets.domain.base import Encryption
-from apps.applets.filters import AppletQueryParams
+from apps.applets.filters import AppletQueryParams, FlowItemHistoryExportQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.applets.service.applet_history import retrieve_applet_by_version, retrieve_versions
 from apps.authentication.deps import get_current_user
@@ -214,7 +214,7 @@ async def flow_report_config_update(
     schema: ActivityFlowReportConfiguration = Body(...),
     session=Depends(get_session),
 ):
-    service = FlowService(session)
+    service = FlowService(session, admin_user_id=user.id)
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
     flow = await service.get_by_id(flow_id)
@@ -294,7 +294,7 @@ async def applet_flow_versions_data_retrieve(
 ) -> ResponseMulti[VersionPublic]:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
-    service = FlowService(session=session)
+    service = FlowService(session=session, admin_user_id=user.id)
     versions = await service.get_versions(applet_id, flow_id)
     return ResponseMulti(
         result=versions,
@@ -449,3 +449,21 @@ async def applet_retrieve_base_info_by_key(
     await service.exist_by_key(key_guid)
     applet = await service.get_info_by_key(key_guid, language)
     return Response(result=AppletActivitiesBaseInfo.from_orm(applet))
+
+
+async def flow_item_history(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    query_params: QueryParams = Depends(parse_query_params(FlowItemHistoryExportQueryParams)),
+    session=Depends(get_session),
+):
+    async with atomic(session):
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+
+        events_history, total = await AppletService(
+            session,
+            user.id,
+        ).get_flow_history(applet_id, query_params)
+
+    return ResponseMulti(result=events_history, count=total)

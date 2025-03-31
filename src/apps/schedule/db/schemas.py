@@ -1,20 +1,10 @@
 import datetime
-import uuid
 
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Time, UniqueConstraint, text
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, Interval, String, Text, Time, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import ENUM, UUID
 
 from infrastructure.database.base import Base
 from infrastructure.database.mixins import HistoryAware
-
-
-class PeriodicitySchema(Base):
-    __tablename__ = "periodicity"
-
-    type = Column(String(10), nullable=False)  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
-    start_date = Column(Date, nullable=True)
-    end_date = Column(Date, nullable=True)
-    selected_date = Column(Date, nullable=True)
 
 
 class _BaseEventSchema:
@@ -26,7 +16,6 @@ class _BaseEventSchema:
     timer_type = Column(String(10), nullable=False)  # NOT_SET, TIMER, IDLE
     version = Column(
         String(13),
-        nullable=True,
         default=lambda: datetime.datetime.now(datetime.UTC).strftime("%Y%m%d") + "-1",
         server_default=text("TO_CHAR(timezone('utc', now()), 'YYYYMMDD') || '-1'"),
     )
@@ -36,17 +25,16 @@ class _BaseEventSchema:
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     selected_date = Column(Date, nullable=True)
+    event_type = Column(ENUM("activity", "flow", name="event_type_enum", create_type=False), nullable=False)
+    activity_id = Column(UUID(as_uuid=True), nullable=True)
+    activity_flow_id = Column(UUID(as_uuid=True), nullable=True)
 
 
 class EventSchema(_BaseEventSchema, Base):
     __tablename__ = "events"
 
-    periodicity_id = Column(
-        UUID(as_uuid=True),
-        default=lambda: uuid.uuid4(),
-        server_default=text("gen_random_uuid()"),
-    )
     applet_id = Column(ForeignKey("applets.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
 
 
 class EventHistorySchema(_BaseEventSchema, HistoryAware, Base):
@@ -54,10 +42,8 @@ class EventHistorySchema(_BaseEventSchema, HistoryAware, Base):
 
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
-    event_type = Column(ENUM("activity", "flow", name="event_type_enum", create_type=False), nullable=False)
-    activity_id = Column(UUID(as_uuid=True), nullable=True)
-    activity_flow_id = Column(UUID(as_uuid=True), nullable=True)
     user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    updated_by = Column(UUID(as_uuid=True), nullable=True)
 
 
 class AppletEventsSchema(Base):
@@ -72,54 +58,6 @@ class AppletEventsSchema(Base):
             "event_id",
             "is_deleted",
             name="_unique_applet_events",
-        ),
-    )
-
-
-class UserEventsSchema(Base):
-    __tablename__ = "user_events"
-
-    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
-    event_id = Column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
-
-    __table_args__ = (
-        UniqueConstraint(
-            "user_id",
-            "event_id",
-            "is_deleted",
-            name="_unique_user_events",
-        ),
-    )
-
-
-class ActivityEventsSchema(Base):
-    __tablename__ = "activity_events"
-
-    activity_id = Column(UUID(as_uuid=True), nullable=False)
-    event_id = Column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
-
-    __table_args__ = (
-        UniqueConstraint(
-            "activity_id",
-            "event_id",
-            "is_deleted",
-            name="_unique_activity_events",
-        ),
-    )
-
-
-class FlowEventsSchema(Base):
-    __tablename__ = "flow_events"
-
-    flow_id = Column(UUID(as_uuid=True), nullable=False)
-    event_id = Column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
-
-    __table_args__ = (
-        UniqueConstraint(
-            "flow_id",
-            "event_id",
-            "is_deleted",
-            name="_unique_flow_events",
         ),
     )
 
@@ -163,3 +101,28 @@ class ReminderHistorySchema(_BaseReminderSchema, HistoryAware, Base):
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
     event_id = Column(ForeignKey("event_histories.id_version", ondelete="RESTRICT"), nullable=False)
+
+
+class UserDeviceEventsHistorySchema(Base):
+    __tablename__ = "user_device_events_history"
+
+    unique_constraint = "_unique_user_device_events_history"
+
+    user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    device_id = Column(String(255), nullable=False)
+    os_name = Column(Text, nullable=True)
+    os_version = Column(Text, nullable=True)
+    app_version = Column(Text, nullable=True)
+    event_id = Column(UUID(as_uuid=True), nullable=False)
+    event_version = Column(String(13), nullable=False)
+    time_zone = Column(Text, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "device_id",
+            "event_id",
+            "event_version",
+            name=unique_constraint,
+        ),
+    )

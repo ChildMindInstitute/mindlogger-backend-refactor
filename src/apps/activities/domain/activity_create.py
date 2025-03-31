@@ -9,6 +9,7 @@ from apps.activities.domain.custom_validation import (
     validate_item_flow,
     validate_performance_task_type,
     validate_phrasal_templates,
+    validate_request_health_record_data,
     validate_score_and_sections,
     validate_subscales,
 )
@@ -60,3 +61,7 @@ class ActivityCreate(ActivityBase, InternalModel):
     @root_validator()
     def validate_phrasal_templates(cls, values):
         return validate_phrasal_templates(values)
+
+    @root_validator()
+    def validate_request_health_record_data(cls, values):
+        return validate_request_health_record_data(values)

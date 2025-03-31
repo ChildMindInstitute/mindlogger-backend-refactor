@@ -7,7 +7,11 @@ from infrastructure.dependency.structured_logs import setup_structured_logging
 
 logger = logging.getLogger("startup")
 logger.setLevel(logging.INFO)
+formatter = logging.Formatter(logging.BASIC_FORMAT)
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
 logger.addHandler(logging.StreamHandler())
+
 
 if os.getenv("DD_PROFILING_ENABLED", "false").lower() == "true":
     from ddtrace.profiling import Profiler

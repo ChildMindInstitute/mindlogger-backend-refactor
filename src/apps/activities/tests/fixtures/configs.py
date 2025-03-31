@@ -15,6 +15,7 @@ from apps.activities.domain.response_type_config import (
     ParagraphTextConfig,
     PhotoConfig,
     PhrasalTemplateConfig,
+    RequestHealthRecordDataConfig,
     ResponseType,
     SingleSelectionConfig,
     SingleSelectionRowsConfig,
@@ -50,6 +51,7 @@ def single_select_config(default_config: DefaultConfig) -> SingleSelectionConfig
         set_alerts=False,
         add_tooltip=False,
         set_palette=False,
+        response_data_identifier=False,
         **default_config.dict(),
         type=ResponseType.SINGLESELECT,
     )
@@ -185,3 +187,8 @@ def phrasal_template_config(default_config: DefaultConfig) -> PhrasalTemplateCon
 @pytest.fixture
 def unity_config(default_config: DefaultConfig) -> UnityConfig:
     return UnityConfig(**default_config.dict(), type=ResponseType.UNITY)
+
+
+@pytest.fixture
+def request_health_record_data_config(default_config: DefaultConfig) -> RequestHealthRecordDataConfig:
+    return RequestHealthRecordDataConfig(**default_config.dict(), type=ResponseType.REQUEST_HEALTH_RECORD_DATA)

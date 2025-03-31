@@ -10,6 +10,9 @@ from infrastructure.database.crud import BaseCRUD
 class UserDevicesCRUD(BaseCRUD[UserDeviceSchema]):
     schema_class = UserDeviceSchema
 
+    async def get_by_device_id(self, device_id: str) -> UserDeviceSchema | None:
+        return await self._get(key="device_id", value=device_id)
+
     async def add_device(self, user_id: uuid.UUID, device_id: str) -> None:
         await self._delete(user_id=user_id, device_id=device_id)
 

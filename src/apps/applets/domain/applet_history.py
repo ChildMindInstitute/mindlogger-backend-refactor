@@ -31,3 +31,14 @@ class History(Version):
 
 class PublicHistory(VersionPublic):
     creator: UserPublic
+
+
+class FlowItemHistoryDto(PublicModel):
+    applet_id: uuid.UUID
+    applet_version: str
+    applet_name: str
+    flow_id: uuid.UUID
+    flow_name: str
+    activity_id: uuid.UUID
+    activity_name: str
+    created_at: datetime.datetime
