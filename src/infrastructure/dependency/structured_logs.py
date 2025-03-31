@@ -176,6 +176,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             client_host = request.client.host if request.client else None
             client_port = request.client.port if request.client else None
             real_host = request.headers.get("X-Forwarded-For", client_host)
+            actual_client_ip = real_host.split(',')[0].strip() if real_host else None
             http_method = request.method
             http_version = request.scope["http_version"]
 
@@ -191,7 +192,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
 
             # Recreate the Uvicorn access log format, but add all parameters as structured information
             logger_fn(
-                f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+                f"""{actual_client_ip}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
                 http={
                     "url": str(request.url),
                     "request_path": str(path),
@@ -200,7 +201,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                     "request_id": request_id,
                     "version": http_version,
                 },
-                network={"client": {"ip": real_host, "port": client_port}},
+                network={"client": {"ip": actual_client_ip, "port": client_port}},
                 duration=process_time,
             )
 
