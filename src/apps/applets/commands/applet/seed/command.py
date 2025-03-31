@@ -96,14 +96,16 @@ async def update_event_details(
     session: AsyncSession,
     existing_event_id: uuid.UUID,
     new_event_id: uuid.UUID,
-    new_event_created_at: datetime.datetime,
+    new_event_created_at: datetime.datetime | None = None,
     event_data: EventCreate | None = None,
     include_history: bool = False,
 ) -> None:
-    values = {
+    values: dict = {
         "id": new_event_id,
-        "created_at": new_event_created_at,
     }
+
+    if new_event_created_at:
+        values["created_at"] = new_event_created_at
 
     if event_data:
         values.update(
@@ -252,6 +254,9 @@ async def create_activity(
                     (e for e in applet_schedules if e.activity_id == activity.id),
                     None,
                 )
+                if not existing_always_available_event:
+                    raise RuntimeError(f"Unexpected error: No existing event found for activity {activity.id}")
+
                 try:
                     await update_event_details(
                         session,
@@ -259,9 +264,7 @@ async def create_activity(
                         new_event_id=event.id
                         if not default_always_available_event_created
                         else existing_always_available_event.id,
-                        new_event_created_at=event.created_at
-                        if not default_always_available_event_created
-                        else existing_always_available_event.id,
+                        new_event_created_at=event.created_at if not default_always_available_event_created else None,
                         event_data=EventCreate(
                             applet_id=applet.id,
                             start_time=event.start_time,
@@ -296,7 +299,9 @@ async def create_activity(
                     EventRequest(
                         start_time=event.start_time,
                         end_time=event.end_time,
-                        access_before_schedule=event.access_before_start_time,
+                        access_before_schedule=event.access_before_start_time
+                        if hasattr(event, "access_before_start_time")
+                        else None,
                         one_time_completion=event.one_time_completion
                         if hasattr(event, "one_time_completion")
                         else None,
@@ -364,6 +369,11 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                     applet_owner = next(
                         (user for user in schema_users if user.id == applet_owner_subject.user_id), None
                     )
+
+                    if not applet_owner:
+                        raise RuntimeError(
+                            f"Unexpected Error: Applet owner {applet_owner_subject.user_id} not found in users."
+                        )
 
                     encryption = create_encryption(str(applet_owner.id), applet.password)
 
@@ -451,6 +461,9 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                     existing_owner_subject = await subject_service.get_by_user_and_applet(
                         user_id=applet_owner.id, applet_id=applet.id
                     )
+
+                    if not existing_owner_subject:
+                        raise RuntimeError(f"Unexpected Error: Owner subject {applet_owner_subject.id} not found.")
 
                     try:
                         await update_subject_details(

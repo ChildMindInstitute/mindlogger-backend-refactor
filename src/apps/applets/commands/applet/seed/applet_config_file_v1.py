@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, date, datetime, time
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import AnyHttpUrl, BaseModel, Extra, Field, conlist, conset, constr, validator
+from pydantic import AnyHttpUrl, BaseModel, Extra, Field, validator
 
 
 class StrictBaseModel(BaseModel):
@@ -34,10 +34,10 @@ class SubjectConfig(StrictBaseModel):
     email: Optional[str] = Field(None, description="Email address that received the applet invitation")
     secret_user_id: str = Field(..., description="Subject secret user ID. Should be unique within the applet")
     nickname: Optional[str] = Field(None, description="Optional subject nickname")
-    roles: conset(
-        Literal["super_admin", "owner", "manager", "coordinator", "editor", "reviewer", "respondent"], min_items=1
-    ) = Field(..., description="Role of the subject in the applet")
-    tag: Literal["Child", "Parent", "Teacher", "Team"] = Field(default=[], description="Subject tag")
+    roles: set[Literal["super_admin", "owner", "manager", "coordinator", "editor", "reviewer", "respondent"]] = Field(
+        ..., min_items=1, description="Role of the subject in the applet"
+    )
+    tag: Optional[Literal["Child", "Parent", "Teacher", "Team"]] = Field(default=None, description="Subject tag")
 
     @validator("created_at")
     def remove_timezone(cls, created_at: datetime):
@@ -51,7 +51,7 @@ class SubjectConfig(StrictBaseModel):
 
     class Config:
         @staticmethod
-        def schema_extra(schema: dict, model):
+        def schema_extra(schema: dict):
             roles_schema = schema.get("properties", {}).get("roles", {})
             roles_schema.update(
                 {
@@ -103,7 +103,7 @@ class BaseEventConfig(StrictBaseModel):
     version: str = Field(
         ..., description="Event version in the format YYYYMMdd-n (e.g. 20250301-1)", regex=r"^\d{8}-\d{1,4}$"
     )
-    created_at: datetime = Field(None, description="Date when the event was created")
+    created_at: datetime = Field(..., description="Date when the event was created")
     notifications: list[NotificationConfig] = Field(
         default=[],
         description="List of notifications for the event. Each notification is a dictionary with keys: ",
@@ -226,11 +226,11 @@ class AssignmentConfig(StrictBaseModel):
 
 class ReportServerConfig(StrictBaseModel):
     ip_address: AnyHttpUrl = Field(..., description="IP address of the report server")
-    public_key: constr(min_length=1) = Field(..., description="RSA Public key for the report server")
-    recipients: list[constr(min_length=1)] = Field(default=[], description="List of email addresses to receive reports")
+    public_key: str = Field(..., min_length=1, description="RSA Public key for the report server")
+    recipients: list[str] = Field(default=[], description="List of email addresses to receive reports")
     include_user_id: bool = Field(default=False, description="Whether to include user ID in the report")
     include_case_id: bool = Field(default=False)
-    email_body: constr(min_length=1) = Field(..., description="Email body for the report")
+    email_body: str = Field(..., min_length=1, description="Email body for the report")
 
 
 class ActivityConfig(StrictBaseModel):
@@ -269,8 +269,8 @@ class FlowConfig(StrictBaseModel):
     auto_assign: bool = Field(True, description="Whether the flow is auto-assigned to all participants")
     events: list[EventConfig] = Field(..., min_items=1, description="List of scheduled events for this flow")
     assignments: list[AssignmentConfig] = Field(default=[], description="List of flow assignments")
-    activities: conlist(uuid.UUID, min_items=1) = Field(
-        ..., description="List of activity IDs in the flow, arranged in the desired order"
+    activities: list[uuid.UUID] = Field(
+        ..., min_items=1, description="List of activity IDs in the flow, arranged in the desired order"
     )
 
     @validator("created_at")
@@ -286,10 +286,10 @@ class AppletConfig(StrictBaseModel):
     created_at: datetime = Field(
         datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the applet was created"
     )
-    subjects: conlist(SubjectConfig, min_items=1) = Field(
-        ..., description="List of subjects in the applet. You must provide at least the applet owner"
+    subjects: list[SubjectConfig] = Field(
+        ..., min_items=1, description="List of subjects in the applet. You must provide at least the applet owner"
     )
-    activities: conlist(ActivityConfig, min_items=1) = Field(..., description="List of activities in the applet")
+    activities: list[ActivityConfig] = Field(..., description="List of activities in the applet")
     report_server: Optional[ReportServerConfig] = Field(
         default=None, description="Report server settings for the applet"
     )
