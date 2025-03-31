@@ -1,6 +1,5 @@
 import datetime
 import hashlib
-import traceback
 import uuid
 from itertools import groupby
 
@@ -17,6 +16,8 @@ from apps.activities.domain.activity_create import (
 )
 from apps.activities.domain.response_type_config import MessageConfig, ResponseType
 from apps.applets.commands.applet.seed.applet_config_file_v1 import (
+    ActivityConfig,
+    AppletConfig,
     AppletConfigFileV1,
     EventConfig,
     UserConfig,
@@ -120,14 +121,14 @@ async def update_event_details(
         )
         if hasattr(event_data, "one_time_completion"):
             values["one_time_completion"] = event_data.one_time_completion
-            if hasattr(event_data, 'access_before_schedule'):
-                values['access_before_schedule'] = event_data.access_before_schedule
-            if hasattr(event_data, 'start_date'):
-                values['start_date'] = event_data.start_date
-            if hasattr(event_data, 'end_date'):
-                values['end_date'] = event_data.end_date
-            if hasattr(event_data, 'selected_date'):
-                values['selected_date'] = event_data.selected_date
+            if hasattr(event_data, "access_before_schedule"):
+                values["access_before_schedule"] = event_data.access_before_schedule
+            if hasattr(event_data, "start_date"):
+                values["start_date"] = event_data.start_date
+            if hasattr(event_data, "end_date"):
+                values["end_date"] = event_data.end_date
+            if hasattr(event_data, "selected_date"):
+                values["selected_date"] = event_data.selected_date
 
     query = update(EventSchema)
     query = query.where(EventSchema.id == existing_event_id)
@@ -186,6 +187,168 @@ async def create_users(session: AsyncSession, config_users: list[UserConfig]) ->
         schema_users.append(schema_user)
 
     return schema_users
+
+
+async def create_subjects(
+    session: AsyncSession,
+    applet: AppletConfig,
+    applet_owner: User,
+    schema_users: list[User],
+):
+    subject_service = SubjectsService(session, applet_owner.id)
+
+    # Create the rest of the subjects
+    for subject in applet.subjects:
+        if "owner" in subject.roles:
+            # The owner subject has already been created and updated
+            continue
+        else:
+            pass
+            subject_user = next((user for user in schema_users if user.id == subject.user_id), None)
+            created_subject = await subject_service.create(
+                SubjectCreate(
+                    applet_id=applet.id,
+                    email=subject_user.email if subject_user else None,
+                    creator_id=applet_owner.id,
+                    user_id=subject_user.id if subject_user else None,
+                    language="en",
+                    first_name=subject_user.first_name if subject_user else None,
+                    last_name=subject_user.last_name if subject_user else None,
+                    secret_user_id=subject.secret_user_id,
+                    nickname=subject.nickname,
+                    tag=subject.tag,
+                )
+            )
+
+            try:
+                await update_subject_details(
+                    session,
+                    created_subject.id,
+                    (subject.id, subject.created_at),
+                )
+            except IntegrityError as e:
+                raise ValueError(
+                    f"Subject ID {subject.id} for applet {applet.id} already exists in the database."
+                ) from e
+
+
+async def create_activity(
+    session: AsyncSession,
+    activity: ActivityConfig,
+    applet_owner: User,
+    applet: AppletConfig,
+):
+    schedule_service = ScheduleService(session, applet_owner.id)
+
+    applet_schedules = await schedule_service.get_all_schedules(applet.id)
+
+    default_always_available_event_created = False
+    events: list[EventConfig] = activity.events
+    for key, grouped_events in groupby(events, lambda ev: ev.id):
+        for i, event in enumerate(grouped_events):
+            # First event in this series
+            if i == 0:
+                existing_always_available_event = next(
+                    (e for e in applet_schedules if e.activity_id == activity.id),
+                    None,
+                )
+                try:
+                    await update_event_details(
+                        session,
+                        existing_event_id=existing_always_available_event.id,
+                        new_event_id=event.id
+                        if not default_always_available_event_created
+                        else existing_always_available_event.id,
+                        new_event_created_at=event.created_at
+                        if not default_always_available_event_created
+                        else existing_always_available_event.id,
+                        event_data=EventCreate(
+                            applet_id=applet.id,
+                            start_time=event.start_time,
+                            end_time=event.end_time,
+                            access_before_schedule=event.access_before_schedule
+                            if hasattr(event, "access_before_schedule")
+                            else None,
+                            timer=None,
+                            timer_type=TimerType.NOT_SET,
+                            one_time_completion=event.one_time_completion
+                            if hasattr(event, "one_time_completion")
+                            else None,
+                            periodicity=event.periodicity.upper(),
+                            start_date=event.start_date if hasattr(event, "start_date") else None,
+                            end_date=event.end_date if hasattr(event, "end_date") else None,
+                            selected_date=event.selected_date if hasattr(event, "selected_date") else None,
+                            user_id=event.user_id,
+                            activity_id=activity.id,
+                            activity_flow_id=None,
+                            event_type=EventType.ACTIVITY,
+                        ),
+                        include_history=True,
+                    )
+                    default_always_available_event_created = True
+                except IntegrityError as e:
+                    raise ValueError(
+                        f"Event ID {event.id} for activity {activity.id} already exists in the database."
+                    ) from e
+            else:
+                # This should be a new event, so let's just create it
+                created_event = await schedule_service.create_schedule(
+                    EventRequest(
+                        start_time=event.start_time,
+                        end_time=event.end_time,
+                        access_before_schedule=event.access_before_start_time,
+                        one_time_completion=event.one_time_completion
+                        if hasattr(event, "one_time_completion")
+                        else None,
+                        respondent_id=event.user_id,
+                        activity_id=activity.id,
+                        flow_id=None,
+                        periodicity=PeriodicityRequest(
+                            type=event.periodicity.upper(),
+                            start_date=event.start_date if hasattr(event, "start_date") else None,
+                            end_date=event.end_date if hasattr(event, "end_date") else None,
+                            selected_date=event.selected_date if hasattr(event, "selected_date") else None,
+                        ),
+                        notification=Notification(
+                            notifications=[
+                                NotificationSettingRequest(
+                                    trigger_type=notification.trigger_type,
+                                    from_time=notification.from_time if hasattr(notification, "from_time") else None,
+                                    to_time=notification.to_time if hasattr(notification, "to_time") else None,
+                                    at_time=notification.at_time if hasattr(notification, "at_time") else None,
+                                    order=i,
+                                )
+                                for i, notification in enumerate(event.notifications)
+                            ]
+                            if len(event.notifications) > 0
+                            else None,
+                            reminder=ReminderSettingRequest(
+                                activity_incomplete=event.reminder.activity_incomplete,
+                                reminder_time=event.reminder.reminder_time,
+                            )
+                            if event.reminder
+                            else None,
+                        )
+                        if len(event.notifications) > 0 or event.reminder
+                        else None,
+                        timer=None,
+                        timer_type=TimerType.NOT_SET,
+                    ),
+                    applet_id=applet.id,
+                )
+
+                try:
+                    await update_event_details(
+                        session=session,
+                        existing_event_id=created_event.id,
+                        new_event_id=event.id,
+                        new_event_created_at=event.created_at,
+                        include_history=True,
+                    )
+                except IntegrityError as e:
+                    raise ValueError(
+                        f"Event ID {event.id} for activity {activity.id} already exists in the database."
+                    ) from e
 
 
 async def seed_applet_v1(config: AppletConfigFileV1):
@@ -302,165 +465,21 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                         ) from e
 
                     # Create the rest of the subjects
-                    for subject in applet.subjects:
-                        if "owner" in subject.roles:
-                            # The owner subject has already been created and updated
-                            continue
-                        else:
-                            pass
-                            subject_user = next((user for user in schema_users if user.id == subject.user_id), None)
-                            created_subject = await subject_service.create(
-                                SubjectCreate(
-                                    applet_id=applet.id,
-                                    email=subject_user.email if subject_user else None,
-                                    creator_id=applet_owner.id,
-                                    user_id=subject_user.id if subject_user else None,
-                                    language="en",
-                                    first_name=subject_user.first_name if subject_user else None,
-                                    last_name=subject_user.last_name if subject_user else None,
-                                    secret_user_id=subject.secret_user_id,
-                                    nickname=subject.nickname,
-                                    tag=subject.tag,
-                                )
-                            )
-
-                            try:
-                                await update_subject_details(
-                                    session,
-                                    created_subject.id,
-                                    (subject.id, subject.created_at),
-                                )
-                            except IntegrityError as e:
-                                raise ValueError(
-                                    f"Subject ID {subject.id} for applet {applet.id} already exists in the database."
-                                ) from e
-
-                    schedule_service = ScheduleService(session, applet_owner.id)
-
-                    applet_schedules = await schedule_service.get_all_schedules(applet.id)
-
-                    default_always_available_event_created = False
+                    await create_subjects(
+                        session=session,
+                        applet=applet,
+                        applet_owner=applet_owner,
+                        schema_users=schema_users,
+                    )
 
                     # Create/update the events
                     for activity in applet.activities:
-                        events: list[EventConfig] = activity.events
-                        for key, grouped_events in groupby(events, lambda ev: ev.id):
-                            for i, event in enumerate(grouped_events):
-                                # First event in this series
-                                if i == 0:
-                                    existing_always_available_event = next(
-                                        (e for e in applet_schedules if e.activity_id == activity.id),
-                                        None,
-                                    )
-                                    try:
-                                        await update_event_details(
-                                            session,
-                                            existing_event_id=existing_always_available_event.id,
-                                            new_event_id=event.id
-                                            if not default_always_available_event_created
-                                            else existing_always_available_event.id,
-                                            new_event_created_at=event.created_at
-                                            if not default_always_available_event_created
-                                            else existing_always_available_event.id,
-                                            event_data=EventCreate(
-                                                applet_id=applet.id,
-                                                start_time=event.start_time,
-                                                end_time=event.end_time,
-                                                access_before_schedule=event.access_before_schedule
-                                                if hasattr(event, "access_before_schedule")
-                                                else None,
-                                                timer=None,
-                                                timer_type=TimerType.NOT_SET,
-                                                one_time_completion=event.one_time_completion
-                                                if hasattr(event, "one_time_completion")
-                                                else None,
-                                                periodicity=event.periodicity.upper(),
-                                                start_date=event.start_date if hasattr(event, "start_date") else None,
-                                                end_date=event.end_date if hasattr(event, "end_date") else None,
-                                                selected_date=event.selected_date
-                                                if hasattr(event, "selected_date")
-                                                else None,
-                                                user_id=event.user_id,
-                                                activity_id=activity.id,
-                                                activity_flow_id=None,
-                                                event_type=EventType.ACTIVITY,
-                                            ),
-                                            include_history=True,
-                                        )
-                                        default_always_available_event_created = True
-                                    except IntegrityError as e:
-                                        raise ValueError(
-                                            f"Event ID {event.id} for activity {activity.id}"
-                                            f" already exists in the database."
-                                        ) from e
-                                else:
-                                    # This should be a new event, so let's just create it
-                                    created_event = await schedule_service.create_schedule(
-                                        EventRequest(
-                                            start_time=event.start_time,
-                                            end_time=event.end_time,
-                                            access_before_schedule=event.access_before_start_time,
-                                            one_time_completion=event.one_time_completion
-                                            if hasattr(event, "one_time_completion")
-                                            else None,
-                                            respondent_id=event.user_id,
-                                            activity_id=activity.id,
-                                            flow_id=None,
-                                            periodicity=PeriodicityRequest(
-                                                type=event.periodicity.upper(),
-                                                start_date=event.start_date if hasattr(event, "start_date") else None,
-                                                end_date=event.end_date if hasattr(event, "end_date") else None,
-                                                selected_date=event.selected_date
-                                                if hasattr(event, "selected_date")
-                                                else None,
-                                            ),
-                                            notification=Notification(
-                                                notifications=[
-                                                    NotificationSettingRequest(
-                                                        trigger_type=notification.trigger_type,
-                                                        from_time=notification.from_time
-                                                        if hasattr(notification, "from_time")
-                                                        else None,
-                                                        to_time=notification.to_time
-                                                        if hasattr(notification, "to_time")
-                                                        else None,
-                                                        at_time=notification.at_time
-                                                        if hasattr(notification, "at_time")
-                                                        else None,
-                                                        order=i,
-                                                    )
-                                                    for i, notification in enumerate(event.notifications)
-                                                ]
-                                                if len(event.notifications) > 0
-                                                else None,
-                                                reminder=ReminderSettingRequest(
-                                                    activity_incomplete=event.reminder.activity_incomplete,
-                                                    reminder_time=event.reminder.reminder_time,
-                                                )
-                                                if event.reminder
-                                                else None,
-                                            )
-                                            if len(event.notifications) > 0 or event.reminder
-                                            else None,
-                                            timer=None,
-                                            timer_type=TimerType.NOT_SET,
-                                        ),
-                                        applet_id=applet.id,
-                                    )
-
-                                    try:
-                                        await update_event_details(
-                                            session=session,
-                                            existing_event_id=created_event.id,
-                                            new_event_id=event.id,
-                                            new_event_created_at=event.created_at,
-                                            include_history=True,
-                                        )
-                                    except IntegrityError as e:
-                                        raise ValueError(
-                                            f"Event ID {event.id} for activity {activity.id}"
-                                            f" already exists in the database."
-                                        ) from e
+                        await create_activity(
+                            session=session,
+                            activity=activity,
+                            applet_owner=applet_owner,
+                            applet=applet,
+                        )
 
     except Exception as ex:
-        typer.echo(typer.style(str(ex), fg=typer.colors.RED))
+        typer.echo(typer.style(f"ERROR: {str(ex)}", fg=typer.colors.RED))
