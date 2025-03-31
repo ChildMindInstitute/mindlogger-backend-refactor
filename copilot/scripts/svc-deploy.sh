@@ -15,11 +15,9 @@ PR_NUM=${ENV_NAME}
 echo "Working with ${PR_NUM}"
 ALL_ALBS=$(aws elbv2 describe-load-balancers --query "LoadBalancers[*].LoadBalancerArn" --output text | tr '\t' ' ')
 ALB_ARNS=$(IFS=, ; echo "${ALL_ALBS[*]}")
-ARN=$(aws elbv2 describe-tags --resource-arns "${ALB_ARNS}" --query "TagDescriptions[?Tags[?Key=='copilot-environment' && Value=='${PR_NUM}']].ResourceArn" --output text)
 
 for ALB in ${ALB_ARNS}; do
-
-  ARN=$(aws elbv2 describe-tags --resource-arns ${ALB} --query "TagDescriptions[?Tags[?Key=='copilot-environment' && Value=='pr-${PR_NUM}']].ResourceArn" --output text)
+  ARN=$(aws elbv2 describe-tags --resource-arns ${ALB} --query "TagDescriptions[?Tags[?Key=='copilot-environment' && Value=='${PR_NUM}']].ResourceArn" --output text)
 
   if [ -n "${ARN}" ]; then
     echo "ALB ARN: ${ARN}"
