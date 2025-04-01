@@ -31,6 +31,7 @@ from apps.applets.commands.applet.seed.errors import (
     LastNameMismatchError,
     PasswordMismatchError,
     SeedError,
+    SeedUserIdMismatchError,
     SeedUserIsDeletedError,
     SubjectIdAlreadyExistsError,
 )
@@ -175,7 +176,10 @@ async def create_users(session: AsyncSession, config_users: list[UserConfig]) ->
         try:
             schema_user = await user_service.get(user.id)
         except UserNotFound:
-            pass
+            try:
+                schema_user = await user_service.get_by_email(user.email)
+            except UserNotFound:
+                pass
         except UserIsDeletedError as e:
             raise SeedUserIsDeletedError(user.id) from e
 
@@ -202,6 +206,8 @@ async def create_users(session: AsyncSession, config_users: list[UserConfig]) ->
             update_query = update_query.values(**values)
             await session.execute(update_query, execution_options=immutabledict({"synchronize_session": False}))
 
+        elif schema_user.id != user.id:
+            raise SeedUserIdMismatchError(user.id)
         elif schema_user.email_encrypted != user.email:
             raise EmailMismatchError(user.id)
         elif schema_user.first_name != user.first_name:

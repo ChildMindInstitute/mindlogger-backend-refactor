@@ -16,6 +16,19 @@ class SeedUserIsDeletedError(SeedError):
         super().__init__(f"User {user_id} is deleted.")
 
 
+class SeedUserIdMismatchError(SeedError):
+    """
+    Exception raised when a seeded user has the same email address as an existing user in the database,
+    but has a different user ID.
+    """
+
+    def __init__(self, user_id: uuid.UUID):
+        self.user_id = user_id
+        super().__init__(
+            f"User ID mismatch. The user {user_id} already exists in the database by email address,"
+            f" but has a different user ID"
+        )
+
 class EmailMismatchError(SeedError):
     """
     Exception raised when a seeded user already exists in the database, but the email in the existing user doesn't
