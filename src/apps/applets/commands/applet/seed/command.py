@@ -21,6 +21,19 @@ from apps.applets.commands.applet.seed.applet_config_file_v1 import (
     UserConfig,
 )
 from apps.applets.commands.applet.seed.constants import prime_array, prime_int
+from apps.applets.commands.applet.seed.errors import (
+    AppletActivityIdsAlreadyExistsError,
+    AppletAlreadyExistsError,
+    AppletNameAlreadyExistsError,
+    EmailMismatchError,
+    EventIdAlreadyExistsError,
+    FirstNameMismatchError,
+    LastNameMismatchError,
+    PasswordMismatchError,
+    SeedError,
+    SeedUserIsDeletedError,
+    SubjectIdAlreadyExistsError,
+)
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.base import Encryption
 from apps.applets.errors import AppletAlreadyExist, AppletNotFoundError
@@ -142,7 +155,7 @@ async def update_event_details(
         history_query = history_query.where(EventHistorySchema.id == existing_event_id)
         history_values = {
             **values,
-            'id_version': f"{updated_event.id}_{updated_event.version}",
+            "id_version": f"{updated_event.id}_{updated_event.version}",
         }
         history_query = history_query.values(**history_values)
         await session.execute(history_query, execution_options=immutabledict({"synchronize_session": False}))
@@ -159,7 +172,7 @@ async def create_users(session: AsyncSession, config_users: list[UserConfig]) ->
         except UserNotFound:
             pass
         except UserIsDeletedError as e:
-            raise ValueError(f"User {user.id} is deleted") from e
+            raise SeedUserIsDeletedError(user.id) from e
 
         if not schema_user:
             schema_user = await user_service.create_user(
@@ -182,13 +195,13 @@ async def create_users(session: AsyncSession, config_users: list[UserConfig]) ->
             await session.execute(update_query, execution_options=immutabledict({"synchronize_session": False}))
 
         elif schema_user.email_encrypted != user.email:
-            raise ValueError(f"User email mismatch: {schema_user.email} != {user.email}")
+            raise EmailMismatchError(user.id)
         elif schema_user.first_name != user.first_name:
-            raise ValueError(f"User first name mismatch: {schema_user.first_name} != {user.first_name}")
+            raise FirstNameMismatchError(user.id)
         elif schema_user.last_name != user.last_name:
-            raise ValueError(f"User last name mismatch: {schema_user.last_name} != {user.last_name}")
+            raise LastNameMismatchError(user.id)
         elif not auth_service.verify_password(user.password, schema_user.hashed_password, raise_exception=False):
-            raise ValueError(f"User password mismatch for {user.email}")
+            raise PasswordMismatchError(user.id)
 
         schema_users.append(schema_user)
 
@@ -233,9 +246,7 @@ async def create_subjects(
                     (subject.id, subject.created_at),
                 )
             except IntegrityError as e:
-                raise ValueError(
-                    f"Subject ID {subject.id} for applet {applet.id} already exists in the database."
-                ) from e
+                raise SubjectIdAlreadyExistsError(subject.id, applet.id) from e
 
 
 async def create_activity(
@@ -294,9 +305,7 @@ async def create_activity(
                     )
                     default_always_available_event_created = True
                 except IntegrityError as e:
-                    raise ValueError(
-                        f"Event ID {event.id} for activity {activity.id} already exists in the database."
-                    ) from e
+                    raise EventIdAlreadyExistsError(event.id, activity.id) from e
             else:
                 # This should be a new event, so let's just create it
                 created_event = await schedule_service.create_schedule(
@@ -355,9 +364,7 @@ async def create_activity(
                         include_history=True,
                     )
                 except IntegrityError as e:
-                    raise ValueError(
-                        f"Event ID {event.id} for activity {activity.id} already exists in the database."
-                    ) from e
+                    raise EventIdAlreadyExistsError(event.id, activity.id) from e
 
 
 async def seed_applet_v1(config: AppletConfigFileV1):
@@ -386,14 +393,14 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                     # Ensure the applet does not exist before creating it
                     try:
                         await applet_service.exist_by_id(applet.id)
-                        raise ValueError(f"Applet {applet.id} already exists.")
+                        raise AppletAlreadyExistsError(applet.id)
                     except AppletNotFoundError:
                         pass
 
                     try:
                         await applet_service._validate_applet_name(applet.display_name)
                     except AppletAlreadyExist as e:
-                        raise ValueError(f"Applet with name {applet.display_name} already exists.") from e
+                        raise AppletNameAlreadyExistsError(applet.display_name) from e
 
                     create_data = AppletCreate(
                         display_name=applet.display_name,
@@ -455,10 +462,7 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                             applet_id=applet.id,
                         )
                     except IntegrityError as e:
-                        raise ValueError(
-                            f"One or more of the activity/flow IDs in the applet {applet.id}"
-                            f" already exist in the database."
-                        ) from e
+                        raise AppletActivityIdsAlreadyExistsError(applet.id) from e
 
                     subject_service = SubjectsService(session, applet_owner.id)
 
@@ -477,10 +481,7 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                             (applet_owner_subject.id, applet_owner_subject.created_at),
                         )
                     except IntegrityError as e:
-                        raise ValueError(
-                            f"Subject ID {applet_owner_subject.id} for applet {applet.id}"
-                            f" already exists in the database."
-                        ) from e
+                        raise SubjectIdAlreadyExistsError(applet_owner_subject.id, applet.id) from e
 
                     # Create the rest of the subjects
                     await create_subjects(
@@ -498,5 +499,8 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                             applet_owner=applet_owner,
                             applet=applet,
                         )
-    except Exception:
-        traceback.print_exc()
+    except Exception as e:
+        if isinstance(e, SeedError):
+            typer.echo(typer.style(f"ERROR: {str(e)}", fg=typer.colors.RED))
+        else:
+            traceback.print_exc()
