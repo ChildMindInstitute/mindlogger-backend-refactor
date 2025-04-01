@@ -108,6 +108,7 @@ async def update_event_details(
     existing_event_id: uuid.UUID,
     new_event_id: uuid.UUID,
     new_event_created_at: datetime.datetime | None = None,
+    new_event_version: str | None = None,
     event_data: EventCreate | None = None,
     include_history: bool = False,
 ) -> None:
@@ -117,6 +118,9 @@ async def update_event_details(
 
     if new_event_created_at:
         values["created_at"] = new_event_created_at
+
+    if new_event_version:
+        values["version"] = new_event_version
 
     if event_data:
         values.update(
@@ -279,6 +283,9 @@ async def create_activity(
                         new_event_id=event.id
                         if not default_always_available_event_created
                         else existing_always_available_event.id,
+                        new_event_version=event.version
+                        if not default_always_available_event_created
+                        else existing_always_available_event.version,
                         new_event_created_at=event.created_at if not default_always_available_event_created else None,
                         event_data=EventCreate(
                             applet_id=applet.id,
@@ -360,6 +367,7 @@ async def create_activity(
                         session=session,
                         existing_event_id=created_event.id,
                         new_event_id=event.id,
+                        new_event_version=event.version,
                         new_event_created_at=event.created_at,
                         include_history=True,
                     )
@@ -367,7 +375,7 @@ async def create_activity(
                     raise EventIdAlreadyExistsError(event.id, activity.id) from e
 
 
-async def seed_applet_v1(config: AppletConfigFileV1):
+async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> None:
     typer.echo("Seeding data from v1 config file...")
     s_maker = session_manager.get_session()
     try:
@@ -500,7 +508,9 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                             applet=applet,
                         )
     except Exception as e:
-        if isinstance(e, SeedError):
+        if not from_cli:
+            raise e
+        elif isinstance(e, SeedError):
             typer.echo(typer.style(f"ERROR: {str(e)}", fg=typer.colors.RED))
         else:
             traceback.print_exc()
