@@ -15,6 +15,8 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
 
+from config import settings
+
 
 def rename_event_key(_, __, event_dict: EventDict) -> EventDict:
     """
@@ -151,6 +153,9 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        if settings.env == "testing":
+            return await call_next(request)
+
         structlog.contextvars.clear_contextvars()
         # These context vars will be added to all log entries emitted during the request
         request_id = correlation_id.get()
