@@ -133,12 +133,18 @@ async def update_event_details(
     query = update(EventSchema)
     query = query.where(EventSchema.id == existing_event_id)
     query = query.values(**values)
-    await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    query = query.returning(EventSchema)
+    db_result = await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    updated_event = EventSchema(**db_result.mappings().all()[0])
 
     if include_history:
         history_query = update(EventHistorySchema)
         history_query = history_query.where(EventHistorySchema.id == existing_event_id)
-        history_query = history_query.values(**values)
+        history_values = {
+            **values,
+            'id_version': f"{updated_event.id}_{updated_event.version}",
+        }
+        history_query = history_query.values(**history_values)
         await session.execute(history_query, execution_options=immutabledict({"synchronize_session": False}))
 
 
