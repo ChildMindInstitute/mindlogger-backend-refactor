@@ -91,7 +91,7 @@ class ActivityService:
                 )
 
                 if hasattr(item, "created_at"):
-                    setattr(prepared_activity_item, "created_at", getattr(item, "created_at"))
+                    prepared_activity_item.__dict__["created_at"] = getattr(item, "created_at")
 
                 prepared_activity_items.append(prepared_activity_item)
         activity_schemas = await ActivitiesCRUD(self.session).create_many(schemas)

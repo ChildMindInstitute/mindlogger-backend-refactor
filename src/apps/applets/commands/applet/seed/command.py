@@ -265,7 +265,7 @@ async def create_activity(
 
     default_always_available_event_created = False
     events: list[EventConfig] = activity.events
-    for key, grouped_events in groupby(events, lambda ev: ev.id):
+    for id, grouped_events in groupby(events, lambda ev: ev.id):
         for i, event in enumerate(grouped_events):
             # First event in this series
             if i == 0:
@@ -425,7 +425,7 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                         activities=[],
                         activity_flows=[],
                     )
-                    setattr(create_data, "created_at", applet.created_at)
+                    create_data.__dict__["created_at"] = applet.created_at
 
                     for activity in applet.activities:
                         activity_create = ActivityCreate(
@@ -436,8 +436,8 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                             auto_assign=activity.auto_assign,
                             items=[],
                         )
-                        setattr(activity_create, "id", activity.id)
-                        setattr(activity_create, "created_at", activity.created_at)
+                        activity_create.__dict__["id"] = activity.id
+                        activity_create.__dict__["created_at"] = activity.created_at
 
                         item = ActivityItemCreate(
                             name="Message",
@@ -450,7 +450,7 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                             ),
                             response_values=None,
                         )
-                        setattr(item, "created_at", activity.created_at)
+                        item.__dict__["created_at"] = activity.created_at
                         activity_create.items.append(item)
 
                     if applet.report_server:
