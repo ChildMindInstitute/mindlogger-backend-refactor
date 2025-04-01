@@ -29,6 +29,7 @@ class SeedUserIdMismatchError(SeedError):
             f" but has a different user ID"
         )
 
+
 class EmailMismatchError(SeedError):
     """
     Exception raised when a seeded user already exists in the database, but the email in the existing user doesn't
