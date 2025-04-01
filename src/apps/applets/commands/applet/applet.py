@@ -90,19 +90,22 @@ async def seed(path_to_config: str = typer.Argument(..., help="Path to YAML conf
     try:
         with open(path_to_config, "r") as f:
             data: dict = yaml.safe_load(f)
-        await _seed(data)
+        await _seed(data, True)
     except FileNotFoundError:
         typer.echo(typer.style(f"Config file not found: {path_to_config}", fg=typer.colors.RED))
     except yaml.YAMLError as e:
         typer.echo(typer.style(f"Error parsing config file: {e}", fg=typer.colors.RED))
 
 
-async def _seed(config_data: dict):
+async def _seed(config_data: dict, from_cli: bool = False) -> None:
     try:
         config = AppletConfigFileV1(**config_data)
         typer.echo("Config loaded successfully")
-        await seed_applet_v1(config)
+        await seed_applet_v1(config, from_cli)
     except (ValidationError, ValueError) as e:
+        if not from_cli:
+            raise e
+
         typer.echo(typer.style("Validation error while parsing config file", fg=typer.colors.RED))
         typer.echo(typer.style(f"ERROR: {str(e)}", fg=typer.colors.RED))
 
