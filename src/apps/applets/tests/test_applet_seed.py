@@ -128,4 +128,4 @@ class TestAppletSeedV1(BaseTest):
         with pytest.raises(ValidationError) as info:
             await seed_config(config)
 
-        assert info.value.args[0][0]._loc == 'version'
+        assert info.value.args[0][0]._loc == "version"
