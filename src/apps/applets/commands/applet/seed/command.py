@@ -1,5 +1,6 @@
 import datetime
 import hashlib
+import traceback
 import uuid
 from itertools import groupby
 
@@ -491,6 +492,5 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                             applet_owner=applet_owner,
                             applet=applet,
                         )
-
-    except Exception as ex:
-        typer.echo(typer.style(f"ERROR: {str(ex)}", fg=typer.colors.RED))
+    except Exception:
+        traceback.print_exc()
