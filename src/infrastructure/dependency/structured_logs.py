@@ -15,6 +15,8 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
 
+from config import settings
+
 
 def rename_event_key(_, __, event_dict: EventDict) -> EventDict:
     """
@@ -151,6 +153,9 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        if settings.env == "testing":
+            return await call_next(request)
+
         structlog.contextvars.clear_contextvars()
         # These context vars will be added to all log entries emitted during the request
         request_id = correlation_id.get()
@@ -165,6 +170,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         except Exception as e:
             structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
+            # Re-raise to let FastAPI/Starlette do its thing with exceptions in other middlewares
             raise e
         finally:
             access_logger = structlog.stdlib.get_logger("api.access")
@@ -175,13 +181,23 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             client_host = request.client.host if request.client else None
             client_port = request.client.port if request.client else None
             real_host = request.headers.get("X-Forwarded-For", client_host)
+            actual_client_ip = real_host.split(',')[0].strip() if real_host else None
             http_method = request.method
             http_version = request.scope["http_version"]
 
+            # Pick the right log level based on status code:
+            # - Info: 2XX, 3XX
+            # - Warn: 4XX (user/client error)
+            # - Error: 5XX (Backend error)
+            logger_fn = access_logger.info
+            if 400 <= status_code > 500:
+                logger_fn = access_logger.warn
+            elif 600 > status_code >= 500:
+                logger_fn = access_logger.error
+
             # Recreate the Uvicorn access log format, but add all parameters as structured information
-            logger_fn = access_logger.warn if 400 < status_code < 500 else access_logger.info
             logger_fn(
-                f"""{real_host}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
+                f"""{actual_client_ip}:{client_port} - "{http_method} {url} HTTP/{http_version}" {status_code}""",
                 http={
                     "url": str(request.url),
                     "request_path": str(path),
@@ -190,7 +206,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                     "request_id": request_id,
                     "version": http_version,
                 },
-                network={"client": {"ip": real_host, "port": client_port}},
+                network={"client": {"ip": actual_client_ip, "port": client_port}},
                 duration=process_time,
             )
 
