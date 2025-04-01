@@ -452,6 +452,7 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                         )
                         item.__dict__["created_at"] = activity.created_at
                         activity_create.items.append(item)
+                        create_data.activities.append(activity_create)
 
                     if applet.report_server:
                         report_server = applet.report_server
