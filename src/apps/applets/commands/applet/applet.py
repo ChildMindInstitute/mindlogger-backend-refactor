@@ -89,17 +89,22 @@ async def transfer_ownership(
 async def seed(path_to_config: str = typer.Argument(..., help="Path to YAML config file")):
     try:
         with open(path_to_config, "r") as f:
-            data = yaml.safe_load(f)
-        config = AppletConfigFileV1(**data)
+            data: dict = yaml.safe_load(f)
+        await _seed(data)
+    except FileNotFoundError:
+        typer.echo(typer.style(f"Config file not found: {path_to_config}", fg=typer.colors.RED))
+    except yaml.YAMLError as e:
+        typer.echo(typer.style(f"Error parsing config file: {e}", fg=typer.colors.RED))
+
+
+async def _seed(config_data: dict):
+    try:
+        config = AppletConfigFileV1(**config_data)
         typer.echo("Config loaded successfully")
         await seed_applet_v1(config)
-    except FileNotFoundError:
-        typer.echo(f"Config file not found: {path_to_config}")
-    except yaml.YAMLError as e:
-        typer.echo(f"Error parsing config file: {e}")
     except (ValidationError, ValueError) as e:
-        typer.echo("Validation error while parsing config file")
-        typer.echo(str(e))
+        typer.echo(typer.style("Validation error while parsing config file", fg=typer.colors.RED))
+        typer.echo(typer.style(f"ERROR: {str(e)}", fg=typer.colors.RED))
 
 
 @app.command(help="Generate YAML schema for seed config")
