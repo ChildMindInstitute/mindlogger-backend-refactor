@@ -15,6 +15,7 @@ from apps.schedule.domain.constants import PeriodicityType
 from apps.shared.test import BaseTest
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UsersCRUD
+from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 
 
 async def seed_config(config: str) -> None:
@@ -98,6 +99,10 @@ class TestAppletSeedV1(BaseTest):
 
         # Check if the user was created successfully
         await UsersCRUD(session).get_by_id(user_id)
+
+        # Check if the user's workspace was created successfully
+        workspace = await UserWorkspaceCRUD(session).get_by_user_id(user_id)
+        assert workspace is not None
 
         # Check if the subject was created successfully
         subject = await SubjectsCrud(session).get_by_id(subject_id)

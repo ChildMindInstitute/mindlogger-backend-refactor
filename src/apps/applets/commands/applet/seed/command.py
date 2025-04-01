@@ -57,6 +57,7 @@ from apps.users import User, UserIsDeletedError, UserNotFound, UserSchema
 from apps.users.domain import UserCreate
 from apps.users.services.user import UserService
 from apps.workspaces.domain.constants import Role
+from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 
 generator = 2
@@ -188,6 +189,9 @@ async def create_users(session: AsyncSession, config_users: list[UserConfig]) ->
                 ),
                 user.id,
             )
+
+            # Create default workspace for new user
+            await WorkspaceService(session, user.id).create_workspace_from_user(schema_user)
 
             update_query = update(UserSchema)
             update_query = update_query.where(UserSchema.id == schema_user.id)
