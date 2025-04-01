@@ -181,7 +181,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             client_host = request.client.host if request.client else None
             client_port = request.client.port if request.client else None
             real_host = request.headers.get("X-Forwarded-For", client_host)
-            actual_client_ip = real_host.split(',')[0].strip() if real_host else None
+            actual_client_ip = real_host.split(",")[0].strip() if real_host else None
             http_method = request.method
             http_version = request.scope["http_version"]
 
@@ -190,7 +190,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             # - Warn: 4XX (user/client error)
             # - Error: 5XX (Backend error)
             logger_fn = access_logger.info
-            if 400 <= status_code > 500:
+            if 400 <= status_code < 500:
                 logger_fn = access_logger.warn
             elif 600 > status_code >= 500:
                 logger_fn = access_logger.error
