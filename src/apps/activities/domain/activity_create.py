@@ -1,4 +1,3 @@
-import datetime
 import uuid
 from typing import Any
 
@@ -22,17 +21,9 @@ class ActivityItemCreate(BaseActivityItem, InternalModel):
     extra_fields: dict = Field(default_factory=dict)
 
 
-class SeededActivityItemCreate(ActivityItemCreate):
-    created_at: datetime.datetime
-
-
 class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
     extra_fields: dict = Field(default_factory=dict)
-
-
-class SeededPreparedActivityItemCreate(PreparedActivityItemCreate):
-    created_at: datetime.datetime
 
 
 class ActivityCreate(ActivityBase, InternalModel):
@@ -74,9 +65,3 @@ class ActivityCreate(ActivityBase, InternalModel):
     @root_validator()
     def validate_request_health_record_data(cls, values):
         return validate_request_health_record_data(values)
-
-
-class SeededActivity(ActivityCreate):
-    id: uuid.UUID
-    created_at: datetime.datetime
-    items: list[SeededActivityItemCreate]

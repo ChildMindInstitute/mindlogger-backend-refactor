@@ -23,7 +23,7 @@ from apps.applets.domain import (
     Role,
 )
 from apps.applets.domain.applet import Applet, AppletDataRetention
-from apps.applets.domain.applet_create_update import AppletCreate, AppletReportConfiguration, AppletUpdate, SeededApplet
+from apps.applets.domain.applet_create_update import AppletCreate, AppletReportConfiguration, AppletUpdate
 from apps.applets.domain.applet_duplicate import AppletDuplicate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_history import FlowItemHistoryDto
@@ -118,7 +118,7 @@ class AppletService:
 
     async def create(
         self,
-        create_data: AppletCreate | SeededApplet,
+        create_data: AppletCreate,
         manager_id: uuid.UUID | None = None,
         manager_role: Role | None = None,
         applet_id: uuid.UUID | None = None,
@@ -146,7 +146,7 @@ class AppletService:
         return applet
 
     async def _create(
-        self, create_data: AppletCreate | SeededApplet, creator_id: uuid.UUID, applet_id: uuid.UUID | None = None
+        self, create_data: AppletCreate, creator_id: uuid.UUID, applet_id: uuid.UUID | None = None
     ) -> AppletFull:
         if applet_id is None:
             applet_id = uuid.uuid4()
@@ -177,8 +177,10 @@ class AppletService:
             stream_port=create_data.stream_port,
         )
 
+        # Override the created_at field if it is provided in the create_data
+        # This can happen when data is being seeded through the CLI
         if hasattr(create_data, "created_at"):
-            data.created_at = create_data.created_at
+            data.created_at = getattr(create_data, "created_at")
 
         schema = await AppletsCRUD(self.session).save(data)
         return AppletFull.from_orm(schema)

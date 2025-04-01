@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from apps.activities.crud import ActivityItemsCRUD
 from apps.activities.db.schemas import ActivityItemSchema
-from apps.activities.domain.activity_create import PreparedActivityItemCreate, SeededPreparedActivityItemCreate
+from apps.activities.domain.activity_create import PreparedActivityItemCreate
 from apps.activities.domain.activity_full import ActivityItemFull
 from apps.activities.domain.activity_item import (
     ActivityItemDuplicate,
@@ -18,19 +18,21 @@ class ActivityItemService:
     def __init__(self, session):
         self.session = session
 
-    async def create(
-        self, activity_items: list[PreparedActivityItemCreate | SeededPreparedActivityItemCreate]
-    ) -> list[ActivityItemFull]:
+    async def create(self, activity_items: list[PreparedActivityItemCreate]) -> list[ActivityItemFull]:
         schemas = list()
         activity_id_ordering_map: dict[uuid.UUID, int] = defaultdict(int)
 
         for activity_item in activity_items:
-            schemas.append(
-                ActivityItemSchema(
-                    **activity_item.dict(),
-                    order=activity_id_ordering_map[activity_item.activity_id] + 1,
-                )
+            schema = ActivityItemSchema(
+                **activity_item.dict(),
+                order=activity_id_ordering_map[activity_item.activity_id] + 1,
             )
+
+            # Set the created_at field if it is provided by seed data
+            if hasattr(activity_item, "created_at"):
+                schema.created_at = getattr(activity_item, "created_at")
+
+            schemas.append(schema)
             activity_id_ordering_map[activity_item.activity_id] += 1
         item_schemas = await ActivityItemsCRUD(self.session).create_many(schemas)
         return [ActivityItemFull.from_orm(item) for item in item_schemas]

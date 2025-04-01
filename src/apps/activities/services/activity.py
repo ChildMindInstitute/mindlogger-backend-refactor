@@ -11,12 +11,7 @@ from apps.activities.domain.activity import (
     ActivitySingleLanguageDetail,
     ActivitySingleLanguageWithItemsDetail,
 )
-from apps.activities.domain.activity_create import (
-    ActivityCreate,
-    PreparedActivityItemCreate,
-    SeededActivity,
-    SeededPreparedActivityItemCreate,
-)
+from apps.activities.domain.activity_create import ActivityCreate, PreparedActivityItemCreate
 from apps.activities.domain.activity_full import ActivityFull
 from apps.activities.domain.activity_update import (
     ActivityReportConfiguration,
@@ -40,16 +35,16 @@ class ActivityService:
         self.user_id = user_id
         self.session = session
 
-    async def create(
-        self, applet_id: uuid.UUID, activities_create: list[ActivityCreate | SeededActivity]
-    ) -> list[ActivityFull]:
+    async def create(self, applet_id: uuid.UUID, activities_create: list[ActivityCreate]) -> list[ActivityFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
         activity_id_key_map: dict[uuid.UUID, uuid.UUID] = dict()
         prepared_activity_items = list()
 
         for index, activity_data in enumerate(activities_create):
-            activity_id = activity_data.id if hasattr(activity_data, "id") else uuid.uuid4()
+            # Pull the activity_id from the activity_data if it exists, otherwise generate a new UUID
+            # CLI seeded activity data may have an id
+            activity_id = getattr(activity_data, "id") if hasattr(activity_data, "id") else uuid.uuid4()
             activity_key_id_map[activity_data.key] = activity_id
             activity_id_key_map[activity_id] = activity_data.key
 
@@ -77,7 +72,7 @@ class ActivityService:
             )
 
             if hasattr(activity_data, "created_at"):
-                schema.created_at = activity_data.created_at
+                schema.created_at = getattr(activity_data, "created_at")
 
             schemas.append(schema)
 
@@ -96,10 +91,7 @@ class ActivityService:
                 )
 
                 if hasattr(item, "created_at"):
-                    prepared_activity_item = SeededPreparedActivityItemCreate(
-                        **prepared_activity_item.dict(),
-                        created_at=item.created_at,
-                    )
+                    setattr(prepared_activity_item, "created_at", getattr(item, "created_at"))
 
                 prepared_activity_items.append(prepared_activity_item)
         activity_schemas = await ActivitiesCRUD(self.session).create_many(schemas)

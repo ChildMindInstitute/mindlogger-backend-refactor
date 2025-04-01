@@ -10,10 +10,7 @@ from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.activities.domain.activity_create import (
-    SeededActivity,
-    SeededActivityItemCreate,
-)
+from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.domain.response_type_config import MessageConfig, ResponseType
 from apps.applets.commands.applet.seed.applet_config_file_v1 import (
     ActivityConfig,
@@ -23,7 +20,7 @@ from apps.applets.commands.applet.seed.applet_config_file_v1 import (
     UserConfig,
 )
 from apps.applets.commands.applet.seed.constants import prime_array, prime_int
-from apps.applets.domain.applet_create_update import SeededApplet
+from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.base import Encryption
 from apps.applets.errors import AppletAlreadyExist, AppletNotFoundError
 from apps.applets.service import AppletService
@@ -391,9 +388,8 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                     except AppletAlreadyExist as e:
                         raise ValueError(f"Applet with name {applet.display_name} already exists.") from e
 
-                    create_data = SeededApplet(
+                    create_data = AppletCreate(
                         display_name=applet.display_name,
-                        created_at=applet.created_at,
                         description={"en": applet.description},
                         link=None,
                         require_login=True,
@@ -404,34 +400,36 @@ async def seed_applet_v1(config: AppletConfigFileV1):
                         stream_ip_address=None,
                         stream_port=None,
                         encryption=encryption,
-                        activities=[
-                            SeededActivity(
-                                id=activity.id,
-                                created_at=activity.created_at,
-                                key=uuid.uuid4(),
-                                name=activity.name,
-                                description={"en": activity.description},
-                                is_hidden=activity.is_hidden,
-                                auto_assign=activity.auto_assign,
-                                items=[
-                                    SeededActivityItemCreate(
-                                        name="Message",
-                                        response_type=ResponseType.MESSAGE,
-                                        question={"en": "Message"},
-                                        config=MessageConfig(
-                                            type=ResponseType.MESSAGE,
-                                            remove_back_button=False,
-                                            timer=NonNegativeInt(0),
-                                        ),
-                                        response_values=None,
-                                        created_at=activity.created_at,
-                                    )
-                                ],
-                            )
-                            for activity in applet.activities
-                        ],
+                        activities=[],
                         activity_flows=[],
                     )
+                    setattr(create_data, "created_at", applet.created_at)
+
+                    for activity in applet.activities:
+                        activity_create = ActivityCreate(
+                            key=uuid.uuid4(),
+                            name=activity.name,
+                            description={"en": activity.description},
+                            is_hidden=activity.is_hidden,
+                            auto_assign=activity.auto_assign,
+                            items=[],
+                        )
+                        setattr(activity_create, "id", activity.id)
+                        setattr(activity_create, "created_at", activity.created_at)
+
+                        item = ActivityItemCreate(
+                            name="Message",
+                            response_type=ResponseType.MESSAGE,
+                            question={"en": "Message"},
+                            config=MessageConfig(
+                                type=ResponseType.MESSAGE,
+                                remove_back_button=False,
+                                timer=NonNegativeInt(0),
+                            ),
+                            response_values=None,
+                        )
+                        setattr(item, "created_at", activity.created_at)
+                        activity_create.items.append(item)
 
                     if applet.report_server:
                         report_server = applet.report_server
