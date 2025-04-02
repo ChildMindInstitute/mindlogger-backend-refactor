@@ -277,6 +277,7 @@ class FlowConfig(StrictBaseModel):
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
+
 class AppletEncryptionConfig(StrictBaseModel):
     public_key: str = Field(..., description="Public key for encryption")
     prime: str = Field(..., description="Large prime number array")
