@@ -8,6 +8,7 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthAPIForbiddenError,
     OneUpHealthUserAlreadyExists,
 )
+from apps.shared.exception import InternalServerError
 from config import settings
 
 __all__ = ["OneupHealthService"]
@@ -17,6 +18,9 @@ from infrastructure.logger import logger
 
 class OneupHealthAPIClient:
     def __init__(self):
+        if settings.oneup_health.client_id is None or settings.oneup_health.client_secret is None:
+            raise InternalServerError("OneUp health settings not configured")
+
         self._default_headers = {
             "client_id": settings.oneup_health.client_id,
             "client_secret": settings.oneup_health.client_secret,
