@@ -20,7 +20,6 @@ from apps.applets.commands.applet.seed.applet_config_file_v1 import (
     EventConfig,
     UserConfig,
 )
-from apps.applets.commands.applet.seed.constants import prime_array, prime_int
 from apps.applets.commands.applet.seed.errors import (
     AppletActivityIdsAlreadyExistsError,
     AppletAlreadyExistsError,
@@ -60,34 +59,6 @@ from apps.users.services.user import UserService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
-
-generator = 2
-
-
-def create_encryption(account_id: str, applet_password: str) -> Encryption:
-    # Hash the applet password and account ID using SHA-512
-    hashed_applet_password = hashlib.sha512(applet_password.encode()).digest()
-    hashed_account_id = hashlib.sha512(account_id.encode()).digest()
-
-    # Concatenate the two hashes to form a raw private key (128 bytes)
-    raw_private = hashed_applet_password + hashed_account_id
-    raw_private_int = int.from_bytes(raw_private, byteorder="big")
-
-    # Adjust the private value to ensure it's in the valid range [2, prime-2]
-    private_value = (raw_private_int % (prime_int - 3)) + 2
-
-    # Compute the public key: g^x mod p
-    public_value = pow(generator, private_value, prime_int)
-
-    # Format outputs as lists of integers (similar to JSON.stringify(Array.from(...)) in Node)
-    pub_key_bytes = public_value.to_bytes((public_value.bit_length() + 7) // 8, byteorder="big")
-
-    return Encryption(
-        public_key=str(list(pub_key_bytes)),
-        prime=str(prime_array),
-        base=str(generator),
-        account_id=account_id,
-    )
 
 
 async def update_subject_details(
@@ -395,16 +366,13 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
 
                 for applet in config.applets:
                     applet_owner_subject = next(subject for subject in applet.subjects if "owner" in subject.roles)
-                    applet_owner = next(
-                        (user for user in schema_users if user.id == applet_owner_subject.user_id), None
-                    )
+                    applet_owner = await UserService(session).get(applet.encryption.account_id)
 
                     if not applet_owner:
+                        # TODO: Change to SeedError subclass
                         raise RuntimeError(
-                            f"Unexpected Error: Applet owner {applet_owner_subject.user_id} not found in users."
+                            f"Unexpected Error: Applet owner {applet_owner_subject.user_id} not found in the database."
                         )
-
-                    encryption = create_encryption(str(applet_owner.id), applet.password)
 
                     applet_service = AppletService(session, applet_owner.id)
 
@@ -419,6 +387,13 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                         await applet_service._validate_applet_name(applet.display_name)
                     except AppletAlreadyExist as e:
                         raise AppletNameAlreadyExistsError(applet.display_name) from e
+
+                    encryption = Encryption(
+                        public_key=applet.encryption.public_key,
+                        prime=applet.encryption.prime,
+                        base=applet.encryption.base,
+                        account_id=str(applet_owner.id),
+                    )
 
                     create_data = AppletCreate(
                         display_name=applet.display_name,

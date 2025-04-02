@@ -277,10 +277,18 @@ class FlowConfig(StrictBaseModel):
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
+class AppletEncryptionConfig(StrictBaseModel):
+    public_key: str = Field(..., description="Public key for encryption")
+    prime: str = Field(..., description="Large prime number array")
+    base: str = Field(..., description="Generator base")
+    account_id: uuid.UUID = Field(..., description="Applet owner user ID")
+
 
 class AppletConfig(StrictBaseModel):
     id: uuid.UUID = Field(..., description="Applet ID")
-    password: str = Field(..., description="Applet password")
+    encryption: AppletEncryptionConfig = Field(
+        ..., description="Encryption config for an existing applet from the applet owner"
+    )
     display_name: str = Field(..., description="Applet display name")
     description: str = Field("", description="Applet description")
     created_at: datetime = Field(
