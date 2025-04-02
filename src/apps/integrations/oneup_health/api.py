@@ -2,7 +2,6 @@ import uuid
 
 from fastapi import Depends
 
-from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.integrations.oneup_health.domain import OneupHealthToken
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
@@ -15,16 +14,14 @@ from infrastructure.database.deps import get_session
 
 
 async def retrieve_token(
-    applet_id: uuid.UUID, user: User = Depends(get_current_user), session=Depends(get_session)
+    subject_id: uuid.UUID, user: User = Depends(get_current_user), session=Depends(get_session)
 ) -> Response[OneupHealthToken]:
     async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
-
-        await CheckAccessService(session, user.id).check_answer_create_access(applet_id)
-
         subjects_service = SubjectsService(session, user.id)
-        subject = await subjects_service.get_by_user_and_applet(user.id, applet_id)
-        assert subject
+        subject = await subjects_service.exist_by_id(subject_id)
+
+        applet_id = subject.applet_id
+        await CheckAccessService(session, user.id).check_answer_create_access(applet_id)
 
         oneup_health_service = OneupHealthService()
 

@@ -3,7 +3,6 @@ import re
 from pytest_httpx import HTTPXMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.applets.domain.applet_full import AppletFull
 from apps.shared.test.client import TestClient
 from apps.subjects.domain import SubjectFull
 from apps.subjects.services import SubjectsService
@@ -11,12 +10,11 @@ from apps.users import User
 
 
 class TestOneupHealth:
-    get_token_url = "integrations/oneup_health/applet/{applet_id}/token"
+    get_token_url = "integrations/oneup_health/subject/{subject_id}/token"
 
     async def test_get_token_creating_user_success(
         self,
         client: TestClient,
-        applet_one: AppletFull,
         tom: User,
         tom_applet_one_subject: SubjectFull,
         httpx_mock: HTTPXMock,
@@ -43,7 +41,7 @@ class TestOneupHealth:
         )
 
         client.login(tom)
-        response = await client.get(url=self.get_token_url.format(applet_id=applet_one.id))
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 200
         result = response.json()["result"]
         assert result["accessToken"] == "token_test"
@@ -54,7 +52,6 @@ class TestOneupHealth:
     async def test_get_token_user_already_exists_success(
         self,
         client: TestClient,
-        applet_one: AppletFull,
         tom: User,
         tom_applet_one_subject: SubjectFull,
         httpx_mock: HTTPXMock,
@@ -99,7 +96,7 @@ class TestOneupHealth:
         )
 
         client.login(tom)
-        response = await client.get(url=self.get_token_url.format(applet_id=applet_one.id))
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 200
         result = response.json()["result"]
         assert result["accessToken"] == "token_test"
@@ -110,9 +107,8 @@ class TestOneupHealth:
     async def test_get_token_without_creating_user(
         self,
         client: TestClient,
-        session: AsyncSession,
-        applet_one: AppletFull,
         tom: User,
+        session: AsyncSession,
         tom_applet_one_subject: SubjectFull,
         httpx_mock: HTTPXMock,
     ):
@@ -143,7 +139,7 @@ class TestOneupHealth:
         )
 
         client.login(tom)
-        response = await client.get(url=self.get_token_url.format(applet_id=applet_one.id))
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 200
         result = response.json()["result"]
         assert result["accessToken"] == "token_test"
@@ -152,14 +148,14 @@ class TestOneupHealth:
         assert result["oneupUserId"] == 1
 
     async def test_get_token_error_outside_us(
-        self, client: TestClient, applet_one: AppletFull, tom: User, httpx_mock: HTTPXMock
+        self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
     ):
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user"), method="POST", json={"message": "Forbidden"}, status_code=403
         )
 
         client.login(tom)
-        response = await client.get(url=self.get_token_url.format(applet_id=applet_one.id))
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
         result = response.json()["result"]
         assert (
@@ -167,7 +163,7 @@ class TestOneupHealth:
         )
 
     async def test_get_token_error_creating_user(
-        self, client: TestClient, applet_one: AppletFull, tom: User, httpx_mock: HTTPXMock
+        self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
     ):
         # mock create user
         httpx_mock.add_response(
@@ -177,7 +173,7 @@ class TestOneupHealth:
         )
 
         client.login(tom)
-        response = await client.get(url=self.get_token_url.format(applet_id=applet_one.id))
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
         result = response.json()["result"]
         assert result[0]["message"] == "OneUp Health request failed."
@@ -185,9 +181,8 @@ class TestOneupHealth:
     async def test_get_token_error_getting_code(
         self,
         client: TestClient,
-        session: AsyncSession,
-        applet_one: AppletFull,
         tom: User,
+        session: AsyncSession,
         tom_applet_one_subject: SubjectFull,
         httpx_mock: HTTPXMock,
     ):
@@ -203,7 +198,7 @@ class TestOneupHealth:
         )
 
         client.login(tom)
-        response = await client.get(url=self.get_token_url.format(applet_id=applet_one.id))
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
         result = response.json()["result"]
         assert result[0]["message"] == "OneUp Health request failed."
@@ -211,9 +206,8 @@ class TestOneupHealth:
     async def test_get_token_error_getting_token(
         self,
         client: TestClient,
-        session: AsyncSession,
-        applet_one: AppletFull,
         tom: User,
+        session: AsyncSession,
         tom_applet_one_subject: SubjectFull,
         httpx_mock: HTTPXMock,
     ):
@@ -242,7 +236,7 @@ class TestOneupHealth:
         )
 
         client.login(tom)
-        response = await client.get(url=self.get_token_url.format(applet_id=applet_one.id))
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
         result = response.json()["result"]
         assert (

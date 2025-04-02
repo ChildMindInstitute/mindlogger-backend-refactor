@@ -9,7 +9,7 @@ from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_
 router = APIRouter(prefix="/integrations/oneup_health", tags=["oneup_health"])
 
 router.get(
-    "/applet/{applet_id}/token",
+    "/subject/{subject_id}/token",
     description="This endpoint is used to retrieve 1UpHealth API access token",
     status_code=status.HTTP_200_OK,
     responses={
