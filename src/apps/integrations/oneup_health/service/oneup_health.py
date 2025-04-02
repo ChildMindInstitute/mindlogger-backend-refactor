@@ -34,9 +34,9 @@ class OneupHealthAPIClient:
                 raise OneUpHealthAPIError(resp.text)
 
             result = resp.json()
-            if result["success"] is False:
-                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result['error']}")
-                raise OneUpHealthAPIErrorMessageMap.get(result["error"], OneUpHealthAPIError)()
+            if result.get("success") is False:
+                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
+                raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
             return result
 
@@ -63,9 +63,9 @@ class OneupHealthAPIClient:
                 raise OneUpHealthAPIError()
 
             result = resp.json()
-            if result["success"] is False:
-                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result['error']}")
-                raise OneUpHealthAPIErrorMessageMap.get(result["error"], OneUpHealthAPIError)()
+            if result.get("success") is False:
+                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
+                raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
             return result
 
