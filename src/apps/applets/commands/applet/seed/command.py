@@ -2,6 +2,7 @@ import datetime
 import traceback
 import uuid
 from itertools import groupby
+from typing import cast
 
 import typer
 from pydantic import EmailStr, NonNegativeInt
@@ -14,6 +15,7 @@ from apps.activities.domain.activity_create import ActivityCreate, ActivityItemC
 from apps.activities.domain.response_type_config import MessageConfig, ResponseType
 from apps.applets.commands.applet.seed.applet_config_file_v1 import (
     ActivityConfig,
+    AlwaysAvailableEventConfig,
     AppletConfig,
     AppletConfigFileV1,
     EventConfig,
@@ -34,18 +36,21 @@ from apps.applets.commands.applet.seed.errors import (
     SubjectIdAlreadyExistsError,
 )
 from apps.applets.domain.applet_create_update import AppletCreate
+from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import Encryption
 from apps.applets.errors import AppletAlreadyExist, AppletNotFoundError
 from apps.applets.service import AppletService
 from apps.authentication.services import AuthenticationService
-from apps.schedule.db.schemas import EventHistorySchema, EventSchema
-from apps.schedule.domain.constants import EventType, TimerType
+from apps.schedule.db.schemas import AppletEventsSchema, EventHistorySchema, EventSchema
+from apps.schedule.domain.constants import EventType, PeriodicityType, TimerType
 from apps.schedule.domain.schedule import (
     EventCreate,
     EventRequest,
+    EventUpdateRequest,
     Notification,
     NotificationSettingRequest,
     PeriodicityRequest,
+    PublicEvent,
     ReminderSettingRequest,
 )
 from apps.schedule.service import ScheduleService
@@ -75,24 +80,95 @@ async def update_subject_details(
     await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
 
 
-async def update_event_details(
+async def create_and_update_new_event(
     session: AsyncSession,
-    existing_event_id: uuid.UUID,
+    event: EventConfig,
+    activity: ActivityConfig,
+    applet_owner: User,
+    applet: AppletFull,
+):
+    """
+    Create a new event using the existing service method, and then manually update its properties (id, version,
+    created_at)
+    """
+    schedule_service = ScheduleService(session, applet_owner.id)
+    created_event = await schedule_service.create_schedule(
+        EventRequest(
+            start_time=event.start_time,
+            end_time=event.end_time,
+            access_before_schedule=getattr(event, "access_before_start_time", None),
+            one_time_completion=getattr(event, "one_time_completion", None),
+            respondent_id=event.user_id,
+            activity_id=activity.id,
+            flow_id=None,
+            periodicity=PeriodicityRequest(
+                type=event.periodicity.upper(),
+                start_date=getattr(event, "start_date", None),
+                end_date=getattr(event, "end_date", None),
+                selected_date=getattr(event, "selected_date", None),
+            ),
+            notification=Notification(
+                notifications=[
+                    NotificationSettingRequest(
+                        trigger_type=notification.trigger_type,
+                        from_time=getattr(notification, "from_time", None),
+                        to_time=getattr(notification, "to_time", None),
+                        at_time=getattr(notification, "at_time", None),
+                        order=i,
+                    )
+                    for i, notification in enumerate(event.notifications)
+                ]
+                if len(event.notifications) > 0
+                else None,
+                reminder=ReminderSettingRequest(
+                    activity_incomplete=event.reminder.activity_incomplete,
+                    reminder_time=event.reminder.reminder_time,
+                )
+                if event.reminder
+                else None,
+            )
+            if len(event.notifications) > 0 or event.reminder
+            else None,
+            timer=None,
+            timer_type=TimerType.NOT_SET,
+        ),
+        applet_id=applet.id,
+    )
+
+    try:
+        # Now let's set the fields we couldn't in the create method (id, version, created_at)
+        await update_first_event_version(
+            session=session,
+            existing_event=created_event,
+            new_event_id=event.id,
+            new_event_version=event.version,
+            new_event_created_at=event.created_at,
+            is_deleted=event.is_deleted,
+        )
+    except IntegrityError as e:
+        raise EventIdAlreadyExistsError(event.id, activity.id) from e
+
+
+async def update_first_event_version(
+    session: AsyncSession,
+    existing_event: PublicEvent,
     new_event_id: uuid.UUID,
-    new_event_created_at: datetime.datetime | None = None,
-    new_event_version: str | None = None,
+    new_event_created_at: datetime.datetime,
+    new_event_version: str,
+    is_deleted: bool = False,
     event_data: EventCreate | None = None,
-    include_history: bool = False,
 ) -> None:
+    """
+    Update an event that may not have been created by this seed script. Entries already exist in the `events`,
+    `event_histories`, and `applet_events` tables, and we manually update their properties. Which properties get
+    updated is determined by the presence of the `event_data` parameter.
+    """
     values: dict = {
         "id": new_event_id,
+        "created_at": new_event_created_at,
+        "updated_at": new_event_created_at,
+        "version": new_event_version,
     }
-
-    if new_event_created_at:
-        values["created_at"] = new_event_created_at
-
-    if new_event_version:
-        values["version"] = new_event_version
 
     if event_data:
         values.update(
@@ -106,35 +182,142 @@ async def update_event_details(
                 "activity_id": event_data.activity_id,
                 "activity_flow_id": event_data.activity_flow_id,
                 "event_type": event_data.event_type,
+                "one_time_completion": getattr(event_data, "one_time_completion", None),
+                "access_before_schedule": getattr(event_data, "access_before_schedule", None),
+                "start_date": getattr(event_data, "start_date", None),
+                "end_date": getattr(event_data, "end_date", None),
+                "selected_date": getattr(event_data, "selected_date", None),
             }
         )
-        if hasattr(event_data, "one_time_completion"):
-            values["one_time_completion"] = event_data.one_time_completion
-            if hasattr(event_data, "access_before_schedule"):
-                values["access_before_schedule"] = event_data.access_before_schedule
-            if hasattr(event_data, "start_date"):
-                values["start_date"] = event_data.start_date
-            if hasattr(event_data, "end_date"):
-                values["end_date"] = event_data.end_date
-            if hasattr(event_data, "selected_date"):
-                values["selected_date"] = event_data.selected_date
 
+    # Update `events` table
     query = update(EventSchema)
-    query = query.where(EventSchema.id == existing_event_id)
+    query = query.where(EventSchema.id == existing_event.id)
+    query = query.values(**values)
+    query = query.returning(EventSchema)
+    db_result = await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    mappings = db_result.mappings().all()
+    updated_event = EventSchema(**mappings[0])
+
+    existing_id_version = f"{existing_event.id}_{existing_event.version}"
+    id_version = f"{updated_event.id}_{updated_event.version}"
+
+    # Update `event_histories` table
+    history_query = update(EventHistorySchema)
+    history_query = history_query.where(EventHistorySchema.id_version == existing_id_version)
+
+    history_values = {
+        **values,
+        "id_version": id_version,
+        "is_deleted": is_deleted,
+    }
+    history_query = history_query.values(**history_values)
+    await session.execute(history_query, execution_options=immutabledict({"synchronize_session": False}))
+
+    # Update `applet_events` table
+    applet_events_query = update(AppletEventsSchema)
+    applet_events_query = applet_events_query.where(AppletEventsSchema.event_id == id_version)
+    applet_events_query = applet_events_query.values(
+        # This created_at column represents when either the event or the applet version was created
+        # Since we currently only support one applet version, we can use the event's created_at
+        created_at=new_event_created_at,
+        updated_at=new_event_created_at,
+    )
+    await session.execute(applet_events_query, execution_options=immutabledict({"synchronize_session": False}))
+
+
+async def update_subsequent_event_version(
+    session: AsyncSession,
+    applet: AppletFull,
+    existing_event: PublicEvent,
+    event_data: EventConfig,
+):
+    """
+    Update an event that was created by this seed script, by creating a new version. We use the existing service
+    method to update the `events` table, and create entries in `event_histories` and `applet_events`, after which
+    we will manually update some of their properties
+    """
+    updated_schedule = await ScheduleService(session, applet.owner_id).update_schedule(
+        applet_id=applet.id,
+        schedule_id=existing_event.id,
+        schedule=EventUpdateRequest(
+            start_time=event_data.start_time,
+            end_time=event_data.end_time,
+            access_before_schedule=getattr(event_data, "access_before_start_time", None),
+            one_time_completion=getattr(event_data, "one_time_completion", None),
+            periodicity=PeriodicityRequest(
+                type=event_data.periodicity.upper(),
+                start_date=getattr(event_data, "start_date", None),
+                end_date=getattr(event_data, "end_date", None),
+                selected_date=getattr(event_data, "selected_date", None),
+            ),
+            notification=Notification(
+                notifications=[
+                    NotificationSettingRequest(
+                        trigger_type=notification.trigger_type,
+                        from_time=getattr(notification, "from_time", None),
+                        to_time=getattr(notification, "to_time", None),
+                        at_time=getattr(notification, "at_time", None),
+                        order=i,
+                    )
+                    for i, notification in enumerate(event_data.notifications)
+                ]
+                if len(event_data.notifications) > 0
+                else None,
+                reminder=ReminderSettingRequest(
+                    activity_incomplete=event_data.reminder.activity_incomplete,
+                    reminder_time=event_data.reminder.reminder_time,
+                )
+                if event_data.reminder
+                else None,
+            )
+            if len(event_data.notifications) > 0 or event_data.reminder
+            else None,
+            timer=None,
+            timer_type=TimerType.NOT_SET,
+        ),
+    )
+
+    values: dict = {
+        "version": event_data.version,
+        "updated_at": event_data.created_at,
+    }
+
+    # Update `events` table
+    query = update(EventSchema)
+    query = query.where(EventSchema.id == existing_event.id)
     query = query.values(**values)
     query = query.returning(EventSchema)
     db_result = await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
     updated_event = EventSchema(**db_result.mappings().all()[0])
 
-    if include_history:
-        history_query = update(EventHistorySchema)
-        history_query = history_query.where(EventHistorySchema.id == existing_event_id)
-        history_values = {
-            **values,
-            "id_version": f"{updated_event.id}_{updated_event.version}",
-        }
-        history_query = history_query.values(**history_values)
-        await session.execute(history_query, execution_options=immutabledict({"synchronize_session": False}))
+    existing_id_version = f"{existing_event.id}_{updated_schedule.version}"
+    id_version = f"{updated_event.id}_{updated_event.version}"
+
+    # Update `event_histories` table
+    history_query = update(EventHistorySchema)
+    history_query = history_query.where(EventHistorySchema.id_version == existing_id_version)
+
+    history_values = {
+        "id_version": id_version,
+        "version": event_data.version,
+        "created_at": event_data.created_at,
+        "updated_at": event_data.created_at,
+        "is_deleted": event_data.is_deleted,
+    }
+    history_query = history_query.values(**history_values)
+    await session.execute(history_query, execution_options=immutabledict({"synchronize_session": False}))
+
+    # Update `applet_events` table
+    applet_events_query = update(AppletEventsSchema)
+    applet_events_query = applet_events_query.where(AppletEventsSchema.event_id == id_version)
+    applet_events_query = applet_events_query.values(
+        # This created_at column represents when either the event or the applet version was created
+        # Since we currently only support one applet version, we can use the event's created_at
+        created_at=event_data.created_at,
+        updated_at=event_data.created_at,
+    )
+    await session.execute(applet_events_query, execution_options=immutabledict({"synchronize_session": False}))
 
 
 async def create_users(session: AsyncSession, config_users: list[UserConfig]) -> list[User]:
@@ -237,122 +420,81 @@ async def create_activity(
     session: AsyncSession,
     activity: ActivityConfig,
     applet_owner: User,
-    applet: AppletConfig,
+    applet: AppletFull,
 ):
     schedule_service = ScheduleService(session, applet_owner.id)
 
     applet_schedules = await schedule_service.get_all_schedules(applet.id)
 
-    default_always_available_event_created = False
     events: list[EventConfig] = activity.events
-    for id, grouped_events in groupby(events, lambda ev: ev.id):
-        for i, event in enumerate(grouped_events):
-            # First event in this series
-            if i == 0:
-                existing_always_available_event = next(
-                    (e for e in applet_schedules if e.activity_id == activity.id),
-                    None,
-                )
-                if not existing_always_available_event:
-                    raise RuntimeError(f"Unexpected error: No existing event found for activity {activity.id}")
-
-                try:
-                    await update_event_details(
-                        session,
-                        existing_event_id=existing_always_available_event.id,
-                        new_event_id=event.id
-                        if not default_always_available_event_created
-                        else existing_always_available_event.id,
-                        new_event_version=event.version
-                        if not default_always_available_event_created
-                        else existing_always_available_event.version,
-                        new_event_created_at=event.created_at if not default_always_available_event_created else None,
-                        event_data=EventCreate(
-                            applet_id=applet.id,
-                            start_time=event.start_time,
-                            end_time=event.end_time,
-                            access_before_schedule=event.access_before_schedule
-                            if hasattr(event, "access_before_schedule")
-                            else None,
-                            timer=None,
-                            timer_type=TimerType.NOT_SET,
-                            one_time_completion=event.one_time_completion
-                            if hasattr(event, "one_time_completion")
-                            else None,
-                            periodicity=event.periodicity.upper(),
-                            start_date=event.start_date if hasattr(event, "start_date") else None,
-                            end_date=event.end_date if hasattr(event, "end_date") else None,
-                            selected_date=event.selected_date if hasattr(event, "selected_date") else None,
-                            user_id=event.user_id,
-                            activity_id=activity.id,
-                            activity_flow_id=None,
-                            event_type=EventType.ACTIVITY,
-                        ),
-                        include_history=True,
+    for group_idx, [_, grouped_events] in enumerate(groupby(events, lambda ev: ev.id)):
+        for version_idx, event in enumerate(grouped_events):
+            if version_idx == 0:
+                if group_idx == 0:
+                    # This is the first event version in the first group, which makes it the default, auto-created
+                    # always available event for this activity. We need to update instead of create
+                    always_available_event = cast(AlwaysAvailableEventConfig, event)
+                    existing_always_available_event = next(
+                        (e for e in applet_schedules if e.activity_id == activity.id),
+                        None,
                     )
-                    default_always_available_event_created = True
-                except IntegrityError as e:
-                    raise EventIdAlreadyExistsError(event.id, activity.id) from e
-            else:
-                # This should be a new event, so let's just create it
-                created_event = await schedule_service.create_schedule(
-                    EventRequest(
+                    if (
+                        not existing_always_available_event
+                        or existing_always_available_event.periodicity.type != PeriodicityType.ALWAYS
+                    ):
+                        raise RuntimeError(
+                            f"Unexpected error: No default always available event found for activity {activity.id}"
+                        )
+
+                    event_data = EventCreate(
+                        applet_id=applet.id,
                         start_time=event.start_time,
                         end_time=event.end_time,
-                        access_before_schedule=event.access_before_start_time
-                        if hasattr(event, "access_before_start_time")
-                        else None,
-                        one_time_completion=event.one_time_completion
-                        if hasattr(event, "one_time_completion")
-                        else None,
-                        respondent_id=event.user_id,
-                        activity_id=activity.id,
-                        flow_id=None,
-                        periodicity=PeriodicityRequest(
-                            type=event.periodicity.upper(),
-                            start_date=event.start_date if hasattr(event, "start_date") else None,
-                            end_date=event.end_date if hasattr(event, "end_date") else None,
-                            selected_date=event.selected_date if hasattr(event, "selected_date") else None,
-                        ),
-                        notification=Notification(
-                            notifications=[
-                                NotificationSettingRequest(
-                                    trigger_type=notification.trigger_type,
-                                    from_time=notification.from_time if hasattr(notification, "from_time") else None,
-                                    to_time=notification.to_time if hasattr(notification, "to_time") else None,
-                                    at_time=notification.at_time if hasattr(notification, "at_time") else None,
-                                    order=i,
-                                )
-                                for i, notification in enumerate(event.notifications)
-                            ]
-                            if len(event.notifications) > 0
-                            else None,
-                            reminder=ReminderSettingRequest(
-                                activity_incomplete=event.reminder.activity_incomplete,
-                                reminder_time=event.reminder.reminder_time,
-                            )
-                            if event.reminder
-                            else None,
-                        )
-                        if len(event.notifications) > 0 or event.reminder
-                        else None,
+                        access_before_schedule=None,
                         timer=None,
                         timer_type=TimerType.NOT_SET,
-                    ),
-                    applet_id=applet.id,
-                )
-
-                try:
-                    await update_event_details(
-                        session=session,
-                        existing_event_id=created_event.id,
-                        new_event_id=event.id,
-                        new_event_version=event.version,
-                        new_event_created_at=event.created_at,
-                        include_history=True,
+                        one_time_completion=always_available_event.one_time_completion,
+                        periodicity=PeriodicityType.ALWAYS,
+                        start_date=None,
+                        end_date=None,
+                        selected_date=None,
+                        user_id=event.user_id,
+                        activity_id=activity.id,
+                        activity_flow_id=None,
+                        event_type=EventType.ACTIVITY,
                     )
-                except IntegrityError as e:
-                    raise EventIdAlreadyExistsError(event.id, activity.id) from e
+
+                    # Update the always available event to match the details specified in the config
+                    try:
+                        await update_first_event_version(
+                            session,
+                            existing_event=existing_always_available_event,
+                            new_event_id=always_available_event.id,
+                            new_event_version=always_available_event.version,
+                            new_event_created_at=always_available_event.created_at,
+                            is_deleted=event.is_deleted,
+                            event_data=event_data,
+                        )
+                    except IntegrityError as e:
+                        raise EventIdAlreadyExistsError(event.id, activity.id) from e
+                else:
+                    # This is the first event version, but not the first group. It must be created before updating
+                    await create_and_update_new_event(
+                        session=session,
+                        event=event,
+                        activity=activity,
+                        applet_owner=applet_owner,
+                        applet=applet,
+                    )
+            else:
+                existing_event = await schedule_service.get_schedule_by_id(event.id, applet.id)
+                # This is not the first version of this event. It should be updated
+                await update_subsequent_event_version(
+                    session=session,
+                    applet=applet,
+                    existing_event=existing_event,
+                    event_data=event,
+                )
 
 
 async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> None:
@@ -448,7 +590,7 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                         create_data.report_email_body = report_server.email_body
 
                     try:
-                        await applet_service.create(
+                        created_applet = await applet_service.create(
                             create_data=create_data,
                             manager_id=applet_owner.id,
                             manager_role=Role.OWNER,
@@ -490,7 +632,7 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                             session=session,
                             activity=activity,
                             applet_owner=applet_owner,
-                            applet=applet,
+                            applet=created_applet,
                         )
     except Exception as e:
         if not from_cli:
