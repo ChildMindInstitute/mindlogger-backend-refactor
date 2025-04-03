@@ -25,6 +25,7 @@ from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.http import get_local_tz
 from infrastructure.logger import logger
 from infrastructure.utility import FirebaseNotificationType
 
@@ -275,6 +276,7 @@ async def schedule_get_all_by_user(
 async def schedule_get_all_by_respondent_user(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
+    time_zone: str | None = Depends(get_local_tz()),
     device_id: Annotated[str | None, Header()] = None,
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
@@ -307,6 +309,7 @@ async def schedule_get_all_by_respondent_user(
             applet_ids=applet_ids,
             min_end_date=min_end_date,
             max_start_date=max_start_date,
+            time_zone=time_zone,
             device_id=device_id,
             os_name=os_name,
             os_version=os_version,
