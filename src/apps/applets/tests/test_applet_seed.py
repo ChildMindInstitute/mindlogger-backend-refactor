@@ -49,7 +49,11 @@ class TestAppletSeedV1(BaseTest):
         
         applets:
           - id: {applet_id}
-            password: P@$$w0rd
+            encryption:
+                account_id: {user_id}
+                base: ""
+                prime: ""
+                public_key: ""
             display_name: Back-Dated Applet 3
             description: This is a test applet created in the past
             created_at: 2023-10-01T00:00:00Z
@@ -58,6 +62,8 @@ class TestAppletSeedV1(BaseTest):
                 created_at: 2023-10-01T00:00:00Z
                 user_id: {user_id}
                 email: {user_email}
+                first_name: First
+                last_name: Last
                 secret_user_id: "123456"
                 nickname: Applet Owner
                 tag: "Team"
