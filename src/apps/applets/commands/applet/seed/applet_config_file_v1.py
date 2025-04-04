@@ -1,8 +1,22 @@
 import uuid
 from datetime import UTC, date, datetime, time
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Literal, Optional, Union, cast
 
 from pydantic import AnyHttpUrl, BaseModel, Extra, Field, validator
+
+from apps.applets.commands.applet.seed.errors import (
+    AppletOwnerWithInvalidRolesError,
+    AppletOwnerWithoutUserIdError,
+    DuplicatAppletIdsError,
+    DuplicateUserEmailsError,
+    DuplicateUserIdsError,
+    FullAccountWithoutRespondentRoleError,
+    InvalidAppletError,
+    InvalidFirstEventError,
+    LimitedAccountWithRolesError,
+    NonReviewerSubjectWithRevieweesError,
+    SubjectUserNotPresentError,
+)
 
 
 class StrictBaseModel(BaseModel):
@@ -51,22 +65,21 @@ class SubjectConfig(StrictBaseModel):
 
     @validator("roles")
     def validate_respondent_role(cls, roles, values: dict):
+        subject_id = cast(uuid.UUID, values.get("id"))
         if values.get("user_id") is not None and "respondent" not in roles:
-            raise ValueError(f"Subject {values.get('id')} is a full account and must have the 'respondent' role")
+            raise FullAccountWithoutRespondentRoleError(subject_id)
 
         if values.get("user_id") is None and len(roles) > 0:
-            raise ValueError(f"Subject {values.get('id')} is a limited account and should not have roles")
+            raise LimitedAccountWithRolesError(subject_id)
 
         if "owner" in roles:
             if len(roles) > 2:
-                raise ValueError(
-                    f"Subject {values.get('id')} is the applet owner and should only have an additional respondent role"
-                )
+                raise AppletOwnerWithInvalidRolesError(subject_id)
             elif values.get("user_id") is None:
-                raise ValueError(f"Subject {values.get('id')} is the applet owner and must have a user_id")
+                raise AppletOwnerWithoutUserIdError(subject_id)
 
         if values.get("reviewer_subjects") is not None and "reviewer" not in roles:
-            raise ValueError(f"Subject {values.get('id')} has reviewer_subjects and must have the 'reviewer' role")
+            raise NonReviewerSubjectWithRevieweesError(subject_id)
 
         return roles
 
@@ -271,10 +284,11 @@ class ActivityConfig(StrictBaseModel):
 
     @validator("events")
     def validate_events(cls, events: list[EventConfig]):
-        if events[0].periodicity != "ALWAYS":
-            raise ValueError("The first event must have periodicity set to ALWAYS")
-        elif events[0].user_id is not None:
-            raise ValueError("The first event must be on the default schedule")
+        first_event = events[0]
+        if first_event.periodicity != "ALWAYS":
+            raise InvalidFirstEventError(first_event.id, "Periodicity must be set to ALWAYS")
+        elif first_event.user_id is not None:
+            raise InvalidFirstEventError(first_event.id, "Must be on the default schedule (user_id should be null)")
 
         return events
 
@@ -319,7 +333,7 @@ class AppletConfig(StrictBaseModel):
     subjects: list[SubjectConfig] = Field(
         ..., min_items=1, description="List of subjects in the applet. You must provide at least the applet owner"
     )
-    activities: list[ActivityConfig] = Field(..., description="List of activities in the applet")
+    activities: list[ActivityConfig] = Field(..., min_items=1, description="List of activities in the applet")
     report_server: Optional[ReportServerConfig] = Field(
         default=None, description="Report server settings for the applet"
     )
@@ -332,7 +346,11 @@ class AppletConfig(StrictBaseModel):
     def validate_activities(cls, activities: list[ActivityConfig], values: dict):
         activity_id_counts: dict[uuid.UUID, int] = {}
         duplicate_activity_ids: set[uuid.UUID] = set()
-        applet_id = values.get("id")
+        applet_id = cast(uuid.UUID, values.get("id"))
+
+        if len(activities) == 0:
+            # We'll need to update this validation when we start supporting flows
+            raise InvalidAppletError(applet_id, "The applet must contain at least one activity")
 
         for activity in activities:
             activity_id_counts[activity.id] = activity_id_counts.get(activity.id, 0) + 1
@@ -341,8 +359,8 @@ class AppletConfig(StrictBaseModel):
 
         # Ensure all activity IDs are unique
         if len(duplicate_activity_ids) > 0:
-            raise ValueError(
-                f"Duplicate activity IDs found in applet {applet_id}: {', '.join(map(str, duplicate_activity_ids))}"
+            raise InvalidAppletError(
+                applet_id, f"The activity IDs are repeated: {', '.join(map(str, duplicate_activity_ids))}"
             )
 
         return activities
@@ -354,7 +372,7 @@ class AppletConfig(StrictBaseModel):
         duplicate_subject_ids: set[uuid.UUID] = set()
         duplicate_secret_user_ids: set[str] = set()
         owner_subject_ids: set[uuid.UUID] = set()
-        applet_id = values.get("id")
+        applet_id = cast(uuid.UUID, values.get("id"))
 
         for subject in subjects:
             subject_id_counts[subject.id] = subject_id_counts.get(subject.id, 0) + 1
@@ -368,26 +386,24 @@ class AppletConfig(StrictBaseModel):
 
         # Ensure all subject IDs are unique
         if len(duplicate_subject_ids) > 0:
-            raise ValueError(
-                f"Duplicate subject IDs found in applet {applet_id}: {', '.join(map(str, duplicate_subject_ids))}"
+            raise InvalidAppletError(
+                applet_id, f"The subject IDs are repeated: {', '.join(map(str, duplicate_subject_ids))}"
             )
 
         # Ensure all secret user IDs are unique
         if len(duplicate_secret_user_ids) > 0:
-            raise ValueError(
-                f"Duplicate secret user IDs found in applet {applet_id}: {', '.join(duplicate_secret_user_ids)}"
+            raise InvalidAppletError(
+                applet_id, f"The secret user IDs are repeated: {', '.join(duplicate_secret_user_ids)}"
             )
 
         if len(owner_subject_ids) != 1:
-            raise ValueError(
-                f"Applets must have exactly one owner, found {len(owner_subject_ids)} owners for applet {applet_id}"
-            )
+            raise InvalidAppletError(applet_id, f"Must have exactly one owner, found {len(owner_subject_ids)} owners")
 
         applet_owner_id = owner_subject_ids.pop()
         owner_subject = next(subject for subject in subjects if subject.id == applet_owner_id)
 
         if not owner_subject.user_id:
-            raise ValueError(f"Subject {owner_subject.id} in applet {applet_id} has an owner role, but no user_id")
+            raise AppletOwnerWithoutUserIdError(owner_subject.id)
 
         return subjects
 
@@ -401,16 +417,25 @@ class AppletConfigFileV1(StrictBaseModel):
     @validator("users")
     def validate_user_ids(cls, users: list[UserConfig]):
         user_id_counts: dict[uuid.UUID, int] = {}
+        user_email_counts: dict[str, int] = {}
         duplicate_user_ids: set[uuid.UUID] = set()
+        duplicate_user_emails: set[str] = set()
 
         for user in users:
             user_id_counts[user.id] = user_id_counts.get(user.id, 0) + 1
+            user_email_counts[user.email] = user_email_counts.get(user.email, 0) + 1
             if user_id_counts[user.id] > 1:
                 duplicate_user_ids.add(user.id)
+            if user_email_counts[user.email] > 1:
+                duplicate_user_emails.add(user.email)
 
         # Ensure all user IDs are unique
         if len(duplicate_user_ids) > 0:
-            raise ValueError(f"Duplicate user IDs found: {', '.join(map(str, duplicate_user_ids))}")
+            raise DuplicateUserIdsError(duplicate_user_ids)
+
+        # Ensure all user emails are unique
+        if len(duplicate_user_emails) > 0:
+            raise DuplicateUserEmailsError(duplicate_user_emails)
 
         return users
 
@@ -427,12 +452,14 @@ class AppletConfigFileV1(StrictBaseModel):
                 duplicate_applet_ids.add(applet.id)
             for subject in applet.subjects:
                 if subject.user_id and subject.user_id not in user_ids:
-                    raise ValueError(
-                        f"Subject {subject.id} in applet {applet.id} has a user_id that is not in the users list"
+                    raise SubjectUserNotPresentError(
+                        subject_id=subject.id,
+                        user_id=subject.user_id,
+                        applet_id=applet.id,
                     )
 
         # Ensure all applet IDs are unique
         if len(duplicate_applet_ids) > 0:
-            raise ValueError(f"Duplicate applet IDs found: {', '.join(map(str, duplicate_applet_ids))}")
+            raise DuplicatAppletIdsError(duplicate_applet_ids)
 
         return applets

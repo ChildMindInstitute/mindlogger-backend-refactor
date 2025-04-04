@@ -1,4 +1,5 @@
 import uuid
+from typing import Iterable
 
 
 class SeedError(Exception):
@@ -146,9 +147,95 @@ class AppletWithoutOwnerError(SeedError):
         super().__init__(f"Unexpected Error: Applet {applet_id} does not have an owner")
 
 
-class AppletOwnerWithoutUserIdError(SeedError):
-    """Exception raised when a seeded applet has an owner without a user ID"""
+class FullAccountWithoutRespondentRoleError(SeedError):
+    """Exception raised when a seeded applet has a full account without a respondent role"""
 
-    def __init__(self, applet_id: uuid.UUID):
+    def __init__(self, subject_id: uuid.UUID):
+        self.subject_id = subject_id
+        super().__init__(f"Subject {subject_id} is a full account and must have the 'respondent' role")
+
+
+class AppletOwnerWithInvalidRolesError(SeedError):
+    """
+    Exception raised when a seeded applet owner has invalid roles. An applet owner subject should only have the roles
+    'owner' and 'respondent'.
+    """
+
+    def __init__(self, subject_id: uuid.UUID):
+        self.subject_id = subject_id
+        super().__init__(f"Subject {subject_id} is the applet owner and should only have an additional respondent role")
+
+
+class LimitedAccountWithRolesError(SeedError):
+    """Exception raised when a seeded applet has a limited account with roles"""
+
+    def __init__(self, subject_id: uuid.UUID):
+        self.subject_id = subject_id
+        super().__init__(f"Subject {subject_id} is a limited account and should not have any roles")
+
+
+class AppletOwnerWithoutUserIdError(SeedError):
+    """Exception raised when a seeded applet owner does not have a user ID"""
+
+    def __init__(self, subject_id: uuid.UUID):
+        self.subject_id = subject_id
+        super().__init__(f"Subject {subject_id} is the applet owner and must have a user_id")
+
+
+class NonReviewerSubjectWithRevieweesError(SeedError):
+    """Exception raised when a seeded applet has a subject with reviewees but the subject is not a reviewer"""
+
+    def __init__(self, subject_id: uuid.UUID):
+        self.subject_id = subject_id
+        super().__init__(f"Subject {subject_id} has reviewer_subjects and must have the 'reviewer' role")
+
+
+class InvalidFirstEventError(SeedError):
+    """Exception raised when the first even of an activity/flow does not match its validation criteria"""
+
+    def __init__(self, event_id: uuid.UUID, message: str):
+        self.event_id = event_id
+        super().__init__(f"The first event {event_id} is invalid: {message}")
+
+
+class InvalidAppletError(SeedError):
+    """Exception raised when the applet configuration is invalid"""
+
+    def __init__(self, applet_id: uuid.UUID, message: str):
+        super().__init__(f"The applet {applet_id} is invalid: {message}")
+
+
+class DuplicateUserIdsError(SeedError):
+    """Exception raised when duplicate user IDs are found in the seed file"""
+
+    def __init__(self, user_ids: Iterable[uuid.UUID]):
+        self.user_ids = user_ids
+        super().__init__(f"Duplicate user IDs found: {', '.join(map(str, user_ids))}")
+
+
+class DuplicateUserEmailsError(SeedError):
+    """Exception raised when duplicate user emails are found in the seed file"""
+
+    def __init__(self, user_emails: Iterable[str]):
+        self.user_ids = user_emails
+        super().__init__(f"Duplicate user emails found: {', '.join(user_emails)}")
+
+
+class DuplicatAppletIdsError(SeedError):
+    """Exception raised when duplicate applet IDs are found in the seed file"""
+
+    def __init__(self, applet_ids: Iterable[uuid.UUID]):
+        self.applet_ids = applet_ids
+        super().__init__(f"Duplicate applet IDs found: {', '.join(map(str, applet_ids))}")
+
+
+class SubjectUserNotPresentError(SeedError):
+    """Exception raised when a subject's user ID is not present in the seed file"""
+
+    def __init__(self, subject_id: uuid.UUID, user_id: uuid.UUID, applet_id: uuid.UUID):
+        self.subject_id = subject_id
+        self.user_id = user_id
         self.applet_id = applet_id
-        super().__init__(f"Unexpected Error: Applet {applet_id} owner does not have a user ID")
+        super().__init__(
+            f"Subject {subject_id} in applet {applet_id} has a user_id ({user_id}) that is not in the users list"
+        )

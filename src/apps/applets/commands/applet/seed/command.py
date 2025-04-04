@@ -688,7 +688,7 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                     if not applet_owner_subject:
                         raise AppletWithoutOwnerError(applet_id=applet.id)
                     elif not applet_owner_subject.user_id:
-                        raise AppletOwnerWithoutUserIdError(applet_id=applet.id)
+                        raise AppletOwnerWithoutUserIdError(subject_id=applet_owner_subject.id)
 
                     applet_owner = await UserService(session).get(applet_owner_subject.user_id)
                     if not applet_owner:
