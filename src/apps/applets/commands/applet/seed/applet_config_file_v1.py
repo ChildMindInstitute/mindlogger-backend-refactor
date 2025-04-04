@@ -281,7 +281,7 @@ class ActivityConfig(StrictBaseModel):
         return created_at.replace(tzinfo=None)
 
     @validator("events")
-    def validate_events(cls, events: list[EventConfig]):
+    def validate_events(cls, events: list[EventConfig], values: dict):
         first_event = events[0]
         if first_event.periodicity != "ALWAYS":
             raise InvalidFirstEventError(first_event.id, "Periodicity must be set to ALWAYS")
@@ -359,6 +359,24 @@ class AppletConfig(StrictBaseModel):
         if len(duplicate_activity_ids) > 0:
             raise InvalidAppletError(
                 applet_id, f"The activity IDs are repeated: {', '.join(map(str, duplicate_activity_ids))}"
+            )
+
+        event_id_version_counts: dict[str, int] = {}
+        duplicate_event_id_versions: set[str] = set()
+
+        for activity in activities:
+            for event in activity.events:
+                id_version = f"{event.id}_{event.version}"
+                event_id_version_counts[id_version] = event_id_version_counts.get(id_version, 0) + 1
+                if event_id_version_counts[id_version] > 1:
+                    duplicate_event_id_versions.add(f"{event.id}, {event.version}")
+
+        # Ensure all event IDs and versions are unique
+        if len(duplicate_event_id_versions) > 0:
+            raise InvalidAppletError(
+                applet_id=applet_id,
+                message=f"Contains multiple events with the same ID and version: "
+                f"{', '.join(duplicate_event_id_versions)}",
             )
 
         return activities
