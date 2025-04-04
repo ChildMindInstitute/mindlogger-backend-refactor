@@ -1,0 +1,15 @@
+INFO     root:tasks.py:25 Reencryption a6e35c42-e7ba-41b7-a86a-3cdf46f36a38: reencrypt_answers start
+ERROR    root:tasks.py:54 Reencryption a6e35c42-e7ba-41b7-a86a-3cdf46f36a38: Wrong applet 600e08a8-1c8f-4850-8b22-b9aa566ff2cc encryption format, skip
+ERROR    root:tasks.py:55 Expecting value: line 1 column 1 (char 0)
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 52, in reencrypt_answers
+    applet_pub_key = json.loads(applet.encryption.public_key)
+  File "/usr/local/lib/python3.13/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/local/lib/python3.13/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
