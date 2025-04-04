@@ -847,7 +847,7 @@ class LorisIntegrationService:
 
     async def _create_integration_alerts(self, applet_id: uuid.UUID, message: str):
         latest_versions = await AppletHistoriesCRUD(self.session).get_versions_by_applet_id(self.applet_id)
-        version = latest_versions[-1]
+        version = next(iter(latest_versions[::-1]), None)
         cache = RedisCache()
         user_applet_access = UserAppletAccessCRUD(self.session)
         persons = await user_applet_access.get_responsible_persons(applet_id=applet_id, subject_id=None)
