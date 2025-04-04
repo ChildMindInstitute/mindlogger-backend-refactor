@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime
+from typing import cast
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -22,6 +24,7 @@ from apps.applets.commands.applet.seed.errors import (
 )
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.applet_full import AppletFull
+from apps.authentication.services import AuthenticationService
 from apps.schedule.crud.events import EventCRUD
 from apps.schedule.crud.schedule_history import ScheduleHistoryCRUD
 from apps.schedule.domain.constants import PeriodicityType
@@ -30,6 +33,7 @@ from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import Subject
 from apps.users import User, UsersCRUD
 from apps.users.domain import UserCreate
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 
 
@@ -38,118 +42,410 @@ async def seed_config(config: str) -> None:
     with patch("builtins.open", m):
         with open("test.yaml", "r") as f:
             data: dict = yaml.safe_load(f)
-            await _seed(data, False)
+    await _seed(data, False)
 
 
 def uuid_prefix() -> str:
     return str(uuid.uuid4()).replace("-", "")[:8]
 
 
+def user_details(last_name: str) -> dict:
+    return {
+        "id": uuid.uuid4(),
+        "email": f"{last_name.lower()}{uuid_prefix()}@email.com",
+        "first_name": "Example",
+        "last_name": last_name,
+        "password": "password",
+        "subject_id": uuid.uuid4(),
+        "secret_user_id": uuid.uuid4(),
+        "nickname": f"Applet {last_name}",
+    }
+
+
 class TestAppletSeedV1(BaseTest):
     async def test_seed_applet_successfully(self, session: AsyncSession):
-        user_id = uuid.uuid4()
-        user_email = f"email_{uuid_prefix()}@email.com"
-        subject_id = uuid.uuid4()
+        base = "[2]"
+        prime = (
+            "[246,25,62,57,3,211,201,60,45,201,150,1,190,238,76,102,74,251,46,148,77,29,170,58,244,105,8,98,210,"
+            "151,133,169,246,23,82,120,229,35,147,74,213,4,72,145,136,233,32,137,37,224,243,5,139,4,160,166,149,"
+            "244,212,219,224,247,214,181,167,166,108,86,34,111,18,209,99,87,0,176,210,79,16,216,191,44,55,132,214,"
+            "25,245,124,98,228,240,133,112,89,169,47,151,247,250,57,221,161,14,109,147,162,179,95,51,145,147,18,"
+            "195,48,190,74,88,26,132,25,66,236,103,148,101,136,234,195]"
+        )
+        public_key = (
+            "[239,242,164,45,219,53,182,152,239,29,82,154,249,100,131,121,96,86,0,20,36,150,45,34,36,235,201,"
+            "3,250,82,44,145,87,153,223,175,96,63,93,62,107,143,34,120,13,237,165,86,39,170,168,169,141,120,"
+            "229,181,72,41,73,18,150,141,154,32,17,174,63,44,159,161,63,9,249,247,90,125,232,219,130,6,250,"
+            "243,69,11,253,29,234,155,198,255,62,115,100,61,129,28,24,2,22,155,104,117,210,159,229,94,112,"
+            "238,97,145,47,98,2,194,193,121,209,190,229,89,44,227,167,9,131,245,151,87]"
+        )
         applet_id = uuid.uuid4()
-        applet_name = f"Back-Dated Applet {uuid_prefix()}"
-        activity_id = uuid.uuid4()
-        event_id = uuid.uuid4()
+        applet_display_name = f"Back-Dated Applet {uuid_prefix()}"
+
+        owner = {
+            "id": uuid.UUID("2b14f59e-baf6-407b-9b59-25ec39bc3893"),
+            "email": "someone@example.com",
+            "first_name": "Someone",
+            "last_name": "Owner",
+            "password": "password",
+            "subject_id": uuid.uuid4(),
+            "secret_user_id": uuid.uuid4(),
+            "nickname": "Applet Owner",
+        }
+        manager = user_details("Manager")
+        coordinator = user_details("Coordinator")
+        editor = user_details("Editor")
+        reviewer = user_details("Reviewer")
+        full_account_respondent = user_details("Respondent")
+        limited_account_subject_id = uuid.uuid4()
+
+        users = {
+            "owner": owner,
+            "manager": manager,
+            "coordinator": coordinator,
+            "editor": editor,
+            "reviewer": reviewer,
+            "respondent": full_account_respondent,
+        }
+        users_snippet = ""
+        subjects_snippet = ""
+        for role, user in users.items():
+            users_snippet += f"""
+  - id: &{role}_id {user.get("id")}
+    created_at: 2023-10-01T00:00:00Z
+    email: &{role}_email {user.get("email")}
+    first_name: {user.get("first_name")}
+    last_name: {user.get("last_name")}
+    password: {user.get("password")}"""
+
+            subjects_snippet += f"""
+      - id: {user.get("subject_id")}
+        created_at: 2023-10-01T00:00:00Z
+        user_id: *{role}_id
+        email: *{role}_email
+        first_name: {user.get("first_name")}
+        last_name: {user.get("last_name")}
+        secret_user_id: {user.get("secret_user_id")}
+        nickname: {user.get("nickname")}"""
+
+            if role != "respondent":
+                subjects_snippet += f"""
+        tag: "Team"
+        roles: ["{role}", "respondent"]"""
+            else:
+                subjects_snippet += """
+        roles: ["respondent"]"""
+
+        subjects_snippet += f"""
+      - id: {limited_account_subject_id}
+        created_at: 2023-10-01T00:00:00Z
+        first_name: Limited
+        last_name: Account
+        secret_user_id: {uuid.uuid4()}
+        nickname: Limited Account
+"""
+
+        activities = {
+            "always": {
+                "id": uuid.uuid4(),
+                "name": "Always Available Activity",
+                "description": "This is a test activity",
+                "created_at": "2023-10-01T00:00:00Z",
+                "events": [
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-1",
+                        "periodicity": PeriodicityType.ALWAYS,
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-02T00:00:00Z",
+                        "version": "20231002-1",
+                        "periodicity": PeriodicityType.DAILY,
+                        "start_date": "2023-10-02",
+                        "end_date": "2026-12-31",
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2025-01-01T00:00:00Z",
+                        "version": "20250101-1",
+                        "periodicity": PeriodicityType.ALWAYS,
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                ],
+            },
+            "once": {
+                "id": uuid.uuid4(),
+                "name": "Once Activity",
+                "description": "This is a test activity",
+                "created_at": "2023-10-01T00:00:00Z",
+                "events": [
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-1",
+                        "periodicity": PeriodicityType.ALWAYS,
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-2",
+                        "periodicity": PeriodicityType.ONCE,
+                        "selected_date": "2023-10-01",
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                ],
+            },
+            "daily": {
+                "id": uuid.uuid4(),
+                "name": "Daily Activity",
+                "description": "This is a test activity",
+                "created_at": "2023-10-01T00:00:00Z",
+                "events": [
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-1",
+                        "periodicity": PeriodicityType.ALWAYS,
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-2",
+                        "periodicity": PeriodicityType.DAILY,
+                        "start_date": "2023-10-01",
+                        "end_date": "2026-12-31",
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                ],
+            },
+            "weekly": {
+                "id": uuid.uuid4(),
+                "name": "Weekly Activity",
+                "description": "This is a test activity",
+                "created_at": "2023-10-01T00:00:00Z",
+                "events": [
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-1",
+                        "periodicity": PeriodicityType.ALWAYS,
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-2",
+                        "periodicity": PeriodicityType.WEEKLY,
+                        "start_date": "2023-10-01",
+                        "end_date": "2026-12-31",
+                        "selected_date": "2023-10-01",
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                ],
+            },
+            "weekdays": {
+                "id": uuid.uuid4(),
+                "name": "Weekdays Activity",
+                "description": "This is a test activity",
+                "created_at": "2023-10-01T00:00:00Z",
+                "events": [
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-1",
+                        "periodicity": PeriodicityType.ALWAYS,
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-2",
+                        "periodicity": PeriodicityType.WEEKDAYS,
+                        "start_date": "2023-10-01",
+                        "end_date": "2026-12-31",
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                ],
+            },
+            "monthly": {
+                "id": uuid.uuid4(),
+                "name": "Monthly Activity",
+                "description": "This is a test activity",
+                "created_at": "2023-10-01T00:00:00Z",
+                "events": [
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-1",
+                        "periodicity": PeriodicityType.ALWAYS,
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                    {
+                        "id": uuid.uuid4(),
+                        "created_at": "2023-10-01T00:00:00Z",
+                        "version": "20231001-2",
+                        "periodicity": PeriodicityType.MONTHLY,
+                        "start_date": "2023-10-01",
+                        "end_date": "2026-12-31",
+                        "selected_date": "2023-10-01",
+                        "start_time": "00:00:00",
+                        "end_time": "23:59:00",
+                    },
+                ],
+            },
+        }
+        activities_snippet = ""
+        for activity in activities.values():
+            activities_snippet += f"""
+      - id: {activity["id"]}
+        name: {activity["name"]}
+        description: {activity["description"]}
+        created_at: {activity["created_at"]}"""
+
+            events_snippet = """
+        events:"""
+            for event in activity["events"]:  # type: ignore[attr-defined]
+                events_snippet += f"""
+          - id: {event["id"]}
+            version: {event["version"]}
+            created_at: {event["created_at"]}
+            periodicity: {event["periodicity"]}
+            start_time: {event["start_time"]}
+            end_time: {event["end_time"]}"""
+
+                if event.get("start_date"):
+                    events_snippet += f"""
+            start_date: {event["start_date"]}"""
+                if event.get("end_date"):
+                    events_snippet += f"""
+            end_date: {event["end_date"]}"""
+                if event.get("selected_date"):
+                    events_snippet += f"""
+            selected_date: {event["selected_date"]}"""
+
+            activities_snippet += events_snippet
 
         # language=yaml
-        config = f"""
-        version: "1.0"
-        
-        users:
-          - id: {user_id}
-            created_at: 2023-10-01T00:00:00Z
-            email: {user_email}
-            first_name: First
-            last_name: Last
-            password: password
-        
-        applets:
-          - id: {applet_id}
-            encryption:
-                account_id: {user_id}
-                base: ""
-                prime: ""
-                public_key: ""
-            display_name: {applet_name}
-            description: This is a test applet created in the past
-            created_at: 2023-10-01T00:00:00Z
-            subjects:
-              - id: {subject_id}
-                created_at: 2023-10-01T00:00:00Z
-                user_id: {user_id}
-                email: {user_email}
-                first_name: First
-                last_name: Last
-                secret_user_id: "123456"
-                nickname: Applet Owner
-                tag: "Team"
-                roles: ["owner", "respondent"]
-            activities:
-              - id: {activity_id}
-                name: Always Available Activity
-                description: This is a test activity
-                created_at: 2023-10-01T00:00:00Z
-                auto_assign: true
-                events:
-                  - id: {event_id}
-                    version: 20231001-1
-                    created_at: 2023-10-01T00:00:00Z
-                    periodicity: ALWAYS
-                    start_time: 00:00:00
-                    end_time: 23:59:00
-                    one_time_completion: false
-                  - id: {event_id}
-                    version: 20231002-1
-                    created_at: 2023-10-02T00:00:00Z
-                    periodicity: DAILY
-                    start_date: 2023-10-02
-                    end_date: 2024-12-31
-                    start_time: 00:00:00
-                    end_time: 23:59:00
-            report_server:
-                ip_address: http://10.0.0.1
-                public_key: Public key
-                recipients: []
-                include_user_id: false
-                include_case_id: false
-                email_body: Email body
+        config = f"""version: "1.0"
+
+users: {users_snippet}
+
+applets:
+  - id: {applet_id}
+    encryption:
+      account_id: *owner_id
+      base: "{base}"
+      prime: "{prime}"
+      public_key: "{public_key}"
+    display_name: {applet_display_name}
+    description: This is a test applet created in the past
+    created_at: 2023-10-01T00:00:00Z
+    subjects: {subjects_snippet}
+    activities: {activities_snippet}
+    report_server:
+        ip_address: http://10.0.0.1
+        public_key: Public key
+        recipients: []
+        include_user_id: false
+        include_case_id: false
+        email_body: Email body
         """
         await seed_config(config)
 
         # Check if the applet was created successfully
         await AppletsCRUD(session).get_by_id(applet_id)
 
-        # Check if the user was created successfully
-        await UsersCRUD(session).get_by_id(user_id)
+        workspace_crud = UserWorkspaceCRUD(session)
+        auth_service = AuthenticationService(session)
+        subjects_crud = SubjectsCrud(session)
 
-        # Check if the user's workspace was created successfully
-        workspace = await UserWorkspaceCRUD(session).get_by_user_id(user_id)
-        assert workspace is not None
+        # Check if the users and their subjects were created successfully
+        for user in users.values():
+            # Check if the user was created successfully
+            created_user = await UsersCRUD(session).get_by_id(user["id"])
+            assert created_user is not None
+            assert created_user.id == user["id"]
+            assert created_user.email_encrypted == user["email"]
+            assert created_user.first_name == user["first_name"]
+            assert created_user.last_name == user["last_name"]
+            assert (
+                auth_service.verify_password(user["password"], created_user.hashed_password, raise_exception=False)
+                is True
+            )
 
-        # Check if the subject was created successfully
-        subject = await SubjectsCrud(session).get_by_id(subject_id)
-        assert subject is not None
-        assert subject.user_id == user_id
-        assert subject.applet_id == applet_id
+            # Check if the user's workspace was created successfully
+            workspace = await workspace_crud.get_by_user_id(created_user.id)
+            assert workspace is not None
 
-        # Check if the activity was created successfully
-        activity = await ActivitiesCRUD(session).get_by_id(activity_id)
-        assert activity is not None
+            subject = await subjects_crud.get_by_id(user["subject_id"])
+            assert subject is not None
+            assert subject.user_id == user["id"]
+            assert subject.applet_id == applet_id
 
-        # Check if the events were created successfully
-        event = await EventCRUD(session).get_by_id(event_id)
-        assert event.periodicity == PeriodicityType.DAILY
-        assert event.version == "20231002-1"
+        limited_account_subject = await subjects_crud.get_by_id(limited_account_subject_id)
+        assert limited_account_subject is not None
+        assert limited_account_subject.user_id is None
+        assert limited_account_subject.email is None
+        assert limited_account_subject.applet_id == applet_id
 
-        event_v1 = await ScheduleHistoryCRUD(session).get_by_id(f"{event_id}_20231001-1")
-        assert event_v1 is not None
+        # Confirm access roles
+        access_crud = UserAppletAccessCRUD(session)
+        owner_roles = await access_crud.get_user_roles_to_applet(cast(uuid.UUID, owner["id"]), applet_id)
+        assert set(owner_roles) == {"owner", "respondent"}
 
-        event_v2 = await ScheduleHistoryCRUD(session).get_by_id(f"{event_id}_20231002-1")
-        assert event_v2 is not None
+        manager_roles = await access_crud.get_user_roles_to_applet(manager["id"], applet_id)
+        assert set(manager_roles) == {"manager", "respondent"}
+
+        coordinator_roles = await access_crud.get_user_roles_to_applet(coordinator["id"], applet_id)
+        assert set(coordinator_roles) == {"coordinator", "respondent"}
+
+        editor_roles = await access_crud.get_user_roles_to_applet(editor["id"], applet_id)
+        assert set(editor_roles) == {"editor", "respondent"}
+
+        reviewer_roles = await access_crud.get_user_roles_to_applet(reviewer["id"], applet_id)
+        assert set(reviewer_roles) == {"reviewer", "respondent"}
+
+        respondent_roles = await access_crud.get_user_roles_to_applet(full_account_respondent["id"], applet_id)
+        assert set(respondent_roles) == {"respondent"}
+
+        # Check if the activities were created successfully
+        for activity in activities.values():
+            schema_activity = await ActivitiesCRUD(session).get_by_id(cast(uuid.UUID, activity["id"]))
+            assert schema_activity is not None
+            assert schema_activity.name == activity["name"]
+
+            current_event = activity["events"][-1]  # type: ignore[index]
+            schema_event = await EventCRUD(session).get_by_id(current_event["id"])
+            time_format = "%H:%M:%S"
+            start_time = datetime.strptime(current_event["start_time"], time_format).time()
+            end_time = datetime.strptime(current_event["end_time"], time_format).time()
+            assert schema_event is not None
+            assert schema_event.periodicity == current_event["periodicity"]
+            assert schema_event.version == current_event["version"]
+            assert schema_event.start_time == start_time
+            assert schema_event.end_time == end_time
+
+            for event in activity["events"]:  # type: ignore[attr-defined]
+                history_schema = await ScheduleHistoryCRUD(session).get_by_id(f"{event['id']}_{event['version']}")
+                assert history_schema is not None
 
     async def test_seed_invalid_version(self):
         # language=yaml
@@ -839,3 +1135,34 @@ class TestAppletSeedV1(BaseTest):
         with pytest.raises(FullAccountWithoutRespondentRoleError):
             await seed_config(config)
 
+
+# Things to validate
+## AppletConfigFileV1
+### - Duplicate users IDs ✅
+### - Duplicate users emails ✅
+### - Duplicate applet IDs ✅
+### - Applets with IDs that are already in the database ✅
+### - Applets with names that are already in the database ✅
+### - Applets with no activities ✅
+### - Subjects with user IDs that are not defined in the users section ✅
+### - Subjects with IDs that are already in the database ✅
+### - Subjects with secret IDs that are not unique ✅
+### - Applets with no owner ✅
+### - Applets with multiple owners ✅
+### - Duplicate subject IDs ✅
+### - Activities where the first event does not have a periodicity of ALWAYS ✅
+### - Activities where the first event is not on the default schedule ✅
+### - Each subject must have a respondent role ✅
+### - Roles array must not be empty
+### - Subject role must be one of the valid options
+### - Subject tag must be valid
+### - Full account subjects must have at least respondent role
+### - Limited subjects should not have any roles
+### - User exists in the database and is deleted
+### - User exists in the database with the same email but has different id
+### - User exists in the database with the same ID but has different email
+### - User exists in the database with the same ID but has different first_name
+### - User exists in the database with the same ID but has different last_name
+### - User exists in the database with the same ID but has different password
+### - Event with version specified alone
+### - Event with created_at specified alone
