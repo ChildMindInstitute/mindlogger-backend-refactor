@@ -33,9 +33,15 @@ class SubjectConfig(StrictBaseModel):
     user_id: Optional[uuid.UUID] = Field(None, description="User ID for full accounts and team members")
     email: Optional[str] = Field(None, description="Email address that received the applet invitation")
     secret_user_id: str = Field(..., description="Subject secret user ID. Should be unique within the applet")
+    first_name: str = Field(..., min_length=1, description="Subject first name")
+    last_name: str = Field(..., min_length=1, description="Subject last name")
     nickname: Optional[str] = Field(None, description="Optional subject nickname")
     roles: set[Literal["super_admin", "owner", "manager", "coordinator", "editor", "reviewer", "respondent"]] = Field(
-        ..., min_items=1, description="Role of the subject in the applet"
+        set(), description="Role of the subject in the applet"
+    )
+    reviewer_subjects: set[uuid.UUID] = Field(
+        default=set(),
+        description="List of UUIDs of subjects who this reviewer will review",
     )
     tag: Optional[Literal["Child", "Parent", "Teacher", "Team"]] = Field(default=None, description="Subject tag")
 
@@ -44,9 +50,24 @@ class SubjectConfig(StrictBaseModel):
         return created_at.replace(tzinfo=None)
 
     @validator("roles")
-    def validate_respondent_role(cls, roles):
-        if "respondent" not in roles:
-            raise ValueError("The 'respondent' role is required")
+    def validate_respondent_role(cls, roles, values: dict):
+        if values.get("user_id") is not None and "respondent" not in roles:
+            raise ValueError(f"Subject {values.get('id')} is a full account and must have the 'respondent' role")
+
+        if values.get("user_id") is None and len(roles) > 0:
+            raise ValueError(f"Subject {values.get('id')} is a limited account and should not have roles")
+
+        if "owner" in roles:
+            if len(roles) > 2:
+                raise ValueError(
+                    f"Subject {values.get('id')} is the applet owner and should only have an additional respondent role"
+                )
+            elif values.get("user_id") is None:
+                raise ValueError(f"Subject {values.get('id')} is the applet owner and must have a user_id")
+
+        if values.get("reviewer_subjects") is not None and "reviewer" not in roles:
+            raise ValueError(f"Subject {values.get('id')} has reviewer_subjects and must have the 'reviewer' role")
+
         return roles
 
     class Config:
@@ -329,14 +350,19 @@ class AppletConfig(StrictBaseModel):
     @validator("subjects")
     def validate_subjects(cls, subjects: list[SubjectConfig], values: dict):
         subject_id_counts: dict[uuid.UUID, int] = {}
+        secret_user_id_counts: dict[str, int] = {}
         duplicate_subject_ids: set[uuid.UUID] = set()
+        duplicate_secret_user_ids: set[str] = set()
         owner_subject_ids: set[uuid.UUID] = set()
         applet_id = values.get("id")
 
         for subject in subjects:
             subject_id_counts[subject.id] = subject_id_counts.get(subject.id, 0) + 1
+            secret_user_id_counts[subject.secret_user_id] = secret_user_id_counts.get(subject.secret_user_id, 0) + 1
             if subject_id_counts[subject.id] > 1:
                 duplicate_subject_ids.add(subject.id)
+            if secret_user_id_counts[subject.secret_user_id] > 1:
+                duplicate_secret_user_ids.add(subject.secret_user_id)
             if "owner" in subject.roles:
                 owner_subject_ids.add(subject.id)
 
@@ -346,10 +372,22 @@ class AppletConfig(StrictBaseModel):
                 f"Duplicate subject IDs found in applet {applet_id}: {', '.join(map(str, duplicate_subject_ids))}"
             )
 
+        # Ensure all secret user IDs are unique
+        if len(duplicate_secret_user_ids) > 0:
+            raise ValueError(
+                f"Duplicate secret user IDs found in applet {applet_id}: {', '.join(duplicate_secret_user_ids)}"
+            )
+
         if len(owner_subject_ids) != 1:
             raise ValueError(
                 f"Applets must have exactly one owner, found {len(owner_subject_ids)} owners for applet {applet_id}"
             )
+
+        applet_owner_id = owner_subject_ids.pop()
+        owner_subject = next(subject for subject in subjects if subject.id == applet_owner_id)
+
+        if not owner_subject.user_id:
+            raise ValueError(f"Subject {owner_subject.id} in applet {applet_id} has an owner role, but no user_id")
 
         return subjects
 

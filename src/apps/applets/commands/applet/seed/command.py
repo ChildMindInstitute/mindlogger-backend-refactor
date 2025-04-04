@@ -19,12 +19,16 @@ from apps.applets.commands.applet.seed.applet_config_file_v1 import (
     AppletConfig,
     AppletConfigFileV1,
     EventConfig,
+    SubjectConfig,
     UserConfig,
 )
 from apps.applets.commands.applet.seed.errors import (
     AppletActivityIdsAlreadyExistsError,
     AppletAlreadyExistsError,
     AppletNameAlreadyExistsError,
+    AppletOwnerNotFoundError,
+    AppletOwnerWithoutUserIdError,
+    AppletWithoutOwnerError,
     EmailMismatchError,
     EventIdAlreadyExistsError,
     FirstNameMismatchError,
@@ -41,6 +45,16 @@ from apps.applets.domain.base import Encryption
 from apps.applets.errors import AppletAlreadyExist, AppletNotFoundError
 from apps.applets.service import AppletService
 from apps.authentication.services import AuthenticationService
+from apps.invitations.domain import (
+    InvitationDetailForManagers,
+    InvitationDetailForRespondent,
+    InvitationDetailForReviewer,
+    InvitationLanguage,
+    InvitationManagersRequest,
+    InvitationRespondentRequest,
+    InvitationReviewerRequest,
+)
+from apps.invitations.services import InvitationsService
 from apps.schedule.db.schemas import AppletEventsSchema, EventHistorySchema, EventSchema
 from apps.schedule.domain.constants import EventType, PeriodicityType, TimerType
 from apps.schedule.domain.schedule import (
@@ -60,20 +74,22 @@ from apps.subjects.services import SubjectsService
 from apps.users import User, UserIsDeletedError, UserNotFound, UserSchema
 from apps.users.domain import UserCreate
 from apps.users.services.user import UserService
-from apps.workspaces.domain.constants import Role
+from apps.workspaces.domain.constants import ManagersRole, Role
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 
 
-async def update_subject_details(
-    session: AsyncSession, existing_subject_id: uuid.UUID, new_subject_data: tuple[uuid.UUID, datetime.datetime]
-) -> None:
+async def update_subject_details(session: AsyncSession, existing_subject_id: uuid.UUID, subject: SubjectConfig) -> None:
     query = update(SubjectSchema)
     query = query.where(SubjectSchema.id == existing_subject_id)
 
     values = {
-        "id": new_subject_data[0],
-        "created_at": new_subject_data[1],
+        "id": subject.id,
+        "created_at": subject.created_at,
+        "updated_at": subject.created_at,
+        "first_name": subject.first_name,
+        "last_name": subject.last_name,
     }
 
     query = query.values(**values)
@@ -320,45 +336,64 @@ async def update_subsequent_event_version(
     await session.execute(applet_events_query, execution_options=immutabledict({"synchronize_session": False}))
 
 
-async def create_users(session: AsyncSession, config_users: list[UserConfig]) -> list[User]:
-    schema_users: list[User] = []
+async def find_schema_user(
+    session: AsyncSession,
+    user: UserConfig,
+) -> User | None:
     user_service = UserService(session)
-    auth_service = AuthenticationService(session)
-    for user in config_users:
-        schema_user: User | None = None
+    prop: uuid.UUID | str = user.id
+    try:
         try:
-            schema_user = await user_service.get(user.id)
+            return await user_service.get(user.id)
         except UserNotFound:
             try:
-                schema_user = await user_service.get_by_email(user.email)
+                prop = user.email
+                return await user_service.get(user.id)
             except UserNotFound:
-                pass
-        except UserIsDeletedError as e:
-            raise SeedUserIsDeletedError(user.id) from e
+                return None
+    except UserIsDeletedError as e:
+        raise SeedUserIsDeletedError(prop) from e
+
+
+async def create_schema_user(session: AsyncSession, user_config: UserConfig) -> User:
+    user_service = UserService(session)
+    schema_user = await user_service.create_user(
+        UserCreate(
+            email=EmailStr(user_config.email),
+            first_name=user_config.first_name,
+            last_name=user_config.last_name,
+            password=user_config.password,
+        ),
+        user_config.id,
+    )
+
+    # Create default workspace for new user
+    await WorkspaceService(session, user_config.id).create_workspace_from_user(schema_user)
+
+    update_query = update(UserSchema)
+    update_query = update_query.where(UserSchema.id == schema_user.id)
+    values = {
+        "created_at": user_config.created_at,
+    }
+
+    update_query = update_query.values(**values)
+    await session.execute(update_query, execution_options=immutabledict({"synchronize_session": False}))
+
+    return schema_user
+
+
+async def create_users(session: AsyncSession, config_users: list[UserConfig]) -> list[User]:
+    schema_users: list[User] = []
+    auth_service = AuthenticationService(session)
+
+    typer.echo("Processing users")
+    for user in config_users:
+        schema_user = await find_schema_user(session, user)
 
         if not schema_user:
-            schema_user = await user_service.create_user(
-                UserCreate(
-                    email=EmailStr(user.email),
-                    first_name=user.first_name,
-                    last_name=user.last_name,
-                    password=user.password,
-                ),
-                user.id,
-            )
-
-            # Create default workspace for new user
-            await WorkspaceService(session, user.id).create_workspace_from_user(schema_user)
-
-            update_query = update(UserSchema)
-            update_query = update_query.where(UserSchema.id == schema_user.id)
-            values = {
-                "created_at": user.created_at,
-            }
-
-            update_query = update_query.values(**values)
-            await session.execute(update_query, execution_options=immutabledict({"synchronize_session": False}))
-
+            typer.echo(f"Creating user {user.id}...")
+            schema_user = await create_schema_user(session, user)
+            typer.echo(f"User {user.id} created successfully.")
         elif schema_user.id != user.id:
             raise SeedUserIdMismatchError(user.id)
         elif schema_user.email_encrypted != user.email:
@@ -369,6 +404,8 @@ async def create_users(session: AsyncSession, config_users: list[UserConfig]) ->
             raise LastNameMismatchError(user.id)
         elif not auth_service.verify_password(user.password, schema_user.hashed_password, raise_exception=False):
             raise PasswordMismatchError(user.id)
+        else:
+            typer.echo(f"User {user.id} already exists in the database. Skipping...")
 
         schema_users.append(schema_user)
 
@@ -381,54 +418,125 @@ async def create_subjects(
     applet_owner: User,
     schema_users: list[User],
 ):
-    subject_service = SubjectsService(session, applet_owner.id)
-
     # Create the rest of the subjects
+    typer.echo("Processing subjects")
     for subject in applet.subjects:
         if "owner" in subject.roles:
-            # The owner subject has already been created and updated
+            # The owner subject has already been created and updated, and they already have accesses
             continue
-        else:
-            pass
-            subject_user = next((user for user in schema_users if user.id == subject.user_id), None)
-            created_subject = await subject_service.create(
-                SubjectCreate(
-                    applet_id=applet.id,
-                    email=subject_user.email if subject_user else None,
-                    creator_id=applet_owner.id,
-                    user_id=subject_user.id if subject_user else None,
-                    language="en",
+
+        typer.echo(f"Creating subject {subject.id}...")
+
+        subject_user = next((user for user in schema_users if user.id == subject.user_id), None)
+        created_subject = await SubjectsService(session, applet_owner.id).create(
+            SubjectCreate(
+                applet_id=applet.id,
+                email=EmailStr(subject_user.email) if subject_user else None,
+                creator_id=applet_owner.id,
+                user_id=subject_user.id if subject_user else None,
+                language="en",
+                first_name=subject.first_name,
+                last_name=subject.last_name,
+                secret_user_id=subject.secret_user_id,
+                nickname=subject.nickname,
+                tag=subject.tag,
+            )
+        )
+
+        typer.echo(f"Subject {subject.id} created successfully.")
+
+        if subject_user is None:
+            continue
+
+        try:
+            await update_subject_details(
+                session=session,
+                existing_subject_id=created_subject.id,
+                subject=subject,
+            )
+        except IntegrityError as e:
+            raise SubjectIdAlreadyExistsError(subject.id, applet.id) from e
+
+        invitation_service = InvitationsService(session, applet_owner)
+        processed_role: str | None = None
+
+        roles = subject.roles
+        typer.echo(f"Adding subject roles: {', '.join(roles)}...")
+        if len(roles) == 1:
+            invitation: (
+                InvitationDetailForRespondent | InvitationDetailForReviewer | InvitationDetailForManagers
+            ) = await invitation_service.send_respondent_invitation(
+                applet_id=applet.id,
+                schema=InvitationRespondentRequest(
+                    email=EmailStr(subject_user.email),
+                    language=InvitationLanguage.EN,
                     first_name=subject_user.first_name if subject_user else None,
                     last_name=subject_user.last_name if subject_user else None,
                     secret_user_id=subject.secret_user_id,
                     nickname=subject.nickname,
                     tag=subject.tag,
-                )
+                ),
+                subject=created_subject,
             )
+        elif "reviewer" in roles:
+            processed_role = "reviewer"
+            invitation = await invitation_service.send_reviewer_invitation(
+                applet_id=applet.id,
+                schema=InvitationReviewerRequest(
+                    email=EmailStr(subject_user.email),
+                    language=InvitationLanguage.EN,
+                    first_name=subject_user.first_name if subject_user else None,
+                    last_name=subject_user.last_name if subject_user else None,
+                    subjects=list(subject.reviewer_subjects),
+                    title=None,
+                ),
+            )
+        else:
+            role = next(
+                role for role in roles if role == Role.MANAGER or role == Role.COORDINATOR or role == Role.EDITOR
+            )
+            invitation = await invitation_service.send_managers_invitation(
+                applet_id=applet.id,
+                schema=InvitationManagersRequest(
+                    email=EmailStr(subject_user.email),
+                    language=InvitationLanguage.EN,
+                    first_name=subject_user.first_name if subject_user else None,
+                    last_name=subject_user.last_name if subject_user else None,
+                    role=cast(ManagersRole, role),
+                    title=None,
+                ),
+            )
+            processed_role = role
 
-            try:
-                await update_subject_details(
-                    session,
-                    created_subject.id,
-                    (subject.id, subject.created_at),
-                )
-            except IntegrityError as e:
-                raise SubjectIdAlreadyExistsError(subject.id, applet.id) from e
+        if invitation is not None:
+            await invitation_service.accept(invitation.key)
+
+        user_applet_access_service = UserAppletAccessService(
+            session=session, user_id=applet_owner.id, applet_id=applet.id
+        )
+        for role in roles:
+            if role == processed_role:
+                continue
+
+            # Add the non-invitation roles directly
+            await user_applet_access_service.add_role(user_id=subject_user.id, role=cast(Role, role), meta=None)
+
+        typer.echo("Subject roles added successfully.")
 
 
-async def create_activity(
+async def create_activity_events(
     session: AsyncSession,
     activity: ActivityConfig,
     applet_owner: User,
     applet: AppletFull,
 ):
     schedule_service = ScheduleService(session, applet_owner.id)
-
     applet_schedules = await schedule_service.get_all_schedules(applet.id)
-
     events: list[EventConfig] = activity.events
+
     for group_idx, [_, grouped_events] in enumerate(groupby(events, lambda ev: ev.id)):
         for version_idx, event in enumerate(grouped_events):
+            typer.echo(f"Creating event {event.id} for activity {activity.id}...")
             if version_idx == 0:
                 if group_idx == 0:
                     # This is the first event version in the first group, which makes it the default, auto-created
@@ -496,6 +604,74 @@ async def create_activity(
                     event_data=event,
                 )
 
+            typer.echo("Event created successfully.")
+
+
+def prepare_applet_data(
+    applet: AppletConfig,
+) -> AppletCreate:
+    encryption = Encryption(
+        public_key=applet.encryption.public_key,
+        prime=applet.encryption.prime,
+        base=applet.encryption.base,
+        account_id=str(applet.encryption.account_id),
+    )
+
+    create_data = AppletCreate(
+        display_name=applet.display_name,
+        description={"en": applet.description},
+        link=None,
+        require_login=True,
+        pinned_at=None,
+        retention_period=None,
+        retention_type=None,
+        stream_enabled=None,
+        stream_ip_address=None,
+        stream_port=None,
+        encryption=encryption,
+        activities=[],
+        activity_flows=[],
+    )
+    create_data.__dict__["created_at"] = applet.created_at
+
+    for activity in applet.activities:
+        activity_create = ActivityCreate(
+            key=uuid.uuid4(),
+            name=activity.name,
+            description={"en": activity.description},
+            is_hidden=activity.is_hidden,
+            auto_assign=activity.auto_assign,
+            items=[],
+        )
+        activity_create.__dict__["id"] = activity.id
+        activity_create.__dict__["created_at"] = activity.created_at
+
+        item = ActivityItemCreate(
+            name="Message",
+            response_type=ResponseType.MESSAGE,
+            question={"en": "Message"},
+            config=MessageConfig(
+                type=ResponseType.MESSAGE,
+                remove_back_button=False,
+                timer=NonNegativeInt(0),
+            ),
+            response_values=None,
+        )
+        item.__dict__["created_at"] = activity.created_at
+        activity_create.items.append(item)
+        create_data.activities.append(activity_create)
+
+    if applet.report_server:
+        report_server = applet.report_server
+        create_data.report_server_ip = report_server.ip_address
+        create_data.report_public_key = report_server.public_key
+        create_data.report_recipients = report_server.recipients
+        create_data.report_include_user_id = report_server.include_user_id
+        create_data.report_include_case_id = report_server.include_case_id
+        create_data.report_email_body = report_server.email_body
+
+    return create_data
+
 
 async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> None:
     typer.echo("Seeding data from v1 config file...")
@@ -506,14 +682,17 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                 schema_users: list[User] = await create_users(session, config.users)
 
                 for applet in config.applets:
-                    applet_owner_subject = next(subject for subject in applet.subjects if "owner" in subject.roles)
-                    applet_owner = await UserService(session).get(applet.encryption.account_id)
+                    typer.echo(f"Creating applet {applet.display_name} ({applet.id})...")
 
+                    applet_owner_subject = next(subject for subject in applet.subjects if "owner" in subject.roles)
+                    if not applet_owner_subject:
+                        raise AppletWithoutOwnerError(applet_id=applet.id)
+                    elif not applet_owner_subject.user_id:
+                        raise AppletOwnerWithoutUserIdError(applet_id=applet.id)
+
+                    applet_owner = await UserService(session).get(applet_owner_subject.user_id)
                     if not applet_owner:
-                        # TODO: Change to SeedError subclass
-                        raise RuntimeError(
-                            f"Unexpected Error: Applet owner {applet_owner_subject.user_id} not found in the database."
-                        )
+                        raise AppletOwnerNotFoundError(applet.id, applet_owner_subject.user_id)
 
                     applet_service = AppletService(session, applet_owner.id)
 
@@ -529,77 +708,20 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                     except AppletAlreadyExist as e:
                         raise AppletNameAlreadyExistsError(applet.display_name) from e
 
-                    encryption = Encryption(
-                        public_key=applet.encryption.public_key,
-                        prime=applet.encryption.prime,
-                        base=applet.encryption.base,
-                        account_id=str(applet_owner.id),
-                    )
-
-                    create_data = AppletCreate(
-                        display_name=applet.display_name,
-                        description={"en": applet.description},
-                        link=None,
-                        require_login=True,
-                        pinned_at=None,
-                        retention_period=None,
-                        retention_type=None,
-                        stream_enabled=None,
-                        stream_ip_address=None,
-                        stream_port=None,
-                        encryption=encryption,
-                        activities=[],
-                        activity_flows=[],
-                    )
-                    create_data.__dict__["created_at"] = applet.created_at
-
-                    for activity in applet.activities:
-                        activity_create = ActivityCreate(
-                            key=uuid.uuid4(),
-                            name=activity.name,
-                            description={"en": activity.description},
-                            is_hidden=activity.is_hidden,
-                            auto_assign=activity.auto_assign,
-                            items=[],
-                        )
-                        activity_create.__dict__["id"] = activity.id
-                        activity_create.__dict__["created_at"] = activity.created_at
-
-                        item = ActivityItemCreate(
-                            name="Message",
-                            response_type=ResponseType.MESSAGE,
-                            question={"en": "Message"},
-                            config=MessageConfig(
-                                type=ResponseType.MESSAGE,
-                                remove_back_button=False,
-                                timer=NonNegativeInt(0),
-                            ),
-                            response_values=None,
-                        )
-                        item.__dict__["created_at"] = activity.created_at
-                        activity_create.items.append(item)
-                        create_data.activities.append(activity_create)
-
-                    if applet.report_server:
-                        report_server = applet.report_server
-                        create_data.report_server_ip = report_server.ip_address
-                        create_data.report_public_key = report_server.public_key
-                        create_data.report_recipients = report_server.recipients
-                        create_data.report_include_user_id = report_server.include_user_id
-                        create_data.report_include_case_id = report_server.include_case_id
-                        create_data.report_email_body = report_server.email_body
-
                     try:
                         created_applet = await applet_service.create(
-                            create_data=create_data,
+                            create_data=prepare_applet_data(applet),
                             manager_id=applet_owner.id,
                             manager_role=Role.OWNER,
                             applet_id=applet.id,
                         )
+                        typer.echo(f"Applet {applet.display_name} created successfully.")
                     except IntegrityError as e:
                         raise AppletActivityIdsAlreadyExistsError(applet.id) from e
 
                     subject_service = SubjectsService(session, applet_owner.id)
+
+                    typer.echo(f"Setting applet owner subject ID to {applet_owner_subject.id}...")
 
                     # Update the subject ID of the owner subject
                     existing_owner_subject = await subject_service.get_by_user_and_applet(
@@ -607,16 +729,20 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                     )
 
                     if not existing_owner_subject:
-                        raise RuntimeError(f"Unexpected Error: Owner subject {applet_owner_subject.id} not found.")
+                        raise RuntimeError(
+                            "Unexpected Error: No subject found in the DB for applet owner after creating the applet"
+                        )
 
                     try:
                         await update_subject_details(
                             session,
                             existing_owner_subject.id,
-                            (applet_owner_subject.id, applet_owner_subject.created_at),
+                            subject=applet_owner_subject,
                         )
                     except IntegrityError as e:
                         raise SubjectIdAlreadyExistsError(applet_owner_subject.id, applet.id) from e
+
+                    typer.echo("Applet owner subject ID updated successfully.")
 
                     # Create the rest of the subjects
                     await create_subjects(
@@ -627,8 +753,9 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                     )
 
                     # Create/update the events
+                    typer.echo("Processing events")
                     for activity in applet.activities:
-                        await create_activity(
+                        await create_activity_events(
                             session=session,
                             activity=activity,
                             applet_owner=applet_owner,

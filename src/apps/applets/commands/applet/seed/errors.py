@@ -11,9 +11,9 @@ class SeedError(Exception):
 class SeedUserIsDeletedError(SeedError):
     """Exception raised when trying to seed an applet using a deleted user."""
 
-    def __init__(self, user_id: uuid.UUID):
-        self.user_id = user_id
-        super().__init__(f"User {user_id} is deleted.")
+    def __init__(self, user_id_or_email: uuid.UUID | str):
+        self.user_id_or_email = user_id_or_email
+        super().__init__(f"User {user_id_or_email} is deleted.")
 
 
 class SeedUserIdMismatchError(SeedError):
@@ -127,3 +127,28 @@ class AppletActivityIdsAlreadyExistsError(SeedError):
         super().__init__(
             f"One or more of the activity/flow IDs in the applet {applet_id} already exist in the database."
         )
+
+
+class AppletOwnerNotFoundError(SeedError):
+    """Exception raised when a seeded applet has an owner that does not exist in the database."""
+
+    def __init__(self, applet_id: uuid.UUID, user_id: uuid.UUID):
+        self.user_id = user_id
+        self.applet_id = applet_id
+        super().__init__(f"Unexpected Error: Owner {user_id} of applet {applet_id} was not found in the database.")
+
+
+class AppletWithoutOwnerError(SeedError):
+    """Exception raised when a seeded applet does not have an owner"""
+
+    def __init__(self, applet_id: uuid.UUID):
+        self.applet_id = applet_id
+        super().__init__(f"Unexpected Error: Applet {applet_id} does not have an owner")
+
+
+class AppletOwnerWithoutUserIdError(SeedError):
+    """Exception raised when a seeded applet has an owner without a user ID"""
+
+    def __init__(self, applet_id: uuid.UUID):
+        self.applet_id = applet_id
+        super().__init__(f"Unexpected Error: Applet {applet_id} owner does not have a user ID")
