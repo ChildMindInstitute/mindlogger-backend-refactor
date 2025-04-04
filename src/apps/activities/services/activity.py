@@ -42,50 +42,58 @@ class ActivityService:
         prepared_activity_items = list()
 
         for index, activity_data in enumerate(activities_create):
-            activity_id = uuid.uuid4()
+            # Pull the activity_id from the activity_data if it exists, otherwise generate a new UUID
+            # CLI seeded activity data may have an id
+            activity_id = getattr(activity_data, "id") if hasattr(activity_data, "id") else uuid.uuid4()
             activity_key_id_map[activity_data.key] = activity_id
             activity_id_key_map[activity_id] = activity_data.key
 
-            schemas.append(
-                ActivitySchema(
-                    id=activity_id,
-                    applet_id=applet_id,
-                    name=activity_data.name,
-                    description=activity_data.description,
-                    splash_screen=activity_data.splash_screen,
-                    image=activity_data.image,
-                    show_all_at_once=activity_data.show_all_at_once,
-                    is_skippable=activity_data.is_skippable,
-                    is_reviewable=activity_data.is_reviewable,
-                    response_is_editable=activity_data.response_is_editable,
-                    is_hidden=activity_data.is_hidden,
-                    scores_and_reports=activity_data.scores_and_reports.dict()
-                    if activity_data.scores_and_reports
-                    else None,
-                    subscale_setting=activity_data.subscale_setting.dict() if activity_data.subscale_setting else None,
-                    order=index + 1,
-                    report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
-                    extra_fields=activity_data.extra_fields,
-                    performance_task_type=activity_data.performance_task_type,
-                    auto_assign=activity_data.auto_assign,
-                )
+            schema = ActivitySchema(
+                id=activity_id,
+                applet_id=applet_id,
+                name=activity_data.name,
+                description=activity_data.description,
+                splash_screen=activity_data.splash_screen,
+                image=activity_data.image,
+                show_all_at_once=activity_data.show_all_at_once,
+                is_skippable=activity_data.is_skippable,
+                is_reviewable=activity_data.is_reviewable,
+                response_is_editable=activity_data.response_is_editable,
+                is_hidden=activity_data.is_hidden,
+                scores_and_reports=activity_data.scores_and_reports.dict()
+                if activity_data.scores_and_reports
+                else None,
+                subscale_setting=activity_data.subscale_setting.dict() if activity_data.subscale_setting else None,
+                order=index + 1,
+                report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
+                extra_fields=activity_data.extra_fields,
+                performance_task_type=activity_data.performance_task_type,
+                auto_assign=activity_data.auto_assign,
             )
 
+            if hasattr(activity_data, "created_at"):
+                schema.created_at = getattr(activity_data, "created_at")
+
+            schemas.append(schema)
+
             for item in activity_data.items:
-                prepared_activity_items.append(
-                    PreparedActivityItemCreate(
-                        activity_id=activity_id,
-                        question=item.question,
-                        response_type=item.response_type,
-                        response_values=item.response_values.dict() if item.response_values else None,
-                        config=item.config.dict(),
-                        name=item.name,
-                        is_hidden=item.is_hidden,
-                        conditional_logic=item.conditional_logic.dict() if item.conditional_logic else None,
-                        allow_edit=item.allow_edit,
-                        extra_fields=item.extra_fields,
-                    )
+                prepared_activity_item = PreparedActivityItemCreate(
+                    activity_id=activity_id,
+                    question=item.question,
+                    response_type=item.response_type,
+                    response_values=item.response_values.dict() if item.response_values else None,
+                    config=item.config.dict(),
+                    name=item.name,
+                    is_hidden=item.is_hidden,
+                    conditional_logic=item.conditional_logic.dict() if item.conditional_logic else None,
+                    allow_edit=item.allow_edit,
+                    extra_fields=item.extra_fields,
                 )
+
+                if hasattr(item, "created_at"):
+                    prepared_activity_item.__dict__["created_at"] = getattr(item, "created_at")
+
+                prepared_activity_items.append(prepared_activity_item)
         activity_schemas = await ActivitiesCRUD(self.session).create_many(schemas)
         activity_items = await ActivityItemService(self.session).create(prepared_activity_items)
         activities = list()
