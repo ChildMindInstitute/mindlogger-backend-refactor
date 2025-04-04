@@ -69,7 +69,7 @@ from apps.schedule.domain.schedule import (
 )
 from apps.schedule.service import ScheduleService
 from apps.subjects.db.schemas import SubjectSchema
-from apps.subjects.domain import SubjectCreate
+from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserIsDeletedError, UserNotFound, UserSchema
 from apps.users.domain import UserCreate
@@ -80,7 +80,9 @@ from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic, session_manager
 
 
-async def update_subject_details(session: AsyncSession, existing_subject_id: uuid.UUID, subject: SubjectConfig) -> None:
+async def update_subject_details(
+    session: AsyncSession, existing_subject_id: uuid.UUID, subject: SubjectConfig
+) -> Subject:
     query = update(SubjectSchema)
     query = query.where(SubjectSchema.id == existing_subject_id)
 
@@ -93,7 +95,12 @@ async def update_subject_details(session: AsyncSession, existing_subject_id: uui
     }
 
     query = query.values(**values)
-    await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    query = query.returning(SubjectSchema)
+    db_result = await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    mappings = db_result.mappings().all()
+    updated_subject = SubjectSchema(**mappings[0])
+
+    return Subject.from_orm(updated_subject)
 
 
 async def create_and_update_new_event(
@@ -421,87 +428,91 @@ async def create_subjects(
     # Create the rest of the subjects
     typer.echo("Processing subjects")
     for subject in applet.subjects:
-        if "owner" in subject.roles:
+        roles = subject.roles
+        if "owner" in roles:
             # The owner subject has already been created and updated, and they already have accesses
             continue
 
         typer.echo(f"Creating subject {subject.id}...")
 
         subject_user = next((user for user in schema_users if user.id == subject.user_id), None)
-        created_subject = await SubjectsService(session, applet_owner.id).create(
-            SubjectCreate(
-                applet_id=applet.id,
-                email=EmailStr(subject_user.email) if subject_user else None,
-                creator_id=applet_owner.id,
-                user_id=subject_user.id if subject_user else None,
-                language="en",
-                first_name=subject.first_name,
-                last_name=subject.last_name,
-                secret_user_id=subject.secret_user_id,
-                nickname=subject.nickname,
-                tag=subject.tag,
+        updated_subject: Subject | None = None
+        subject_service = SubjectsService(session, applet_owner.id)
+        if len(roles) < 2:
+            created_subject = await subject_service.create(
+                SubjectCreate(
+                    applet_id=applet.id,
+                    email=EmailStr(subject_user.email_encrypted) if subject_user else None,
+                    creator_id=applet_owner.id,
+                    user_id=subject_user.id if subject_user else None,
+                    language="en",
+                    first_name=subject.first_name,
+                    last_name=subject.last_name,
+                    secret_user_id=subject.secret_user_id,
+                    nickname=subject.nickname,
+                    tag=subject.tag,
+                )
             )
-        )
 
-        typer.echo(f"Subject {subject.id} created successfully.")
+            typer.echo(f"Subject {subject.id} created successfully.")
+
+            try:
+                updated_subject = await update_subject_details(
+                    session=session,
+                    existing_subject_id=created_subject.id,
+                    subject=subject,
+                )
+            except IntegrityError as e:
+                raise SubjectIdAlreadyExistsError(subject.id, applet.id) from e
 
         if subject_user is None:
             continue
 
-        try:
-            await update_subject_details(
-                session=session,
-                existing_subject_id=created_subject.id,
-                subject=subject,
-            )
-        except IntegrityError as e:
-            raise SubjectIdAlreadyExistsError(subject.id, applet.id) from e
-
         invitation_service = InvitationsService(session, applet_owner)
         processed_role: str | None = None
 
-        roles = subject.roles
         typer.echo(f"Adding subject roles: {', '.join(roles)}...")
-        if len(roles) == 1:
+        if updated_subject:
             invitation: (
                 InvitationDetailForRespondent | InvitationDetailForReviewer | InvitationDetailForManagers
             ) = await invitation_service.send_respondent_invitation(
                 applet_id=applet.id,
                 schema=InvitationRespondentRequest(
-                    email=EmailStr(subject_user.email),
+                    email=EmailStr(subject_user.email_encrypted),
                     language=InvitationLanguage.EN,
-                    first_name=subject_user.first_name if subject_user else None,
-                    last_name=subject_user.last_name if subject_user else None,
+                    first_name=subject_user.first_name,
+                    last_name=subject_user.last_name,
                     secret_user_id=subject.secret_user_id,
                     nickname=subject.nickname,
                     tag=subject.tag,
                 ),
-                subject=created_subject,
+                subject=updated_subject,
             )
         elif "reviewer" in roles:
             processed_role = "reviewer"
             invitation = await invitation_service.send_reviewer_invitation(
                 applet_id=applet.id,
                 schema=InvitationReviewerRequest(
-                    email=EmailStr(subject_user.email),
+                    email=EmailStr(subject_user.email_encrypted),
                     language=InvitationLanguage.EN,
-                    first_name=subject_user.first_name if subject_user else None,
-                    last_name=subject_user.last_name if subject_user else None,
+                    first_name=subject_user.first_name,
+                    last_name=subject_user.last_name,
                     subjects=list(subject.reviewer_subjects),
                     title=None,
                 ),
             )
         else:
             role = next(
-                role for role in roles if role == Role.MANAGER or role == Role.COORDINATOR or role == Role.EDITOR
+                (role for role in roles if role == Role.MANAGER or role == Role.COORDINATOR or role == Role.EDITOR),
+                None,
             )
             invitation = await invitation_service.send_managers_invitation(
                 applet_id=applet.id,
                 schema=InvitationManagersRequest(
-                    email=EmailStr(subject_user.email),
+                    email=EmailStr(subject_user.email_encrypted),
                     language=InvitationLanguage.EN,
-                    first_name=subject_user.first_name if subject_user else None,
-                    last_name=subject_user.last_name if subject_user else None,
+                    first_name=subject_user.first_name,
+                    last_name=subject_user.last_name,
                     role=cast(ManagersRole, role),
                     title=None,
                 ),
@@ -509,7 +520,20 @@ async def create_subjects(
             processed_role = role
 
         if invitation is not None:
-            await invitation_service.accept(invitation.key)
+            await InvitationsService(session, subject_user).accept(invitation.key)
+            auto_created_subject = await subject_service.get_by_user_and_applet(subject_user.id, applet.id)
+
+            if not auto_created_subject:
+                raise RuntimeError(f"Failed to create subject {subject.id} for applet {applet.id}")
+
+            try:
+                await update_subject_details(
+                    session=session,
+                    existing_subject_id=auto_created_subject.id,
+                    subject=subject,
+                )
+            except IntegrityError as e:
+                raise SubjectIdAlreadyExistsError(subject.id, applet.id) from e
 
         user_applet_access_service = UserAppletAccessService(
             session=session, user_id=applet_owner.id, applet_id=applet.id
