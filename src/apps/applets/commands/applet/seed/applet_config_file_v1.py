@@ -166,8 +166,6 @@ class OnceEventConfig(BaseEventConfig):
     periodicity: Literal["ONCE"] = Field(
         ..., description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"
     )
-    start_date: date = Field(..., description="Event start date")
-    end_date: date = Field(..., description="Event end date")
     selected_date: date = Field(..., description="Selected date for the event")
     start_time: time = Field(..., description="Event start time")
     end_time: time = Field(..., description="Event end time")
