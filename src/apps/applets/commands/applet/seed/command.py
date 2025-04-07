@@ -13,15 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.domain.response_type_config import MessageConfig, ResponseType
-from apps.applets.commands.applet.seed.applet_config_file_v1 import (
-    ActivityConfig,
-    AlwaysAvailableEventConfig,
-    AppletConfig,
-    AppletConfigFileV1,
-    EventConfig,
-    SubjectConfig,
-    UserConfig,
-)
 from apps.applets.commands.applet.seed.errors import (
     AppletActivityIdsAlreadyExistsError,
     AppletAlreadyExistsError,
@@ -38,6 +29,15 @@ from apps.applets.commands.applet.seed.errors import (
     SeedUserIdMismatchError,
     SeedUserIsDeletedError,
     SubjectIdAlreadyExistsError,
+)
+from apps.applets.commands.applet.seed.v1.applet_config_file_v1 import (
+    ActivityConfig,
+    AlwaysAvailableEventConfig,
+    AppletConfig,
+    AppletConfigFileV1,
+    EventConfig,
+    SubjectConfig,
+    UserConfig,
 )
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull

@@ -5,8 +5,8 @@ import yaml
 from pydantic import ValidationError
 from rich import print
 
-from apps.applets.commands.applet.seed.applet_config_file_v1 import AppletConfigFileV1
 from apps.applets.commands.applet.seed.command import seed_applet_v1
+from apps.applets.commands.applet.seed.v1.applet_config_file_v1 import AppletConfigFileV1
 from apps.applets.service import AppletService
 from apps.transfer_ownership.service import TransferService
 from apps.users import User

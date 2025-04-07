@@ -125,7 +125,8 @@ NotificationConfig = Annotated[
 class ReminderConfig(StrictBaseModel):
     activity_incomplete: int = Field(
         ...,
-        description="Number of times the activity must be incomplete to trigger the reminder",
+        description="Number of consecutive days that the user has not completed the activity after which to trigger the"
+        " reminder",
     )
     reminder_time: time = Field(..., description="Time when the reminder should be sent")
 
