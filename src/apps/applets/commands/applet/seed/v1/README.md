@@ -115,14 +115,14 @@ Notifications alert participants about events and come in two variants:
 
 A notification that is sent at a specific time. It includes:
 
-- `trigger_type`: Must be `"fixed"`.
+- `*trigger_type`: Must be `"fixed"`.
 - `at_time`: (Optional) The specific time when the notification should be sent.
 
 #### Random Notification
 
 A notification that is sent at a random time within a specified window. It includes:
 
-- `trigger_type`: Must be `"random"`.
+- `*trigger_type`: Must be `"random"`.
 - `from_time`: The start time for the notification window.
 - `to_time`: The end time for the notification window.
 
@@ -149,7 +149,7 @@ Subjects represent the individual participants within an applet. Each subject ob
 - `*secret_user_id`: A unique secret identifier for the subject (must be unique within the applet).
 - `*first_name`: The subject's first name (minimum one character).
 - `*last_name`: The subject's last name (minimum one character).
-- `roles`: An array of strings indicating the roles assigned to the subject. This array must include `"respondent"` and may also contain `super_admin`, `owner`, `manager`, `coordinator`, `editor`, or `reviewer`.
+- `*roles`: An array of strings indicating the roles assigned to the subject. This array must include `"respondent"` and may also contain `super_admin`, `owner`, `manager`, `coordinator`, `editor`, or `reviewer`.
 
 Optional fields include:
 - `created_at`: The date the subject was created.
