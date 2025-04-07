@@ -134,6 +134,8 @@ variables:
   DD_ENV: feature
   DD_SERVICE: backend-api
   DD_VERSION: ${COPILOT_ENVIRONMENT_NAME}
+  DD_TRACE_ENABLED: true
+  LOG_JSON_FORMAT: true
 
   # jsonld converter
   JSONLD_CONVERTER__PROTOCOL_PASSWORD:
