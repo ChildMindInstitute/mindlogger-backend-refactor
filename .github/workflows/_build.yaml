@@ -1,0 +1,111 @@
+
+name: Build
+on:
+  workflow_call:
+    inputs:
+      tag-name:
+        description: Docker tag to create
+        required: false
+        default: latest
+        type: string
+
+# Safe to cancel builds in progress
+concurrency:
+  cancel-in-progress: true
+  group: api-build
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+env:
+  GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+  GITHUB_BRANCH_OR_TAG: ${{ github.ref_name }}
+  BUILD_NUMBER: ${{github.run_id}}
+
+  OUT_DIR: ./out
+  AWS_REGION : "us-east-1"
+
+  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
+  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
+
+
+jobs:
+  build:
+    name: Docker Build and Push
+    runs-on: ubuntu-latest
+    outputs:
+      image-name: ${{ steps.sha.outputs.IMAGE_NAME }}
+      image-sha: ${{ steps.sha.outputs.SHORT_SHA }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
+          role-session-name: gha-oidc-runner
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get secrets by name and by ARN
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          parse-json-secrets: true
+          secret-ids: |
+            ,cmiml-devops
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_ADDRESS }}
+
+      - name: Generate short sha
+        id: sha
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "IMAGE_NAME=${ECR_REPO}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./compose/fastapi/Dockerfile
+          push: true
+          build-args: |
+            PIPENV_EXTRA_ARGS=--dev
+            DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
+            DD_GIT_COMMIT_SHA=${{ github.sha }}
+          cache-to: mode=max,image-manifest=true,oci-mediatypes=true,type=registry,ref=${{ env.ECR_REPO }}:cache
+          cache-from: type=registry,ref=${{ env.ECR_REPO }}:cache
+          tags: |
+            ${{ env.ECR_REPO }}:${{ inputs.tag-name }}
+            ${{ env.ECR_REPO }}:${{ steps.sha.outputs.SHORT_SHA }}
+          platforms: linux/amd64,linux/arm64
+
+      - name: Extract Jira ticket numbers from commit message
+        run: |
+          tickets=$(git log -1 --pretty=%B | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
+          if [ -z "$tickets" ]; then
+              echo "No Jira tickets found in the latest commit message."
+          else
+              echo "Jira ticket numbers found: ${tickets}"
+              if [ "${GITHUB_BRANCH_OR_TAG}" != "develop" ]; then
+                  echo "Skipping saving Jira ticket numbers to a file because the branch is not develop"
+              else
+                file="jira-tickets.json"
+                echo "{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }" > "${file}"
+                echo "Jira ticket numbers saved to ${file}"
+              fi
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
