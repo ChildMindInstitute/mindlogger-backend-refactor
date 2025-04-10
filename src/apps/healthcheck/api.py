@@ -10,9 +10,11 @@ from apps.shared.domain import Response as ResponseModel
 from apps.users import User
 from apps.users.domain import AppInfo
 from config import settings
+from infrastructure.logger import logger
 
 
 def readiness():
+    logger.info("Readiness!!")
     return Response("Readiness - OK!")
 
 
@@ -33,9 +35,9 @@ async def statuscode(code: int = 200, timeout: float = Query(0.0, ge=0.0, le=60.
 
 
 async def emergency_message(
-    info: AppInfo = Body(...),
-    user: User | None = Depends(get_optional_current_user),
-    test: bool = Query(False),
+        info: AppInfo = Body(...),
+        user: User | None = Depends(get_optional_current_user),
+        test: bool = Query(False),
 ) -> ResponseModel[EmergencyMessage]:
     # Logic to generate response message based on the user info and app os/version
 

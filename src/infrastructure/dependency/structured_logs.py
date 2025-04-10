@@ -126,7 +126,7 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
         logging.getLogger(_log).propagate = True
 
     # Since we re-create the access logs ourselves, to add all information
-    # in the structured log (see the `DataDogLoggingMiddleware`), we clear
+    # in the structured log (see the `StructuredLoggingMiddleware`), we clear
     # the handlers and prevent the logs to propagate to a logger higher up in the
     # hierarchy (effectively rendering them silent).
     logging.getLogger("uvicorn.access").handlers.clear()
@@ -159,7 +159,24 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         structlog.contextvars.clear_contextvars()
         # These context vars will be added to all log entries emitted during the request
         request_id = correlation_id.get()
-        structlog.contextvars.bind_contextvars(request_id=request_id)
+        url = request.url
+        path = request.url.path
+        client_host = request.client.host if request.client else None
+        client_port = request.client.port if request.client else None
+        real_host = request.headers.get("X-Forwarded-For", client_host)
+        actual_client_ip = real_host.split(",")[0].strip() if real_host else None
+        http_method = request.method
+        http_version = request.scope["http_version"]
+        structlog.contextvars.bind_contextvars(
+            http={
+                "url": str(request.url),
+                "request_path": str(path),
+                "method": http_method,
+                "version": http_version,
+                "request_id": request_id,
+            },
+            network={"client": {"ip": actual_client_ip, "port": client_port}},
+        )
 
         start_time = time.perf_counter_ns()
         # If the call_next raises an error, we still want to return our own 500 response,
@@ -176,14 +193,6 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             access_logger = structlog.stdlib.get_logger("api.access")
             process_time = time.perf_counter_ns() - start_time
             status_code = response.status_code
-            url = request.url
-            path = request.url.path
-            client_host = request.client.host if request.client else None
-            client_port = request.client.port if request.client else None
-            real_host = request.headers.get("X-Forwarded-For", client_host)
-            actual_client_ip = real_host.split(",")[0].strip() if real_host else None
-            http_method = request.method
-            http_version = request.scope["http_version"]
 
             # Pick the right log level based on status code:
             # - Info: 2XX, 3XX
@@ -206,7 +215,6 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                     "request_id": request_id,
                     "version": http_version,
                 },
-                network={"client": {"ip": actual_client_ip, "port": client_port}},
                 duration=process_time,
             )
 
