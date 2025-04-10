@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 from fastapi import Depends
@@ -5,6 +6,7 @@ from fastapi import Depends
 from apps.authentication.deps import get_current_user
 from apps.integrations.oneup_health.domain import OneupHealthToken
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
+from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.shared.domain import Response
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User
@@ -36,3 +38,12 @@ async def retrieve_token(
         token = await oneup_health_service.retrieve_token(subject_id=subject.id, code=code)
 
         return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, subject_id=subject.id, **token))
+
+
+async def test_fetch_data(subject_id: uuid.UUID, user: User = Depends(get_current_user), session=Depends(get_session)):
+    await task_ingest_user_data.kicker().kiq(
+        subject_id=subject_id,
+        start_date=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=10),
+    )
+
+    return Response(result="ok")

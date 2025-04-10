@@ -6,3 +6,5 @@ class OneUpHealthSettings(BaseModel):
     client_secret: str | None = None
     base_url: str = "https://api.1up.health"
     auth_base_url: str = "https://auth.1up.health"
+    base_backoff_delay: int = 5
+    max_backoff_delay: int = 60 * 60 * 24
