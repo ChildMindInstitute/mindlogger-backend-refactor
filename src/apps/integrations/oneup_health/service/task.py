@@ -59,13 +59,14 @@ async def _process_data_transfer(session, subject: Subject, start_date: datetime
         return False
 
     # Check if transfer is completed or timed out
-    if await oneup_health_service.check_for_transfer_initiated(oneup_user_id, start_date) is True:
+    initiated_count = await oneup_health_service.check_for_transfer_initiated(oneup_user_id, start_date)
+    if initiated_count > 0:
         logger.info(f"Transfer initiated for subject {subject.id}")
-        is_completed = await oneup_health_service.check_for_transfer_completed(oneup_user_id, start_date)
-        is_timeout = await oneup_health_service.check_for_transfer_timeout(oneup_user_id, start_date)
+        completed_count = await oneup_health_service.check_for_transfer_completed(oneup_user_id, start_date)
+        timeout_count = await oneup_health_service.check_for_transfer_timeout(oneup_user_id, start_date)
 
-        if is_completed or is_timeout:
-            logger.info(f"Transfer {'completed' if is_completed else 'timed out'} for subject {subject.id}")
+        if completed_count + timeout_count == initiated_count:
+            logger.info(f"Transfer {'completed' if completed_count > 0 else 'timed out'} for subject {subject.id}")
             return await oneup_health_service.get_patient_data(session, subject)
 
     return False
