@@ -1,7 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.integrations.oneup_health.api import retrieve_token
+from apps.integrations.oneup_health.api import retrieve_token, test_fetch_data
 from apps.integrations.oneup_health.domain import OneupHealthToken
 from apps.shared.domain import Response
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE
@@ -18,3 +18,9 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(retrieve_token)
+
+router.get(
+    "/subject/{subject_id}/test",
+    description="This endpoint is used to test 1UpHealth API access token",
+    status_code=status.HTTP_200_OK,
+)(test_fetch_data)

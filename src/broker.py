@@ -28,7 +28,7 @@ class StructlogMiddleware(TaskiqMiddleware):
         return message
 
 
-if settings.env == "testing":
+if settings.env == "testing" or settings.env == "local":
     logger.info("Starting in memory broker")
     broker = InMemoryBroker().with_formatter(JSONFormatter())
 
