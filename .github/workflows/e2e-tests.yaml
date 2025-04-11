@@ -28,8 +28,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-      pull-requests: write
-      discussions: write
 
     steps:
       - name: configure aws credentials
