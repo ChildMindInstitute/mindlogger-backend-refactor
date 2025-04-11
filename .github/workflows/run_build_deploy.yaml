@@ -56,6 +56,7 @@ jobs:
     secrets: inherit
     permissions:
       contents: write
+      id-token: write
     with:
       service-url: https://api-dev.cmiml.net
 
