@@ -12,10 +12,6 @@ on:
         description: Git ref to checkout from TAF repo
         required: false
         default: dev
-      db-name:
-        required: true
-        type: string
-        description: Database name to connect to
     outputs:
       report-url:
         description: URL of the test report
