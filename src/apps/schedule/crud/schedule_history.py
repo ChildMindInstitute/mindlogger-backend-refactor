@@ -27,8 +27,6 @@ from infrastructure.database import BaseCRUD
 class _ScheduleHistoryExportFilters(Filtering):
     respondent_ids = FilterField(EventHistorySchema.user_id, method_name="filter_respondent_ids")
     subject_ids = FilterField(SubjectSchema.id, Comparisons.IN)
-    from_date = FilterField(EventHistorySchema.created_at, Comparisons.GREAT_OR_EQUAL)
-    to_date = FilterField(EventHistorySchema.created_at, Comparisons.LESS_OR_EQUAL)
 
     def filter_respondent_ids(self, field, value):
         return or_(field.in_(value), EventHistorySchema.user_id.is_(None))

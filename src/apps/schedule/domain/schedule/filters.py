@@ -1,4 +1,3 @@
-import datetime
 import uuid
 
 from fastapi import Query
@@ -19,6 +18,4 @@ class EventQueryParams(InternalModel):
 class ScheduleEventsExportParams(BaseQueryParams):
     respondent_ids: list[uuid.UUID] | None = Field(Query(None))
     subject_ids: list[uuid.UUID] | None = Field(Query(None))
-    from_date: datetime.datetime | None = None
-    to_date: datetime.datetime | None = None
     limit: int = Field(gt=0, default=settings.service.result_limit, le=settings.service.result_limit)
