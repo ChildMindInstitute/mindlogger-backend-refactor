@@ -54,6 +54,8 @@ jobs:
     if: ${{ !cancelled() && needs.deploy-dev.result == 'success' }}
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/e2e-tests.yaml@develop
     secrets: inherit
+    permissions:
+      contents: write
     with:
       service-url: https://api-dev.cmiml.net
 
