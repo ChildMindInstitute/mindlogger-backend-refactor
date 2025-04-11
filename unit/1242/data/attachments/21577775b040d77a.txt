@@ -1,1 +1,0 @@
-INFO     root:api.py:98 Invalid event_history_id 11090eea-d343-4944-a42d-f6a8603a8654 provided
