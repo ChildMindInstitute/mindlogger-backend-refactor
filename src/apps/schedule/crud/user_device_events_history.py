@@ -21,8 +21,6 @@ from infrastructure.database import BaseCRUD
 
 class _UserDeviceEventsHistoryExportFilters(Filtering):
     respondent_ids = FilterField(UserDeviceEventsHistorySchema.user_id, Comparisons.IN)
-    from_date = FilterField(EventHistorySchema.created_at, Comparisons.GREAT_OR_EQUAL)
-    to_date = FilterField(EventHistorySchema.created_at, Comparisons.LESS_OR_EQUAL)
 
 
 class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
