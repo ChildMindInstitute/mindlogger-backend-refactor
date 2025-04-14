@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 async def main(session: AsyncSession, applets: Dict[str, str] | None = None, *args, **kwargs):
     """
-    Cleanup libraries for CAMHI applets.
+    This script deletes applet entries from the library table, since the Library feature lacks a delete endpoint.
     """
     if applets:
         applet_id_prefixes = list(applets.keys())
