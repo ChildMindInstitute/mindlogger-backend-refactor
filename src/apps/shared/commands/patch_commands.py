@@ -140,8 +140,8 @@ PatchRegister.register(
 )
 
 PatchRegister.register(
-    file_path="m2_8175_library_cleanup_for_camhi.py",
-    task_id="M2-8175",
+    file_path="m2_9015_library_cleanup.py",
+    task_id="M2-9015",
     description="Library cleanup for CAMHI applets",
 )
 
