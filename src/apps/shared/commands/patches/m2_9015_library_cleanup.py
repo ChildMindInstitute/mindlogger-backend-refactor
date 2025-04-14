@@ -4,7 +4,7 @@ from rich import print
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def main(session: AsyncSession, *args, applets: Dict[str, str] = None, applet_id: str = None, **kwargs):
+async def main(session: AsyncSession, applets: Dict[str, str] | None = None, *args, **kwargs):
     """
     Cleanup libraries for CAMHI applets.
     """
