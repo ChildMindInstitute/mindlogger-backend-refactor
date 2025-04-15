@@ -1,1 +1,0 @@
-INFO     root:api.py:98 Invalid event_history_id 9ad953d5-2196-4b54-bd29-bc0fa77852dc provided
