@@ -148,6 +148,17 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
 
 
 class AppletEventsCRUD(BaseCRUD[AppletEventsSchema]):
+    async def find_by_applet_id_version(self, applet_id_version: str) -> list[AppletEventsSchema]:
+        query = select(AppletEventsSchema)
+        query = query.where(
+            AppletEventsSchema.applet_id == applet_id_version,
+            AppletEventsSchema.soft_exists(),
+        )
+
+        res = await self._execute(query)
+
+        return res.scalars().all()
+
     async def add(self, applet_event: AppletEventsSchema) -> AppletEventsSchema:
         return await self._create(applet_event)
 
