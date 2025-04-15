@@ -56,7 +56,7 @@ async def retrieve_token_by_submit_id(
         return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, submit_id=submit_id, **token))
 
 
-async def test_fetch_data(
+async def trigger_data_fetch(
     applet_id: uuid.UUID, submit_id: uuid.UUID, user: User = Depends(get_current_user), session=Depends(get_session)
 ):
     await task_ingest_user_data.kicker().kiq(applet_id=applet_id, unique_id=submit_id)
