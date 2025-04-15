@@ -17,7 +17,7 @@ from apps.schedule.db.schemas import (
     ReminderHistorySchema,
 )
 from apps.schedule.domain.schedule.public import ExportEventHistoryDto
-from apps.shared.filtering import Comparisons, FilterField, Filtering
+from apps.shared.filtering import FilterField, Filtering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams
 from apps.subjects.db.schemas import SubjectSchema
@@ -25,11 +25,11 @@ from infrastructure.database import BaseCRUD
 
 
 class _ScheduleHistoryExportFilters(Filtering):
-    respondent_ids = FilterField(EventHistorySchema.user_id, method_name="filter_respondent_ids")
-    subject_ids = FilterField(SubjectSchema.id, Comparisons.IN)
+    respondent_ids = FilterField(EventHistorySchema.user_id, method_name="filter_nullable_ids")
+    subject_ids = FilterField(SubjectSchema.id, method_name="filter_nullable_ids")
 
-    def filter_respondent_ids(self, field, value):
-        return or_(field.in_(value), EventHistorySchema.user_id.is_(None))
+    def filter_nullable_ids(self, field, value):
+        return or_(field.in_(value), field.is_(None))
 
 
 class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
