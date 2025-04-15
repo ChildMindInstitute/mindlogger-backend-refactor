@@ -32,7 +32,7 @@ run:
 
 .PHONY: run_local
 run_local:
-	${DOCKER_COMPOSE_CMD} up -d redis postgres mailhog rabbitmq
+	${DOCKER_COMPOSE_CMD} up -d redis postgres mailhog rabbitmq minio
 
 .PHONY: test
 test:
