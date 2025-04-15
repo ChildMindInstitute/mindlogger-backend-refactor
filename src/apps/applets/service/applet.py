@@ -196,9 +196,6 @@ class AppletService:
         applet = await self._update(applet_id, update_data, next_version)
         await AppletHistoryService(self.session, applet.id, applet.version).add_history(self.user_id, applet)
 
-        if next_version != old_applet_schema.version:
-            await ScheduleHistoryService(self.session).update_applet_event_links(applet_id, applet.version)
-
         applet.activities = await ActivityService(self.session, self.user_id).update_create(
             applet_id, update_data.activities
         )
@@ -228,6 +225,12 @@ class AppletService:
             )
         )
         await asyncio.gather(*to_await)
+
+        if next_version != old_applet_schema.version:
+            await ScheduleHistoryService(self.session).update_applet_event_links(
+                applet_id=applet_id, current_applet_version=old_applet_schema.version, new_applet_version=applet.version
+            )
+
         return applet
 
     async def update_encryption(self, applet_id: uuid.UUID, encryption: Encryption):
