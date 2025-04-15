@@ -12,9 +12,12 @@ class EHRStorage:
         self.session = session
         self.applet_id = applet_id
 
-    async def upload(self, subject_id: uuid.UUID, data: EHRData):
+    def get_unique_path(self, data: EHRData):
+        return f"{data.unique_id}/{data.date.strftime('%Y-%m-%d')}/{data.healthcare_provider_id}"
+
+    async def upload(self, data: EHRData):
         cdn_client = await select_storage(applet_id=self.applet_id, session=self.session)
-        unique = f"{subject_id}/{data.date.strftime('%Y-%m-%d')}/{data.healthcare_provider_id}"
+        unique = self.get_unique_path(data)
         filename = "resources.json"
         key = cdn_client.generate_key(FileScopeEnum.EHR, unique, filename)
 
