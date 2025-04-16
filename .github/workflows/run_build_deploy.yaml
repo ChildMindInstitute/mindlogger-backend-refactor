@@ -8,8 +8,8 @@ on:
 
 
 concurrency:
-  cancel-in-progress: true
-  group: api-build
+  cancel-in-progress: false
+  group: api-build-deploy
 
 permissions:
   id-token: write

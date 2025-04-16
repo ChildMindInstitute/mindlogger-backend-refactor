@@ -13,6 +13,7 @@ from config.logs import Logs
 from config.mailing import MailingSettings
 from config.multiinformant import MultiInformantSettings
 from config.notification import FirebaseCloudMessagingSettings
+from config.oneup_health import OneUpHealthSettings
 from config.prolific_respondent import ProlificRespondent
 from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
@@ -92,6 +93,8 @@ class Settings(BaseSettings):
     logs: Logs = Logs()
 
     multi_informant: MultiInformantSettings = MultiInformantSettings()
+
+    oneup_health: OneUpHealthSettings = OneUpHealthSettings()
 
     @property
     def uploads_dir(self):

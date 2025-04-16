@@ -154,30 +154,35 @@ class AppletService:
         if not create_data.theme_id:
             theme = await ThemeService(self.session, self.user_id).get_default()
             create_data.theme_id = theme.id
-        schema = await AppletsCRUD(self.session).save(
-            AppletSchema(
-                id=applet_id,
-                display_name=create_data.display_name,
-                description=create_data.description,
-                about=create_data.about,
-                image=create_data.image,
-                watermark=create_data.watermark,
-                theme_id=create_data.theme_id,
-                version=await self.get_next_version(),
-                report_server_ip=create_data.report_server_ip,
-                report_public_key=create_data.report_public_key,
-                report_recipients=create_data.report_recipients,
-                report_include_user_id=create_data.report_include_user_id,
-                report_include_case_id=create_data.report_include_case_id,
-                report_email_body=create_data.report_email_body,
-                encryption=create_data.encryption.dict() if create_data.encryption else None,
-                extra_fields=create_data.extra_fields,
-                creator_id=creator_id,
-                stream_enabled=create_data.stream_enabled,
-                stream_ip_address=create_data.stream_ip_address,
-                stream_port=create_data.stream_port,
-            )
+        data = AppletSchema(
+            id=applet_id,
+            display_name=create_data.display_name,
+            description=create_data.description,
+            about=create_data.about,
+            image=create_data.image,
+            watermark=create_data.watermark,
+            theme_id=create_data.theme_id,
+            version=await self.get_next_version(),
+            report_server_ip=create_data.report_server_ip,
+            report_public_key=create_data.report_public_key,
+            report_recipients=create_data.report_recipients,
+            report_include_user_id=create_data.report_include_user_id,
+            report_include_case_id=create_data.report_include_case_id,
+            report_email_body=create_data.report_email_body,
+            encryption=create_data.encryption.dict() if create_data.encryption else None,
+            extra_fields=create_data.extra_fields,
+            creator_id=creator_id,
+            stream_enabled=create_data.stream_enabled,
+            stream_ip_address=create_data.stream_ip_address,
+            stream_port=create_data.stream_port,
         )
+
+        # Override the created_at field if it is provided in the create_data
+        # This can happen when data is being seeded through the CLI
+        if hasattr(create_data, "created_at"):
+            data.created_at = getattr(create_data, "created_at")
+
+        schema = await AppletsCRUD(self.session).save(data)
         return AppletFull.from_orm(schema)
 
     async def update(self, applet_id: uuid.UUID, update_data: AppletUpdate) -> AppletFull:
