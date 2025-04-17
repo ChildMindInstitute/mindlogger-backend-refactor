@@ -21,24 +21,26 @@ class TestTaskIngestUserData:
                 "success": True,
             },
         )
-        # mock audit event initiated
+
+        # mock audit event
         httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=data-transfer-initiated.*"),
+            url=re.compile(
+                ".*/r4/AuditEvent\\?subtype=data-transfer-initiated%2Cmember-data-ingestion-completed%2Cmember-data-ingestion-timeout.*"
+            ),
             method="GET",
-            json={"total": 1},
+            json={
+                "entry": [
+                    {
+                        "resource": {"id": "fakeid", "subtype": [{"code": "data-transfer-initiated"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid", "subtype": [{"code": "member-data-ingestion-completed"}]},
+                    },
+                ],
+                "total": 4,
+            },
         )
-        # mock audit event completed
-        httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=member-data-ingestion-completed.*"),
-            method="GET",
-            json={"total": 1},
-        )
-        # mock audit event timeout
-        httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=member-data-ingestion-timeout.*"),
-            method="GET",
-            json={"total": 0},
-        )
+
         # mock patient resources
         httpx_mock.add_response(
             url=re.compile(".*/r4/Patient"),
@@ -167,25 +169,29 @@ class TestTaskIngestUserData:
         """Test the _process_data_transfer function with partial completion."""
         from apps.integrations.oneup_health.service.task import _process_data_transfer
 
-        # Mock transfer initiated
+        # Mock audit events
         httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=data-transfer-initiated.*"),
+            url=re.compile(
+                ".*/r4/AuditEvent\\?subtype=data-transfer-initiated%2Cmember-data-ingestion-completed%2Cmember-data-ingestion-timeout.*"
+            ),
             method="GET",
-            json={"total": 3},
-        )
-
-        # Mock transfer completed (only 1 of 3)
-        httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=member-data-ingestion-completed.*"),
-            method="GET",
-            json={"total": 1},
-        )
-
-        # Mock transfer timeout (none)
-        httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=member-data-ingestion-timeout.*"),
-            method="GET",
-            json={"total": 0},
+            json={
+                "entry": [
+                    {
+                        "resource": {"id": "fakeid", "subtype": [{"code": "data-transfer-initiated"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid2", "subtype": [{"code": "data-transfer-initiated"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid3", "subtype": [{"code": "data-transfer-initiated"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid", "subtype": [{"code": "member-data-ingestion-completed"}]},
+                    },
+                ],
+                "total": 4,
+            },
         )
 
         unique_id = uuid.uuid4()
@@ -202,25 +208,35 @@ class TestTaskIngestUserData:
         """Test the _process_data_transfer function with some timeouts."""
         from apps.integrations.oneup_health.service.task import _process_data_transfer
 
-        # Mock transfer initiated
+        # Mock audit events
         httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=data-transfer-initiated.*"),
+            url=re.compile(
+                ".*/r4/AuditEvent\\?subtype=data-transfer-initiated%2Cmember-data-ingestion-completed%2Cmember-data-ingestion-timeout.*"
+            ),
             method="GET",
-            json={"total": 3},
-        )
-
-        # Mock transfer completed (1 of 3)
-        httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=member-data-ingestion-completed.*"),
-            method="GET",
-            json={"total": 1},
-        )
-
-        # Mock transfer timeout (2 of 3)
-        httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=member-data-ingestion-timeout.*"),
-            method="GET",
-            json={"total": 2},
+            json={
+                "entry": [
+                    {
+                        "resource": {"id": "fakeid", "subtype": [{"code": "data-transfer-initiated"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid2", "subtype": [{"code": "data-transfer-initiated"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid3", "subtype": [{"code": "data-transfer-initiated"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid", "subtype": [{"code": "member-data-ingestion-completed"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid2", "subtype": [{"code": "member-data-ingestion-timeout"}]},
+                    },
+                    {
+                        "resource": {"id": "fakeid3", "subtype": [{"code": "member-data-ingestion-timeout"}]},
+                    },
+                ],
+                "total": 6,
+            },
         )
 
         # Mock patient resources
@@ -274,16 +290,11 @@ class TestTaskIngestUserData:
 
         from apps.integrations.oneup_health.service.task import _process_data_transfer
 
-        # Mock transfer initiated
-        httpx_mock.add_response(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=data-transfer-initiated.*"),
-            method="GET",
-            json={"total": 2},
-        )
-
-        # Mock HTTP error for completed transfers check
+        # Mock HTTP error for audit events
         httpx_mock.add_exception(
-            url=re.compile(".*/r4/AuditEvent\\?subtype=member-data-ingestion-completed.*"),
+            url=re.compile(
+                ".*/r4/AuditEvent\\?subtype=data-transfer-initiated%2Cmember-data-ingestion-completed%2Cmember-data-ingestion-timeout.*"
+            ),
             exception=httpx.RequestError("Connection error"),
         )
 
