@@ -7,11 +7,11 @@ class OneUpHealthAPIError(BaseError):
     message = _("OneUp Health request failed.")
 
 
-class OneUpHealthUserAlreadyExists(BaseError):
+class OneUpHealthUserAlreadyExists(OneUpHealthAPIError):
     message = _("OneUp Health user already exists for this subject.")
 
 
-class OneUpHealthAPIForbiddenError(BaseError):
+class OneUpHealthAPIForbiddenError(OneUpHealthAPIError):
     message = _("Access to OneUp Health is currently restricted to users within the United States.")
     type = ExceptionTypes.ACCESS_DENIED
 
