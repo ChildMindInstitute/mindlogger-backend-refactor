@@ -5,21 +5,29 @@ from io import BytesIO
 from apps.file.enums import FileScopeEnum
 from apps.file.storage import select_storage
 from apps.integrations.oneup_health.service.domain import EHRData
+from infrastructure.utility import CDNClient
+
+__all = ["create_ehr_storage"]
 
 
-class EHRStorage:
-    def __init__(self, session, applet_id: uuid.UUID):
-        self.session = session
-        self.applet_id = applet_id
+class _EHRStorage:
+    def __init__(self, session, applet_id: uuid.UUID, cdn_client: CDNClient):
+        self._session = session
+        self._applet_id = applet_id
+        self._cdn_client: CDNClient = cdn_client
 
-    def get_unique_path(self, data: EHRData):
-        return f"{data.unique_id}/{data.date.strftime('%Y-%m-%d')}/{data.healthcare_provider_id}"
+    def _get_storage_path(self, base_path: str, key: str) -> str:
+        index = key.find(base_path)
+        if index == -1:  # substring not found
+            return key
 
-    async def upload(self, data: EHRData):
-        cdn_client = await select_storage(applet_id=self.applet_id, session=self.session)
-        unique = self.get_unique_path(data)
+        # Return everything up to and including the unique substring
+        return key[: index + len(base_path)]
+
+    async def upload_resources(self, data: EHRData):
+        base_path = f"{data.unique_id}/{data.date.strftime('%Y-%m-%d')}"
         filename = "resources.json"
-        key = cdn_client.generate_key(FileScopeEnum.EHR, unique, filename)
+        key = self._cdn_client.generate_key(FileScopeEnum.EHR, f"{base_path}/{data.healthcare_provider_id}", filename)
 
         # Serialize to JSON and encode to bytes
         json_data = json.dumps(data.resources)
@@ -28,6 +36,12 @@ class EHRStorage:
         # Create a binary stream
         binary_data = BytesIO(bytes_data)
 
-        await cdn_client.upload(key, binary_data)
+        await self._cdn_client.upload(key, binary_data)
 
-        return
+        return self._get_storage_path(base_path, key)
+
+
+async def create_ehr_storage(session, applet_id: uuid.UUID):
+    cdn_client = await select_storage(applet_id=applet_id, session=session)
+
+    return _EHRStorage(session, applet_id, cdn_client)

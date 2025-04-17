@@ -11,7 +11,7 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthUserAlreadyExists,
 )
 from apps.integrations.oneup_health.service.domain import EHRData
-from apps.integrations.oneup_health.service.ehr_storage import EHRStorage
+from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
 from apps.shared.exception import InternalServerError
 from config import settings
 
@@ -411,7 +411,9 @@ class OneupHealthService:
 
         return resources
 
-    async def get_patient_data(self, session, applet_id: uuid.UUID, submit_id: uuid.UUID, oneup_user_id: int) -> bool:
+    async def get_patient_data(
+        self, session, applet_id: uuid.UUID, submit_id: uuid.UUID, oneup_user_id: int
+    ) -> str | None:
         """
         Retrieve and store patient data for a subject.
 
@@ -419,6 +421,8 @@ class OneupHealthService:
 
         Args:
             session: The database session to use.
+            applet_id (uuid.UUID): The unique identifier for the applet.
+            submit_id (uuid.UUID): The unique identifier for the submission.
             oneup_user_id (int): The OneUp Health user ID
 
         Returns:
@@ -431,8 +435,9 @@ class OneupHealthService:
         )
 
         if result.get("total") == 0:
-            return False
+            return None
 
+        storage_path = None
         entries = result.get("entry", [])
         for entry in entries:
             resource_url = entry.get("fullUrl")
@@ -441,7 +446,7 @@ class OneupHealthService:
                 resources = await self._get_resources(f"{resource_url}/$everything", oneup_user_id)
                 if len(resources) > 0:
                     healthcare_provider_id = entry.get("resource", {}).get("id")
-                    ehr_storage = EHRStorage(session=session, applet_id=applet_id)
+                    ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
                     data = EHRData(
                         resources=resources,
                         healthcare_provider_id=healthcare_provider_id,
@@ -449,7 +454,7 @@ class OneupHealthService:
                         unique_id=submit_id,
                     )
 
-                    await ehr_storage.upload(data)
-                    logger.info(f"Stored EHR data healthcare provider {healthcare_provider_id}")
+                    storage_path = await ehr_storage.upload_resources(data)
+                    logger.info(f"Stored EHR data healthcare provider {healthcare_provider_id} in {storage_path}")
 
-        return True
+        return storage_path
