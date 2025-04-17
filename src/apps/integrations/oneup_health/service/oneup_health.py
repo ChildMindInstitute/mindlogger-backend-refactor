@@ -279,9 +279,9 @@ class OneupHealthService:
         assert code
         return await self._get_token(code)
 
-    async def check_for_transfer_initiated(self, oneup_user_id: int, start_date: datetime | None) -> int:
+    async def check_audit_events(self, oneup_user_id: int, start_date: datetime | None) -> dict[str, int]:
         """
-        Check if a data transfer has been initiated for a user.
+        Check if a data transfer h
 
         Args:
             oneup_user_id (int): The OneUp Health user ID to check.
@@ -290,11 +290,13 @@ class OneupHealthService:
         Returns:
             int: The number of initiated transfers found, or 0 if none or if an error occurred.
         """
+        counters = {"initiated": 0, "completed": 0, "timeout": 0}
+
         if oneup_user_id is None:
-            return 0
+            return counters
 
         params = {
-            "subtype": "data-transfer-initiated",
+            "subtype": "data-transfer-initiated,member-data-ingestion-completed,member-data-ingestion-timeout",
             "agent-name:contains": f"1up-user-{oneup_user_id}",
         }
 
@@ -308,80 +310,23 @@ class OneupHealthService:
                 headers={"x-oneup-user-id": str(oneup_user_id)},
             )
 
-            return result.get("total", 0)
+            for entry in result.get("entry", []):
+                subtypes = entry.get("resource", {}).get("subtype", [])
+                for subtype in subtypes:
+                    if subtype.get("code") == "data-transfer-initiated":
+                        counters["initiated"] += 1
+                        break
+                    elif subtype.get("code") == "member-data-ingestion-completed":
+                        counters["completed"] += 1
+                        break
+                    elif subtype.get("code") == "member-data-ingestion-timeout":
+                        counters["timeout"] += 1
+                        break
 
         except OneUpHealthAPIError as ex:
             logger.error(ex.message)
 
-            return 0
-
-    async def check_for_transfer_completed(self, oneup_user_id: int, start_date: datetime | None) -> int:
-        """
-        Check if a data transfer has been completed for a user.
-
-        Args:
-            oneup_user_id (int): The OneUp Health user ID to check.
-            start_date (datetime): The date from which to start checking.
-
-        Returns:
-            int: The number of completed transfers found, or 0 if none.
-        """
-        if oneup_user_id is None:
-            return 0
-
-        params = {
-            "subtype": "member-data-ingestion-completed",
-            "agent-name:contains": f"1up-user-{oneup_user_id}",
-        }
-
-        if start_date is not None:
-            params["recorded"] = f"ge{start_date.isoformat()}"
-
-        result = await self._client.get(
-            "/r4/AuditEvent",
-            params=params,
-            headers={"x-oneup-user-id": str(oneup_user_id)},
-        )
-
-        total = result.get("total", 0)
-        if total > 0:
-            logger.info(f"{total} Transfers completed")
-
-        return total
-
-    async def check_for_transfer_timeout(self, oneup_user_id: int, start_date: datetime | None) -> int:
-        """
-        Check if a data transfer has timed out for a user.
-
-        Args:
-            oneup_user_id (int): The OneUp Health user ID to check.
-            start_date (datetime): The date from which to start checking.
-
-        Returns:
-            int: The number of timed-out transfers found, or 0 if none.
-        """
-        if oneup_user_id is None:
-            return 0
-
-        params = {
-            "subtype": "member-data-ingestion-timeout",
-            "agent-name:contains": f"1up-user-{oneup_user_id}",
-        }
-
-        if start_date is not None:
-            params["recorded"] = f"ge{start_date.isoformat()}"
-
-        result = await self._client.get(
-            "/r4/AuditEvent",
-            params=params,
-            headers={"x-oneup-user-id": str(oneup_user_id)},
-        )
-
-        total = result.get("total", 0)
-        if total > 0:
-            logger.info(f"{total} Transfers timeout detected")
-
-        return total
+        return counters
 
     async def _get_resources(self, entry_url: str, oneup_user_id: int):
         """
@@ -411,7 +356,7 @@ class OneupHealthService:
 
         return resources
 
-    async def get_patient_data(
+    async def retrieve_patient_data(
         self, session, applet_id: uuid.UUID, submit_id: uuid.UUID, oneup_user_id: int
     ) -> str | None:
         """

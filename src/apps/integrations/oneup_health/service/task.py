@@ -62,17 +62,19 @@ async def _process_data_transfer(
     try:
         oneup_health_service = OneupHealthService()
         # Check if transfer is completed or timed out
-        initiated_count = await oneup_health_service.check_for_transfer_initiated(oneup_user_id, start_date)
+        counters = await oneup_health_service.check_audit_events(oneup_user_id, start_date)
+
+        initiated_count = counters["initiated"]
         if initiated_count > 0:
             logger.info(f"Transfer initiated for OneUp Health user ID {oneup_user_id} ({initiated_count} transfers)")
-            completed_count = await oneup_health_service.check_for_transfer_completed(oneup_user_id, start_date)
-            timeout_count = await oneup_health_service.check_for_transfer_timeout(oneup_user_id, start_date)
+            completed_count = counters["completed"]
+            timeout_count = counters["timeout"]
 
             if completed_count + timeout_count == initiated_count:
                 logger.info(f"{completed_count} Transfers completed for OneUp Health user ID {oneup_user_id}")
                 if timeout_count > 0:
                     logger.warn(f"{timeout_count} Transfers timed out for OneUp Health user ID {oneup_user_id}")
-                return await oneup_health_service.get_patient_data(session, applet_id, unique_id, oneup_user_id)
+                return await oneup_health_service.retrieve_patient_data(session, applet_id, unique_id, oneup_user_id)
     except httpx.RequestError as e:
         logger.error(f"Failed to process data transfer for OneUp Health user ID {oneup_user_id}")
         logger.exception(f"Error: {e}")
