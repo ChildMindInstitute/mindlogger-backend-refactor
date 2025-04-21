@@ -69,7 +69,8 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
         drop_color_message_key,
         # tracer_injection, # Not needed, patched in
         timestamper,
-        structlog.processors.dict_tracebacks,
+        # Console renderer does not like this, and it doesn't seem to affect JSON logs
+        # structlog.processors.dict_tracebacks,
         structlog.processors.StackInfoRenderer(),
     ]
 

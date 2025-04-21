@@ -18,7 +18,7 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     # TODO Some unit tests check for error messages.  Might be bad?  If the erroring endpoint doesn't log anything
     # TODO then there is nothing in the log.  Logging here ensures errors actually get logged.
     if settings.env != "testing":
-        logger.warning(error)
+        logger.warning(error.message, exc_info=error)
 
     response = ErrorResponseMulti(
         result=[
@@ -46,7 +46,7 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     # Also it stops sending duplicate of error to the sentry.
     # (Default logging level for sending events to the sentry is ERROR.
     # It means that each logger.error sends additional event to the sentry).
-    logger.warning(response)
+    logger.warning(error, exc_info=error)
 
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
