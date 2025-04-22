@@ -264,7 +264,7 @@ class PhrasalTemplateConfig(PublicModel):
     remove_back_button: bool
 
 
-class RequestHealthRecordDataConfig(_ScreenConfig, PublicModel):
+class RequestHealthRecordDataConfig(_ScreenConfig):
     type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
 
 
