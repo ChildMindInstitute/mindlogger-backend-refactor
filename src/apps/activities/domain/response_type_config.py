@@ -266,6 +266,7 @@ class PhrasalTemplateConfig(PublicModel):
 
 class RequestHealthRecordDataConfig(PublicModel):
     type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
+    skippable_item: bool
     remove_back_button: bool
 
 
