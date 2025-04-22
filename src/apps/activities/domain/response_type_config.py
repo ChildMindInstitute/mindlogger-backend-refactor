@@ -264,10 +264,8 @@ class PhrasalTemplateConfig(PublicModel):
     remove_back_button: bool
 
 
-class RequestHealthRecordDataConfig(PublicModel):
+class RequestHealthRecordDataConfig(_ScreenConfig, PublicModel):
     type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
-    skippable_item: bool
-    remove_back_button: bool
 
 
 class UnityConfig(PublicModel):
