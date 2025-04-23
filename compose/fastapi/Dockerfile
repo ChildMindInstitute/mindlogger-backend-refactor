@@ -12,18 +12,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install system dependencies and pipenv
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libpq-dev \
     curl \
-    gcc \
-    git \
+    libtool \
+    autoconf \
+    automake \
+    pkg-config \
+    zlib1g-dev \
     python3-dev \
     ca-certificates \
-    zlib1g-dev \
-    pkg-config \
-    autoconf \
-    libtool \
- && pip install pipenv \
+    git \
+    python3-pip \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 
 ## CVE CVE-2025-24928
 WORKDIR /opt
@@ -32,12 +32,14 @@ WORKDIR /opt
 RUN curl -LO https://download.gnome.org/sources/libxml2/2.13/libxml2-${LIBXML2_VERSION}.tar.xz && \
     tar -xf libxml2-${LIBXML2_VERSION}.tar.xz && \
     cd libxml2-${LIBXML2_VERSION} && \
-    ./configure --prefix=/opt/libxml2 --with-python=/usr/bin/python3 && \
-    make && \
+    ./configure --prefix=/usr --with-python=/usr/bin/python3 && \
+    make -j"$(nproc)" && \
     make install
 ## CVE CVE-2025-24928
 
 WORKDIR /app
+
+RUN pip install --no-cache-dir pipenv
 
 # Copy Pipenv files and install dependencies
 COPY Pipfile Pipfile.lock ./
@@ -56,8 +58,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 ## CVE CVE-2025-24928
+# Remove system libxml2 to eliminate CVE exposure
+RUN apt-get update && apt-get remove -y libxml2 libxml2-dev && apt-get autoremove -y && apt-get clean
+
 # Copy libxml2 from builder
-COPY --from=builder /opt/libxml2 /usr/local
+COPY --from=builder /usr /usr
 
 # Add libxml2 to library path
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH \
