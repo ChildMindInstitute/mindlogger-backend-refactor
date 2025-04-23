@@ -77,7 +77,7 @@ pipenv --python /opt/homebrew/bin/python3.13
 ### Environment Variables
 
 | Key                                                          | Default value              | Description                                                                                                                                                                                                                                                                                                                            |
-|--------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DATABASE\_\_HOST                                             | postgres                   | Database Host                                                                                                                                                                                                                                                                                                                          |
 | DATABASE\_\_USER                                             | postgres                   | User name for Postgresql Database user                                                                                                                                                                                                                                                                                                 |
 | DATABASE\_\_PASSWORD                                         | postgres                   | Password for Postgresql Database user                                                                                                                                                                                                                                                                                                  |
@@ -435,7 +435,7 @@ Please use this link for that: https://github.com/awslabs/git-secrets#installing
 make aws-scan
 ```
 
-👉 Then all your staged cahnges will be checked via git hooks on every `git commit`
+👉 Then all your staged changes will be checked via git hooks on every `git commit`
 
 ### Alembic (migration)
 
@@ -479,22 +479,31 @@ delete from alembic_version;
 alembic -c alembic_arbitrary.ini upgrade head
 ```
 
-#### Update gender_screen and age_screen activity items strings to greek for an applet
+### Update gender_screen and age_screen activity items strings to greek for an applet
 
 ```bash
-python src/cli.py patch exec M2-8568 -a <applet_id> 
+python src/cli.py patch exec M2-8568 -a <applet_id>
 ```
 
-#### Note: You can use environment variables to overwrite default values.
+> [!NOTE]
+> You can use environment variables to overwrite default values.
+>
+> | Environment variable | Text string |
+> | - | - |
+> | `AGE_SCREEN_QUESTION_TRANSLATION` | Question text for the Age screen |
+> | `GENDER_SCREEN_QUESTION_TRANSLATION` | Question text for the Gender screen |
+> | `GENDER_SCREEN_RESPONSE_MALE_TRANSLATION` | "Male" response text |
+> | `GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION` | "Female" response text |
 
-| Environment variable | Text string |
-| - | - |
-| `AGE_SCREEN_QUESTION_TRANSLATION` | Question text for the Age screen |
-| `GENDER_SCREEN_QUESTION_TRANSLATION` | Question text for the Gender screen |
-| `GENDER_SCREEN_RESPONSE_MALE_TRANSLATION` | "Male" response text |
-| `GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION` | "Female" response text |
+### Library cleanup
 
-### Database relation structure
+You can use the following command to remove entries from the `library` table (as the Library feature lacks a delete endpoint):
+
+```bash
+python src/cli.py patch exec M2-9015 --applets '{"<applet_id>": "<applet_name>", ...}'
+```
+
+## Database relation structure
 
 ```mermaid
 

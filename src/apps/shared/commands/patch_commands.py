@@ -1,8 +1,9 @@
 import asyncio
 import importlib
+import json
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import typer
 from rich import print
@@ -139,8 +140,8 @@ PatchRegister.register(
 )
 
 PatchRegister.register(
-    file_path="m2_8175_library_cleanup_for_camhi.py",
-    task_id="M2-8175",
+    file_path="m2_9015_library_cleanup.py",
+    task_id="M2-9015",
     description="Library cleanup for CAMHI applets",
 )
 
@@ -190,18 +191,37 @@ async def exec(
         "-o",
         help="Workspace owner id",
     ),
-    applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a", help="Patch arguments"),
-):
+    applet_id: Optional[uuid.UUID] = typer.Option(None, "--applet_id", "-a", help="Applet ID"),
+    applets: Optional[str] = typer.Option(None, "--applets", help="Map of applet IDs to names as JSON string"),
+) -> None:
+    """
+    Execute patch command
+    """
     patch = PatchRegister.get_by_task_id(task_id)
     if not patch:
         print(wrap_error_msg("Patch not registered"))
-    else:
-        await exec_patch(patch, owner_id, applet_id)
+        return
 
-    return
+    applets_dict: Optional[Dict[str, str]] = None
+    if applets:
+        try:
+            applets_dict = json.loads(applets)
+            if not isinstance(applets_dict, dict):
+                print(wrap_error_msg("Applets must be a dictionary of applet IDs and titles."))
+                return
+        except json.JSONDecodeError:
+            print(wrap_error_msg("Invalid applets format. Please provide a JSON string."))
+            return
+
+    await exec_patch(patch, owner_id, applet_id, applets=applets_dict)
 
 
-async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID], applet_id: Optional[uuid.UUID]):
+async def exec_patch(
+    patch: Patch,
+    owner_id: Optional[uuid.UUID],
+    applet_id: Optional[uuid.UUID] = None,
+    applets: Optional[Dict[str, str]] = None,
+):
     session_maker = session_manager.get_session()
     arbitrary = None
     async with session_maker() as session:
@@ -254,16 +274,18 @@ async def exec_patch(patch: Patch, owner_id: Optional[uuid.UUID], applet_id: Opt
 
             # if manage_session is True, pass sessions to patch_file main
             if patch.manage_session:
-                await patch_file.main(session_maker, arbitrary_session_maker, applet_id=applet_id)
+                await patch_file.main(session_maker, arbitrary_session_maker, applets=applets, applet_id=applet_id)
             else:
                 async with session_maker() as session:
                     async with atomic(session):
                         if arbitrary_session_maker:
                             async with arbitrary_session_maker() as arbitrary_session:  # noqa: E501
                                 async with atomic(arbitrary_session):
-                                    await patch_file.main(session, arbitrary_session, applet_id=applet_id)
+                                    await patch_file.main(
+                                        session, arbitrary_session, applets=applets, applet_id=applet_id
+                                    )
                         else:
-                            await patch_file.main(session, applet_id=applet_id)
+                            await patch_file.main(session, applets=applets, applet_id=applet_id)
 
             print(
                 f"[bold green]Patch {patch.task_id} executed[/bold green]"  # noqa: E501
