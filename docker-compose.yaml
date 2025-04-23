@@ -59,7 +59,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-      target: worker
+#      target: worker
       args:
         - PIPENV_EXTRA_ARGS=--dev
     image: mindlogger_worker
