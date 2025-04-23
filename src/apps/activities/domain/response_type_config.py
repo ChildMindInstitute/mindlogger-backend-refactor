@@ -266,6 +266,7 @@ class PhrasalTemplateConfig(PublicModel):
 
 class RequestHealthRecordDataConfig(_ScreenConfig):
     type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
+    skippable_item: bool = False
 
 
 class UnityConfig(PublicModel):
