@@ -1,36 +1,89 @@
-FROM python:3.13-slim-bookworm AS base
+# ------------------------------
+# Stage 1: Build
+# ------------------------------
+FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm AS builder
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH="src/"
+ENV LIBXML2_VERSION=2.13.8
 
-WORKDIR /app/
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="src/"
 
-RUN apt-get -y update && apt-get -y upgrade \
-    && apt-get install --no-install-recommends -y build-essential curl libffi-dev \
+# Install system dependencies and pipenv
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    gcc \
+    git \
+    python3-dev \
+    ca-certificates \
+    zlib1g-dev \
+    pkg-config \
+    autoconf \
+    libtool \
+ && pip install pipenv \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+## CVE CVE-2025-24928
+WORKDIR /opt
+
+# Download and build libxml2
+RUN curl -LO https://download.gnome.org/sources/libxml2/2.13/libxml2-${LIBXML2_VERSION}.tar.xz && \
+    tar -xf libxml2-${LIBXML2_VERSION}.tar.xz && \
+    cd libxml2-${LIBXML2_VERSION} && \
+    ./configure --prefix=/opt/libxml2 --with-python=/usr/bin/python3 && \
+    make && \
+    make install
+## CVE CVE-2025-24928
+
+WORKDIR /app
+
+# Copy Pipenv files and install dependencies
+COPY Pipfile Pipfile.lock ./
+RUN pipenv requirements > requirements.txt && \
+    pipenv requirements --dev >> requirements.txt && \
+    pip wheel --wheel-dir=/wheels -r requirements.txt
+
+
+
+# ------------------------------
+# Stage 2: Runtime
+# ------------------------------
+FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+## CVE CVE-2025-24928
+# Copy libxml2 from builder
+COPY --from=builder /opt/libxml2 /usr/local
+
+# Add libxml2 to library path
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH \
+    CPATH=/usr/local/include:$CPATH \
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+## CVE CVE-2025-24928
+
+# Worker and startup dependencies
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    curl \
+    ffmpeg \
+    imagemagick \
     && rm -rf /var/lib/apt/lists/
 
-# Add local non-root user to avoid issue with files
-# created inside a container being owned by root.
-ARG USERNAME=code
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
 
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash
+# Add non-root user
+RUN adduser --disabled-password --gecos '' code
 
-# Install Python dependencies
-RUN pip install --no-cache-dir pipenv
+WORKDIR /app
 
-COPY Pipfile Pipfile.lock ./
-ARG PIPENV_EXTRA_ARGS
-RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
+# Install runtime dependencies from wheelhouse
+COPY --from=builder /wheels /wheels
+COPY --from=builder /app/requirements.txt .
+RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt
 
-
-# Copy the whole project project
-COPY ./ ./
-
-# Copy infrustructure scripts
-
+## Copy infrustructure scripts
 # Application scripts
 COPY --chown=code:code ./compose/fastapi/entrypoint /fastapi-entrypoint
 RUN sed -i 's/\r$//g' /fastapi-entrypoint && chmod +x /fastapi-entrypoint
@@ -58,35 +111,14 @@ RUN sed -i 's/\r$//g' /start-worker && chmod +x /start-worker
 COPY --chown=code:code ./compose/fastapi/start-scheduler /start-scheduler
 RUN sed -i 's/\r$//g' /start-worker && chmod +x /start-scheduler
 
+# Copy app code
+COPY . .
+
+# Switch to non-root user
+USER code
+
 # These are down here to prevent cache busting
 ARG DD_GIT_REPOSITORY_URL
 ARG DD_GIT_COMMIT_SHA
 ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
 ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
-
-# Select internal user
-USER code
-
-FROM base AS fargate
-# Hack for Fargate
-# https://github.com/aws/containers-roadmap/issues/938
-USER root
-RUN chmod 777 /tmp && mkdir -p /app/uploads && chown -R code:code /app
-#USER code
-
-RUN touch /app/uploads/.test
-RUN touch /tmp/.test
-
-VOLUME ["/tmp"]
-VOLUME ["/app/uploads"]
-
-# worker instructions
-FROM base AS worker
-
-USER root
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    imagemagick \
-    && rm -rf /var/lib/apt/lists/
-
-USER code

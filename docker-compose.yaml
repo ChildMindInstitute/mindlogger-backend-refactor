@@ -1,5 +1,3 @@
-version: "3.4"
-
 services:
 
   postgres:
@@ -15,7 +13,7 @@ services:
       POSTGRES_USER: ${DATABASE__USER}
       POSTGRES_DB: ${DATABASE__DB}
     ports:
-      - 5432:5432
+      - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
 
@@ -23,24 +21,23 @@ services:
     image: rabbitmq:3-management
     container_name: mindlogger_rabbitmq
     ports:
-      - 5672:5672
-      - 15672:15672
+      - "5672:5672"
+      - "15672:15672"
 
   redis:
     image: redis
     container_name: mindlogger_redis
     ports:
-      - 6379:6379
+      - "6379:6379"
 
   app:
     stdin_open: true
     tty: true
-    image: mindlogger_webapp
-    container_name: mindlogger_app
+    image: mindlogger_backend
+    container_name: mindlogger_backend
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-      target: base
       args:
         - PIPENV_EXTRA_ARGS=--dev
     entrypoint: /fastapi-entrypoint
@@ -52,7 +49,7 @@ services:
       - rabbitmq
       - mailhog
     ports:
-      - 8000:80
+      - "8000:80"
     volumes:
       - ./:/app/
       - /tmp:/tmp
@@ -101,8 +98,8 @@ services:
     image: mailhog/mailhog:v1.0.0
     container_name: mindlogger_mailhog
     ports:
-      - 8025:8025
-      - 1025:1025
+      - "8025:8025"
+      - "1025:1025"
 
   minio:
     image: minio/minio

@@ -9,3 +9,7 @@ docker-compose.yaml
 venv*/
 allure-results
 .git
+.github
+Jenkinsfile.groovy
+Makefile
+buildspec.yaml
