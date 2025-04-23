@@ -5,6 +5,7 @@ Revises: c4e312ad0798
 Create Date: 2025-04-18 05:24:08.432983
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -16,8 +17,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(sa.DDL(
-        """
+    op.execute(
+        sa.DDL(
+            """
         create or replace function encrypt_internal(text, bytea) returns text
         language plpgsql as
         $$
@@ -29,7 +31,8 @@ def upgrade() -> None:
         begin
             key_digest = digest($2, 'sha256');
             block_size = 16;
-            padded_value = (concat($1, repeat('*', block_size - octet_length($1) %% block_size)))::bytea;
+            padded_value = convert_to($1, 'UTF8');
+            padded_value =  padded_value || repeat('*', block_size - octet_length(padded_value) %% block_size)::bytea;                 
             select
                 encode(
                     encrypt_iv(
@@ -41,17 +44,19 @@ def upgrade() -> None:
                     'base64'
                 )
             into res;
-
             return res;
+       
         end;
         $$;
         """
-    ))
+        )
+    )
 
 
 def downgrade() -> None:
-    op.execute(sa.DDL(
-        """
+    op.execute(
+        sa.DDL(
+            """
         create or replace function encrypt_internal(text, bytea) returns text
         language plpgsql as
         $$
@@ -80,4 +85,5 @@ def downgrade() -> None:
         end;
         $$;
         """
-    ))
+        )
+    )
