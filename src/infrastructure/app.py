@@ -42,7 +42,6 @@ from infrastructure.http.exceptions import (
     sqlalchemy_database_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
-from infrastructure.logger import logger
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (

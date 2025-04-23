@@ -52,8 +52,8 @@ services:
       - "8000:80"
     volumes:
       - ./:/app/
-      - /tmp:/tmp
-      - ./uploads/:/app/uploads/
+#      - /tmp:/tmp
+#      - ./uploads/:/app/uploads/
 
   worker:
     build:
