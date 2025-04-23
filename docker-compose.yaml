@@ -79,7 +79,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-      target: base
+#      target: base
       args:
         - PIPENV_EXTRA_ARGS=--dev
     image: mindlogger_scheduler
