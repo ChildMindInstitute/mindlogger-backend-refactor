@@ -120,7 +120,7 @@ class _ScreenConfig(PublicModel):
     skippable_item: bool
 
 
-class TextConfig(_ScreenConfig, PublicModel):
+class TextConfig(_ScreenConfig):
     type: Literal[ResponseType.TEXT] | None
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
@@ -142,13 +142,13 @@ class TextConfig(_ScreenConfig, PublicModel):
         return value
 
 
-class ParagraphTextConfig(_ScreenConfig, PublicModel):
+class ParagraphTextConfig(_ScreenConfig):
     type: Literal[ResponseType.PARAGRAPHTEXT] | None
     max_response_length: PositiveInt = 1000
     response_required: bool
 
 
-class _SelectionConfig(_ScreenConfig, PublicModel):
+class _SelectionConfig(_ScreenConfig):
     randomize_options: bool
     timer: NonNegativeInt | None
     add_scores: bool
@@ -176,7 +176,7 @@ class MessageConfig(PublicModel):
     timer: NonNegativeInt | None
 
 
-class SliderConfig(_ScreenConfig, PublicModel):
+class SliderConfig(_ScreenConfig):
     type: Literal[ResponseType.SLIDER] | None
     add_scores: bool
     set_alerts: bool
@@ -187,12 +187,12 @@ class SliderConfig(_ScreenConfig, PublicModel):
     timer: NonNegativeInt | None
 
 
-class NumberSelectionConfig(_ScreenConfig, PublicModel):
+class NumberSelectionConfig(_ScreenConfig):
     type: Literal[ResponseType.NUMBERSELECT] | None
     additional_response_option: AdditionalResponseOption
 
 
-class DefaultConfig(_ScreenConfig, PublicModel):
+class DefaultConfig(_ScreenConfig):
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
 
@@ -209,7 +209,7 @@ class GeolocationConfig(DefaultConfig, PublicModel):
     type: Literal[ResponseType.GEOLOCATION] | None
 
 
-class DrawingConfig(_ScreenConfig, PublicModel):
+class DrawingConfig(_ScreenConfig):
     type: Literal[ResponseType.DRAWING] | None
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
@@ -229,14 +229,14 @@ class DateConfig(DefaultConfig, PublicModel):
     type: Literal[ResponseType.DATE] | None
 
 
-class SliderRowsConfig(_ScreenConfig, PublicModel):
+class SliderRowsConfig(_ScreenConfig):
     type: Literal[ResponseType.SLIDERROWS] | None
     add_scores: bool
     set_alerts: bool
     timer: NonNegativeInt | None
 
 
-class SingleSelectionRowsConfig(_ScreenConfig, PublicModel):
+class SingleSelectionRowsConfig(_ScreenConfig):
     type: Literal[ResponseType.SINGLESELECTROWS] | None
     timer: NonNegativeInt | None
     add_scores: bool
@@ -253,7 +253,7 @@ class AudioConfig(DefaultConfig, PublicModel):
     type: Literal[ResponseType.AUDIO] | None
 
 
-class AudioPlayerConfig(_ScreenConfig, PublicModel):
+class AudioPlayerConfig(_ScreenConfig):
     type: Literal[ResponseType.AUDIOPLAYER] | None
     additional_response_option: AdditionalResponseOption
     play_once: bool
@@ -264,9 +264,9 @@ class PhrasalTemplateConfig(PublicModel):
     remove_back_button: bool
 
 
-class RequestHealthRecordDataConfig(PublicModel):
+class RequestHealthRecordDataConfig(_ScreenConfig):
     type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
-    remove_back_button: bool
+    skippable_item: bool = False
 
 
 class UnityConfig(PublicModel):
