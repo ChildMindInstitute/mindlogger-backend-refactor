@@ -33,6 +33,7 @@ router.get(
 
 router.get(
     "/applet/{applet_id}/submissions/{submit_id}/trigger_data_fetch",
-    description="This endpoint is used to test 1UpHealth API access token",
+    description="This endpoint is used to trigger 1UpHealth data fetch. Use only for test purposes, "
+    "should not me called by frontend",
     status_code=status.HTTP_200_OK,
 )(trigger_data_fetch)
