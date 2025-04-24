@@ -39,7 +39,7 @@ def _exponential_backoff(retry_count) -> int:
     delay *= jitter_multiplier
 
     # Convert to integer
-    return int(delay)
+    return round(delay)
 
 
 async def _process_data_transfer(

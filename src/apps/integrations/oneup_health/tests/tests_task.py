@@ -143,7 +143,7 @@ class TestTaskIngestUserData:
         try:
             # Test retry count 0
             delay_0 = _exponential_backoff(0)
-            assert 1 <= delay_0 <= 3  # With jitter between 0.75-1.25, should be between 1.5-2.5
+            assert 1 <= delay_0 <= 3  # With jitter between 0.75-1.25, should be between 1-3
 
             # Test retry count 1
             delay_1 = _exponential_backoff(1)
