@@ -1,6 +1,7 @@
 import re
 import uuid
 
+import httpx
 from pytest_httpx import HTTPXMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -241,6 +242,26 @@ class TestOneupHealth:
             json={"success": False, "error": "this user does not exist"},
         )
 
+        client.login(tom)
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == 500
+        result = response.json()["result"]
+        assert result[0]["message"] == "OneUp Health request failed."
+
+    async def test_get_token_error_timeout(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        tom_applet_one_subject: SubjectFull,
+        httpx_mock: HTTPXMock,
+    ):
+        # Mock HTTP error for audit events
+        httpx_mock.add_exception(
+            url=re.compile(".*/user-management/v1/user"),
+            method="POST",
+            exception=httpx.ConnectTimeout("Connection Timeout"),
+        )
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500

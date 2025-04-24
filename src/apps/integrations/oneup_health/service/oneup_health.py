@@ -92,16 +92,20 @@ class OneupHealthAPIClient:
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthAPIError: If the API returns any other error status code or an unsuccessful response.
         """
-        async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
-            resp = await client.post(url=url_path, data=data, params=params)
-            OneupHealthAPIClient._handle_error(resp, url_path)
+        try:
+            async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
+                resp = await client.post(url=url_path, data=data, params=params)
+                OneupHealthAPIClient._handle_error(resp, url_path)
 
-            result = resp.json()
-            if result.get("success") is False:
-                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
-                raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
+                result = resp.json()
+                if result.get("success") is False:
+                    logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
+                    raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
-            return result
+                return result
+        except httpx.RequestError as e:
+            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            raise OneUpHealthAPIError()
 
     async def post_auth(self, url_path, data=None):
         """
@@ -118,13 +122,17 @@ class OneupHealthAPIClient:
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthAPIError: If the API returns any other error status code.
         """
-        async with httpx.AsyncClient(base_url=self._auth_base_url) as client:
-            resp = await client.post(url=url_path, data={**data, **self._default_headers})
-            OneupHealthAPIClient._handle_error(resp, url_path)
+        try:
+            async with httpx.AsyncClient(base_url=self._auth_base_url) as client:
+                resp = await client.post(url=url_path, data={**data, **self._default_headers})
+                OneupHealthAPIClient._handle_error(resp, url_path)
 
-            result = resp.json()
+                result = resp.json()
 
-            return result
+                return result
+        except httpx.RequestError as e:
+            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            raise OneUpHealthAPIError()
 
     async def get(self, url_path, params=None, headers=None):
         """
@@ -142,22 +150,26 @@ class OneupHealthAPIClient:
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthAPIError: If the API returns any other error status code or an unsuccessful response.
         """
-        async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
-            resp = await client.get(
-                url=url_path, params=params, headers={**(headers if headers else {}), **self._default_headers}
-            )
-            if resp.status_code != 400 and resp.status_code != 200:
-                logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
-                if resp.status_code == 403:
-                    raise OneUpHealthAPIForbiddenError()
-                raise OneUpHealthAPIError()
+        try:
+            async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
+                resp = await client.get(
+                    url=url_path, params=params, headers={**(headers if headers else {}), **self._default_headers}
+                )
+                if resp.status_code != 400 and resp.status_code != 200:
+                    logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
+                    if resp.status_code == 403:
+                        raise OneUpHealthAPIForbiddenError()
+                    raise OneUpHealthAPIError()
 
-            result = resp.json()
-            if result.get("success") is False:
-                logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
-                raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
+                result = resp.json()
+                if result.get("success") is False:
+                    logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
+                    raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
-            return result
+                return result
+        except httpx.RequestError as e:
+            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            raise OneUpHealthAPIError()
 
 
 class OneupHealthService:
