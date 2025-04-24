@@ -240,7 +240,7 @@ class OneupHealthService:
         Create a new user in the OneUp Health platform or retrieve an existing user.
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the user.
+            unique_id (uuid.UUID): The unique identifier for the 1Up user.
 
         Returns:
             dict: A dictionary containing the oneup_user_id and optionally a code.
@@ -263,7 +263,7 @@ class OneupHealthService:
         If no code is provided, a new authentication code will be generated.
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the user.
+            unique_id (uuid.UUID): The unique identifier for the 1Up user.
             code (str, optional): An existing authentication code to use.
 
         Returns:

@@ -62,6 +62,11 @@ async def _process_data_transfer(
     try:
         oneup_health_service = OneupHealthService()
         # Check if transfer is completed or timed out
+        # The `oneup_user_id` is mapped to a MindLogger activity submission
+        # We can determine if the data ingestions triggered by this activity submission
+        # by comparing the number of ingestion starts (`data-transfer-initiated`) to the number
+        # of ingestion end events (`member-data-ingestion-completed` and `member-data-ingestion-timeout`
+        # https://docs.1up.health/help-center/Content/en-US/connect-patient/patient-connect-audit-events.html#audit-event-types-and-subtypes
         counters = await oneup_health_service.check_audit_events(oneup_user_id, start_date)
 
         initiated_count = counters["initiated"]

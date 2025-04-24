@@ -25,6 +25,7 @@ class _EHRStorage:
         return key[: index + len(base_path)]
 
     async def upload_resources(self, data: EHRData):
+        # TODO: Follow updated filename format [M2-8831](https://mindlogger.atlassian.net/browse/M2-8831)
         base_path = f"{data.unique_id}/{data.date.strftime('%Y-%m-%d')}"
         filename = "resources.json"
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, f"{base_path}/{data.healthcare_provider_id}", filename)

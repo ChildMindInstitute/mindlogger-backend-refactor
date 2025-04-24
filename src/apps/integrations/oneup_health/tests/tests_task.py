@@ -12,7 +12,7 @@ from apps.integrations.oneup_health.service.task import task_ingest_user_data
 class TestTaskIngestUserData:
     @pytest.mark.asyncio
     async def test_success(self, applet_one: AppletFull, httpx_mock: HTTPXMock):
-        # mock ge user
+        # mock get user
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user"),
             method="GET",
