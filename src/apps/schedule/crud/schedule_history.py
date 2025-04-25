@@ -28,8 +28,7 @@ class _ScheduleHistoryExportFilters(Filtering):
     respondent_ids = FilterField(EventHistorySchema.user_id, method_name="filter_nullable_ids")
     subject_ids = FilterField(SubjectSchema.id, method_name="filter_nullable_ids")
     activity_or_flow_ids = FilterField(
-        func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id),
-        Comparisons.IN
+        func.coalesce(EventHistorySchema.activity_flow_id, EventHistorySchema.activity_id), Comparisons.IN
     )
 
     def filter_nullable_ids(self, field, value):
