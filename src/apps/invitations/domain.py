@@ -190,6 +190,7 @@ class InvitationDetailBase(InternalModel):
     first_name: str
     last_name: str
     created_at: datetime
+    accepted_at: datetime | None
     user_id: uuid.UUID | None
     tag: str | None
     title: str | None
@@ -291,6 +292,7 @@ class InvitationResponse(PublicModel):
     first_name: str
     last_name: str
     created_at: datetime
+    accepted_at: datetime | None
     meta: dict
     nickname: str | None
     secret_user_id: str | None
