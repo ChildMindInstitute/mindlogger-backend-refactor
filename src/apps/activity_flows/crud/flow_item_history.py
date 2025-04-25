@@ -22,6 +22,7 @@ __all__ = ["FlowItemHistoriesCRUD"]
 class _FlowItemHistoryFilters(Filtering):
     from_date = FilterField(ActivityFlowItemHistorySchema.created_at, Comparisons.GREAT_OR_EQUAL)
     to_date = FilterField(ActivityFlowItemHistorySchema.created_at, Comparisons.LESS_OR_EQUAL)
+    flow_ids = FilterField(ActivityFlowHistoriesSchema.id, Comparisons.IN)
 
 
 class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
