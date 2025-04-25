@@ -1,6 +1,7 @@
 import datetime
 import uuid
 
+from fastapi import Query
 from pydantic import Field
 
 from apps.applets.domain import Role
@@ -21,6 +22,7 @@ class AppletUsersQueryParams(BaseQueryParams):
 
 
 class FlowItemHistoryExportQueryParams(BaseQueryParams):
+    flow_ids: list[uuid.UUID] | None = Field(Query(None))
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None
     limit: int = Field(gt=0, default=settings.service.result_limit, le=settings.service.result_limit)
