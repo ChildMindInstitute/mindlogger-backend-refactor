@@ -16,6 +16,7 @@ class EventQueryParams(InternalModel):
 
 
 class ScheduleEventsExportParams(BaseQueryParams):
+    activity_or_flow_ids: list[uuid.UUID] | None = Field(Query(None))
     respondent_ids: list[uuid.UUID] | None = Field(Query(None))
     subject_ids: list[uuid.UUID] | None = Field(Query(None))
     limit: int = Field(gt=0, default=settings.service.result_limit, le=settings.service.result_limit)
