@@ -93,7 +93,7 @@ RUN mkdir -p /app/uploads && \
     chown -R code /app/uploads
 
 # Switch to non-root user
-#USER code
+USER code
 
 # These are down here to prevent cache busting
 ARG DD_GIT_REPOSITORY_URL
