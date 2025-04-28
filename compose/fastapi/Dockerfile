@@ -91,8 +91,8 @@ COPY --chown=code:code . .
 
 VOLUME /app/uploads /tmp
 
-#RUN mkdir -p /app/uploads && \
-#    chown -R code /app/uploads
+RUN mkdir -p /app/uploads && \
+    chown -R code /app/uploads
 
 # Switch to non-root user
 USER code
