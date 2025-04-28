@@ -1,5 +1,7 @@
 import re
+import uuid
 
+import httpx
 from pytest_httpx import HTTPXMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +13,7 @@ from apps.users import User
 
 class TestOneupHealth:
     get_token_url = "integrations/oneup_health/subject/{subject_id}/token"
+    get_token_by_submit_id_url = "integrations/oneup_health/applet/{applet_id}/submissions/{submit_id}/token"
 
     async def test_get_token_creating_user_success(
         self,
@@ -47,6 +50,48 @@ class TestOneupHealth:
         assert result["accessToken"] == "token_test"
         assert result["refreshToken"] == "refresh_token_test"
         assert result["subjectId"] == str(tom_applet_one_subject.id)
+        assert result["submitId"] is None
+        assert result["oneupUserId"] == 1
+
+    async def test_get_token_by_submit_id_creating_user_success(
+        self,
+        client: TestClient,
+        tom: User,
+        tom_applet_one_subject: SubjectFull,
+        httpx_mock: HTTPXMock,
+    ):
+        # mock create user
+        httpx_mock.add_response(
+            url=re.compile(".*/user-management/v1/user"),
+            method="POST",
+            json={
+                "success": True,
+                "code": "code_test",
+                "oneup_user_id": 1,
+            },
+        )
+
+        # mock get token
+        httpx_mock.add_response(
+            url=re.compile(".*/oauth2/token"),
+            method="POST",
+            json={
+                "access_token": "token_test",
+                "refresh_token": "refresh_token_test",
+            },
+        )
+
+        submit_id = uuid.uuid4()
+        client.login(tom)
+        response = await client.get(
+            url=self.get_token_by_submit_id_url.format(applet_id=tom_applet_one_subject.applet_id, submit_id=submit_id)
+        )
+        assert response.status_code == 200
+        result = response.json()["result"]
+        assert result["accessToken"] == "token_test"
+        assert result["refreshToken"] == "refresh_token_test"
+        assert result["subjectId"] is None
+        assert result["submitId"] == str(submit_id)
         assert result["oneupUserId"] == 1
 
     async def test_get_token_user_already_exists_success(
@@ -197,6 +242,26 @@ class TestOneupHealth:
             json={"success": False, "error": "this user does not exist"},
         )
 
+        client.login(tom)
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == 500
+        result = response.json()["result"]
+        assert result[0]["message"] == "OneUp Health request failed."
+
+    async def test_get_token_error_timeout(
+        self,
+        client: TestClient,
+        tom: User,
+        session: AsyncSession,
+        tom_applet_one_subject: SubjectFull,
+        httpx_mock: HTTPXMock,
+    ):
+        # Mock HTTP error for audit events
+        httpx_mock.add_exception(
+            url=re.compile(".*/user-management/v1/user"),
+            method="POST",
+            exception=httpx.ConnectTimeout("Connection Timeout"),
+        )
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
