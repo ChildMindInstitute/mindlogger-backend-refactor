@@ -77,15 +77,6 @@ COPY --chown=code:code --chmod=775 ./compose/fastapi/ecs-start-feature /ecs-star
 COPY --chmod=775 --chown=code:code ./compose/fastapi/start-worker /start-worker
 COPY --chmod=775 --chown=code:code ./compose/fastapi/start-scheduler /start-scheduler
 
-#RUN sed -i 's/\r$//g' /fastapi-entrypoint && chmod +x /fastapi-entrypoint && \
-#    sed -i 's/\r$//g' /start-backend-datadog && chmod +x /start-backend-datadog && \
-#    cp /start-backend-datadog /fastapi-start && cp /start-backend-datadog /fastapi-start-datadog && \
-#    sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate && \
-#    sed -i 's/\r$//g' /ecs-start && chmod +x /ecs-start && \
-#    sed -i 's/\r$//g' /ecs-start-feature && chmod +x /ecs-start-feature && \
-#    sed -i 's/\r$//g' /start-worker && chmod +x /start-worker && \
-#    sed -i 's/\r$//g' /start-worker && chmod +x /start-scheduler
-
 # Copy app code
 COPY --chown=code:code . .
 
@@ -104,7 +95,6 @@ USER root
 FROM base AS app
 # This is a hack to allow Fargate to exist since docker will build the last defined target if none is specified
 EXPOSE 8080
-
 
 
 # These are down here to prevent cache busting
