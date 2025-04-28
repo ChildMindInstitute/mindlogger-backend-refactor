@@ -22,7 +22,7 @@ image:
   # Docker build arguments. For additional overrides: https://aws.github.io/copilot-cli/docs/manifest/lb-web-service/#image-build
   build:
     dockerfile: compose/fastapi/Dockerfile
-#    target: fargate
+    target: fargate
     context: .
     args:
       PIPENV_EXTRA_ARGS: --dev
@@ -174,13 +174,14 @@ logging:
 sidecars:
   datadog:
     image: public.ecr.aws/datadog/agent:7
+    essential: false
     variables:
       ECS_FARGATE: true
       DD_SITE: datadoghq.com
       DD_ENV: feature
       DD_VERSION: ${COPILOT_ENVIRONMENT_NAME}
       DD_LOGS_ENABLED: true
-      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: true
+      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: false
       DD_CONTAINER_EXCLUDE: "name:datadog name:datadog-agent name:fluent-bit name:firelens_log_router name:ecs-agent name:aws-fargate-supervisor"
       DD_APM_ENABLED: true
     secrets:

@@ -38,7 +38,7 @@ RUN pipenv requirements > requirements.txt && \
 # ------------------------------
 # Stage 2: Runtime
 # ------------------------------
-FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm
+FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -89,11 +89,23 @@ COPY --chmod=775 --chown=code:code ./compose/fastapi/start-scheduler /start-sche
 # Copy app code
 COPY --chown=code:code . .
 
-RUN mkdir -p /app/uploads && \
-    chown -R code /app/uploads
+VOLUME /app/uploads /tmp
+
+#RUN mkdir -p /app/uploads && \
+#    chown -R code /app/uploads
 
 # Switch to non-root user
 USER code
+
+FROM base AS fargate
+# TODO Fargate still can't run as the non-priveleged user.  Likely due to old bind mounts.
+USER root
+
+FROM base AS app
+# This is a hack to allow Fargate to exist since docker will build the last defined target if none is specified
+EXPOSE 8080
+
+
 
 # These are down here to prevent cache busting
 #ARG DD_GIT_REPOSITORY_URL
