@@ -352,11 +352,11 @@ class AppletService:
         )
 
     async def _validate_applet_name(self, display_name: str, exclude_by_id: uuid.UUID | None = None):
-        applet_ids_query = UserAppletAccessCRUD(self.session).user_applet_ids_query(self.user_id)
-        existed_applet = await AppletsCRUD(self.session).get_by_display_name(
+        applet_ids_query = AppletsCRUD(self.session).owner_applet_ids_query(self.user_id)
+        existing_applet = await AppletsCRUD(self.session).get_by_display_name(
             display_name, applet_ids_query, exclude_by_id
         )
-        if existed_applet:
+        if existing_applet:
             raise AppletAlreadyExist()
 
     async def _update(self, applet_id: uuid.UUID, update_data: AppletUpdate, version: str) -> AppletFull:
