@@ -92,6 +92,9 @@ FROM base AS fargate
 # TODO Fargate still can't run as the non-priveleged user.  Likely due to old bind mounts.
 USER root
 
+VOLUME ["/tmp"]
+VOLUME ["/app/uploads"]
+
 FROM base AS app
 # This is a hack to allow Fargate to exist since docker will build the last defined target if none is specified
 EXPOSE 8080
