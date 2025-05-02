@@ -2005,7 +2005,7 @@ class TestAnswerActivityItems(BaseTest):
             "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag",
             "targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
             "inputSubjectId", "inputSecretId", "inputUserNickname",
-            "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
+            "client", "tzOffset", "scheduledEventId", "scheduledEventHistoryId", "reviewedFlowSubmitId"
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
