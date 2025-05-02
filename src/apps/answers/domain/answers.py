@@ -554,6 +554,7 @@ class UserAnswerDataBase(BaseModel):
     migrated_date: datetime.datetime | None = None
     tz_offset: int | None = None
     scheduled_event_id: uuid.UUID | str | None = None
+    scheduled_event_history_id: str | None = None
     applet_history_id: str
     activity_history_id: str | None
     flow_history_id: str | None
