@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "025c3e15188e7c94357b51227639d34cf2c2b74b4a03e595b8505a20d391f4a1"
+            "sha256": "21a7f7d607b9fc8991471cf5d3db1bb60254f8f261bf565668e5b57cf91c6cca"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -329,20 +329,20 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:5a90d674830adbaf86456d6b27a18f5f11378277da5286511fa860d2e7b14261",
-                "sha256:751ed599c8fd9ca24896edcd6620e8a32b3db1b68efea3a90126312240e668a2"
+                "sha256:71f6d43f5bc156cc904f8dde9a2801adb222b81724fb9129f8ff6e7b9331e853",
+                "sha256:a9f8642e84589e7787da0d5d146a14d1eb9e3a4029893c88d1b4e11654cf8014"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.8'",
-            "version": "==1.37.35"
+            "markers": "python_version >= '3.9'",
+            "version": "==1.38.9"
         },
         "botocore": {
             "hashes": [
-                "sha256:197a9bf8251c45b9d882c405ec0d0ab40c10e2d2a55ee66960185daec4beb6ec",
-                "sha256:50839212e90650d0b0fa6b8f7514876bf802f6164f2775f3abcd4d53c98bb73c"
+                "sha256:2d954d3d9a6c7f86fbfbeb164223996c24b7b7726682bace61f86a7e10b531e6",
+                "sha256:53113040882192388e05edebee48d45c008fb4ba2739dc889ce09b2adc9e56e4"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==1.37.35"
+            "markers": "python_version >= '3.9'",
+            "version": "==1.38.9"
         },
         "bytecode": {
             "hashes": [
@@ -1996,11 +1996,11 @@
         },
         "s3transfer": {
             "hashes": [
-                "sha256:559f161658e1cf0a911f45940552c696735f5c74e64362e515f333ebed87d679",
-                "sha256:ac265fa68318763a03bf2dc4f39d5cbd6a9e178d81cc9483ad27da33637e320d"
+                "sha256:35b314d7d82865756edab59f7baebc6b477189e6ab4c53050e28c1de4d9cce18",
+                "sha256:8ac58bc1989a3fdb7c7f3ee0918a66b160d038a147c7b5db1500930a607e9a1c"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==0.11.4"
+            "markers": "python_version >= '3.9'",
+            "version": "==0.12.0"
         },
         "sentry-sdk": {
             "hashes": [
