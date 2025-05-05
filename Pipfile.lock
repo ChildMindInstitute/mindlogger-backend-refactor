@@ -2663,11 +2663,12 @@
         },
         "allure-python-commons": {
             "hashes": [
-                "sha256:9200f40abee697133e9ed9f68887cde996a24b9eb33fcf528da8fe50fae88e43",
-                "sha256:9b217e2f6c74cdbd0e253f89059d4165346e95fcb28228fae333ff4dccea0bd5"
+                "sha256:2a18f987c722810ff1cfc1509fad85fbdaabd695770804a1b4c93cf95d3cdd4e",
+                "sha256:cf2bc5fef2c392b1782ee6956fce6641645517b453ff72a901acf20db3d37d36"
             ],
+            "index": "pypi",
             "markers": "python_version >= '3.6'",
-            "version": "==2.14.0"
+            "version": "==2.14.1"
         },
         "anyio": {
             "hashes": [
