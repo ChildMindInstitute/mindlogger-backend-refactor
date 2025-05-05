@@ -1,17 +1,15 @@
-import logging
 import os
 
+import structlog
 from pydantic.tools import parse_obj_as
 
 from infrastructure.dependency.structured_logs import setup_structured_logging
 
-logger = logging.getLogger("startup")
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter(logging.BASIC_FORMAT)
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-logger.addHandler(logging.StreamHandler())
+LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+setup_structured_logging(json_logs=LOG_JSON_FORMAT, log_level=LOG_LEVEL)
 
+logger = structlog.stdlib.get_logger("startup")
 
 if os.getenv("DD_PROFILING_ENABLED", "false").lower() == "true":
     from ddtrace.profiling import Profiler
@@ -44,9 +42,5 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
         redis=True,
     )
     config.botocore["distributed_tracing"] = True
-
-    LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))
-    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-    setup_structured_logging(json_logs=LOG_JSON_FORMAT, log_level=LOG_LEVEL)
 
     logger.info("Structured logging configured")

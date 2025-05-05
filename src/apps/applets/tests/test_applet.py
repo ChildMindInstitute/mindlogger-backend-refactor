@@ -34,6 +34,7 @@ from apps.subjects.domain import Subject
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
+from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility import FCMNotificationTest
 
 
@@ -171,6 +172,54 @@ class TestApplet:
         assert len(fcm_client.notifications[device_tom]) == 1
         notification = json.loads(fcm_client.notifications[device_tom][0])
         assert notification["title"] == "Applet is updated."
+
+    async def test_same_user_cannot_create_applets_with_same_name(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
+    ):
+        # Tom creates an applet
+        client.login(tom)
+        data = applet_minimal_data.copy(deep=True)
+        data.display_name = "Unique Applet Name"
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        # Tom tries to create another applet with the same name
+        data_duplicate = applet_minimal_data.copy(deep=True)
+        data_duplicate.display_name = "Unique Applet Name"
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_duplicate)
+
+        # This should still be restricted with the updated _validate_applet_name function
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        result = response.json()["result"]
+        assert len(result) == 1
+        assert result[0]["message"] == AppletAlreadyExist.message
+
+    async def test_different_users_can_create_applets_with_same_name(
+        self, client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_minimal_data: AppletCreate
+    ):
+        # First user (Tom) creates an applet
+        client.login(tom)
+        data_tom = applet_minimal_data.copy(deep=True)
+        data_tom.display_name = "Same Applet Name"
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_tom)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        # Get the applet ID from the response
+        tom_applet_id = response.json()["result"]["id"]
+
+        # Add Lucy as a manager to Tom's applet
+        await UserAppletAccessService(session, tom.id, uuid.UUID(tom_applet_id)).add_role(lucy.id, Role.MANAGER)
+
+        # Second user (Lucy) creates an applet with the same name
+        client.login(lucy)
+        data_lucy = applet_minimal_data.copy(deep=True)
+        data_lucy.display_name = "Same Applet Name"
+        response = await client.post(self.applet_create_url.format(owner_id=lucy.id), data=data_lucy)
+
+        # This should now be allowed with the updated _validate_applet_name function
+        # that checks for uniqueness only among applets owned by the same user
+        # even though Lucy has access to Tom's applet
+        assert response.status_code == http.HTTPStatus.CREATED
 
     async def test_update_applet_change_activities_auto_assign(
         self, client: TestClient, tom: User, applet_one: AppletFull

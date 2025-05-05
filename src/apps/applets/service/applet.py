@@ -187,6 +187,7 @@ class AppletService:
 
     async def update(self, applet_id: uuid.UUID, update_data: AppletUpdate) -> AppletFull:
         old_applet_schema = await AppletsCRUD(self.session).get_by_id(applet_id)
+        old_applet_version = old_applet_schema.version
 
         next_version = await self.get_next_version(old_applet_schema.version, update_data, applet_id)
 
@@ -226,9 +227,9 @@ class AppletService:
         )
         await asyncio.gather(*to_await)
 
-        if next_version != old_applet_schema.version:
+        if next_version != old_applet_version:
             await ScheduleHistoryService(self.session).update_applet_event_links(
-                applet_id=applet_id, current_applet_version=old_applet_schema.version, new_applet_version=applet.version
+                applet_id=applet_id, current_applet_version=old_applet_version, new_applet_version=applet.version
             )
 
         return applet
@@ -352,11 +353,11 @@ class AppletService:
         )
 
     async def _validate_applet_name(self, display_name: str, exclude_by_id: uuid.UUID | None = None):
-        applet_ids_query = UserAppletAccessCRUD(self.session).user_applet_ids_query(self.user_id)
-        existed_applet = await AppletsCRUD(self.session).get_by_display_name(
+        applet_ids_query = AppletsCRUD(self.session).owner_applet_ids_query(self.user_id)
+        existing_applet = await AppletsCRUD(self.session).get_by_display_name(
             display_name, applet_ids_query, exclude_by_id
         )
-        if existed_applet:
+        if existing_applet:
             raise AppletAlreadyExist()
 
     async def _update(self, applet_id: uuid.UUID, update_data: AppletUpdate, version: str) -> AppletFull:

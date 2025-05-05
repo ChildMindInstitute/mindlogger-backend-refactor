@@ -669,6 +669,12 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         )
         await self._execute(query)
 
+    def owner_applet_ids_query(self, owner_id: uuid.UUID) -> Query:
+        query: Query = select(AppletSchema.id)
+        query = query.where(AppletSchema.soft_exists())
+        query = query.where(AppletSchema.creator_id == owner_id)
+        return query
+
     async def get_respondents_device_ids(
         self,
         applet_id: uuid.UUID,
