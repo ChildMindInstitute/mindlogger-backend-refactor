@@ -13,12 +13,14 @@ from sqlalchemy.sql.elements import BooleanClauseList
 from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
 from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
-from apps.answers.db.schemas import AnswerItemSchema, AnswerSchema
+from apps.answers.db.schemas import AnswerEHRSchema, AnswerItemSchema, AnswerSchema
 from apps.answers.domain import (
     Answer,
+    AnswerEHR,
     AnswerItemDataEncrypted,
     AppletCompletedEntities,
     CompletedEntity,
+    EHRIngestionStatus,
     FlowSubmission,
     FlowSubmissionInfo,
     IdentifierData,
@@ -1104,3 +1106,49 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         res = await self._execute(query)
 
         return res.mappings().all()
+
+
+class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
+    schema_class = AnswerEHRSchema
+
+    async def create(self, schema: AnswerEHRSchema):
+        schema = await self._create(schema)
+        return schema
+
+    async def create_many(self, schemas: list[AnswerEHRSchema]) -> list[AnswerEHRSchema]:
+        schemas = await self._create_many(schemas)
+        return schemas
+
+    async def get_by_submit_id(self, submit_id: uuid.UUID) -> AnswerEHRSchema | None:
+        return await self._get("submit_id", submit_id)
+
+    async def update_status(self, submit_id: uuid.UUID, status: EHRIngestionStatus):
+        return await self._update("submit_id", submit_id, AnswerEHRSchema(ehr_ingestion_status=status))
+
+    async def upsert(self, schema: AnswerEHR) -> AnswerEHRSchema:
+        """
+        Upsert an `AnswerEHRSchema` entity.
+
+        This function will create a new `AnswerEHRSchema` entity if one does not already exist with the given `submit_id`.
+        If an existing entity is found, it will be updated with the provided values.
+
+        Args:
+            schema (AnswerEHRSchema): The entity to upsert.
+
+        Returns:
+            AnswerEHRSchema: The upserted entity.
+        """
+        values = {**schema.dict(), "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)}
+        stmt = insert(AnswerEHRSchema).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[AnswerEHRSchema.submit_id],
+            set_={
+                # all updatable fields EXCEPT created_at
+                **{k: v for k, v in values.items() if k != "created_at"},
+                "updated_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+            },
+            where=AnswerEHRSchema.submit_id == schema.submit_id,
+        ).returning(AnswerEHRSchema)
+
+        result = await self._execute(stmt)
+        return result.scalar_one_or_none()

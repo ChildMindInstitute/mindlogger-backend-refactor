@@ -1,12 +1,12 @@
 import uuid
 
-from fastapi import Depends
+from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
 from apps.integrations.oneup_health.domain import OneupHealthToken
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
-from apps.shared.domain import Response
+from apps.shared.domain import InternalModel, Response
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
@@ -56,9 +56,17 @@ async def retrieve_token_by_submit_id(
         return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, submit_id=submit_id, **token))
 
 
-async def trigger_data_fetch(
-    applet_id: uuid.UUID, submit_id: uuid.UUID, user: User = Depends(get_current_user), session=Depends(get_session)
-):
-    await task_ingest_user_data.kicker().kiq(applet_id=applet_id, unique_id=submit_id)
+class EHRTriggerInput(InternalModel):
+    activity_history_id: str
+    applet_id: uuid.UUID
+    submit_id: uuid.UUID
+
+
+async def trigger_data_fetch(trigger_input: EHRTriggerInput = Body(...)):
+    await task_ingest_user_data.kicker().kiq(
+        applet_id=trigger_input.applet_id,
+        unique_id=trigger_input.submit_id,
+        activity_history_id=trigger_input.activity_history_id,
+    )
 
     return Response(result="ok")

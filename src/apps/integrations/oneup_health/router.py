@@ -31,8 +31,8 @@ router.get(
 )(retrieve_token_by_submit_id)
 
 
-router.get(
-    "/applet/{applet_id}/submissions/{submit_id}/trigger_data_fetch",
+router.post(
+    "/trigger_data_fetch",
     description="This endpoint is used to trigger 1UpHealth data fetch. Use only for test purposes, "
     "should not me called by frontend",
     status_code=status.HTTP_200_OK,

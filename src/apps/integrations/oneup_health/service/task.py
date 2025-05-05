@@ -1,14 +1,18 @@
 import random
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime
 
 import httpx
 
+from apps.answers.crud.answers import AnswersEHRCRUD
+from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
+from apps.answers.domain import AnswerEHR, EHRIngestionStatus
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
 from apps.shared.exception import BaseError
 from broker import broker
 from config import settings
-from infrastructure.database import session_manager
+from infrastructure.database import atomic, session_manager
 from infrastructure.logger import logger
 
 __all__ = ["task_ingest_user_data"]
@@ -89,7 +93,7 @@ async def _process_data_transfer(
 
 async def _schedule_retry(
     applet_id: uuid.UUID, unique_id: uuid.UUID, start_date: datetime | None, retry_count: int
-) -> None:
+) -> bool:
     """
     Schedule a retry of the data ingestion task with exponential backoff.
 
@@ -109,10 +113,16 @@ async def _schedule_retry(
             .kiq(applet_id=applet_id, unique_id=unique_id, start_date=start_date, retry_count=retry_count)
         )
 
+    return delay > 0
+
 
 @broker.task
 async def task_ingest_user_data(
-    applet_id: uuid.UUID, unique_id: uuid.UUID, start_date: datetime | None = None, retry_count: int = 0
+    applet_id: uuid.UUID,
+    unique_id: uuid.UUID,
+    activity_history_id: str,
+    start_date: datetime | None = None,
+    retry_count: int = 0,
 ) -> str | None:
     """
     Asynchronous task to ingest user health data from OneUp Health.
@@ -130,21 +140,63 @@ async def task_ingest_user_data(
         list | None: List of retrieved resources if successful, None otherwise
     """
     storage_path = None
-    try:
-        # Get subject and check for OneUp Health integration
-        async with session_manager.get_session()() as session:
-            oneup_user_id = await OneupHealthService().get_oneup_user_id(unique_id=unique_id)
-            if oneup_user_id is None:
-                logger.info(f"ID {unique_id} has no OneUp Health user ID")
-                return None
+    async with session_manager.get_session()() as session:
+        info = await preprocess_arbitrary_url(applet_id=applet_id, session=session)
 
-            # Process data transfer
-            storage_path = await _process_data_transfer(session, applet_id, unique_id, oneup_user_id, start_date)
-            if storage_path is None:
-                logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
-                await _schedule_retry(applet_id, unique_id, start_date, retry_count)
+        async with asynccontextmanager(get_answer_session)(info) as answer_session:
+            answer_session = answer_session if answer_session is not None else session
+            try:
+                async with atomic(answer_session):
+                    answer_ehr = AnswerEHR(
+                        submit_id=unique_id,
+                        ehr_ingestion_status=EHRIngestionStatus.IN_PROGRESS,
+                        activity_history_id=activity_history_id,
+                    )
+                    await AnswersEHRCRUD(session=session).upsert(answer_ehr)
 
-    except BaseError as e:
-        logger.error(f"Error in task_ingest_user_data: {e.message}")
+                async with atomic(answer_session):
+                    oneup_user_id = await OneupHealthService().get_oneup_user_id(unique_id=unique_id)
+                    if oneup_user_id is None:
+                        logger.info(f"ID {unique_id} has no OneUp Health user ID")
+                        await AnswersEHRCRUD(session=answer_session).update_status(
+                            submit_id=unique_id, status=EHRIngestionStatus.FAILED
+                        )
+                        return None
 
-    return storage_path
+                    # Process data transfer
+                    storage_path = await _process_data_transfer(
+                        session, applet_id, unique_id, oneup_user_id, start_date
+                    )
+                    if storage_path is None:
+                        logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
+                        to_reschedule = await _schedule_retry(applet_id, unique_id, start_date, retry_count)
+                        if not to_reschedule:
+                            await AnswersEHRCRUD(session=answer_session).update_status(
+                                submit_id=unique_id, status=EHRIngestionStatus.FAILED
+                            )
+                        return None
+
+                    logger.info(
+                        f"Data transfer complete for OneUp Health user ID {oneup_user_id} and submit ID {unique_id}"
+                    )
+                    await AnswersEHRCRUD(session=session).upsert(
+                        AnswerEHR(
+                            submit_id=unique_id,
+                            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+                            activity_history_id=activity_history_id,
+                            ehr_storage_uri=storage_path,
+                        )
+                    )
+            except BaseError as e:
+                logger.error(f"Error in task_ingest_user_data: {e.message}")
+                async with atomic(answer_session):
+                    await AnswersEHRCRUD(session=answer_session).update_status(
+                        submit_id=unique_id, status=EHRIngestionStatus.FAILED
+                    )
+            return storage_path
+
+
+async def trigger_erh_ingestion(applet_id: uuid.UUID, submit_id: uuid.UUID, activity_history_id: str) -> None:
+    await task_ingest_user_data.kicker().kiq(
+        applet_id=applet_id, unique_id=submit_id, activity_history_id=activity_history_id
+    )
