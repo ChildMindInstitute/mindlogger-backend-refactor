@@ -400,7 +400,7 @@ class OneupHealthService:
             resource_url = entry.get("fullUrl")
             if resource_url:
                 logger.info(f"Retrieving resources from {resource_url}")
-                resources = await self._get_resources(f"{resource_url}/$everything", oneup_user_id)
+                resources = await self._get_resources(f"{resource_url}/$everything?_count=100", oneup_user_id)
                 if len(resources) > 0:
                     healthcare_provider_id = entry.get("resource", {}).get("id")
                     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)

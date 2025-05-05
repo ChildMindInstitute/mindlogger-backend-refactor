@@ -1,4 +1,5 @@
 import datetime
+import enum
 import uuid
 from copy import deepcopy
 from typing import Any, Generic
@@ -116,6 +117,7 @@ class AppletAnswerCreate(InternalModel):
     consent_to_share: bool | None = False
     prolific_params: ProlificParamsActivityAnswer | None = None
     event_history_id: str | None = None
+    allowed_ehr_ingest: bool | None = False
 
     _dates_from_ms = validator("created_at", pre=True, allow_reuse=True)(datetime_from_ms)
 
@@ -732,3 +734,16 @@ class SubmissionsSubjectCounters(InternalModel):
 class SubmissionsActivityMetadataBySubject(InternalModel):
     subject_id: uuid.UUID
     activities: dict[uuid.UUID, SubmissionsSubjectCounters] = Field(default_factory=dict)
+
+
+class EHRIngestionStatus(enum.StrEnum):
+    COMPLETED = "completed"
+    IN_PROGRESS = "in_progress"
+    FAILED = "failed"
+
+
+class AnswerEHR(InternalModel):
+    submit_id: uuid.UUID
+    ehr_ingestion_status: EHRIngestionStatus
+    ehr_storage_uri: str | None
+    activity_history_id: str | None
