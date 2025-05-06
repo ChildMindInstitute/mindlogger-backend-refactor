@@ -65,6 +65,7 @@ COPY --chown=code:code --chmod=775 ./compose/fastapi/entrypoint /fastapi-entrypo
 
 # Copy to fastapi-start and fastapi-start-datadog to not break current ECS task config
 COPY --chown=code:code --chmod=775 ./compose/fastapi/start-backend-datadog /start-backend-datadog
+COPY --chown=code:code --chmod=775 ./compose/fastapi/start-backend-datadog /fastapi-start-datadog
 
 # Migration script
 COPY --chown=code:code --chmod=775 ./compose/fastapi/migrate /fastapi-migrate
