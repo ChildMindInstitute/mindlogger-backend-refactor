@@ -104,6 +104,6 @@ class AnswerEHRSchema(Base):
     __tablename__ = "answers_ehr"
 
     submit_id = Column(UUID(as_uuid=True), index=True)
-    activity_history_id = Column(Text(), nullable=False, index=True)
+    activity_id = Column(UUID(as_uuid=True), index=True)
     ehr_storage_uri = Column(Text())
     ehr_ingestion_status = Column(Text())

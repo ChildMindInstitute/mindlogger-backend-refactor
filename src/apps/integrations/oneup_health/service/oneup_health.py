@@ -369,7 +369,7 @@ class OneupHealthService:
         return resources
 
     async def retrieve_patient_data(
-        self, session, applet_id: uuid.UUID, submit_id: uuid.UUID, oneup_user_id: int
+        self, session, applet_id: uuid.UUID, unique_id: uuid.UUID, activity_id: uuid.UUID, oneup_user_id: int
     ) -> str | None:
         """
         Retrieve and store patient data for a subject.
@@ -379,7 +379,8 @@ class OneupHealthService:
         Args:
             session: The database session to use.
             applet_id (uuid.UUID): The unique identifier for the applet.
-            submit_id (uuid.UUID): The unique identifier for the submission.
+            unique_id (uuid.UUID): The unique identifier for the submission.
+            activity_id (uuid.UUID): The unique identifier for the activity.
             oneup_user_id (int): The OneUp Health user ID
 
         Returns:
@@ -408,7 +409,8 @@ class OneupHealthService:
                         resources=resources,
                         healthcare_provider_id=healthcare_provider_id,
                         date=datetime.now(timezone.utc),
-                        unique_id=submit_id,
+                        unique_id=unique_id,
+                        activity_id=activity_id,
                     )
 
                     storage_path = await ehr_storage.upload_resources(data)

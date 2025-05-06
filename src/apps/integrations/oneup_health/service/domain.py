@@ -9,3 +9,4 @@ class EHRData(InternalModel):
     healthcare_provider_id: str
     resources: list[dict]
     unique_id: uuid.UUID
+    activity_id: uuid.UUID
