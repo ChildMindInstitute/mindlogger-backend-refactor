@@ -1,1 +1,0 @@
-INFO     root:api.py:848 check-existence: applet_id=491bcab3-c45b-4598-b0c8-7d5990dfb2aa, activity_id=98c6f7b2-ef03-4482-8e5d-d38d2aa8e06c, user_id=7484f34a-3acc-4ee6-8a94-fd7299502fa1, created_at=1745859761.0, exists=True, ip=127.0.0.1
