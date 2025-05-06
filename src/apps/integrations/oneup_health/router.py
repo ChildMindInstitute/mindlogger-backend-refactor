@@ -34,6 +34,6 @@ router.get(
 router.post(
     "/trigger_data_fetch",
     description="This endpoint is used to trigger 1UpHealth data fetch. Use only for test purposes, "
-    "should not me called by frontend",
+    "should not be called by frontend.",
     status_code=status.HTTP_200_OK,
 )(trigger_data_fetch)
