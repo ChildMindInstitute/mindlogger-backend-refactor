@@ -86,6 +86,7 @@ class CDNClient:
         try:
             return self.client.head_object(Bucket=bucket, Key=key)
         except ClientError as e:
+            # TODO The actual error for not found is S3.Client.exceptions.NoSuchKey
             logger.warning(f"Error when trying to check existence for {key} in {bucket}: {e}")
             raise NotFoundError
 
@@ -95,6 +96,10 @@ class CDNClient:
             return await asyncio.wrap_future(future)
 
     def download(self, key, file: BinaryIO | None = None):
+        """
+        Download a file from a CDN location to a local directory.  It is up to the caller to
+        clean up the file after use.
+        """
         if not file:
             file = io.BytesIO()
 
