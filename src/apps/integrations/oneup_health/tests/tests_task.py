@@ -5,13 +5,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest_httpx import HTTPXMock
 
+from apps.answers.crud.answers import AnswersEHRCRUD
+from apps.answers.domain import EHRIngestionStatus
 from apps.applets.domain.applet_full import AppletFull
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
 
 
 class TestTaskIngestUserData:
     @pytest.mark.asyncio
-    async def test_success(self, applet_one: AppletFull, httpx_mock: HTTPXMock):
+    async def test_success(self, session, applet_one: AppletFull, httpx_mock: HTTPXMock):
         # mock get user
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user"),
@@ -81,14 +83,21 @@ class TestTaskIngestUserData:
             upload_resources.return_value = "fake/storage/path"
 
             submit_id = uuid.uuid4()
-            task = await task_ingest_user_data.kicker().kiq(applet_id=applet_one.id, unique_id=submit_id)
+            task = await task_ingest_user_data.kicker().kiq(
+                applet_id=applet_one.id, unique_id=submit_id, activity_history_id=f"{uuid.uuid4()}_1.0.0"
+            )
             result = await task.wait_result()
 
             assert result.return_value == "fake/storage/path"
             assert upload_resources.called
 
+            answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id(submit_id)
+            assert answers_ehr is not None
+            assert answers_ehr.ehr_storage_uri == "fake/storage/path"
+            assert answers_ehr.ehr_ingestion_status == EHRIngestionStatus.COMPLETED
+
     @pytest.mark.asyncio
-    async def test_no_oneup_user_id(self, httpx_mock: HTTPXMock):
+    async def test_no_oneup_user_id(self, session, httpx_mock: HTTPXMock):
         # mock ge user
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user"),
@@ -101,11 +110,16 @@ class TestTaskIngestUserData:
 
         applet_id = uuid.uuid4()
         unique_id = uuid.uuid4()
-        result = await task_ingest_user_data(applet_id, unique_id)
+        result = await task_ingest_user_data(applet_id, unique_id, activity_history_id=f"{uuid.uuid4()}_1.0.0")
         assert result is None
 
+        answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id(submit_id=unique_id)
+        assert answers_ehr is not None
+        assert answers_ehr.ehr_storage_uri is None
+        assert answers_ehr.ehr_ingestion_status == EHRIngestionStatus.FAILED
+
     @pytest.mark.asyncio
-    async def test_transfer_not_complete(self, httpx_mock: HTTPXMock):
+    async def test_transfer_not_complete(self, session, httpx_mock: HTTPXMock):
         # mock ge user
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user"),
@@ -121,10 +135,15 @@ class TestTaskIngestUserData:
             with patch("apps.integrations.oneup_health.service.task._schedule_retry", new=AsyncMock()) as mock_retry:
                 applet_id = uuid.uuid4()
                 unique_id = uuid.uuid4()
-                result = await task_ingest_user_data(applet_id, unique_id)
+                result = await task_ingest_user_data(applet_id, unique_id, activity_history_id=f"{uuid.uuid4()}_1.0.0")
                 assert result is None
                 assert mock_process.called
                 assert mock_retry.called
+
+                answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id(submit_id=unique_id)
+                assert answers_ehr is not None
+                assert answers_ehr.ehr_storage_uri is None
+                assert answers_ehr.ehr_ingestion_status == EHRIngestionStatus.IN_PROGRESS
 
     @pytest.mark.asyncio
     async def test_exponential_backoff(self):
