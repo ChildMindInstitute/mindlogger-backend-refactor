@@ -1,92 +1,107 @@
-FROM python:3.13-slim-bookworm AS base
+# ------------------------------
+# Stage 1: Build
+# ------------------------------
+FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm AS builder
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH="src/"
 
-WORKDIR /app/
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="src/"
 
-RUN apt-get -y update && apt-get -y upgrade \
-    && apt-get install --no-install-recommends -y build-essential curl libffi-dev \
-    && rm -rf /var/lib/apt/lists/
+# Install system dependencies and pipenv
+RUN apt update && apt install -y --no-install-recommends \
+    build-essential \
+    curl \
+    libtool \
+    autoconf \
+    automake \
+    pkg-config \
+    zlib1g-dev \
+    python3-dev \
+    ca-certificates \
+    git \
+    python3-pip \
+ && apt clean && rm -rf /var/lib/apt/lists/*
 
-# Add local non-root user to avoid issue with files
-# created inside a container being owned by root.
-ARG USERNAME=code
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
+WORKDIR /app
 
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash
-
-# Install Python dependencies
 RUN pip install --no-cache-dir pipenv
 
+# Copy Pipenv files and install dependencies
 COPY Pipfile Pipfile.lock ./
-ARG PIPENV_EXTRA_ARGS
-RUN pipenv sync --system ${PIPENV_EXTRA_ARGS}
+RUN pipenv requirements > requirements.txt && \
+    pipenv requirements --dev >> requirements.txt && \
+    pip wheel --wheel-dir=/wheels -r requirements.txt
 
 
-# Copy the whole project project
-COPY ./ ./
 
-# Copy infrustructure scripts
+# ------------------------------
+# Stage 2: Runtime
+# ------------------------------
+FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm AS base
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="src/"
+
+# Startup dependencies
+RUN apt update -y && apt install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/
+
+# Add non-root user
+RUN adduser --disabled-password --gecos '' code
+
+WORKDIR /app
+
+# Install runtime dependencies from wheelhouse
+COPY --from=builder /wheels /wheels
+COPY --from=builder /app/requirements.txt .
+RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt
+
+## Copy infrustructure scripts
 # Application scripts
-COPY --chown=code:code ./compose/fastapi/entrypoint /fastapi-entrypoint
-RUN sed -i 's/\r$//g' /fastapi-entrypoint && chmod +x /fastapi-entrypoint
+COPY --chown=code:code --chmod=775 ./compose/fastapi/entrypoint /fastapi-entrypoint
 
 # Copy to fastapi-start and fastapi-start-datadog to not break current ECS task config
-COPY --chown=code:code ./compose/fastapi/start-backend-datadog /start-backend-datadog
-RUN sed -i 's/\r$//g' /start-backend-datadog && chmod +x /start-backend-datadog && \
-    cp /start-backend-datadog /fastapi-start && cp /start-backend-datadog /fastapi-start-datadog
+COPY --chown=code:code --chmod=775 ./compose/fastapi/start-backend-datadog /start-backend-datadog
 
 # Migration script
-COPY --chown=code:code ./compose/fastapi/migrate /fastapi-migrate
-RUN sed -i 's/\r$//g' /fastapi-migrate && chmod +x /fastapi-migrate
+COPY --chown=code:code --chmod=775 ./compose/fastapi/migrate /fastapi-migrate
 
 # ECS
-COPY --chown=code:code ./compose/fastapi/ecs-start /ecs-start
-RUN sed -i 's/\r$//g' /ecs-start && chmod +x /ecs-start
-
-COPY --chown=code:code ./compose/fastapi/ecs-start-feature /ecs-start-feature
-RUN sed -i 's/\r$//g' /ecs-start-feature && chmod +x /ecs-start-feature
+COPY --chown=code:code --chmod=775 ./compose/fastapi/ecs-start /ecs-start
+COPY --chown=code:code --chmod=775 ./compose/fastapi/ecs-start-feature /ecs-start-feature
 
 # Scheduler and worker
-COPY --chown=code:code ./compose/fastapi/start-worker /start-worker
-RUN sed -i 's/\r$//g' /start-worker && chmod +x /start-worker
+COPY --chmod=775 --chown=code:code ./compose/fastapi/start-worker /start-worker
+COPY --chmod=775 --chown=code:code ./compose/fastapi/start-scheduler /start-scheduler
 
-COPY --chown=code:code ./compose/fastapi/start-scheduler /start-scheduler
-RUN sed -i 's/\r$//g' /start-worker && chmod +x /start-scheduler
+# Copy app code
+COPY --chown=code:code . .
 
-# These are down here to prevent cache busting
-ARG DD_GIT_REPOSITORY_URL
-ARG DD_GIT_COMMIT_SHA
-ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
-ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
+VOLUME /app/uploads /tmp
 
-# Select internal user
+RUN mkdir -p /app/uploads && \
+    chown -R code /app/uploads
+
+# Switch to non-root user
 USER code
 
 FROM base AS fargate
-# Hack for Fargate
-# https://github.com/aws/containers-roadmap/issues/938
+# TODO Fargate still can't run as the non-priveleged user.  Likely due to old bind mounts.
 USER root
-RUN chmod 777 /tmp && mkdir -p /app/uploads && chown -R code:code /app
-#USER code
-
-RUN touch /app/uploads/.test
-RUN touch /tmp/.test
 
 VOLUME ["/tmp"]
 VOLUME ["/app/uploads"]
 
-# worker instructions
-FROM base AS worker
+FROM base AS app
+# This is a hack to allow Fargate to exist since docker will build the last defined target if none is specified
+EXPOSE 8080
 
-USER root
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    imagemagick \
-    && rm -rf /var/lib/apt/lists/
 
-USER code
+# These are down here to prevent cache busting
+#ARG DD_GIT_REPOSITORY_URL
+#ARG DD_GIT_COMMIT_SHA
+#ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
+#ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
