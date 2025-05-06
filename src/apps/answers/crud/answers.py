@@ -1122,8 +1122,27 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
     async def get_by_submit_id(self, submit_id: uuid.UUID) -> AnswerEHRSchema | None:
         return await self._get("submit_id", submit_id)
 
-    async def update_status(self, submit_id: uuid.UUID, status: EHRIngestionStatus):
-        return await self._update("submit_id", submit_id, AnswerEHRSchema(ehr_ingestion_status=status))
+    async def update_status(
+        self, submit_id: uuid.UUID, activity_id: uuid.UUID, status: EHRIngestionStatus
+    ) -> AnswerEHRSchema | None:
+        """
+        Update the EHR ingestion status for a specific answer identified by submit_id and activity_history_id.
+
+        Args:
+            submit_id: The UUID of the submission
+            activity_history_id: The activity history ID
+            status: The new EHR ingestion status
+
+        Returns:
+            List of updated AnswerEHRSchema objects
+        """
+        query = update(self.schema_class)
+        query = query.where((self.schema_class.submit_id == submit_id) & (self.schema_class.activity_id == activity_id))
+        query = query.values(ehr_ingestion_status=status)
+        query = query.returning(self.schema_class)
+
+        result = await self._execute(query)
+        return result.scalar_one_or_none()
 
     async def upsert(self, schema: AnswerEHR) -> AnswerEHRSchema:
         """
@@ -1141,13 +1160,13 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         values = {**schema.dict(), "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)}
         stmt = insert(AnswerEHRSchema).values(values)
         stmt = stmt.on_conflict_do_update(
-            index_elements=[AnswerEHRSchema.submit_id],
+            index_elements=[AnswerEHRSchema.submit_id, AnswerEHRSchema.activity_id],
             set_={
                 # all updatable fields EXCEPT created_at
                 **{k: v for k, v in values.items() if k != "created_at"},
                 "updated_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
             },
-            where=AnswerEHRSchema.submit_id == schema.submit_id,
+            where=AnswerEHRSchema.submit_id == schema.submit_id and AnswerEHRSchema.activity_id == schema.activity_id,
         ).returning(AnswerEHRSchema)
 
         result = await self._execute(stmt)

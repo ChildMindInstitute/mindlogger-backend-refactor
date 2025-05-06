@@ -27,18 +27,18 @@ def upgrade() -> None:
         sa.Column("migrated_date", sa.DateTime(), nullable=True),
         sa.Column("migrated_updated", sa.DateTime(), nullable=True),
         sa.Column("submit_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("activity_history_id", sa.String(), nullable=False),
+        sa.Column("activity_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("ehr_storage_uri", sa.Text(), nullable=True),
         sa.Column("ehr_ingestion_status", sa.Text(), nullable=True),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_answers_ehr")),
     )
-    op.create_index(op.f("ix_answers_ehr_submit_id"), "answers_ehr", ["submit_id"], unique=False)
-    op.create_index(op.f("ix_answers_ehr_activity_history_id"), "answers_ehr", ["activity_history_id"], unique=False)
-    op.create_unique_constraint("answers_ehr_submit_id_key", "answers_ehr", ["submit_id"])
+    op.create_index(
+        op.f("ix_answers_ehr_submit_activity_id"), "answers_ehr", ["submit_id", "activity_id"], unique=False
+    )
+    op.create_unique_constraint("answers_ehr_submit_activity_key", "answers_ehr", ["submit_id", "activity_id"])
 
 
 def downgrade() -> None:
-    op.drop_constraint("answers_ehr_submit_id_key", "answers_ehr", type_="unique")
-    op.drop_index(op.f("ix_answers_ehr_submit_id"), table_name="answers_ehr")
-    op.drop_index(op.f("ix_answers_ehr_activity_history_id"), table_name="answers_ehr")
+    op.drop_constraint("answers_ehr_submit_activity_key", "answers_ehr", type_="unique")
+    op.drop_index(op.f("ix_answers_ehr_submit_activity_id"), table_name="answers_ehr")
     op.drop_table("answers_ehr")

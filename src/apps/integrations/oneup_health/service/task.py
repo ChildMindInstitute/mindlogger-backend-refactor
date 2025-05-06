@@ -47,7 +47,12 @@ def _exponential_backoff(retry_count) -> int:
 
 
 async def _process_data_transfer(
-    session, applet_id: uuid.UUID, unique_id: uuid.UUID, oneup_user_id: int, start_date: datetime | None
+    session,
+    applet_id: uuid.UUID,
+    unique_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    oneup_user_id: int,
+    start_date: datetime | None,
 ) -> str | None:
     """
     Process the OneUp Health data transfer for a subject.
@@ -56,6 +61,7 @@ async def _process_data_transfer(
         session: Database session
         applet_id (uuid.UUID): The unique identifier for the applet
         unique_id (uuid.UUID): The unique identifier for the user
+        activity_id (uuid.UUID): The unique identifier for the activity
         oneup_user_id (int): The OneUp Health user ID
         start_date (datetime): The start date of the transfer process
 
@@ -83,7 +89,13 @@ async def _process_data_transfer(
                 logger.info(f"{completed_count} Transfers completed for OneUp Health user ID {oneup_user_id}")
                 if timeout_count > 0:
                     logger.warn(f"{timeout_count} Transfers timed out for OneUp Health user ID {oneup_user_id}")
-                return await oneup_health_service.retrieve_patient_data(session, applet_id, unique_id, oneup_user_id)
+                return await oneup_health_service.retrieve_patient_data(
+                    session=session,
+                    applet_id=applet_id,
+                    unique_id=unique_id,
+                    activity_id=activity_id,
+                    oneup_user_id=oneup_user_id,
+                )
     except httpx.RequestError as e:
         logger.error(f"Failed to process data transfer for OneUp Health user ID {oneup_user_id}")
         logger.exception(f"Error: {e}")
@@ -92,7 +104,7 @@ async def _process_data_transfer(
 
 
 async def _schedule_retry(
-    applet_id: uuid.UUID, unique_id: uuid.UUID, start_date: datetime | None, retry_count: int
+    applet_id: uuid.UUID, unique_id: uuid.UUID, activity_id: uuid.UUID, start_date: datetime | None, retry_count: int
 ) -> bool:
     """
     Schedule a retry of the data ingestion task with exponential backoff.
@@ -100,6 +112,7 @@ async def _schedule_retry(
     Args:
         applet_id (uuid.UUID): The unique identifier for the applet
         unique_id (uuid.UUID): The unique identifier for the user
+        activity_history_id (str): The activity history ID
         start_date (datetime): The start date of the transfer process
         retry_count (int): The current retry attempt count
     """
@@ -110,7 +123,13 @@ async def _schedule_retry(
         await (
             task_ingest_user_data.kicker()
             .with_labels(delay=delay)
-            .kiq(applet_id=applet_id, unique_id=unique_id, start_date=start_date, retry_count=retry_count)
+            .kiq(
+                applet_id=applet_id,
+                unique_id=unique_id,
+                activity_id=activity_id,
+                start_date=start_date,
+                retry_count=retry_count,
+            )
         )
 
     return delay > 0
@@ -120,7 +139,7 @@ async def _schedule_retry(
 async def task_ingest_user_data(
     applet_id: uuid.UUID,
     unique_id: uuid.UUID,
-    activity_history_id: str,
+    activity_id: uuid.UUID,
     start_date: datetime | None = None,
     retry_count: int = 0,
 ) -> str | None:
@@ -133,6 +152,7 @@ async def task_ingest_user_data(
     Args:
         applet_id (uuid.UUID): The unique identifier for the applet
         unique_id (uuid.UUID): The unique identifier for the user
+        activity_id (uuid.UUID): The unique identifier for the activity
         start_date (datetime, optional): The start date of the transfer process
         retry_count (int): The current retry attempt count
 
@@ -150,7 +170,7 @@ async def task_ingest_user_data(
                     answer_ehr = AnswerEHR(
                         submit_id=unique_id,
                         ehr_ingestion_status=EHRIngestionStatus.IN_PROGRESS,
-                        activity_history_id=activity_history_id,
+                        activity_id=activity_id,
                     )
                     await AnswersEHRCRUD(session=session).upsert(answer_ehr)
 
@@ -159,20 +179,35 @@ async def task_ingest_user_data(
                     if oneup_user_id is None:
                         logger.info(f"ID {unique_id} has no OneUp Health user ID")
                         await AnswersEHRCRUD(session=answer_session).update_status(
-                            submit_id=unique_id, status=EHRIngestionStatus.FAILED
+                            submit_id=unique_id,
+                            activity_id=activity_id,
+                            status=EHRIngestionStatus.FAILED,
                         )
                         return None
 
                     # Process data transfer
                     storage_path = await _process_data_transfer(
-                        session, applet_id, unique_id, oneup_user_id, start_date
+                        session=session,
+                        applet_id=applet_id,
+                        unique_id=unique_id,
+                        activity_id=activity_id,
+                        oneup_user_id=oneup_user_id,
+                        start_date=start_date,
                     )
                     if storage_path is None:
                         logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
-                        to_reschedule = await _schedule_retry(applet_id, unique_id, start_date, retry_count)
+                        to_reschedule = await _schedule_retry(
+                            applet_id=applet_id,
+                            unique_id=unique_id,
+                            activity_id=activity_id,
+                            start_date=start_date,
+                            retry_count=retry_count,
+                        )
                         if not to_reschedule:
                             await AnswersEHRCRUD(session=answer_session).update_status(
-                                submit_id=unique_id, status=EHRIngestionStatus.FAILED
+                                submit_id=unique_id,
+                                activity_id=activity_id,
+                                status=EHRIngestionStatus.FAILED,
                             )
                         return None
 
@@ -183,7 +218,7 @@ async def task_ingest_user_data(
                         AnswerEHR(
                             submit_id=unique_id,
                             ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
-                            activity_history_id=activity_history_id,
+                            activity_id=activity_id,
                             ehr_storage_uri=storage_path,
                         )
                     )
@@ -191,12 +226,10 @@ async def task_ingest_user_data(
                 logger.error(f"Error in task_ingest_user_data: {e.message}")
                 async with atomic(answer_session):
                     await AnswersEHRCRUD(session=answer_session).update_status(
-                        submit_id=unique_id, status=EHRIngestionStatus.FAILED
+                        submit_id=unique_id, activity_id=activity_id, status=EHRIngestionStatus.FAILED
                     )
             return storage_path
 
 
-async def trigger_erh_ingestion(applet_id: uuid.UUID, submit_id: uuid.UUID, activity_history_id: str) -> None:
-    await task_ingest_user_data.kicker().kiq(
-        applet_id=applet_id, unique_id=submit_id, activity_history_id=activity_history_id
-    )
+async def trigger_erh_ingestion(applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID) -> None:
+    await task_ingest_user_data.kicker().kiq(applet_id=applet_id, unique_id=submit_id, activity_id=activity_id)

@@ -745,5 +745,5 @@ class EHRIngestionStatus(enum.StrEnum):
 class AnswerEHR(InternalModel):
     submit_id: uuid.UUID
     ehr_ingestion_status: EHRIngestionStatus
+    activity_id: uuid.UUID
     ehr_storage_uri: str | None
-    activity_history_id: str | None
