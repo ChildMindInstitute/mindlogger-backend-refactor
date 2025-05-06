@@ -179,7 +179,7 @@ async def task_ingest_user_data(
                     logger.info(
                         f"Data transfer complete for OneUp Health user ID {oneup_user_id} and submit ID {unique_id}"
                     )
-                    await AnswersEHRCRUD(session=session).upsert(
+                    await AnswersEHRCRUD(session=answer_session).upsert(
                         AnswerEHR(
                             submit_id=unique_id,
                             ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
