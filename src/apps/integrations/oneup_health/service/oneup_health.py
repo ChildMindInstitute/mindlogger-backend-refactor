@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from datetime import datetime, timezone
 from functools import reduce
@@ -18,6 +19,12 @@ from config import settings
 __all__ = ["OneupHealthService"]
 
 from infrastructure.logger import logger
+
+
+def get_unique_short_id(submit_id: uuid.UUID, activity_id: uuid.UUID | None) -> str:
+    full_unique_id = f"{submit_id}_{activity_id}"
+
+    return hashlib.sha1(full_unique_id.encode()).hexdigest()
 
 
 class OneupHealthAPIClient:
@@ -186,12 +193,13 @@ class OneupHealthService:
         """
         self._client = OneupHealthAPIClient()
 
-    async def _generate_auth_code(self, subject_id: uuid.UUID) -> str:
+    async def _generate_auth_code(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> str:
         """
         Generate an authentication code for a subject.
 
         Args:
-            subject_id (uuid.UUID): The ID of the subject to generate the code for.
+            unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            activity_id (uuid.UUID | None): The unique identifier for the activity.
 
         Returns:
             str: The generated authentication code.
@@ -199,7 +207,8 @@ class OneupHealthService:
         Raises:
             OneUpHealthAPIError: If the API request fails.
         """
-        result = await self._client.post("/user-management/v1/user/auth-code", params={"app_user_id": str(subject_id)})
+        app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
+        result = await self._client.post("/user-management/v1/user/auth-code", params={"app_user_id": app_user_id})
 
         code = result.get("code")
         return code
@@ -224,12 +233,13 @@ class OneupHealthService:
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 
-    async def get_oneup_user_id(self, unique_id: uuid.UUID):
+    async def get_oneup_user_id(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None):
         """
         Get the OneUp Health user ID
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the user.
+            unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
             int or None: The OneUp Health user ID if found, None otherwise.
@@ -237,7 +247,8 @@ class OneupHealthService:
         Raises:
             OneUpHealthAPIError: If the API request fails.
         """
-        result = await self._client.get("/user-management/v1/user", params={"app_user_id": str(unique_id)})
+        app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
+        result = await self._client.get("/user-management/v1/user", params={"app_user_id": app_user_id})
 
         entries = result.get("entry", [])
         if len(entries) == 0:
@@ -245,14 +256,15 @@ class OneupHealthService:
 
         oneup_user_id = entries[0].get("oneup_user_id")
 
-        return oneup_user_id
+        return {"oneup_user_id": str(oneup_user_id), "app_user_id": app_user_id}
 
-    async def create_user(self, unique_id: uuid.UUID) -> dict[str, str]:
+    async def create_user(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> dict[str, str]:
         """
         Create a new user in the OneUp Health platform or retrieve an existing user.
 
         Args:
             unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
             dict: A dictionary containing the oneup_user_id and optionally a code.
@@ -261,14 +273,19 @@ class OneupHealthService:
             OneUpHealthAPIError: If the API request fails and the user doesn't already exist.
         """
         try:
-            result = await self._client.post("/user-management/v1/user", params={"app_user_id": str(unique_id)})
-            return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
+            app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
+            result = await self._client.post("/user-management/v1/user", params={"app_user_id": app_user_id})
+            return {
+                "oneup_user_id": result["oneup_user_id"],
+                "code": result["code"],
+                "app_user_id": result["app_user_id"],
+            }
         except OneUpHealthUserAlreadyExists:
-            if oneup_user_id := await self.get_oneup_user_id(unique_id=unique_id):
-                return {"oneup_user_id": oneup_user_id}
+            if result := await self.get_oneup_user_id(unique_id=unique_id, activity_id=activity_id):
+                return {"oneup_user_id": result["oneup_user_id"], "app_user_id": result["app_user_id"]}
             raise
 
-    async def retrieve_token(self, unique_id: uuid.UUID, code: str | None = None):
+    async def retrieve_token(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None, code: str | None = None):
         """
         Retrieve access and refresh tokens for a user.
 
@@ -276,6 +293,7 @@ class OneupHealthService:
 
         Args:
             unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            activity_id (uuid.UUID, optional): The unique identifier for the activity.
             code (str, optional): An existing authentication code to use.
 
         Returns:
@@ -286,7 +304,7 @@ class OneupHealthService:
             AssertionError: If no code is available.
         """
         if not code:
-            code = await self._generate_auth_code(unique_id)
+            code = await self._generate_auth_code(unique_id, activity_id)
 
         assert code
         return await self._get_token(code)

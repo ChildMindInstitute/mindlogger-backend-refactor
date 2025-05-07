@@ -10,4 +10,5 @@ class OneupHealthToken(PublicModel):
     refresh_token: str | None = Field(default=None)
     subject_id: uuid.UUID | None = Field(default=None)
     submit_id: uuid.UUID | None = Field(default=None)
+    app_user_id: str
     oneup_user_id: int
