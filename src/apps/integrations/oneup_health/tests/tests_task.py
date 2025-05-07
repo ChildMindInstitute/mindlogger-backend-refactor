@@ -83,21 +83,24 @@ class TestTaskIngestUserData:
             upload_resources.return_value = "fake/storage/path"
 
             submit_id = uuid.uuid4()
+            activity_id = applet_one.activities[0].id
             task = await task_ingest_user_data.kicker().kiq(
-                applet_id=applet_one.id, unique_id=submit_id, activity_history_id=f"{uuid.uuid4()}_1.0.0"
+                applet_id=applet_one.id, unique_id=submit_id, activity_id=activity_id
             )
             result = await task.wait_result()
 
             assert result.return_value == "fake/storage/path"
             assert upload_resources.called
 
-            answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id(submit_id)
+            answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id_and_activity_id(
+                submit_id=submit_id, activity_id=activity_id
+            )
             assert answers_ehr is not None
             assert answers_ehr.ehr_storage_uri == "fake/storage/path"
             assert answers_ehr.ehr_ingestion_status == EHRIngestionStatus.COMPLETED
 
     @pytest.mark.asyncio
-    async def test_no_oneup_user_id(self, session, httpx_mock: HTTPXMock):
+    async def test_no_oneup_user_id(self, session, applet_one: AppletFull, httpx_mock: HTTPXMock):
         # mock ge user
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user"),
@@ -110,16 +113,19 @@ class TestTaskIngestUserData:
 
         applet_id = uuid.uuid4()
         unique_id = uuid.uuid4()
-        result = await task_ingest_user_data(applet_id, unique_id, activity_history_id=f"{uuid.uuid4()}_1.0.0")
+        activity_id = applet_one.activities[0].id
+        result = await task_ingest_user_data(applet_id, unique_id, activity_id)
         assert result is None
 
-        answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id(submit_id=unique_id)
+        answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id_and_activity_id(
+            submit_id=unique_id, activity_id=activity_id
+        )
         assert answers_ehr is not None
         assert answers_ehr.ehr_storage_uri is None
         assert answers_ehr.ehr_ingestion_status == EHRIngestionStatus.FAILED
 
     @pytest.mark.asyncio
-    async def test_transfer_not_complete(self, session, httpx_mock: HTTPXMock):
+    async def test_transfer_not_complete(self, session, applet_one: AppletFull, httpx_mock: HTTPXMock):
         # mock ge user
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user"),
@@ -135,12 +141,15 @@ class TestTaskIngestUserData:
             with patch("apps.integrations.oneup_health.service.task._schedule_retry", new=AsyncMock()) as mock_retry:
                 applet_id = uuid.uuid4()
                 unique_id = uuid.uuid4()
-                result = await task_ingest_user_data(applet_id, unique_id, activity_history_id=f"{uuid.uuid4()}_1.0.0")
+                activity_id = applet_one.activities[0].id
+                result = await task_ingest_user_data(applet_id, unique_id, activity_id=activity_id)
                 assert result is None
                 assert mock_process.called
                 assert mock_retry.called
 
-                answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id(submit_id=unique_id)
+                answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id_and_activity_id(
+                    submit_id=unique_id, activity_id=activity_id
+                )
                 assert answers_ehr is not None
                 assert answers_ehr.ehr_storage_uri is None
                 assert answers_ehr.ehr_ingestion_status == EHRIngestionStatus.IN_PROGRESS
@@ -214,10 +223,11 @@ class TestTaskIngestUserData:
         )
 
         unique_id = uuid.uuid4()
+        activity_id = applet_one.activities[0].id
         oneup_user_id = 1
         start_date = None
 
-        result = await _process_data_transfer(session, applet_one.id, unique_id, oneup_user_id, start_date)
+        result = await _process_data_transfer(session, applet_one.id, unique_id, activity_id, oneup_user_id, start_date)
 
         # Should return None since not all transfers are complete
         assert result is None
@@ -289,6 +299,7 @@ class TestTaskIngestUserData:
         )
 
         unique_id = uuid.uuid4()
+        activity_id = applet_one.activities[0].id
         oneup_user_id = 1
         start_date = None
 
@@ -297,7 +308,9 @@ class TestTaskIngestUserData:
         ) as upload_resources:
             upload_resources.return_value = "fake/storage/path"
 
-            result = await _process_data_transfer(session, applet_one.id, unique_id, oneup_user_id, start_date)
+            result = await _process_data_transfer(
+                session, applet_one.id, unique_id, activity_id, oneup_user_id, start_date
+            )
 
             assert result == "fake/storage/path"
             assert upload_resources.called
@@ -319,10 +332,11 @@ class TestTaskIngestUserData:
 
         # Test with session mock
         unique_id = uuid.uuid4()
+        activity_id = applet_one.activities[0].id
         oneup_user_id = 1
         start_date = None
 
-        result = await _process_data_transfer(session, applet_one.id, unique_id, oneup_user_id, start_date)
+        result = await _process_data_transfer(session, applet_one.id, unique_id, activity_id, oneup_user_id, start_date)
 
         # Should return None due to the HTTP error
         assert result is None
@@ -348,7 +362,13 @@ class TestTaskIngestUserData:
                 "apps.integrations.oneup_health.service.task._exponential_backoff",
                 return_value=10,
             ) as mock_backoff:
-                await _schedule_retry(applet_one.id, unique_id, start_date, retry_count)
+                await _schedule_retry(
+                    applet_id=applet_one.id,
+                    unique_id=unique_id,
+                    activity_id=applet_one.activities[0].id,
+                    start_date=start_date,
+                    retry_count=retry_count,
+                )
 
                 mock_backoff.assert_called_once_with(retry_count)
                 mock_task.kicker.assert_called_once()
@@ -356,6 +376,7 @@ class TestTaskIngestUserData:
                 kiq.assert_awaited_once_with(
                     applet_id=applet_one.id,
                     unique_id=unique_id,
+                    activity_id=applet_one.activities[0].id,
                     start_date=start_date,
                     retry_count=retry_count + 1,
                 )
