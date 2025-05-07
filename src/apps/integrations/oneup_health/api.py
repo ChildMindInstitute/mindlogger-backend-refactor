@@ -2,11 +2,13 @@ import uuid
 
 from fastapi import Body, Depends
 
+from apps.activities.crud import ActivitiesCRUD
 from apps.authentication.deps import get_current_user
 from apps.integrations.oneup_health.domain import OneupHealthToken
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.shared.domain import InternalModel, Response
+from apps.shared.exception import NotFoundError
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User
 from apps.workspaces.service.check_access import CheckAccessService
@@ -39,25 +41,36 @@ async def retrieve_token(
         return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, subject_id=subject.id, **token))
 
 
-async def retrieve_token_by_submit_id(
-    applet_id: uuid.UUID, submit_id: uuid.UUID, user: User = Depends(get_current_user), session=Depends(get_session)
+async def retrieve_token_by_submit_id_and_activity_id(
+    applet_id: uuid.UUID,
+    submit_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
 ) -> Response[OneupHealthToken]:
     async with atomic(session):
         await CheckAccessService(session, user.id).check_answer_create_access(applet_id)
 
+        activity = await ActivitiesCRUD(session).get_by_id(activity_id)
+        if activity is None or activity.applet_id != applet_id:
+            raise NotFoundError("Activity does not belong to the applet")
+
         oneup_health_service = OneupHealthService()
 
-        response = await oneup_health_service.create_user(submit_id)
+        response = await oneup_health_service.create_user(submit_id, activity_id)
         oneup_user_id = int(response["oneup_user_id"])
+        app_user_id = response["app_user_id"]
         code = response.get("code")
 
-        token = await oneup_health_service.retrieve_token(unique_id=submit_id, code=code)
+        token = await oneup_health_service.retrieve_token(unique_id=submit_id, activity_id=activity_id, code=code)
 
-        return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, submit_id=submit_id, **token))
+        return Response(
+            result=OneupHealthToken(oneup_user_id=oneup_user_id, submit_id=submit_id, app_user_id=app_user_id, **token)
+        )
 
 
 class EHRTriggerInput(InternalModel):
-    activity_history_id: str
+    activity_id: uuid.UUID
     applet_id: uuid.UUID
     submit_id: uuid.UUID
 
@@ -66,7 +79,7 @@ async def trigger_data_fetch(trigger_input: EHRTriggerInput = Body(...)):
     await task_ingest_user_data.kicker().kiq(
         applet_id=trigger_input.applet_id,
         unique_id=trigger_input.submit_id,
-        activity_history_id=trigger_input.activity_history_id,
+        activity_id=trigger_input.activity_id,
     )
 
     return Response(result="ok")
