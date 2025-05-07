@@ -1119,8 +1119,24 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         schemas = await self._create_many(schemas)
         return schemas
 
-    async def get_by_submit_id(self, submit_id: uuid.UUID) -> AnswerEHRSchema | None:
-        return await self._get("submit_id", submit_id)
+    async def get_by_submit_id(self, submit_id: uuid.UUID) -> list[AnswerEHRSchema]:
+        query = select(self.schema_class).where(self.schema_class.submit_id == submit_id)
+        result = await self._execute(query)
+
+        return result.scalars().all()
+
+    async def get_by_submit_id_and_activity_id(
+        self, submit_id: uuid.UUID, activity_id: uuid.UUID
+    ) -> AnswerEHRSchema | None:
+        query = (
+            select(self.schema_class)
+            .where((self.schema_class.submit_id == submit_id))
+            .where(self.schema_class.activity_id == activity_id)
+        )
+
+        result = await self._execute(query)
+
+        return result.scalars().one_or_none()
 
     async def update_status(
         self, submit_id: uuid.UUID, activity_id: uuid.UUID, status: EHRIngestionStatus
@@ -1130,16 +1146,19 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
 
         Args:
             submit_id: The UUID of the submission
-            activity_history_id: The activity history ID
+            activity_id: The UUID of the activity
             status: The new EHR ingestion status
 
         Returns:
             List of updated AnswerEHRSchema objects
         """
-        query = update(self.schema_class)
-        query = query.where((self.schema_class.submit_id == submit_id) & (self.schema_class.activity_id == activity_id))
-        query = query.values(ehr_ingestion_status=status)
-        query = query.returning(self.schema_class)
+        query = (
+            update(self.schema_class)
+            .where(self.schema_class.submit_id == submit_id)
+            .where(self.schema_class.activity_id == activity_id)
+            .values(ehr_ingestion_status=status)
+            .returning(self.schema_class)
+        )
 
         result = await self._execute(query)
         return result.scalar_one_or_none()

@@ -28,7 +28,7 @@ class TestOneupHealth:
     ):
         # mock create user
         httpx_mock.add_response(
-            url=re.compile(".*/user-management/v1/user"),
+            url=re.compile(".*/user-management/v1/user.*"),
             method="POST",
             json={
                 "success": True,
@@ -39,7 +39,7 @@ class TestOneupHealth:
 
         # mock get token
         httpx_mock.add_response(
-            url=re.compile(".*/oauth2/token"),
+            url=re.compile(".*/oauth2/token.*"),
             method="POST",
             json={
                 "access_token": "token_test",
