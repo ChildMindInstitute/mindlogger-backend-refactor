@@ -2,6 +2,7 @@ import re
 import uuid
 
 import httpx
+import pytest
 from pytest_httpx import HTTPXMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +20,7 @@ class TestOneupHealth:
         "integrations/oneup_health/applet/{applet_id}/submission/{submit_id}/activity/{activity_id}/token"
     )
 
+    @pytest.mark.asyncio
     async def test_get_token_creating_user_success(
         self,
         client: TestClient,
@@ -26,14 +28,18 @@ class TestOneupHealth:
         tom_applet_one_subject: SubjectFull,
         httpx_mock: HTTPXMock,
     ):
+        assert tom_applet_one_subject.id
+        app_user_id = get_unique_short_id(submit_id=tom_applet_one_subject.id, activity_id=None)
+
         # mock create user
         httpx_mock.add_response(
-            url=re.compile(".*/user-management/v1/user.*"),
+            url=re.compile(".*/user-management/v1/user"),
             method="POST",
             json={
                 "success": True,
                 "code": "code_test",
                 "oneup_user_id": 1,
+                "app_user_id": app_user_id,
             },
         )
 
@@ -56,8 +62,9 @@ class TestOneupHealth:
         assert result["subjectId"] == str(tom_applet_one_subject.id)
         assert result["submitId"] is None
         assert result["oneupUserId"] == 1
-        assert result["appUserId"] == str(tom_applet_one_subject.id)
+        assert result["appUserId"] == app_user_id
 
+    @pytest.mark.asyncio
     async def test_get_token_by_submit_id_creating_user_success(
         self,
         client: TestClient,
@@ -102,6 +109,7 @@ class TestOneupHealth:
         assert result["oneupUserId"] == 1
         assert result["appUserId"] == app_user_id
 
+    @pytest.mark.asyncio
     async def test_get_token_user_already_exists_success(
         self,
         client: TestClient,
@@ -157,6 +165,7 @@ class TestOneupHealth:
         assert result["subjectId"] == str(tom_applet_one_subject.id)
         assert result["oneupUserId"] == 1
 
+    @pytest.mark.asyncio
     async def test_get_token_without_creating_user(
         self,
         client: TestClient,
@@ -179,6 +188,7 @@ class TestOneupHealth:
             },
         )
 
+        app_user_id = get_unique_short_id(submit_id=tom_applet_one_subject.id, activity_id=None)
         # mock create auth code
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user/auth-code"),
@@ -188,6 +198,7 @@ class TestOneupHealth:
                 "code": "code_test",
                 "oneup_user_id": 1,
                 "active": True,
+                "app_user_id": app_user_id,
             },
         )
 

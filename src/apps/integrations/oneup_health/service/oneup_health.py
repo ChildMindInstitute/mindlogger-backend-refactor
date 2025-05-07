@@ -106,7 +106,7 @@ class OneupHealthAPIClient:
 
                 result = resp.json()
                 if result.get("success") is False:
-                    logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
+                    logger.warning(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
                     raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
                 return result
@@ -170,7 +170,7 @@ class OneupHealthAPIClient:
 
                 result = resp.json()
                 if result.get("success") is False:
-                    logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
+                    logger.warning(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
                     raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
                 return result
@@ -210,8 +210,7 @@ class OneupHealthService:
         app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
         result = await self._client.post("/user-management/v1/user/auth-code", params={"app_user_id": app_user_id})
 
-        code = result.get("code")
-        return code
+        return result.get("code")
 
     async def _get_token(self, code: str) -> dict[str, str]:
         """
@@ -281,8 +280,9 @@ class OneupHealthService:
                 "app_user_id": result["app_user_id"],
             }
         except OneUpHealthUserAlreadyExists:
-            if result := await self.get_oneup_user_id(unique_id=unique_id, activity_id=activity_id):
-                return {"oneup_user_id": result["oneup_user_id"], "app_user_id": result["app_user_id"]}
+            user = await self.get_oneup_user_id(unique_id=unique_id, activity_id=activity_id)
+            if user is not None and user["oneup_user_id"] is not None:
+                return {"oneup_user_id": user["oneup_user_id"], "app_user_id": user["app_user_id"]}
             raise
 
     async def retrieve_token(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None, code: str | None = None):
@@ -303,11 +303,12 @@ class OneupHealthService:
             OneUpHealthAPIError: If the API request fails.
             AssertionError: If no code is available.
         """
+        app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
         if not code:
             code = await self._generate_auth_code(unique_id, activity_id)
 
         assert code
-        return await self._get_token(code)
+        return {**await self._get_token(code), "app_user_id": app_user_id}
 
     async def check_audit_events(self, oneup_user_id: int, start_date: datetime | None) -> dict[str, int]:
         """
