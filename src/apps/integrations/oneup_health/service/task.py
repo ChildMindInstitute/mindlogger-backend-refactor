@@ -128,7 +128,11 @@ async def _schedule_retry(
 
 @broker.task
 async def task_ingest_user_data(
-    applet_id: uuid.UUID, unique_id: uuid.UUID, start_date: datetime | None = None, retry_count: int = 0
+    applet_id: uuid.UUID,
+    unique_id: uuid.UUID,
+    start_date: datetime | None = None,
+    retry_count: int = 0,
+    error_retry_count: int = 0,
 ) -> str | None:
     """
     Asynchronous task to ingest user health data from OneUp Health.
@@ -141,6 +145,7 @@ async def task_ingest_user_data(
         unique_id (uuid.UUID): The unique identifier for the user
         start_date (datetime, optional): The start date of the transfer process
         retry_count (int): The current retry attempt count
+        error_retry_count (int): The current error retry attempt count
 
     Returns:
         list | None: List of retrieved resources if successful, None otherwise
@@ -158,7 +163,7 @@ async def task_ingest_user_data(
             storage_path = await _process_data_transfer(session, applet_id, unique_id, oneup_user_id, start_date)
             if storage_path is None:
                 logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
-                await _schedule_retry(applet_id, unique_id, start_date, retry_count)
+                await _schedule_retry(applet_id, unique_id, start_date, retry_count, error_retry_count)
 
     except BaseError as e:
         logger.error(f"Error in task_ingest_user_data: {e.message}")
