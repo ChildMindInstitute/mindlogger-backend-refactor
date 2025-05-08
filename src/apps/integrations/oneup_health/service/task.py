@@ -88,7 +88,11 @@ async def _process_data_transfer(
 
 
 async def _schedule_retry(
-    applet_id: uuid.UUID, unique_id: uuid.UUID, start_date: datetime | None, retry_count: int
+    applet_id: uuid.UUID,
+    unique_id: uuid.UUID,
+    start_date: datetime | None,
+    retry_count: int,
+    error_retry_count: int = 0,
 ) -> None:
     """
     Schedule a retry of the data ingestion task with exponential backoff.
@@ -98,16 +102,28 @@ async def _schedule_retry(
         unique_id (uuid.UUID): The unique identifier for the user
         start_date (datetime): The start date of the transfer process
         retry_count (int): The current retry attempt count
+        error_retry_count (int): The current error retry attempt count
     """
     delay = _exponential_backoff(retry_count)
     if delay > 0:
         retry_count += 1
         logger.info(f"Scheduling retry #{retry_count} in {delay} seconds")
-        await (
-            task_ingest_user_data.kicker()
-            .with_labels(delay=delay)
-            .kiq(applet_id=applet_id, unique_id=unique_id, start_date=start_date, retry_count=retry_count)
-        )
+        try:
+            await (
+                task_ingest_user_data.kicker()
+                .with_labels(delay=delay)
+                .kiq(applet_id=applet_id, unique_id=unique_id, start_date=start_date, retry_count=retry_count)
+            )
+        except BaseError as e:
+            error_retry_count += 1
+            if error_retry_count > settings.oneup_health.max_error_retries:
+                logger.error(f"Max error retries exceeded for OneUp Health user ID {unique_id}")
+                raise e
+            logger.warning(
+                f"Failed to ingest user data for OneUp Health user ID {unique_id}.\
+                 Scheduling error retry number {error_retry_count}"
+            )
+            await _schedule_retry(applet_id, unique_id, start_date, retry_count, error_retry_count)
 
 
 @broker.task
@@ -146,5 +162,6 @@ async def task_ingest_user_data(
 
     except BaseError as e:
         logger.error(f"Error in task_ingest_user_data: {e.message}")
+        raise e
 
     return storage_path
