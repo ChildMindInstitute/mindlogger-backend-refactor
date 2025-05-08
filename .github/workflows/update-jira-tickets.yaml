@@ -16,6 +16,7 @@ jobs:
       JENKINS_USER: ${{ secrets.JENKINS_USER }}
       JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
       JIRA_WEBHOOK_URL: ${{ secrets.JIRA_WEBHOOK_URL }}
+      JIRA_WEBHOOK_SECRET: ${{ secrets.JIRA_WEBHOOK_SECRET }}
       JENKINS_HOST: ${{ vars.JENKINS_HOST }}
 
       # The max amount of time (in minutes) we should wait for the current Jenkins build to finish. Defaults to 6 hours
@@ -127,7 +128,7 @@ jobs:
               echo "Build successful! Submitting ticket numbers to Jira"
               tickets="${{ steps.jira-tickets.outputs.tickets }}"
               json="{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]'), \"data\": { \"tag\": \"${currentTag}\", \"repository\": \"${REPO_URL}\" } }"
-              curl -X POST -H 'Content-Type: application/json' --url "${JIRA_WEBHOOK_URL}" --data "$json"
+              curl -X POST -H 'Content-Type: application/json' -H "X-Automation-Webhook-Token: ${JIRA_WEBHOOK_SECRET}" --url "${JIRA_WEBHOOK_URL}" --data "$json"
               break
             elif [[ "$result" != "null" ]]; then
               echo "Build failed, ending workflow"
