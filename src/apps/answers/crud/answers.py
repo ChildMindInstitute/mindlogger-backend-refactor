@@ -357,6 +357,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.client,
                 AnswerItemSchema.tz_offset,
                 AnswerItemSchema.scheduled_event_id,
+                AnswerSchema.event_history_id.label("scheduled_event_history_id"),
             )
             .select_from(AnswerSchema)
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
