@@ -8,3 +8,4 @@ class OneUpHealthSettings(BaseModel):
     auth_base_url: str = "https://auth.1up.health"
     base_backoff_delay: int = 5
     max_backoff_delay: int = 60 * 60 * 24
+    max_error_retries: int = 5
