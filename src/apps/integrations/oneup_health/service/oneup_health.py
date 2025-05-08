@@ -193,12 +193,12 @@ class OneupHealthService:
         """
         self._client = OneupHealthAPIClient()
 
-    async def _generate_auth_code(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> str:
+    async def _generate_auth_code(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> str:
         """
         Generate an authentication code for a subject.
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            submit_id (uuid.UUID): The unique identifier for the submission.
             activity_id (uuid.UUID | None): The unique identifier for the activity.
 
         Returns:
@@ -207,7 +207,7 @@ class OneupHealthService:
         Raises:
             OneUpHealthAPIError: If the API request fails.
         """
-        app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
+        app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
         result = await self._client.post("/user-management/v1/user/auth-code", params={"app_user_id": app_user_id})
 
         return result.get("code")
@@ -232,12 +232,12 @@ class OneupHealthService:
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 
-    async def get_oneup_user_id(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None):
+    async def get_oneup_user_id(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None):
         """
         Get the OneUp Health user ID
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            submit_id (uuid.UUID): The unique identifier for the submission.
             activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
@@ -246,7 +246,7 @@ class OneupHealthService:
         Raises:
             OneUpHealthAPIError: If the API request fails.
         """
-        app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
+        app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
         result = await self._client.get("/user-management/v1/user", params={"app_user_id": app_user_id})
 
         entries = result.get("entry", [])
@@ -257,12 +257,12 @@ class OneupHealthService:
 
         return {"oneup_user_id": str(oneup_user_id), "app_user_id": app_user_id}
 
-    async def create_user(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> dict[str, str]:
+    async def create_user(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> dict[str, str]:
         """
         Create a new user in the OneUp Health platform or retrieve an existing user.
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            submit_id (uuid.UUID): The unique identifier for the submission.
             activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
@@ -272,7 +272,7 @@ class OneupHealthService:
             OneUpHealthAPIError: If the API request fails and the user doesn't already exist.
         """
         try:
-            app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
+            app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
             result = await self._client.post("/user-management/v1/user", params={"app_user_id": app_user_id})
             return {
                 "oneup_user_id": result["oneup_user_id"],
@@ -280,19 +280,19 @@ class OneupHealthService:
                 "app_user_id": result["app_user_id"],
             }
         except OneUpHealthUserAlreadyExists:
-            user = await self.get_oneup_user_id(unique_id=unique_id, activity_id=activity_id)
+            user = await self.get_oneup_user_id(submit_id=submit_id, activity_id=activity_id)
             if user is not None and user["oneup_user_id"] is not None:
                 return {"oneup_user_id": user["oneup_user_id"], "app_user_id": user["app_user_id"]}
             raise
 
-    async def retrieve_token(self, unique_id: uuid.UUID, activity_id: uuid.UUID | None = None, code: str | None = None):
+    async def retrieve_token(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None, code: str | None = None):
         """
         Retrieve access and refresh tokens for a user.
 
         If no code is provided, a new authentication code will be generated.
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            submit_id (uuid.UUID): The unique identifier for the 1Up user.
             activity_id (uuid.UUID, optional): The unique identifier for the activity.
             code (str, optional): An existing authentication code to use.
 
@@ -303,9 +303,9 @@ class OneupHealthService:
             OneUpHealthAPIError: If the API request fails.
             AssertionError: If no code is available.
         """
-        app_user_id = get_unique_short_id(submit_id=unique_id, activity_id=activity_id)
+        app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
         if not code:
-            code = await self._generate_auth_code(unique_id, activity_id)
+            code = await self._generate_auth_code(submit_id, activity_id)
 
         assert code
         return {**await self._get_token(code), "app_user_id": app_user_id}
@@ -388,7 +388,7 @@ class OneupHealthService:
         return resources
 
     async def retrieve_patient_data(
-        self, session, applet_id: uuid.UUID, unique_id: uuid.UUID, activity_id: uuid.UUID, oneup_user_id: int
+        self, session, applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID, oneup_user_id: int
     ) -> str | None:
         """
         Retrieve and store patient data for a subject.
@@ -398,7 +398,7 @@ class OneupHealthService:
         Args:
             session: The database session to use.
             applet_id (uuid.UUID): The unique identifier for the applet.
-            unique_id (uuid.UUID): The unique identifier for the submission.
+            submit_id (uuid.UUID): The unique identifier for the submission.
             activity_id (uuid.UUID): The unique identifier for the activity.
             oneup_user_id (int): The OneUp Health user ID
 
@@ -428,7 +428,7 @@ class OneupHealthService:
                         resources=resources,
                         healthcare_provider_id=healthcare_provider_id,
                         date=datetime.now(timezone.utc),
-                        unique_id=unique_id,
+                        submit_id=submit_id,
                         activity_id=activity_id,
                     )
 
