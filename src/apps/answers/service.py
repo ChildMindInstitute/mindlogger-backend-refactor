@@ -2045,7 +2045,7 @@ class AnswerService:
     async def trigger_ehr_ingestion(answer):
         await task_ingest_user_data.kicker().kiq(
             applet_id=answer.applet_id,
-            unique_id=answer.submit_id,
+            submit_id=answer.submit_id,
             activity_history_id=answer.activity_history_id,
         )
 

@@ -36,7 +36,7 @@ async def retrieve_token(
             oneup_user_id = int(response["oneup_user_id"])
             await subjects_service.update(subject.id, meta={"oneup_user_id": oneup_user_id})
 
-        token = await oneup_health_service.retrieve_token(unique_id=subject.id, code=code)
+        token = await oneup_health_service.retrieve_token(submit_id=subject.id, code=code)
 
         return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, subject_id=subject.id, **token))
 
@@ -61,7 +61,7 @@ async def retrieve_token_by_submit_id_and_activity_id(
         oneup_user_id = int(response["oneup_user_id"])
         code = response.get("code")
 
-        token = await oneup_health_service.retrieve_token(unique_id=submit_id, activity_id=activity_id, code=code)
+        token = await oneup_health_service.retrieve_token(submit_id=submit_id, activity_id=activity_id, code=code)
 
         return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, submit_id=submit_id, **token))
 
@@ -75,7 +75,7 @@ class EHRTriggerInput(InternalModel):
 async def trigger_data_fetch(trigger_input: EHRTriggerInput = Body(...)):
     await task_ingest_user_data.kicker().kiq(
         applet_id=trigger_input.applet_id,
-        unique_id=trigger_input.submit_id,
+        submit_id=trigger_input.submit_id,
         activity_id=trigger_input.activity_id,
     )
 
