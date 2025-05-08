@@ -1130,7 +1130,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
     ) -> AnswerEHRSchema | None:
         query = (
             select(self.schema_class)
-            .where((self.schema_class.submit_id == submit_id))
+            .where(self.schema_class.submit_id == submit_id)
             .where(self.schema_class.activity_id == activity_id)
         )
 
@@ -1142,7 +1142,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         self, submit_id: uuid.UUID, activity_id: uuid.UUID, status: EHRIngestionStatus
     ) -> AnswerEHRSchema | None:
         """
-        Update the EHR ingestion status for a specific answer identified by submit_id and activity_history_id.
+        Update the EHR ingestion status for a specific answer identified by submit_id and activity_id.
 
         Args:
             submit_id: The UUID of the submission
@@ -1167,7 +1167,8 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         """
         Upsert an `AnswerEHRSchema` entity.
 
-        This function will create a new `AnswerEHRSchema` entity if one does not already exist with the given `submit_id`.
+        This function will create a new `AnswerEHRSchema` entity if one does not already exist with the
+        given `submit_id` and `activity_id`.
         If an existing entity is found, it will be updated with the provided values.
 
         Args:
