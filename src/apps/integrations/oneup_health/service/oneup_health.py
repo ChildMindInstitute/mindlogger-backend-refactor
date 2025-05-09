@@ -232,7 +232,7 @@ class OneupHealthService:
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 
-    async def get_oneup_user_id(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None):
+    async def get_oneup_user_id(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> int | None:
         """
         Get the OneUp Health user ID
 
@@ -255,7 +255,7 @@ class OneupHealthService:
 
         oneup_user_id = entries[0].get("oneup_user_id")
 
-        return {"oneup_user_id": str(oneup_user_id), "app_user_id": app_user_id}
+        return oneup_user_id
 
     async def create_user(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> dict[str, str]:
         """
@@ -274,15 +274,11 @@ class OneupHealthService:
         try:
             app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
             result = await self._client.post("/user-management/v1/user", params={"app_user_id": app_user_id})
-            return {
-                "oneup_user_id": result["oneup_user_id"],
-                "code": result["code"],
-                "app_user_id": result["app_user_id"],
-            }
+            return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
         except OneUpHealthUserAlreadyExists:
-            user = await self.get_oneup_user_id(submit_id=submit_id, activity_id=activity_id)
-            if user is not None and user["oneup_user_id"] is not None:
-                return {"oneup_user_id": user["oneup_user_id"], "app_user_id": user["app_user_id"]}
+            oneup_user_id = await self.get_oneup_user_id(submit_id=submit_id, activity_id=activity_id)
+            if oneup_user_id is not None:
+                return {"oneup_user_id": str(oneup_user_id)}
             raise
 
     async def retrieve_token(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None, code: str | None = None):

@@ -1150,7 +1150,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
             status: The new EHR ingestion status
 
         Returns:
-            List of updated AnswerEHRSchema objects
+            The updated AnswerEHRSchema object
         """
         query = (
             update(self.schema_class)

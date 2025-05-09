@@ -38,7 +38,7 @@ async def retrieve_token(
 
         token = await oneup_health_service.retrieve_token(submit_id=subject.id, code=code)
 
-        return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, subject_id=subject.id, **token))
+        return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, **token))
 
 
 async def retrieve_token_by_submit_id_and_activity_id(
@@ -63,7 +63,7 @@ async def retrieve_token_by_submit_id_and_activity_id(
 
         token = await oneup_health_service.retrieve_token(submit_id=submit_id, activity_id=activity_id, code=code)
 
-        return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, submit_id=submit_id, **token))
+        return Response(result=OneupHealthToken(oneup_user_id=oneup_user_id, **token))
 
 
 class EHRTriggerInput(InternalModel):
