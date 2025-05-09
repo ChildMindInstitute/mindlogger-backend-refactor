@@ -175,8 +175,10 @@ async def task_ingest_user_data(
                     await AnswersEHRCRUD(session=session).upsert(answer_ehr)
 
                 async with atomic(answer_session):
-                    result = await OneupHealthService().get_oneup_user_id(submit_id=submit_id, activity_id=activity_id)
-                    if result is None:
+                    oneup_user_id = await OneupHealthService().get_oneup_user_id(
+                        submit_id=submit_id, activity_id=activity_id
+                    )
+                    if oneup_user_id is None:
                         logger.info(f"Submit ID {submit_id} and activity ID {activity_id} has no OneUp Health user ID")
                         await AnswersEHRCRUD(session=answer_session).update_status(
                             submit_id=submit_id,
@@ -184,8 +186,6 @@ async def task_ingest_user_data(
                             status=EHRIngestionStatus.FAILED,
                         )
                         return None
-
-                    oneup_user_id = result["oneup_user_id"]
 
                     # Process data transfer
                     storage_path = await _process_data_transfer(

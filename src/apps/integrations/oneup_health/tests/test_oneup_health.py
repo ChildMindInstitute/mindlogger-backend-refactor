@@ -59,8 +59,6 @@ class TestOneupHealth:
         result = response.json()["result"]
         assert result["accessToken"] == "token_test"
         assert result["refreshToken"] == "refresh_token_test"
-        assert result["subjectId"] == str(tom_applet_one_subject.id)
-        assert result["submitId"] is None
         assert result["oneupUserId"] == 1
         assert result["appUserId"] == app_user_id
 
@@ -104,8 +102,6 @@ class TestOneupHealth:
         result = response.json()["result"]
         assert result["accessToken"] == "token_test"
         assert result["refreshToken"] == "refresh_token_test"
-        assert result["subjectId"] is None
-        assert result["submitId"] == str(submit_id)
         assert result["oneupUserId"] == 1
         assert result["appUserId"] == app_user_id
 
@@ -156,14 +152,15 @@ class TestOneupHealth:
             },
         )
 
+        app_user_id = get_unique_short_id(submit_id=tom_applet_one_subject.id, activity_id=None)
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 200
         result = response.json()["result"]
         assert result["accessToken"] == "token_test"
         assert result["refreshToken"] == "refresh_token_test"
-        assert result["subjectId"] == str(tom_applet_one_subject.id)
         assert result["oneupUserId"] == 1
+        assert result["appUserId"] == app_user_id
 
     @pytest.mark.asyncio
     async def test_get_token_without_creating_user(
@@ -208,8 +205,8 @@ class TestOneupHealth:
         result = response.json()["result"]
         assert result["accessToken"] == "token_test"
         assert result["refreshToken"] == "refresh_token_test"
-        assert result["subjectId"] == str(tom_applet_one_subject.id)
         assert result["oneupUserId"] == 1
+        assert result["appUserId"] == app_user_id
 
     async def test_get_token_error_outside_us(
         self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
