@@ -114,6 +114,8 @@ async def create_answer(
         async with atomic(answer_session):
             answer = await service.create_answer(schema, device.device_id if device else None)
         await service.create_report_from_answer(answer)
+        if schema.allowed_ehr_ingest:
+            await service.trigger_ehr_ingestion(answer)
 
 
 async def create_anonymous_answer(
