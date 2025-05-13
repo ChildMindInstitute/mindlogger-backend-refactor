@@ -315,6 +315,7 @@ class TestTaskIngestUserData:
         unique_id = uuid.uuid4()
         start_date = None
         retry_count = 2
+        error_retry_count = 0
 
         with patch("apps.integrations.oneup_health.service.task.task_ingest_user_data") as mock_task:
             kicker = MagicMock()
@@ -329,7 +330,7 @@ class TestTaskIngestUserData:
                 "apps.integrations.oneup_health.service.task._exponential_backoff",
                 return_value=10,
             ) as mock_backoff:
-                await _schedule_retry(applet_one.id, unique_id, start_date, retry_count)
+                await _schedule_retry(applet_one.id, unique_id, start_date, retry_count, error_retry_count)
 
                 mock_backoff.assert_called_once_with(retry_count)
                 mock_task.kicker.assert_called_once()
@@ -339,4 +340,29 @@ class TestTaskIngestUserData:
                     unique_id=unique_id,
                     start_date=start_date,
                     retry_count=retry_count + 1,
+                    error_retry_count=error_retry_count,
                 )
+
+    @pytest.mark.asyncio
+    async def test_task_retries_on_connection_error(self, applet_one: AppletFull, httpx_mock: HTTPXMock):
+        """Test that the task retries when a connection error occurs during user data ingestion."""
+        import httpx
+
+        from apps.integrations.oneup_health.service import task as task_module
+        from apps.integrations.oneup_health.service.task import task_ingest_user_data
+
+        # Mock HTTP error for user-management call
+        for _ in range(5):
+            httpx_mock.add_exception(
+                url=re.compile(".*/user-management/v1/user"),
+                exception=httpx.RequestError("Connection error"),
+            )
+
+        submit_id = uuid.uuid4()
+        with patch.object(task_module, "_schedule_retry", wraps=task_module._schedule_retry) as mock_retry:
+            task = await task_ingest_user_data.kicker().kiq(applet_id=applet_one.id, unique_id=submit_id)
+            result = await task.wait_result()
+            # The result should be None due to the connection error
+            assert result.return_value is None
+            # The function should have been retried a total of 5 times
+            assert mock_retry.call_count == 5
