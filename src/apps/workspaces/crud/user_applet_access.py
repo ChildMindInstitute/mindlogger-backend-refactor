@@ -556,6 +556,10 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
                     SubjectSchema.last_name,
                     text("'subject_created_at'"),
                     SubjectSchema.created_at,
+                    text("'subject_updated_at'"),
+                    SubjectSchema.updated_at,
+                    text("'subject_is_deleted'"),
+                    SubjectSchema.is_deleted,
                     text("'roles'"),
                     func.coalesce(roles_subquery.c.roles, []),
                 )
@@ -587,7 +591,6 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             has_access,
             SubjectSchema.applet_id.in_(select(workspace_applets_sq)),
             SubjectSchema.applet_id == applet_id if applet_id else True,
-            SubjectSchema.soft_exists(),
         )
 
         query = query.group_by(
@@ -597,6 +600,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
 
         if query_params.filters:
             query = query.where(*_AppletUsersFilter().get_clauses(**query_params.filters))
+            if not query_params.filters.get("include_soft_deleted_subjects", False):
+                query = query.where(SubjectSchema.soft_exists())
         if query_params.search:
             query = query.having(_WorkspaceRespondentSearch().get_clauses(query_params.search))
 
