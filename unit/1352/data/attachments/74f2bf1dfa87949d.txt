@@ -1,0 +1,16 @@
+INFO     root:tasks.py:25 Reencryption 63bc3483-8d40-4ef0-9186-873f3fce8a36: reencrypt_answers start
+ERROR    root:tasks.py:85 Reencryption 63bc3483-8d40-4ef0-9186-873f3fce8a36: cannot process applet e0a01bf9-c955-4ed9-b3c3-e26b588f83e3, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+               ~~~~~~^^^^^^^^^
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2321, in _execute_mock_call
+    raise effect
+Exception: ERROR
