@@ -73,18 +73,61 @@ class OneupHealthAPIClient:
             OneUpHealthAPIError: If the API returns any other error status code.
         """
         if resp.status_code not in (200, 201, 400):
-            logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
+            # Log all errors with detailed information
+            logger.error(
+                "1UpHealth API error",
+                extra={
+                    "error_type": "oneup_health_api_error",
+                    "status_code": resp.status_code,
+                    "url_path": url_path,
+                    "response_text": resp.text[:500] if resp.text else None,
+                },
+            )
+
             if resp.status_code == 401:
                 # The API returns a 401 status code if the token has expired
+                logger.error(
+                    "1UpHealth token expired",
+                    extra={
+                        "error_type": "oneup_health_token_expired",
+                        "url_path": url_path,
+                    },
+                )
                 raise OneUpHealthTokenExpiredError()
+
             elif resp.status_code == 403:
                 # The API returns a 403 status code if request comes from outside the USA
+                logger.error(
+                    "1UpHealth geographic restriction",
+                    extra={
+                        "error_type": "oneup_health_geo_restricted",
+                        "url_path": url_path,
+                    },
+                )
                 raise OneUpHealthAPIForbiddenError()
+
             elif resp.status_code in (503, 504):
                 # The API returns 503 or 504 status codes if the service is unavailable
+                logger.error(
+                    "1UpHealth service unavailable",
+                    extra={
+                        "error_type": "oneup_health_service_unavailable",
+                        "status_code": resp.status_code,
+                        "url_path": url_path,
+                    },
+                )
                 raise OneUpHealthServiceUnavailableError()
 
             # The API should return a 400 status code if the request body is invalid.
+            logger.error(
+                "1UpHealth API error",
+                extra={
+                    "error_type": "oneup_health_api_error",
+                    "status_code": resp.status_code,
+                    "url_path": url_path,
+                    "response_text": resp.text[:500] if resp.text else None,
+                },
+            )
             raise OneUpHealthAPIError(resp.text)
 
     async def post(self, url_path, data=None, params=None):
