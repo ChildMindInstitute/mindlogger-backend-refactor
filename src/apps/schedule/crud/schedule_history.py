@@ -85,9 +85,9 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             EventHistorySchema.one_time_completion,
             EventHistorySchema.periodicity,
             EventHistorySchema.start_date,
-            EventHistorySchema.start_time,
+            func.coalesce(EventHistorySchema.start_time, "00:00:00").label("start_time"),
             EventHistorySchema.end_date,
-            EventHistorySchema.end_time,
+            func.coalesce(EventHistorySchema.end_time, "23:59:00").label("end_time"),
             EventHistorySchema.selected_date,
         ]
 
