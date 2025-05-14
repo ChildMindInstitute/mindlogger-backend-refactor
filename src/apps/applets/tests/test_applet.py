@@ -28,6 +28,7 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
 from apps.applets.errors import AppletAlreadyExist, AppletVersionNotFoundError
 from apps.applets.service.applet import AppletService
+from apps.shared.enums import Language
 from apps.shared.exception import NotFoundError
 from apps.shared.test.client import TestClient
 from apps.subjects.domain import Subject
@@ -220,6 +221,50 @@ class TestApplet:
         # that checks for uniqueness only among applets owned by the same user
         # even though Lucy has access to Tom's applet
         assert response.status_code == http.HTTPStatus.CREATED
+
+    async def test_manager_can_update_applet_with_same_name_as_own_applet(
+        self, client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_minimal_data: AppletCreate
+    ):
+        # First user (Tom) creates an applet
+        client.login(tom)
+        data_tom = applet_minimal_data.copy(deep=True)
+        data_tom.display_name = "Same Applet Name For Update Test"
+        data_tom.description = {Language.ENGLISH: "Original description"}
+        response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_tom)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        # Get the applet ID from the response
+        tom_applet_id = response.json()["result"]["id"]
+
+        # Second user (Lucy) creates an applet with the same name
+        client.login(lucy)
+        data_lucy = applet_minimal_data.copy(deep=True)
+        data_lucy.display_name = "Same Applet Name For Update Test"
+        response = await client.post(self.applet_create_url.format(owner_id=lucy.id), data=data_lucy)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        # Add Lucy as a manager to Tom's applet
+        await UserAppletAccessService(session, tom.id, uuid.UUID(tom_applet_id)).add_role(lucy.id, Role.MANAGER)
+
+        # Lucy tries to update Tom's applet (editing the description)
+        client.login(lucy)
+
+        # Prepare update data
+        update_data = AppletUpdate(**data_tom.dict())
+        update_data.description = {Language.ENGLISH: "Updated description by Lucy"}
+
+        # Perform the update
+        response = await client.put(
+            self.applet_detail_url.format(pk=tom_applet_id),
+            data=update_data,
+        )
+
+        # The update should succeed even though Lucy has her own applet with the same name
+        # because the _validate_applet_name function checks against the owner's applets (Tom)
+        # not the manager's applets (Lucy)
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+        assert result["description"] == {Language.ENGLISH: "Updated description by Lucy"}
 
     async def test_update_applet_change_activities_auto_assign(
         self, client: TestClient, tom: User, applet_one: AppletFull

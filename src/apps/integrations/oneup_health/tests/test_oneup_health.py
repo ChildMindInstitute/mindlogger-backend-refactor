@@ -152,6 +152,7 @@ class TestOneupHealth:
             },
         )
 
+        assert tom_applet_one_subject.id is not None
         app_user_id = get_unique_short_id(submit_id=tom_applet_one_subject.id, activity_id=None)
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
