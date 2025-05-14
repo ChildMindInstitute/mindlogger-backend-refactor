@@ -4,7 +4,7 @@ import re
 import uuid
 from collections import defaultdict
 from typing import Any, AsyncGenerator, Tuple, cast
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pydantic import EmailStr
@@ -1079,6 +1079,26 @@ class TestAnswerActivityItems(BaseTest):
 
         response = await client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
+    @pytest.mark.asyncio
+    async def test_answer_activity_with_ehr_ingestion(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create_applet_one: AppletAnswerCreate,
+        applet_one: AppletFull,
+        applet_one_lucy_subject: Subject,
+        applet_one_user_subject: Subject,
+    ):
+        client.login(tom)
+        data = answer_create_applet_one.copy(deep=True)
+        data.allowed_ehr_ingest = True
+
+        with patch("apps.answers.service.AnswerService.trigger_ehr_ingestion") as trigger_ehr_ingestion_mock:
+            response = await client.post(self.answer_url, data=data)
+            assert response.status_code == http.HTTPStatus.CREATED
+
+            trigger_ehr_ingestion_mock.assert_called()
 
     @pytest.mark.usefixtures("mock_report_server_response", "answer")
     async def test_get_latest_summary(

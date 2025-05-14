@@ -288,7 +288,7 @@ class OneupHealthService:
         If no code is provided, a new authentication code will be generated.
 
         Args:
-            submit_id (uuid.UUID): The unique identifier for the 1Up user.
+            submit_id (uuid.UUID): The unique identifier for the submission.
             activity_id (uuid.UUID, optional): The unique identifier for the activity.
             code (str, optional): An existing authentication code to use.
 

@@ -2042,11 +2042,11 @@ class AnswerService:
         return submissions_activity_metadata
 
     @staticmethod
-    async def trigger_ehr_ingestion(answer):
+    async def trigger_ehr_ingestion(applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID):
         await task_ingest_user_data.kicker().kiq(
-            applet_id=answer.applet_id,
-            submit_id=answer.submit_id,
-            activity_history_id=answer.activity_history_id,
+            applet_id=applet_id,
+            submit_id=submit_id,
+            activity_id=activity_id,
         )
 
 

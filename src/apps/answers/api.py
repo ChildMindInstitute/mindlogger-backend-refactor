@@ -115,7 +115,9 @@ async def create_answer(
             answer = await service.create_answer(schema, device.device_id if device else None)
         await service.create_report_from_answer(answer)
         if schema.allowed_ehr_ingest:
-            await service.trigger_ehr_ingestion(answer)
+            await service.trigger_ehr_ingestion(
+                applet_id=answer.applet_id, submit_id=answer.submit_id, activity_id=schema.activity_id
+            )
 
 
 async def create_anonymous_answer(
