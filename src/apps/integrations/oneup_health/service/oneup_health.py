@@ -111,7 +111,7 @@ class OneupHealthAPIClient:
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
     async def post_auth(self, url_path, data=None):
@@ -138,7 +138,7 @@ class OneupHealthAPIClient:
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
     async def get(self, url_path, params=None, headers=None):
@@ -175,7 +175,7 @@ class OneupHealthAPIClient:
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
 
