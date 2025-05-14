@@ -11,3 +11,10 @@ class OneupHealthToken(PublicModel):
     subject_id: uuid.UUID | None = Field(default=None)
     submit_id: uuid.UUID | None = Field(default=None)
     oneup_user_id: int
+
+
+class RefreshTokenRequest(PublicModel):
+    refresh_token: str = Field(description="The refresh token to use for getting a new access token")
+    oneup_user_id: int | None = Field(default=0, description="The 1UpHealth user ID (optional)")
+    subject_id: uuid.UUID | None = Field(default=None)
+    submit_id: uuid.UUID | None = Field(default=None)
