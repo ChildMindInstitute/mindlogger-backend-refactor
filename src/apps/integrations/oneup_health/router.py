@@ -4,7 +4,7 @@ from starlette import status
 from apps.integrations.oneup_health.api import (
     refresh_token,
     retrieve_token,
-    retrieve_token_by_submit_id,
+    retrieve_token_by_submit_id_and_activity_id,
     trigger_data_fetch,
 )
 from apps.integrations.oneup_health.domain import OneupHealthToken
@@ -25,7 +25,7 @@ router.get(
 )(retrieve_token)
 
 router.get(
-    "/applet/{applet_id}/submissions/{submit_id}/token",
+    "/applet/{applet_id}/submission/{submit_id}/activity/{activity_id}/token",
     description="This endpoint is used to retrieve 1UpHealth API access token",
     status_code=status.HTTP_200_OK,
     responses={
@@ -33,7 +33,7 @@ router.get(
         **DEFAULT_OPENAPI_RESPONSE,
         **AUTHENTICATION_ERROR_RESPONSES,
     },
-)(retrieve_token_by_submit_id)
+)(retrieve_token_by_submit_id_and_activity_id)
 
 router.post(
     "/refresh_token",
@@ -46,9 +46,9 @@ router.post(
     },
 )(refresh_token)
 
-router.get(
-    "/applet/{applet_id}/submissions/{submit_id}/trigger_data_fetch",
+router.post(
+    "/trigger_data_fetch",
     description="This endpoint is used to trigger 1UpHealth data fetch. Use only for test purposes, "
-    "should not me called by frontend",
+    "should not be called by frontend.",
     status_code=status.HTTP_200_OK,
 )(trigger_data_fetch)
