@@ -8,6 +8,8 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthAPIError,
     OneUpHealthAPIErrorMessageMap,
     OneUpHealthAPIForbiddenError,
+    OneUpHealthServiceUnavailableError,
+    OneUpHealthTokenExpiredError,
     OneUpHealthUserAlreadyExists,
 )
 from apps.integrations.oneup_health.service.domain import EHRData
@@ -66,13 +68,22 @@ class OneupHealthAPIClient:
 
         Raises:
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
+            OneUpHealthServiceUnavailableError: If the API returns a 503 or 504 status code.
+            OneUpHealthTokenExpiredError: If the API returns a 401 status code.
             OneUpHealthAPIError: If the API returns any other error status code.
         """
-        if resp.status_code != 201 and resp.status_code != 400 and resp.status_code != 200:
+        if resp.status_code not in (200, 201, 400):
             logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
-            if resp.status_code == 403:
-                # The API returns a 403 status code if request come from outside the USA
+            if resp.status_code == 401:
+                # The API returns a 401 status code if the token has expired
+                raise OneUpHealthTokenExpiredError()
+            elif resp.status_code == 403:
+                # The API returns a 403 status code if request comes from outside the USA
                 raise OneUpHealthAPIForbiddenError()
+            elif resp.status_code in (503, 504):
+                # The API returns 503 or 504 status codes if the service is unavailable
+                raise OneUpHealthServiceUnavailableError()
+
             # The API should return a 400 status code if the request body is invalid.
             raise OneUpHealthAPIError(resp.text)
 
@@ -155,11 +166,8 @@ class OneupHealthAPIClient:
                 resp = await client.get(
                     url=url_path, params=params, headers={**(headers if headers else {}), **self._default_headers}
                 )
-                if resp.status_code != 400 and resp.status_code != 200:
-                    logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
-                    if resp.status_code == 403:
-                        raise OneUpHealthAPIForbiddenError()
-                    raise OneUpHealthAPIError()
+                logger.info(f"Requesting to OneUp health API {url_path} - {resp.status_code}")
+                OneupHealthAPIClient._handle_error(resp, url_path)
 
                 result = resp.json()
                 if result.get("success") is False:
