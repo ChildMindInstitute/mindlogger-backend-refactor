@@ -161,8 +161,8 @@ async def task_ingest_user_data(
                 await _schedule_retry(applet_id, unique_id, start_date, retry_count)
 
     except (BaseError, httpx.RequestError) as e:
-        logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry.")
         error_retry_count += 1
+        logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry number {error_retry_count}")
         await _schedule_retry(applet_id, unique_id, start_date, retry_count, error_retry_count)
 
     return storage_path

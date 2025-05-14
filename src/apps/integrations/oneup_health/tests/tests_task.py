@@ -352,11 +352,11 @@ class TestTaskIngestUserData:
         from apps.integrations.oneup_health.service.task import task_ingest_user_data
 
         # Mock HTTP error for user-management call
-        for _ in range(5):
-            httpx_mock.add_exception(
-                url=re.compile(".*/user-management/v1/user"),
-                exception=httpx.RequestError("Connection error"),
-            )
+        httpx_mock.add_exception(
+            url=re.compile(".*/user-management/v1/user"),
+            exception=httpx.RequestError("Connection error"),
+            is_reusable=True,
+        )
 
         submit_id = uuid.uuid4()
         with patch.object(task_module, "_schedule_retry", wraps=task_module._schedule_retry) as mock_retry:
