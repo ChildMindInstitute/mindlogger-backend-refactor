@@ -5,7 +5,7 @@ from fastapi import Body, Depends
 from apps.activities.crud import ActivitiesCRUD
 from apps.authentication.deps import get_current_user
 from apps.integrations.oneup_health.domain import OneupHealthToken, RefreshTokenRequest
-from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
+from apps.integrations.oneup_health.service.oneup_health import OneupHealthService, get_unique_short_id
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.shared.domain import InternalModel, Response
 from apps.shared.exception import NotFoundError
@@ -72,23 +72,18 @@ async def refresh_token(
     oneup_health_service = OneupHealthService()
 
     new_tokens = await oneup_health_service.refresh_token(request.refresh_token)
-    result_token = OneupHealthToken(oneup_user_id=request.oneup_user_id, **new_tokens)
 
-    if request.subject_id:
-        async with atomic(session):
-            subjects_service = SubjectsService(session, user.id)
-            subject = await subjects_service.exist_by_id(request.subject_id)
+    app_user_id = None
+    if request.submit_id and request.activity_id:
+        app_user_id = get_unique_short_id(submit_id=request.submit_id, activity_id=request.activity_id)
+    elif "app_user_id" in new_tokens:
+        app_user_id = new_tokens["app_user_id"]
 
-            applet_id = subject.applet_id
-            await CheckAccessService(session, user.id).check_answer_create_access(applet_id)
-
-            result_token.subject_id = request.subject_id
-
-            if subject.meta and "oneup_user_id" in subject.meta:
-                result_token.oneup_user_id = subject.meta["oneup_user_id"]
-
-    if request.submit_id:
-        result_token.submit_id = request.submit_id
+    result_token = OneupHealthToken(
+        oneup_user_id=request.oneup_user_id,
+        app_user_id=app_user_id or "",
+        **{k: v for k, v in new_tokens.items() if k != "app_user_id"},
+    )
 
     return Response(result=result_token)
 
