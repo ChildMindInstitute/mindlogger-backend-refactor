@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import Field
 
 from apps.shared.domain import PublicModel
@@ -13,5 +15,5 @@ class OneupHealthToken(PublicModel):
 class RefreshTokenRequest(PublicModel):
     refresh_token: str = Field(description="The refresh token to use for getting a new access token")
     oneup_user_id: int | None = Field(default=0, description="The 1UpHealth user ID (optional)")
-    subject_id: uuid.UUID | None = Field(default=None)
     submit_id: uuid.UUID | None = Field(default=None)
+    activity_id: uuid.UUID | None = Field(default=None)
