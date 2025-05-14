@@ -48,28 +48,15 @@ network:
 storage:
   readonly_fs: false
   ephemeral: 20
-  volumes:
-    tmp-dir:
-      efs: false
-      path: /tmp
-      read_only: false
-    shared-dir-uploads:
-      efs: false
-      path: /app/uploads
-      read_only: false
-    # For Datadog
-#    sock:
+#  volumes:
+#    tmp-dir:
 #      efs: false
-#      path: '/var/run/docker.sock'
-#      read_only: true
-#    proc:
+#      path: /tmp
+#      read_only: false
+#    shared-dir-uploads:
 #      efs: false
-#      path: '/proc/'
-#      read_only: true
-#    cgroup:
-#      efs: false
-#      path: '/sys/fs/cgroup/'
-#      read_only: true
+#      path: /app/uploads
+#      read_only: false
 
 variables:
   # Python configurations
@@ -118,17 +105,13 @@ variables:
   NOTIFICATION__API_KEY:
 
   # CDN configs (container by default)
-#  CDN__ENDPOINT_URL: http://localhost:9000
   CDN__REGION: us-east-1
   CDN__BUCKET_ANSWER: cmiml-feature-answer
   CDN__BUCKET: cmiml-feature-media
   CDN__BUCKET_OPERATIONS: cmiml-feature-operations
   CDN__DOMAIN: media-feature.cmiml.net
-#  CDN__STORAGE_ADDRESS: http://localhost:9000
   CDN__LEGACY_REGION: us-east-1
   CDN__LEGACY_BUCKET: mindlogger-media-staging
-#  CDN__LEGACY_SECRET_KEY:
-#  CDN__LEGACY_ACCESS_KEY:
   CDN__TTL_SIGNED_URLS: 3600
 
   DD_ENV: feature
@@ -164,13 +147,6 @@ secrets:
   LOGS__ACCESS:
     secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:LOGS__ACCESS::"
 
-# You can override any of the values defined above by environment.
-#environments:
-#  test:
-#    count: 2               # Number of tasks to run for the "test" environment.
-#    deployment:            # The deployment strategy for the "test" environment.
-#       rolling: 'recreate' # Stops existing tasks before new ones are started for faster deployments.
-
 taskdef_overrides:
   - path: ContainerDefinitions[0].Ulimits[-]
     value:
@@ -198,35 +174,16 @@ logging:
 sidecars:
   datadog:
     image: public.ecr.aws/datadog/agent:7
+    essential: false
     variables:
       ECS_FARGATE: true
       DD_SITE: datadoghq.com
       DD_ENV: feature
       DD_VERSION: ${COPILOT_ENVIRONMENT_NAME}
       DD_LOGS_ENABLED: true
-      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: true
+      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: false
       DD_CONTAINER_EXCLUDE: "name:datadog name:datadog-agent name:fluent-bit name:firelens_log_router name:ecs-agent name:aws-fargate-supervisor"
       DD_APM_ENABLED: true
     secrets:
       DD_API_KEY:
         secretsmanager: "cmiml-feature-${COPILOT_ENVIRONMENT_NAME}:DD_API_KEY::"
-
-        #/copilot/${COPILOT_APPLICATION_NAME}/${COPILOT_ENVIRONMENT_NAME}/secrets/DATADOG_API_KEY
-#    mount_points:
-#      - source_volume: sock
-#        path: '/var/run/docker.sock'
-#      - source_volume: proc
-#        path: '/proc/'
-#      - source_volume: cgroup
-#        path: '/sys/fs/cgroup/'
-
-#  firelens:
-#    essential: true
-#    image: amazon/aws-for-fluent-bit:stable
-#    name: log_router
-#    firelensConfiguration:
-#      type: fluentbit
-#      options:
-#        enable-ecs-log-metadata: 'true'
-#        config-file-type: file
-#        config-file-value: "/fluent-bit/configs/parse-json.conf"
