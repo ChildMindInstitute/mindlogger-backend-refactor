@@ -299,6 +299,28 @@ class OneupHealthService:
         assert code
         return await self._get_token(code)
 
+    async def refresh_token(self, refresh_token: str) -> dict[str, str]:
+        """
+        Refresh an access token using a refresh token.
+
+        Args:
+            refresh_token (str): The refresh token to use for getting a new access token.
+
+        Returns:
+            dict: A dictionary containing the new access_token and refresh_token.
+
+        Raises:
+            OneUpHealthAPIError: If the API request fails.
+        """
+        result = await self._client.post_auth(
+            "/oauth2/token", data={"refresh_token": refresh_token, "grant_type": "refresh_token"}
+        )
+
+        access_token = result.get("access_token")
+        new_refresh_token = result.get("refresh_token")
+
+        return dict(access_token=access_token, refresh_token=new_refresh_token)
+
     async def check_audit_events(self, oneup_user_id: int, start_date: datetime | None) -> dict[str, int]:
         """
         Check if a data transfer h
