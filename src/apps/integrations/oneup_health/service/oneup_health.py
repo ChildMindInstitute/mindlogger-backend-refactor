@@ -358,7 +358,7 @@ class OneupHealthService:
         return {**await self._get_token(code), "app_user_id": app_user_id}
 
     async def refresh_token(
-        self, refresh_token: str, submit_id: uuid.UUID = None, activity_id: uuid.UUID = None
+        self, refresh_token: str, submit_id: uuid.UUID | None = None, activity_id: uuid.UUID | None = None
     ) -> dict[str, str]:
         """
         Refresh an access token using a refresh token.
@@ -385,7 +385,7 @@ class OneupHealthService:
         response = dict(access_token=access_token, refresh_token=new_refresh_token)
 
         # Generate app_user_id if submit_id and activity_id are provided
-        if submit_id and activity_id:
+        if submit_id is not None and activity_id is not None:
             app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
             response["app_user_id"] = app_user_id
 
