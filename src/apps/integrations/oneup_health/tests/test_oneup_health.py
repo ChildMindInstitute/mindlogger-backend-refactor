@@ -209,19 +209,6 @@ class TestOneupHealth:
         assert result["oneupUserId"] == 1
         assert result["appUserId"] == app_user_id
 
-    async def test_get_token_error_outside_us(
-        self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
-    ):
-        httpx_mock.add_response(
-            url=re.compile(".*/user-management/v1/user"), method="POST", json={"message": "Forbidden"}, status_code=403
-        )
-
-        client.login(tom)
-        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
-        result = response.json()["result"]
-        assert result[0]["message"] == "Access to 1UpHealth is currently restricted to users within the United States."
-
     async def test_get_token_error_creating_user(
         self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
     ):
@@ -237,6 +224,61 @@ class TestOneupHealth:
         assert response.status_code == 500
         result = response.json()["result"]
         assert result[0]["message"] == "1UpHealth request failed."
+
+    async def test_token_expired_error(
+        self,
+        client: TestClient,
+        tom: User,
+        tom_applet_one_subject: SubjectFull,
+        httpx_mock: HTTPXMock,
+    ):
+        # Mock token expired error
+        httpx_mock.add_response(
+            url=re.compile(".*/user-management/v1/user"),
+            method="POST",
+            json={"message": "Unauthorized"},
+            status_code=401,
+        )
+
+        client.login(tom)
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == 401
+        result = response.json()["result"]
+        assert result[0]["message"] == "1UpHealth access token has expired."
+
+    async def test_get_token_error_outside_us(
+        self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
+    ):
+        httpx_mock.add_response(
+            url=re.compile(".*/user-management/v1/user"), method="POST", json={"message": "Forbidden"}, status_code=403
+        )
+
+        client.login(tom)
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == 403
+        result = response.json()["result"]
+        assert result[0]["message"] == "Access to 1UpHealth is currently restricted to users within the United States."
+
+    async def test_service_unavailable_error(
+        self,
+        client: TestClient,
+        tom: User,
+        tom_applet_one_subject: SubjectFull,
+        httpx_mock: HTTPXMock,
+    ):
+        # Mock service unavailable error
+        httpx_mock.add_response(
+            url=re.compile(".*/user-management/v1/user"),
+            method="POST",
+            json={"message": "Service Unavailable"},
+            status_code=503,
+        )
+
+        client.login(tom)
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == 503
+        result = response.json()["result"]
+        assert result[0]["message"] == "1UpHealth service is currently unavailable."
 
     async def test_get_token_error_getting_code(
         self,
@@ -317,7 +359,10 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
+        assert response.status_code == 503
+        result = response.json()["result"]
+        assert result[0]["message"] == "1UpHealth service is currently unavailable."
+
         result = response.json()["result"]
         assert (
             result[0]["message"]
