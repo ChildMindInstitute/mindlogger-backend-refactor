@@ -2,7 +2,7 @@ from gettext import gettext as _
 
 from starlette import status
 
-from apps.shared.exception import BaseError, ExceptionTypes
+from apps.shared.exception import BaseError
 
 
 class OneUpHealthErrorCodes:
@@ -14,7 +14,7 @@ class OneUpHealthErrorCodes:
 
 class OneUpHealthAPIError(BaseError):
     message = _("1UpHealth request failed.")
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    status_code = status.HTTP_502_BAD_GATEWAY
 
     def __init__(self, message=None, **kwargs):
         if message:
@@ -25,29 +25,25 @@ class OneUpHealthAPIError(BaseError):
 
 class OneUpHealthUserAlreadyExists(OneUpHealthAPIError):
     message = _("1UpHealth user already exists for this subject.")
-    type = ExceptionTypes.UNDEFINED
     status_code = status.HTTP_409_CONFLICT
     error_code = OneUpHealthErrorCodes.USER_ALREADY_EXISTS
 
 
 class OneUpHealthTokenExpiredError(OneUpHealthAPIError):
     message = _("1UpHealth access token has expired.")
-    type = ExceptionTypes.ACCESS_DENIED
-    status_code = status.HTTP_401_UNAUTHORIZED
+    status_code = status.HTTP_502_BAD_GATEWAY
     error_code = OneUpHealthErrorCodes.TOKEN_EXPIRED
 
 
 class OneUpHealthAPIForbiddenError(OneUpHealthAPIError):
     message = _("Access to 1UpHealth is currently restricted to users within the United States.")
-    type = ExceptionTypes.ACCESS_DENIED
-    status_code = status.HTTP_403_FORBIDDEN
+    status_code = status.HTTP_502_BAD_GATEWAY
     error_code = OneUpHealthErrorCodes.GEOGRAPHIC_RESTRICTION
 
 
 class OneUpHealthServiceUnavailableError(OneUpHealthAPIError):
     message = _("1UpHealth service is currently unavailable.")
-    type = ExceptionTypes.UNDEFINED
-    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    status_code = status.HTTP_502_BAD_GATEWAY
     error_code = OneUpHealthErrorCodes.SERVICE_UNAVAILABLE
 
 
