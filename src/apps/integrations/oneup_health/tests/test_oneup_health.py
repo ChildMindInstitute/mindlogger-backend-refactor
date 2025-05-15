@@ -221,7 +221,7 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
+        assert response.status_code == 502
         result = response.json()["result"]
         assert result[0]["message"] == "1UpHealth request failed."
 
@@ -242,7 +242,7 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 401
+        assert response.status_code == 502
         result = response.json()["result"]
         assert result[0]["message"] == "1UpHealth access token has expired."
 
@@ -255,7 +255,7 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 403
+        assert response.status_code == 502
         result = response.json()["result"]
         assert result[0]["message"] == "Access to 1UpHealth is currently restricted to users within the United States."
 
@@ -276,7 +276,7 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 503
+        assert response.status_code == 502
         result = response.json()["result"]
         assert result[0]["message"] == "1UpHealth service is currently unavailable."
 
@@ -301,7 +301,7 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
+        assert response.status_code == 502
         result = response.json()["result"]
         assert result[0]["message"] == "1UpHealth request failed."
 
@@ -321,7 +321,7 @@ class TestOneupHealth:
         )
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
+        assert response.status_code == 502
         result = response.json()["result"]
         assert result[0]["message"] == "1UpHealth request failed."
 
@@ -359,7 +359,7 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 503
+        assert response.status_code == 502
         result = response.json()["result"]
         assert result[0]["message"] == "1UpHealth service is currently unavailable."
 
