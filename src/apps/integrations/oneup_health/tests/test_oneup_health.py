@@ -220,9 +220,7 @@ class TestOneupHealth:
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
         result = response.json()["result"]
-        assert (
-            result[0]["message"] == "Access to OneUp Health is currently restricted to users within the United States."
-        )
+        assert result[0]["message"] == "Access to 1UpHealth is currently restricted to users within the United States."
 
     async def test_get_token_error_creating_user(
         self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
@@ -238,7 +236,7 @@ class TestOneupHealth:
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
         result = response.json()["result"]
-        assert result[0]["message"] == "OneUp Health request failed."
+        assert result[0]["message"] == "1UpHealth request failed."
 
     async def test_get_token_error_getting_code(
         self,
@@ -263,7 +261,7 @@ class TestOneupHealth:
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
         result = response.json()["result"]
-        assert result[0]["message"] == "OneUp Health request failed."
+        assert result[0]["message"] == "1UpHealth request failed."
 
     async def test_get_token_error_timeout(
         self,
@@ -283,7 +281,7 @@ class TestOneupHealth:
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
         assert response.status_code == 500
         result = response.json()["result"]
-        assert result[0]["message"] == "OneUp Health request failed."
+        assert result[0]["message"] == "1UpHealth request failed."
 
     async def test_get_token_error_getting_token(
         self,
