@@ -337,11 +337,12 @@
         },
         "botocore": {
             "hashes": [
-                "sha256:86c459de3e39b418f4eb81e88c23fba02995496141db73816e7f65cb8b04408b",
-                "sha256:bcea44f3fe3a5bc18030656b8d32013d8b2d76b54433f591500a14bcac2e94ee"
+                "sha256:6adb3b1b0739153d5dc9758e5e06f7596290999c07ed8f9167ca62a1f97c6592",
+                "sha256:9cc149ef56c3b99aff5436f26b71ad9558a45e4ac6b25b7b7046b0889279e601"
             ],
+            "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==1.38.12"
+            "version": "==1.38.15"
         },
         "bytecode": {
             "hashes": [
