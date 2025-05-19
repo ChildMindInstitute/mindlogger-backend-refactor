@@ -1,1 +1,0 @@
-INFO     root:task.py:200 Data transfer not complete for OneUp Health user ID 1
