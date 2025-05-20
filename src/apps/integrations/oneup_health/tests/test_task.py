@@ -84,8 +84,9 @@ class TestTaskIngestUserData:
 
             submit_id = uuid.uuid4()
             activity_id = applet_one.activities[0].id
+            user_id = uuid.uuid4()
             task = await task_ingest_user_data.kicker().kiq(
-                applet_id=applet_one.id, submit_id=submit_id, activity_id=activity_id
+                user_id=user_id, applet_id=applet_one.id, submit_id=submit_id, activity_id=activity_id
             )
             result = await task.wait_result()
 
@@ -114,7 +115,9 @@ class TestTaskIngestUserData:
         applet_id = uuid.uuid4()
         submit_id = uuid.uuid4()
         activity_id = applet_one.activities[0].id
-        result = await task_ingest_user_data(applet_id, submit_id, activity_id)
+        user_id = uuid.uuid4()
+
+        result = await task_ingest_user_data(user_id, applet_id, submit_id, activity_id)
         assert result is None
 
         answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id_and_activity_id(
@@ -142,7 +145,8 @@ class TestTaskIngestUserData:
                 applet_id = uuid.uuid4()
                 submit_id = uuid.uuid4()
                 activity_id = applet_one.activities[0].id
-                result = await task_ingest_user_data(applet_id, submit_id, activity_id=activity_id)
+                user_id = uuid.uuid4()
+                result = await task_ingest_user_data(user_id, applet_id, submit_id, activity_id=activity_id)
                 assert result is None
                 assert mock_process.called
                 assert mock_retry.called
@@ -222,12 +226,15 @@ class TestTaskIngestUserData:
             },
         )
 
+        user_id = uuid.uuid4()
         submit_id = uuid.uuid4()
         activity_id = applet_one.activities[0].id
         oneup_user_id = 1
         start_date = None
 
-        result = await _process_data_transfer(session, applet_one.id, submit_id, activity_id, oneup_user_id, start_date)
+        result = await _process_data_transfer(
+            session, user_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
+        )
 
         # Should return None since not all transfers are complete
         assert result is None
@@ -302,6 +309,7 @@ class TestTaskIngestUserData:
         activity_id = applet_one.activities[0].id
         oneup_user_id = 1
         start_date = None
+        user_id = uuid.uuid4()
 
         with patch(
             "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_resources"
@@ -309,7 +317,7 @@ class TestTaskIngestUserData:
             upload_resources.return_value = "fake/storage/path"
 
             result = await _process_data_transfer(
-                session, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
+                session, user_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
             )
 
             assert result == "fake/storage/path"
@@ -335,8 +343,11 @@ class TestTaskIngestUserData:
         activity_id = applet_one.activities[0].id
         oneup_user_id = 1
         start_date = None
+        user_id = uuid.uuid4()
 
-        result = await _process_data_transfer(session, applet_one.id, submit_id, activity_id, oneup_user_id, start_date)
+        result = await _process_data_transfer(
+            session, user_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
+        )
 
         # Should return None due to the HTTP error
         assert result is None
@@ -349,6 +360,7 @@ class TestTaskIngestUserData:
         start_date = None
         retry_count = 2
         failed_attempts = 0
+        user_id = uuid.uuid4()
 
         with patch("apps.integrations.oneup_health.service.task.task_ingest_user_data") as mock_task:
             kicker = MagicMock()
@@ -364,6 +376,7 @@ class TestTaskIngestUserData:
                 return_value=10,
             ) as mock_backoff:
                 await _schedule_retry(
+                    user_id=user_id,
                     applet_id=applet_one.id,
                     submit_id=submit_id,
                     activity_id=applet_one.activities[0].id,
@@ -376,6 +389,7 @@ class TestTaskIngestUserData:
                 mock_task.kicker.assert_called_once()
                 kicker.with_labels.assert_called_once_with(delay=10)
                 kiq.assert_awaited_once_with(
+                    user_id=user_id,
                     applet_id=applet_one.id,
                     submit_id=submit_id,
                     activity_id=applet_one.activities[0].id,
