@@ -69,42 +69,43 @@ async def _process_data_transfer(
         bool: True if the data transfer is complete, False otherwise
     """
 
-    try:
-        oneup_health_service = OneupHealthService()
-        # Check if transfer is completed or timed out
-        # The `oneup_user_id` is mapped to a MindLogger activity submission
-        # We can determine if the data ingestions triggered by this activity submission
-        # by comparing the number of ingestion starts (`data-transfer-initiated`) to the number
-        # of ingestion end events (`member-data-ingestion-completed` and `member-data-ingestion-timeout`
-        # https://docs.1up.health/help-center/Content/en-US/connect-patient/patient-connect-audit-events.html#audit-event-types-and-subtypes
-        counters = await oneup_health_service.check_audit_events(oneup_user_id, start_date)
+    oneup_health_service = OneupHealthService()
+    # Check if transfer is completed or timed out
+    # The `oneup_user_id` is mapped to a MindLogger activity submission
+    # We can determine if the data ingestions triggered by this activity submission
+    # by comparing the number of ingestion starts (`data-transfer-initiated`) to the number
+    # of ingestion end events (`member-data-ingestion-completed` and `member-data-ingestion-timeout`
+    # https://docs.1up.health/help-center/Content/en-US/connect-patient/patient-connect-audit-events.html#audit-event-types-and-subtypes
+    counters = await oneup_health_service.check_audit_events(oneup_user_id, start_date)
 
-        initiated_count = counters["initiated"]
-        if initiated_count > 0:
-            logger.info(f"Transfer initiated for OneUp Health user ID {oneup_user_id} ({initiated_count} transfers)")
-            completed_count = counters["completed"]
-            timeout_count = counters["timeout"]
+    initiated_count = counters["initiated"]
+    if initiated_count > 0:
+        logger.info(f"Transfer initiated for OneUp Health user ID {oneup_user_id} ({initiated_count} transfers)")
+        completed_count = counters["completed"]
+        timeout_count = counters["timeout"]
 
-            if completed_count + timeout_count == initiated_count:
-                logger.info(f"{completed_count} Transfers completed for OneUp Health user ID {oneup_user_id}")
-                if timeout_count > 0:
-                    logger.warning(f"{timeout_count} Transfers timed out for OneUp Health user ID {oneup_user_id}")
-                return await oneup_health_service.retrieve_patient_data(
-                    session=session,
-                    applet_id=applet_id,
-                    submit_id=submit_id,
-                    activity_id=activity_id,
-                    oneup_user_id=oneup_user_id,
-                )
-    except httpx.RequestError as e:
-        logger.error(f"Failed to process data transfer for OneUp Health user ID {oneup_user_id}")
-        logger.exception(f"Error: {e}")
+        if completed_count + timeout_count == initiated_count:
+            logger.info(f"{completed_count} Transfers completed for OneUp Health user ID {oneup_user_id}")
+            if timeout_count > 0:
+                logger.warning(f"{timeout_count} Transfers timed out for OneUp Health user ID {oneup_user_id}")
+            return await oneup_health_service.retrieve_patient_data(
+                session=session,
+                applet_id=applet_id,
+                submit_id=submit_id,
+                activity_id=activity_id,
+                oneup_user_id=oneup_user_id,
+            )
 
     return None
 
 
 async def _schedule_retry(
-    applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID, start_date: datetime | None, retry_count: int
+    applet_id: uuid.UUID,
+    submit_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    start_date: datetime | None,
+    retry_count: int,
+    error_retry_count: int = 0,
 ) -> bool:
     """
     Schedule a retry of the data ingestion task with exponential backoff.
@@ -115,7 +116,11 @@ async def _schedule_retry(
         activity_id (uuid.UUID): The unique identifier for the activity
         start_date (datetime): The start date of the transfer process
         retry_count (int): The current retry attempt count
+        error_retry_count (int): The current error retry attempt count
     """
+    if error_retry_count >= settings.oneup_health.max_error_retries:
+        logger.error(f"Max error retries reached for {applet_id}.")
+        return True
     delay = _exponential_backoff(retry_count)
     if delay > 0:
         retry_count += 1
@@ -129,6 +134,7 @@ async def _schedule_retry(
                 activity_id=activity_id,
                 start_date=start_date,
                 retry_count=retry_count,
+                error_retry_count=error_retry_count,
             )
         )
 
@@ -142,6 +148,7 @@ async def task_ingest_user_data(
     activity_id: uuid.UUID,
     start_date: datetime | None = None,
     retry_count: int = 0,
+    error_retry_count: int = 0,
 ) -> str | None:
     """
     Asynchronous task to ingest user health data from OneUp Health.
@@ -155,11 +162,13 @@ async def task_ingest_user_data(
         activity_id (uuid.UUID): The unique identifier for the activity
         start_date (datetime, optional): The start date of the transfer process
         retry_count (int): The current retry attempt count
+        error_retry_count (int): The current error retry attempt count
 
     Returns:
         list | None: List of retrieved resources if successful, None otherwise
     """
     storage_path = None
+
     async with session_manager.get_session()() as session:
         info = await preprocess_arbitrary_url(applet_id=applet_id, session=session)
 
@@ -188,6 +197,7 @@ async def task_ingest_user_data(
                         return None
 
                     # Process data transfer
+
                     storage_path = await _process_data_transfer(
                         session=session,
                         applet_id=applet_id,
@@ -198,6 +208,7 @@ async def task_ingest_user_data(
                     )
                     if storage_path is None:
                         logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
+                        # Error retry count is reset to default 0 if we are not in an error state.
                         to_reschedule = await _schedule_retry(
                             applet_id=applet_id,
                             submit_id=submit_id,
@@ -225,12 +236,16 @@ async def task_ingest_user_data(
                             ehr_storage_uri=storage_path,
                         )
                     )
-            except BaseError as e:
-                logger.error(f"Error in task_ingest_user_data: {e.message}")
-                async with atomic(answer_session):
-                    await AnswersEHRCRUD(session=answer_session).update_status(
-                        submit_id=submit_id, activity_id=activity_id, status=EHRIngestionStatus.FAILED
-                    )
+            except (BaseError, httpx.RequestError) as e:
+                error_retry_count += 1
+                if error_retry_count >= settings.oneup_health.max_error_retries:
+                    async with atomic(answer_session):
+                        await AnswersEHRCRUD(session=answer_session).update_status(
+                            submit_id=submit_id, activity_id=activity_id, status=EHRIngestionStatus.FAILED
+                        )
+                logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry number {error_retry_count}")
+                await _schedule_retry(applet_id, submit_id, activity_id, start_date, retry_count, error_retry_count)
+
             return storage_path
 
 

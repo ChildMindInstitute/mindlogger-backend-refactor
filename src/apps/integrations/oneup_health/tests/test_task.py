@@ -348,6 +348,7 @@ class TestTaskIngestUserData:
         submit_id = uuid.uuid4()
         start_date = None
         retry_count = 2
+        error_retry_count = 0
 
         with patch("apps.integrations.oneup_health.service.task.task_ingest_user_data") as mock_task:
             kicker = MagicMock()
@@ -368,6 +369,7 @@ class TestTaskIngestUserData:
                     activity_id=applet_one.activities[0].id,
                     start_date=start_date,
                     retry_count=retry_count,
+                    error_retry_count=error_retry_count,
                 )
 
                 mock_backoff.assert_called_once_with(retry_count)
@@ -379,4 +381,28 @@ class TestTaskIngestUserData:
                     activity_id=applet_one.activities[0].id,
                     start_date=start_date,
                     retry_count=retry_count + 1,
+                    error_retry_count=error_retry_count + 1,
                 )
+
+    @pytest.mark.asyncio
+    async def test_task_retries_on_connection_error(self, applet_one: AppletFull):
+        """Test that the task retries when a connection error occurs during user data ingestion."""
+        import httpx
+
+        from apps.integrations.oneup_health.service import task as task_module
+        from apps.integrations.oneup_health.service.task import task_ingest_user_data
+
+        with patch(
+            "apps.answers.crud.answers.AnswersEHRCRUD.upsert",
+            new=AsyncMock(side_effect=httpx.RequestError("Connection error")),
+        ):
+            submit_id = uuid.uuid4()
+            with patch.object(task_module, "_schedule_retry", wraps=task_module._schedule_retry) as mock_retry:
+                task = await task_ingest_user_data.kicker().kiq(
+                    applet_id=applet_one.id, submit_id=submit_id, activity_id=applet_one.activities[0].id
+                )
+                result = await task.wait_result()
+                # The result should be None due to the connection error
+                assert result.return_value is None
+                # The function should have been retried a total of 5 times
+                assert mock_retry.call_count == 5
