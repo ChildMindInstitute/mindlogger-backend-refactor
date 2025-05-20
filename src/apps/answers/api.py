@@ -1,10 +1,13 @@
 import asyncio
 import base64
 import datetime
+import io
 import uuid
+import zipfile
 from typing import Annotated
 
 from fastapi import Body, Depends, Header, Query
+from fastapi import Response as FastAPIResponse
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
@@ -116,7 +119,7 @@ async def create_answer(
         await service.create_report_from_answer(answer)
         if schema.allowed_ehr_ingest:
             await service.trigger_ehr_ingestion(
-                applet_id=answer.applet_id, submit_id=answer.submit_id, activity_id=schema.activity_id
+                user_id=user.id, applet_id=answer.applet_id, submit_id=answer.submit_id, activity_id=schema.activity_id
             )
 
 
@@ -921,3 +924,27 @@ async def applet_submissions_list(
     return PublicSubmissionsResponse(
         submissions=submissions, submissions_count=submissions_count, participants_count=participants_count
     )
+
+
+async def applet_ehr_answers_export(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+) -> FastAPIResponse:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
+
+    ehr_answers = await AnswerService(session, user.id, answer_session).export_ehr_answers(applet_id)
+
+    zip_buffer = io.BytesIO()
+    try:
+        with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+            for ehr_answer in ehr_answers:
+                zip_file.writestr(ehr_answer.file_name, ehr_answer.content)
+
+        zip_buffer.seek(0)
+        headers = {"Content-Disposition": "attachment; filename=EHR.zip"}
+        return FastAPIResponse(zip_buffer.getvalue(), headers=headers, media_type="application/zip")
+    finally:
+        zip_buffer.close()
