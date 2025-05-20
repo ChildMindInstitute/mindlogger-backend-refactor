@@ -31,5 +31,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.alter_column(
+        "subjects",
+        "is_deleted",
+        existing_type=sa.Boolean(),
+        nullable=True,
+    )
     op.execute(sa.text("UPDATE subjects SET is_deleted = NULL WHERE is_deleted IS FALSE AND is_deleted_null IS TRUE"))
     op.drop_column("subjects", "is_deleted_null")
