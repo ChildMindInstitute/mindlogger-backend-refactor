@@ -404,5 +404,5 @@ class TestTaskIngestUserData:
                 result = await task.wait_result()
                 # The result should be None due to the connection error
                 assert result.return_value is None
-                # The function should have been retried a total of 5 times
-                assert mock_retry.call_count == 5
+                # The function should have been retried a total of 5 times, so the retry function is called 4 times.
+                assert mock_retry.call_count == 4
