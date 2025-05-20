@@ -381,7 +381,7 @@ class TestTaskIngestUserData:
                     activity_id=applet_one.activities[0].id,
                     start_date=start_date,
                     retry_count=retry_count + 1,
-                    error_retry_count=error_retry_count + 1,
+                    error_retry_count=error_retry_count,
                 )
 
     @pytest.mark.asyncio
