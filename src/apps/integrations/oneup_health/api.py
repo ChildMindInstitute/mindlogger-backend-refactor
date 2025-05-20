@@ -82,8 +82,9 @@ class EHRTriggerInput(InternalModel):
     submit_id: uuid.UUID
 
 
-async def trigger_data_fetch(trigger_input: EHRTriggerInput = Body(...)):
+async def trigger_data_fetch(user: User = Depends(get_current_user), trigger_input: EHRTriggerInput = Body(...)):
     await task_ingest_user_data.kicker().kiq(
+        user_id=user.id,
         applet_id=trigger_input.applet_id,
         submit_id=trigger_input.submit_id,
         activity_id=trigger_input.activity_id,

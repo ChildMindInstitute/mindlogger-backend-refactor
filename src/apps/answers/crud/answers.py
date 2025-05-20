@@ -1188,3 +1188,47 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
 
         result = await self._execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_by_applet_id(self, applet_id: uuid.UUID) -> list[AnswerEHRSchema]:
+        """
+        Get a list of AnswerEHRSchema records filtered by applet_id.
+
+        Since AnswerEHRSchema doesn't have an applet_id field directly, this method
+        joins with the AnswerSchema table to filter by applet_id.
+
+        Args:
+            applet_id: The UUID of the applet to filter by
+
+        Returns:
+            A list of AnswerEHRSchema objects associated with the given applet_id
+        """
+        query = (
+            select(self.schema_class)
+            .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)
+            .where(AnswerSchema.applet_id == applet_id)
+        )
+
+        result = await self._execute(query)
+        return result.scalars().all()
+
+    async def export_ehr_answers(self, applet_id: uuid.UUID) -> list[AnswerEHRSchema]:
+        """
+        Get a list of AnswerEHRSchema records filtered by applet_id for export purposes.
+
+        This method joins the AnswerEHRSchema with the AnswerSchema table to filter by applet_id.
+
+        Args:
+            applet_id: The UUID of the applet to filter by
+
+        Returns:
+            A list of AnswerEHRSchema objects associated with the given applet_id
+        """
+        query = (
+            select(self.schema_class)
+            .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)
+            .where(AnswerSchema.applet_id == applet_id)
+            .order_by(self.schema_class.created_at.desc())
+        )
+
+        result = await self._execute(query)
+        return result.scalars().all()

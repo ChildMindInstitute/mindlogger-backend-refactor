@@ -30,7 +30,7 @@ from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain import AlertMessage, AlertTypes
 from apps.answers.crud import AnswerItemsCRUD
-from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.crud.answers import AnswersCRUD, AnswersEHRCRUD
 from apps.answers.crud.notes import AnswerNotesCRUD
 from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
 from apps.answers.domain import (
@@ -2042,9 +2042,17 @@ class AnswerService:
 
         return submissions_activity_metadata
 
+    async def export_ehr_answers(self, applet_id: uuid.UUID):
+        ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id)
+
+        return ehr_answers
+
     @staticmethod
-    async def trigger_ehr_ingestion(applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID):
+    async def trigger_ehr_ingestion(
+        user_id: uuid.UUID, applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID
+    ):
         await task_ingest_user_data.kicker().kiq(
+            user_id=user_id,
             applet_id=applet_id,
             submit_id=submit_id,
             activity_id=activity_id,
