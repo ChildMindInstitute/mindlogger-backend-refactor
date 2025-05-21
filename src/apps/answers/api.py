@@ -45,6 +45,7 @@ from apps.answers.domain.answers import (
     PublicSubmissionsResponse,
 )
 from apps.answers.filters import (
+    AnswerEHRExportFilters,
     AnswerExportFilters,
     AppletMultiinformantAssessmentParams,
     AppletSubmissionsFilter,
@@ -937,12 +938,13 @@ async def applet_ehr_answers_export(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
+    query_params: QueryParams = Depends(parse_query_params(AnswerEHRExportFilters)),
 ) -> FastAPIResponse:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
 
     ehr_answers: list[AnswerEHRFull] = await AnswerService(session, user.id, answer_session).export_ehr_answers(
-        applet_id
+        applet_id, query_params
     )
 
     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)

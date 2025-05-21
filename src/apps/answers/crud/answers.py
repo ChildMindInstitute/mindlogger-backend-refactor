@@ -49,6 +49,14 @@ class _AnswersExportFilter(Filtering):
     to_date = FilterField(AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL)
 
 
+class _AnswersEHRExportFilter(Filtering):
+    respondent_ids = FilterField(AnswerSchema.respondent_id, Comparisons.IN)
+    target_subject_ids = FilterField(AnswerSchema.target_subject_id, Comparisons.IN)
+    activity_ids = FilterField(AnswerEHRSchema.activity_id, Comparisons.IN)
+    from_date = FilterField(AnswerEHRSchema.created_at, Comparisons.GREAT_OR_EQUAL)
+    to_date = FilterField(AnswerEHRSchema.created_at, Comparisons.LESS_OR_EQUAL)
+
+
 class _AnswerListFilter(Filtering):
     respondent_ids = FilterField(AnswerItemSchema.respondent_id, method_name="filter_respondent_ids")
     target_subject_ids = FilterField(AnswerSchema.target_subject_id, Comparisons.IN)
@@ -1211,7 +1219,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def export_ehr_answers(self, applet_id: uuid.UUID) -> list[dict]:
+    async def export_ehr_answers(self, applet_id: uuid.UUID, **filters) -> list[dict]:
         """
         Get a list of AnswerEHRSchema records filtered by applet_id for export purposes.
 
@@ -1223,6 +1231,11 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         Returns:
             A list of AnswerEHRSchema objects associated with the given applet_id
         """
+
+        filter_clauses = []
+        if filters:
+            filter_clauses = _AnswersEHRExportFilter().get_clauses(**filters)
+
         query = (
             select(
                 AnswerSchema.submit_id,
@@ -1233,7 +1246,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
                 AnswerEHRSchema.ehr_ingestion_status,
             )
             .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)
-            .where(AnswerSchema.applet_id == applet_id)
+            .where(AnswerSchema.applet_id == applet_id, **filter_clauses)
             .order_by(self.schema_class.created_at.desc())
         )
 

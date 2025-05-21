@@ -2043,8 +2043,8 @@ class AnswerService:
 
         return submissions_activity_metadata
 
-    async def export_ehr_answers(self, applet_id: uuid.UUID) -> list[AnswerEHRFull]:
-        ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id)
+    async def export_ehr_answers(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[AnswerEHRFull]:
+        ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id, **query_params.filters)
 
         return [AnswerEHRFull(**ehr_answer) for ehr_answer in ehr_answers]
 
