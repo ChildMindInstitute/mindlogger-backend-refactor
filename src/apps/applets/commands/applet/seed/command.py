@@ -728,7 +728,11 @@ async def seed_applet_v1(config: AppletConfigFileV1, from_cli: bool = False) -> 
                         pass
 
                     try:
-                        await applet_service._validate_applet_name(applet.display_name)
+                        # When seeding applets, validate name uniqueness against the authenticated user's applets
+                        # since they will be the owner of the newly seeded applet.
+                        # We pass applet_service.user_id as the owner_id to check for name conflicts
+                        # only among applets owned by this user.
+                        await applet_service._validate_applet_name(applet.display_name, applet_service.user_id)
                     except AppletAlreadyExist as e:
                         raise AppletNameAlreadyExistsError(applet.display_name) from e
 

@@ -102,9 +102,9 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
             UserDeviceEventsHistorySchema.event_id,
             UserDeviceEventsHistorySchema.event_version,
             EventHistorySchema.start_date,
-            EventHistorySchema.start_time,
+            func.coalesce(EventHistorySchema.start_time, datetime.time(0, 0, 0)).label("start_time"),
             EventHistorySchema.end_date,
-            EventHistorySchema.end_time,
+            func.coalesce(EventHistorySchema.end_time, datetime.time(23, 59, 0)).label("end_time"),
             EventHistorySchema.access_before_schedule,
             UserDeviceEventsHistorySchema.created_at,
             UserDeviceEventsHistorySchema.time_zone.label("user_time_zone"),
@@ -134,7 +134,7 @@ class UserDeviceEventsHistoryCRUD(BaseCRUD[UserDeviceEventsHistorySchema]):
             query = query.where(*_filters)
 
         unlabeled_columns = [col.element if hasattr(col, "element") else col for col in columns]
-        query = query.group_by(*unlabeled_columns)
+        query = query.group_by(*unlabeled_columns, EventHistorySchema.start_time, EventHistorySchema.end_time)
 
         query = query.order_by(UserDeviceEventsHistorySchema.created_at)
 
