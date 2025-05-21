@@ -548,6 +548,8 @@ class OneupHealthService:
             activity_id=activity_id,
             user_id=user_id,
         )
-        await ehr_storage.upload_ehr_zip(resource_files, data)
+        zip_file_path = await ehr_storage.upload_ehr_zip(resource_files, data)
+
+        logger.info(f"Stored EHR data in {zip_file_path}")
 
         return storage_path

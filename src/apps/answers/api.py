@@ -39,7 +39,11 @@ from apps.answers.domain import (
     PublicSummaryActivityFlow,
     ReviewsCount,
 )
-from apps.answers.domain.answers import MultiinformantAssessmentValidationResponse, PublicSubmissionsResponse
+from apps.answers.domain.answers import (
+    AnswerEHRFull,
+    MultiinformantAssessmentValidationResponse,
+    PublicSubmissionsResponse,
+)
 from apps.answers.filters import (
     AnswerExportFilters,
     AppletMultiinformantAssessmentParams,
@@ -55,6 +59,8 @@ from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
+from apps.integrations.oneup_health.service.domain import EHRData
+from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
 from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.service.schedule_history import ScheduleHistoryService
@@ -935,13 +941,28 @@ async def applet_ehr_answers_export(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
 
-    ehr_answers = await AnswerService(session, user.id, answer_session).export_ehr_answers(applet_id)
+    ehr_answers: list[AnswerEHRFull] = await AnswerService(session, user.id, answer_session).export_ehr_answers(
+        applet_id
+    )
 
+    ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
     zip_buffer = io.BytesIO()
     try:
         with zipfile.ZipFile(zip_buffer, "w") as zip_file:
             for ehr_answer in ehr_answers:
-                zip_file.writestr(ehr_answer.file_name, ehr_answer.content)
+                data = EHRData(
+                    user_id=ehr_answer.user_id,
+                    activity_id=ehr_answer.activity_id,
+                    submit_id=ehr_answer.submit_id,
+                    date=ehr_answer.date,
+                )
+                ehr_zip_buffer = io.BytesIO()
+                try:
+                    ehr_zip_filename = ehr_storage.download_ehr_zip(data, ehr_zip_buffer)
+
+                    zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
+                finally:
+                    ehr_zip_buffer.close()
 
         zip_buffer.seek(0)
         headers = {"Content-Disposition": "attachment; filename=EHR.zip"}

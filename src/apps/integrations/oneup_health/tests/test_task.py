@@ -80,25 +80,30 @@ class TestTaskIngestUserData:
             "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_resources"
         ) as upload_resources:
             # Mock the storage to return a path
-            upload_resources.return_value = "fake/storage/path"
+            upload_resources.return_value = "fake/storage/path", "fake_filename"
 
-            submit_id = uuid.uuid4()
-            activity_id = applet_one.activities[0].id
-            user_id = uuid.uuid4()
-            task = await task_ingest_user_data.kicker().kiq(
-                user_id=user_id, applet_id=applet_one.id, submit_id=submit_id, activity_id=activity_id
-            )
-            result = await task.wait_result()
+            with patch(
+                "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_ehr_zip"
+            ) as upload_ehr_zip:
+                upload_ehr_zip.return_value = None
 
-            assert result.return_value == "fake/storage/path"
-            assert upload_resources.called
+                submit_id = uuid.uuid4()
+                activity_id = applet_one.activities[0].id
+                user_id = uuid.uuid4()
+                task = await task_ingest_user_data.kicker().kiq(
+                    user_id=user_id, applet_id=applet_one.id, submit_id=submit_id, activity_id=activity_id
+                )
+                result = await task.wait_result()
 
-            answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id_and_activity_id(
-                submit_id=submit_id, activity_id=activity_id
-            )
-            assert answers_ehr is not None
-            assert answers_ehr.ehr_storage_uri == "fake/storage/path"
-            assert answers_ehr.ehr_ingestion_status == EHRIngestionStatus.COMPLETED
+                assert result.return_value == "fake/storage/path"
+                assert upload_resources.called
+
+                answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id_and_activity_id(
+                    submit_id=submit_id, activity_id=activity_id
+                )
+                assert answers_ehr is not None
+                assert answers_ehr.ehr_storage_uri == "fake/storage/path"
+                assert answers_ehr.ehr_ingestion_status == EHRIngestionStatus.COMPLETED
 
     @pytest.mark.asyncio
     async def test_no_oneup_user_id(self, session, applet_one: AppletFull, httpx_mock: HTTPXMock):
@@ -314,14 +319,20 @@ class TestTaskIngestUserData:
         with patch(
             "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_resources"
         ) as upload_resources:
-            upload_resources.return_value = "fake/storage/path"
+            upload_resources.return_value = "fake/storage/path", "fake_filename"
 
-            result = await _process_data_transfer(
-                session, user_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
-            )
+            with patch(
+                "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_ehr_zip"
+            ) as upload_ehr_zip:
+                upload_ehr_zip.return_value = None
 
-            assert result == "fake/storage/path"
-            assert upload_resources.called
+                result = await _process_data_transfer(
+                    session, user_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
+                )
+
+                assert result == "fake/storage/path"
+                assert upload_resources.called
+                assert upload_ehr_zip.called
 
     @pytest.mark.asyncio
     async def test_process_data_transfer_http_error(self, session, applet_one: AppletFull, httpx_mock: HTTPXMock):
@@ -408,6 +419,8 @@ class TestTaskIngestUserData:
         from apps.integrations.oneup_health.service import task as task_module
         from apps.integrations.oneup_health.service.task import task_ingest_user_data
 
+        user_id = uuid.uuid4()
+
         with patch(
             "apps.answers.crud.answers.AnswersEHRCRUD.upsert",
             new=AsyncMock(side_effect=httpx.RequestError("Connection error")),
@@ -415,7 +428,10 @@ class TestTaskIngestUserData:
             submit_id = uuid.uuid4()
             with patch.object(task_module, "_schedule_retry", wraps=task_module._schedule_retry) as mock_retry:
                 task = await task_ingest_user_data.kicker().kiq(
-                    applet_id=applet_one.id, submit_id=submit_id, activity_id=applet_one.activities[0].id
+                    user_id=user_id,
+                    applet_id=applet_one.id,
+                    submit_id=submit_id,
+                    activity_id=applet_one.activities[0].id,
                 )
                 result = await task.wait_result()
                 # The result should be None due to the connection error

@@ -6,6 +6,7 @@ import zipfile
 from io import BytesIO
 
 from slugify import slugify
+from typing_extensions import BinaryIO
 
 from apps.file.enums import FileScopeEnum
 from apps.integrations.oneup_health.service.domain import EHRData
@@ -48,7 +49,7 @@ class _EHRStorage:
 
         return self._get_storage_path(base_path, key), filename
 
-    async def upload_ehr_zip(self, resources_files: list[str], data: EHRData) -> None:
+    async def upload_ehr_zip(self, resources_files: list[str], data: EHRData) -> str:
         base_path = f"{data.activity_id}/{data.submit_id}"
         filename = f"{data.user_id}-{data.activity_id}-{data.submit_id}-{data.date.strftime('%Y%m%d')}-EHR.zip"
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
@@ -70,8 +71,18 @@ class _EHRStorage:
 
             zip_buffer.seek(0)
             await self._cdn_client.upload(key, zip_buffer)
+            return key
         finally:
             zip_buffer.close()
+
+    def download_ehr_zip(self, data: EHRData, file_buffer: BinaryIO) -> str:
+        base_path = f"{data.activity_id}/{data.submit_id}"
+        filename = f"{data.user_id}-{data.activity_id}-{data.submit_id}-{data.date.strftime('%Y%m%d')}-EHR.zip"
+        key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
+
+        self._cdn_client.download(key, file_buffer)
+
+        return filename
 
 
 async def create_ehr_storage(session, applet_id: uuid.UUID):
