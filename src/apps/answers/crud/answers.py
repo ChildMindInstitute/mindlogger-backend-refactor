@@ -1211,7 +1211,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         result = await self._execute(query)
         return result.scalars().all()
 
-    async def export_ehr_answers(self, applet_id: uuid.UUID) -> list[AnswerEHRSchema]:
+    async def export_ehr_answers(self, applet_id: uuid.UUID) -> list[dict]:
         """
         Get a list of AnswerEHRSchema records filtered by applet_id for export purposes.
 
@@ -1224,11 +1224,18 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
             A list of AnswerEHRSchema objects associated with the given applet_id
         """
         query = (
-            select(self.schema_class)
+            select(
+                AnswerSchema.submit_id,
+                AnswerEHRSchema.activity_id,
+                AnswerEHRSchema.ehr_storage_uri,
+                AnswerEHRSchema.updated_at.label("date"),
+                AnswerSchema.respondent_id.label("user_id"),
+                AnswerEHRSchema.ehr_ingestion_status,
+            )
             .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)
             .where(AnswerSchema.applet_id == applet_id)
             .order_by(self.schema_class.created_at.desc())
         )
 
         result = await self._execute(query)
-        return result.scalars().all()
+        return result.mappings().all()

@@ -63,6 +63,7 @@ from apps.answers.domain import (
 )
 from apps.answers.domain.answers import (
     Answer,
+    AnswerEHRFull,
     AnswersCopyCheckResult,
     AppletSubmission,
     FilesCopyCheckResult,
@@ -1850,8 +1851,8 @@ class AnswerService:
             return True
         return False
 
-    async def replace_answer_subject(self, sabject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
-        await AnswersCRUD(self.answer_session).replace_answers_subject(sabject_id_from, subject_id_to)
+    async def replace_answer_subject(self, subject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
+        await AnswersCRUD(self.answer_session).replace_answers_subject(subject_id_from, subject_id_to)
 
     async def get_submission_last_answer(
         self, submit_id: uuid.UUID, flow_id: uuid.UUID | None = None
@@ -2042,10 +2043,10 @@ class AnswerService:
 
         return submissions_activity_metadata
 
-    async def export_ehr_answers(self, applet_id: uuid.UUID):
+    async def export_ehr_answers(self, applet_id: uuid.UUID) -> list[AnswerEHRFull]:
         ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id)
 
-        return ehr_answers
+        return [AnswerEHRFull(**ehr_answer) for ehr_answer in ehr_answers]
 
     @staticmethod
     async def trigger_ehr_ingestion(

@@ -747,3 +747,8 @@ class AnswerEHR(InternalModel):
     ehr_ingestion_status: EHRIngestionStatus
     activity_id: uuid.UUID
     ehr_storage_uri: str | None
+
+
+class AnswerEHRFull(AnswerEHR):
+    user_id: uuid.UUID
+    date: datetime.datetime
