@@ -30,7 +30,7 @@ from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
 from apps.alerts.domain import AlertMessage, AlertTypes
 from apps.answers.crud import AnswerItemsCRUD
-from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.crud.answers import AnswersCRUD, AnswersEHRCRUD
 from apps.answers.crud.notes import AnswerNotesCRUD
 from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
 from apps.answers.domain import (
@@ -63,6 +63,7 @@ from apps.answers.domain import (
 )
 from apps.answers.domain.answers import (
     Answer,
+    AnswerEHRFull,
     AnswersCopyCheckResult,
     AppletSubmission,
     FilesCopyCheckResult,
@@ -1220,6 +1221,9 @@ class AnswerService:
         if not answers:
             return AnswerExport()
 
+        if query_params.filters.get("include_ehr") is True:
+            answers = await self._fill_ehr_filenames(applet_id, answers)
+
         respondent_ids: set[uuid.UUID] = set()
         subject_ids: set[uuid.UUID] = set()
         applet_assessment_ids = set()
@@ -1849,8 +1853,8 @@ class AnswerService:
             return True
         return False
 
-    async def replace_answer_subject(self, sabject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
-        await AnswersCRUD(self.answer_session).replace_answers_subject(sabject_id_from, subject_id_to)
+    async def replace_answer_subject(self, subject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
+        await AnswersCRUD(self.answer_session).replace_answers_subject(subject_id_from, subject_id_to)
 
     async def get_submission_last_answer(
         self, submit_id: uuid.UUID, flow_id: uuid.UUID | None = None
@@ -2041,13 +2045,51 @@ class AnswerService:
 
         return submissions_activity_metadata
 
+    async def export_ehr_answers(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[AnswerEHRFull]:
+        ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id, **query_params.filters)
+
+        return [AnswerEHRFull(**ehr_answer) for ehr_answer in ehr_answers]
+
     @staticmethod
-    async def trigger_ehr_ingestion(applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID):
+    async def trigger_ehr_ingestion(
+        user_id: uuid.UUID, applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID
+    ):
         await task_ingest_user_data.kicker().kiq(
+            user_id=user_id,
             applet_id=applet_id,
             submit_id=submit_id,
             activity_id=activity_id,
         )
+
+    async def _fill_ehr_filenames(self, applet_id: uuid.UUID, answers: list[RespondentAnswerData]):
+        activity_ids = [
+            uuid.UUID(answer.activity_history_id.split("_")[0]) for answer in answers if answer.activity_history_id
+        ]
+        submit_ids = [answer.submit_id for answer in answers]
+
+        ehr_answers = await AnswersEHRCRUD(session=self.session).get_ehr_answers_with_filters(
+            applet_id=applet_id, activity_ids=activity_ids, submit_ids=submit_ids
+        )
+
+        for answer in answers:
+            if not answer.activity_history_id:
+                continue
+
+            ehr_answer = next(
+                (
+                    ehr_answer
+                    for ehr_answer in ehr_answers
+                    if ehr_answer["submit_id"] == answer.submit_id
+                    and ehr_answer["activity_id"] == uuid.UUID(answer.activity_history_id.split("_")[0])
+                ),
+                None,
+            )
+            if ehr_answer:
+                answer.ehr_data_file = f"{answer.respondent_id}-{ehr_answer['activity_id']}-{answer.submit_id}-{
+                    ehr_answer['date'].strftime('%Y%m%d')
+                }-EHR.zip"
+
+        return answers
 
 
 class ReportServerService:

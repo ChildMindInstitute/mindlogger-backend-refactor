@@ -17,6 +17,7 @@ from apps.answers.api import (
     applet_answer_reviews_retrieve,
     applet_answers_export,
     applet_completed_entities,
+    applet_ehr_answers_export,
     applet_flow_answer_retrieve,
     applet_flow_assessment_create,
     applet_flow_identifiers_retrieve,
@@ -398,6 +399,20 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(applet_answers_export)
+
+
+router.get(
+    "/applet/{applet_id}/ehr-data",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {
+            "content": {"application/zip": {}},
+            "description": "Return zip file with ehr data",
+        },
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(applet_ehr_answers_export)
 
 router.get(
     "/applet/{applet_id}/completions",
