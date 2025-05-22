@@ -1206,6 +1206,31 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         assert len(response.json()["result"]["dates"]) == 1
 
+    async def test_list_submit_dates_with_activity_id_from_flow(
+        self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_with_flow: AppletFull
+    ):
+        client.login(tom)
+
+        data = answer_create.copy(deep=True)
+        data.applet_id = applet_with_flow.id
+        data.flow_id = applet_with_flow.activity_flows[0].id
+        data.activity_id = applet_with_flow.activities[0].id
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        response = await client.get(
+            self.applet_submit_dates_url.format(applet_id=str(applet_with_flow.id)),
+            dict(
+                respondentId=tom.id,
+                fromDate=datetime.date.today() - datetime.timedelta(days=10),
+                toDate=datetime.date.today() + datetime.timedelta(days=10),
+                activityOrFlowId=applet_with_flow.activities[0].id,
+            ),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert len(response.json()["result"]["dates"]) == 1
+
     async def test_answer_flow_items_create_for_respondent(
         self, client: TestClient, tom: User, answer_create: AppletAnswerCreate
     ):
