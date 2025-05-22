@@ -155,7 +155,6 @@ class AnswerItemsCRUD(BaseCRUD[AnswerItemSchema]):
         )
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.where(AnswerSchema.activity_history_id.in_(activity_ver_ids))
-        query = query.where(AnswerSchema.flow_history_id.is_(None))
         query = query.order_by(AnswerSchema.created_at.asc())
         query = query.where(*_ActivityAnswerFilter().get_clauses(**filters))
         db_result = await self._execute(query)
