@@ -54,6 +54,7 @@ class AnswerExportFilters(BaseQueryParams):
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None
     limit: int = 10000
+    include_ehr: bool = False
 
 
 class AnswerIdentifierVersionFilter(BaseQueryParams):

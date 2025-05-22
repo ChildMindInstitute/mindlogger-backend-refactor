@@ -566,6 +566,7 @@ class UserAnswerDataBase(BaseModel):
     created_at: datetime.datetime
     migrated_data: dict | None = None
     client: ClientMeta | None = None
+    ehr_data_file: str | None = None
 
 
 class RespondentAnswerData(UserAnswerDataBase, InternalModel):

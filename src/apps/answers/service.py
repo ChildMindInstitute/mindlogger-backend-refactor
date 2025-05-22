@@ -1222,6 +1222,9 @@ class AnswerService:
         if not answers:
             return AnswerExport()
 
+        if query_params.filters.get("include_ehr") is True:
+            answers = await self._fill_ehr_filenames(applet_id, answers)
+
         respondent_ids: set[uuid.UUID] = set()
         subject_ids: set[uuid.UUID] = set()
         applet_assessment_ids = set()
@@ -2058,6 +2061,36 @@ class AnswerService:
             submit_id=submit_id,
             activity_id=activity_id,
         )
+
+    async def _fill_ehr_filenames(self, applet_id: uuid.UUID, answers: list[RespondentAnswerData]):
+        activity_ids = [
+            uuid.UUID(answer.activity_history_id.split("_")[0]) for answer in answers if answer.activity_history_id
+        ]
+        submit_ids = [answer.submit_id for answer in answers]
+
+        ehr_answers = await AnswersEHRCRUD(session=self.session).get_ehr_answers_with_filters(
+            applet_id=applet_id, activity_ids=activity_ids, submit_ids=submit_ids
+        )
+
+        for answer in answers:
+            if not answer.activity_history_id:
+                continue
+
+            ehr_answer = next(
+                (
+                    ehr_answer
+                    for ehr_answer in ehr_answers
+                    if ehr_answer["submit_id"] == answer.submit_id
+                    and ehr_answer["activity_id"] == uuid.UUID(answer.activity_history_id.split("_")[0])
+                ),
+                None,
+            )
+            if ehr_answer:
+                answer.ehr_data_file = f"{answer.respondent_id}-{ehr_answer['activity_id']}-{answer.submit_id}-{
+                    ehr_answer['date'].strftime('%Y%m%d')
+                }-EHR.zip"
+
+        return answers
 
 
 class ReportServerService:
