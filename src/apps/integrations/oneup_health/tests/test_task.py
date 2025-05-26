@@ -418,6 +418,9 @@ class TestTaskIngestUserData:
 
         from apps.integrations.oneup_health.service import task as task_module
         from apps.integrations.oneup_health.service.task import task_ingest_user_data
+        from config import settings
+
+        settings.oneup_health.max_error_retries = 4
 
         user_id = uuid.uuid4()
 
