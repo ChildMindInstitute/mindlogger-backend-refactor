@@ -3,6 +3,7 @@ import http
 import re
 import uuid
 from collections import defaultdict
+from http import HTTPStatus
 from typing import Any, AsyncGenerator, Tuple, cast
 from unittest.mock import AsyncMock, patch
 
@@ -16,9 +17,16 @@ from apps.activities.domain.activity_update import ActivityUpdate
 from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.answers.crud import AnswerItemsCRUD
-from apps.answers.crud.answers import AnswersCRUD
-from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
-from apps.answers.domain import AnswerNote, AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
+from apps.answers.crud.answers import AnswersCRUD, AnswersEHRCRUD
+from apps.answers.db.schemas import AnswerEHRSchema, AnswerItemSchema, AnswerNoteSchema, AnswerSchema
+from apps.answers.domain import (
+    AnswerNote,
+    AppletAnswerCreate,
+    AssessmentAnswerCreate,
+    ClientMeta,
+    EHRIngestionStatus,
+    ItemAnswerCreate,
+)
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
@@ -747,6 +755,8 @@ class TestAnswerActivityItems(BaseTest):
     check_existence_url = "/answers/check-existence"
     assessment_delete_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}"
     multiinformat_assessment_validate_url = "/answers/applet/{applet_id}/multiinformant-assessment/validate"
+
+    applet_ehr_answers_export_url = "/answers/applet/{applet_id}/ehr-data"
 
     async def test_answer_activity_items_create_alert_for_respondent(
         self,
@@ -2050,7 +2060,7 @@ class TestAnswerActivityItems(BaseTest):
             "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag",
             "targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
             "inputSubjectId", "inputSecretId", "inputUserNickname",
-            "client", "tzOffset", "scheduledEventId", "scheduledEventHistoryId", "reviewedFlowSubmitId"
+            "client", "tzOffset", "scheduledEventId", "scheduledEventHistoryId", "reviewedFlowSubmitId", "ehrDataFile"
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
@@ -4392,3 +4402,81 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.get(url)
 
         assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_applet_ehr_data_endpoint(self, client, session, tom, tom_answer):
+        # Create EHR record
+        now = datetime.datetime.now(tz=datetime.UTC)
+        activity_id = uuid.UUID(tom_answer.activity_history_id.split("_")[0])
+        await AnswersEHRCRUD(session=session).create(
+            AnswerEHRSchema(
+                activity_id=activity_id,
+                submit_id=tom_answer.submit_id,
+                ehr_storage_uri="fake/ehr/storage/uri",
+                ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            )
+        )
+
+        def _mock_download_ehr_zip(data, file_buffer):
+            file_buffer.write(b"mocked EHR zip data")
+            file_buffer.seek(0)
+
+            return f"{tom.id}-{activity_id}-{tom_answer.submit_id}-{now.strftime('%Y%m%d')}-EHR.zip"
+
+        with patch(
+            "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.download_ehr_zip"
+        ) as download_ehr_zip:
+            download_ehr_zip.side_effect = _mock_download_ehr_zip
+
+            client.login(tom)
+
+            # Request EHR data
+            response = await client.get(self.applet_ehr_answers_export_url.format(applet_id=tom_answer.applet_id))
+            assert response.status_code == 200
+            assert response.headers["Content-Type"] == "application/zip"
+            assert response.headers["Content-Disposition"] == "attachment; filename=EHR.zip"
+
+    @pytest.mark.asyncio
+    async def test_include_ehr_parameter_in_data_endpoint(
+        self,
+        client,
+        session,
+        tom: User,
+        tom_answer: AnswerSchema,
+    ):
+        # Create EHR record
+        now = datetime.datetime.now(tz=datetime.UTC)
+        await AnswersEHRCRUD(session=session).create(
+            AnswerEHRSchema(
+                activity_id=uuid.UUID(tom_answer.activity_history_id.split("_")[0]),
+                submit_id=tom_answer.submit_id,
+                ehr_storage_uri="fake/ehr/storage/uri",
+                ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            )
+        )
+
+        client.login(tom)
+
+        # 1. Without include_ehr param
+        response = await client.get(self.applet_answers_export_url.format(applet_id=tom_answer.applet_id))
+        assert response.status_code == HTTPStatus.OK
+
+        results = response.json()["result"]
+
+        assert results["answers"][0]["ehrDataFile"] is None
+
+        # 2. With include_ehr param
+        response = await client.get(
+            f"{self.applet_answers_export_url.format(applet_id=tom_answer.applet_id)}",
+            query={"includeEhr": True},
+        )
+        assert response.status_code == HTTPStatus.OK
+        results = response.json()["result"]
+
+        _answer = results["answers"][0]
+
+        activity_id = tom_answer.activity_history_id.split("_")[0]
+
+        assert (
+            _answer["ehrDataFile"] == f"{tom.id}-{activity_id}-{tom_answer.submit_id}-{now.strftime('%Y%m%d')}-EHR.zip"
+        )

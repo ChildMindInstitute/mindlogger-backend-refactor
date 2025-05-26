@@ -77,13 +77,13 @@ class TestTaskIngestUserData:
         )
 
         with patch(
-            "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_resources"
+            "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_resources"
         ) as upload_resources:
             # Mock the storage to return a path
             upload_resources.return_value = "fake/storage/path", "fake_filename"
 
             with patch(
-                "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_ehr_zip"
+                "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_ehr_zip"
             ) as upload_ehr_zip:
                 upload_ehr_zip.return_value = None
 
@@ -317,12 +317,12 @@ class TestTaskIngestUserData:
         user_id = uuid.uuid4()
 
         with patch(
-            "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_resources"
+            "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_resources"
         ) as upload_resources:
             upload_resources.return_value = "fake/storage/path", "fake_filename"
 
             with patch(
-                "apps.integrations.oneup_health.service.ehr_storage._EHRStorage.upload_ehr_zip"
+                "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_ehr_zip"
             ) as upload_ehr_zip:
                 upload_ehr_zip.return_value = None
 
