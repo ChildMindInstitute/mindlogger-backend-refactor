@@ -18,8 +18,9 @@ from apps.activity_assignments.domain.assignments import ActivityAssignmentCreat
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD, AnswersEHRCRUD
-from apps.answers.db.schemas import AnswerEHRSchema, AnswerItemSchema, AnswerNoteSchema, AnswerSchema
+from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
 from apps.answers.domain import (
+    AnswerEHR,
     AnswerNote,
     AppletAnswerCreate,
     AssessmentAnswerCreate,
@@ -4408,16 +4409,13 @@ class TestAnswerActivityItems(BaseTest):
     @pytest.mark.asyncio
     async def test_applet_ehr_data_endpoint(self, client, session, tom, tom_answer):
         # Create EHR record
-        now = datetime.datetime.now(tz=datetime.UTC)
-        activity_id = uuid.UUID(tom_answer.activity_history_id.split("_")[0])
-        await AnswersEHRCRUD(session=session).create(
-            AnswerEHRSchema(
-                activity_id=activity_id,
-                submit_id=tom_answer.submit_id,
-                ehr_storage_uri="fake/ehr/storage/uri",
-                ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
-            )
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri",
+            activity_id=uuid.UUID(tom_answer.activity_history_id.split("_")[0]),
         )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
 
         def _mock_download_ehr_zip(data, file_buffer):
             file_buffer.write(b"mocked EHR zip data")
@@ -4439,6 +4437,23 @@ class TestAnswerActivityItems(BaseTest):
             assert response.headers["Content-Disposition"] == "attachment; filename=EHR.zip"
 
     @pytest.mark.asyncio
+    async def test_applet_ehr_data_endpoint_without_ehr(self, client, session, tom, tom_answer):
+        # Create EHR record
+        activity_id = uuid.UUID(tom_answer.activity_history_id.split("_")[0])
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.IN_PROGRESS,
+            activity_id=activity_id,
+        )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        client.login(tom)
+
+        # Request EHR data
+        response = await client.get(self.applet_ehr_answers_export_url.format(applet_id=tom_answer.applet_id))
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+    @pytest.mark.asyncio
     async def test_include_ehr_parameter_in_data_endpoint(
         self,
         client,
@@ -4447,15 +4462,13 @@ class TestAnswerActivityItems(BaseTest):
         tom_answer: AnswerSchema,
     ):
         # Create EHR record
-        now = datetime.datetime.now(tz=datetime.UTC)
-        await AnswersEHRCRUD(session=session).create(
-            AnswerEHRSchema(
-                activity_id=uuid.UUID(tom_answer.activity_history_id.split("_")[0]),
-                submit_id=tom_answer.submit_id,
-                ehr_storage_uri="fake/ehr/storage/uri",
-                ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
-            )
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri",
+            activity_id=uuid.UUID(tom_answer.activity_history_id.split("_")[0]),
         )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
 
         client.login(tom)
 
