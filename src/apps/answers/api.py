@@ -950,7 +950,7 @@ async def applet_ehr_answers_export(
     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
     zip_buffer = io.BytesIO()
     try:
-        with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+        with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
             for ehr_answer in ehr_answers:
                 data = EHRData(
                     user_id=ehr_answer.user_id,
