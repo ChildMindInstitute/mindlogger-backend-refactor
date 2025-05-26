@@ -1,1 +1,0 @@
-INFO     root:task.py:182 Submit ID ff2046f2-718f-47e1-88fe-a986b4c19df1 and activity ID cff6a1fc-1d02-47dc-a20d-575a218558cf has no OneUp Health user ID

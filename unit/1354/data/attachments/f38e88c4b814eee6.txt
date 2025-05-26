@@ -1,2 +1,0 @@
-ERROR    root:oneup_health.py:178 Error requesting to OneUp health API /r4/AuditEvent - Connection error
-ERROR    root:oneup_health.py:354 OneUp Health request failed.
