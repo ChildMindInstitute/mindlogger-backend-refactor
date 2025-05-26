@@ -32,6 +32,8 @@ from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
 from apps.applets.service import AppletService
+from apps.integrations.oneup_health.service.domain import EHRData
+from apps.integrations.oneup_health.service.ehr_storage import EHRStorage
 from apps.mailing.services import TestMail
 from apps.schedule.domain.schedule import PublicEvent
 from apps.schedule.service import ScheduleService
@@ -4421,7 +4423,7 @@ class TestAnswerActivityItems(BaseTest):
             file_buffer.write(b"mocked EHR zip data")
             file_buffer.seek(0)
 
-            return f"{tom.id}-{activity_id}-{tom_answer.submit_id}-{now.strftime('%Y%m%d')}-EHR.zip"
+            return EHRStorage.ehr_zip_filename(data)
 
         with patch(
             "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.download_ehr_zip"
@@ -4477,6 +4479,13 @@ class TestAnswerActivityItems(BaseTest):
 
         activity_id = tom_answer.activity_history_id.split("_")[0]
 
-        assert (
-            _answer["ehrDataFile"] == f"{tom.id}-{activity_id}-{tom_answer.submit_id}-{now.strftime('%Y%m%d')}-EHR.zip"
+        filename = EHRStorage.ehr_zip_filename(
+            data=EHRData(
+                user_id=tom.id,
+                activity_id=uuid.UUID(activity_id),
+                submit_id=tom_answer.submit_id,
+                date=tom_answer.created_at,
+            )
         )
+
+        assert _answer["ehrDataFile"] == filename

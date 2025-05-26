@@ -20,6 +20,11 @@ class EHRStorage:
     def __init__(self, cdn_client: CDNClient):
         self._cdn_client: CDNClient = cdn_client
 
+    @staticmethod
+    def ehr_zip_filename(data: EHRData) -> str:
+        filename = f"{data.user_id}_{data.activity_id}_{data.submit_id}_{data.date.strftime('%Y%m%d')}_EHR.zip"
+        return filename
+
     def _get_storage_path(self, base_path: str, key: str) -> str:
         index = key.find(base_path)
         if index == -1:  # substring not found
@@ -51,7 +56,7 @@ class EHRStorage:
 
     async def upload_ehr_zip(self, resources_files: list[str], data: EHRData) -> str:
         base_path = f"{data.activity_id}/{data.submit_id}"
-        filename = f"{data.user_id}-{data.activity_id}-{data.submit_id}-{data.date.strftime('%Y%m%d')}-EHR.zip"
+        filename = EHRStorage.ehr_zip_filename(data)
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
 
         zip_buffer = io.BytesIO()
@@ -77,7 +82,7 @@ class EHRStorage:
 
     def download_ehr_zip(self, data: EHRData, file_buffer: BinaryIO) -> str:
         base_path = f"{data.activity_id}/{data.submit_id}"
-        filename = f"{data.user_id}-{data.activity_id}-{data.submit_id}-{data.date.strftime('%Y%m%d')}-EHR.zip"
+        filename = EHRStorage.ehr_zip_filename(data)
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
 
         self._cdn_client.download(key, file_buffer)
