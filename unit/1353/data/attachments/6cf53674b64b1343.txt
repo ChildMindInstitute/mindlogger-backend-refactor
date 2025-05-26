@@ -1,1 +1,0 @@
-WARNING  root:oneup_health.py:109 Unsuccessful requesting to OneUp health API /user-management/v1/user - this user already exists
