@@ -416,6 +416,9 @@ class TestTaskIngestUserData:
 
         from apps.integrations.oneup_health.service import task as task_module
         from apps.integrations.oneup_health.service.task import task_ingest_user_data
+        from config import settings
+
+        settings.oneup_health.max_error_retries = 4
 
         user_id = uuid.uuid4()
 
@@ -434,5 +437,5 @@ class TestTaskIngestUserData:
                 result = await task.wait_result()
                 # The result should be None due to the connection error
                 assert result.return_value is None
-                # The function should have been retried a total of 5 times, so the retry function is called 4 times.
-                assert mock_retry.call_count == 5
+                # The function should have been retried a total of 4 times, so the retry function is called 4 times.
+                assert mock_retry.call_count == 4
