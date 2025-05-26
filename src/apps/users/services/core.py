@@ -34,6 +34,7 @@ class PasswordRecoveryService:
             "en": "Password reset",
             "fr": "Réinitialisation du mot de passe",
             "el": "Επαναφορά κωδικού πρόσβασης",
+            "es": "Restablecimiento de contraseña",
         }
         return subjects.get(language, "Password reset")
 
