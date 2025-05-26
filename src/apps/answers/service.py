@@ -95,6 +95,8 @@ from apps.applets.domain.applet_history import Version
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
 from apps.file.enums import FileScopeEnum
+from apps.integrations.oneup_health.service.domain import EHRData
+from apps.integrations.oneup_health.service.ehr_storage import EHRStorage
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
@@ -2086,9 +2088,13 @@ class AnswerService:
                 None,
             )
             if ehr_answer:
-                answer.ehr_data_file = f"{answer.respondent_id}-{ehr_answer['activity_id']}-{answer.submit_id}-{
-                    ehr_answer['date'].strftime('%Y%m%d')
-                }-EHR.zip"
+                data = EHRData(
+                    user_id=answer.respondent_id,
+                    activity_id=ehr_answer["activity_id"],
+                    submit_id=answer.submit_id,
+                    date=ehr_answer["date"],
+                )
+                answer.ehr_data_file = EHRStorage.ehr_zip_filename(data)
 
         return answers
 
