@@ -1259,10 +1259,6 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
             A list of AnswerEHRSchema objects associated with the given applet_id
         """
 
-        filter_clauses = []
-        if filters:
-            filter_clauses = _AnswersEHRExportFilter().get_clauses(**filters)
-
         query = (
             select(
                 AnswerSchema.submit_id,
@@ -1273,9 +1269,13 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
                 AnswerEHRSchema.ehr_ingestion_status,
             )
             .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)
-            .where(AnswerSchema.applet_id == applet_id, **filter_clauses)
+            .where(AnswerSchema.applet_id == applet_id)
             .order_by(self.schema_class.created_at.desc())
         )
+
+        if filters:
+            filter_clauses = _AnswersEHRExportFilter().get_clauses(**filters)
+            query = query.where(**filter_clauses)
 
         result = await self._execute(query)
         return result.mappings().all()
