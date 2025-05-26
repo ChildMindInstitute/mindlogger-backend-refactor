@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import datetime
+import http
 import io
 import uuid
 import zipfile
@@ -946,6 +947,9 @@ async def applet_ehr_answers_export(
     ehr_answers: list[AnswerEHRFull] = await AnswerService(session, user.id, answer_session).export_ehr_answers(
         applet_id, query_params
     )
+
+    if len(ehr_answers) == 0:
+        return FastAPIResponse(status_code=http.HTTPStatus.NO_CONTENT, content="No EHR answers found")
 
     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
     zip_buffer = io.BytesIO()
