@@ -9,6 +9,7 @@ from apps.answers.crud.answers import AnswersEHRCRUD
 from apps.answers.domain import EHRIngestionStatus
 from apps.applets.domain.applet_full import AppletFull
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
+from broker import broker
 
 
 class TestTaskIngestUserData:
@@ -437,5 +438,9 @@ class TestTaskIngestUserData:
                 result = await task.wait_result()
                 # The result should be None due to the connection error
                 assert result.return_value is None
+
+                # Wait all tasks to finish
+                await broker.wait_all()  # type: ignore
+
                 # The function should have been retried a total of 4 times, so the retry function is called 4 times.
                 assert mock_retry.call_count == 4
