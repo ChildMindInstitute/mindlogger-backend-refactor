@@ -49,7 +49,7 @@ async def get_log_bucket() -> CDNClient:
     )
     return CDNClient(config, env=settings.env)
 
-
+# TODO Pycharm says this isn't used
 async def get_answer_bucket(
     applet_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
@@ -63,6 +63,7 @@ async def get_answer_bucket(
 
 
 async def get_legacy_bucket():
+    """@deprecated: use get_answer_bucket instead."""
     config_cdn = CdnConfig(
         region=settings.cdn.legacy_region,
         bucket=settings.cdn.legacy_bucket,

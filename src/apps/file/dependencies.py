@@ -1,7 +1,7 @@
 from config import CDNSettings, settings
 from infrastructure.utility import CDNClient
 
-
+# TODO Pycharm says this is not used
 def get_legacy_storage():
     settings_cdn = CDNSettings(
         region=settings.cdn.legacy_region,

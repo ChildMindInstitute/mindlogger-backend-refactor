@@ -8,6 +8,7 @@ class CDNSettings(BaseModel):
     legacy_bucket: str | None
     legacy_secret_key: str | None
     legacy_access_key: str | None
+    legacy_prefix: str | None
 
     region: str | None
     bucket: str | None
