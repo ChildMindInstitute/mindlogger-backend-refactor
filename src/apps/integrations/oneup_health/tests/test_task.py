@@ -9,6 +9,7 @@ from apps.answers.crud.answers import AnswersEHRCRUD
 from apps.answers.domain import EHRIngestionStatus
 from apps.applets.domain.applet_full import AppletFull
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
+from broker import broker
 
 
 class TestTaskIngestUserData:
