@@ -1,2 +1,0 @@
-ERROR    root:oneup_health.py:84 1UpHealth API error
-ERROR    root:oneup_health.py:96 1UpHealth token expired
