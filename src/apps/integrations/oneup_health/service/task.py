@@ -238,7 +238,7 @@ async def task_ingest_user_data(
                     )
             except (BaseError, httpx.RequestError) as e:
                 failed_attempts += 1
-                if failed_attempts >= settings.oneup_health.max_error_retries:
+                if failed_attempts > settings.oneup_health.max_error_retries:
                     async with atomic(answer_session):
                         await AnswersEHRCRUD(session=answer_session).update_status(
                             submit_id=submit_id, activity_id=activity_id, status=EHRIngestionStatus.FAILED
