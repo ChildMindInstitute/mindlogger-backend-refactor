@@ -9,4 +9,5 @@ class WorkspaceUsersQueryParams(BaseQueryParams):
     shell: bool | None
     user_id: uuid.UUID | None = None
     respondent_secret_id: str | None = None
+    include_soft_deleted_subjects: bool = False
     ordering = "-isPinned,-createdAt"

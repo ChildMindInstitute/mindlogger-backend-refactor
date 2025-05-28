@@ -150,7 +150,9 @@ class AppletService:
     ) -> AppletFull:
         if applet_id is None:
             applet_id = uuid.uuid4()
-        await self._validate_applet_name(create_data.display_name)
+        # For new applets, validate name uniqueness against the current user's applets (self.user_id)
+        # since they will be the owner of the new applet
+        await self._validate_applet_name(create_data.display_name, self.user_id)
         if not create_data.theme_id:
             theme = await ThemeService(self.session, self.user_id).get_default()
             create_data.theme_id = theme.id
@@ -253,8 +255,11 @@ class AppletService:
     ):
         activity_key_id_map = dict()
 
-        await self._validate_applet_name(new_name)
+        # Get the current owner of the applet being duplicated
         applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_exist.id)
+        # Validate name uniqueness against the original applet owner's applets
+        # since they will also be the owner of the duplicated applet
+        await self._validate_applet_name(new_name, applet_owner.user_id)
 
         has_editor = await UserAppletAccessCRUD(self.session).check_access_by_user_and_owner(
             user_id=self.user_id,
@@ -352,8 +357,23 @@ class AppletService:
             encryption=encryption,
         )
 
-    async def _validate_applet_name(self, display_name: str, exclude_by_id: uuid.UUID | None = None):
-        applet_ids_query = AppletsCRUD(self.session).owner_applet_ids_query(self.user_id)
+    async def _validate_applet_name(
+        self, display_name: str, owner_id: uuid.UUID, exclude_by_id: uuid.UUID | None = None
+    ):
+        """
+        Validates that an applet name is unique for a specific owner.
+
+        Parameters:
+            display_name (str): The name to validate for uniqueness
+            owner_id (uuid.UUID): The ID of the user who owns/will own the applet.
+                                  Used to check for name conflicts only among applets owned by this user.
+            exclude_by_id (uuid.UUID, optional): An applet ID to exclude from the uniqueness check.
+                                               Useful when updating an existing applet's name.
+
+        Raises:
+            AppletAlreadyExist: If an applet with the same name already exists for the specified owner.
+        """
+        applet_ids_query = AppletsCRUD(self.session).owner_applet_ids_query(owner_id)
         existing_applet = await AppletsCRUD(self.session).get_by_display_name(
             display_name, applet_ids_query, exclude_by_id
         )
@@ -361,7 +381,11 @@ class AppletService:
             raise AppletAlreadyExist()
 
     async def _update(self, applet_id: uuid.UUID, update_data: AppletUpdate, version: str) -> AppletFull:
-        await self._validate_applet_name(update_data.display_name, applet_id)
+        # Get the current owner of the applet being updated
+        applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
+        # Validate name uniqueness against the current owner's applets, excluding the current applet (applet_id)
+        # to allow an applet to keep its existing name when other fields are updated
+        await self._validate_applet_name(update_data.display_name, applet_owner.user_id, applet_id)
 
         schema = await AppletsCRUD(self.session).update_by_id(
             applet_id,

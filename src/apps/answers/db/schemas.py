@@ -98,3 +98,12 @@ class AnswerItemSchema(Base):
     @is_identifier_encrypted.expression  # type: ignore[no-redef]
     def is_identifier_encrypted(cls):
         return cls.migrated_data[text("'is_identifier_encrypted'")].astext.cast(Boolean()).isnot(false())
+
+
+class AnswerEHRSchema(Base):
+    __tablename__ = "answers_ehr"
+
+    submit_id = Column(UUID(as_uuid=True), index=True)
+    activity_id = Column(UUID(as_uuid=True), index=True)
+    ehr_storage_uri = Column(Text())
+    ehr_ingestion_status = Column(Text())
