@@ -77,7 +77,7 @@ async def _process_data_transfer(
     # by comparing the number of ingestion starts (`data-transfer-initiated`) to the number
     # of ingestion end events (`member-data-ingestion-completed` and `member-data-ingestion-timeout`
     # https://docs.1up.health/help-center/Content/en-US/connect-patient/patient-connect-audit-events.html#audit-event-types-and-subtypes
-    counters, healthcare_provider_name = await oneup_health_service.check_audit_events(oneup_user_id, start_date)
+    counters, healthcare_providers = await oneup_health_service.check_audit_events(oneup_user_id, start_date)
 
     initiated_count = counters["initiated"]
     if initiated_count > 0:
@@ -96,7 +96,7 @@ async def _process_data_transfer(
                 submit_id=submit_id,
                 activity_id=activity_id,
                 oneup_user_id=oneup_user_id,
-                healthcare_provider_name=healthcare_provider_name,
+                healthcare_providers=healthcare_providers,
             )
 
     return None
