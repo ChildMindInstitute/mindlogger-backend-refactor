@@ -1,7 +1,6 @@
 import asyncio
 import http
 import io
-import json
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO
@@ -215,48 +214,3 @@ class CDNClient:
             except httpx.HTTPError as e:
                 logger.info("File upload error")
                 raise e
-
-    def _check_is_bucket_public(self) -> bool:
-        # Check the bucket policy
-        try:
-            bucket_policy = self.client.get_bucket_policy(Bucket=self.config.bucket)
-            if policy := bucket_policy.get("Policy"):
-                policy_statements: list = json.loads(policy)["Statement"]
-
-                for statement in policy_statements:
-                    if statement["Effect"] == "Allow" and "Principal" in statement and statement["Principal"] == "*":
-                        return True  # Bucket policy allows public access
-        except ClientError as e:
-            if e.response["Error"]["Code"] != "NoSuchBucketPolicy":
-                logger.error(f"Error getting bucket policy: {e}")
-        except Exception as e:
-            logger.error(f"Error getting bucket policy: {e}")
-
-        return False  # No public access found
-
-    def is_bucket_public(self) -> bool:
-        if self._is_bucket_public is None:
-            self._is_bucket_public = self._check_is_bucket_public()
-
-        return self._is_bucket_public
-
-    def _is_object_public(self, key) -> bool:
-        # Check the object's ACL
-        try:
-            acl = self.client.get_object_acl(Bucket=self.config.bucket, Key=key)
-            for grant in acl["Grants"]:
-                if (
-                    grant["Grantee"].get("Type") == "Group"
-                    and grant["Grantee"].get("URI") == "http://acs.amazonaws.com/groups/global/AllUsers"
-                ):
-                    return True  # Object is publicly accessible
-        except (ClientError, Exception) as e:
-            logger.error(f"Error getting object ACL: {e}")
-            return False
-
-        return False  # No public access found
-
-    async def is_object_public(self, key) -> bool:
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(self._is_object_public, key)
-            return await asyncio.wrap_future(future)
