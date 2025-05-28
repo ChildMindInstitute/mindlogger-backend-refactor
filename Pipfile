@@ -38,6 +38,7 @@ ddtrace = "==2.21.*"
 bytecode = "==0.16.*"
 structlog = "==25.3.*"
 asgi-correlation-id = "==4.3.4"
+python-slugify = "*"
 
 [dev-packages]
 allure-pytest = "==2.14.*"
