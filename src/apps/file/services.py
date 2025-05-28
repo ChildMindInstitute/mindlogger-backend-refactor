@@ -67,8 +67,6 @@ class S3PresignService:
             if not await self._check_access_to_legacy_url(url):
                 return url
             key = self._get_key(url)
-            if legacy_cdn_client.is_bucket_public() or await legacy_cdn_client.is_object_public(key):
-                return await legacy_cdn_client.generate_public_url(key)
             return await legacy_cdn_client.generate_presigned_url(key)
         elif self._is_regular_file_url_format(url):
             if not await self._check_access_to_regular_url(url):
