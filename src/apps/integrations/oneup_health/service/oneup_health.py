@@ -407,7 +407,7 @@ class OneupHealthService:
 
     async def check_audit_events(
         self, oneup_user_id: int, start_date: datetime | None
-    ) -> tuple[dict[str, int], str | None]:
+    ) -> tuple[dict[str, int], list[dict[str, str]]]:
         """
         Check if a data transfer h
 
@@ -419,10 +419,10 @@ class OneupHealthService:
             int: The number of initiated transfers found, or 0 if none or if an error occurred.
         """
         counters = {"initiated": 0, "completed": 0, "timeout": 0}
-        healthcare_provider_name = None
+        healthcare_providers = []
 
         if oneup_user_id is None:
-            return counters, healthcare_provider_name
+            return counters, healthcare_providers
 
         params = {
             "subtype": "data-transfer-initiated,member-data-ingestion-completed,member-data-ingestion-timeout",
@@ -440,11 +440,13 @@ class OneupHealthService:
             )
 
             for entry in result.get("entry", []):
+                # Get the healthcare providers data
                 agents = entry.get("resource", {}).get("agent", [])
                 for agent in agents:
                     coding = agent.get("type", {}).get("coding", [])
                     if len(coding) > 0 and coding[0].get("code") == "CST":
-                        healthcare_provider_name = agent.get("name")
+                        healthcare_providers.append(dict(name=agent.get("name"), id=agent.get("altId")))
+                # Count the audit events
                 subtypes = entry.get("resource", {}).get("subtype", [])
                 for subtype in subtypes:
                     if subtype.get("code") == "data-transfer-initiated":
@@ -460,7 +462,7 @@ class OneupHealthService:
         except OneUpHealthAPIError as ex:
             logger.error(ex.message)
 
-        return counters, healthcare_provider_name
+        return counters, healthcare_providers
 
     async def _get_resources(self, entry_url: str, oneup_user_id: int):
         """
@@ -498,7 +500,7 @@ class OneupHealthService:
         submit_id: uuid.UUID,
         activity_id: uuid.UUID,
         oneup_user_id: int,
-        healthcare_provider_name: str | None,
+        healthcare_providers: list[dict[str, str]],
     ) -> str | None:
         """
         Retrieve and store patient data for a subject.
@@ -512,6 +514,7 @@ class OneupHealthService:
             submit_id (uuid.UUID): The unique identifier for the submission.
             activity_id (uuid.UUID): The unique identifier for the activity.
             oneup_user_id (int): The OneUp Health user ID
+            healthcare_providers (list[dict[str, str]]): A list of healthcare provider dictionaries.
 
         Returns:
             bool: True if data was successfully retrieved and stored, False otherwise.
@@ -535,7 +538,18 @@ class OneupHealthService:
                 logger.info(f"Retrieving resources from {resource_url}")
                 resources = await self._get_resources(f"{resource_url}/$everything?_count=100", oneup_user_id)
                 if len(resources) > 0:
+                    # Get the healthcare provider name
                     healthcare_provider_id = entry.get("resource", {}).get("id")
+                    meta_source = entry.get("resource", {}).get("meta", {}).get("source")
+                    healthcare_provider_name = next(
+                        (
+                            healthcare_provider["name"]
+                            for healthcare_provider in healthcare_providers
+                            if f"1up-external-system:{healthcare_provider['id']}" == meta_source
+                        ),
+                        None,
+                    )
+
                     data = EHRData(
                         resources=resources,
                         healthcare_provider_id=healthcare_provider_id,
