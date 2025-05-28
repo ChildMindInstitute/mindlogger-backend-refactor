@@ -6,9 +6,9 @@ from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.service import workspace
 from config import settings
-from infrastructure.utility.cdn_arbitrary import ArbitraryAzureCdnClient, ArbitraryGCPCdnClient, ArbitraryS3CdnClient
-from infrastructure.utility.cdn_client import CDNClient
-from infrastructure.utility.cdn_config import CdnConfig
+from infrastructure.storage.cdn_arbitrary import ArbitraryAzureCdnClient, ArbitraryGCPCdnClient, ArbitraryS3CdnClient
+from infrastructure.storage.cdn_client import CDNClient
+from infrastructure.storage.cdn_config import CdnConfig
 
 
 async def select_storage(
@@ -16,7 +16,11 @@ async def select_storage(
     applet_id: uuid.UUID | None = None,
     owner_id: uuid.UUID | None = None,
     session: AsyncSession,
-):
+) -> CDNClient:
+    """
+    Create a CDNClient based on arbitrary server info to the answer bucket.
+    """
+
     service = workspace.WorkspaceService(session, uuid.uuid4())
     if applet_id:
         info = await service.get_arbitrary_info_if_use_arbitrary(applet_id)
@@ -25,10 +29,13 @@ async def select_storage(
     else:
         raise ValueError("Applet id or owner id should be specified.")
 
-    return create_client(info)
+    return create_answer_client(info)
 
 
-def create_client(info: WorkspaceArbitrary | None):
+def create_answer_client(info: WorkspaceArbitrary | None) -> CDNClient:
+    """Create a CDN client based on optional arbitrary server info"""
+
+    # No arbitrary server, create a client based on local configuration
     if not info:
         config_cdn = CdnConfig(
             endpoint_url=settings.cdn.endpoint_url,
@@ -48,6 +55,7 @@ def create_client(info: WorkspaceArbitrary | None):
         access_key=info.storage_access_key,
         secret_key=info.storage_secret_key,
     )
+
     match bucket_type:
         case StorageType.AZURE:
             return ArbitraryAzureCdnClient(

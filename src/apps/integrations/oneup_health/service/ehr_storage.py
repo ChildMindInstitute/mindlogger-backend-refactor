@@ -3,7 +3,7 @@ import uuid
 from io import BytesIO
 
 from apps.file.enums import FileScopeEnum
-from apps.file.storage import select_storage
+from infrastructure.storage.storage import select_storage
 from apps.integrations.oneup_health.service.domain import EHRData
 from infrastructure.utility import CDNClient
 

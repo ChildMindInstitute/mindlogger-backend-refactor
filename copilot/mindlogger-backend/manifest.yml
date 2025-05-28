@@ -125,10 +125,6 @@ variables:
   CDN__BUCKET_OPERATIONS: cmiml-feature-operations
   CDN__DOMAIN: media-feature.cmiml.net
 #  CDN__STORAGE_ADDRESS: http://localhost:9000
-  CDN__LEGACY_REGION: us-east-1
-  CDN__LEGACY_BUCKET: mindlogger-media-staging
-#  CDN__LEGACY_SECRET_KEY:
-#  CDN__LEGACY_ACCESS_KEY:
   CDN__TTL_SIGNED_URLS: 3600
 
   DD_ENV: feature
@@ -183,7 +179,7 @@ logging:
     Name: "datadog"
     Host: "http-intake.logs.datadoghq.com"
     dd_service: "backend-api"
-    dd_source: "api-server"
+    dd_source: "python"
     dd_message_key: "log"
     dd_tags: "version:${COPILOT_ENVIRONMENT_NAME},env:feature"
     TLS: "on"

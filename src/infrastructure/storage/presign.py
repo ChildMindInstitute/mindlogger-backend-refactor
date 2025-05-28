@@ -3,12 +3,12 @@ from typing import Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.file.services import AzurePresignService, GCPPresignService, S3PresignService
-from apps.file.storage import select_storage
 from apps.workspaces.constants import StorageType
+from infrastructure.storage.storage import select_storage
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.workspace import WorkspaceService
+from infrastructure.storage.presign_services import S3PresignService, GCPPresignService, AzurePresignService
 
 
 async def get_presign_service(

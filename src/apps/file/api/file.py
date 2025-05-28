@@ -32,7 +32,8 @@ from apps.file.domain import (
 from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError, SomethingWentWrongError
 from apps.file.services import LogFileService
-from apps.file.storage import select_storage
+from infrastructure.storage.presign import get_presign_service
+from infrastructure.storage.storage import select_storage
 from apps.file.tasks import convert_audio_file, convert_image
 from apps.shared.domain.response import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
@@ -46,9 +47,8 @@ from apps.workspaces.service import workspace
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.database.deps import get_session
-from infrastructure.dependency.cdn import get_log_bucket, get_media_bucket
-from infrastructure.dependency.presign_service import get_presign_service
-from infrastructure.utility.cdn_client import CDNClient, ObjectNotFoundError
+from infrastructure.storage.buckets import get_log_bucket, get_media_bucket, get_operations_bucket
+from infrastructure.storage.cdn_client import CDNClient, ObjectNotFoundError
 
 
 # TODO: delete later, it is not used anymore
@@ -281,7 +281,7 @@ async def check_file_uploaded(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ResponseMulti[FileExistenceResponse]:
-    """Provides the information if the files is uploaded."""
+    """Provides the information if the file is uploaded."""
 
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
@@ -402,10 +402,23 @@ async def generate_presigned_media_url(
     body: FileNameRequest = Body(...),
     user: User = Depends(get_current_user),
     cdn_client: CDNClient = Depends(get_media_bucket),
+    operations_client: CDNClient = Depends(get_operations_bucket),
 ) -> Response[PresignedUrl]:
     orig_key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
-    target_key, upload_key, bucket = _get_keys_and_bucket_for_media(orig_key, body.target_extension)
-    data = cdn_client.generate_presigned_post(bucket, upload_key)
+
+    # Webm files go to the operations bucket to be converted to MP4s via Lambda/AWS MediaConvert
+    if orig_key.lower().endswith(".webm"):
+        extension = body.target_extension if body.target_extension else WebmTargetExtenstion.MP3
+        target_key = orig_key + extension
+        upload_key = f"{settings.cdn.bucket}/{orig_key}"
+        data = operations_client.generate_presigned_post(upload_key)
+    else:
+        target_key = orig_key
+        data = cdn_client.generate_presigned_post(orig_key)
+
+    # target_key, upload_key, bucket = _get_keys_and_bucket_for_media(orig_key, body.target_extension)
+
+
     return Response(
         result=PresignedUrl(
             upload_url=data["url"], fields=data["fields"], url=quote(settings.cdn.url.format(key=target_key), "/:")
@@ -426,17 +439,22 @@ async def generate_presigned_answer_url(
     ):
         raise AnswerViewAccessDenied()
     # TODO: Refactor this part when file storage is covered by tests. Get arbitrary info only once.
-    workspace_srv = workspace.WorkspaceService(session, user.id)
-    arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
+    # workspace_srv = workspace.WorkspaceService(session, user.id)
+    # arb_info = await workspace_srv.get_arbitrary_info_if_use_arbitrary(applet_id)
     cdn_client = await select_storage(applet_id=applet_id, session=session)
+
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = body.file_id.strip()
+
     orig_key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
-    target_key, upload_key, bucket = _get_keys_and_bucket_for_image(orig_key, arb_info, cdn_client)
-    data = cdn_client.generate_presigned_post(bucket, upload_key)
+
+    # TODO This feels like it should be a function of the cdn client.  It has the logic and arb info already
+    # target_key, upload_key, bucket = _get_keys_and_bucket_for_image(orig_key, arb_info, cdn_client)
+    data = cdn_client.generate_presigned_post(orig_key)
+
     return Response(
         result=PresignedUrl(
-            upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(target_key)
+            upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(orig_key)
         )
     )
 
@@ -449,7 +467,8 @@ async def generate_presigned_logs_url(
 ) -> Response[PresignedUrl]:
     service = LogFileService(user.id, cdn_client)
     key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"
-    data = cdn_client.generate_presigned_post(cdn_client.config.bucket, key)
+    data = cdn_client.generate_presigned_post(key)
+
     return Response(
         result=PresignedUrl(upload_url=data["url"], fields=data["fields"], url=cdn_client.generate_private_url(key))
     )

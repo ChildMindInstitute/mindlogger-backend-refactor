@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from apps.answers.service import AnswerTransferService
 from apps.applets.crud import AppletsCRUD
-from apps.file.storage import create_client, select_storage
+from infrastructure.storage.storage import create_answer_client, select_storage
 from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserIsDeletedError, UserNotFound
 from apps.workspaces.constants import StorageType
@@ -358,7 +358,7 @@ async def _get_arbitrary_data(session, email: str | None):
 
 
 async def _get_storage_client(arb_data: WorkspaceArbitrary | None):
-    client = create_client(arb_data)
+    client = create_answer_client(arb_data)
     try:
         await client.check()
     except Exception as e:
