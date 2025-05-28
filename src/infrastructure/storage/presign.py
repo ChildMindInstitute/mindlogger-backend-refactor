@@ -4,11 +4,11 @@ from typing import Union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.workspaces.constants import StorageType
-from infrastructure.storage.storage import select_storage
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.workspace import WorkspaceService
-from infrastructure.storage.presign_services import S3PresignService, GCPPresignService, AzurePresignService
+from infrastructure.storage.presign_services import AzurePresignService, GCPPresignService, S3PresignService
+from infrastructure.storage.storage import select_answer_storage
 
 
 async def get_presign_service(
@@ -47,17 +47,11 @@ async def get_presign_service(
         [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
     )
 
-    cdn_client = await select_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
 
     if arbitrary_info:
         if arbitrary_info.storage_type.lower() == StorageType.AZURE:
-            return AzurePresignService(
-                session,
-                user_id,
-                applet_id,
-                access,
-                cdn_client
-            )
+            return AzurePresignService(session, user_id, applet_id, access, cdn_client)
 
         if arbitrary_info.storage_type.lower() == StorageType.GCP:
             return GCPPresignService(session, user_id, applet_id, access, cdn_client)

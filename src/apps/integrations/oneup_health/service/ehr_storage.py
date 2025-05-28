@@ -3,8 +3,8 @@ import uuid
 from io import BytesIO
 
 from apps.file.enums import FileScopeEnum
-from infrastructure.storage.storage import select_storage
 from apps.integrations.oneup_health.service.domain import EHRData
+from infrastructure.storage.storage import select_answer_storage
 from infrastructure.utility import CDNClient
 
 __all = ["create_ehr_storage"]
@@ -43,6 +43,6 @@ class _EHRStorage:
 
 
 async def create_ehr_storage(session, applet_id: uuid.UUID):
-    cdn_client = await select_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
 
     return _EHRStorage(session, applet_id, cdn_client)

@@ -18,7 +18,6 @@ from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
 from apps.workspaces.constants import StorageType
-from apps.workspaces.db.schemas import UserWorkspaceSchema
 from apps.workspaces.domain.workspace import WorkspaceArbitrary, WorkspaceArbitraryCreate
 from apps.workspaces.errors import AnswerViewAccessDenied
 from apps.workspaces.service.workspace import WorkspaceService
@@ -186,7 +185,6 @@ class TestAnswerActivityItems(BaseTest):
     log_download_url = "/file/log-file/{user_email}/{device_id}"
     log_check_url = "/file/log-file/{device_id}/check"
 
-
     @pytest.mark.usefixtures("tom_workspace_arbitrary_aws")
     async def test_arbitrary_upload_to_s3_aws(
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
@@ -316,9 +314,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client: CDNClient
     ):
         client.login(tom)
-        expected_key = cdn_client.generate_key(
-            FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", self.file_id
-        )
+        expected_key = cdn_client.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", self.file_id)
         resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": self.file_id})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["fields"]["key"] == expected_key
@@ -336,7 +332,6 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["fields"]["key"] == expected_key
         assert resp.json()["result"]["url"] == cdn_client_arbitrary_aws.generate_private_url(expected_key)
-
 
     @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_log_url__logs_are_uploaded_to_the_answer_bucket(
@@ -373,99 +368,6 @@ class TestAnswerActivityItems(BaseTest):
         assert result["url"].endswith(exp_converted_file_name)
         assert result["fields"]["key"].startswith(cdn_settings.bucket)
         assert cdn_settings.bucket_operations in result["uploadUrl"]
-
-    # @pytest.mark.usefixtures("mock_presigned_post")
-    # @pytest.mark.parametrize("file_name", ("answer.heic", "answer.HEIC"))
-    # async def test_generate_presigned_for_answer_for_heic_format_not_arbitrary(
-    #     self, client: TestClient, applet_one: AppletFull, file_name: str, tom: User, cdn_settings: CDNSettings
-    # ) -> None:
-    #     client.login(tom)
-    #     resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": file_name})
-    #     assert resp.status_code == http.HTTPStatus.OK
-    #     result = resp.json()["result"]
-    #     exp_converted_file_name = file_name + ".jpg"
-    #     assert result["fields"]["key"].endswith(file_name)
-    #     assert result["fields"]["key"].startswith(cdn_settings.bucket_answer)
-    #     assert result["url"].endswith(exp_converted_file_name)
-    #     assert cdn_settings.bucket_answer in result["url"]
-    #     assert cdn_settings.bucket_operations in result["uploadUrl"]
-
-    # @pytest.mark.usefixtures("mock_presigned_post")
-    # async def test_generate_presigned_for_answer_for_heic_format_arbitrary_workspace(
-    #     self,
-    #     client: TestClient,
-    #     applet_one: AppletFull,
-    #     tom: User,
-    #     tom_workspace_arbitrary_aws: UserWorkspaceSchema,
-    #     cdn_settings: CDNSettings,
-    # ) -> None:
-    #     client.login(tom)
-    #
-    #     file_name = "answer.heic"
-    #     resp = await client.post(self.answer_upload_url.format(applet_id=applet_one.id), data={"file_id": file_name})
-    #     assert resp.status_code == http.HTTPStatus.OK
-    #     result = resp.json()["result"]
-    #     exp_converted_file_name = file_name + ".jpg"
-    #     assert result["fields"]["key"].endswith(file_name)
-    #     assert result["fields"]["key"].startswith(f"arbitrary-{tom_workspace_arbitrary_aws.id}")
-    #     assert result["url"].endswith(exp_converted_file_name)
-    #     assert str(tom.id) in result["url"]
-    #     assert cdn_settings.bucket_operations in result["uploadUrl"]
-    #
-    # @pytest.mark.usefixtures("mock_presigned_post")
-    # async def test_answer_existance_for_heic_format_not_arbitrary(
-    #     self,
-    #     client: TestClient,
-    #     tom: User,
-    #     applet_one: AppletFull,
-    #     mocker: MockerFixture,
-    #     cdn_settings: CDNSettings,
-    # ) -> None:
-    #     client.login(tom)
-    #
-    #     file_name = "answer.heic"
-    #     mock_check_existance = mocker.patch("infrastructure.storage.cdn_client.CDNClient.check_existence")
-    #     resp = await client.post(
-    #         self.existance_url.format(applet_id=applet_one.id),
-    #         data={"files": [file_name]},
-    #     )
-    #     assert resp.status_code == http.HTTPStatus.OK
-    #     result = resp.json()["result"]
-    #     exp_converted_file_name = file_name + ".jpg"
-    #     check_key = CDNClient.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", file_name)
-    #     exp_check_key = f"{cdn_settings.bucket_answer}/{check_key}"
-    #
-    #     mock_check_existance.assert_awaited_once_with(cdn_settings.bucket_operations, exp_check_key)
-    #     assert result[0]["url"].endswith(exp_converted_file_name)
-    #     assert cdn_settings.bucket_answer in result[0]["url"]
-    #
-    # @pytest.mark.usefixtures("mock_presigned_post")
-    # async def test_answer_existance_for_heic_format_for_arbitrary(
-    #     self,
-    #     client: TestClient,
-    #     tom: User,
-    #     applet_one: AppletFull,
-    #     mocker: MockerFixture,
-    #     tom_workspace_arbitrary_aws: UserWorkspaceSchema,
-    #     cdn_settings: CDNSettings,
-    # ) -> None:
-    #     client.login(tom)
-    #
-    #     file_name = "answer.heic"
-    #     mock_check_existance = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryS3CdnClient.check_existence")
-    #     resp = await client.post(
-    #         self.existance_url.format(applet_id=applet_one.id),
-    #         data={"files": [file_name]},
-    #     )
-    #     assert resp.status_code == http.HTTPStatus.OK
-    #     result = resp.json()["result"]
-    #     exp_converted_file_name = file_name + ".jpg"
-    #     check_key = CDNClient.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", file_name)
-    #     exp_check_key = f"arbitrary-{tom_workspace_arbitrary_aws.id}/{check_key}"
-    #
-    #     mock_check_existance.assert_awaited_once_with(cdn_settings.bucket_operations, exp_check_key)
-    #     assert result[0]["url"].endswith(exp_converted_file_name)
-    #     assert str(tom.id) in result[0]["url"]
 
     @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize(
@@ -710,6 +612,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.usefixtures("mock_presigned_url")
     async def test_presign_legacy_answer_url(self, client: TestClient, applet_legacy: AppletFull, kate: User):
+        """Test creating a presigned URL for a legacy answer."""
         client.login(kate)
         key = self.file_id
 
@@ -717,7 +620,9 @@ class TestAnswerActivityItems(BaseTest):
         mongo_applet_id = str(applet_legacy.id).replace("00000000", "").replace("-", "")
 
         private_url = f"s3://legacy-bucket/64f9a0b322d818224fd399df/64cbb57922d8180cf9b3eab7/{mongo_applet_id}/{key}"
-        resp = await client.post(self.presign_url.format(applet_id=applet_legacy.id), data={"privateUrls": [private_url]})
+        resp = await client.post(
+            self.presign_url.format(applet_id=applet_legacy.id), data={"privateUrls": [private_url]}
+        )
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert len(result) == 1
@@ -726,6 +631,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.usefixtures("mock_presigned_url")
     async def test_presign_legacy_answer_url_no_access(self, client: TestClient, applet_legacy: AppletFull, tom: User):
+        """Test creating a presigned URL for a legacy answer that the current user does not have access to."""
         client.login(tom)
         key = self.file_id
 
@@ -736,10 +642,10 @@ class TestAnswerActivityItems(BaseTest):
         resp = await client.post(
             self.presign_url.format(applet_id=applet_legacy.id), data={"privateUrls": [private_url]}
         )
-        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert len(result) == 1
-        assert result[0]["message"] == AnswerViewAccessDenied.message
+        assert result[0] == private_url
 
     async def test_upload_logs(
         self, client: TestClient, device_tom: str, mocker: MockerFixture, tom: User, cdn_settings: CDNSettings

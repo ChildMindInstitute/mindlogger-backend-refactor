@@ -80,17 +80,17 @@ class CDNClient:
             future = executor.submit(self._upload, path, body)
         await asyncio.wrap_future(future)
 
-    def _check_existence(self, bucket: str, key: str):
+    def _check_existence(self, key: str):
         try:
-            return self.client.head_object(Bucket=bucket, Key=key)
+            return self.client.head_object(Bucket=self.config.bucket, Key=key)
         except ClientError as e:
             # TODO The actual error for not found is S3.Client.exceptions.NoSuchKey
-            logger.warning(f"Error when trying to check existence for {key} in {bucket}: {e}")
+            logger.warning(f"Error when trying to check existence for {key} in {self.config.bucket}: {e}")
             raise NotFoundError
 
-    async def check_existence(self, bucket: str, key: str):
+    async def check_existence(self, key: str):
         with ThreadPoolExecutor() as executor:
-            future = executor.submit(self._check_existence, bucket, key)
+            future = executor.submit(self._check_existence, key)
             return await asyncio.wrap_future(future)
 
     def download(self, key, file: BinaryIO | None = None):
@@ -117,7 +117,6 @@ class CDNClient:
         media_type = mimetypes.guess_type(key)[0] if mimetypes.guess_type(key)[0] else "application/octet-stream"
         return file, media_type
 
-
     def _generate_presigned_url(self, key):
         url = self.client.generate_presigned_url(
             "get_object",
@@ -135,7 +134,6 @@ class CDNClient:
             url = await asyncio.wrap_future(future)
             return url
 
-
     async def delete_object(self, key: str | None):
         async with self.semaphore:
             with ThreadPoolExecutor() as executor:
@@ -148,8 +146,6 @@ class CDNClient:
                 future = executor.submit(self.client.list_objects, Bucket=self.config.bucket, Prefix=key)
                 result = await asyncio.wrap_future(future)
                 return result.get("Contents", [])
-
-
 
     def generate_presigned_post(self, key):
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)

@@ -1,13 +1,4 @@
-import uuid
-from typing import Union
-
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from infrastructure.storage.storage import select_storage
 from config import settings
-from infrastructure.database.deps import get_session
-from infrastructure.storage.cdn_arbitrary import ArbitraryAzureCdnClient, ArbitraryGCPCdnClient, ArbitraryS3CdnClient
 from infrastructure.storage.cdn_client import CDNClient
 from infrastructure.storage.cdn_config import CdnConfig
 
@@ -48,4 +39,3 @@ async def get_log_bucket() -> CDNClient:
         ttl_signed_urls=settings.cdn.ttl_signed_urls,
     )
     return CDNClient(config, env=settings.env)
-

@@ -1,13 +1,12 @@
 import asyncio
 import re
 import uuid
-from typing import Optional, List
+from typing import List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 from infrastructure.storage.cdn_client import CDNClient
 
@@ -25,6 +24,7 @@ class S3PresignService:
     Checks through a few mechanisms to determine whether the user has access to the requested resource
     depending on if it/they are a legacy or modern resource.
     """
+
     key_pattern = r"s3:\/\/[^\/]+\/"
     # Legacy URLs are in the format s3://<bucket>/<ObjectId>/<ObjectId>/<ObjectId>/<key>
     # Regular URLs are in the format s3://<bucket>/mindlogger/answer/<uuid>/<uuid>/<key>
@@ -50,7 +50,6 @@ class S3PresignService:
         self.applet_id = applet_id
         self.access = access
         self.cdn_client = cdn_client
-
 
     async def _presign(self, url: str | None) -> Optional[str]:
         """Presign a URL if the location is not public"""
@@ -117,6 +116,10 @@ class S3PresignService:
         """
         pattern = self.check_access_to_regular_url_pattern
         match = re.search(pattern, url)
+
+        if not match:
+            return False
+
         user_id, applet_id = match.group(1), match.group(2)
 
         if self.user_id == user_id:

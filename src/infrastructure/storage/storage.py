@@ -11,7 +11,7 @@ from infrastructure.storage.cdn_client import CDNClient
 from infrastructure.storage.cdn_config import CdnConfig
 
 
-async def select_storage(
+async def select_answer_storage(
     *,
     applet_id: uuid.UUID | None = None,
     owner_id: uuid.UUID | None = None,
@@ -47,6 +47,7 @@ def create_answer_client(info: WorkspaceArbitrary | None) -> CDNClient:
         )
         return CDNClient(config_cdn, env=settings.env, max_concurrent_tasks=settings.cdn.max_concurrent_tasks)
 
+    # Create an arbitrary server client
     bucket_type = info.storage_type.lower()
     arbitrary_cdn_config = CdnConfig(
         region=info.storage_region,

@@ -382,6 +382,7 @@ async def applet_activity_flow(
     if not pytestconfig.getoption("--keepdb"):
         await teardown_applet(session, applet.id)
 
+
 @pytest.fixture(autouse=True, scope="session")
 async def applet_legacy(
     global_session: AsyncSession,
