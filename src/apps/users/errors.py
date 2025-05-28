@@ -11,10 +11,6 @@ class UserAlreadyExistError(ValidationError):
     message = _("That email address is already associated with a Curious account.")
 
 
-class EmailAddressError(ValidationError):
-    message = _("That email is not associated with a Curious account.")
-
-
 class PasswordRecoveryKeyNotFound(NotFoundError):
     message = _("Password recovery key not found.")
 
