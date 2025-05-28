@@ -369,7 +369,7 @@ class TestTaskIngestUserData:
                     activity_id=applet_one.activities[0].id,
                     start_date=start_date,
                     retry_count=retry_count,
-                    error_retry_count=error_retry_count,
+                    failed_attempts=error_retry_count,
                 )
 
                 mock_backoff.assert_called_once_with(retry_count)
@@ -387,6 +387,8 @@ class TestTaskIngestUserData:
     @pytest.mark.asyncio
     async def test_task_retries_on_connection_error(self, applet_one: AppletFull):
         """Test that the task retries when a connection error occurs during user data ingestion."""
+        import asyncio
+
         import httpx
 
         from apps.integrations.oneup_health.service import task as task_module
@@ -404,5 +406,15 @@ class TestTaskIngestUserData:
                 result = await task.wait_result()
                 # The result should be None due to the connection error
                 assert result.return_value is None
-                # The function should have been retried a total of 5 times, so the retry function is called 4 times.
-                assert mock_retry.call_count == 4
+
+                # Wait for all scheduled retries to be invoked
+                # This is necessary because the retry function is asynchronous, and we need to give it time to execute.
+                # At worst, this loop will wait for 5 seconds (50 iterations * 0.1 seconds), which should be sufficient
+                # time given that we are manually failing the task to simulate a connection error.
+                for _ in range(50):
+                    if mock_retry.call_count > 5:
+                        break
+                    await asyncio.sleep(0.1)
+
+                # The function should have been retried a total of  times, so the retry function is called 4 times.
+                assert mock_retry.call_count == 6
