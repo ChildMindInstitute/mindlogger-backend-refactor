@@ -348,7 +348,7 @@ class TestTaskIngestUserData:
         submit_id = uuid.uuid4()
         start_date = None
         retry_count = 2
-        error_retry_count = 0
+        failed_attempts = 0
 
         with patch("apps.integrations.oneup_health.service.task.task_ingest_user_data") as mock_task:
             kicker = MagicMock()
@@ -369,7 +369,7 @@ class TestTaskIngestUserData:
                     activity_id=applet_one.activities[0].id,
                     start_date=start_date,
                     retry_count=retry_count,
-                    failed_attempts=error_retry_count,
+                    failed_attempts=failed_attempts,
                 )
 
                 mock_backoff.assert_called_once_with(retry_count)
@@ -381,7 +381,7 @@ class TestTaskIngestUserData:
                     activity_id=applet_one.activities[0].id,
                     start_date=start_date,
                     retry_count=retry_count + 1,
-                    error_retry_count=error_retry_count,
+                    failed_attempts=failed_attempts,
                 )
 
     @pytest.mark.asyncio
