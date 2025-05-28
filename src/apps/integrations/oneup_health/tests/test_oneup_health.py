@@ -117,6 +117,7 @@ class TestOneupHealth:
         httpx_mock.add_response(
             url=re.compile(".*/user-management/v1/user"),
             method="POST",
+            status_code=400,
             json={"success": False, "error": "this user already exists"},
         )
 
@@ -217,6 +218,7 @@ class TestOneupHealth:
             url=re.compile(".*/user-management/v1/user"),
             method="POST",
             json={"success": False, "error": "Any error message"},
+            status_code=200,
         )
 
         client.login(tom)
