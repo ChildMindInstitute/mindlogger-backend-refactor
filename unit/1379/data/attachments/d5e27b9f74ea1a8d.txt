@@ -1,8 +1,0 @@
-WARNING  root:task.py:246 Error in task_ingest_user_data: Connection error. Triggering retry number 1
-INFO     root:task.py:127 Scheduling retry #1 in 5 seconds
-WARNING  root:task.py:246 Error in task_ingest_user_data: Connection error. Triggering retry number 2
-INFO     root:task.py:127 Scheduling retry #2 in 10 seconds
-WARNING  root:task.py:246 Error in task_ingest_user_data: Connection error. Triggering retry number 3
-INFO     root:task.py:127 Scheduling retry #3 in 23 seconds
-WARNING  root:task.py:246 Error in task_ingest_user_data: Connection error. Triggering retry number 4
-INFO     root:task.py:127 Scheduling retry #4 in 48 seconds

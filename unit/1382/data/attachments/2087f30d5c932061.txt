@@ -1,5 +1,0 @@
-INFO     root:task.py:84 Transfer initiated for OneUp Health user ID 1 (1 transfers)
-INFO     root:task.py:89 1 Transfers completed for OneUp Health user ID 1
-INFO     root:oneup_health.py:418 Retrieving resources from https://fake.url/r4/Patient/fakeid
-INFO     root:oneup_health.py:432 Stored EHR data healthcare provider health_provider_id_1 in fake/storage/path
-INFO     root:task.py:216 Data transfer complete for OneUp Health user ID 1 and submit ID 53bb9d74-1779-4966-8ee3-828a91f9b7af and activity ID 0311f198-c661-4aa3-a25d-b8ce5b9fc043
