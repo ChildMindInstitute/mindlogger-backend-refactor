@@ -85,7 +85,7 @@ class OneupHealthAPIClient:
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthServiceUnavailableError: If the API returns a 503 or 504 status code.
         """
-        if resp.status_code not in (200, 201):
+        if resp.status_code not in (200, 201, 400):
             if resp.status_code == 401:
                 # The API returns a 401 status code if the token has expired
                 logger.error(
