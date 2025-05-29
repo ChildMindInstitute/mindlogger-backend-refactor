@@ -27,7 +27,7 @@ class PermissionsError(AccessDeniedError):
 
 
 class EmailDoesNotExist(AccessDeniedError):
-    message = _("That email is not associated with a MindLogger account.")
+    message = _("That email is not associated with a Curious account.")
 
 
 class InvalidCredentials(AccessDeniedError):

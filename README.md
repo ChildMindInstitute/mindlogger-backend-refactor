@@ -1,6 +1,6 @@
-# Child Mind Institute - MindLogger Backend API
+# Child Mind Institute - Curious Backend API
 
-This repository is used for the backend of the [MindLogger](https://mindlogger.org/) application stack.
+This repository is used for the backend of the [Curious](https://mindlogger.org/) application stack.
 
 [![Automated tests](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml/badge.svg)](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml)
 <a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/ChildMindInstitute/mindlogger-backend-refactor" target="_blank">
@@ -9,10 +9,10 @@ This repository is used for the backend of the [MindLogger](https://mindlogger.o
 
 ## Getting Started
 
-* MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
-* MindLogger Backend - **This Repo**
-* MindLogger Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
-* MindLogger Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
+* Curious Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
+* Curious Backend - **This Repo**
+* Curious Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
+* Curious Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
 
 
 ## Contents
@@ -34,7 +34,9 @@ This repository is used for the backend of the [MindLogger](https://mindlogger.o
 
 ## Features
 
-See MindLogger's [Knowledge Base article](https://mindlogger.atlassian.net/servicedesk/customer/portal/3/topic/4d9a9ad4-c663-443b-b7fc-be9faf5d9383/article/337444910) to discover the MindLogger application stack's features.
+See
+Curious's [Knowledge Base article](https://mindlogger.atlassian.net/servicedesk/customer/portal/3/topic/4d9a9ad4-c663-443b-b7fc-be9faf5d9383/article/337444910)
+to discover the Curious application stack's features.
 
 ## Technologies
 
