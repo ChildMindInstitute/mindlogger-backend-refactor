@@ -209,21 +209,6 @@ class TestOneupHealth:
         assert result["oneupUserId"] == 1
         assert result["appUserId"] == app_user_id
 
-    async def test_get_token_error_outside_us(
-        self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
-    ):
-        httpx_mock.add_response(
-            url=re.compile(".*/user-management/v1/user"), method="POST", json={"message": "Forbidden"}, status_code=403
-        )
-
-        client.login(tom)
-        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
-        result = response.json()["result"]
-        assert (
-            result[0]["message"] == "Access to OneUp Health is currently restricted to users within the United States."
-        )
-
     async def test_get_token_error_creating_user(
         self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
     ):
@@ -236,9 +221,64 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
+        assert response.status_code == 502
         result = response.json()["result"]
-        assert result[0]["message"] == "OneUp Health request failed."
+        assert result[0]["message"] == "1UpHealth request failed."
+
+    async def test_token_expired_error(
+        self,
+        client: TestClient,
+        tom: User,
+        tom_applet_one_subject: SubjectFull,
+        httpx_mock: HTTPXMock,
+    ):
+        # Mock token expired error
+        httpx_mock.add_response(
+            url=re.compile(".*/user-management/v1/user"),
+            method="POST",
+            json={"message": "Unauthorized"},
+            status_code=401,
+        )
+
+        client.login(tom)
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == 502
+        result = response.json()["result"]
+        assert result[0]["message"] == "1UpHealth access token has expired."
+
+    async def test_get_token_error_outside_us(
+        self, client: TestClient, tom: User, tom_applet_one_subject: SubjectFull, httpx_mock: HTTPXMock
+    ):
+        httpx_mock.add_response(
+            url=re.compile(".*/user-management/v1/user"), method="POST", json={"message": "Forbidden"}, status_code=403
+        )
+
+        client.login(tom)
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == 502
+        result = response.json()["result"]
+        assert result[0]["message"] == "Access to 1UpHealth is currently restricted to users within the United States."
+
+    async def test_service_unavailable_error(
+        self,
+        client: TestClient,
+        tom: User,
+        tom_applet_one_subject: SubjectFull,
+        httpx_mock: HTTPXMock,
+    ):
+        # Mock service unavailable error
+        httpx_mock.add_response(
+            url=re.compile(".*/user-management/v1/user"),
+            method="POST",
+            json={"message": "Service Unavailable"},
+            status_code=503,
+        )
+
+        client.login(tom)
+        response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
+        assert response.status_code == 502
+        result = response.json()["result"]
+        assert result[0]["message"] == "1UpHealth service is currently unavailable."
 
     async def test_get_token_error_getting_code(
         self,
@@ -261,9 +301,9 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
+        assert response.status_code == 502
         result = response.json()["result"]
-        assert result[0]["message"] == "OneUp Health request failed."
+        assert result[0]["message"] == "1UpHealth request failed."
 
     async def test_get_token_error_timeout(
         self,
@@ -281,9 +321,9 @@ class TestOneupHealth:
         )
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
+        assert response.status_code == 502
         result = response.json()["result"]
-        assert result[0]["message"] == "OneUp Health request failed."
+        assert result[0]["message"] == "1UpHealth request failed."
 
     async def test_get_token_error_getting_token(
         self,
@@ -319,9 +359,80 @@ class TestOneupHealth:
 
         client.login(tom)
         response = await client.get(url=self.get_token_url.format(subject_id=tom_applet_one_subject.id))
-        assert response.status_code == 500
+        assert response.status_code == 502
         result = response.json()["result"]
-        assert (
-            result[0]["message"]
-            == '{"error":"server_error","error_description":"Cannot read property \'code\' of undefined"}'
+        assert result[0]["message"] == "1UpHealth service is currently unavailable."
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_success(
+        self,
+        client: TestClient,
+        tom: User,
+        httpx_mock: HTTPXMock,
+    ):
+        submit_id = uuid.uuid4()
+        activity_id = uuid.uuid4()
+        app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
+
+        # Mock refresh token response - no app_user_id in the response
+        # as it will be generated by the service based on submit_id and activity_id
+        httpx_mock.add_response(
+            url=re.compile(".*/oauth2/token"),
+            method="POST",
+            json={
+                "access_token": "new_access_token",
+                "refresh_token": "new_refresh_token",
+            },
         )
+
+        client.login(tom)
+        response = await client.post(
+            "/integrations/oneup_health/refresh_token",
+            {
+                "refreshToken": "old_refresh_token",
+                "oneupUserId": 1,
+                "submitId": str(submit_id),
+                "activityId": str(activity_id),
+            },
+        )
+
+        assert response.status_code == 200
+        result = response.json()["result"]
+        assert result["accessToken"] == "new_access_token"
+        assert result["refreshToken"] == "new_refresh_token"
+        assert result["oneupUserId"] == 1
+        assert result["appUserId"] == app_user_id
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_without_ids(
+        self,
+        client: TestClient,
+        tom: User,
+        httpx_mock: HTTPXMock,
+    ):
+        # Mock refresh token response
+        httpx_mock.add_response(
+            url=re.compile(".*/oauth2/token"),
+            method="POST",
+            json={
+                "access_token": "new_access_token",
+                "refresh_token": "new_refresh_token",
+            },
+        )
+
+        client.login(tom)
+        response = await client.post(
+            "/integrations/oneup_health/refresh_token",
+            {
+                "refreshToken": "old_refresh_token",
+                "oneupUserId": 1,
+            },
+        )
+
+        assert response.status_code == 200
+        result = response.json()["result"]
+        assert result["accessToken"] == "new_access_token"
+        assert result["refreshToken"] == "new_refresh_token"
+        assert result["oneupUserId"] == 1
+        # The app_user_id will be empty because submit_id and activity_id were not provided
+        assert result["appUserId"] == ""
