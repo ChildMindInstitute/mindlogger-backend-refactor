@@ -1183,7 +1183,6 @@ class TestInvite(BaseTest):
             invitation_reviewer_data,
         )
         assert response.status_code == http.HTTPStatus.FORBIDDEN
-        result= response.json()["result"]
         assert response.json()["result"][0]["message"] == AppletInviteAccessDenied.message
 
     async def test_editor_can_NOT_invite_new_reviewer_for_a_specific_respondent(
