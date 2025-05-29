@@ -355,20 +355,15 @@ class OneupHealthService:
         assert code
         return {**await self._get_token(code), "app_user_id": app_user_id}
 
-    async def refresh_token(
-        self, refresh_token: str, submit_id: uuid.UUID | None = None, activity_id: uuid.UUID | None = None
-    ) -> dict[str, str]:
+    async def refresh_token(self, refresh_token: str) -> dict[str, str]:
         """
         Refresh an access token using a refresh token.
 
         Args:
             refresh_token (str): The refresh token to use for getting a new access token.
-            submit_id (uuid.UUID, optional): The unique identifier for the submission.
-            activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
-            dict: A dictionary containing the new access_token, refresh_token, and
-            app_user_id if submit_id and activity_id are provided.
+            dict: A dictionary containing the new access_token and refresh_token
 
         Raises:
             OneUpHealthAPIError: If the API request fails.
@@ -380,14 +375,7 @@ class OneupHealthService:
         access_token = result.get("access_token")
         new_refresh_token = result.get("refresh_token")
 
-        response = dict(access_token=access_token, refresh_token=new_refresh_token)
-
-        # Generate app_user_id if submit_id and activity_id are provided
-        if submit_id is not None and activity_id is not None:
-            app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
-            response["app_user_id"] = app_user_id
-
-        return response
+        return dict(access_token=access_token, refresh_token=new_refresh_token)
 
     async def check_audit_events(self, oneup_user_id: int, start_date: datetime | None) -> dict[str, int]:
         """

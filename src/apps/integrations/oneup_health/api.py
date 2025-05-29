@@ -4,7 +4,7 @@ from fastapi import Body, Depends
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.authentication.deps import get_current_user
-from apps.integrations.oneup_health.domain import OneupHealthToken, RefreshTokenRequest
+from apps.integrations.oneup_health.domain import OneupHealthRefreshToken, OneupHealthToken, RefreshTokenRequest
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.shared.domain import InternalModel, Response
@@ -68,22 +68,12 @@ async def retrieve_token_by_submit_id_and_activity_id(
 
 async def refresh_token(
     request: RefreshTokenRequest, user: User = Depends(get_current_user), session=Depends(get_session)
-) -> Response[OneupHealthToken]:
+) -> Response[OneupHealthRefreshToken]:
     oneup_health_service = OneupHealthService()
 
-    new_tokens = await oneup_health_service.refresh_token(
-        request.refresh_token, submit_id=request.submit_id, activity_id=request.activity_id
-    )
+    new_tokens = await oneup_health_service.refresh_token(request.refresh_token)
 
-    app_user_id = new_tokens.get("app_user_id", "")
-
-    result_token = OneupHealthToken(
-        oneup_user_id=request.oneup_user_id,
-        app_user_id=app_user_id,
-        **{k: v for k, v in new_tokens.items() if k != "app_user_id"},
-    )
-
-    return Response(result=result_token)
+    return Response(result=OneupHealthRefreshToken(**new_tokens))
 
 
 class EHRTriggerInput(InternalModel):
