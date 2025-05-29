@@ -105,7 +105,7 @@ async def _schedule_retry(
     activity_id: uuid.UUID,
     start_date: datetime | None,
     retry_count: int,
-    error_retry_count: int = 0,
+    failed_attempts: int = 0,
 ) -> bool:
     """
     Schedule a retry of the data ingestion task with exponential backoff.
@@ -116,9 +116,9 @@ async def _schedule_retry(
         activity_id (uuid.UUID): The unique identifier for the activity
         start_date (datetime): The start date of the transfer process
         retry_count (int): The current retry attempt count
-        error_retry_count (int): The current error retry attempt count
+        failed_attempts (int): The current error retry attempt count
     """
-    if error_retry_count >= settings.oneup_health.max_error_retries:
+    if failed_attempts > settings.oneup_health.max_error_retries:
         logger.error(f"Max error retries reached for {applet_id}.")
         return True
     delay = _exponential_backoff(retry_count)
@@ -134,7 +134,7 @@ async def _schedule_retry(
                 activity_id=activity_id,
                 start_date=start_date,
                 retry_count=retry_count,
-                error_retry_count=error_retry_count,
+                failed_attempts=failed_attempts,
             )
         )
 
@@ -148,7 +148,7 @@ async def task_ingest_user_data(
     activity_id: uuid.UUID,
     start_date: datetime | None = None,
     retry_count: int = 0,
-    error_retry_count: int = 0,
+    failed_attempts: int = 0,
 ) -> str | None:
     """
     Asynchronous task to ingest user health data from OneUp Health.
@@ -162,7 +162,7 @@ async def task_ingest_user_data(
         activity_id (uuid.UUID): The unique identifier for the activity
         start_date (datetime, optional): The start date of the transfer process
         retry_count (int): The current retry attempt count
-        error_retry_count (int): The current error retry attempt count
+        failed_attempts (int): The current error retry attempt count
 
     Returns:
         list | None: List of retrieved resources if successful, None otherwise
@@ -237,14 +237,14 @@ async def task_ingest_user_data(
                         )
                     )
             except (BaseError, httpx.RequestError) as e:
-                error_retry_count += 1
-                if error_retry_count >= settings.oneup_health.max_error_retries:
+                failed_attempts += 1
+                if failed_attempts > settings.oneup_health.max_error_retries:
                     async with atomic(answer_session):
                         await AnswersEHRCRUD(session=answer_session).update_status(
                             submit_id=submit_id, activity_id=activity_id, status=EHRIngestionStatus.FAILED
                         )
-                logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry number {error_retry_count}")
-                await _schedule_retry(applet_id, submit_id, activity_id, start_date, retry_count, error_retry_count)
+                logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry number {failed_attempts}")
+                await _schedule_retry(applet_id, submit_id, activity_id, start_date, retry_count, failed_attempts)
 
             return storage_path
 
