@@ -30,7 +30,6 @@ from apps.invitations.errors import (
     RespondentInvitationExist,
 )
 from apps.mailing.services import TestMail
-from apps.shared.exception import AccessDeniedError
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.subjects.crud import SubjectsCrud
