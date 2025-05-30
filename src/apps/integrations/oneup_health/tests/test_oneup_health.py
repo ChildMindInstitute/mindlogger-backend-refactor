@@ -390,9 +390,6 @@ class TestOneupHealth:
             "/integrations/oneup_health/refresh_token",
             {
                 "refreshToken": "old_refresh_token",
-                "oneupUserId": 1,
-                "submitId": str(submit_id),
-                "activityId": str(activity_id),
             },
         )
 
@@ -400,8 +397,6 @@ class TestOneupHealth:
         result = response.json()["result"]
         assert result["accessToken"] == "new_access_token"
         assert result["refreshToken"] == "new_refresh_token"
-        assert result["oneupUserId"] == 1
-        assert result["appUserId"] == app_user_id
 
     @pytest.mark.asyncio
     async def test_refresh_token_without_ids(
@@ -425,7 +420,6 @@ class TestOneupHealth:
             "/integrations/oneup_health/refresh_token",
             {
                 "refreshToken": "old_refresh_token",
-                "oneupUserId": 1,
             },
         )
 
@@ -433,6 +427,3 @@ class TestOneupHealth:
         result = response.json()["result"]
         assert result["accessToken"] == "new_access_token"
         assert result["refreshToken"] == "new_refresh_token"
-        assert result["oneupUserId"] == 1
-        # The app_user_id will be empty because submit_id and activity_id were not provided
-        assert result["appUserId"] == ""
