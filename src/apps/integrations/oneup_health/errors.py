@@ -49,6 +49,7 @@ class OneUpHealthServiceUnavailableError(OneUpHealthAPIError):
 
 OneUpHealthAPIErrorMessageMap = {
     "this user already exists": OneUpHealthUserAlreadyExists,
-    "service unavailable": OneUpHealthServiceUnavailableError,
     "token expired": OneUpHealthTokenExpiredError,
+    "geographic restriction": OneUpHealthAPIForbiddenError,
+    "service unavailable": OneUpHealthServiceUnavailableError,
 }
