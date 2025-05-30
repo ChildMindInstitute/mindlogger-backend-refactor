@@ -4,10 +4,7 @@ from pydantic import BaseModel
 class CDNSettings(BaseModel):
     """Configure cdn settings"""
 
-    legacy_region: str | None
-    legacy_bucket: str | None
-    legacy_secret_key: str | None
-    legacy_access_key: str | None
+    legacy_prefix: str | None = "mindlogger-legacy/answer"
 
     region: str | None
     bucket: str | None

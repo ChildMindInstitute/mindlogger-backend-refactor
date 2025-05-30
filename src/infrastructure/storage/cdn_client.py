@@ -8,14 +8,13 @@ from typing import BinaryIO
 
 import boto3
 import httpx
-from botocore import UNSIGNED
 from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from apps.file.errors import FileNotFoundError
 from apps.shared.exception import NotFoundError
 from infrastructure.logger import logger
-from infrastructure.utility.cdn_config import CdnConfig
+from infrastructure.storage.cdn_config import CdnConfig
 
 
 class ObjectNotFoundError(Exception):
@@ -32,7 +31,7 @@ class CDNClient:
     def __init__(self, config: CdnConfig, env: str, *, max_concurrent_tasks: int = 10):
         self.config = config
         self.env = env
-        self.client = self.configure_client(config)
+        self.client = self._configure_client(config)
 
         # semaphore for concurrent calls of urlib3 in boto3
         self.semaphore = asyncio.Semaphore(max_concurrent_tasks)
@@ -46,11 +45,10 @@ class CDNClient:
     def generate_private_url(self, key):
         return f"s3://{self.config.bucket}/{key}"
 
-    def configure_client(self, config, signature_version=None):
+    def _configure_client(self, config):
         assert config, "set CDN"
         client_config = Config(
             max_pool_connections=25,
-            signature_version=signature_version,
         )
 
         if config.access_key and config.secret_key:
@@ -82,19 +80,24 @@ class CDNClient:
             future = executor.submit(self._upload, path, body)
         await asyncio.wrap_future(future)
 
-    def _check_existence(self, bucket: str, key: str):
+    def _check_existence(self, key: str):
         try:
-            return self.client.head_object(Bucket=bucket, Key=key)
+            return self.client.head_object(Bucket=self.config.bucket, Key=key)
         except ClientError as e:
-            logger.warning(f"Error when trying to check existence for {key} in {bucket}: {e}")
+            # TODO The actual error for not found is S3.Client.exceptions.NoSuchKey
+            logger.warning(f"Error when trying to check existence for {key} in {self.config.bucket}: {e}")
             raise NotFoundError
 
-    async def check_existence(self, bucket: str, key: str):
+    async def check_existence(self, key: str):
         with ThreadPoolExecutor() as executor:
-            future = executor.submit(self._check_existence, bucket, key)
+            future = executor.submit(self._check_existence, key)
             return await asyncio.wrap_future(future)
 
     def download(self, key, file: BinaryIO | None = None):
+        """
+        Download a file from a CDN location to a local directory.  It is up to the caller to
+        clean up the file after use.
+        """
         if not file:
             file = io.BytesIO()
 
@@ -114,18 +117,6 @@ class CDNClient:
         media_type = mimetypes.guess_type(key)[0] if mimetypes.guess_type(key)[0] else "application/octet-stream"
         return file, media_type
 
-    def _generate_public_url(self, key):
-        client = self.configure_client(config=self.config, signature_version=UNSIGNED)
-        url = client.generate_presigned_url(
-            "get_object",
-            Params={
-                "Bucket": self.config.bucket,
-                "Key": key,
-            },
-            ExpiresIn=0,
-        )
-        return url
-
     def _generate_presigned_url(self, key):
         url = self.client.generate_presigned_url(
             "get_object",
@@ -143,12 +134,6 @@ class CDNClient:
             url = await asyncio.wrap_future(future)
             return url
 
-    async def generate_public_url(self, key):
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(self._generate_public_url, key)
-            url = await asyncio.wrap_future(future)
-            return url
-
     async def delete_object(self, key: str | None):
         async with self.semaphore:
             with ThreadPoolExecutor() as executor:
@@ -162,9 +147,9 @@ class CDNClient:
                 result = await asyncio.wrap_future(future)
                 return result.get("Contents", [])
 
-    def generate_presigned_post(self, bucket, key):
+    def generate_presigned_post(self, key):
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
-        return self.client.generate_presigned_post(bucket, key, ExpiresIn=self.config.ttl_signed_urls)
+        return self.client.generate_presigned_post(self.config.bucket, key, ExpiresIn=self.config.ttl_signed_urls)
 
     def _copy(self, key, storage_from: "CDNClient", key_from: str | None = None) -> int:
         key_from = key_from or key
