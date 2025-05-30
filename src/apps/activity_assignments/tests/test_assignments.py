@@ -1454,3 +1454,28 @@ class TestActivityAssignments(BaseTest):
 
         # Expect a 400 Bad Request due to missing target_subject_id
         assert unassign_response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+
+    async def test_get_reviews_200(
+        self,
+        client: TestClient,
+        applet_one_with_flow: AppletFull,
+        tom: User,
+        tom_applet_one_subject: SubjectFull,
+    ):
+        client.login(tom)
+        reviews_create = ActivitiesAssignmentsCreate(
+            assignments=[
+                ActivityAssignmentCreate(
+                    activity_id=applet_one_with_flow.activities[0].id,
+                    respondent_subject_id=tom_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                )
+            ]
+        )
+
+        # Create the assignment
+        responseReview = await client.post(
+            self.activities_assignments_applet.format(applet_id=applet_one_with_flow.id),
+            data=reviews_create,
+        )
+        assert responseReview.status_code == http.HTTPStatus.CREATED, response.json()
