@@ -70,7 +70,6 @@ class OneupHealthAPIClient:
         and a 201 status code if the request is successful.
 
         1UpHealth API returns the following error codes that are currently being mapped:
-        - 400: 1UpHealth request failed. This is due to the request body being invalid.
         - 401: 1UpHealth token expired
         - 403: Forbidden access to 1UpHealth API. This is due to the user being outside the United States.
         - 503, 504: 1UpHealth service unavailable
@@ -342,7 +341,7 @@ class OneupHealthService:
             code (str, optional): An existing authentication code to use.
 
         Returns:
-            dict: A dictionary containing the access_token and refresh_token.
+            dict: A dictionary containing the access_token, the refresh_token, and the app_user_id.
 
         Raises:
             OneUpHealthAPIError: If the API request fails.
