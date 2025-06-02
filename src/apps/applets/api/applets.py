@@ -48,7 +48,6 @@ from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_language
 from infrastructure.logger import logger
-from infrastructure.utility import FirebaseNotificationType
 
 __all__ = [
     "applet_create",
@@ -68,6 +67,8 @@ __all__ = [
     "applet_duplicate",
     "applet_retrieve_by_key",
 ]
+
+from infrastructure.utility.notification_client import FirebaseNotificationType
 
 
 async def applet_list(

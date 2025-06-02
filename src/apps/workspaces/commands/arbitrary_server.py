@@ -16,7 +16,6 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from apps.answers.service import AnswerTransferService
 from apps.applets.crud import AppletsCRUD
-from apps.file.storage import create_client, select_storage
 from apps.users.cruds.user import UsersCRUD
 from apps.users.errors import UserIsDeletedError, UserNotFound
 from apps.workspaces.constants import StorageType
@@ -32,6 +31,7 @@ from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 from infrastructure.logger import logger
+from infrastructure.storage.storage import create_answer_client, select_answer_storage
 
 app = typer.Typer()
 
@@ -284,9 +284,9 @@ async def ping(owner_email: str = typer.Argument(..., help="Workspace owner emai
             except Exception as e:
                 error_msg(str(e))
         print(f'Check bucket "{data.storage_bucket}" availability.')
-        storage = await select_storage(owner_id=owner.id, session=session)
+        storage = await select_answer_storage(owner_id=owner.id, session=session)
         key = "mindlogger.txt"
-        presigned_data = storage.generate_presigned_post(data.storage_bucket, key)
+        presigned_data = storage.generate_presigned_post(key)
         print(f"Presigned POST fields are following: {presigned_data['fields'].keys()}")
         file = io.BytesIO(b"")
         async with httpx.AsyncClient() as client:
@@ -358,7 +358,7 @@ async def _get_arbitrary_data(session, email: str | None):
 
 
 async def _get_storage_client(arb_data: WorkspaceArbitrary | None):
-    client = create_client(arb_data)
+    client = create_answer_client(arb_data)
     try:
         await client.check()
     except Exception as e:

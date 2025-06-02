@@ -10,7 +10,7 @@ from infrastructure.cache.types import _InputObject
 
 __all__ = ["BaseCacheService"]
 
-from infrastructure.utility import RedisCache
+from infrastructure.utility.redis_client import RedisCache
 
 
 class BaseCacheService(ABC, Generic[_InputObject]):

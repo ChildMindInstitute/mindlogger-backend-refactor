@@ -4,10 +4,10 @@ from rich import print
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.service import AnswerTransferService
-from apps.file.storage import create_client
 from apps.workspaces.errors import WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import session_manager
+from infrastructure.storage.storage import create_answer_client
 
 APPLET_IDS = (
     uuid.UUID("710f76b5-de7f-47ca-9442-62dd21b329bf"),
@@ -42,14 +42,14 @@ async def main(
 
     session_maker = session_manager.get_session(arb_info.database_uri)
     async with session_maker() as arb_session:
-        arb_bucket = create_client(arb_info)
+        arb_bucket = create_answer_client(arb_info)
         try:
             await arb_bucket.check()
         except Exception as e:
             error_msg(str(e))
             raise
 
-        internal_bucket = create_client(None)
+        internal_bucket = create_answer_client(None)
         try:
             await internal_bucket.check()
         except Exception as e:

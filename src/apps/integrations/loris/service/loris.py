@@ -42,11 +42,12 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from infrastructure.database.core import atomic
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
-from infrastructure.utility import RedisCache
 
 __all__ = [
     "LorisIntegrationService",
 ]
+
+from infrastructure.utility.redis_client import RedisCache
 
 
 class LorisIntegrationService:

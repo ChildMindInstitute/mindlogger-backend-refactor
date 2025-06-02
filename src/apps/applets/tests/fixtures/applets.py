@@ -381,3 +381,18 @@ async def applet_activity_flow(
     yield applet
     if not pytestconfig.getoption("--keepdb"):
         await teardown_applet(session, applet.id)
+
+
+@pytest.fixture(autouse=True, scope="session")
+async def applet_legacy(
+    global_session: AsyncSession,
+    kate: User,
+    applet_minimal_data: AppletCreate,
+    pytestconfig: Config,
+) -> AsyncGenerator[AppletFull, None]:
+    applet_id = uuid.UUID("64cbb579-22d8-180c-f9b3-eab700000000")
+    applet_name = "Applet Legacy"
+    applet = await _get_or_create_applet(global_session, applet_name, applet_id, applet_minimal_data, kate.id)
+    yield applet
+    if not pytestconfig.getoption("--keepdb"):
+        await teardown_applet(global_session, applet.id)
