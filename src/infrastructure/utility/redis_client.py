@@ -7,7 +7,6 @@ import redis.asyncio as redis
 from redis.typing import EncodableT
 from sentry_sdk import capture_exception
 
-
 from config import settings
 
 

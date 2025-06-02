@@ -61,7 +61,7 @@ __all__ = [
 ]
 
 from apps.shared.query_params import QueryParams
-from infrastructure.utility.notification_client import FirebaseNotificationType, FCMNotification, FirebaseMessage
+from infrastructure.utility.notification_client import FCMNotification, FirebaseMessage, FirebaseNotificationType
 
 
 class AppletService:
