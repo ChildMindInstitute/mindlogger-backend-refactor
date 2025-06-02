@@ -4,8 +4,8 @@ from io import BytesIO
 
 from apps.file.enums import FileScopeEnum
 from apps.integrations.oneup_health.service.domain import EHRData
+from infrastructure.storage.cdn_client import CDNClient
 from infrastructure.storage.storage import select_answer_storage
-from infrastructure.utility import CDNClient
 
 __all = ["create_ehr_storage"]
 

@@ -35,7 +35,7 @@ from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 from infrastructure.storage.buckets import get_operations_bucket
-from infrastructure.utility import CDNClient, ObjectNotFoundError
+from infrastructure.storage.cdn_client import CDNClient, ObjectNotFoundError
 
 app = typer.Typer()
 

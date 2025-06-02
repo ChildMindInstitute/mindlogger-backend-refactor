@@ -114,7 +114,8 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
-from infrastructure.utility import CDNClient, RedisCache
+from infrastructure.storage.cdn_client import CDNClient
+from infrastructure.utility.redis_client import RedisCache
 
 
 class AnswerService:

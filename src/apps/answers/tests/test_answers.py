@@ -41,7 +41,7 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-from infrastructure.utility import RedisCacheTest
+from infrastructure.utility.redis_client import RedisCacheTest
 
 
 @pytest.fixture(params=["none", "respondent", "subject"])

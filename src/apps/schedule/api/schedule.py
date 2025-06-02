@@ -27,7 +27,7 @@ from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_local_tz
 from infrastructure.logger import logger
-from infrastructure.utility import FirebaseNotificationType
+from infrastructure.utility.notification_client import FirebaseNotificationType
 
 
 # TODO: Add logic to allow to create events by permissions

@@ -11,7 +11,7 @@ from apps.file.domain import LogFileExistenceResponse
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.logger import logger
-from infrastructure.utility import CDNClient
+from infrastructure.storage.cdn_client import CDNClient
 
 
 class LogFileService:

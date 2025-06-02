@@ -24,7 +24,10 @@ from config import settings
 from infrastructure.app import create_app
 from infrastructure.database.core import build_engine
 from infrastructure.database.deps import get_session
-from infrastructure.utility import FCMNotificationTest, RedisCacheTest
+from infrastructure.utility.notification_client import FCMNotificationTest
+from infrastructure.utility.redis_client import RedisCacheTest
+
+# from infrastructure.utility import FCMNotificationTest, RedisCacheTest
 
 pytest_plugins = [
     "apps.activities.tests.fixtures.configs",
