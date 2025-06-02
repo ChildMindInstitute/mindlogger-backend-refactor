@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from datetime import datetime, timezone
 from functools import reduce
@@ -8,6 +9,8 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthAPIError,
     OneUpHealthAPIErrorMessageMap,
     OneUpHealthAPIForbiddenError,
+    OneUpHealthServiceUnavailableError,
+    OneUpHealthTokenExpiredError,
     OneUpHealthUserAlreadyExists,
 )
 from apps.integrations.oneup_health.service.domain import EHRData
@@ -18,6 +21,12 @@ from config import settings
 __all__ = ["OneupHealthService"]
 
 from infrastructure.logger import logger
+
+
+def get_unique_short_id(submit_id: uuid.UUID, activity_id: uuid.UUID | None) -> str:
+    full_unique_id = f"{submit_id}_{activity_id}"
+
+    return hashlib.sha1(full_unique_id.encode()).hexdigest()
 
 
 class OneupHealthAPIClient:
@@ -54,26 +63,76 @@ class OneupHealthAPIClient:
     @staticmethod
     def _handle_error(resp, url_path):
         """
-        Handle errors returned by the OneUp Health API.
+        Handle errors returned by the 1UpHealth API.
 
         The API should return a 400 status code if the request body is invalid,
         a 403 status code if the API key is invalid or the request is rate-limited,
         and a 201 status code if the request is successful.
+
+        1UpHealth API returns the following error codes that are currently being mapped:
+        - 400: 1UpHealth request failed. This is due to the request body being invalid.
+        - 401: 1UpHealth token expired
+        - 403: Forbidden access to 1UpHealth API. This is due to the user being outside the United States.
+        - 503, 504: 1UpHealth service unavailable
 
         Args:
             resp (httpx.Response): The response returned by the API.
             url_path (str): The path of the API endpoint that the request was sent to.
 
         Raises:
-            OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthAPIError: If the API returns any other error status code.
+            OneUpHealthTokenExpiredError: If the API returns a 401 status code.
+            OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
+            OneUpHealthServiceUnavailableError: If the API returns a 503 or 504 status code.
         """
-        if resp.status_code != 201 and resp.status_code != 400 and resp.status_code != 200:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
-            if resp.status_code == 403:
-                # The API returns a 403 status code if request come from outside the USA
+        if resp.status_code not in (200, 201):
+            if resp.status_code == 401:
+                # The API returns a 401 status code if the token has expired
+                logger.error(
+                    f"1UpHealth token expired - Path: {url_path} - Status: {resp.status_code}",
+                    extra={
+                        "error_type": "oneup_health_token_expired",
+                        "url_path": url_path,
+                        "status_code": resp.status_code,
+                    },
+                )
+                raise OneUpHealthTokenExpiredError()
+
+            elif resp.status_code == 403:
+                # The API returns a 403 status code if request comes from outside the USA
+                logger.error(
+                    f"1UpHealth geographic restriction - Path: {url_path} - Status: {resp.status_code}",
+                    extra={
+                        "error_type": "oneup_health_geo_restricted",
+                        "url_path": url_path,
+                        "status_code": resp.status_code,
+                    },
+                )
                 raise OneUpHealthAPIForbiddenError()
-            # The API should return a 400 status code if the request body is invalid.
+
+            elif resp.status_code in (503, 504):
+                # The API returns 503 or 504 status codes if the service is unavailable
+                logger.error(
+                    f"1UpHealth service unavailable - Path: {url_path} - Status: {resp.status_code}",
+                    extra={
+                        "error_type": "oneup_health_service_unavailable",
+                        "status_code": resp.status_code,
+                        "url_path": url_path,
+                    },
+                )
+                raise OneUpHealthServiceUnavailableError()
+
+            # For any other error status code
+            response_text = resp.text[:200] if resp.text else "No response text"
+            logger.error(
+                f"1UpHealth API error - Path: {url_path} - Status: {resp.status_code} - Response: {response_text}",
+                extra={
+                    "error_type": "oneup_health_api_error",
+                    "status_code": resp.status_code,
+                    "url_path": url_path,
+                    "response_text": resp.text[:500] if resp.text else None,
+                },
+            )
             raise OneUpHealthAPIError(resp.text)
 
     async def post(self, url_path, data=None, params=None):
@@ -99,12 +158,12 @@ class OneupHealthAPIClient:
 
                 result = resp.json()
                 if result.get("success") is False:
-                    logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
+                    logger.warning(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
                     raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
     async def post_auth(self, url_path, data=None):
@@ -131,7 +190,7 @@ class OneupHealthAPIClient:
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
     async def get(self, url_path, params=None, headers=None):
@@ -155,20 +214,17 @@ class OneupHealthAPIClient:
                 resp = await client.get(
                     url=url_path, params=params, headers={**(headers if headers else {}), **self._default_headers}
                 )
-                if resp.status_code != 400 and resp.status_code != 200:
-                    logger.error(f"Error requesting to OneUp health API {url_path} - {resp.status_code} {resp.text}")
-                    if resp.status_code == 403:
-                        raise OneUpHealthAPIForbiddenError()
-                    raise OneUpHealthAPIError()
+                logger.info(f"Requesting to OneUp health API {url_path} - {resp.status_code}")
+                OneupHealthAPIClient._handle_error(resp, url_path)
 
                 result = resp.json()
                 if result.get("success") is False:
-                    logger.warn(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
+                    logger.warning(f"Unsuccessful requesting to OneUp health API {url_path} - {result.get('error')}")
                     raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {e}")
+            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
 
@@ -186,12 +242,13 @@ class OneupHealthService:
         """
         self._client = OneupHealthAPIClient()
 
-    async def _generate_auth_code(self, subject_id: uuid.UUID) -> str:
+    async def _generate_auth_code(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> str:
         """
         Generate an authentication code for a subject.
 
         Args:
-            subject_id (uuid.UUID): The ID of the subject to generate the code for.
+            submit_id (uuid.UUID): The unique identifier for the submission.
+            activity_id (uuid.UUID | None): The unique identifier for the activity.
 
         Returns:
             str: The generated authentication code.
@@ -199,10 +256,10 @@ class OneupHealthService:
         Raises:
             OneUpHealthAPIError: If the API request fails.
         """
-        result = await self._client.post("/user-management/v1/user/auth-code", params={"app_user_id": str(subject_id)})
+        app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
+        result = await self._client.post("/user-management/v1/user/auth-code", params={"app_user_id": app_user_id})
 
-        code = result.get("code")
-        return code
+        return result.get("code")
 
     async def _get_token(self, code: str) -> dict[str, str]:
         """
@@ -224,12 +281,13 @@ class OneupHealthService:
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 
-    async def get_oneup_user_id(self, unique_id: uuid.UUID):
+    async def get_oneup_user_id(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> int | None:
         """
         Get the OneUp Health user ID
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the user.
+            submit_id (uuid.UUID): The unique identifier for the submission.
+            activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
             int or None: The OneUp Health user ID if found, None otherwise.
@@ -237,7 +295,8 @@ class OneupHealthService:
         Raises:
             OneUpHealthAPIError: If the API request fails.
         """
-        result = await self._client.get("/user-management/v1/user", params={"app_user_id": str(unique_id)})
+        app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
+        result = await self._client.get("/user-management/v1/user", params={"app_user_id": app_user_id})
 
         entries = result.get("entry", [])
         if len(entries) == 0:
@@ -247,12 +306,13 @@ class OneupHealthService:
 
         return oneup_user_id
 
-    async def create_user(self, unique_id: uuid.UUID) -> dict[str, str]:
+    async def create_user(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> dict[str, str]:
         """
         Create a new user in the OneUp Health platform or retrieve an existing user.
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            submit_id (uuid.UUID): The unique identifier for the submission.
+            activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
             dict: A dictionary containing the oneup_user_id and optionally a code.
@@ -261,21 +321,24 @@ class OneupHealthService:
             OneUpHealthAPIError: If the API request fails and the user doesn't already exist.
         """
         try:
-            result = await self._client.post("/user-management/v1/user", params={"app_user_id": str(unique_id)})
+            app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
+            result = await self._client.post("/user-management/v1/user", params={"app_user_id": app_user_id})
             return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
         except OneUpHealthUserAlreadyExists:
-            if oneup_user_id := await self.get_oneup_user_id(unique_id=unique_id):
-                return {"oneup_user_id": oneup_user_id}
+            oneup_user_id = await self.get_oneup_user_id(submit_id=submit_id, activity_id=activity_id)
+            if oneup_user_id is not None:
+                return {"oneup_user_id": str(oneup_user_id)}
             raise
 
-    async def retrieve_token(self, unique_id: uuid.UUID, code: str | None = None):
+    async def retrieve_token(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None, code: str | None = None):
         """
         Retrieve access and refresh tokens for a user.
 
         If no code is provided, a new authentication code will be generated.
 
         Args:
-            unique_id (uuid.UUID): The unique identifier for the 1Up user.
+            submit_id (uuid.UUID): The unique identifier for the submission.
+            activity_id (uuid.UUID, optional): The unique identifier for the activity.
             code (str, optional): An existing authentication code to use.
 
         Returns:
@@ -285,11 +348,46 @@ class OneupHealthService:
             OneUpHealthAPIError: If the API request fails.
             AssertionError: If no code is available.
         """
+        app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
         if not code:
-            code = await self._generate_auth_code(unique_id)
+            code = await self._generate_auth_code(submit_id, activity_id)
 
         assert code
-        return await self._get_token(code)
+        return {**await self._get_token(code), "app_user_id": app_user_id}
+
+    async def refresh_token(
+        self, refresh_token: str, submit_id: uuid.UUID | None = None, activity_id: uuid.UUID | None = None
+    ) -> dict[str, str]:
+        """
+        Refresh an access token using a refresh token.
+
+        Args:
+            refresh_token (str): The refresh token to use for getting a new access token.
+            submit_id (uuid.UUID, optional): The unique identifier for the submission.
+            activity_id (uuid.UUID, optional): The unique identifier for the activity.
+
+        Returns:
+            dict: A dictionary containing the new access_token, refresh_token, and
+            app_user_id if submit_id and activity_id are provided.
+
+        Raises:
+            OneUpHealthAPIError: If the API request fails.
+        """
+        result = await self._client.post_auth(
+            "/oauth2/token", data={"refresh_token": refresh_token, "grant_type": "refresh_token"}
+        )
+
+        access_token = result.get("access_token")
+        new_refresh_token = result.get("refresh_token")
+
+        response = dict(access_token=access_token, refresh_token=new_refresh_token)
+
+        # Generate app_user_id if submit_id and activity_id are provided
+        if submit_id is not None and activity_id is not None:
+            app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
+            response["app_user_id"] = app_user_id
+
+        return response
 
     async def check_audit_events(self, oneup_user_id: int, start_date: datetime | None) -> dict[str, int]:
         """
@@ -369,7 +467,7 @@ class OneupHealthService:
         return resources
 
     async def retrieve_patient_data(
-        self, session, applet_id: uuid.UUID, submit_id: uuid.UUID, oneup_user_id: int
+        self, session, applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID, oneup_user_id: int
     ) -> str | None:
         """
         Retrieve and store patient data for a subject.
@@ -380,6 +478,7 @@ class OneupHealthService:
             session: The database session to use.
             applet_id (uuid.UUID): The unique identifier for the applet.
             submit_id (uuid.UUID): The unique identifier for the submission.
+            activity_id (uuid.UUID): The unique identifier for the activity.
             oneup_user_id (int): The OneUp Health user ID
 
         Returns:
@@ -400,7 +499,7 @@ class OneupHealthService:
             resource_url = entry.get("fullUrl")
             if resource_url:
                 logger.info(f"Retrieving resources from {resource_url}")
-                resources = await self._get_resources(f"{resource_url}/$everything", oneup_user_id)
+                resources = await self._get_resources(f"{resource_url}/$everything?_count=100", oneup_user_id)
                 if len(resources) > 0:
                     healthcare_provider_id = entry.get("resource", {}).get("id")
                     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
@@ -408,7 +507,8 @@ class OneupHealthService:
                         resources=resources,
                         healthcare_provider_id=healthcare_provider_id,
                         date=datetime.now(timezone.utc),
-                        unique_id=submit_id,
+                        submit_id=submit_id,
+                        activity_id=activity_id,
                     )
 
                     storage_path = await ehr_storage.upload_resources(data)

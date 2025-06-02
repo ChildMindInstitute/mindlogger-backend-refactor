@@ -1,6 +1,7 @@
 __all__ = ["ScheduleHistoryCRUD", "AppletEventsCRUD", "NotificationHistoryCRUD", "ReminderHistoryCRUD"]
 
 import asyncio
+import datetime
 import uuid
 
 from sqlalchemy import or_, select, update
@@ -85,9 +86,9 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
             EventHistorySchema.one_time_completion,
             EventHistorySchema.periodicity,
             EventHistorySchema.start_date,
-            EventHistorySchema.start_time,
+            func.coalesce(EventHistorySchema.start_time, datetime.time(0, 0, 0)).label("start_time"),
             EventHistorySchema.end_date,
-            EventHistorySchema.end_time,
+            func.coalesce(EventHistorySchema.end_time, datetime.time(23, 59, 0)).label("end_time"),
             EventHistorySchema.selected_date,
         ]
 
@@ -130,7 +131,7 @@ class ScheduleHistoryCRUD(BaseCRUD[EventHistorySchema]):
 
         unlabeled_columns = [col.element if hasattr(col, "element") else col for col in columns]
 
-        query = query.group_by(*unlabeled_columns)
+        query = query.group_by(*unlabeled_columns, EventHistorySchema.start_time, EventHistorySchema.end_time)
         query = query.order_by(EventHistorySchema.created_at, AppletEventsSchema.created_at)
 
         query_count: Query = select(func.count()).select_from(query.with_only_columns(*unlabeled_columns).subquery())

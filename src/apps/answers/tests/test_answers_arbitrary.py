@@ -704,7 +704,7 @@ class TestAnswerActivityItems(BaseTest):
             "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag",
             "targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
             "inputSubjectId", "inputSecretId", "inputUserNickname",
-            "client", "tzOffset", "scheduledEventId", "reviewedFlowSubmitId"
+            "client", "tzOffset", "scheduledEventId", "scheduledEventHistoryId", "reviewedFlowSubmitId"
         }
 
         assert set(assessment.keys()) == expected_keys

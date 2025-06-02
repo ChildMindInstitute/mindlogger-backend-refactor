@@ -94,6 +94,7 @@ from apps.applets.domain.applet_history import Version
 from apps.applets.domain.base import Encryption
 from apps.applets.service import AppletHistoryService
 from apps.file.enums import FileScopeEnum
+from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
@@ -2040,6 +2041,14 @@ class AnswerService:
                 )
 
         return submissions_activity_metadata
+
+    @staticmethod
+    async def trigger_ehr_ingestion(applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID):
+        await task_ingest_user_data.kicker().kiq(
+            applet_id=applet_id,
+            submit_id=submit_id,
+            activity_id=activity_id,
+        )
 
 
 class ReportServerService:

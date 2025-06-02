@@ -88,6 +88,8 @@ class WorkspaceRespondentDetails(InternalModel):
     subject_first_name: str
     subject_last_name: str
     subject_created_at: datetime.datetime
+    subject_updated_at: datetime.datetime
+    subject_is_deleted: bool
     invitation: InvitationDetail | None = None
     roles: list[Role]
 
@@ -202,6 +204,8 @@ class PublicWorkspaceRespondentDetails(PublicModel):
     subject_first_name: str
     subject_last_name: str
     subject_created_at: datetime.datetime
+    subject_updated_at: datetime.datetime
+    subject_is_deleted: bool
     invitation: InvitationResponse | None = None
     roles: list[Role]
     team_member_can_view_data: bool = False
