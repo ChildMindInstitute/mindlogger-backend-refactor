@@ -323,7 +323,7 @@ class OneupHealthService:
             app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
             result = await self._client.post("/user-management/v1/user", params={"app_user_id": app_user_id})
             return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
-        except OneUpHealthUserAlreadyExists:
+        except OneUpHealthUserAlreadyExistsError:
             oneup_user_id = await self.get_oneup_user_id(submit_id=submit_id, activity_id=activity_id)
             if oneup_user_id is not None:
                 return {"oneup_user_id": str(oneup_user_id)}
