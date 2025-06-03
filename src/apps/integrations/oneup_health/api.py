@@ -31,7 +31,7 @@ async def retrieve_token(
         code = None
         oneup_user_id = subject.meta.get("oneup_user_id") if subject.meta else None
         if oneup_user_id is None:
-            response = await oneup_health_service.create_user(subject.id)
+            response = await oneup_health_service.create_or_retrieve_user(subject.id)
             code = response.get("code")
             oneup_user_id = int(response["oneup_user_id"])
             await subjects_service.update(subject.id, meta={"oneup_user_id": oneup_user_id})
