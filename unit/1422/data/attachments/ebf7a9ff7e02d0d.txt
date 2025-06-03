@@ -1,0 +1,9 @@
+INFO     root:oneup_health.py:216 Requesting to OneUp health API /user-management/v1/user - 200
+INFO     root:oneup_health.py:216 Requesting to OneUp health API /r4/AuditEvent - 200
+INFO     root:task.py:83 Transfer initiated for OneUp Health user ID 1 (1 transfers)
+INFO     root:task.py:88 1 Transfers completed for OneUp Health user ID 1
+INFO     root:oneup_health.py:216 Requesting to OneUp health API /r4/Patient - 200
+INFO     root:oneup_health.py:488 Retrieving resources from https://fake.url/r4/Patient/fakeid
+INFO     root:oneup_health.py:216 Requesting to OneUp health API https://fake.url/r4/Patient/fakeid/$everything?_count=100 - 200
+INFO     root:oneup_health.py:502 Stored EHR data healthcare provider health_provider_id_1 in fake/storage/path
+INFO     root:task.py:227 Data transfer complete for OneUp Health user ID 1 and submit ID 382365dc-ffbd-4d99-989d-f1e7a49c1562 and activity ID 55def898-2094-42e8-bf65-0c6c2c794ed4
