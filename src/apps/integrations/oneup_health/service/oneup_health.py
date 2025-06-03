@@ -11,7 +11,7 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthAPIForbiddenError,
     OneUpHealthServiceUnavailableError,
     OneUpHealthTokenExpiredError,
-    OneUpHealthUserAlreadyExists,
+    OneUpHealthUserAlreadyExistsError,
 )
 from apps.integrations.oneup_health.service.domain import EHRData
 from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
@@ -84,7 +84,19 @@ class OneupHealthAPIClient:
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthServiceUnavailableError: If the API returns a 503 or 504 status code.
         """
-        if resp.status_code not in (200, 201, 400):
+        if resp.status_code not in (200, 201):
+            if resp.status_code == 400 and (resp.json() and resp.json().get("error") == "this user already exists"):
+                # The API returns a 401 status code if the token has expired
+                logger.error(
+                    f"1UpHealth user already exists - Path: {url_path} - Status: {resp.status_code}",
+                    extra={
+                        "error_type": "oneup_health_user_already_exists",
+                        "status_code": resp.status_code,
+                        "url_path": url_path,
+                    },
+                )
+                raise OneUpHealthUserAlreadyExistsError()
+
             if resp.status_code == 401:
                 # The API returns a 401 status code if the token has expired
                 logger.error(
