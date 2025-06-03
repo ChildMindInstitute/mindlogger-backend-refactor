@@ -447,13 +447,14 @@ class TestSubjects(BaseTest):
         body, exp_status = update_subject_params
         client.login(tom)
         response = await client.post(self.subject_list_url, data=create_shell_body)
-        subject = response.json()["result"]
-        url = self.subject_detail_url.format(subject_id=subject["id"])
+        result = response.json()["result"]
+        url = self.subject_detail_url.format(subject_id=result["id"])
         response = await client.put(url, body)
         assert response.status_code == exp_status
         payload = response.json()
         assert payload
-        subject = await SubjectsCrud(session).get_by_id(subject["id"])
+        subject = await SubjectsCrud(session).get_by_id(result["id"])
+        assert subject
         if exp_status == http.HTTPStatus.OK:
             exp_secret_id = body.get("secretUserId")
             exp_nickname = body.get("nickname")
