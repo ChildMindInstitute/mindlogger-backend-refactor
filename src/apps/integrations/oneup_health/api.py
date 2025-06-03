@@ -57,7 +57,7 @@ async def retrieve_token_by_submit_id_and_activity_id(
 
         oneup_health_service = OneupHealthService()
 
-        response = await oneup_health_service.create_user(submit_id, activity_id)
+        response = await oneup_health_service.create_or_retrieve_user(submit_id, activity_id)
         oneup_user_id = int(response["oneup_user_id"])
         code = response.get("code")
 

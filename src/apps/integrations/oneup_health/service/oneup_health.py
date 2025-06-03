@@ -305,7 +305,9 @@ class OneupHealthService:
 
         return oneup_user_id
 
-    async def create_user(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> dict[str, str]:
+    async def create_or_retrieve_user(
+        self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None
+    ) -> dict[str, str]:
         """
         Create a new user in the OneUp Health platform or retrieve an existing user.
 
