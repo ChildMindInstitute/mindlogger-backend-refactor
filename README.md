@@ -1,6 +1,6 @@
-# Child Mind Institute - MindLogger Backend API
+# Child Mind Institute - Curious Backend API
 
-This repository is used for the backend of the [MindLogger](https://mindlogger.org/) application stack.
+This repository is used for the backend of the [Curious](https://mindlogger.org/) application stack.
 
 [![Automated tests](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml/badge.svg)](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml)
 <a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/ChildMindInstitute/mindlogger-backend-refactor" target="_blank">
@@ -9,10 +9,10 @@ This repository is used for the backend of the [MindLogger](https://mindlogger.o
 
 ## Getting Started
 
-* MindLogger Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
-* MindLogger Backend - **This Repo**
-* MindLogger Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
-* MindLogger Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
+* Curious Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
+* Curious Backend - **This Repo**
+* Curious Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
+* Curious Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
 
 
 ## Contents
@@ -34,7 +34,9 @@ This repository is used for the backend of the [MindLogger](https://mindlogger.o
 
 ## Features
 
-See MindLogger's [Knowledge Base article](https://mindlogger.atlassian.net/servicedesk/customer/portal/3/topic/4d9a9ad4-c663-443b-b7fc-be9faf5d9383/article/337444910) to discover the MindLogger application stack's features.
+See
+Curious's [Knowledge Base article](https://mindlogger.atlassian.net/servicedesk/customer/portal/3/topic/4d9a9ad4-c663-443b-b7fc-be9faf5d9383/article/337444910)
+to discover the Curious application stack's features.
 
 ## Technologies
 
@@ -77,7 +79,7 @@ pipenv --python /opt/homebrew/bin/python3.13
 ### Environment Variables
 
 | Key                                                          | Default value              | Description                                                                                                                                                                                                                                                                                                                            |
-| ------------------------------------------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|--------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | DATABASE\_\_HOST                                             | postgres                   | Database Host                                                                                                                                                                                                                                                                                                                          |
 | DATABASE\_\_USER                                             | postgres                   | User name for Postgresql Database user                                                                                                                                                                                                                                                                                                 |
 | DATABASE\_\_PASSWORD                                         | postgres                   | Password for Postgresql Database user                                                                                                                                                                                                                                                                                                  |
@@ -102,6 +104,9 @@ pipenv --python /opt/homebrew/bin/python3.13
 | MAILING\_\_MAIL\_\_SERVER                                    | mailhog                    | Mail service URL                                                                                                                                                                                                                                                                                                                       |
 | MULTI\_INFORMANT\_\_TEMP\_RELATION\_EXPIRY\_SECS             | 86400                      | Expiry (sec) of temporary multi-informant participant take now relation                                                                                                                                                                                                                                                                |
 | SECRETS\_\_SECRET\_KEY                                       | -                          | Secret key for data encryption. Use this key only for local development                                                                                                                                                                                                                                                                |
+| ONEUP\_HEALTH\_\_CLIENT\_ID                                  | -                          | OneUpHealth API Client ID                                                                                                                                                                                                                                                                                                              |
+| ONEUP\_HEALTH\_\_CLIENT\_SECRET                              | -                          | OneUpHealth API Client secret                                                                                                                                                                                                                                                                                                          |
+| ONEUP\_HEALTH\_\_MAX\_ERROR\_RETRIES                         | 5                          | Maximum number of times to re-attempt fetching health data from the OneUpHealth API. The overall total number of attempts will be this value plus one                                                                                                                                                                                  |
 
 ##### ✋ Mandatory:
 

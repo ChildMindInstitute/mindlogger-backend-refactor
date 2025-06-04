@@ -19,6 +19,7 @@ class InvitationLanguage(StrEnum):
     EN = "en"  # English
     FR = "fr"  # French
     EL = "el"  # Greek
+    ES = "es"  # Spanish
 
 
 class InvitationRequest(InternalModel):

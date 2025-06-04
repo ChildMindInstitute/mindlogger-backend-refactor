@@ -8,11 +8,7 @@ class UserNotFound(NotFoundError):
 
 
 class UserAlreadyExistError(ValidationError):
-    message = _("That email address is already associated with a MindLogger account.")
-
-
-class EmailAddressError(ValidationError):
-    message = _("That email is not associated with a MindLogger account.")
+    message = _("That email address is already associated with a Curious account.")
 
 
 class PasswordRecoveryKeyNotFound(NotFoundError):

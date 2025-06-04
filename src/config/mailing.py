@@ -9,7 +9,7 @@ class MailSettings(BaseModel):
     starttls: bool = False
     ssl_tls: bool = False
     from_email: EmailStr = EmailStr("no-reply@mindlogger.org")
-    from_name: str = "Mindlogger"
+    from_name: str = "Curious"
 
 
 class MailingSettings(BaseModel):
