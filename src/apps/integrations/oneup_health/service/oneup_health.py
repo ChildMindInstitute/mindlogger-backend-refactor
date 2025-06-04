@@ -1,9 +1,14 @@
+import base64
 import hashlib
+import io
+import mimetypes
 import uuid
+import zipfile
 from datetime import datetime, timezone
 from functools import reduce
 
 import httpx
+from slugify import slugify
 
 from apps.integrations.oneup_health.errors import (
     OneUpHealthAPIError,
@@ -14,7 +19,7 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthUserAlreadyExistsError,
 )
 from apps.integrations.oneup_health.service.domain import EHRData
-from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
+from apps.integrations.oneup_health.service.ehr_storage import EHRStorage, create_ehr_storage
 from apps.shared.exception import InternalServerError
 from config import settings
 
@@ -239,6 +244,31 @@ class OneupHealthAPIClient:
                 return result
         except httpx.RequestError as e:
             logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
+            raise OneUpHealthAPIError()
+
+    async def download(self, url_path, params=None, headers=None):
+        """
+        Send a GET request to the OneUp Health API to download a file.
+
+        Args:
+            url_path (str): The API endpoint path to send the request to.
+            params (dict, optional): The query parameters to include in the request.
+            headers (dict, optional): Additional headers to include in the request.
+
+        Returns:
+            bytes: The content of the file.
+        """
+        try:
+            async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
+                resp = await client.get(
+                    url=url_path, params=params, headers={**(headers if headers else {}), **self._default_headers}
+                )
+                if resp.status_code != 200:
+                    raise OneUpHealthAPIError()
+
+                return resp.content
+        except httpx.RequestError as e:
+            logger.error(f"Error downloading from OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
 
@@ -480,6 +510,77 @@ class OneupHealthService:
 
         return resources
 
+    def _get_document_references(self, resource_list) -> list[dict[str, str]]:
+        """Filter DocumentReference resources and extract their document URLs."""
+        doc_refs = [res for res in resource_list if res.get("resourceType") == "DocumentReference"]
+        documents = []
+        for doc_ref in doc_refs:
+            for content in doc_ref.get("content", []):
+                attachment = content.get("attachment", {})
+                title = attachment.get("title")
+                url = attachment.get("url")
+                if url:
+                    documents.append(dict(title=title, url=url))
+        return documents
+
+    def _get_extension_from_content_type(self, content_type: str) -> str | None:
+        """Return the file extension (with dot) for a given MIME content type, or None if unknown."""
+        # Handle common edge cases if needed
+        if content_type == "application/xml":
+            return ".xml"
+
+        if content_type == "application/json":
+            return ".json"
+
+        return mimetypes.guess_extension(content_type)
+
+    async def _download_and_store_documents(self, ehr_storage, oneup_user_id: int, data: EHRData) -> str | None:
+        document_references = self._get_document_references(data.resources)
+
+        if len(document_references) == 0:
+            logger.info(f"No documents found for {data.activity_id}/{data.submit_id}")
+            return None
+
+        base_path = f"{data.activity_id}/{data.submit_id}"
+        zip_filename = EHRStorage.docs_zip_filename(data)
+
+        zip_buffer = io.BytesIO()
+        try:
+            with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+                for reference in document_references:
+                    url = reference["url"]
+                    try:
+                        document_meta = await self._client.get(url, headers={"x-oneup-user-id": str(oneup_user_id)})
+                        title = reference.get("title")
+                        last_updated_str = document_meta.get("meta", {}).get("lastUpdated")
+                        date = (
+                            datetime.fromisoformat(last_updated_str.replace("Z", "+00:00"))
+                            if last_updated_str
+                            else None
+                        )
+                        if date:
+                            date_string = date.strftime("%Y%m%d_%H%M%S")
+                        ext = self._get_extension_from_content_type(document_meta.get("contentType"))
+                        logger.info(f"Guessed extension: {ext} for mime type: {document_meta.get('contentType')}")
+                        file_name = f"{slugify(title) if title else url.split('/')[-1]}_{date_string}{ext}"
+                        data_b64: str = document_meta.get("data")
+                        content = base64.b64decode(data_b64)
+                        await ehr_storage.upload_file(base_path, file_name, content)
+                        zip_file.writestr(file_name, content)
+                        logger.info(f"Downloaded and stored document: {file_name}")
+
+                    except OneUpHealthAPIError as ex:
+                        logger.error(f"Failed to download document: {url}: {ex}")
+                        continue
+
+            zip_buffer.seek(0)
+            await ehr_storage.upload_file(base_path, zip_filename, zip_buffer.getvalue())
+
+        finally:
+            zip_buffer.close()
+
+        return zip_filename
+
     async def retrieve_patient_data(
         self,
         session,
@@ -528,22 +629,21 @@ class OneupHealthService:
                 logger.info(f"Retrieving resources from {resource_url}")
                 resources = await self._get_resources(f"{resource_url}/$everything?_count=100", oneup_user_id)
                 if len(resources) > 0:
-                    # Get the healthcare provider name
-                    healthcare_provider_id = entry.get("resource", {}).get("id")
+                    # Get the healthcare provider meta data
                     meta_source = entry.get("resource", {}).get("meta", {}).get("source")
-                    healthcare_provider_name = next(
+                    healthcare_provider = next(
                         (
-                            healthcare_provider["name"]
+                            healthcare_provider
                             for healthcare_provider in healthcare_providers
                             if f"1up-external-system:{healthcare_provider['id']}" == meta_source
                         ),
-                        None,
+                        {},
                     )
 
                     data = EHRData(
                         resources=resources,
-                        healthcare_provider_id=healthcare_provider_id,
-                        healthcare_provider_name=healthcare_provider_name,
+                        healthcare_provider_id=healthcare_provider.get("id"),
+                        healthcare_provider_name=healthcare_provider.get("name"),
                         date=datetime.now(timezone.utc),
                         submit_id=submit_id,
                         activity_id=activity_id,
@@ -555,8 +655,14 @@ class OneupHealthService:
                     resource_files.append(f"{storage_path}/{filename}")
                     logger.info(
                         f"Stored EHR data for healthcare provider "
-                        f"{healthcare_provider_name} in {storage_path}/{filename}"
+                        f"{healthcare_provider.get('name')} in {storage_path}/{filename}"
                     )
+                    docs_zip_filename = await self._download_and_store_documents(ehr_storage, oneup_user_id, data)
+                    if docs_zip_filename:
+                        logger.info(
+                            f"Stored documents for healthcare provider {healthcare_provider.get('name')} "
+                            f"in {docs_zip_filename}"
+                        )
 
         # Upload EHR zip with all resources
         data = EHRData(
