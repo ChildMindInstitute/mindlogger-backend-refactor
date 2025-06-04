@@ -13,4 +13,4 @@ class EHRData(InternalModel):
     resources: list[dict] = Field(default_factory=list)
     submit_id: uuid.UUID
     activity_id: uuid.UUID
-    user_id: uuid.UUID
+    target_subject_id: uuid.UUID

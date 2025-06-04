@@ -751,5 +751,5 @@ class AnswerEHR(InternalModel):
 
 
 class AnswerEHRFull(AnswerEHR):
-    user_id: uuid.UUID
+    target_subject_id: uuid.UUID
     date: datetime.datetime

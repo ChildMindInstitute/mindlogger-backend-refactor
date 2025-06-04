@@ -1266,7 +1266,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
                 AnswerEHRSchema.activity_id,
                 AnswerEHRSchema.ehr_storage_uri,
                 AnswerEHRSchema.updated_at.label("date"),
-                AnswerSchema.respondent_id.label("user_id"),
+                AnswerSchema.target_subject_id,
                 AnswerEHRSchema.ehr_ingestion_status,
             )
             .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)

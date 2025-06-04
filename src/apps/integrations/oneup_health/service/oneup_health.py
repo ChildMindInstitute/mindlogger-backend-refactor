@@ -495,7 +495,7 @@ class OneupHealthService:
     async def retrieve_patient_data(
         self,
         session,
-        user_id: uuid.UUID,
+        target_subject_id: uuid.UUID,
         applet_id: uuid.UUID,
         submit_id: uuid.UUID,
         activity_id: uuid.UUID,
@@ -509,7 +509,7 @@ class OneupHealthService:
 
         Args:
             session: The database session to use.
-            user_id (uuid.UUID): The unique identifier for the ML user.
+            target_subject_id (uuid.UUID): The unique identifier for the subject.
             applet_id (uuid.UUID): The unique identifier for the applet.
             submit_id (uuid.UUID): The unique identifier for the submission.
             activity_id (uuid.UUID): The unique identifier for the activity.
@@ -557,7 +557,7 @@ class OneupHealthService:
                         date=datetime.now(timezone.utc),
                         submit_id=submit_id,
                         activity_id=activity_id,
-                        user_id=user_id,
+                        target_subject_id=target_subject_id,
                     )
 
                     storage_path, filename = await ehr_storage.upload_resources(data)
@@ -572,7 +572,7 @@ class OneupHealthService:
             date=datetime.now(timezone.utc),
             submit_id=submit_id,
             activity_id=activity_id,
-            user_id=user_id,
+            target_subject_id=target_subject_id,
         )
         zip_file_path = await ehr_storage.upload_ehr_zip(resource_files, data)
 

@@ -22,7 +22,9 @@ class EHRStorage:
 
     @staticmethod
     def ehr_zip_filename(data: EHRData) -> str:
-        filename = f"{data.user_id}_{data.activity_id}_{data.submit_id}_{data.date.strftime('%Y%m%d')}_EHR.zip"
+        filename = (
+            f"{data.target_subject_id}_{data.activity_id}_{data.submit_id}_{data.date.strftime('%Y%m%d')}_EHR.zip"
+        )
         return filename
 
     def _get_storage_path(self, base_path: str, key: str) -> str:
@@ -40,7 +42,7 @@ class EHRStorage:
             if data.healthcare_provider_name
             else data.healthcare_provider_id
         )
-        filename = f"{data.user_id}-{data.date.strftime('%Y%m%d')}-{provider_name}.json"
+        filename = f"{data.target_subject_id}-{data.date.strftime('%Y%m%d')}-{provider_name}.json"
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
 
         # Serialize to JSON and encode to bytes

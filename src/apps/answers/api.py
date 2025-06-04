@@ -127,7 +127,10 @@ async def create_answer(
         await service.create_report_from_answer(answer)
         if schema.allowed_ehr_ingest:
             await service.trigger_ehr_ingestion(
-                user_id=user.id, applet_id=answer.applet_id, submit_id=answer.submit_id, activity_id=schema.activity_id
+                target_subject_id=answer.target_subject_id,
+                applet_id=answer.applet_id,
+                submit_id=answer.submit_id,
+                activity_id=schema.activity_id,
             )
 
 
@@ -957,7 +960,7 @@ async def applet_ehr_answers_export(
         with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
             for ehr_answer in ehr_answers:
                 data = EHRData(
-                    user_id=ehr_answer.user_id,
+                    target_subject_id=ehr_answer.target_subject_id,
                     activity_id=ehr_answer.activity_id,
                     submit_id=ehr_answer.submit_id,
                     date=ehr_answer.date,

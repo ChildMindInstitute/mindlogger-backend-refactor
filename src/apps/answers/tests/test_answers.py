@@ -4494,7 +4494,7 @@ class TestAnswerActivityItems(BaseTest):
 
         filename = EHRStorage.ehr_zip_filename(
             data=EHRData(
-                user_id=tom.id,
+                target_subject_id=tom_answer.target_subject_id,
                 activity_id=uuid.UUID(activity_id),
                 submit_id=tom_answer.submit_id,
                 date=tom_answer.created_at,
