@@ -38,11 +38,11 @@ class EHRStorage:
     async def upload_resources(self, data: EHRData) -> tuple[str, str]:
         base_path = f"{data.activity_id}/{data.submit_id}"
         provider_name = (
-            slugify(data.healthcare_provider_name, separator="_")
+            slugify(data.healthcare_provider_name, separator="-")
             if data.healthcare_provider_name
             else data.healthcare_provider_id
         )
-        filename = f"{data.target_subject_id}-{data.date.strftime('%Y%m%d')}-{provider_name}.json"
+        filename = f"{data.target_subject_id}_{data.date.strftime('%Y%m%d')}_{provider_name}.json"
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
 
         # Serialize to JSON and encode to bytes
