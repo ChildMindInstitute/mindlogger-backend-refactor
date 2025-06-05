@@ -37,6 +37,7 @@ from apps.schedule.errors import (
     StartEndTimeEqualError,
 )
 from apps.schedule.service.schedule import ScheduleService
+from apps.schedule.tests.unit.domain.test_schedule_request_data import event_monthly_data
 from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
 from apps.shared.util import assert_not_none
@@ -148,6 +149,29 @@ def event_daily_data(applet: AppletFull) -> EventRequest:
         timer_type=constants.TimerType.NOT_SET,
     )
 
+@pytest.fixture
+def event_monthly_data(applet: AppletFull) -> EventRequest:
+    start_date = datetime.date.today()
+    end_date = start_date + datetime.timedelta(days=30)
+    ##lucy = user(),
+    return EventRequest(
+        activity_id=applet.activities[0].id,
+        flow_id=None,
+        respondent_id=None,
+        periodicity=PeriodicityRequest(
+            type=constants.PeriodicityType.MONTHLY,
+            start_date=start_date,
+            end_date=end_date,
+            selected_date=start_date,
+        ),        
+        start_time=datetime.time(8, 0),
+        end_time=datetime.time(11, 0),         
+        access_before_schedule= False,
+        one_time_completion=None,
+        notification=None,
+        timer=None,
+        timer_type=constants.TimerType.NOT_SET,
+    )
 
 @pytest.fixture
 def event_daily_flow_data(applet: AppletFull, event_daily_data: EventRequest) -> EventRequest:
@@ -1402,3 +1426,22 @@ class TestSchedule:
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == UserNotFound.message
+
+    async def test_coordinator_can_schedule_event(
+        self,
+        client: TestClient,        
+        applet_one_lucy_coordinator: AppletFull,
+        lucy: User,
+        event_monthly_data: EventRequest,
+  
+    ):
+        client.login(lucy)
+        data = event_monthly_data.copy(deep=True)
+        data.periodicity.type = constants.PeriodicityType.MONTHLY
+        resp = await client.post(
+            self.schedule_url.format(applet_id=applet_one_lucy_coordinator.id), data=data,
+        )   
+        print("Response from schedule import:")
+        print(resp.json())
+        ##assert resp.status_code == 201
+        
