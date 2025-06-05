@@ -1,0 +1,1 @@
+INFO     root:services.py:108 LOGFILE - logs-upload-check: {'userId': '7484f34a-3acc-4ee6-8a94-fd7299502fa1', 'deviceId': 'deviceid', 'success': 'true', 'email': 'tom@mindlogger.com', 'details': None}
