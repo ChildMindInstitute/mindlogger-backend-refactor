@@ -70,6 +70,7 @@ class OneupHealthAPIClient:
         and a 201 status code if the request is successful.
 
         1UpHealth API returns the following error codes that are currently being mapped:
+        - 400: 1UpHealth request failed. Reasons are varied. Currently, we're only handling "this user already exists".
         - 401: 1UpHealth token expired
         - 403: Forbidden access to 1UpHealth API. This is due to the user being outside the United States.
         - 503, 504: 1UpHealth service unavailable
@@ -80,13 +81,15 @@ class OneupHealthAPIClient:
 
         Raises:
             OneUpHealthAPIError: If the API returns any other error status code.
+            OneUpHealthUserAlreadyExistsError: If the API returns a 400 status code with a
+                "this user already exists" error.
             OneUpHealthTokenExpiredError: If the API returns a 401 status code.
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthServiceUnavailableError: If the API returns a 503 or 504 status code.
         """
         if resp.status_code not in (200, 201):
             if resp.status_code == 400 and (resp.json() and resp.json().get("error") == "this user already exists"):
-                # The API returns a 401 status code if the token has expired
+                # The API returns a 400 status code with a "this user already exists" error if the user already exists
                 logger.error(
                     f"1UpHealth user already exists - Path: {url_path} - Status: {resp.status_code}",
                     extra={
