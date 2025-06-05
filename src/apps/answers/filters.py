@@ -72,5 +72,6 @@ class AnswerEHRExportFilters(BaseQueryParams):
     respondent_ids: list[uuid.UUID] | None = Field(Query(None))
     target_subject_ids: list[uuid.UUID] | None = Field(Query(None))
     activity_ids: list[uuid.UUID] | None = Field(Query(None))
+    flow_ids: list[uuid.UUID] | None = Field(Query(None))
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None

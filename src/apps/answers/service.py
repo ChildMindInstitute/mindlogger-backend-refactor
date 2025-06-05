@@ -2049,6 +2049,15 @@ class AnswerService:
         return submissions_activity_metadata
 
     async def export_ehr_answers(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[AnswerEHRFull]:
+        if query_params.filters["flow_ids"]:
+            activity_ids = await AnswersCRUD(self.answer_session).get_activities_submitted_by_flows(
+                applet_id=applet_id, flow_ids=query_params.filters["flow_ids"]
+            )
+            existing_ids = query_params.filters.get("activity_ids") or []
+            # Merge and remove duplicates
+            merged_ids = list(set(existing_ids + activity_ids))
+            query_params.filters["activity_ids"] = merged_ids
+
         ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id, **query_params.filters)
 
         return [AnswerEHRFull(**ehr_answer) for ehr_answer in ehr_answers]

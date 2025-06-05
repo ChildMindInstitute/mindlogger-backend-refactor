@@ -237,6 +237,26 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         return parse_obj_as(list[FlowSubmission], data), count
 
+    async def get_activities_submitted_by_flows(self, applet_id: uuid.UUID, flow_ids: list[uuid.UUID]):
+        if not flow_ids:
+            return []
+
+        query = (
+            select(AnswerSchema.id_from_history_id(AnswerSchema.activity_history_id).label("activity_id"))
+            .where(AnswerSchema.applet_id == applet_id)
+            .where(
+                AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id).in_(
+                    [str(flow_id) for flow_id in flow_ids]
+                )
+            )
+            .distinct()
+        )
+        res = await self._execute(query)
+
+        rows = res.mappings().all()
+
+        return [uuid.UUID(row["activity_id"]) for row in rows]
+
     async def get_respondents_submit_dates(
         self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
     ) -> list[datetime.date]:
