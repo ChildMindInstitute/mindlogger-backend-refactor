@@ -1,7 +1,9 @@
 import datetime
 import http
+import io
 import re
 import uuid
+import zipfile
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, AsyncGenerator, Tuple, cast
@@ -4407,21 +4409,37 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_applet_ehr_data_endpoint(self, client, session, tom, tom_answer):
+    async def test_applet_ehr_data_endpoint(
+        self, client, session, tom, tom_answer_activity_flow, tom_answer_activity_no_flow
+    ):
         # Create EHR record
         answer_ehr = AnswerEHR(
-            submit_id=tom_answer.submit_id,
+            submit_id=tom_answer_activity_no_flow.submit_id,
             ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
             ehr_storage_uri="fake/ehr/storage/uri",
-            activity_id=uuid.UUID(tom_answer.activity_history_id.split("_")[0]),
+            activity_id=uuid.UUID(tom_answer_activity_no_flow.activity_history_id.split("_")[0]),
         )
         await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        answer_ehr_flow = AnswerEHR(
+            submit_id=tom_answer_activity_flow.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri-flow",
+            activity_id=uuid.UUID(tom_answer_activity_flow.activity_history_id.split("_")[0]),
+        )
+
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr_flow)
+
+        file_names = []
 
         def _mock_download_ehr_zip(data, file_buffer):
             file_buffer.write(b"mocked EHR zip data")
             file_buffer.seek(0)
 
-            return EHRStorage.ehr_zip_filename(data)
+            file_name = EHRStorage.ehr_zip_filename(data)
+            file_names.append(file_name)
+
+            return file_name
 
         with patch(
             "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.download_ehr_zip"
@@ -4431,10 +4449,74 @@ class TestAnswerActivityItems(BaseTest):
             client.login(tom)
 
             # Request EHR data
-            response = await client.get(self.applet_ehr_answers_export_url.format(applet_id=tom_answer.applet_id))
+            response = await client.get(
+                self.applet_ehr_answers_export_url.format(applet_id=tom_answer_activity_flow.applet_id)
+            )
             assert response.status_code == 200
             assert response.headers["Content-Type"] == "application/zip"
             assert response.headers["Content-Disposition"] == "attachment; filename=EHR.zip"
+
+            response_body = response.read()
+            with zipfile.ZipFile(io.BytesIO(response_body), "r") as zip_file:
+                file_list = zip_file.namelist()
+                assert len(file_list) == 2
+                assert file_list == file_names
+
+    @pytest.mark.asyncio
+    async def test_applet_ehr_data_endpoint_filtering_by_flow(
+        self, client, session, tom, tom_answer_activity_flow, tom_answer_activity_no_flow
+    ):
+        # Create EHR record
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer_activity_no_flow.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri",
+            activity_id=uuid.UUID(tom_answer_activity_no_flow.activity_history_id.split("_")[0]),
+        )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        answer_ehr_flow = AnswerEHR(
+            submit_id=tom_answer_activity_flow.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri-flow",
+            activity_id=uuid.UUID(tom_answer_activity_flow.activity_history_id.split("_")[0]),
+        )
+
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr_flow)
+
+        file_names = []
+
+        def _mock_download_ehr_zip(data, file_buffer):
+            file_buffer.write(b"mocked EHR zip data")
+            file_buffer.seek(0)
+
+            file_name = EHRStorage.ehr_zip_filename(data)
+            file_names.append(file_name)
+
+            return file_name
+
+        with patch(
+            "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.download_ehr_zip"
+        ) as download_ehr_zip:
+            download_ehr_zip.side_effect = _mock_download_ehr_zip
+
+            client.login(tom)
+
+            # Request EHR data
+            response = await client.get(
+                self.applet_ehr_answers_export_url.format(applet_id=tom_answer_activity_flow.applet_id),
+                query={"flowIds": tom_answer_activity_flow.flow_history_id.split("_")[0]},
+            )
+            assert response.status_code == 200
+            assert response.headers["Content-Type"] == "application/zip"
+            assert response.headers["Content-Disposition"] == "attachment; filename=EHR.zip"
+
+            response_body = response.read()
+            with zipfile.ZipFile(io.BytesIO(response_body), "r") as zip_file:
+                file_list = zip_file.namelist()
+                assert len(file_list) == 1
+                assert file_list == file_names
+                assert str(tom_answer_activity_flow.submit_id) in file_names[0]
 
     @pytest.mark.asyncio
     async def test_applet_ehr_data_endpoint_without_ehr(self, client, session, tom, tom_answer):
