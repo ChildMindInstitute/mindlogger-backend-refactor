@@ -806,7 +806,9 @@ python src/cli.py [COMMAND] [SUBCOMMAND] [OPTIONS]
 - `encryption` – Encrypt, decrypt, or re-encrypt data
 - `applet` – Applet management and seeding
 - `applet-ema` – Export EMA schedules
-- `activities`, `assessments`, `token` – Other backend operations
+- `activities` – Commands for processing activities
+- `assessments` – Commands for processing assessments
+- `token` - Generate access token
 
 ### Getting Help
 All commands and subcommands support `--help` for detailed usage, arguments, and options:
