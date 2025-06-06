@@ -136,18 +136,6 @@ class OneupHealthAPIClient:
                 )
                 raise OneUpHealthServiceUnavailableError()
 
-            elif resp.status_code == 400 and (resp.json() and resp.json().get("error") == "this user already exists"):
-                # The API returns a 400 status code if the user already exists
-                logger.error(
-                    f"1UpHealth user already exists - Path: {url_path} - Status: {resp.status_code}",
-                    extra={
-                        "error_type": "oneup_health_user_already_exists",
-                        "status_code": resp.status_code,
-                        "url_path": url_path,
-                    },
-                )
-                raise OneUpHealthUserAlreadyExists()
-
             # For any other error status code
             response_text = resp.text[:200] if resp.text else "No response text"
             logger.error(
