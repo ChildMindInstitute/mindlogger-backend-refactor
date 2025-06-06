@@ -23,7 +23,7 @@ class OneUpHealthAPIError(BaseError):
             super().__init__(**kwargs)
 
 
-class OneUpHealthUserAlreadyExists(OneUpHealthAPIError):
+class OneUpHealthUserAlreadyExistsError(OneUpHealthAPIError):
     message = _("1UpHealth user already exists for this subject.")
     status_code = status.HTTP_409_CONFLICT
     error_code = OneUpHealthErrorCodes.USER_ALREADY_EXISTS
@@ -48,7 +48,8 @@ class OneUpHealthServiceUnavailableError(OneUpHealthAPIError):
 
 
 OneUpHealthAPIErrorMessageMap = {
-    "this user already exists": OneUpHealthUserAlreadyExists,
-    "service unavailable": OneUpHealthServiceUnavailableError,
+    "this user already exists": OneUpHealthUserAlreadyExistsError,
     "token expired": OneUpHealthTokenExpiredError,
+    "geographic restriction": OneUpHealthAPIForbiddenError,
+    "service unavailable": OneUpHealthServiceUnavailableError,
 }

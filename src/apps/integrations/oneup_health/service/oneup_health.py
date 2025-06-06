@@ -11,7 +11,7 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthAPIForbiddenError,
     OneUpHealthServiceUnavailableError,
     OneUpHealthTokenExpiredError,
-    OneUpHealthUserAlreadyExists,
+    OneUpHealthUserAlreadyExistsError,
 )
 from apps.integrations.oneup_health.service.domain import EHRData
 from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
@@ -70,7 +70,7 @@ class OneupHealthAPIClient:
         and a 201 status code if the request is successful.
 
         1UpHealth API returns the following error codes that are currently being mapped:
-        - 400: 1UpHealth request failed. This is due to the request body being invalid.
+        - 400: 1UpHealth request failed. Reasons are varied. Currently, we're only handling "this user already exists".
         - 401: 1UpHealth token expired
         - 403: Forbidden access to 1UpHealth API. This is due to the user being outside the United States.
         - 503, 504: 1UpHealth service unavailable
@@ -81,11 +81,25 @@ class OneupHealthAPIClient:
 
         Raises:
             OneUpHealthAPIError: If the API returns any other error status code.
+            OneUpHealthUserAlreadyExistsError: If the API returns a 400 status code with a
+                "this user already exists" error.
             OneUpHealthTokenExpiredError: If the API returns a 401 status code.
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthServiceUnavailableError: If the API returns a 503 or 504 status code.
         """
         if resp.status_code not in (200, 201):
+            if resp.status_code == 400 and (resp.json() and resp.json().get("error") == "this user already exists"):
+                # The API returns a 400 status code with a "this user already exists" error if the user already exists
+                logger.error(
+                    f"1UpHealth user already exists - Path: {url_path} - Status: {resp.status_code}",
+                    extra={
+                        "error_type": "oneup_health_user_already_exists",
+                        "status_code": resp.status_code,
+                        "url_path": url_path,
+                    },
+                )
+                raise OneUpHealthUserAlreadyExistsError()
+
             if resp.status_code == 401:
                 # The API returns a 401 status code if the token has expired
                 logger.error(
@@ -306,7 +320,9 @@ class OneupHealthService:
 
         return oneup_user_id
 
-    async def create_user(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> dict[str, str]:
+    async def create_or_retrieve_user(
+        self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None
+    ) -> dict[str, str]:
         """
         Create a new user in the OneUp Health platform or retrieve an existing user.
 
@@ -324,7 +340,7 @@ class OneupHealthService:
             app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
             result = await self._client.post("/user-management/v1/user", params={"app_user_id": app_user_id})
             return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
-        except OneUpHealthUserAlreadyExists:
+        except OneUpHealthUserAlreadyExistsError:
             oneup_user_id = await self.get_oneup_user_id(submit_id=submit_id, activity_id=activity_id)
             if oneup_user_id is not None:
                 return {"oneup_user_id": str(oneup_user_id)}
@@ -342,7 +358,7 @@ class OneupHealthService:
             code (str, optional): An existing authentication code to use.
 
         Returns:
-            dict: A dictionary containing the access_token and refresh_token.
+            dict: A dictionary containing the access_token, the refresh_token, and the app_user_id.
 
         Raises:
             OneUpHealthAPIError: If the API request fails.
@@ -355,20 +371,15 @@ class OneupHealthService:
         assert code
         return {**await self._get_token(code), "app_user_id": app_user_id}
 
-    async def refresh_token(
-        self, refresh_token: str, submit_id: uuid.UUID | None = None, activity_id: uuid.UUID | None = None
-    ) -> dict[str, str]:
+    async def refresh_token(self, refresh_token: str) -> dict[str, str]:
         """
         Refresh an access token using a refresh token.
 
         Args:
             refresh_token (str): The refresh token to use for getting a new access token.
-            submit_id (uuid.UUID, optional): The unique identifier for the submission.
-            activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
-            dict: A dictionary containing the new access_token, refresh_token, and
-            app_user_id if submit_id and activity_id are provided.
+            dict: A dictionary containing the new access_token and refresh_token
 
         Raises:
             OneUpHealthAPIError: If the API request fails.
@@ -380,14 +391,7 @@ class OneupHealthService:
         access_token = result.get("access_token")
         new_refresh_token = result.get("refresh_token")
 
-        response = dict(access_token=access_token, refresh_token=new_refresh_token)
-
-        # Generate app_user_id if submit_id and activity_id are provided
-        if submit_id is not None and activity_id is not None:
-            app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
-            response["app_user_id"] = app_user_id
-
-        return response
+        return dict(access_token=access_token, refresh_token=new_refresh_token)
 
     async def check_audit_events(self, oneup_user_id: int, start_date: datetime | None) -> dict[str, int]:
         """
