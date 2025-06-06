@@ -566,6 +566,7 @@ class UserAnswerDataBase(BaseModel):
     created_at: datetime.datetime
     migrated_data: dict | None = None
     client: ClientMeta | None = None
+    ehr_data_file: str | None = None
 
 
 class RespondentAnswerData(UserAnswerDataBase, InternalModel):
@@ -747,3 +748,8 @@ class AnswerEHR(InternalModel):
     ehr_ingestion_status: EHRIngestionStatus
     activity_id: uuid.UUID
     ehr_storage_uri: str | None
+
+
+class AnswerEHRFull(AnswerEHR):
+    target_subject_id: uuid.UUID
+    date: datetime.datetime
