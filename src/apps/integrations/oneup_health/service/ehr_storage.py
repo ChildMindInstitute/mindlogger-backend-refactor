@@ -4,7 +4,6 @@ import os
 import uuid
 import zipfile
 from io import BytesIO
-from typing import List
 
 from slugify import slugify
 from typing_extensions import BinaryIO
@@ -30,7 +29,9 @@ class EHRStorage:
 
     @staticmethod
     def docs_zip_filename(data: EHRData) -> str:
-        filename = f"{data.user_id}_{data.activity_id}_{data.submit_id}_{data.date.strftime('%Y%m%d')}_DOCS.zip"
+        filename = (
+            f"{data.target_subject_id}_{data.activity_id}_{data.submit_id}_{data.date.strftime('%Y%m%d')}_DOCS.zip"
+        )
         return filename
 
     def _get_storage_path(self, base_path: str, key: str) -> str:
@@ -75,7 +76,7 @@ class EHRStorage:
 
         file_buffer.close()
 
-    async def upload_ehr_zip(self, resources_files: list[str], data: EHRData) -> str:
+    async def upload_ehr_zip(self, resources_files: list[str], data: EHRData) -> tuple[str, int]:
         base_path = self._get_base_path(data)
         filename = EHRStorage.ehr_zip_filename(data)
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
@@ -96,8 +97,9 @@ class EHRStorage:
                     file_buffer.close()
 
             zip_buffer.seek(0)
+            file_size = zip_buffer.getbuffer().nbytes
             await self._cdn_client.upload(key, zip_buffer)
-            return key
+            return filename, file_size
         finally:
             zip_buffer.close()
 
@@ -109,18 +111,6 @@ class EHRStorage:
         self._cdn_client.download(key, file_buffer)
 
         return filename
-
-    async def list_files(self, base_path: str, contains: str | None = None) -> List[str]:
-        """
-        List files in the EHR S3 storage, optionally filtering by substring.
-        """
-        key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, "")
-        contents = await self._cdn_client.list_object(key)
-        all_files = []
-        all_files.extend([obj["Key"] for obj in contents])
-        if contains:
-            return [f for f in all_files if contains in f]
-        return all_files
 
 
 async def create_ehr_storage(session, applet_id: uuid.UUID):

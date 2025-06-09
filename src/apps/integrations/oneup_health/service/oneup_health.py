@@ -18,7 +18,7 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthTokenExpiredError,
     OneUpHealthUserAlreadyExistsError,
 )
-from apps.integrations.oneup_health.service.domain import EHRData
+from apps.integrations.oneup_health.service.domain import EHRData, EHRMetadata
 from apps.integrations.oneup_health.service.ehr_storage import EHRStorage, create_ehr_storage
 from apps.shared.exception import InternalServerError
 from config import settings
@@ -244,31 +244,6 @@ class OneupHealthAPIClient:
                 return result
         except httpx.RequestError as e:
             logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
-            raise OneUpHealthAPIError()
-
-    async def download(self, url_path, params=None, headers=None):
-        """
-        Send a GET request to the OneUp Health API to download a file.
-
-        Args:
-            url_path (str): The API endpoint path to send the request to.
-            params (dict, optional): The query parameters to include in the request.
-            headers (dict, optional): Additional headers to include in the request.
-
-        Returns:
-            bytes: The content of the file.
-        """
-        try:
-            async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
-                resp = await client.get(
-                    url=url_path, params=params, headers={**(headers if headers else {}), **self._default_headers}
-                )
-                if resp.status_code != 200:
-                    raise OneUpHealthAPIError()
-
-                return resp.content
-        except httpx.RequestError as e:
-            logger.error(f"Error downloading from OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
 
@@ -534,12 +509,14 @@ class OneupHealthService:
 
         return mimetypes.guess_extension(content_type)
 
-    async def _download_and_store_documents(self, ehr_storage, oneup_user_id: int, data: EHRData) -> str | None:
+    async def _download_and_store_documents(
+        self, ehr_storage, oneup_user_id: int, data: EHRData
+    ) -> tuple[str | None, int | None]:
         document_references = self._get_document_references(data.resources)
 
         if len(document_references) == 0:
             logger.info(f"No documents found for {data.activity_id}/{data.submit_id}")
-            return None
+            return None, None
 
         base_path = f"{data.activity_id}/{data.submit_id}"
         zip_filename = EHRStorage.docs_zip_filename(data)
@@ -574,12 +551,13 @@ class OneupHealthService:
                         continue
 
             zip_buffer.seek(0)
+            zip_size = zip_buffer.getbuffer().nbytes
             await ehr_storage.upload_file(base_path, zip_filename, zip_buffer.getvalue())
 
         finally:
             zip_buffer.close()
 
-        return zip_filename
+        return zip_filename, zip_size
 
     async def retrieve_patient_data(
         self,
@@ -591,7 +569,7 @@ class OneupHealthService:
         activity_id: uuid.UUID,
         oneup_user_id: int,
         healthcare_providers: list[dict[str, str]],
-    ) -> str | None:
+    ) -> EHRMetadata | None:
         """
         Retrieve and store patient data for a subject.
 
@@ -623,6 +601,7 @@ class OneupHealthService:
         entries = result.get("entry", [])
         ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
         resource_files = []
+        zip_files = []
         for entry in entries:
             resource_url = entry.get("fullUrl")
             if resource_url:
@@ -657,11 +636,14 @@ class OneupHealthService:
                         f"Stored EHR data for healthcare provider "
                         f"{healthcare_provider.get('name')} in {storage_path}/{filename}"
                     )
-                    docs_zip_filename = await self._download_and_store_documents(ehr_storage, oneup_user_id, data)
+                    docs_zip_filename, docs_zip_size = await self._download_and_store_documents(
+                        ehr_storage, oneup_user_id, data
+                    )
                     if docs_zip_filename:
+                        zip_files.append(dict(name=docs_zip_filename, size=docs_zip_size, type="DOCS"))
                         logger.info(
                             f"Stored documents for healthcare provider {healthcare_provider.get('name')} "
-                            f"in {docs_zip_filename}"
+                            f"in {docs_zip_filename} size {docs_zip_size}"
                         )
 
         # Upload EHR zip with all resources
@@ -672,8 +654,12 @@ class OneupHealthService:
             target_subject_id=target_subject_id,
             user_id=user_id,
         )
-        zip_file_path = await ehr_storage.upload_ehr_zip(resource_files, data)
+        ehr_zip_filename, ehr_zip_size = await ehr_storage.upload_ehr_zip(resource_files, data)
+        zip_files.append(dict(name=ehr_zip_filename, size=ehr_zip_size, type="EHR"))
 
-        logger.info(f"Stored EHR data in {zip_file_path}")
+        logger.info(f"Stored EHR data in {ehr_zip_filename} size {ehr_zip_size}")
 
-        return storage_path
+        return EHRMetadata(
+            zip_files=zip_files,
+            storage_path=storage_path,
+        )

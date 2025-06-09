@@ -15,3 +15,8 @@ class EHRData(InternalModel):
     activity_id: uuid.UUID
     target_subject_id: uuid.UUID
     user_id: uuid.UUID
+
+
+class EHRMetadata(InternalModel):
+    zip_files: list[dict]
+    storage_path: str

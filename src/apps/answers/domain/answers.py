@@ -18,6 +18,7 @@ from apps.activities.domain.scores_reports import SubscaleSetting
 from apps.activity_flows.domain.flow_full import FlowFull, FlowHistoryWithActivityFlat, FlowHistoryWithActivityFull
 from apps.answers.domain.answer_items import AnswerItem, ItemAnswerCreate
 from apps.applets.domain.base import AppletBaseInfo
+from apps.integrations.oneup_health.service.domain import EHRMetadata
 from apps.integrations.prolific.domain import ProlificParamsActivityAnswer
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
@@ -748,6 +749,7 @@ class AnswerEHR(InternalModel):
     ehr_ingestion_status: EHRIngestionStatus
     activity_id: uuid.UUID
     ehr_storage_uri: str | None
+    meta: EHRMetadata | None
 
 
 class AnswerEHRFull(AnswerEHR):
