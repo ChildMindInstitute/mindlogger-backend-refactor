@@ -334,6 +334,7 @@ class TestTaskIngestUserData:
                     session, target_subject_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
                 )
 
+                assert result is not None
                 assert result.storage_path == "fake/storage/path"
                 assert upload_resources.called
                 assert upload_ehr_zip.called
