@@ -54,6 +54,7 @@ class AnswerExportFilters(BaseQueryParams):
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None
     limit: int = 10000
+    include_ehr: bool = False
 
 
 class AnswerIdentifierVersionFilter(BaseQueryParams):
@@ -65,3 +66,12 @@ class AppletMultiinformantAssessmentParams(InternalModel):
     target_subject_id: uuid.UUID
     source_subject_id: uuid.UUID
     activity_or_flow_id: uuid.UUID
+
+
+class AnswerEHRExportFilters(BaseQueryParams):
+    respondent_ids: list[uuid.UUID] | None = Field(Query(None))
+    target_subject_ids: list[uuid.UUID] | None = Field(Query(None))
+    activity_ids: list[uuid.UUID] | None = Field(Query(None))
+    flow_ids: list[uuid.UUID] | None = Field(Query(None))
+    from_date: datetime.datetime | None = None
+    to_date: datetime.datetime | None = None

@@ -1,8 +1,11 @@
 import datetime
 import http
+import io
 import re
 import uuid
+import zipfile
 from collections import defaultdict
+from http import HTTPStatus
 from typing import Any, AsyncGenerator, Tuple, cast
 from unittest.mock import AsyncMock, patch
 
@@ -16,14 +19,24 @@ from apps.activities.domain.activity_update import ActivityUpdate
 from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.answers.crud import AnswerItemsCRUD
-from apps.answers.crud.answers import AnswersCRUD
+from apps.answers.crud.answers import AnswersCRUD, AnswersEHRCRUD
 from apps.answers.db.schemas import AnswerItemSchema, AnswerNoteSchema, AnswerSchema
-from apps.answers.domain import AnswerNote, AppletAnswerCreate, AssessmentAnswerCreate, ClientMeta, ItemAnswerCreate
+from apps.answers.domain import (
+    AnswerEHR,
+    AnswerNote,
+    AppletAnswerCreate,
+    AssessmentAnswerCreate,
+    ClientMeta,
+    EHRIngestionStatus,
+    ItemAnswerCreate,
+)
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
 from apps.applets.service import AppletService
+from apps.integrations.oneup_health.service.domain import EHRData
+from apps.integrations.oneup_health.service.ehr_storage import EHRStorage
 from apps.mailing.services import TestMail
 from apps.schedule.domain.schedule import PublicEvent
 from apps.schedule.service import ScheduleService
@@ -747,6 +760,8 @@ class TestAnswerActivityItems(BaseTest):
     check_existence_url = "/answers/check-existence"
     assessment_delete_url = "/answers/applet/{applet_id}/answers/{answer_id}/assessment/{assessment_id}"
     multiinformat_assessment_validate_url = "/answers/applet/{applet_id}/multiinformant-assessment/validate"
+
+    applet_ehr_answers_export_url = "/answers/applet/{applet_id}/ehr-data"
 
     async def test_answer_activity_items_create_alert_for_respondent(
         self,
@@ -2050,7 +2065,7 @@ class TestAnswerActivityItems(BaseTest):
             "sourceSubjectId", "sourceSecretId", "sourceUserNickname", "sourceUserTag",
             "targetSubjectId", "targetSecretId", "targetUserNickname", "targetUserTag",
             "inputSubjectId", "inputSecretId", "inputUserNickname",
-            "client", "tzOffset", "scheduledEventId", "scheduledEventHistoryId", "reviewedFlowSubmitId"
+            "client", "tzOffset", "scheduledEventId", "scheduledEventHistoryId", "reviewedFlowSubmitId", "ehrDataFile"
         }
         # Comment for now, wtf is it
         # assert int(answer['startDatetime'] * 1000) == answer_item_create.start_time
@@ -4392,3 +4407,180 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.get(url)
 
         assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_applet_ehr_data_endpoint(
+        self, client, session, tom, tom_answer_activity_flow, tom_answer_activity_no_flow
+    ):
+        # Create EHR record
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer_activity_no_flow.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri",
+            activity_id=uuid.UUID(tom_answer_activity_no_flow.activity_history_id.split("_")[0]),
+        )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        answer_ehr_flow = AnswerEHR(
+            submit_id=tom_answer_activity_flow.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri-flow",
+            activity_id=uuid.UUID(tom_answer_activity_flow.activity_history_id.split("_")[0]),
+        )
+
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr_flow)
+
+        file_names = []
+
+        def _mock_download_ehr_zip(data, file_buffer):
+            file_buffer.write(b"mocked EHR zip data")
+            file_buffer.seek(0)
+
+            file_name = EHRStorage.ehr_zip_filename(data)
+            file_names.append(file_name)
+
+            return file_name
+
+        with patch(
+            "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.download_ehr_zip"
+        ) as download_ehr_zip:
+            download_ehr_zip.side_effect = _mock_download_ehr_zip
+
+            client.login(tom)
+
+            # Request EHR data
+            response = await client.get(
+                self.applet_ehr_answers_export_url.format(applet_id=tom_answer_activity_flow.applet_id)
+            )
+            assert response.status_code == 200
+            assert response.headers["Content-Type"] == "application/zip"
+            assert response.headers["Content-Disposition"] == "attachment; filename=EHR.zip"
+
+            response_body = response.read()
+            with zipfile.ZipFile(io.BytesIO(response_body), "r") as zip_file:
+                file_list = zip_file.namelist()
+                assert len(file_list) == 2
+                assert file_list == file_names
+
+    @pytest.mark.asyncio
+    async def test_applet_ehr_data_endpoint_filtering_by_flow(
+        self, client, session, tom, tom_answer_activity_flow, tom_answer_activity_no_flow
+    ):
+        # Create EHR record
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer_activity_no_flow.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri",
+            activity_id=uuid.UUID(tom_answer_activity_no_flow.activity_history_id.split("_")[0]),
+        )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        answer_ehr_flow = AnswerEHR(
+            submit_id=tom_answer_activity_flow.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri-flow",
+            activity_id=uuid.UUID(tom_answer_activity_flow.activity_history_id.split("_")[0]),
+        )
+
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr_flow)
+
+        file_names = []
+
+        def _mock_download_ehr_zip(data, file_buffer):
+            file_buffer.write(b"mocked EHR zip data")
+            file_buffer.seek(0)
+
+            file_name = EHRStorage.ehr_zip_filename(data)
+            file_names.append(file_name)
+
+            return file_name
+
+        with patch(
+            "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.download_ehr_zip"
+        ) as download_ehr_zip:
+            download_ehr_zip.side_effect = _mock_download_ehr_zip
+
+            client.login(tom)
+
+            # Request EHR data
+            response = await client.get(
+                self.applet_ehr_answers_export_url.format(applet_id=tom_answer_activity_flow.applet_id),
+                query={"flowIds": tom_answer_activity_flow.flow_history_id.split("_")[0]},
+            )
+            assert response.status_code == 200
+            assert response.headers["Content-Type"] == "application/zip"
+            assert response.headers["Content-Disposition"] == "attachment; filename=EHR.zip"
+
+            response_body = response.read()
+            with zipfile.ZipFile(io.BytesIO(response_body), "r") as zip_file:
+                file_list = zip_file.namelist()
+                assert len(file_list) == 1
+                assert file_list == file_names
+                assert str(tom_answer_activity_flow.submit_id) in file_names[0]
+
+    @pytest.mark.asyncio
+    async def test_applet_ehr_data_endpoint_without_ehr(self, client, session, tom, tom_answer):
+        # Create EHR record
+        activity_id = uuid.UUID(tom_answer.activity_history_id.split("_")[0])
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.IN_PROGRESS,
+            activity_id=activity_id,
+        )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        client.login(tom)
+
+        # Request EHR data
+        response = await client.get(self.applet_ehr_answers_export_url.format(applet_id=tom_answer.applet_id))
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+    @pytest.mark.asyncio
+    async def test_include_ehr_parameter_in_data_endpoint(
+        self,
+        client,
+        session,
+        tom: User,
+        tom_answer: AnswerSchema,
+    ):
+        # Create EHR record
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri",
+            activity_id=uuid.UUID(tom_answer.activity_history_id.split("_")[0]),
+        )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        client.login(tom)
+
+        # 1. Without include_ehr param
+        response = await client.get(self.applet_answers_export_url.format(applet_id=tom_answer.applet_id))
+        assert response.status_code == HTTPStatus.OK
+
+        results = response.json()["result"]
+
+        assert results["answers"][0]["ehrDataFile"] is None
+
+        # 2. With include_ehr param
+        response = await client.get(
+            f"{self.applet_answers_export_url.format(applet_id=tom_answer.applet_id)}",
+            query={"includeEhr": True},
+        )
+        assert response.status_code == HTTPStatus.OK
+        results = response.json()["result"]
+
+        _answer = results["answers"][0]
+
+        activity_id = tom_answer.activity_history_id.split("_")[0]
+
+        filename = EHRStorage.ehr_zip_filename(
+            data=EHRData(
+                target_subject_id=tom_answer.target_subject_id,
+                activity_id=uuid.UUID(activity_id),
+                submit_id=tom_answer.submit_id,
+                date=tom_answer.created_at,
+            )
+        )
+
+        assert _answer["ehrDataFile"] == filename

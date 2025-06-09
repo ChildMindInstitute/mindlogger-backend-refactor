@@ -49,6 +49,14 @@ class _AnswersExportFilter(Filtering):
     to_date = FilterField(AnswerItemSchema.created_at, Comparisons.LESS_OR_EQUAL)
 
 
+class _AnswersEHRExportFilter(Filtering):
+    respondent_ids = FilterField(AnswerSchema.respondent_id, Comparisons.IN)
+    target_subject_ids = FilterField(AnswerSchema.target_subject_id, Comparisons.IN)
+    activity_ids = FilterField(AnswerEHRSchema.activity_id, Comparisons.IN)
+    from_date = FilterField(AnswerEHRSchema.created_at, Comparisons.GREAT_OR_EQUAL)
+    to_date = FilterField(AnswerEHRSchema.created_at, Comparisons.LESS_OR_EQUAL)
+
+
 class _AnswerListFilter(Filtering):
     respondent_ids = FilterField(AnswerItemSchema.respondent_id, method_name="filter_respondent_ids")
     target_subject_ids = FilterField(AnswerSchema.target_subject_id, Comparisons.IN)
@@ -1188,3 +1196,99 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
 
         result = await self._execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_by_applet_id(self, applet_id: uuid.UUID) -> list[AnswerEHRSchema]:
+        """
+        Get a list of AnswerEHRSchema records filtered by applet_id.
+
+        Since AnswerEHRSchema doesn't have an applet_id field directly, this method
+        joins with the AnswerSchema table to filter by applet_id.
+
+        Args:
+            applet_id: The UUID of the applet to filter by
+
+        Returns:
+            A list of AnswerEHRSchema objects associated with the given applet_id
+        """
+        query = (
+            select(self.schema_class)
+            .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)
+            .where(AnswerSchema.applet_id == applet_id)
+        )
+
+        result = await self._execute(query)
+        return result.scalars().all()
+
+    async def get_ehr_answers_with_filters(
+        self, applet_id: uuid.UUID, activity_ids: list[uuid.UUID], submit_ids: list[uuid.UUID]
+    ) -> list[dict]:
+        query = (
+            select(
+                AnswerSchema.submit_id,
+                AnswerEHRSchema.activity_id,
+                AnswerEHRSchema.ehr_storage_uri,
+                AnswerEHRSchema.updated_at.label("date"),
+                AnswerSchema.respondent_id.label("user_id"),
+                AnswerEHRSchema.ehr_ingestion_status,
+            )
+            .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)
+            .where(
+                AnswerSchema.applet_id == applet_id,
+                AnswerEHRSchema.activity_id.in_(activity_ids),
+                AnswerSchema.submit_id.in_(submit_ids),
+            )
+            .order_by(self.schema_class.created_at.desc())
+        )
+
+        result = await self._execute(query)
+        return result.mappings().all()
+
+    async def export_ehr_answers(self, applet_id: uuid.UUID, **filters) -> list[dict]:
+        """
+        Get a list of AnswerEHRSchema records filtered by applet_id for export purposes.
+
+        This method joins the AnswerEHRSchema with the AnswerSchema table to filter by applet_id.
+
+        Args:
+            applet_id: The UUID of the applet to filter by
+
+        Returns:
+            A list of AnswerEHRSchema objects associated with the given applet_id
+        """
+
+        filter_clauses = []
+        if filters:
+            filter_clauses = _AnswersEHRExportFilter().get_clauses(**filters)
+
+            if flow_ids := filters.get("flow_ids"):
+                submit_ids_sub_query = (
+                    select(AnswerSchema.submit_id)
+                    .where(AnswerSchema.applet_id == applet_id)
+                    .where(
+                        AnswerSchema.id_from_history_id(AnswerSchema.flow_history_id).in_(
+                            [str(flow_id) for flow_id in flow_ids]
+                        )
+                    )
+                    .distinct()
+                )
+                filter_clauses.append(AnswerEHRSchema.submit_id.in_(submit_ids_sub_query))
+
+        query = (
+            select(
+                AnswerSchema.submit_id,
+                AnswerEHRSchema.activity_id,
+                AnswerEHRSchema.ehr_storage_uri,
+                AnswerEHRSchema.updated_at.label("date"),
+                AnswerSchema.target_subject_id,
+                AnswerEHRSchema.ehr_ingestion_status,
+            )
+            .join(AnswerSchema, self.schema_class.submit_id == AnswerSchema.submit_id)
+            .where(AnswerSchema.applet_id == applet_id)
+            .where(AnswerEHRSchema.ehr_ingestion_status == EHRIngestionStatus.COMPLETED)
+            .where(AnswerEHRSchema.ehr_storage_uri.is_not(None))
+            .where(*filter_clauses)
+            .order_by(self.schema_class.created_at.desc())
+        )
+
+        result = await self._execute(query)
+        return result.mappings().all()

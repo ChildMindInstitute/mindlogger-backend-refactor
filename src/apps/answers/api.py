@@ -1,10 +1,14 @@
 import asyncio
 import base64
 import datetime
+import http
+import io
 import uuid
+import zipfile
 from typing import Annotated
 
 from fastapi import Body, Depends, Header, Query
+from fastapi import Response as FastAPIResponse
 from fastapi.responses import Response as FastApiResponse
 from pydantic import parse_obj_as
 
@@ -36,8 +40,13 @@ from apps.answers.domain import (
     PublicSummaryActivityFlow,
     ReviewsCount,
 )
-from apps.answers.domain.answers import MultiinformantAssessmentValidationResponse, PublicSubmissionsResponse
+from apps.answers.domain.answers import (
+    AnswerEHRFull,
+    MultiinformantAssessmentValidationResponse,
+    PublicSubmissionsResponse,
+)
 from apps.answers.filters import (
+    AnswerEHRExportFilters,
     AnswerExportFilters,
     AppletMultiinformantAssessmentParams,
     AppletSubmissionsFilter,
@@ -52,6 +61,8 @@ from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.authentication.deps import get_current_user
+from apps.integrations.oneup_health.service.domain import EHRData
+from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
 from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.service.schedule_history import ScheduleHistoryService
@@ -116,7 +127,10 @@ async def create_answer(
         await service.create_report_from_answer(answer)
         if schema.allowed_ehr_ingest:
             await service.trigger_ehr_ingestion(
-                applet_id=answer.applet_id, submit_id=answer.submit_id, activity_id=schema.activity_id
+                target_subject_id=answer.target_subject_id,
+                applet_id=answer.applet_id,
+                submit_id=answer.submit_id,
+                activity_id=schema.activity_id,
             )
 
 
@@ -921,3 +935,46 @@ async def applet_submissions_list(
     return PublicSubmissionsResponse(
         submissions=submissions, submissions_count=submissions_count, participants_count=participants_count
     )
+
+
+async def applet_ehr_answers_export(
+    applet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+    answer_session=Depends(get_answer_session),
+    query_params: QueryParams = Depends(parse_query_params(AnswerEHRExportFilters)),
+) -> FastAPIResponse:
+    await AppletService(session, user.id).exist_by_id(applet_id)
+    await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
+
+    ehr_answers: list[AnswerEHRFull] = await AnswerService(session, user.id, answer_session).export_ehr_answers(
+        applet_id, query_params
+    )
+
+    if len(ehr_answers) == 0:
+        return FastAPIResponse(status_code=http.HTTPStatus.NO_CONTENT, content="No EHR answers found")
+
+    ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
+    zip_buffer = io.BytesIO()
+    try:
+        with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+            for ehr_answer in ehr_answers:
+                data = EHRData(
+                    target_subject_id=ehr_answer.target_subject_id,
+                    activity_id=ehr_answer.activity_id,
+                    submit_id=ehr_answer.submit_id,
+                    date=ehr_answer.date,
+                )
+                ehr_zip_buffer = io.BytesIO()
+                try:
+                    ehr_zip_filename = ehr_storage.download_ehr_zip(data, ehr_zip_buffer)
+
+                    zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
+                finally:
+                    ehr_zip_buffer.close()
+
+        zip_buffer.seek(0)
+        headers = {"Content-Disposition": "attachment; filename=EHR.zip"}
+        return FastAPIResponse(zip_buffer.getvalue(), headers=headers, media_type="application/zip")
+    finally:
+        zip_buffer.close()

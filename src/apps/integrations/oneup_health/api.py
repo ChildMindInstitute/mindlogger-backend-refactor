@@ -82,8 +82,17 @@ class EHRTriggerInput(InternalModel):
     submit_id: uuid.UUID
 
 
-async def trigger_data_fetch(trigger_input: EHRTriggerInput = Body(...)):
+async def trigger_data_fetch(
+    user: User = Depends(get_current_user),
+    trigger_input: EHRTriggerInput = Body(...),
+    session=Depends(get_session),
+):
+    subject = await SubjectsService(session, user.id).get_by_user_and_applet(user.id, trigger_input.applet_id)
+    if subject is None:
+        raise NotFoundError("Subject does not exist")
+
     await task_ingest_user_data.kicker().kiq(
+        target_subject_id=subject.id,
         applet_id=trigger_input.applet_id,
         submit_id=trigger_input.submit_id,
         activity_id=trigger_input.activity_id,
