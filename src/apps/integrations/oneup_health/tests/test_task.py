@@ -86,7 +86,7 @@ class TestTaskIngestUserData:
             with patch(
                 "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_ehr_zip"
             ) as upload_ehr_zip:
-                upload_ehr_zip.return_value = None
+                upload_ehr_zip.return_value = "fake_zip_filename", 100
 
                 submit_id = uuid.uuid4()
                 activity_id = applet_one.activities[0].id
@@ -328,13 +328,13 @@ class TestTaskIngestUserData:
             with patch(
                 "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_ehr_zip"
             ) as upload_ehr_zip:
-                upload_ehr_zip.return_value = None
+                upload_ehr_zip.return_value = "fake_zip_filename", 100
 
                 result = await _process_data_transfer(
                     session, target_subject_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
                 )
 
-                assert result == "fake/storage/path"
+                assert result.storage_path == "fake/storage/path"
                 assert upload_resources.called
                 assert upload_ehr_zip.called
 
