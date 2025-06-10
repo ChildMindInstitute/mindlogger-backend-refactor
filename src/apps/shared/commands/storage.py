@@ -25,7 +25,38 @@ TABLES = {
         ("splash_screen", "text")
     ],
     "activity_histories": [
-        ("scores_and_reports", "jsonb")
+        ("scores_and_reports", "jsonb"),
+        ("splash_screen", "text"),
+        ("image", "text"),
+        ("extra_fields", "jsonb"),
+    ],
+    "activity_item_histories": [
+        ("config", "jsonb"),
+        ("response_values", "jsonb"),
+        ("question", "jsonb"),
+    ],
+    "activity_items": [
+        ("config", "jsonb"),
+        ("response_values", "jsonb"),
+        ("question", "jsonb"),
+        ("response_values", "jsonb"),
+    ],
+    "applet_histories": [
+        ("report_email_body", "text"),
+        ("about", "jsonb"),
+        ("image", "text"),
+        ("extra_fields", "jsonb"),
+        ("watermark", "text"),
+    ],
+    "applets": [
+        ("report_email_body", "text"),
+        ("about", "jsonb"),
+        ("image", "text"),
+        ("extra_fields", "jsonb"),
+        ("watermark", "text"),
+    ],
+    "cart": [
+        ("cart_items", "jsonb"),
     ]
 }
 
@@ -42,6 +73,21 @@ def print_tables():
 
     print(table)
 
+def _migrate_text_field(session, table_name: str, column: str, search: str, replace: str):
+    sql = f"""
+        update {table_name}
+        set {column} = replace({column}, '{search}', '{replace}')
+    """
+    print(sql)
+
+def _migrate_jsonb_field(session, table_name: str, column: str, search: str, replace: str):
+    sql = f"""
+        update {table_name}
+        set {column} = replace({column}::TEXT, '{search}', '{replace}')::jsonb
+    """
+    print(sql)
+
+
 @app.command(short_help="Migrate storage URLs")
 @coro
 async def migrate(
@@ -50,8 +96,22 @@ async def migrate(
 ) -> None:
     print_tables()
     typer.confirm("Are you sure that you want to alter the fields shown above?", abort=True)
-    print("doing it")
-    pass
+
+    # session_maker = session_manager.get_session()
+    # async with session_maker() as session:
+    #     async with atomic(session):
+    for table_name, fields in TABLES.items():
+        print(f"Started altering the table {table_name}")
+        for field in fields:
+            (col, col_type) = field
+            print(f"  Started altering the column {col} ({col_type})")
+            if col_type == "text":
+                _migrate_text_field("session", table_name, col, source, replacement)
+            elif col_type == "jsonb":
+                _migrate_jsonb_field("session", table_name, col, source, replacement)
+            else:
+                print(f"Unknown column type: {col_type}")
+
 
 @app.command(short_help="Show tables with storage URLs")
 @coro
