@@ -14,6 +14,7 @@ from apps.applets.commands import (  # noqa: E402
     applet_ema_cli,  # noqa: E402
 )  # noqa: E402
 from apps.shared.commands import encryption_cli, patch  # noqa: E402
+from apps.shared.commands.storage import app as storage_cli
 from apps.users.commands import token_cli  # noqa: E402
 from apps.workspaces.commands import arbitrary_server_cli  # noqa: E402
 
@@ -26,6 +27,7 @@ cli.add_typer(patch, name="patch")
 cli.add_typer(encryption_cli, name="encryption")
 cli.add_typer(applet_ema_cli, name="applet-ema")
 cli.add_typer(applet_cli, name="applet")
+cli.add_typer(storage_cli, name="storage")
 
 if __name__ == "__main__":
     # with app context?
