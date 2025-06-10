@@ -515,7 +515,7 @@ class OneupHealthService:
         document_references = self._get_document_references(data.resources)
 
         if len(document_references) == 0:
-            logger.info(f"No documents found for {data.activity_id}/{data.submit_id}")
+            logger.info(f"No documents found for activity_id {data.activity_id}, submit_id {data.submit_id}")
             return None, None
 
         base_path = f"{data.activity_id}/{data.submit_id}"
