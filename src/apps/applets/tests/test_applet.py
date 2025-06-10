@@ -57,6 +57,7 @@ class TestApplet:
     history_changes_url = f"{applet_detail_url}/versions/{{version}}/changes"
     applet_base_info_url = f"{applet_detail_url}/base_info"
     access_link_url = f"{applet_detail_url}/access_link"
+    applets_updates_url = f"{applet_list_url}/{{applet_id}}"
 
     public_applet_detail_url = "/public/applets/{key}"
     public_applet_base_info_url = f"{public_applet_detail_url}/base_info"
@@ -1298,3 +1299,25 @@ class TestApplet:
         response = await client.get(self.applet_detail_url.format(pk=applet_with_reviewable_activity.id))
         assert response.status_code == http.HTTPStatus.OK
         assert response.json()["appletMeta"]["hasAssessment"]
+
+    async def test_manager_can_update_applet(
+            self, client:TestClient, lucy:User, applet_one_lucy_manager: AppletFull, encryption: Encryption
+        ):
+            client.login(lucy)
+            edit_data = dict({
+                "display_name": "Updated Name",
+                "encryption": encryption.dict(),
+                "activities": [],  
+                "activityFlows": [],
+            })
+
+            response = await client.put(
+                self.applets_updates_url.format(
+                    applet_id=applet_one_lucy_manager.id,
+                ),
+                data=edit_data,
+            )
+            assert response.status_code == 200, response.json()
+            data = response.json()["result"]
+            assert data["displayName"] == "Updated Name"
+
