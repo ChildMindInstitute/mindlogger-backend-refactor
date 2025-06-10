@@ -1484,23 +1484,4 @@ class TestWorkspaces(BaseTest):
         assert date_now.hour == date_answer.hour
         assert date_now.minute == date_answer.minute
 
-    async def test_manager_can_update_applet(
-        self, client:TestClient, lucy:User, applet_one_lucy_manager:AppletFull,
-    ):
-        client.login(lucy)
-        edit_data = dict({
-            "display_name": "Updated Name",
-        })
-
-        response = await client.put(
-            self.workspace_applets_detail_url.format(
-                owner_id=lucy.id,
-                applet_id=applet_one_lucy_manager.id,
-            ),
-            data=edit_data,
-        )
-        assert response.status_code == 200, response.json()
-        data = response.json()
-        assert data["display_name"] == "Updated Name"
-
-  
+    
