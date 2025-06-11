@@ -1317,7 +1317,46 @@ class TestApplet:
                 ),
                 data=edit_data,
             )
-            assert response.status_code == 200, response.json()
+            assert response.status_code == http.HTTPStatus.OK, response.json()
             data = response.json()["result"]
             assert data["displayName"] == "Updated Name"
 
+    async def test_coordinator_can_not_update_applet(
+            self, client: TestClient, lucy: User, applet_one_lucy_coordinator: AppletFull, encryption: Encryption
+        ):
+        client.login(lucy)
+        edit_data = dict({
+            "display_name": "Updated Name",
+            "encryption": encryption.dict(),
+            "activities": [],  
+            "activityFlows": [],
+        })
+
+        response = await client.put(
+            self.applets_updates_url.format(
+                applet_id=applet_one_lucy_coordinator.id,
+            ),
+            data=edit_data,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN, response.json()   
+
+    async def test_editor_can_update_applet(
+            self, client: TestClient, lucy: User, applet_one_lucy_editor: AppletFull, encryption: Encryption
+        ):
+        client.login(lucy)
+        edit_data = dict({
+            "display_name": "Updated Name",
+            "encryption": encryption.dict(),
+            "activities": [],  
+            "activityFlows": [],
+        })
+
+        response = await client.put(
+            self.applets_updates_url.format(
+                applet_id=applet_one_lucy_editor.id,
+            ),
+            data=edit_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        data = response.json()["result"]
+        assert data["displayName"] == "Updated Name"     
