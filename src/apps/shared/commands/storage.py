@@ -75,7 +75,8 @@ async def _migrate_text_field(session, table_name: str, column: str, search: str
     """
     print(sql)
     async with atomic(session):
-        await session.execute(sql)
+        result = await session.execute(sql)
+        print(f"Matched {result.rowcount} rows")
 
 
 async def _migrate_jsonb_field(session, table_name: str, column: str, search: str, replace: str):
@@ -85,7 +86,8 @@ async def _migrate_jsonb_field(session, table_name: str, column: str, search: st
     """
     print(sql)
     async with atomic(session):
-        await session.execute(sql)
+        result = await session.execute(sql)
+        print(f"Matched {result.rowcount} rows")
 
 
 @app.command(short_help="Migrate storage URLs")
