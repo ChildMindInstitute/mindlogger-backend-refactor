@@ -1,1 +1,0 @@
-INFO     root:loris.py:96 Error during request to report server, no answers
