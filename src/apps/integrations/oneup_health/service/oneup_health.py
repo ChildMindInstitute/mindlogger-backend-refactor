@@ -18,7 +18,7 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthTokenExpiredError,
     OneUpHealthUserAlreadyExistsError,
 )
-from apps.integrations.oneup_health.service.domain import EHRData, EHRMetadata
+from apps.integrations.oneup_health.service.domain import EHRData, EHRFileMetadata, EHRFileTypeEnum, EHRMetadata
 from apps.integrations.oneup_health.service.ehr_storage import EHRStorage, create_ehr_storage
 from apps.shared.exception import InternalServerError
 from config import settings
@@ -640,7 +640,9 @@ class OneupHealthService:
                         ehr_storage, oneup_user_id, data
                     )
                     if docs_zip_filename:
-                        zip_files.append(dict(name=docs_zip_filename, size=docs_zip_size, type="DOCS"))
+                        zip_files.append(
+                            EHRFileMetadata(name=docs_zip_filename, size=docs_zip_size, type=EHRFileTypeEnum.DOCS)
+                        )
                         logger.info(
                             f"Stored documents for healthcare provider {healthcare_provider.get('name')} "
                             f"in {docs_zip_filename} size {docs_zip_size}"
@@ -655,7 +657,7 @@ class OneupHealthService:
             user_id=user_id,
         )
         ehr_zip_filename, ehr_zip_size = await ehr_storage.upload_ehr_zip(resource_files, data)
-        zip_files.append(dict(name=ehr_zip_filename, size=ehr_zip_size, type="EHR"))
+        zip_files.append(EHRFileMetadata(name=ehr_zip_filename, size=ehr_zip_size, type=EHRFileTypeEnum.EHR))
 
         logger.info(f"Stored EHR data in {ehr_zip_filename} size {ehr_zip_size}")
 

@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import Field
 
@@ -17,6 +18,17 @@ class EHRData(InternalModel):
     user_id: uuid.UUID
 
 
+class EHRFileTypeEnum(StrEnum):
+    DOCS = "DOCS"
+    EHR = "EHR"
+
+
+class EHRFileMetadata(InternalModel):
+    name: str
+    size: int
+    type: EHRFileTypeEnum
+
+
 class EHRMetadata(InternalModel):
-    zip_files: list[dict]
+    zip_files: list[EHRFileMetadata]
     storage_path: str
