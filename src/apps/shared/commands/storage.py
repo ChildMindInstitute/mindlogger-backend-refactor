@@ -1,19 +1,12 @@
-import collections
-from typing import Optional, Annotated
+from typing import Annotated
 
 import typer
 from rich import print
 from rich.style import Style
 from rich.table import Table
-from sqlalchemy import Unicode
-from sqlalchemy.dialects.postgresql import dialect
-from sqlalchemy_utils import StringEncryptedType
 
-from apps.shared.encryption import get_key
-from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
-from infrastructure.database.base import Base
 
 app = typer.Typer()
 
@@ -22,7 +15,7 @@ TABLES = {
         ("extra_fields", "jsonb"),
         ("scores_and_reports", "jsonb"),
         ("image", "text"),
-        ("splash_screen", "text")
+        ("splash_screen", "text"),
     ],
     "activity_histories": [
         ("scores_and_reports", "jsonb"),
@@ -57,8 +50,9 @@ TABLES = {
     ],
     "cart": [
         ("cart_items", "jsonb"),
-    ]
+    ],
 }
+
 
 def print_tables():
     # mapping: dict[str, list[tuple]]
@@ -73,44 +67,55 @@ def print_tables():
 
     print(table)
 
-def _migrate_text_field(session, table_name: str, column: str, search: str, replace: str):
+
+async def _migrate_text_field(session, table_name: str, column: str, search: str, replace: str):
     sql = f"""
         update {table_name}
         set {column} = replace({column}, '{search}', '{replace}')
     """
     print(sql)
+    async with atomic(session):
+        await session.execute(sql)
 
-def _migrate_jsonb_field(session, table_name: str, column: str, search: str, replace: str):
+
+async def _migrate_jsonb_field(session, table_name: str, column: str, search: str, replace: str):
     sql = f"""
         update {table_name}
         set {column} = replace({column}::TEXT, '{search}', '{replace}')::jsonb
     """
     print(sql)
+    async with atomic(session):
+        await session.execute(sql)
 
 
 @app.command(short_help="Migrate storage URLs")
 @coro
 async def migrate(
-        source: Annotated[str, typer.Argument(help="Source value to replace (eg: mindlogger-applet-contents.s3.amazonaws.com)")],
-        replacement: Annotated[str, typer.Argument(help="Replacement value (eg: media.gettingcurious.com/mindlogger-legacy/content)")]
+    source: Annotated[
+        str, typer.Argument(help="Source value to replace (eg: mindlogger-applet-contents.s3.amazonaws.com)")
+    ],
+    replacement: Annotated[
+        str, typer.Argument(help="Replacement value (eg: media.gettingcurious.com/mindlogger-legacy/content)")
+    ],
 ) -> None:
     print_tables()
     typer.confirm("Are you sure that you want to alter the fields shown above?", abort=True)
 
-    # session_maker = session_manager.get_session()
-    # async with session_maker() as session:
-    #     async with atomic(session):
-    for table_name, fields in TABLES.items():
-        print(f"Started altering the table {table_name}")
-        for field in fields:
-            (col, col_type) = field
-            print(f"  Started altering the column {col} ({col_type})")
-            if col_type == "text":
-                _migrate_text_field("session", table_name, col, source, replacement)
-            elif col_type == "jsonb":
-                _migrate_jsonb_field("session", table_name, col, source, replacement)
-            else:
-                print(f"Unknown column type: {col_type}")
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        for table_name, fields in TABLES.items():
+            print(f"Started altering the table {table_name}")
+            for field in fields:
+                (col, col_type) = field
+                print(f"  Started altering the column {col} ({col_type})")
+                if col_type == "text":
+                    await _migrate_text_field(session, table_name, col, source, replacement)
+                elif col_type == "jsonb":
+                    await _migrate_jsonb_field(session, table_name, col, source, replacement)
+                else:
+                    print(f"Unknown column type: {col_type}")
+            print(f"Finished altering the table {table_name}")
+    print("Finished altering the tables")
 
 
 @app.command(short_help="Show tables with storage URLs")

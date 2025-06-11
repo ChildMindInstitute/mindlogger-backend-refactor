@@ -14,7 +14,7 @@ from apps.applets.commands import (  # noqa: E402
     applet_ema_cli,  # noqa: E402
 )  # noqa: E402
 from apps.shared.commands import encryption_cli, patch  # noqa: E402
-from apps.shared.commands.storage import app as storage_cli
+from apps.shared.commands.storage import app as storage_cli  # noqa: E402
 from apps.users.commands import token_cli  # noqa: E402
 from apps.workspaces.commands import arbitrary_server_cli  # noqa: E402
 
