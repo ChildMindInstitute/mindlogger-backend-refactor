@@ -5,6 +5,7 @@ from rich import print
 from rich.style import Style
 from rich.table import Table
 
+from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
@@ -101,6 +102,8 @@ async def migrate(
     ],
 ) -> None:
     print_tables()
+    print(f"Database host: {settings.database.host}")
+
     typer.confirm("Are you sure that you want to alter the fields shown above?", abort=True)
 
     session_maker = session_manager.get_session()
