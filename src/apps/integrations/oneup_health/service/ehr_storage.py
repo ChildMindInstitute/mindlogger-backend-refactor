@@ -29,8 +29,14 @@ class EHRStorage:
 
     @staticmethod
     def docs_zip_filename(data: EHRData) -> str:
+        provider_name = (
+            slugify(data.healthcare_provider_name, separator="-")
+            if data.healthcare_provider_name
+            else data.healthcare_provider_id
+        )
         filename = (
-            f"{data.target_subject_id}_{data.activity_id}_{data.submit_id}_{data.date.strftime('%Y%m%d')}_DOCS.zip"
+            f"{data.target_subject_id}_{data.activity_id}_"
+            f"{data.submit_id}_{data.date.strftime('%Y%m%d')}_{provider_name}_DOCS.zip"
         )
         return filename
 
