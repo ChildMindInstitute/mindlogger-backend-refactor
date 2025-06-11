@@ -1301,36 +1301,40 @@ class TestApplet:
         assert response.json()["appletMeta"]["hasAssessment"]
 
     async def test_manager_can_update_applet(
-            self, client:TestClient, lucy:User, applet_one_lucy_manager: AppletFull, encryption: Encryption
-        ):
-            client.login(lucy)
-            edit_data = dict({
+        self, client: TestClient, lucy: User, applet_one_lucy_manager: AppletFull, encryption: Encryption
+    ):
+        client.login(lucy)
+        edit_data = dict(
+            {
                 "display_name": "Updated Name",
                 "encryption": encryption.dict(),
-                "activities": [],  
+                "activities": [],
                 "activityFlows": [],
-            })
+            }
+        )
 
-            response = await client.put(
-                self.applets_updates_url.format(
-                    applet_id=applet_one_lucy_manager.id,
-                ),
-                data=edit_data,
-            )
-            assert response.status_code == http.HTTPStatus.OK, response.json()
-            data = response.json()["result"]
-            assert data["displayName"] == "Updated Name"
+        response = await client.put(
+            self.applets_updates_url.format(
+                applet_id=applet_one_lucy_manager.id,
+            ),
+            data=edit_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        data = response.json()["result"]
+        assert data["displayName"] == "Updated Name"
 
     async def test_coordinator_can_not_update_applet(
-            self, client: TestClient, lucy: User, applet_one_lucy_coordinator: AppletFull, encryption: Encryption
-        ):
+        self, client: TestClient, lucy: User, applet_one_lucy_coordinator: AppletFull, encryption: Encryption
+    ):
         client.login(lucy)
-        edit_data = dict({
-            "display_name": "Updated Name",
-            "encryption": encryption.dict(),
-            "activities": [],  
-            "activityFlows": [],
-        })
+        edit_data = dict(
+            {
+                "display_name": "Updated Name",
+                "encryption": encryption.dict(),
+                "activities": [],
+                "activityFlows": [],
+            }
+        )
 
         response = await client.put(
             self.applets_updates_url.format(
@@ -1338,18 +1342,20 @@ class TestApplet:
             ),
             data=edit_data,
         )
-        assert response.status_code == http.HTTPStatus.FORBIDDEN, response.json()   
+        assert response.status_code == http.HTTPStatus.FORBIDDEN, response.json()
 
     async def test_editor_can_update_applet(
-            self, client: TestClient, lucy: User, applet_one_lucy_editor: AppletFull, encryption: Encryption
-        ):
+        self, client: TestClient, lucy: User, applet_one_lucy_editor: AppletFull, encryption: Encryption
+    ):
         client.login(lucy)
-        edit_data = dict({
-            "display_name": "Updated Name",
-            "encryption": encryption.dict(),
-            "activities": [],  
-            "activityFlows": [],
-        })
+        edit_data = dict(
+            {
+                "display_name": "Updated Name",
+                "encryption": encryption.dict(),
+                "activities": [],
+                "activityFlows": [],
+            }
+        )
 
         response = await client.put(
             self.applets_updates_url.format(
@@ -1359,4 +1365,4 @@ class TestApplet:
         )
         assert response.status_code == http.HTTPStatus.OK, response.json()
         data = response.json()["result"]
-        assert data["displayName"] == "Updated Name"     
+        assert data["displayName"] == "Updated Name"

@@ -1483,5 +1483,3 @@ class TestWorkspaces(BaseTest):
         assert date_now.year == date_answer.year
         assert date_now.hour == date_answer.hour
         assert date_now.minute == date_answer.minute
-
-    
