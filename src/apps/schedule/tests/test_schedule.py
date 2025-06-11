@@ -45,7 +45,7 @@ from apps.users.errors import UserNotFound
 from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-from infrastructure.utility import FCMNotificationTest
+from infrastructure.utility.notification_client import FCMNotificationTest
 
 
 def _get_number_default_events(applet: AppletFull) -> int:

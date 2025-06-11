@@ -17,7 +17,7 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.crud.workspaces import UserWorkspaceCRUD
 from apps.workspaces.domain.constants import Role
 from infrastructure.database.deps import pass_session
-from infrastructure.utility import RedisCache
+from infrastructure.utility.redis_client import RedisCache
 
 
 async def ws_get_alert_messages(

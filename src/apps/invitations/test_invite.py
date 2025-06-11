@@ -38,6 +38,7 @@ from apps.subjects.services import SubjectsService
 from apps.users import UserSchema
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from apps.workspaces.domain.constants import UserPinRole
+from apps.workspaces.errors import AppletInviteAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
@@ -1167,3 +1168,51 @@ class TestInvite(BaseTest):
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         message = response.json()["result"][0]["message"]
         assert message == RespondentInvitationExist.message
+
+    async def test_respondent_can_NOT_invite_new_reviewer_for_a_specific_respondent(
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        lucy: User,
+        applet_one: AppletFull,
+    ):
+        client.login(lucy)
+        # try to invite a reviewer for a specific respondent
+        response = await client.post(
+            self.invite_reviewer_url.format(applet_id=str(applet_one.id)),
+            invitation_reviewer_data,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        assert response.json()["result"][0]["message"] == AppletInviteAccessDenied.message
+
+    async def test_editor_can_NOT_invite_new_reviewer_for_a_specific_respondent(
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        mike: User,
+        applet_one: AppletFull,
+    ):
+        client.login(mike)
+        # try to invite a reviewer for a specific respondent
+        response = await client.post(
+            self.invite_reviewer_url.format(applet_id=str(applet_one.id)),
+            invitation_reviewer_data,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        assert response.json()["result"][0]["message"] == AppletInviteAccessDenied.message
+
+    async def test_coordinator_can_NOT_invite_new_reviewer_for_a_specific_respondent(
+        self,
+        client: TestClient,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        bob: User,
+        applet_one: AppletFull,
+    ):
+        client.login(bob)
+        # try to invite a reviewer for a specific respondent
+        response = await client.post(
+            self.invite_reviewer_url.format(applet_id=str(applet_one.id)),
+            invitation_reviewer_data,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        assert response.json()["result"][0]["message"] == AppletInviteAccessDenied.message

@@ -26,7 +26,7 @@ from apps.users.domain import User
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema, UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
-from infrastructure.utility import RedisCacheTest
+from infrastructure.utility.redis_client import RedisCacheTest
 
 
 def note_url_path_data(answer: AnswerSchema) -> dict[str, Any]:

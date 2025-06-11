@@ -422,10 +422,10 @@ class TestDataService:
             # third event daily
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
             default_event.periodicity.start_date = anchor_datetime.date() - timedelta(days=5)
             default_event.periodicity.end_date = anchor_datetime.date() - timedelta(days=3)
@@ -441,10 +441,10 @@ class TestDataService:
             # fourth event daily
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
             default_event.periodicity.start_date = anchor_datetime.date() - timedelta(days=2)
             default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=2)
@@ -460,10 +460,10 @@ class TestDataService:
             # fifth event daily
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
             default_event.periodicity.start_date = anchor_datetime.date() + timedelta(days=2)
             default_event.periodicity.end_date = anchor_datetime.date() + timedelta(days=5)
@@ -478,10 +478,10 @@ class TestDataService:
             # sixth event daily
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -516,10 +516,10 @@ class TestDataService:
             # seventh event daily
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -556,10 +556,10 @@ class TestDataService:
             # eighth event daily
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -595,10 +595,10 @@ class TestDataService:
             # ninth event daily
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.DAILY
@@ -634,10 +634,10 @@ class TestDataService:
             # tenth event weekly
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date() - timedelta(days=2)
@@ -654,10 +654,10 @@ class TestDataService:
             # eleventh event weekly
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()
@@ -673,10 +673,10 @@ class TestDataService:
             # twelfth event weekly
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date() + timedelta(days=2)
@@ -692,10 +692,10 @@ class TestDataService:
             # thirteenth event montly
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()
@@ -712,10 +712,10 @@ class TestDataService:
             # fourteenth event weekdays
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.type = PeriodicityType.WEEKDAYS
@@ -734,10 +734,10 @@ class TestDataService:
             # fifteenth event once
             current_entity_index = self._increment_index(current_entity_index, len(entity_ids))
             default_event = self._get_generated_event(
-                is_activity=entity_ids[current_entity_index].get(  # type: ignore  # noqa: E501
+                is_activity=entity_ids[current_entity_index].get(  # noqa: E501
                     "is_activity"
                 ),
-                entity_id=entity_ids[current_entity_index].get("id"),  # type: ignore  # noqa: E501
+                entity_id=entity_ids[current_entity_index].get("id"),  # noqa: E501
             )
 
             default_event.periodicity.selected_date = anchor_datetime.date()

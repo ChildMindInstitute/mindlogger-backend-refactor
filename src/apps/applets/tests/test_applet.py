@@ -36,7 +36,7 @@ from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-from infrastructure.utility import FCMNotificationTest
+from infrastructure.utility.notification_client import FCMNotificationTest
 
 
 class TestApplet:

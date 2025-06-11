@@ -20,7 +20,7 @@ from apps.users.router import router as user_router
 from apps.users.tests.factories import CacheEntryFactory, PasswordRecoveryInfoFactory, PasswordUpdateRequestFactory
 from config import settings
 from infrastructure.cache import PasswordRecoveryHealthCheckNotValid
-from infrastructure.utility import RedisCache
+from infrastructure.utility.redis_client import RedisCache
 
 
 @pytest.fixture(scope="class")

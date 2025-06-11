@@ -6,12 +6,12 @@ import boto3
 from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas
 from botocore.config import Config
 
-from infrastructure.utility.cdn_client import CDNClient
-from infrastructure.utility.cdn_config import CdnConfig
+from infrastructure.storage.cdn_client import CDNClient
+from infrastructure.storage.cdn_config import CdnConfig
 
 
 class ArbitraryS3CdnClient(CDNClient):
-    def configure_client(self, config: CdnConfig, signature_version=None):
+    def _configure_client(self, config: CdnConfig, signature_version=None):
         client_config = Config(
             max_pool_connections=25,
         )
@@ -32,7 +32,7 @@ class ArbitraryGCPCdnClient(CDNClient):
     def generate_private_url(self, key):
         return f"gs://{self.config.bucket}/{key}"
 
-    def configure_client(self, config, signature_version=None):
+    def _configure_client(self, config, signature_version=None):
         client_config = Config(
             max_pool_connections=25,
         )
@@ -58,7 +58,7 @@ class ArbitraryAzureCdnClient(CDNClient):
     def generate_private_url(self, key):
         return f"https://{self.config.bucket}.blob.core.windows.net/mindlogger/{key}"  # noqa
 
-    def configure_client(self, _, **kwargs):
+    def _configure_client(self, _, **kwargs):
         blob_service_client = BlobServiceClient.from_connection_string(self.sec_key)
         with suppress(Exception):
             blob_service_client.create_container(self.default_container_name)
@@ -69,7 +69,7 @@ class ArbitraryAzureCdnClient(CDNClient):
         blob_client = self.client.get_blob_client(blob=path)
         blob_client.upload_blob(body)
 
-    def _check_existence(self, bucket: str, key: str):
+    def _check_existence(self, key: str):
         blob_client = self.client.get_blob_client(self.default_container_name, blob=key)
         return blob_client.exists()
 
