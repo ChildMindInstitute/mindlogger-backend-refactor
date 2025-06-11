@@ -1,3 +1,0 @@
-INFO     root:api.py:852 check-existence: applet_id=05d77539-0255-4c57-ab97-180c0f239c01, activity_id=3482d46e-2b07-47b9-9ff6-b01062685380, user_id=7484f34a-3acc-4ee6-8a94-fd7299502fa1, created_at=1749050224.0, exists=True, ip=127.0.0.1
-INFO     root:api.py:852 check-existence: applet_id=05d77539-0255-4c57-ab97-180c0f239c01, activity_id=3482d46e-2b07-47b9-9ff6-b01062685380, user_id=7484f34a-3acc-4ee6-8a94-fd7299502fa1, created_at=1749050224.0, exists=False, ip=127.0.0.1
-INFO     root:api.py:852 check-existence: applet_id=05d77539-0255-4c57-ab97-180c0f239c01, activity_id=3482d46e-2b07-47b9-9ff6-b01062685380, user_id=7484f34a-3acc-4ee6-8a94-fd7299502fa2, created_at=1749050224.0, exists=False, ip=127.0.0.1
