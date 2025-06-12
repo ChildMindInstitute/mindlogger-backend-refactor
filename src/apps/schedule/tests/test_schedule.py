@@ -150,14 +150,13 @@ def event_daily_data(applet: AppletFull) -> EventRequest:
     )
 
 @pytest.fixture
-def event_monthly_data(applet: AppletFull) -> EventRequest:
+def event_monthly_data(applet: AppletFull, lucy: User) -> EventRequest:
     start_date = datetime.date.today()
     end_date = start_date + datetime.timedelta(days=30)
-    ##lucy = user(),
     return EventRequest(
-        activity_id=applet.activities[0].id,
-        flow_id=None,
-        respondent_id=None,
+        activity_id=None,#applet.activities[0].id,
+        flow_id=str(applet.activity_flows[0].id),
+        respondent_id=lucy.id,
         periodicity=PeriodicityRequest(
             type=constants.PeriodicityType.MONTHLY,
             start_date=start_date,
@@ -166,8 +165,8 @@ def event_monthly_data(applet: AppletFull) -> EventRequest:
         ),        
         start_time=datetime.time(8, 0),
         end_time=datetime.time(11, 0),         
-        access_before_schedule= False,
-        one_time_completion=None,
+        access_before_schedule= True,
+        one_time_completion=True,
         notification=None,
         timer=None,
         timer_type=constants.TimerType.NOT_SET,
@@ -1429,9 +1428,9 @@ class TestSchedule:
 
     async def test_coordinator_can_schedule_event(
         self,
-        client: TestClient,        
-        applet_one_lucy_coordinator: AppletFull,
-        lucy: User,
+        client: TestClient,  
+        lucy: User,     
+        applet_one_lucy_coordinator: AppletFull,        
         event_monthly_data: EventRequest,
   
     ):
@@ -1440,8 +1439,5 @@ class TestSchedule:
         data.periodicity.type = constants.PeriodicityType.MONTHLY
         resp = await client.post(
             self.schedule_url.format(applet_id=applet_one_lucy_coordinator.id), data=data,
-        )   
-        print("Response from schedule import:")
-        print(resp.json())
-        ##assert resp.status_code == 201
-        
+        ) 
+        assert resp.status_code == 201
