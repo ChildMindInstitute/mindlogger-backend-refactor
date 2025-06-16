@@ -1,9 +1,11 @@
 import random
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
 import httpx
+from taskiq import Context, TaskiqDepends
 
 from apps.answers.crud.answers import AnswersEHRCRUD
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
@@ -136,10 +138,11 @@ async def _schedule_retry(
     delay = _exponential_backoff(retry_count)
     if delay > 0:
         retry_count += 1
-        logger.info(f"Scheduling retry #{retry_count} in {delay} seconds")
+        retry_time = datetime.now(tz=timezone.utc) + timedelta(seconds=delay)
+        logger.info(f"Scheduling retry #{retry_count} at {retry_time}")
         await (
             task_ingest_user_data.kicker()
-            .with_labels(delay=delay)
+            .with_labels(delay=60, retry_time=retry_time.isoformat())
             .kiq(
                 user_id=user_id,
                 target_subject_id=target_subject_id,
@@ -155,6 +158,24 @@ async def _schedule_retry(
     return delay > 0
 
 
+async def _check_retry_time(context: Annotated[Context, TaskiqDepends()]) -> bool:
+    """
+    Determine if the task should be retried based on the context.
+
+    Args:
+        context (Annotated[Context, TaskiqDepends()]): The context provided by Taskiq
+
+    Returns:
+        bool: True if the task should be retried, False otherwise
+    """
+    retry_time = context.message.labels.get("retry_time")
+    if retry_time and datetime.fromisoformat(retry_time) > datetime.now(tz=timezone.utc):
+        await context.requeue()
+        return False
+
+    return True
+
+
 @broker.task
 async def task_ingest_user_data(
     user_id: uuid.UUID,
@@ -165,6 +186,7 @@ async def task_ingest_user_data(
     start_date: datetime | None = None,
     retry_count: int = 0,
     failed_attempts: int = 0,
+    check_retry_time: Annotated[bool, TaskiqDepends(_check_retry_time)] = True,  # ignore:unused argument
 ) -> str | None:
     """
     Asynchronous task to ingest user health data from OneUp Health.
@@ -181,6 +203,7 @@ async def task_ingest_user_data(
         start_date (datetime, optional): The start date of the transfer process
         retry_count (int): The current retry attempt count
         failed_attempts (int): The current error retry attempt count
+        check_retry_time (bool): Flag to check if the task should be retried
 
     Returns:
         list | None: List of retrieved resources if successful, None otherwise
