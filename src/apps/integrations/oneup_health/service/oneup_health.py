@@ -521,6 +521,10 @@ class OneupHealthService:
         base_path = f"{data.activity_id}/{data.submit_id}"
         zip_filename = EHRStorage.docs_zip_filename(data)
 
+        # TODO: Optimize this function to avoid loading all files in memory when creating the zip file.
+        # Current implementation loads all document content into memory before writing to the zip file,
+        # which can cause memory issues with large documents or many documents.
+        # Consider using a streaming approach or temporary files to reduce memory usage.
         zip_buffer = io.BytesIO()
         try:
             with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
