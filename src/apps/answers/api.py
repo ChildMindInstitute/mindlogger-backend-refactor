@@ -952,7 +952,7 @@ async def applet_ehr_answers_export(
     )
 
     if len(ehr_answers) == 0:
-        return FastAPIResponse(status_code=http.HTTPStatus.NO_CONTENT, content="No EHR answers found")
+        return FastAPIResponse(status_code=http.HTTPStatus.NO_CONTENT)
 
     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
     zip_buffer = io.BytesIO()
