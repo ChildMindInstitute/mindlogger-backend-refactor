@@ -91,11 +91,13 @@ class TestTaskIngestUserData:
                 submit_id = uuid.uuid4()
                 activity_id = applet_one.activities[0].id
                 target_subject_id = uuid.uuid4()
+                user_id = uuid.uuid4()
                 task = await task_ingest_user_data.kicker().kiq(
                     target_subject_id=target_subject_id,
                     applet_id=applet_one.id,
                     submit_id=submit_id,
                     activity_id=activity_id,
+                    user_id=user_id,
                 )
                 result = await task.wait_result()
 
@@ -125,8 +127,9 @@ class TestTaskIngestUserData:
         submit_id = uuid.uuid4()
         activity_id = applet_one.activities[0].id
         target_subject_id = uuid.uuid4()
+        user_id = uuid.uuid4()
 
-        result = await task_ingest_user_data(target_subject_id, applet_id, submit_id, activity_id)
+        result = await task_ingest_user_data(user_id, target_subject_id, applet_id, submit_id, activity_id)
         assert result is None
 
         answers_ehr = await AnswersEHRCRUD(session).get_by_submit_id_and_activity_id(
@@ -154,8 +157,11 @@ class TestTaskIngestUserData:
                 applet_id = uuid.uuid4()
                 submit_id = uuid.uuid4()
                 activity_id = applet_one.activities[0].id
+                target_subject_id = uuid.uuid4()
                 user_id = uuid.uuid4()
-                result = await task_ingest_user_data(user_id, applet_id, submit_id, activity_id=activity_id)
+                result = await task_ingest_user_data(
+                    user_id, target_subject_id, applet_id, submit_id, activity_id=activity_id
+                )
                 assert result is None
                 assert mock_process.called
                 assert mock_retry.called
@@ -237,12 +243,13 @@ class TestTaskIngestUserData:
 
         target_subject_id = uuid.uuid4()
         submit_id = uuid.uuid4()
+        user_id = uuid.uuid4()
         activity_id = applet_one.activities[0].id
         oneup_user_id = 1
         start_date = None
 
         result = await _process_data_transfer(
-            session, target_subject_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
+            session, user_id, target_subject_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
         )
 
         # Should return None since not all transfers are complete
@@ -319,6 +326,7 @@ class TestTaskIngestUserData:
         oneup_user_id = 1
         start_date = None
         target_subject_id = uuid.uuid4()
+        user_id = uuid.uuid4()
 
         with patch(
             "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_resources"
@@ -331,7 +339,14 @@ class TestTaskIngestUserData:
                 upload_ehr_zip.return_value = None
 
                 result = await _process_data_transfer(
-                    session, target_subject_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
+                    session,
+                    user_id,
+                    target_subject_id,
+                    applet_one.id,
+                    submit_id,
+                    activity_id,
+                    oneup_user_id,
+                    start_date,
                 )
 
                 assert result == "fake/storage/path"
@@ -359,9 +374,10 @@ class TestTaskIngestUserData:
         oneup_user_id = 1
         start_date = None
         target_subject_id = uuid.uuid4()
+        user_id = uuid.uuid4()
 
         result = await _process_data_transfer(
-            session, target_subject_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
+            session, user_id, target_subject_id, applet_one.id, submit_id, activity_id, oneup_user_id, start_date
         )
 
         # Should return None due to the HTTP error
@@ -376,6 +392,7 @@ class TestTaskIngestUserData:
         retry_count = 2
         failed_attempts = 0
         target_subject_id = uuid.uuid4()
+        user_id = uuid.uuid4()
 
         with patch("apps.integrations.oneup_health.service.task.task_ingest_user_data") as mock_task:
             kicker = MagicMock()
@@ -391,6 +408,7 @@ class TestTaskIngestUserData:
                 return_value=10,
             ) as mock_backoff:
                 await _schedule_retry(
+                    user_id=user_id,
                     target_subject_id=target_subject_id,
                     applet_id=applet_one.id,
                     submit_id=submit_id,
@@ -404,6 +422,7 @@ class TestTaskIngestUserData:
                 mock_task.kicker.assert_called_once()
                 kicker.with_labels.assert_called_once_with(delay=10)
                 kiq.assert_awaited_once_with(
+                    user_id=user_id,
                     target_subject_id=target_subject_id,
                     applet_id=applet_one.id,
                     submit_id=submit_id,
@@ -426,6 +445,7 @@ class TestTaskIngestUserData:
         settings.oneup_health.max_error_retries = 4
 
         target_subject_id = uuid.uuid4()
+        user_id = uuid.uuid4()
 
         with patch(
             "apps.answers.crud.answers.AnswersEHRCRUD.upsert",
@@ -434,6 +454,7 @@ class TestTaskIngestUserData:
             submit_id = uuid.uuid4()
             with patch.object(task_module, "_schedule_retry", wraps=task_module._schedule_retry) as mock_retry:
                 task = await task_ingest_user_data.kicker().kiq(
+                    user_id=user_id,
                     target_subject_id=target_subject_id,
                     applet_id=applet_one.id,
                     submit_id=submit_id,

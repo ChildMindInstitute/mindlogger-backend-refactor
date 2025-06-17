@@ -127,6 +127,7 @@ async def create_answer(
         await service.create_report_from_answer(answer)
         if schema.allowed_ehr_ingest:
             await service.trigger_ehr_ingestion(
+                user_id=user.id,
                 target_subject_id=answer.target_subject_id,
                 applet_id=answer.applet_id,
                 submit_id=answer.submit_id,
@@ -964,6 +965,7 @@ async def applet_ehr_answers_export(
                     activity_id=ehr_answer.activity_id,
                     submit_id=ehr_answer.submit_id,
                     date=ehr_answer.date,
+                    user_id=user.id,
                 )
                 ehr_zip_buffer = io.BytesIO()
                 try:

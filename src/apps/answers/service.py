@@ -2055,9 +2055,14 @@ class AnswerService:
 
     @staticmethod
     async def trigger_ehr_ingestion(
-        target_subject_id: uuid.UUID, applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID
+        user_id: uuid.UUID,
+        target_subject_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        submit_id: uuid.UUID,
+        activity_id: uuid.UUID,
     ):
         await task_ingest_user_data.kicker().kiq(
+            user_id=user_id,
             target_subject_id=target_subject_id,
             applet_id=applet_id,
             submit_id=submit_id,
@@ -2093,6 +2098,7 @@ class AnswerService:
                     activity_id=ehr_answer["activity_id"],
                     submit_id=answer.submit_id,
                     date=ehr_answer["date"],
+                    user_id=answer.respondent_id,
                 )
                 answer.ehr_data_file = EHRStorage.ehr_zip_filename(data)
 
