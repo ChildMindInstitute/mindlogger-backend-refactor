@@ -267,7 +267,14 @@ async def task_ingest_user_data(
                         )
                 logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry number {failed_attempts}")
                 await _schedule_retry(
-                    target_subject_id, applet_id, submit_id, activity_id, start_date, retry_count, failed_attempts
+                    user_id,
+                    target_subject_id,
+                    applet_id,
+                    submit_id,
+                    activity_id,
+                    start_date,
+                    retry_count,
+                    failed_attempts,
                 )
 
             return storage_path
