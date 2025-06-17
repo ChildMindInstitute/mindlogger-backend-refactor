@@ -1275,7 +1275,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
 
         query = (
             select(
-                AnswerSchema.submit_id,
+                AnswerEHRSchema.submit_id,
                 AnswerEHRSchema.activity_id,
                 AnswerEHRSchema.ehr_storage_uri,
                 AnswerEHRSchema.updated_at.label("date"),
@@ -1287,7 +1287,8 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
             .where(AnswerEHRSchema.ehr_ingestion_status == EHRIngestionStatus.COMPLETED)
             .where(AnswerEHRSchema.ehr_storage_uri.is_not(None))
             .where(*filter_clauses)
-            .order_by(self.schema_class.created_at.desc())
+            .order_by(self.schema_class.updated_at.desc())
+            .distinct()
         )
 
         result = await self._execute(query)
