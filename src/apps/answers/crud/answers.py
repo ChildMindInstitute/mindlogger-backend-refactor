@@ -1236,6 +1236,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
                 AnswerSchema.applet_id == applet_id,
                 AnswerEHRSchema.activity_id.in_(activity_ids),
                 AnswerSchema.submit_id.in_(submit_ids),
+                AnswerEHRSchema.ehr_ingestion_status == EHRIngestionStatus.COMPLETED,
             )
             .order_by(self.schema_class.created_at.desc())
         )
