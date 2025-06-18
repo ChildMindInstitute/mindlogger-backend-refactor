@@ -518,7 +518,6 @@ class OneupHealthService:
             logger.info(f"No documents found for activity_id {data.activity_id}, submit_id {data.submit_id}")
             return None, None
 
-        base_path = f"{data.activity_id}/{data.submit_id}"
         zip_filename = EHRStorage.docs_zip_filename(data)
 
         # TODO: Optimize this function to avoid loading all files in memory when creating the zip file.
@@ -546,7 +545,7 @@ class OneupHealthService:
                         file_name = f"{slugify(title) if title else url.split('/')[-1]}_{date_string}{ext}"
                         data_b64: str = document_meta.get("data")
                         content = base64.b64decode(data_b64)
-                        await ehr_storage.upload_file(base_path, file_name, content)
+                        await ehr_storage.upload_file(data, file_name, content)
                         zip_file.writestr(file_name, content)
                         logger.info(f"Downloaded and stored document: {file_name}")
 
@@ -556,7 +555,7 @@ class OneupHealthService:
 
             zip_buffer.seek(0)
             zip_size = zip_buffer.getbuffer().nbytes
-            await ehr_storage.upload_file(base_path, zip_filename, zip_buffer.getvalue())
+            await ehr_storage.upload_file(data, zip_filename, zip_buffer.getvalue())
 
         finally:
             zip_buffer.close()

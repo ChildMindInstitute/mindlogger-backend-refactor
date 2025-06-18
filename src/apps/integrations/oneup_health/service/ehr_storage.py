@@ -72,7 +72,8 @@ class EHRStorage:
 
         return self._get_storage_path(base_path, key), filename
 
-    async def upload_file(self, base_path: str, filename: str, content: bytes) -> None:
+    async def upload_file(self, data: EHRData, filename: str, content: bytes) -> None:
+        base_path = self._get_base_path(data)
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
 
         file_buffer = io.BytesIO(content)
