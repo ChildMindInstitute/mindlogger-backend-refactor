@@ -48,6 +48,7 @@ def _exponential_backoff(retry_count) -> int:
 
 async def _process_data_transfer(
     session,
+    user_id: uuid.UUID,
     target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
@@ -60,6 +61,7 @@ async def _process_data_transfer(
 
     Args:
         session: Database session
+        user_id (uuid.UUID): The unique identifier for the curious user
         target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
@@ -91,6 +93,7 @@ async def _process_data_transfer(
             if timeout_count > 0:
                 logger.warning(f"{timeout_count} Transfers timed out for OneUp Health user ID {oneup_user_id}")
             return await oneup_health_service.retrieve_patient_data(
+                user_id=user_id,
                 target_subject_id=target_subject_id,
                 session=session,
                 applet_id=applet_id,
@@ -104,6 +107,7 @@ async def _process_data_transfer(
 
 
 async def _schedule_retry(
+    user_id: uuid.UUID,
     target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
@@ -116,6 +120,7 @@ async def _schedule_retry(
     Schedule a retry of the data ingestion task with exponential backoff.
 
     Args:
+        user_id (uuid.UUID): The unique identifier for the curious user
         target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
@@ -136,6 +141,7 @@ async def _schedule_retry(
             task_ingest_user_data.kicker()
             .with_labels(delay=delay)
             .kiq(
+                user_id=user_id,
                 target_subject_id=target_subject_id,
                 applet_id=applet_id,
                 submit_id=submit_id,
@@ -151,6 +157,7 @@ async def _schedule_retry(
 
 @broker.task
 async def task_ingest_user_data(
+    user_id: uuid.UUID,
     target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
@@ -166,6 +173,7 @@ async def task_ingest_user_data(
     If the transfer is not complete, it reschedules itself with exponential backoff.
 
     Args:
+        user_id (uuid.UUID): The unique identifier for the curious user
         target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
@@ -210,6 +218,7 @@ async def task_ingest_user_data(
 
                     storage_path = await _process_data_transfer(
                         session=session,
+                        user_id=user_id,
                         target_subject_id=target_subject_id,
                         applet_id=applet_id,
                         submit_id=submit_id,
@@ -221,6 +230,7 @@ async def task_ingest_user_data(
                         logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
                         # Error retry count is reset to default 0 if we are not in an error state.
                         to_reschedule = await _schedule_retry(
+                            user_id=user_id,
                             target_subject_id=target_subject_id,
                             applet_id=applet_id,
                             submit_id=submit_id,
@@ -257,7 +267,14 @@ async def task_ingest_user_data(
                         )
                 logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry number {failed_attempts}")
                 await _schedule_retry(
-                    target_subject_id, applet_id, submit_id, activity_id, start_date, retry_count, failed_attempts
+                    user_id,
+                    target_subject_id,
+                    applet_id,
+                    submit_id,
+                    activity_id,
+                    start_date,
+                    retry_count,
+                    failed_attempts,
                 )
 
             return storage_path

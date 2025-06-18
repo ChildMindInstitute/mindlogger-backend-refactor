@@ -4580,6 +4580,7 @@ class TestAnswerActivityItems(BaseTest):
                 activity_id=uuid.UUID(activity_id),
                 submit_id=tom_answer.submit_id,
                 date=tom_answer.created_at,
+                user_id=tom.id,
             )
         )
 

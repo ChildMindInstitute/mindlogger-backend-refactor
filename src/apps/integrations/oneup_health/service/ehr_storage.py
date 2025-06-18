@@ -35,8 +35,11 @@ class EHRStorage:
         # Return everything up to and including the unique substring
         return key[: index + len(base_path)]
 
+    def _get_base_path(self, data: EHRData) -> str:
+        return f"{data.user_id}/{data.activity_id}/{data.submit_id}"
+
     async def upload_resources(self, data: EHRData) -> tuple[str, str]:
-        base_path = f"{data.activity_id}/{data.submit_id}"
+        base_path = self._get_base_path(data)
         provider_name = (
             slugify(data.healthcare_provider_name, separator="-")
             if data.healthcare_provider_name
@@ -57,7 +60,7 @@ class EHRStorage:
         return self._get_storage_path(base_path, key), filename
 
     async def upload_ehr_zip(self, resources_files: list[str], data: EHRData) -> str:
-        base_path = f"{data.activity_id}/{data.submit_id}"
+        base_path = self._get_base_path(data)
         filename = EHRStorage.ehr_zip_filename(data)
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
 
@@ -83,7 +86,7 @@ class EHRStorage:
             zip_buffer.close()
 
     def download_ehr_zip(self, data: EHRData, file_buffer: BinaryIO) -> str:
-        base_path = f"{data.activity_id}/{data.submit_id}"
+        base_path = self._get_base_path(data)
         filename = EHRStorage.ehr_zip_filename(data)
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
 
