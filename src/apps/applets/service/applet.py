@@ -456,8 +456,28 @@ class AppletService:
             new_activity_items_ids = set(item.id for item in new_activity_items)
             if new_activity_items_ids != old_activity_items_ids:
                 return VERSION_DIFFERENCE_ITEM
-            else:
-                return VERSION_DIFFERENCE_MINOR
+
+            # Only check if there is at least one Unity activity in the new payload
+            has_unity = any(getattr(item, "response_type", None) == "unity" for item in new_activity_items)
+            if has_unity:
+                # Fetch old Unity items from DB
+                old_items = await ActivityItemsCRUD(self.session).get_by_activity_ids(list(old_activity_ids))
+                old_unity_items = {
+                    item.id: item for item in old_items if getattr(item, "response_type", None) == "unity"
+                }
+                # Get new Unity items from update payload
+                new_unity_items = {
+                    item.id: item for item in new_activity_items if getattr(item, "response_type", None) == "unity"
+                }
+                # Compare configs for matching Unity items
+                for item_id, old_item in old_unity_items.items():
+                    new_item = new_unity_items.get(item_id)
+                    if new_item is not None:
+                        # Compare config dicts (assuming both are dict-like)
+                        if getattr(old_item, "config", None) != getattr(new_item, "config", None):
+                            return VERSION_DIFFERENCE_ITEM
+
+            return VERSION_DIFFERENCE_MINOR
 
     async def get_list_by_single_language(
         self, language: str, query_params: QueryParams
