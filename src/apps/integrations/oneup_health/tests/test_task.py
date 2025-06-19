@@ -6,8 +6,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest_httpx import HTTPXMock
 
-from broker import broker
-
 from apps.answers.crud.answers import AnswersEHRCRUD
 from apps.answers.domain import EHRIngestionStatus
 from apps.applets.domain.applet_full import AppletFull
