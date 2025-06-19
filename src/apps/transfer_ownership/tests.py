@@ -11,6 +11,7 @@ from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service import AppletService
 from apps.authentication.errors import PermissionsError
+from apps.authentication.errors import AccessDenied
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
@@ -52,6 +53,13 @@ async def applet_one_with_report_conf(
 @pytest.fixture
 async def applet_one_lucy_respondent(session: AsyncSession, applet_one: AppletFull, tom, lucy) -> AppletFull:
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.RESPONDENT)
+    return applet_one
+
+
+@pytest.fixture
+async def applet_one_bob_coordinator_reviewer(session: AsyncSession, applet_one: AppletFull, tom, bob) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(bob.id, Role.COORDINATOR)
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(bob.id, Role.REVIEWER)
     return applet_one
 
 
@@ -536,3 +544,68 @@ class TestTransfer(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == PermissionsError.message
+
+    async def test_manager_can_not_transfer_ownership(
+        self, client: TestClient, applet_one: AppletFull, lucy: User, tom: User, mocker: MockerFixture
+    ):
+        client.login(lucy)
+        data = {"email": tom.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one.id), data=data)
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        assert resp.json()["result"][0]["message"] == AccessDenied.message
+
+    async def test_respondent_can_not_transfer_ownershipto(
+        self, client: TestClient, applet_one_lucy_respondent: AppletFull, lucy: User, tom: User, mocker: MockerFixture
+    ):
+        client.login(lucy)
+        data = {"email": tom.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one_lucy_respondent.id), data=data)
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        assert resp.json()["result"][0]["message"] == AccessDenied.message
+
+    async def test_reviewer_can_not_transfer_ownership(
+        self,
+        client: TestClient,
+        applet_one_bob_coordinator_reviewer: AppletFull,
+        lucy: User,
+        tom: User,
+        mocker: MockerFixture,
+    ):
+        client.login(lucy)
+        data = {"email": tom.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one_bob_coordinator_reviewer.id), data=data)
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        assert resp.json()["result"][0]["message"] == AccessDenied.message
+
+    async def test_editor_can_not_transfer_ownership(
+        self, client: TestClient, applet_one_lucy_editor: AppletFull, lucy: User, tom: User, mocker: MockerFixture
+    ):
+        client.login(lucy)
+        data = {"email": tom.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one_lucy_editor.id), data=data)
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        assert resp.json()["result"][0]["message"] == AccessDenied.message
+
+    async def test_coordinator_can_not_transfer_ownership(
+        self,
+        client: TestClient,
+        applet_one_bob_coordinator_reviewer: AppletFull,
+        lucy: User,
+        tom: User,
+        mocker: MockerFixture,
+    ):
+        client.login(lucy)
+        data = {"email": tom.email_encrypted}
+        key = uuid.uuid4()
+        mocker.patch("uuid.uuid4", return_value=key)
+        resp = await client.post(self.transfer_url.format(applet_id=applet_one_bob_coordinator_reviewer.id), data=data)
+        assert resp.status_code == http.HTTPStatus.FORBIDDEN
+        assert resp.json()["result"][0]["message"] == AccessDenied.message
