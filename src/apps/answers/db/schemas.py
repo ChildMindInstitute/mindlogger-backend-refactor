@@ -107,3 +107,4 @@ class AnswerEHRSchema(Base):
     activity_id = Column(UUID(as_uuid=True), index=True)
     ehr_storage_uri = Column(Text())
     ehr_ingestion_status = Column(Text())
+    meta = Column(JSONB())

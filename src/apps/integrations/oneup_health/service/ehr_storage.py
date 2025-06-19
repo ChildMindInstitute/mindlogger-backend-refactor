@@ -27,6 +27,19 @@ class EHRStorage:
         )
         return filename
 
+    @staticmethod
+    def docs_zip_filename(data: EHRData) -> str:
+        provider_name = (
+            slugify(data.healthcare_provider_name, separator="-")
+            if data.healthcare_provider_name
+            else data.healthcare_provider_id
+        )
+        filename = (
+            f"{data.target_subject_id}_{data.activity_id}_"
+            f"{data.submit_id}_{data.date.strftime('%Y%m%d')}_{provider_name}_DOCS.zip"
+        )
+        return filename
+
     def _get_storage_path(self, base_path: str, key: str) -> str:
         index = key.find(base_path)
         if index == -1:  # substring not found
@@ -59,7 +72,18 @@ class EHRStorage:
 
         return self._get_storage_path(base_path, key), filename
 
-    async def upload_ehr_zip(self, resources_files: list[str], data: EHRData) -> str:
+    async def upload_file(self, data: EHRData, filename: str, content: bytes) -> None:
+        base_path = self._get_base_path(data)
+        key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
+
+        file_buffer = io.BytesIO(content)
+        file_buffer.seek(0)
+
+        await self._cdn_client.upload(key, file_buffer)
+
+        file_buffer.close()
+
+    async def upload_ehr_zip(self, resources_files: list[str], data: EHRData) -> tuple[str, int]:
         base_path = self._get_base_path(data)
         filename = EHRStorage.ehr_zip_filename(data)
         key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
@@ -80,8 +104,9 @@ class EHRStorage:
                     file_buffer.close()
 
             zip_buffer.seek(0)
+            file_size = zip_buffer.getbuffer().nbytes
             await self._cdn_client.upload(key, zip_buffer)
-            return key
+            return filename, file_size
         finally:
             zip_buffer.close()
 
