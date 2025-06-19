@@ -392,6 +392,7 @@ class TestTaskIngestUserData:
         retry_count = 2
         failed_attempts = 0
         target_subject_id = uuid.uuid4()
+        user_id = uuid.uuid4()
 
         with patch("apps.integrations.oneup_health.service.task.datetime") as mock_datetime:
             mock_retry_time = datetime(2025, 6, 16, 12, 0, 10)  # Fixed time for testing
@@ -413,6 +414,7 @@ class TestTaskIngestUserData:
                     return_value=10,
                 ) as mock_backoff:
                     await _schedule_retry(
+                        user_id=user_id,
                         target_subject_id=target_subject_id,
                         applet_id=applet_one.id,
                         submit_id=submit_id,
@@ -427,6 +429,7 @@ class TestTaskIngestUserData:
 
                     kicker.with_labels.assert_called_once_with(delay=60, retry_time=retry_time.isoformat())
                     kiq.assert_awaited_once_with(
+                        user_id=user_id,
                         target_subject_id=target_subject_id,
                         applet_id=applet_one.id,
                         submit_id=submit_id,
@@ -449,6 +452,7 @@ class TestTaskIngestUserData:
         settings.oneup_health.max_error_retries = 4
 
         target_subject_id = uuid.uuid4()
+        user_id = uuid.uuid4()
 
         # Mock the exponential backoff to simplify and return a constant value
         # so that retries are scheduled consistently
@@ -477,6 +481,7 @@ class TestTaskIngestUserData:
                             ) as mock_retry:
                                 # Trigger the initial task
                                 task = await task_ingest_user_data(
+                                    user_id=user_id,
                                     target_subject_id=target_subject_id,
                                     applet_id=applet_one.id,
                                     submit_id=submit_id,
