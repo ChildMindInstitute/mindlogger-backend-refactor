@@ -11,7 +11,7 @@ from apps.integrations.oneup_health.errors import (
     OneUpHealthAPIForbiddenError,
     OneUpHealthServiceUnavailableError,
     OneUpHealthTokenExpiredError,
-    OneUpHealthUserAlreadyExists,
+    OneUpHealthUserAlreadyExistsError,
 )
 from apps.integrations.oneup_health.service.domain import EHRData
 from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
@@ -70,7 +70,7 @@ class OneupHealthAPIClient:
         and a 201 status code if the request is successful.
 
         1UpHealth API returns the following error codes that are currently being mapped:
-        - 400: 1UpHealth request failed. This is due to the request body being invalid.
+        - 400: 1UpHealth request failed. Reasons are varied. Currently, we're only handling "this user already exists".
         - 401: 1UpHealth token expired
         - 403: Forbidden access to 1UpHealth API. This is due to the user being outside the United States.
         - 503, 504: 1UpHealth service unavailable
@@ -81,11 +81,25 @@ class OneupHealthAPIClient:
 
         Raises:
             OneUpHealthAPIError: If the API returns any other error status code.
+            OneUpHealthUserAlreadyExistsError: If the API returns a 400 status code with a
+                "this user already exists" error.
             OneUpHealthTokenExpiredError: If the API returns a 401 status code.
             OneUpHealthAPIForbiddenError: If the API returns a 403 status code.
             OneUpHealthServiceUnavailableError: If the API returns a 503 or 504 status code.
         """
         if resp.status_code not in (200, 201):
+            if resp.status_code == 400 and (resp.json() and resp.json().get("error") == "this user already exists"):
+                # The API returns a 400 status code with a "this user already exists" error if the user already exists
+                logger.error(
+                    f"1UpHealth user already exists - Path: {url_path} - Status: {resp.status_code}",
+                    extra={
+                        "error_type": "oneup_health_user_already_exists",
+                        "status_code": resp.status_code,
+                        "url_path": url_path,
+                    },
+                )
+                raise OneUpHealthUserAlreadyExistsError()
+
             if resp.status_code == 401:
                 # The API returns a 401 status code if the token has expired
                 logger.error(
@@ -306,7 +320,9 @@ class OneupHealthService:
 
         return oneup_user_id
 
-    async def create_user(self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None) -> dict[str, str]:
+    async def create_or_retrieve_user(
+        self, submit_id: uuid.UUID, activity_id: uuid.UUID | None = None
+    ) -> dict[str, str]:
         """
         Create a new user in the OneUp Health platform or retrieve an existing user.
 
@@ -324,7 +340,7 @@ class OneupHealthService:
             app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
             result = await self._client.post("/user-management/v1/user", params={"app_user_id": app_user_id})
             return {"oneup_user_id": result["oneup_user_id"], "code": result["code"]}
-        except OneUpHealthUserAlreadyExists:
+        except OneUpHealthUserAlreadyExistsError:
             oneup_user_id = await self.get_oneup_user_id(submit_id=submit_id, activity_id=activity_id)
             if oneup_user_id is not None:
                 return {"oneup_user_id": str(oneup_user_id)}
@@ -342,7 +358,7 @@ class OneupHealthService:
             code (str, optional): An existing authentication code to use.
 
         Returns:
-            dict: A dictionary containing the access_token and refresh_token.
+            dict: A dictionary containing the access_token, the refresh_token, and the app_user_id.
 
         Raises:
             OneUpHealthAPIError: If the API request fails.
@@ -355,20 +371,15 @@ class OneupHealthService:
         assert code
         return {**await self._get_token(code), "app_user_id": app_user_id}
 
-    async def refresh_token(
-        self, refresh_token: str, submit_id: uuid.UUID | None = None, activity_id: uuid.UUID | None = None
-    ) -> dict[str, str]:
+    async def refresh_token(self, refresh_token: str) -> dict[str, str]:
         """
         Refresh an access token using a refresh token.
 
         Args:
             refresh_token (str): The refresh token to use for getting a new access token.
-            submit_id (uuid.UUID, optional): The unique identifier for the submission.
-            activity_id (uuid.UUID, optional): The unique identifier for the activity.
 
         Returns:
-            dict: A dictionary containing the new access_token, refresh_token, and
-            app_user_id if submit_id and activity_id are provided.
+            dict: A dictionary containing the new access_token and refresh_token
 
         Raises:
             OneUpHealthAPIError: If the API request fails.
@@ -380,16 +391,11 @@ class OneupHealthService:
         access_token = result.get("access_token")
         new_refresh_token = result.get("refresh_token")
 
-        response = dict(access_token=access_token, refresh_token=new_refresh_token)
+        return dict(access_token=access_token, refresh_token=new_refresh_token)
 
-        # Generate app_user_id if submit_id and activity_id are provided
-        if submit_id is not None and activity_id is not None:
-            app_user_id = get_unique_short_id(submit_id=submit_id, activity_id=activity_id)
-            response["app_user_id"] = app_user_id
-
-        return response
-
-    async def check_audit_events(self, oneup_user_id: int, start_date: datetime | None) -> dict[str, int]:
+    async def check_audit_events(
+        self, oneup_user_id: int, start_date: datetime | None
+    ) -> tuple[dict[str, int], list[dict[str, str]]]:
         """
         Check if a data transfer h
 
@@ -401,9 +407,10 @@ class OneupHealthService:
             int: The number of initiated transfers found, or 0 if none or if an error occurred.
         """
         counters = {"initiated": 0, "completed": 0, "timeout": 0}
+        healthcare_providers = []
 
         if oneup_user_id is None:
-            return counters
+            return counters, healthcare_providers
 
         params = {
             "subtype": "data-transfer-initiated,member-data-ingestion-completed,member-data-ingestion-timeout",
@@ -421,6 +428,13 @@ class OneupHealthService:
             )
 
             for entry in result.get("entry", []):
+                # Get the healthcare providers data
+                agents = entry.get("resource", {}).get("agent", [])
+                for agent in agents:
+                    coding = agent.get("type", {}).get("coding", [])
+                    if len(coding) > 0 and coding[0].get("code") == "CST":
+                        healthcare_providers.append(dict(name=agent.get("name"), id=agent.get("altId")))
+                # Count the audit events
                 subtypes = entry.get("resource", {}).get("subtype", [])
                 for subtype in subtypes:
                     if subtype.get("code") == "data-transfer-initiated":
@@ -436,7 +450,7 @@ class OneupHealthService:
         except OneUpHealthAPIError as ex:
             logger.error(ex.message)
 
-        return counters
+        return counters, healthcare_providers
 
     async def _get_resources(self, entry_url: str, oneup_user_id: int):
         """
@@ -467,7 +481,14 @@ class OneupHealthService:
         return resources
 
     async def retrieve_patient_data(
-        self, session, applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID, oneup_user_id: int
+        self,
+        session,
+        target_subject_id: uuid.UUID,
+        applet_id: uuid.UUID,
+        submit_id: uuid.UUID,
+        activity_id: uuid.UUID,
+        oneup_user_id: int,
+        healthcare_providers: list[dict[str, str]],
     ) -> str | None:
         """
         Retrieve and store patient data for a subject.
@@ -476,10 +497,12 @@ class OneupHealthService:
 
         Args:
             session: The database session to use.
+            target_subject_id (uuid.UUID): The unique identifier for the subject.
             applet_id (uuid.UUID): The unique identifier for the applet.
             submit_id (uuid.UUID): The unique identifier for the submission.
             activity_id (uuid.UUID): The unique identifier for the activity.
             oneup_user_id (int): The OneUp Health user ID
+            healthcare_providers (list[dict[str, str]]): A list of healthcare provider dictionaries.
 
         Returns:
             bool: True if data was successfully retrieved and stored, False otherwise.
@@ -495,23 +518,52 @@ class OneupHealthService:
 
         storage_path = None
         entries = result.get("entry", [])
+        ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
+        resource_files = []
         for entry in entries:
             resource_url = entry.get("fullUrl")
             if resource_url:
                 logger.info(f"Retrieving resources from {resource_url}")
                 resources = await self._get_resources(f"{resource_url}/$everything?_count=100", oneup_user_id)
                 if len(resources) > 0:
+                    # Get the healthcare provider name
                     healthcare_provider_id = entry.get("resource", {}).get("id")
-                    ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
+                    meta_source = entry.get("resource", {}).get("meta", {}).get("source")
+                    healthcare_provider_name = next(
+                        (
+                            healthcare_provider["name"]
+                            for healthcare_provider in healthcare_providers
+                            if f"1up-external-system:{healthcare_provider['id']}" == meta_source
+                        ),
+                        None,
+                    )
+
                     data = EHRData(
                         resources=resources,
                         healthcare_provider_id=healthcare_provider_id,
+                        healthcare_provider_name=healthcare_provider_name,
                         date=datetime.now(timezone.utc),
                         submit_id=submit_id,
                         activity_id=activity_id,
+                        target_subject_id=target_subject_id,
                     )
 
-                    storage_path = await ehr_storage.upload_resources(data)
-                    logger.info(f"Stored EHR data healthcare provider {healthcare_provider_id} in {storage_path}")
+                    storage_path, filename = await ehr_storage.upload_resources(data)
+                    resource_files.append(f"{storage_path}/{filename}")
+                    logger.info(
+                        f"Stored EHR data for healthcare provider "
+                        f"{healthcare_provider_name} in {storage_path}/{filename}"
+                    )
+
+        # Upload EHR zip with all resources
+        data = EHRData(
+            date=datetime.now(timezone.utc),
+            submit_id=submit_id,
+            activity_id=activity_id,
+            target_subject_id=target_subject_id,
+        )
+        zip_file_path = await ehr_storage.upload_ehr_zip(resource_files, data)
+
+        logger.info(f"Stored EHR data in {zip_file_path}")
 
         return storage_path

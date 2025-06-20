@@ -4,7 +4,7 @@ from fastapi import Body, Depends
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.authentication.deps import get_current_user
-from apps.integrations.oneup_health.domain import OneupHealthToken, RefreshTokenRequest
+from apps.integrations.oneup_health.domain import OneupHealthRefreshToken, OneupHealthToken, RefreshTokenRequest
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.shared.domain import InternalModel, Response
@@ -31,7 +31,7 @@ async def retrieve_token(
         code = None
         oneup_user_id = subject.meta.get("oneup_user_id") if subject.meta else None
         if oneup_user_id is None:
-            response = await oneup_health_service.create_user(subject.id)
+            response = await oneup_health_service.create_or_retrieve_user(subject.id)
             code = response.get("code")
             oneup_user_id = int(response["oneup_user_id"])
             await subjects_service.update(subject.id, meta={"oneup_user_id": oneup_user_id})
@@ -57,7 +57,7 @@ async def retrieve_token_by_submit_id_and_activity_id(
 
         oneup_health_service = OneupHealthService()
 
-        response = await oneup_health_service.create_user(submit_id, activity_id)
+        response = await oneup_health_service.create_or_retrieve_user(submit_id, activity_id)
         oneup_user_id = int(response["oneup_user_id"])
         code = response.get("code")
 
@@ -68,22 +68,12 @@ async def retrieve_token_by_submit_id_and_activity_id(
 
 async def refresh_token(
     request: RefreshTokenRequest, user: User = Depends(get_current_user), session=Depends(get_session)
-) -> Response[OneupHealthToken]:
+) -> Response[OneupHealthRefreshToken]:
     oneup_health_service = OneupHealthService()
 
-    new_tokens = await oneup_health_service.refresh_token(
-        request.refresh_token, submit_id=request.submit_id, activity_id=request.activity_id
-    )
+    new_tokens = await oneup_health_service.refresh_token(request.refresh_token)
 
-    app_user_id = new_tokens.get("app_user_id", "")
-
-    result_token = OneupHealthToken(
-        oneup_user_id=request.oneup_user_id,
-        app_user_id=app_user_id,
-        **{k: v for k, v in new_tokens.items() if k != "app_user_id"},
-    )
-
-    return Response(result=result_token)
+    return Response(result=OneupHealthRefreshToken(**new_tokens))
 
 
 class EHRTriggerInput(InternalModel):
@@ -92,8 +82,17 @@ class EHRTriggerInput(InternalModel):
     submit_id: uuid.UUID
 
 
-async def trigger_data_fetch(trigger_input: EHRTriggerInput = Body(...)):
+async def trigger_data_fetch(
+    user: User = Depends(get_current_user),
+    trigger_input: EHRTriggerInput = Body(...),
+    session=Depends(get_session),
+):
+    subject = await SubjectsService(session, user.id).get_by_user_and_applet(user.id, trigger_input.applet_id)
+    if subject is None:
+        raise NotFoundError("Subject does not exist")
+
     await task_ingest_user_data.kicker().kiq(
+        target_subject_id=subject.id,
         applet_id=trigger_input.applet_id,
         submit_id=trigger_input.submit_id,
         activity_id=trigger_input.activity_id,

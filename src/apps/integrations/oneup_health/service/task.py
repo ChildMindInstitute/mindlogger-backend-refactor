@@ -48,6 +48,7 @@ def _exponential_backoff(retry_count) -> int:
 
 async def _process_data_transfer(
     session,
+    target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -59,6 +60,7 @@ async def _process_data_transfer(
 
     Args:
         session: Database session
+        target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
         activity_id (uuid.UUID): The unique identifier for the activity
@@ -76,7 +78,7 @@ async def _process_data_transfer(
     # by comparing the number of ingestion starts (`data-transfer-initiated`) to the number
     # of ingestion end events (`member-data-ingestion-completed` and `member-data-ingestion-timeout`
     # https://docs.1up.health/help-center/Content/en-US/connect-patient/patient-connect-audit-events.html#audit-event-types-and-subtypes
-    counters = await oneup_health_service.check_audit_events(oneup_user_id, start_date)
+    counters, healthcare_providers = await oneup_health_service.check_audit_events(oneup_user_id, start_date)
 
     initiated_count = counters["initiated"]
     if initiated_count > 0:
@@ -89,17 +91,20 @@ async def _process_data_transfer(
             if timeout_count > 0:
                 logger.warning(f"{timeout_count} Transfers timed out for OneUp Health user ID {oneup_user_id}")
             return await oneup_health_service.retrieve_patient_data(
+                target_subject_id=target_subject_id,
                 session=session,
                 applet_id=applet_id,
                 submit_id=submit_id,
                 activity_id=activity_id,
                 oneup_user_id=oneup_user_id,
+                healthcare_providers=healthcare_providers,
             )
 
     return None
 
 
 async def _schedule_retry(
+    target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -111,6 +116,7 @@ async def _schedule_retry(
     Schedule a retry of the data ingestion task with exponential backoff.
 
     Args:
+        target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
         activity_id (uuid.UUID): The unique identifier for the activity
@@ -120,7 +126,8 @@ async def _schedule_retry(
     """
     if failed_attempts > settings.oneup_health.max_error_retries:
         logger.error(f"Max error retries reached for {applet_id}.")
-        return True
+        return False
+
     delay = _exponential_backoff(retry_count)
     if delay > 0:
         retry_count += 1
@@ -129,6 +136,7 @@ async def _schedule_retry(
             task_ingest_user_data.kicker()
             .with_labels(delay=delay)
             .kiq(
+                target_subject_id=target_subject_id,
                 applet_id=applet_id,
                 submit_id=submit_id,
                 activity_id=activity_id,
@@ -143,6 +151,7 @@ async def _schedule_retry(
 
 @broker.task
 async def task_ingest_user_data(
+    target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
     activity_id: uuid.UUID,
@@ -157,6 +166,7 @@ async def task_ingest_user_data(
     If the transfer is not complete, it reschedules itself with exponential backoff.
 
     Args:
+        target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
         activity_id (uuid.UUID): The unique identifier for the activity
@@ -200,6 +210,7 @@ async def task_ingest_user_data(
 
                     storage_path = await _process_data_transfer(
                         session=session,
+                        target_subject_id=target_subject_id,
                         applet_id=applet_id,
                         submit_id=submit_id,
                         activity_id=activity_id,
@@ -210,6 +221,7 @@ async def task_ingest_user_data(
                         logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
                         # Error retry count is reset to default 0 if we are not in an error state.
                         to_reschedule = await _schedule_retry(
+                            target_subject_id=target_subject_id,
                             applet_id=applet_id,
                             submit_id=submit_id,
                             activity_id=activity_id,
@@ -244,10 +256,8 @@ async def task_ingest_user_data(
                             submit_id=submit_id, activity_id=activity_id, status=EHRIngestionStatus.FAILED
                         )
                 logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry number {failed_attempts}")
-                await _schedule_retry(applet_id, submit_id, activity_id, start_date, retry_count, failed_attempts)
+                await _schedule_retry(
+                    target_subject_id, applet_id, submit_id, activity_id, start_date, retry_count, failed_attempts
+                )
 
             return storage_path
-
-
-async def trigger_erh_ingestion(applet_id: uuid.UUID, submit_id: uuid.UUID, activity_id: uuid.UUID) -> None:
-    await task_ingest_user_data.kicker().kiq(applet_id=applet_id, submit_id=submit_id, activity_id=activity_id)
