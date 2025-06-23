@@ -1,0 +1,1 @@
+WARNING  root:oneup_health.py:180 Unsuccessful requesting to OneUp health API /user-management/v1/user/auth-code - this user does not exist
