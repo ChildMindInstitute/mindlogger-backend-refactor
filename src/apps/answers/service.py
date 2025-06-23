@@ -2053,7 +2053,10 @@ class AnswerService:
 
         filters = query_params.filters
         if allowed_subjects is not None:
-            filters["target_subject_ids"] = allowed_subjects
+            if target_subject_ids := filters.get("target_subject_ids"):
+                filters["target_subject_ids"] = list(set(allowed_subjects).intersection(set(target_subject_ids)))
+            else:
+                filters["target_subject_ids"] = allowed_subjects
 
         ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id, **filters)
 
