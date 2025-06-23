@@ -118,7 +118,9 @@ services:
     image: minio/mc
     container_name: mindlogger_minio_mc
     environment:
-      CDN__BUCKET: "${CDN__BUCKET:-media}"
+      CDN__BUCKET: "${CDN__BUCKET:-cmi-media-local}"
+      CDN__BUCKET_ANSWER: "${CDN__BUCKET_ANSWER:-cmi-answer-local}"
+      CDN__BUCKET_OPERATIONS: "${CDN__BUCKET_OPERATIONS:-cmi-ops-local}"
     depends_on:
       - minio
     volumes:
