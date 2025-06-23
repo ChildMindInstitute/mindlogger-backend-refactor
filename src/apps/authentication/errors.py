@@ -33,7 +33,3 @@ class EmailDoesNotExist(AccessDeniedError):
 class InvalidCredentials(AccessDeniedError):
     message = _("Incorrect email or password")
     status_code = status.HTTP_401_UNAUTHORIZED
-
-class AccessDenied(AccessDeniedError):
-    message = _("Access denied to create transfer ownership request for the applet.")
-    status_code = status.HTTP_403_FORBIDDEN
