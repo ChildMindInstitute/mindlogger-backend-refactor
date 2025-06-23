@@ -136,7 +136,13 @@ async def _schedule_retry(
         logger.error(f"Max error retries reached for {applet_id}.")
         return False
 
-    delay = _exponential_backoff(retry_count)
+    # In case of error, the retry mechanism will use progressive (linear) delay
+    # instead of exponential backoff to avoid excessive wait times
+    delay = (
+        _exponential_backoff(retry_count)
+        if failed_attempts == 0
+        else failed_attempts * settings.oneup_health.base_backoff_delay
+    )
     if delay > 0:
         retry_count += 1
         retry_time = datetime.now(tz=timezone.utc) + timedelta(seconds=delay)
