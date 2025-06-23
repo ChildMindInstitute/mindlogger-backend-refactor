@@ -11,7 +11,6 @@ from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service import AppletService
 from apps.authentication.errors import PermissionsError
-from apps.authentication.errors import AccessDenied
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
@@ -22,6 +21,7 @@ from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.crud import TransferCRUD
 from apps.transfer_ownership.errors import TransferEmailError
 from apps.users.domain import User
+from apps.workspaces.errors import TransferOwnershipAccessDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
 
@@ -546,26 +546,30 @@ class TestTransfer(BaseTest):
         assert result[0]["message"] == PermissionsError.message
 
     async def test_manager_can_not_transfer_ownership(
-        self, client: TestClient, applet_one: AppletFull, lucy: User, tom: User, mocker: MockerFixture
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        lucy: User,
+        tom: User,
     ):
         client.login(lucy)
         data = {"email": tom.email_encrypted}
-        key = uuid.uuid4()
-        mocker.patch("uuid.uuid4", return_value=key)
         resp = await client.post(self.transfer_url.format(applet_id=applet_one.id), data=data)
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
-        assert resp.json()["result"][0]["message"] == AccessDenied.message
+        assert resp.json()["result"][0]["message"] == TransferOwnershipAccessDenied.message
 
     async def test_respondent_can_not_transfer_ownershipto(
-        self, client: TestClient, applet_one_lucy_respondent: AppletFull, lucy: User, tom: User, mocker: MockerFixture
+        self,
+        client: TestClient,
+        applet_one_lucy_respondent: AppletFull,
+        lucy: User,
+        tom: User,
     ):
         client.login(lucy)
         data = {"email": tom.email_encrypted}
-        key = uuid.uuid4()
-        mocker.patch("uuid.uuid4", return_value=key)
         resp = await client.post(self.transfer_url.format(applet_id=applet_one_lucy_respondent.id), data=data)
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
-        assert resp.json()["result"][0]["message"] == AccessDenied.message
+        assert resp.json()["result"][0]["message"] == TransferOwnershipAccessDenied.message
 
     async def test_reviewer_can_not_transfer_ownership(
         self,
@@ -573,26 +577,25 @@ class TestTransfer(BaseTest):
         applet_one_bob_coordinator_reviewer: AppletFull,
         lucy: User,
         tom: User,
-        mocker: MockerFixture,
     ):
         client.login(lucy)
         data = {"email": tom.email_encrypted}
-        key = uuid.uuid4()
-        mocker.patch("uuid.uuid4", return_value=key)
         resp = await client.post(self.transfer_url.format(applet_id=applet_one_bob_coordinator_reviewer.id), data=data)
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
-        assert resp.json()["result"][0]["message"] == AccessDenied.message
+        assert resp.json()["result"][0]["message"] == TransferOwnershipAccessDenied.message
 
     async def test_editor_can_not_transfer_ownership(
-        self, client: TestClient, applet_one_lucy_editor: AppletFull, lucy: User, tom: User, mocker: MockerFixture
+        self,
+        client: TestClient,
+        applet_one_lucy_editor: AppletFull,
+        lucy: User,
+        tom: User,
     ):
         client.login(lucy)
         data = {"email": tom.email_encrypted}
-        key = uuid.uuid4()
-        mocker.patch("uuid.uuid4", return_value=key)
         resp = await client.post(self.transfer_url.format(applet_id=applet_one_lucy_editor.id), data=data)
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
-        assert resp.json()["result"][0]["message"] == AccessDenied.message
+        assert resp.json()["result"][0]["message"] == TransferOwnershipAccessDenied.message
 
     async def test_coordinator_can_not_transfer_ownership(
         self,
@@ -600,12 +603,9 @@ class TestTransfer(BaseTest):
         applet_one_bob_coordinator_reviewer: AppletFull,
         lucy: User,
         tom: User,
-        mocker: MockerFixture,
     ):
         client.login(lucy)
         data = {"email": tom.email_encrypted}
-        key = uuid.uuid4()
-        mocker.patch("uuid.uuid4", return_value=key)
         resp = await client.post(self.transfer_url.format(applet_id=applet_one_bob_coordinator_reviewer.id), data=data)
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
-        assert resp.json()["result"][0]["message"] == AccessDenied.message
+        assert resp.json()["result"][0]["message"] == TransferOwnershipAccessDenied.message
