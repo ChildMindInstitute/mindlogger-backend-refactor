@@ -85,10 +85,9 @@ class EHRStorage:
         finally:
             zip_buffer.close()
 
-    def download_ehr_zip(self, data: EHRData, file_buffer: BinaryIO) -> str:
-        base_path = self._get_base_path(data)
+    def download_ehr_zip(self, storage_path: str, data: EHRData, file_buffer: BinaryIO) -> str:
         filename = EHRStorage.ehr_zip_filename(data)
-        key = self._cdn_client.generate_key(FileScopeEnum.EHR, base_path, filename)
+        key = f"{storage_path}/{filename}"
 
         self._cdn_client.download(key, file_buffer)
 
