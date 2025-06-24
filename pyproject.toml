@@ -1,3 +1,45 @@
+[project]
+name = ""
+version = "0.0.1"
+requires-python = "~=3.13"
+dependencies = [
+    "aio-pika==9.5.*",
+    "aiofiles==24.1.0",
+    "aiohttp==3.12.7",
+    "alembic==1.16.1",
+    "asgi-correlation-id==4.3.4",
+    "asyncpg==0.30.0",
+    "azure-storage-blob==12.25.*",
+    "bcrypt==4.3.0",
+    "boto3==1.38.28",
+    "bytecode==0.16.*",
+    "ddtrace==2.21.*",
+    "fastapi==0.115.*",
+    "fastapi-mail==1.2.9",
+    "httpx==0.28.*",
+    "jinja2==3.1.*",
+    "more-itertools==10.7.0",
+    "nh3==0.2.*",
+    "pydantic[email]==1.10.18",
+    "pyjwt==2.10.1",
+    "pymongo==4.13.0",
+    "pyOpenSSL==25.1.0",
+    "python-multipart==0.0.20",
+    "python-slugify==8.0.4",
+    "redis==5.2.*",
+    "sentry-sdk~=2.13",
+    "sqlalchemy[asyncio]==1.4.53",
+    "sqlalchemy-utils==0.41.2",
+    "structlog==25.4.0",
+    "taskiq[reload]==0.11.*",
+    "taskiq-aio-pika==0.4.2",
+    "taskiq-fastapi==0.3.*",
+    "taskiq-redis==1.0.8",
+    "typer==0.16.0",
+    "uvicorn[standard]==0.34.*",
+    "firebase-admin==6.9.*",
+]
+
 [tool.ruff]
 exclude = [
     ".eggs",
@@ -25,9 +67,47 @@ indent-width = 4
 target-version = "py310"
 src = ["src"]
 
+[dependency-groups]
+dev = [
+    "allure-pytest==2.14.*",
+    "cachetools==6.0.0",
+    "gevent==25.5.1",
+    "greenlet==3.2.2",
+    "ipdb==0.13.13",
+    "mypy==1.16.0",
+    "nest-asyncio==1.6.0",
+    "polyfactory==2.21.0",
+    "pre-commit==4.2.*",
+    "pudb==2025.1",
+    "pyld==2.0.4",
+    "pytest==8.4.0",
+    "pytest-asyncio==1.0.0",
+    "pytest-cov==6.1.1",
+    "pytest-env==1.1.5",
+    "pytest-httpx",
+    "pytest-lazy-fixtures==1.*",
+    "pytest-mock==3.14.1",
+    "reproschema==0.6.2",
+    "ruff==0.11.*",
+    "types-aiofiles==24.1.0.*",
+    "types-cachetools==6.0.0.20250525",
+    "types-python-dateutil==2.9.0.*",
+    "types-pytz==2025.2.0.*",
+    "types-pyyaml==6.0.12.20250516",
+    "types-requests==2.32.0.*",
+    "typing-extensions==4.12.2",
+]
+
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "C901", "E5", "I"]
 ignore = []
+
+[tool.uv]
+package = false
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
 
 [tool.ruff.format]
 skip-magic-trailing-comma = false
