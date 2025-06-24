@@ -969,7 +969,9 @@ async def applet_ehr_answers_export(
                 )
                 ehr_zip_buffer = io.BytesIO()
                 try:
-                    ehr_zip_filename = ehr_storage.download_ehr_zip(data, ehr_zip_buffer)
+                    ehr_zip_filename = ehr_storage.download_ehr_zip(
+                        storage_path=ehr_answer.ehr_storage_uri, data=data, file_buffer=ehr_zip_buffer
+                    )
 
                     zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
                 finally:
