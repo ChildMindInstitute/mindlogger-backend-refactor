@@ -1,1 +1,0 @@
-INFO     root:api.py:109 Invalid event_history_id 4086a425-033c-4634-8de9-1fe8a440e75f provided
