@@ -2,7 +2,8 @@
 # Stage 1: Build
 # ------------------------------
 FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm AS builder
-
+COPY --from=ghcr.io/astral-sh/uv:0.6.6 /uv /bin/uv
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv/python
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -25,14 +26,16 @@ RUN apt update && apt install -y --no-install-recommends \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir pipenv
+# RUN pip install --no-cache-dir pipenv
 
 # Copy Pipenv files and install dependencies
-COPY Pipfile Pipfile.lock ./
-RUN pipenv requirements > requirements.txt && \
-    pipenv requirements --dev >> requirements.txt && \
-    pip wheel --wheel-dir=/wheels -r requirements.txt
+#COPY Pipfile Pipfile.lock ./
+#RUN pipenv requirements > requirements.txt && \
+#    pipenv requirements --dev >> requirements.txt && \
+#    pip wheel --wheel-dir=/wheels -r requirements.txt
 
+COPY pyproject.toml uv.lock ./
+RUN uv pip freeze > requirements.txt && pip wheel --wheel-dir=/wheels -r requirements.txt
 
 
 # ------------------------------

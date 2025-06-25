@@ -16,6 +16,7 @@ dependencies = [
     "ddtrace==2.21.*",
     "fastapi==0.115.*",
     "fastapi-mail==1.2.9",
+    "firebase-admin==6.9.*",
     "httpx==0.28.*",
     "jinja2==3.1.*",
     "more-itertools==10.7.0",
@@ -37,7 +38,7 @@ dependencies = [
     "taskiq-redis==1.0.8",
     "typer==0.16.0",
     "uvicorn[standard]==0.34.*",
-    "firebase-admin==6.9.*",
+
 ]
 
 [tool.ruff]
@@ -70,7 +71,6 @@ src = ["src"]
 [dependency-groups]
 dev = [
     "allure-pytest==2.14.*",
-    "cachetools==6.0.0",
     "gevent==25.5.1",
     "greenlet==3.2.2",
     "ipdb==0.13.13",
