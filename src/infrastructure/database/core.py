@@ -15,7 +15,10 @@ def build_engine(uri: str) -> AsyncEngine:
         future=True,
         pool_pre_ping=True,
         echo=False,
-        poolclass=NullPool,
+        timeout=None,
+        pool_size=settings.database.pool_size,
+        max_overflow=settings.database.pool_overflow_size,
+        pool_timeout=settings.database.pool_timeout,
         json_serializer=lambda x: json.dumps(x),
         json_deserializer=lambda x: json.loads(x),
     )
