@@ -15,7 +15,6 @@ def build_engine(uri: str) -> AsyncEngine:
         future=True,
         pool_pre_ping=True,
         echo=False,
-        timeout=None,
         pool_size=settings.database.pool_size,
         max_overflow=settings.database.pool_overflow_size,
         pool_timeout=settings.database.pool_timeout,
