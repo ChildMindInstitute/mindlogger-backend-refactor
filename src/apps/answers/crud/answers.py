@@ -1236,6 +1236,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
                 AnswerSchema.applet_id == applet_id,
                 AnswerEHRSchema.activity_id.in_(activity_ids),
                 AnswerSchema.submit_id.in_(submit_ids),
+                AnswerEHRSchema.ehr_ingestion_status == EHRIngestionStatus.COMPLETED,
             )
             .order_by(self.schema_class.created_at.desc())
         )
@@ -1275,7 +1276,7 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
 
         query = (
             select(
-                AnswerSchema.submit_id,
+                AnswerEHRSchema.submit_id,
                 AnswerEHRSchema.activity_id,
                 AnswerEHRSchema.ehr_storage_uri,
                 AnswerEHRSchema.updated_at.label("date"),
@@ -1287,7 +1288,8 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
             .where(AnswerEHRSchema.ehr_ingestion_status == EHRIngestionStatus.COMPLETED)
             .where(AnswerEHRSchema.ehr_storage_uri.is_not(None))
             .where(*filter_clauses)
-            .order_by(self.schema_class.created_at.desc())
+            .order_by(self.schema_class.updated_at.desc())
+            .distinct()
         )
 
         result = await self._execute(query)

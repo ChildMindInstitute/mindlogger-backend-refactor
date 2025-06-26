@@ -4432,7 +4432,7 @@ class TestAnswerActivityItems(BaseTest):
 
         file_names = []
 
-        def _mock_download_ehr_zip(data, file_buffer):
+        def _mock_download_ehr_zip(storage_path, data, file_buffer):
             file_buffer.write(b"mocked EHR zip data")
             file_buffer.seek(0)
 
@@ -4486,7 +4486,7 @@ class TestAnswerActivityItems(BaseTest):
 
         file_names = []
 
-        def _mock_download_ehr_zip(data, file_buffer):
+        def _mock_download_ehr_zip(storage_path, data, file_buffer):
             file_buffer.write(b"mocked EHR zip data")
             file_buffer.seek(0)
 
@@ -4580,6 +4580,7 @@ class TestAnswerActivityItems(BaseTest):
                 activity_id=uuid.UUID(activity_id),
                 submit_id=tom_answer.submit_id,
                 date=tom_answer.created_at,
+                user_id=tom.id,
             )
         )
 

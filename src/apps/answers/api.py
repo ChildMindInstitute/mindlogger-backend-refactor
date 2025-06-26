@@ -127,6 +127,7 @@ async def create_answer(
         await service.create_report_from_answer(answer)
         if schema.allowed_ehr_ingest:
             await service.trigger_ehr_ingestion(
+                user_id=user.id,
                 target_subject_id=answer.target_subject_id,
                 applet_id=answer.applet_id,
                 submit_id=answer.submit_id,
@@ -952,7 +953,7 @@ async def applet_ehr_answers_export(
     )
 
     if len(ehr_answers) == 0:
-        return FastAPIResponse(status_code=http.HTTPStatus.NO_CONTENT, content="No EHR answers found")
+        return FastAPIResponse(status_code=http.HTTPStatus.NO_CONTENT)
 
     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
     zip_buffer = io.BytesIO()
@@ -964,10 +965,13 @@ async def applet_ehr_answers_export(
                     activity_id=ehr_answer.activity_id,
                     submit_id=ehr_answer.submit_id,
                     date=ehr_answer.date,
+                    user_id=user.id,
                 )
                 ehr_zip_buffer = io.BytesIO()
                 try:
-                    ehr_zip_filename = ehr_storage.download_ehr_zip(data, ehr_zip_buffer)
+                    ehr_zip_filename = ehr_storage.download_ehr_zip(
+                        storage_path=ehr_answer.ehr_storage_uri, data=data, file_buffer=ehr_zip_buffer
+                    )
 
                     zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
                 finally:

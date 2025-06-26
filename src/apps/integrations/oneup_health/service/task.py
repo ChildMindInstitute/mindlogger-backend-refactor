@@ -1,9 +1,11 @@
 import random
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
 import httpx
+from taskiq import Context, TaskiqDepends
 
 from apps.answers.crud.answers import AnswersEHRCRUD
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
@@ -48,6 +50,7 @@ def _exponential_backoff(retry_count) -> int:
 
 async def _process_data_transfer(
     session,
+    user_id: uuid.UUID,
     target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
@@ -60,6 +63,7 @@ async def _process_data_transfer(
 
     Args:
         session: Database session
+        user_id (uuid.UUID): The unique identifier for the curious user
         target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
@@ -91,6 +95,7 @@ async def _process_data_transfer(
             if timeout_count > 0:
                 logger.warning(f"{timeout_count} Transfers timed out for OneUp Health user ID {oneup_user_id}")
             return await oneup_health_service.retrieve_patient_data(
+                user_id=user_id,
                 target_subject_id=target_subject_id,
                 session=session,
                 applet_id=applet_id,
@@ -104,6 +109,7 @@ async def _process_data_transfer(
 
 
 async def _schedule_retry(
+    user_id: uuid.UUID,
     target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
@@ -116,6 +122,7 @@ async def _schedule_retry(
     Schedule a retry of the data ingestion task with exponential backoff.
 
     Args:
+        user_id (uuid.UUID): The unique identifier for the curious user
         target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
@@ -131,11 +138,13 @@ async def _schedule_retry(
     delay = _exponential_backoff(retry_count)
     if delay > 0:
         retry_count += 1
-        logger.info(f"Scheduling retry #{retry_count} in {delay} seconds")
+        retry_time = datetime.now(tz=timezone.utc) + timedelta(seconds=delay)
+        logger.info(f"Scheduling retry #{retry_count} at {retry_time}")
         await (
             task_ingest_user_data.kicker()
-            .with_labels(delay=delay)
+            .with_labels(delay=60, retry_time=retry_time.isoformat())
             .kiq(
+                user_id=user_id,
                 target_subject_id=target_subject_id,
                 applet_id=applet_id,
                 submit_id=submit_id,
@@ -149,8 +158,27 @@ async def _schedule_retry(
     return delay > 0
 
 
+async def _check_retry_time(context: Annotated[Context, TaskiqDepends()]) -> bool:
+    """
+    Determine if the task should be retried based on the context.
+
+    Args:
+        context (Annotated[Context, TaskiqDepends()]): The context provided by Taskiq
+
+    Returns:
+        bool: True if the task should be retried, False otherwise
+    """
+    retry_time = context.message.labels.get("retry_time")
+    if retry_time and datetime.fromisoformat(retry_time) > datetime.now(tz=timezone.utc):
+        await context.requeue()
+        return False
+
+    return True
+
+
 @broker.task
 async def task_ingest_user_data(
+    user_id: uuid.UUID,
     target_subject_id: uuid.UUID,
     applet_id: uuid.UUID,
     submit_id: uuid.UUID,
@@ -158,6 +186,7 @@ async def task_ingest_user_data(
     start_date: datetime | None = None,
     retry_count: int = 0,
     failed_attempts: int = 0,
+    check_retry_time: Annotated[bool, TaskiqDepends(_check_retry_time)] = True,  # ignore:unused argument
 ) -> str | None:
     """
     Asynchronous task to ingest user health data from OneUp Health.
@@ -166,6 +195,7 @@ async def task_ingest_user_data(
     If the transfer is not complete, it reschedules itself with exponential backoff.
 
     Args:
+        user_id (uuid.UUID): The unique identifier for the curious user
         target_subject_id (uuid.UUID): The unique identifier for the subject
         applet_id (uuid.UUID): The unique identifier for the applet
         submit_id (uuid.UUID): The unique identifier for the submission
@@ -173,6 +203,7 @@ async def task_ingest_user_data(
         start_date (datetime, optional): The start date of the transfer process
         retry_count (int): The current retry attempt count
         failed_attempts (int): The current error retry attempt count
+        check_retry_time (bool): Flag to check if the task should be retried
 
     Returns:
         list | None: List of retrieved resources if successful, None otherwise
@@ -210,6 +241,7 @@ async def task_ingest_user_data(
 
                     storage_path = await _process_data_transfer(
                         session=session,
+                        user_id=user_id,
                         target_subject_id=target_subject_id,
                         applet_id=applet_id,
                         submit_id=submit_id,
@@ -221,6 +253,7 @@ async def task_ingest_user_data(
                         logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
                         # Error retry count is reset to default 0 if we are not in an error state.
                         to_reschedule = await _schedule_retry(
+                            user_id=user_id,
                             target_subject_id=target_subject_id,
                             applet_id=applet_id,
                             submit_id=submit_id,
@@ -257,7 +290,14 @@ async def task_ingest_user_data(
                         )
                 logger.warning(f"Error in task_ingest_user_data: {str(e)}. Triggering retry number {failed_attempts}")
                 await _schedule_retry(
-                    target_subject_id, applet_id, submit_id, activity_id, start_date, retry_count, failed_attempts
+                    user_id,
+                    target_subject_id,
+                    applet_id,
+                    submit_id,
+                    activity_id,
+                    start_date,
+                    retry_count,
+                    failed_attempts,
                 )
 
             return storage_path

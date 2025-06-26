@@ -92,6 +92,7 @@ async def trigger_data_fetch(
         raise NotFoundError("Subject does not exist")
 
     await task_ingest_user_data.kicker().kiq(
+        user_id=user.id,
         target_subject_id=subject.id,
         applet_id=trigger_input.applet_id,
         submit_id=trigger_input.submit_id,
