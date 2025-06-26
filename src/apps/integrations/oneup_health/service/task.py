@@ -10,6 +10,7 @@ from taskiq import Context, TaskiqDepends
 from apps.answers.crud.answers import AnswersEHRCRUD
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
 from apps.answers.domain import AnswerEHR, EHRIngestionStatus
+from apps.integrations.oneup_health.service.domain import EHRMetadata
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
 from apps.shared.exception import BaseError
 from broker import broker
@@ -57,7 +58,7 @@ async def _process_data_transfer(
     activity_id: uuid.UUID,
     oneup_user_id: int,
     start_date: datetime | None,
-) -> str | None:
+) -> EHRMetadata | None:
     """
     Process the OneUp Health data transfer for a subject.
 
@@ -208,7 +209,7 @@ async def task_ingest_user_data(
     Returns:
         list | None: List of retrieved resources if successful, None otherwise
     """
-    storage_path = None
+    ehr_metadata = None
 
     async with session_manager.get_session()() as session:
         info = await preprocess_arbitrary_url(applet_id=applet_id, session=session)
@@ -239,7 +240,7 @@ async def task_ingest_user_data(
 
                     # Process data transfer
 
-                    storage_path = await _process_data_transfer(
+                    ehr_metadata = await _process_data_transfer(
                         session=session,
                         user_id=user_id,
                         target_subject_id=target_subject_id,
@@ -249,7 +250,7 @@ async def task_ingest_user_data(
                         oneup_user_id=oneup_user_id,
                         start_date=start_date,
                     )
-                    if storage_path is None:
+                    if ehr_metadata is None:
                         logger.info(f"Data transfer not complete for OneUp Health user ID {oneup_user_id}")
                         # Error retry count is reset to default 0 if we are not in an error state.
                         to_reschedule = await _schedule_retry(
@@ -278,7 +279,8 @@ async def task_ingest_user_data(
                             submit_id=submit_id,
                             ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
                             activity_id=activity_id,
-                            ehr_storage_uri=storage_path,
+                            ehr_storage_uri=ehr_metadata.storage_path,
+                            meta=ehr_metadata,
                         )
                     )
             except (BaseError, httpx.RequestError) as e:
@@ -300,4 +302,4 @@ async def task_ingest_user_data(
                     failed_attempts,
                 )
 
-            return storage_path
+            return ehr_metadata.storage_path if ehr_metadata is not None else None

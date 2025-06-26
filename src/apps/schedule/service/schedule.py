@@ -176,7 +176,9 @@ class ScheduleService:
         await self._validate_applet(applet_id=applet_id)
 
         event: Event = await EventCRUD(self.session).get_by_id(pk=schedule_id)
-        notification = await self._get_notifications_and_reminder(event.id)
+        notifications_map = await self._get_notifications_and_reminder({event.id})
+
+        notification = notifications_map.get(event.id)
 
         return PublicEvent(
             **event.dict(exclude={"periodicity", "user_id", "activity_flow_id"}),
@@ -207,9 +209,10 @@ class ScheduleService:
         )
         events: list[PublicEvent] = []
 
+        notification_map = await self._get_notifications_and_reminder({event.id for event in event_schemas})
+
         for event_schema in event_schemas:
             event: Event = Event.from_orm(event_schema)
-            notification = await self._get_notifications_and_reminder(event.id)
 
             events.append(
                 PublicEvent(
@@ -222,7 +225,7 @@ class ScheduleService:
                     ),
                     respondent_id=event.user_id,
                     flow_id=event.activity_flow_id,
-                    notification=notification,
+                    notification=notification_map.get(event.id),
                 )
             )
 
@@ -255,13 +258,18 @@ class ScheduleService:
                 )
             )
 
+        event_ids = {event.id for event in full_events}
+        notifications_map_c = NotificationCRUD(self.session).get_all_by_event_ids(event_ids)
+        reminders_map_c = ReminderCRUD(self.session).get_by_event_ids(event_ids)
+        notifications_map, reminders_map = await asyncio.gather(notifications_map_c, reminders_map_c)
+
         events = PublicEventByUser(
             applet_id=applet_id,
             events=[
                 ScheduleEvent(
                     **full_event.dict(),
-                    notifications=await NotificationCRUD(self.session).get_all_by_event_id(full_event.id),
-                    reminder=await ReminderCRUD(self.session).get_by_event_id(full_event.id),
+                    notifications=notifications_map.get(full_event.id),
+                    reminder=reminders_map.get(full_event.id),
                 ).to_schedule_event_dto()
                 for full_event in full_events
             ],
@@ -644,25 +652,36 @@ class ScheduleService:
             roles=Role.as_list(),
             query_params=QueryParams(),
         )
-        events = []
 
-        for applet in applets:
-            user_events = await EventCRUD(self.session).get_all_by_applet_and_user(
-                applet_id=applet.id,
-                user_id=user_id,
-            )
-            general_events = await EventCRUD(self.session).get_general_events_by_user(
-                applet_id=applet.id, user_id=user_id
-            )
-            all_events = user_events + general_events
+        applet_ids = [applet.id for applet in applets]
+
+        user_events_map, user_event_ids = await EventCRUD(self.session).get_all_by_applets_and_user(
+            applet_ids=applet_ids,
+            user_id=user_id,
+        )
+        general_events_map, general_event_ids = await EventCRUD(self.session).get_general_events_by_applets_and_user(
+            applet_ids=applet_ids,
+            user_id=user_id,
+        )
+        full_events_map: dict[uuid.UUID, list[EventFull]] = self._sum_applets_events_map(
+            user_events_map, general_events_map
+        )
+
+        event_ids = user_event_ids | general_event_ids
+        notifications_map_c = NotificationCRUD(self.session).get_all_by_event_ids(event_ids)
+        reminders_map_c = ReminderCRUD(self.session).get_by_event_ids(event_ids)
+        notifications_map, reminders_map = await asyncio.gather(notifications_map_c, reminders_map_c)
+
+        events: list[PublicEventByUser] = []
+        for applet_id, all_events in full_events_map.items():
             events.append(
                 PublicEventByUser(
-                    applet_id=applet.id,
+                    applet_id=applet_id,
                     events=[
                         ScheduleEvent(
                             **event.dict(),
-                            notifications=await NotificationCRUD(self.session).get_all_by_event_id(event.id),
-                            reminder=await ReminderCRUD(self.session).get_by_event_id(event.id),
+                            notifications=notifications_map.get(event.id),
+                            reminder=reminders_map.get(event.id),
                         ).to_schedule_event_dto()
                         for event in all_events
                     ],
@@ -768,15 +787,22 @@ class ScheduleService:
 
         general_events = await EventCRUD(self.session).get_general_events_by_user(applet_id=applet_id, user_id=user_id)
 
+        all_events = user_events + general_events
+
+        event_ids = {event.id for event in all_events}
+        notifications_map_c = NotificationCRUD(self.session).get_all_by_event_ids(event_ids)
+        reminders_map_c = ReminderCRUD(self.session).get_by_event_ids(event_ids)
+        notifications_map, reminders_map = await asyncio.gather(notifications_map_c, reminders_map_c)
+
         events = PublicEventByUser(
             applet_id=applet_id,
             events=[
                 ScheduleEvent(
                     **event.dict(),
-                    notifications=await NotificationCRUD(self.session).get_all_by_event_id(event.id),
-                    reminder=await ReminderCRUD(self.session).get_by_event_id(event.id),
+                    notifications=notifications_map.get(event.id),
+                    reminder=reminders_map.get(event.id),
                 ).to_schedule_event_dto()
-                for event in (user_events + general_events)
+                for event in all_events
             ],
         )
 
@@ -805,27 +831,32 @@ class ScheduleService:
 
         return count
 
-    async def _get_notifications_and_reminder(self, event_id: uuid.UUID) -> PublicNotification | None:
+    async def _get_notifications_and_reminder(self, event_ids: set[uuid.UUID]) -> dict[uuid.UUID, PublicNotification]:
         """Get notifications and reminder for event."""
-        notifications = await NotificationCRUD(self.session).get_all_by_event_id(event_id=event_id)
+        notifications_map_c = NotificationCRUD(self.session).get_all_by_event_ids(event_ids=event_ids)
+        reminder_map_c = ReminderCRUD(self.session).get_by_event_ids(event_ids=event_ids)
+        notifications_map, reminder_map = await asyncio.gather(notifications_map_c, reminder_map_c)
 
-        reminder = await ReminderCRUD(self.session).get_by_event_id(event_id=event_id)
+        public_notifications_map: dict[uuid.UUID, PublicNotification] = dict()
 
-        return (
-            PublicNotification(
-                notifications=[
-                    PublicNotificationSetting(
-                        **notification.dict(),
-                    )
-                    for notification in notifications
-                ]
-                if notifications
-                else None,
-                reminder=PublicReminderSetting.from_orm(reminder) if reminder else None,
-            )
-            if notifications or reminder
-            else None
-        )
+        for event_id in event_ids:
+            notifications = notifications_map.get(event_id)
+            reminder = reminder_map.get(event_id)
+
+            if notifications or reminder:
+                public_notifications_map[event_id] = PublicNotification(
+                    notifications=[
+                        PublicNotificationSetting(
+                            **notification.dict(),
+                        )
+                        for notification in notifications
+                    ]
+                    if notifications
+                    else None,
+                    reminder=PublicReminderSetting.from_orm(reminder) if reminder else None,
+                )
+
+        return public_notifications_map
 
     async def _validate_applet(self, applet_id: uuid.UUID):
         # Check if applet exists
