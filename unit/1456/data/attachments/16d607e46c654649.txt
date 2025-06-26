@@ -1,1 +1,0 @@
-ERROR    root:oneup_health.py:122 1UpHealth geographic restriction - Path: /user-management/v1/user - Status: 403
