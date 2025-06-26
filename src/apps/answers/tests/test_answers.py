@@ -114,7 +114,9 @@ async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, 
 
 
 @pytest.fixture
-async def bob_reviewer_in_applet_with_reviewable_activity(session, tom, bob, applet_with_reviewable_activity) -> User:
+async def bob_reviewer_in_applet_with_reviewable_activity(
+    session: AsyncSession, tom, bob, applet_with_reviewable_activity
+) -> User:
     tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(
         tom.id, applet_with_reviewable_activity.id
     )
@@ -274,6 +276,35 @@ async def tom_answer_on_reviewable_applet(
                 start_time=datetime.datetime.now(datetime.UTC),
                 end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key=str(tom.id),
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+            consent_to_share=False,
+        )
+    )
+
+
+@pytest.fixture
+async def lucy_answer_on_reviewable_applet(
+    session: AsyncSession,
+    lucy_manager_in_applet_with_reviewable_activity: User,
+    applet_with_reviewable_activity: AppletFull,
+) -> AnswerSchema:
+    await UserAppletAccessService(
+        session, lucy_manager_in_applet_with_reviewable_activity.id, applet_with_reviewable_activity.id
+    ).add_role(lucy_manager_in_applet_with_reviewable_activity.id, Role.RESPONDENT)
+
+    answer_service = AnswerService(session, lucy_manager_in_applet_with_reviewable_activity.id)
+    return await answer_service.create_answer(
+        AppletAnswerCreate(
+            applet_id=applet_with_reviewable_activity.id,
+            version=applet_with_reviewable_activity.version,
+            submit_id=uuid.uuid4(),
+            activity_id=applet_with_reviewable_activity.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_with_reviewable_activity.activities[0].items[0].id],
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
+                user_public_key=str(lucy_manager_in_applet_with_reviewable_activity.id),
             ),
             client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
             consent_to_share=False,
@@ -4517,6 +4548,83 @@ class TestAnswerActivityItems(BaseTest):
                 assert len(file_list) == 1
                 assert file_list == file_names
                 assert str(tom_answer_activity_flow.submit_id) in file_names[0]
+
+    @pytest.mark.parametrize(
+        "user_fixture,role",
+        (
+            ("tom", Role.OWNER),
+            ("bob", Role.REVIEWER),
+        ),
+    )
+    async def test_applet_ehr_data_endpoint_reviewer(
+        self,
+        client,
+        session,
+        tom,
+        bob_reviewer_in_applet_with_reviewable_activity,
+        lucy_answer_on_reviewable_applet,
+        tom_answer_on_reviewable_applet,
+        user_fixture,
+        role,
+        request,
+    ):
+        # Create EHR record
+        answer_ehr = AnswerEHR(
+            submit_id=lucy_answer_on_reviewable_applet.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="fake/ehr/storage/uri",
+            activity_id=uuid.UUID(lucy_answer_on_reviewable_applet.activity_history_id.split("_")[0]),
+        )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        # Create EHR record
+        answer_ehr = AnswerEHR(
+            submit_id=tom_answer_on_reviewable_applet.submit_id,
+            ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+            ehr_storage_uri="tom/fake/ehr/storage/uri",
+            activity_id=uuid.UUID(tom_answer_on_reviewable_applet.activity_history_id.split("_")[0]),
+        )
+        await AnswersEHRCRUD(session=session).upsert(answer_ehr)
+
+        file_names = []
+
+        def _mock_download_ehr_zip(storage_path, data, file_buffer):
+            file_buffer.write(b"mocked EHR zip data")
+            file_buffer.seek(0)
+
+            file_name = EHRStorage.ehr_zip_filename(data)
+            file_names.append(file_name)
+
+            return file_name
+
+        with patch(
+            "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.download_ehr_zip"
+        ) as download_ehr_zip:
+            download_ehr_zip.side_effect = _mock_download_ehr_zip
+
+            login_user = request.getfixturevalue(user_fixture)
+            client.login(login_user)
+
+            # Request EHR data
+            response = await client.get(
+                self.applet_ehr_answers_export_url.format(applet_id=lucy_answer_on_reviewable_applet.applet_id)
+            )
+            assert response.status_code == 200
+            assert response.headers["Content-Type"] == "application/zip"
+            assert response.headers["Content-Disposition"] == "attachment; filename=EHR.zip"
+
+            response_body = response.read()
+            with zipfile.ZipFile(io.BytesIO(response_body), "r") as zip_file:
+                file_list = zip_file.namelist()
+                if role == Role.REVIEWER:
+                    assert len(file_list) == 1
+                    assert file_list == file_names
+                    assert str(tom_answer_on_reviewable_applet.submit_id) in file_names[0]
+                else:
+                    assert len(file_list) == 2
+                    assert file_list == file_names
+                    assert str(tom_answer_on_reviewable_applet.submit_id) in file_names[0]
+                    assert str(lucy_answer_on_reviewable_applet.submit_id) in file_names[1]
 
     @pytest.mark.asyncio
     async def test_applet_ehr_data_endpoint_without_ehr(self, client, session, tom, tom_answer):
