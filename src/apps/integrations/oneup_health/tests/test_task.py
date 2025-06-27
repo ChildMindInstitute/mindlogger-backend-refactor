@@ -497,7 +497,7 @@ class TestTaskIngestUserData:
 
                                 # Verify that the task was scheduled with the correct parameters
                                 kicker.with_labels.assert_called_with(
-                                    delay=60, retry_time=(mock_now + timedelta(seconds=1)).isoformat()
+                                    delay=60, retry_time=(mock_now + timedelta(seconds=5)).isoformat()
                                 )
 
                                 # For each retry, we would need to manually simulate the retry process
