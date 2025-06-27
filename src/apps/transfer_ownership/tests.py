@@ -536,3 +536,24 @@ class TestTransfer(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == PermissionsError.message
+
+    async def test_manager_can_grant_reviewer_permissions_to_coordinator(
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        applet_one_lucy_reviewer: User,
+        applet_one_lucy_manager : User,
+        session: AsyncSession,
+    ):
+        client.login(applet_one_lucy_manager)
+        await UserAppletAccessService(session, tom.id, applet_one.id).add_role(applet_one_lucy_reviewer.id, Role.MANAGER)
+
+        client.login(lucy)
+        response = await client.post(
+            f"{self.applet_encryption_url.format(applet_id=applet_one.id)}/reviewer",
+            data={"user_id": tom.id},
+        )
+        assert response.status_code == http.HTTPStatus.OK
+
+        roles = await UserAppletAccessService(session, applet_one_lucy_reviewer.id, applet_one.id).get_roles(applet_one_lucy_reviewer.id)
+        assert Role.REVIEWER in roles
