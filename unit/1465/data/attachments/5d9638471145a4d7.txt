@@ -1,1 +1,0 @@
-INFO     root:task.py:140 Scheduling retry #3 in 10 seconds
