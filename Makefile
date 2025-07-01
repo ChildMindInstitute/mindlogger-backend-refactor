@@ -7,8 +7,8 @@ REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${
 
 EXPORT_COMMAND = python src/export_spec.py
 
-RUFF_COMMAND = ruff
-MYPY_COMMAND = mypy
+RUFF_COMMAND = uv run ruff
+MYPY_COMMAND = uv run mypy
 
 DOCKER_COMPOSE_EXISTS := $(shell command -v docker-compose 2> /dev/null)
 
