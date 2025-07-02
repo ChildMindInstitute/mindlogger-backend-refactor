@@ -18,7 +18,7 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     # TODO Some unit tests check for error messages.  Might be bad?  If the erroring endpoint doesn't log anything
     # TODO then there is nothing in the log.  Logging here ensures errors actually get logged.
     if settings.env != "testing":
-        logger.warning(error.message, exc_info=error)
+        logger.warning(error.error, exc_info=error)
 
     response = ErrorResponseMulti(
         result=[
