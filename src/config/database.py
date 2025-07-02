@@ -7,7 +7,9 @@ class DatabaseSettings(BaseModel):
     password: str = "postgres"
     user: str = "postgres"
     db: str = "mindlogger_backend"
-    pool_size: int = 2
+    pool_size: int = 5
+    pool_overflow_size: int = 10
+    pool_timeout: int = 30
 
     @property
     def url(self) -> str:
