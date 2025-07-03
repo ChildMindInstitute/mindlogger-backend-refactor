@@ -9,27 +9,12 @@ on:
 
 concurrency:
   cancel-in-progress: false
-  group: api-build-deploy
+  group: api-build-deploy-dev
 
 permissions:
   id-token: write
   contents: read
   issues: write
-
-env:
-  GITHUB_ORGANIZATION: ${{ github.repository_owner }}
-  GITHUB_REPO_NAME: ${{ github.event.repository.name }}
-  GITHUB_BRANCH_OR_TAG: ${{ github.ref_name }}
-  GITHUB_REF: ${{ github.ref }}
-  BUILD_NAME: ${{github.event_name}}
-  BUILD_NUMBER: ${{github.run_id}}
-  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
-  DR_ECR_ADDRESS: 973422231492.dkr.ecr.us-west-2.amazonaws.com
-  OUT_DIR: ./out
-  AWS_REGION : "us-east-1"
-  DR_AWS_REGION : "us-west-2"
-  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-  DR_ECR_REPO: 973422231492.dkr.ecr.us-west-2.amazonaws.com/api-server
 
 
 jobs:
@@ -38,11 +23,20 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_build.yaml
 
+  migrations:
+    name: Run Migrations in Dev
+    secrets:
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
+    uses: ./.github/workflows/_migrations.yaml
+    with:
+      env-name: dev
+      image-tag: latest
 
-  deploy-dev:
+  deploy:
     name: Deploy to Dev
     needs: [ build ]
-    secrets: inherit
+    secrets:
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
     uses: ./.github/workflows/_deploy.yaml
     with:
       image-tag: latest
@@ -100,17 +94,3 @@ jobs:
           target_url: ${{ needs.run-e2e-tests.outputs.report-url }}
 
 
-
-#  deploy_to_uat:
-#    needs: build_job
-#    uses: ./.github/workflows/run_deploy_uat.yaml
-#    with:
-#      COMMIT_HASH: ${{ github.sha }}
-#      IMAGE_NAME: ${{ needs.build_job.outputs.IMAGE_NAME }}
-#
-#  deploy_to_test:
-#    needs: build_job
-#    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/run_deploy_test.yaml@develop
-#    with:
-#      COMMIT_HASH: ${{ github.sha }}
-#      IMAGE_PREFIX: ${{ github.ref_name }}

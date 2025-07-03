@@ -1,5 +1,5 @@
-
 name: Build
+
 on:
   workflow_call:
     inputs:
@@ -12,7 +12,7 @@ on:
 # Safe to cancel builds in progress
 concurrency:
   cancel-in-progress: true
-  group: api-build
+  group: api-build-${{ inputs.tag-name }}
 
 permissions:
   id-token: write
@@ -87,6 +87,7 @@ jobs:
             ${{ env.ECR_REPO }}:${{ steps.sha.outputs.SHORT_SHA }}
           platforms: linux/amd64,linux/arm64
 
+      # TODO What is this used for?  Leftover artifact from Jenkins
       - name: Extract Jira ticket numbers from commit message
         run: |
           tickets=$(git log -1 --pretty=%B | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
