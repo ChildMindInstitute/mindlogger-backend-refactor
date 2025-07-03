@@ -1,3 +1,4 @@
+import json
 import traceback
 
 from asyncpg import InvalidPasswordError
@@ -54,7 +55,7 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     )
 
 
-def pydantic_validation_errors_handler(_: Request, error: RequestValidationError) -> JSONResponse:
+def pydantic_validation_errors_handler(request: Request, error: RequestValidationError) -> JSONResponse:
     """This function is called if the Pydantic validation error was raised."""
     # TODO: remove it later. This is a fix after updating fastapi version.
     errors = []
@@ -66,8 +67,12 @@ def pydantic_validation_errors_handler(_: Request, error: RequestValidationError
             message = str(err.exc)
             path = list(err.loc_tuple())
         errors.append(ErrorResponse(message=message, path=path))
-    response = ErrorResponseMulti(result=errors)
 
+    # Enhanced logging for POST /answers endpoint 422 errors
+    if request.method == "POST" and request.url.path.endswith("/answers"):
+        _log_answers_422_error(request, error, errors)
+
+    response = ErrorResponseMulti(result=errors)
     return JSONResponse(
         content=jsonable_encoder(response.dict(by_alias=True)),
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -85,3 +90,24 @@ def sqlalchemy_database_error_handler(
         content=jsonable_encoder(response.dict(by_alias=True)),
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
+
+
+def _log_answers_422_error(request: Request, error: RequestValidationError, errors: list) -> None:
+    """Simple logging for 422 errors on POST /answers."""
+    try:
+        applet_id = None
+        if hasattr(request, "_body") and request._body:
+            try:
+                body = json.loads(request._body.decode())
+                applet_id = body.get("applet_id")
+            except Exception:
+                pass
+
+        error_messages = [err.message for err in errors]
+        logger.error(
+            f"422 validation error on POST /answers: {len(errors)} errors, \
+                applet_id={applet_id}, errors={error_messages}",
+            extra={"user_agent": request.headers.get("user-agent")},
+        )
+    except Exception:
+        logger.error("422 validation error on POST /answers")

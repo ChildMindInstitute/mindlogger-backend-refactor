@@ -122,8 +122,17 @@ async def create_answer(
         service = AnswerService(session, user.id, answer_session)
         if tz_offset is not None and schema.answer.tz_offset is None:
             schema.answer.tz_offset = tz_offset // 60  # value in minutes
-        async with atomic(answer_session):
-            answer = await service.create_answer(schema, device.device_id if device else None)
+
+        try:
+            async with atomic(answer_session):
+                answer = await service.create_answer(schema, device.device_id if device else None)
+        except Exception as e:
+            logger.error(
+                f"Answer creation failed: applet_id={schema.applet_id}, user_id={user.id}, \
+                    activity_id={schema.activity_id}, error={type(e).__name__}: {e}"
+            )
+            raise
+
         await service.create_report_from_answer(answer)
         if schema.allowed_ehr_ingest:
             await service.trigger_ehr_ingestion(
