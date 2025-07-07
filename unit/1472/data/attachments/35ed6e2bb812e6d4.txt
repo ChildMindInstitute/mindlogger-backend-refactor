@@ -1,2 +1,0 @@
-WARNING  root:task.py:291 Error in task_ingest_user_data: Connection error. Triggering retry number 1
-INFO     root:task.py:142 Scheduling retry #1 at 2025-06-16 12:00:01+00:00
