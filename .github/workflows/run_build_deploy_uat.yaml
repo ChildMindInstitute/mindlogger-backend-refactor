@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - "*-rc[0-9]+"
-#    branches:
-#      - "release/*"
   workflow_dispatch:
     inputs:
       target-ref:
