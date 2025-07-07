@@ -86,7 +86,7 @@ class TestTaskIngestUserData:
             with patch(
                 "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_ehr_zip"
             ) as upload_ehr_zip:
-                upload_ehr_zip.return_value = None
+                upload_ehr_zip.return_value = "fake_zip_filename", 100
 
                 submit_id = uuid.uuid4()
                 activity_id = applet_one.activities[0].id
@@ -336,7 +336,7 @@ class TestTaskIngestUserData:
             with patch(
                 "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_ehr_zip"
             ) as upload_ehr_zip:
-                upload_ehr_zip.return_value = None
+                upload_ehr_zip.return_value = "fake_zip_filename", 100
 
                 result = await _process_data_transfer(
                     session,
@@ -349,7 +349,8 @@ class TestTaskIngestUserData:
                     start_date,
                 )
 
-                assert result == "fake/storage/path"
+                assert result is not None
+                assert result.storage_path == "fake/storage/path"
                 assert upload_resources.called
                 assert upload_ehr_zip.called
 
@@ -496,7 +497,7 @@ class TestTaskIngestUserData:
 
                                 # Verify that the task was scheduled with the correct parameters
                                 kicker.with_labels.assert_called_with(
-                                    delay=60, retry_time=(mock_now + timedelta(seconds=1)).isoformat()
+                                    delay=60, retry_time=(mock_now + timedelta(seconds=5)).isoformat()
                                 )
 
                                 # For each retry, we would need to manually simulate the retry process

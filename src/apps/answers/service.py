@@ -2049,7 +2049,16 @@ class AnswerService:
         return submissions_activity_metadata
 
     async def export_ehr_answers(self, applet_id: uuid.UUID, query_params: QueryParams) -> list[AnswerEHRFull]:
-        ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id, **query_params.filters)
+        allowed_subjects = await self._get_allowed_subjects(applet_id)
+
+        filters = query_params.filters
+        if allowed_subjects is not None:
+            if target_subject_ids := filters.get("target_subject_ids"):
+                filters["target_subject_ids"] = list(set(allowed_subjects).intersection(set(target_subject_ids)))
+            else:
+                filters["target_subject_ids"] = allowed_subjects
+
+        ehr_answers = await AnswersEHRCRUD(self.answer_session).export_ehr_answers(applet_id, **filters)
 
         return [AnswerEHRFull(**ehr_answer) for ehr_answer in ehr_answers]
 
