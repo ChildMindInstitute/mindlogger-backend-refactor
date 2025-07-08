@@ -1,4 +1,5 @@
 import json
+from functools import cache
 
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -8,6 +9,7 @@ from config import settings
 __all__ = ["session_manager", "atomic", "build_engine"]
 
 
+@cache
 def build_engine(uri: str) -> AsyncEngine:
     return create_async_engine(
         uri,
