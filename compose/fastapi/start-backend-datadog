@@ -13,16 +13,6 @@ set -o pipefail
 set -o nounset
 
 
-#NUM_WORKERS=1
-#if command -v nproc >/dev/null 2>&1; then
-#  NUM_WORKERS=$(nproc)
-#  echo "Starting app with $NUM_WORKERS workers..."
-#else
-#  echo "No nproc, defaulting to 1 worker..."
-#fi
-
-NUM_WORKERS=2
-
 # https://www.uvicorn.org/settings/
 export UVICORN_HOST="0.0.0.0"
 export UVICORN_PORT=80
@@ -30,4 +20,4 @@ export UVICORN_PORT=80
 uvicorn main:app \
   --host ${UVICORN_HOST} --port ${UVICORN_PORT} \
   --reload --proxy-headers \
-  --log-config uvicorn_disable_logging.json --workers ${NUM_WORKERS}
+  --log-config uvicorn_disable_logging.json
