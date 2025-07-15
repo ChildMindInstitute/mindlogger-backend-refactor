@@ -1,0 +1,2 @@
+INFO     root:oneup_health.py:236 Requesting to OneUp health API /user-management/v1/user - 200
+INFO     root:task.py:239 Submit ID 6bdaf5fe-d13c-45f6-ad78-ff8f5f4bc022 and activity ID 157f5953-aa38-4a97-aa8a-b6c3c467ef42 has no OneUp Health user ID
