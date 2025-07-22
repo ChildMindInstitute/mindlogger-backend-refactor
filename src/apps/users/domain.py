@@ -81,6 +81,7 @@ class User(InternalModel):
     is_super_admin: bool
     hashed_password: str
     email_encrypted: str | None
+    last_seen_at: datetime.datetime | None
 
     def get_full_name(self) -> str:
         return f"{self.first_name} {self.last_name}" if self.last_name else self.first_name
