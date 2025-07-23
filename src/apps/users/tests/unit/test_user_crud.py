@@ -131,7 +131,7 @@ async def test_change_password(user: User, session: AsyncSession):
     assert updated.hashed_password == new_password
 
 
-async def test_update_last_seet_at(
+async def test_update_last_seen_at(
     faketime,
     user: User,
     session: AsyncSession,

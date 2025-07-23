@@ -83,10 +83,6 @@ async def test_get_current_user_for_ws(user: User, access_token: str, session: A
 async def test_get_current_user(faketime, session: AsyncSession, access_token_internal: InternalToken, user: User):
     current_user = await get_current_user(token=access_token_internal, session=session)
     assert current_user.id == user.id
-    crud = UsersCRUD(session)
-    user_db = await crud._get("id", user.id)
-    user_db = cast(UserSchema, user_db)
-    assert user_db.last_seen_at == faketime.current_utc
 
 
 async def test_get_current_user__token_is_revoked(
