@@ -40,7 +40,7 @@ services:
       dockerfile: ./compose/fastapi/Dockerfile
       args:
         - PIPENV_EXTRA_ARGS=--dev
-    entrypoint: /fastapi-entrypoint
+#    entrypoint: /fastapi-entrypoint
     command: /start-backend-datadog
     env_file: .env
     depends_on:
@@ -50,10 +50,19 @@ services:
       - mailhog
     ports:
       - "8000:80"
-    volumes:
-      - ./:/app/
-#      - /tmp:/tmp
-#      - ./uploads/:/app/uploads/
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          # Exclude the project virtual environment
+          ignore:
+            - .venv/
+
+        # Rebuild the image on changes to the `pyproject.toml`
+        - action: rebuild
+          path: ./pyproject.toml
+
 
   worker:
     build:

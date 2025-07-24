@@ -1,19 +1,19 @@
 [project]
-name = ""
+name = "curious-backend"
 version = "0.0.1"
-requires-python = "~=3.13"
+requires-python = "~=3.13.0"
 dependencies = [
     "aio-pika==9.5.*",
-    "aiofiles==24.1.0",
-    "aiohttp==3.12.7",
-    "alembic==1.16.1",
-    "asgi-correlation-id==4.3.4",
-    "asyncpg==0.30.0",
+    "aiofiles~=24.1.0",
+    "aiohttp~=3.12.0",
+    "alembic~=1.16.1",
+    "asgi-correlation-id~=4.3.4",
+    "asyncpg~=0.30.0",
     "azure-storage-blob==12.25.*",
-    "bcrypt==4.3.0",
-    "boto3==1.38.28",
+    "bcrypt~=4.3.0",
+    "boto3~=1.38.28",
     "bytecode==0.16.*",
-    "ddtrace==2.21.*",
+    "ddtrace~=3.10.2",
     "fastapi==0.115.*",
     "fastapi-mail==1.2.9",
     "firebase-admin==6.9.*",
@@ -29,9 +29,9 @@ dependencies = [
     "python-slugify==8.0.4",
     "redis==5.2.*",
     "sentry-sdk~=2.13",
-    "sqlalchemy[asyncio]==1.4.53",
-    "sqlalchemy-utils==0.41.2",
-    "structlog==25.4.0",
+    "sqlalchemy[asyncio]~=1.4.53",
+    "sqlalchemy-utils~=0.41.2",
+    "structlog~=25.4.0",
     "taskiq[reload]==0.11.*",
     "taskiq-aio-pika==0.4.2",
     "taskiq-fastapi==0.3.*",
