@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH="src/"
 
 # Install system dependencies and pipenv
-RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
+RUN apt update && apt install -y --no-install-recommends \
     build-essential \
     curl \
     libtool \
@@ -27,7 +27,6 @@ RUN apt update && apt upgrade -y && apt install -y --no-install-recommends \
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-#RUN uv pip freeze > requirements.txt && pip wheel --wheel-dir=/wheels -r requirements.txt
 RUN uv export --no-hashes --no-header --format requirements-txt > requirements.txt && \
     pip wheel --wheel-dir=/wheels -r requirements.txt
 
@@ -86,6 +85,12 @@ RUN mkdir -p /app/uploads && \
 # Switch to non-root user
 USER code
 
+# These are down here to prevent cache busting
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
+ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
+ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
+
 FROM base AS fargate
 # TODO Fargate still can't run as the non-priveleged user.  Likely due to old bind mounts.
 USER root
@@ -98,8 +103,4 @@ FROM base AS app
 EXPOSE 8080
 
 
-# These are down here to prevent cache busting
-#ARG DD_GIT_REPOSITORY_URL
-#ARG DD_GIT_COMMIT_SHA
-#ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
-#ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
+
