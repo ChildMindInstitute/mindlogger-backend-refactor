@@ -38,9 +38,7 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-      args:
-        - PIPENV_EXTRA_ARGS=--dev
-#    entrypoint: /fastapi-entrypoint
+    entrypoint: /fastapi-entrypoint
     command: /start-backend-datadog
     env_file: .env
     depends_on:
@@ -68,9 +66,6 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-#      target: worker
-      args:
-        - PIPENV_EXTRA_ARGS=--dev
     image: mindlogger_worker
     container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
@@ -88,9 +83,6 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-#      target: base
-      args:
-        - PIPENV_EXTRA_ARGS=--dev
     image: mindlogger_scheduler
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
