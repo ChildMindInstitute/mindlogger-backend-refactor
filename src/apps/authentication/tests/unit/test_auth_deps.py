@@ -1,5 +1,4 @@
 import uuid
-from typing import cast
 
 import jwt
 import pytest
@@ -14,8 +13,6 @@ from apps.authentication.domain.token import InternalToken, JWTClaim
 from apps.authentication.domain.token.internal import TokenPurpose
 from apps.authentication.errors import AuthenticationError, InvalidCredentials
 from apps.authentication.services import AuthenticationService
-from apps.users.cruds.user import UsersCRUD
-from apps.users.db.schemas import UserSchema
 from apps.users.domain import User
 from apps.users.errors import UserNotFound
 from config import settings
