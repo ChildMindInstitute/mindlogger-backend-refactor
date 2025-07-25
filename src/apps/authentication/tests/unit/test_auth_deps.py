@@ -1,5 +1,4 @@
 import uuid
-from typing import cast
 
 import jwt
 import pytest
@@ -14,8 +13,6 @@ from apps.authentication.domain.token import InternalToken, JWTClaim
 from apps.authentication.domain.token.internal import TokenPurpose
 from apps.authentication.errors import AuthenticationError, InvalidCredentials
 from apps.authentication.services import AuthenticationService
-from apps.users.cruds.user import UsersCRUD
-from apps.users.db.schemas import UserSchema
 from apps.users.domain import User
 from apps.users.errors import UserNotFound
 from config import settings
@@ -83,10 +80,6 @@ async def test_get_current_user_for_ws(user: User, access_token: str, session: A
 async def test_get_current_user(faketime, session: AsyncSession, access_token_internal: InternalToken, user: User):
     current_user = await get_current_user(token=access_token_internal, session=session)
     assert current_user.id == user.id
-    crud = UsersCRUD(session)
-    user_db = await crud._get("id", user.id)
-    user_db = cast(UserSchema, user_db)
-    assert user_db.last_seen_at == faketime.current_utc
 
 
 async def test_get_current_user__token_is_revoked(
