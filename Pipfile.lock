@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8e1f546a6e677b613737c863c7c9898318356b626855acaaaad6ac0cd8aa1d7b"
+            "sha256": "0947f288a9ec243201d74e2ecb4910d679cd879ccc2d758fe52d613537c22593"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -378,11 +378,11 @@
         },
         "certifi": {
             "hashes": [
-                "sha256:2e0c7ce7cb5d8f8634ca55d2ba7e6ec2689a2fd6537d8dec1296a477a4910057",
-                "sha256:d747aa5a8b9bbbb1bb8c22bb13e22bd1f18e9796defa16bab421f7f7a317323b"
+                "sha256:6b31f564a415d79ee77df69d757bb49a5bb53bd9f756cbbe24394ffd6fc1f4b2",
+                "sha256:8ea99dbdfaaf2ba2f9bac77b9249ef62ec5218e7c2b2e903378ed5fccf765995"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==2025.6.15"
+            "version": "==2025.7.14"
         },
         "cffi": {
             "hashes": [
@@ -2039,12 +2039,12 @@
         },
         "sentry-sdk": {
             "hashes": [
-                "sha256:8d4a0206b95fa5fe85e5e7517ed662e3888374bdc342c00e435e10e6d831aa6d",
-                "sha256:90862fe0616ded4572da6c9dadb363121a1ae49a49e21c418f0634e9d10b4c19"
+                "sha256:8d57a3b4861b243aa9d558fda75509ad487db14f488cbdb6c78c614979d77632",
+                "sha256:e85002234b7b8efac9b74c2d91dbd4f8f3970dc28da8798e39530e65cb740f94"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.6'",
-            "version": "==2.29.1"
+            "version": "==2.33.2"
         },
         "shellingham": {
             "hashes": [
