@@ -1515,11 +1515,24 @@ class TestWorkspaces(BaseTest):
     async def test_editor_can_NOT_view_organizers(
         self,
         client,
-        lucy,
         tom,
+        lucy,
         applet_one_lucy_editor: AppletFull,
     ):
         client.login(applet_one_lucy_editor)
+        response = await client.get(
+            self.workspace_managers_url.format(owner_id=tom.id),
+            dict(ordering="+email"),
+        )
+        assert response.status_code == http.HTTPStatus.UNAUTHORIZED
+
+    async def test_reviewer_can_NOT_view_organizers(
+        self,
+        client,
+        tom,
+        applet_one_lucy_reviewer: AppletFull,
+    ):
+        client.login(applet_one_lucy_reviewer)
         response = await client.get(
             self.workspace_managers_url.format(owner_id=tom.id),
             dict(ordering="+email"),
