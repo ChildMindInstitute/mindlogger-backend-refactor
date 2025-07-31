@@ -1483,3 +1483,58 @@ class TestWorkspaces(BaseTest):
         assert date_now.year == date_answer.year
         assert date_now.hour == date_answer.hour
         assert date_now.minute == date_answer.minute
+
+    async def test_applet_owner_can_view_organizers(self, client, tom):
+        client.login(tom)
+        response = await client.get(
+            self.workspace_managers_url.format(owner_id=tom.id),
+            dict(ordering="+email"),
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["count"] == 1  # lucy
+        assert data["count"] == len(data["result"])
+        tom_result = data["result"][0]
+        assert tom_result["id"] == str(tom.id)
+        assert tom_result["email"] == tom.email_encrypted
+
+    async def test_coordinator_can_NOT_view_organizers(
+        self,
+        client,
+        applet_one_lucy_coordinator: AppletFull,
+        tom,
+    ):
+        client.login(applet_one_lucy_coordinator)
+        response = await client.get(
+            self.workspace_managers_url.format(owner_id=tom.id),
+            dict(ordering="+email"),
+        )
+        assert response.status_code == http.HTTPStatus.UNAUTHORIZED
+
+    async def test_editor_can_NOT_view_organizers(
+        self,
+        client,
+        tom,
+        lucy,
+        applet_one_lucy_editor: AppletFull,
+    ):
+        client.login(applet_one_lucy_editor)
+        response = await client.get(
+            self.workspace_managers_url.format(owner_id=tom.id),
+            dict(ordering="+email"),
+        )
+        assert response.status_code == http.HTTPStatus.UNAUTHORIZED
+
+    async def test_reviewer_can_NOT_view_organizers(
+        self,
+        client,
+        tom,
+        applet_one_lucy_reviewer: AppletFull,
+    ):
+        client.login(applet_one_lucy_reviewer)
+        response = await client.get(
+            self.workspace_managers_url.format(owner_id=tom.id),
+            dict(ordering="+email"),
+        )
+        assert response.status_code == http.HTTPStatus.UNAUTHORIZED
