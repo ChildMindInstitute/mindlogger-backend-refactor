@@ -7,7 +7,6 @@ from apps.transfer_ownership.constants import TransferOwnershipStatus
 from apps.transfer_ownership.domain import InitiateTransfer, Transfer
 
 
-
 @pytest.mark.asyncio
 class TestTransferEmailNormalization:
     async def test_transfer_model_email_normalized(self):
