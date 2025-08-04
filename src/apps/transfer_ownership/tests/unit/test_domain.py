@@ -1,9 +1,11 @@
 import uuid
+
 import pytest
 from pydantic import ValidationError
 
-from apps.transfer_ownership.domain import Transfer, InitiateTransfer
 from apps.transfer_ownership.constants import TransferOwnershipStatus
+from apps.transfer_ownership.domain import InitiateTransfer, Transfer
+
 
 
 @pytest.mark.asyncio
