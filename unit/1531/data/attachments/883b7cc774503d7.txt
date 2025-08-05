@@ -1,0 +1,2 @@
+ERROR    root:api.py:130 Answer creation failed: applet_id=ae34a00e-c72e-4213-811e-9a848c941bf4, user_id=7484f34a-3acc-4ee6-8a94-fd7299502fa1,                     activity_id=1970978e-2eab-4036-aa69-2ff408bb99c9, error=ValidationError: Bad request.
+ERROR    root:api.py:130 Answer creation failed: applet_id=ae34a00e-c72e-4213-811e-9a848c941bf4, user_id=7484f34a-3acc-4ee6-8a94-fd7299502fa1,                     activity_id=1970978e-2eab-4036-aa69-2ff408bb99c9, error=ValidationError: Bad request.
