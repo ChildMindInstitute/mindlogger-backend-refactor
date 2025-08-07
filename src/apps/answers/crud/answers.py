@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import uuid
-from typing import Collection
+from typing import Collection, Optional
 
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
@@ -579,7 +579,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_completed_answers_data(
         self,
         applet_id: uuid.UUID,
-        version: str,
+        version: Optional[str],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
     ) -> AppletCompletedEntities:
@@ -602,10 +602,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 AnswerSchema.applet_id == applet_id,
-                AnswerSchema.version == version,
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
+                *( [AnswerSchema.version == version] if version else [] )
             )
             .order_by(
                 AnswerSchema.activity_history_id,
@@ -643,7 +643,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: dict[uuid.UUID, str],
+        applets_version_map: dict[uuid.UUID, Optional[str]],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
     ) -> list[AppletCompletedEntities]:
@@ -714,16 +714,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         result_list: list[AppletCompletedEntities] = list()
         for applet_id, version in applets_version_map.items():
-            result_list.append(
-                AppletCompletedEntities(
-                    id=applet_id,
-                    version=version,
-                    activities=applet_activities_flows_map.get(applet_id, {"activities": [], "flows": []})[
-                        "activities"
-                    ],
-                    activity_flows=applet_activities_flows_map.get(applet_id, {"activities": [], "flows": []})["flows"],
+            if version:
+                applet_version_filter_list.append(
+                    and_(
+                        AnswerSchema.applet_id == applet_id,
+                        AnswerSchema.version == version,
+                    )
                 )
-            )
+            else:
+                applet_version_filter_list.append(
+                    AnswerSchema.applet_id == applet_id
+                )
 
         return result_list
 

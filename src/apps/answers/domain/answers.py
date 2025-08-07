@@ -2,7 +2,7 @@ import datetime
 import enum
 import uuid
 from copy import deepcopy
-from typing import Any, Generic
+from typing import Any, Generic, Optional
 
 from pydantic import BaseModel, Field, root_validator, validator
 from pydantic.generics import GenericModel
@@ -665,7 +665,7 @@ class CompletedEntity(PublicModel):
 
 class AppletCompletedEntities(InternalModel):
     id: uuid.UUID
-    version: str
+    version: Optional[str] = None
 
     activities: list[CompletedEntity]
     activity_flows: list[CompletedEntity]

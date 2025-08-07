@@ -5,7 +5,7 @@ import http
 import io
 import uuid
 import zipfile
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import Body, Depends, Header, Query
 from fastapi import Response as FastAPIResponse
@@ -771,7 +771,7 @@ async def applet_answers_export(
 
 async def applet_completed_entities(
     applet_id: uuid.UUID,
-    version: str,
+    version: Optional[str] = None,
     from_date: datetime.date = Query(..., alias="fromDate"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
