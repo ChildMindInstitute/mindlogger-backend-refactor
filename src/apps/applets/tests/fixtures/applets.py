@@ -333,11 +333,11 @@ async def applet_one_lucy_reviewer(
     mocker: MockerFixture,
     tom: User,
     lucy: User,
-    tom_applet_subject: Subject,
+    tom_applet_one_subject: Subject,
 ) -> AppletFull:
     mocker.patch(
         "apps.workspaces.service.user_applet_access.UserAppletAccessService._get_default_role_meta",
-        return_value={"subjects": [str(tom_applet_subject.id)]},
+        return_value={"subjects": [str(tom_applet_one_subject.id)]},
     )
     await UserAppletAccessService(session, tom.id, applet_one.id).add_role(lucy.id, Role.REVIEWER)
     return applet_one
