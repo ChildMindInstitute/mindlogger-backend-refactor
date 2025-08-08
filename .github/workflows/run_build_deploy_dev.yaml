@@ -44,7 +44,7 @@ jobs:
 
   run-e2e-tests:
     name: Run E2E Test Suite
-    needs: [ deploy-dev ]
+    needs: [ deploy ]
     if: ${{ !cancelled() && needs.deploy-dev.result == 'success' }}
     uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/e2e-tests.yaml@develop
     secrets: inherit
