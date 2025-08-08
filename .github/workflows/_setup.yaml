@@ -2,9 +2,15 @@ name: Setup common variables
 on:
   workflow_call:
     outputs:
-      role: ${{ jobs.setup-vars.outputs.role }}
-      region: ${{ jobs.setup-vars.outputs.region }}
-      cluster: ${{ jobs.setup-vars.outputs.cluster }}
+      role:
+        description: Role name
+        value: ${{ jobs.setup-vars.outputs.role }}
+      region:
+        description: AWS Region name
+        value: ${{ jobs.setup-vars.outputs.region }}
+      cluster:
+        description: ECS Cluster name
+        value: ${{ jobs.setup-vars.outputs.cluster }}
     inputs:
       env-name:
         required: true
