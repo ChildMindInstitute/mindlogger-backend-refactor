@@ -1,0 +1,76 @@
+name: Setup common variables
+on:
+  workflow_call:
+    outputs:
+      role: ${{ jobs.setup-vars.outputs.role }}
+      region: ${{ jobs.setup-vars.outputs.region }}
+      cluster: ${{ jobs.setup-vars.outputs.cluster }}
+    inputs:
+      env-name:
+        required: true
+        type: string
+        description: Environment name
+
+
+jobs:
+  setup-vars:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Map env to AWS Role
+        id: role
+        run: |
+          ENV_NAME="${{ inputs.env-name }}"
+          case "$ENV_NAME" in
+            "dev")
+              echo 'role=arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role' >> "$GITHUB_OUTPUT"
+            ;;
+            "test")
+              echo 'role=arn:aws:iam::641513112151:role/cmiml-test-oidc-github-role' >> "$GITHUB_OUTPUT"
+            ;;
+            "uat")
+              echo 'role=arn:aws:iam::641513112151:role/cmiml-uat-oidc-github-role' >> "$GITHUB_OUTPUT"
+            ;;
+            "stage")
+              echo 'role=arn:aws:iam::641513112151:role/cmiml-stage-oidc-github-role' >> "$GITHUB_OUTPUT"
+            ;;
+            "prod")
+              echo 'role=arn:aws:iam::410431445687:role/cmiml-prod-oidc-github-role' >> "$GITHUB_OUTPUT"
+            ;;
+            "prod-dr")
+              echo 'role=arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role' >> "$GITHUB_OUTPUT"
+            ;;
+            *)
+              echo "Bad environment name"
+              exit 1;
+          esac
+
+      - name: Map env to AWS Region
+        id: region
+        run: |
+          ENV_NAME="${{ inputs.env-name }}"
+          case "$ENV_NAME" in
+            "prod-dr")
+              echo "region=us-west-2" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "region=us-east-1" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+      - name: Map env to ECS cluster
+        id: cluster
+        run: |
+          ENV_NAME="${{ inputs.env-name }}"
+          case "$ENV_NAME" in
+            "prod-dr")
+              echo "cluster=prod-dr-us-west-2" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "cluster=cmiml-${ENV_NAME}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+    outputs:
+      role: ${{ steps.role.outputs.role }}
+      region: ${{ steps.region.outputs.region }}
+      cluster: ${{ steps.cluster.outputs.cluster }}

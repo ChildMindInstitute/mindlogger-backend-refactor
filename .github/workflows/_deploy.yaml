@@ -28,11 +28,14 @@ on:
         required: true
         type: string
         description: Docker tag
+    secrets:
+      slack-webhook:
+        required: true
 
 # Wait for other deploys to finish
 concurrency:
   cancel-in-progress: false
-  group: api-deploy
+  group: api-deploy-${{ inputs.env-name }}
 
 permissions:
   id-token: write
@@ -45,161 +48,13 @@ env:
 
 jobs:
   setup-vars:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Map env to AWS Role
-        id: role
-        run: |
-          ENV_NAME="${{ inputs.env-name }}"
-          case "$ENV_NAME" in
-            "dev")
-              echo 'role=arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role' >> "$GITHUB_OUTPUT"
-            ;;
-            "test")
-              echo 'role=arn:aws:iam::641513112151:role/cmiml-test-oidc-github-role' >> "$GITHUB_OUTPUT"
-            ;;
-            "uat")
-              echo 'role=arn:aws:iam::641513112151:role/cmiml-uat-oidc-github-role' >> "$GITHUB_OUTPUT"
-            ;;
-            "stage")
-              echo 'role=arn:aws:iam::641513112151:role/cmiml-stage-oidc-github-role' >> "$GITHUB_OUTPUT"
-            ;;
-            "prod")
-              echo 'role=arn:aws:iam::410431445687:role/cmiml-prod-oidc-github-role' >> "$GITHUB_OUTPUT"
-            ;;
-            "prod-dr")
-              echo 'role=arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role' >> "$GITHUB_OUTPUT"
-            ;;
-            *)
-              echo "Bad environment name"
-              exit 1;
-          esac
-
-      - name: Map env to AWS Region
-        id: region
-        run: |
-          ENV_NAME="${{ inputs.env-name }}"
-          case "$ENV_NAME" in
-            "prod-dr")
-              echo "region=us-west-2" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "region=us-east-1" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
-      - name: Map env to ECS cluster
-        id: cluster
-        run: |
-          ENV_NAME="${{ inputs.env-name }}"
-          case "$ENV_NAME" in
-            "prod-dr")
-              echo "cluster=prod-dr-us-west-2" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "cluster=cmiml-${ENV_NAME}" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
-
-    outputs:
-      role: ${{ steps.role.outputs.role }}
-      region: ${{ steps.region.outputs.region }}
-      cluster: ${{ steps.cluster.outputs.cluster }}
-
-
-  run-migration:
-    runs-on: ubuntu-latest
-    needs: [setup-vars]
-    env:
-      AWS_REGION: ${{ needs.setup-vars.outputs.region }}
-    steps:
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ needs.setup-vars.outputs.role }}
-          role-session-name: OIDC-GHA-migration-session
-          aws-region: ${{ needs.setup-vars.outputs.region }}
-      - name: Download task definition
-        run: |
-          aws ecs describe-task-definition --task-definition migration --query taskDefinition > task-definition.json
-
-      - name: Render Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: migrate
-          image: ${{ env.ECR_REPO }}:${{ inputs.image-tag }}
-          command: /fastapi-migrate
-          environment-variables: |
-            DD_VERSION=${{ inputs.image-tag }}
-          docker-labels: |
-            com.datadoghq.tags.version=${{ inputs.image-tag }}
-      - name: Update Task Definition
-        id: taskdef
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-      - name: Run migration
-        run: |-
-          CONTAINER_NAME=migrate
-          start=`date +%s`
-
-          echo "Starting migration task"
-          TASK_ID=$(aws ecs run-task --task-definition "${{ steps.taskdef.outputs.task-definition-arn }}" --cluster ${{ needs.setup-vars.outputs.cluster }} | jq -r '.tasks[0].taskArn')
-          
-          echo "Waiting for task ${{ steps.taskdef.outputs.task-definition-arn }} to finish..." 
-          aws ecs wait tasks-stopped --cluster ${{ needs.setup-vars.outputs.cluster }} --tasks "$TASK_ID"
-          
-          TASK_EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ needs.setup-vars.outputs.cluster }} --tasks "$TASK_ID" --query "tasks[0].containers[?name=='$CONTAINER_NAME'].exitCode" --output text)
-          
-          end=`date +%s`
-          runtime=$((end-start))
-          
-          echo "Task finished with exit code $TASK_EXIT_CODE after $runtime"
-          
-          echo "exit-code=${TASK_EXIT_CODE}" >> $GITHUB_OUTPUT
-          echo "task-time=${runtime}" >> $GITHUB_OUTPUT
-          
-          if [ $TASK_EXIT_CODE -gt 0 ]; then
-            exit 1;
-          fi
-
-  on-migration-failure:
-    runs-on: ubuntu-latest
-    if: ${{ !cancelled() && (needs.run-migration.result == 'failure' || needs.run-migration.result == 'timed_out') }}
-    needs:
-      - run-migration
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Send Slack message on failure"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: actions url
-          SLACK_TITLE: Database Migration in DEV environment
-          SLACK_MESSAGE: '🚨 Error when executing migration!'
-
-  on-migration-success:
-    runs-on: ubuntu-latest
-    if: ${{ !cancelled() && (needs.run-migration.result == 'success') }}
-    needs:
-      - run-migration
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Send Slack message on success"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
-          MSG_MINIMAL: actions url
-          SLACK_TITLE: Database Migration in DEV environment
-          SLACK_MESSAGE: '🎉 Migration was successful!'
+    uses: ./.github/workflows/_setup.yaml
+    with:
+      env-name: ${{ inputs.env-name }}
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [setup-vars, run-migration]
+    needs: [setup-vars]
 
     name: Deploy ${{ matrix.apps.name }}
     strategy:
@@ -253,7 +108,7 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
+          SLACK_WEBHOOK: ${{  }}
           MSG_MINIMAL: actions url
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: '🚨 Error when executing deployment!'
