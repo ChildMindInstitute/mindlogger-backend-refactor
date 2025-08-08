@@ -84,7 +84,7 @@ jobs:
           echo "exit-code=${TASK_EXIT_CODE}" >> $GITHUB_OUTPUT
           echo "task-time=${runtime}" >> $GITHUB_OUTPUT
 
-          if [ $TASK_EXIT_CODE -gt 0 ]; then
+          if [ "$TASK_EXIT_CODE" -gt "0" ]; then
             exit 1;
           fi
 
