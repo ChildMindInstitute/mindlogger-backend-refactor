@@ -62,7 +62,7 @@ jobs:
 
   deploy-uat:
     name: Deploy to UAT
-    needs: [ build ]
+    needs: [ build, migrations ]
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_UAT }}
     uses: ./.github/workflows/_deploy.yaml

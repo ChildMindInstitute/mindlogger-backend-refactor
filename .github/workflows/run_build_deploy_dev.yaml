@@ -35,7 +35,7 @@ jobs:
 
   deploy:
     name: Deploy to Dev
-    needs: [ build ]
+    needs: [ build, migrations ]
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
     uses: ./.github/workflows/_deploy.yaml

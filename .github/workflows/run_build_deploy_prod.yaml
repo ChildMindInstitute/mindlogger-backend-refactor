@@ -61,7 +61,7 @@ jobs:
 
   deploy-prod:
     name: Deploy to Prod
-    needs: [ build ]
+    needs: [ build, migrations ]
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_Prod }}
     uses: ./.github/workflows/_deploy.yaml
