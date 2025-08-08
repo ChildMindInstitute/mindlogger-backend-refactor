@@ -51,6 +51,7 @@ jobs:
 
   migrations:
     name: Run Migrations in UAT
+    needs: build
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_UAT }}
     uses: ./.github/workflows/_migrations.yaml
