@@ -108,7 +108,7 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: failure
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
+          SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: '🚨 Error when executing deployment!'
@@ -124,7 +124,7 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
+          SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
           SLACK_TITLE: Deployment to DEV environment
           SLACK_MESSAGE: '🚀 Deployment was successful!'
