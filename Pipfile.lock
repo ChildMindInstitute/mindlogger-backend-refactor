@@ -3933,11 +3933,11 @@
         },
         "zope.event": {
             "hashes": [
-                "sha256:2832e95014f4db26c47a13fdaef84cef2f4df37e66b59d8f1f4a8f319a632c26",
-                "sha256:bac440d8d9891b4068e2b5a2c5e2c9765a9df762944bda6955f96bb9b91e67cd"
+                "sha256:8d5ea7b992c42ce73a6fa9c2ba99a004c52cd9f05d87f3220768ef0329b92df7",
+                "sha256:c1ac931abf57efba71a2a313c5f4d57768a19b15c37e3f02f50eb1536be12d4e"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==5.0"
+            "markers": "python_version >= '3.9'",
+            "version": "==5.1.1"
         },
         "zope.interface": {
             "hashes": [
