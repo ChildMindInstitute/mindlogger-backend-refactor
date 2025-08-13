@@ -652,15 +652,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             AnswerSchema.flow_history_id.is_(None),
         )
 
-        applet_version_filter_list: list[BooleanClauseList] = list()
-        for applet_id, version in applets_version_map.items():
-            applet_version_filter_list.append(
-                and_(
-                    AnswerSchema.applet_id == applet_id,
-                    AnswerSchema.version == version,
-                )
-            )
-        applet_version_filter: BooleanClauseList = or_(*applet_version_filter_list)
+        applet_ids = list(applets_version_map.keys())
 
         query: Query = (
             select(
@@ -679,8 +671,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
+                AnswerSchema.applet_id.in_(applet_ids),
             )
-            .where(applet_version_filter)
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
@@ -714,17 +706,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         result_list: list[AppletCompletedEntities] = list()
         for applet_id, version in applets_version_map.items():
-            if version:
-                applet_version_filter_list.append(
-                    and_(
-                        AnswerSchema.applet_id == applet_id,
-                        AnswerSchema.version == version,
-                    )
+            result_list.append(
+                AppletCompletedEntities(
+                    id=applet_id,
+                    version=version,
+                    activities=applet_activities_flows_map.get(applet_id, {"activities": [], "flows": []})[
+                        "activities"
+                    ],
+                    activity_flows=applet_activities_flows_map.get(applet_id, {"activities": [], "flows": []})["flows"],
                 )
-            else:
-                applet_version_filter_list.append(
-                    AnswerSchema.applet_id == applet_id
-                )
+            )
 
         return result_list
 
