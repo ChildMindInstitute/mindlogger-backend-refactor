@@ -48,7 +48,7 @@ jobs:
     with:
       tag-name: ${{ needs.ref.outputs.target-ref }}
       git-ref: ${{ needs.ref.outputs.target-ref }}
-      #${{ github.ref_name }}
+
 
   migrations:
     name: Run Migrations in UAT
