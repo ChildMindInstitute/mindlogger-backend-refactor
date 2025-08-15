@@ -875,7 +875,7 @@ async def answers_existence_check(
 
     logger.info(
         f"check-existence: applet_id={schema.applet_id}, activity_id={schema.activity_id}, user_id={user.id}, "
-        f"created_at={schema.created_at}, exists={is_exist}, ip={client_ip}"
+        f"submit_id={schema.submit_id}, exists={is_exist}, ip={client_ip}"
     )
 
     return Response[AnswerExistenceResponse](result=AnswerExistenceResponse(exists=is_exist))
