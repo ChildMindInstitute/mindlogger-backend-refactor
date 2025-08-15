@@ -80,12 +80,12 @@ jobs:
           end=`date +%s`
           runtime=$((end-start))
 
-          echo "Task finished with exit code $TASK_EXIT_CODE after $runtime"
+          echo "Task finished with exit code $TASK_EXIT_CODE after ${runtime} seconds."
 
           echo "exit-code=${TASK_EXIT_CODE}" >> $GITHUB_OUTPUT
           echo "task-time=${runtime}" >> $GITHUB_OUTPUT
 
-          if [ -z "$TASK_EXIT_CODE" || "$TASK_EXIT_CODE" -gt "0" ]; then
+          if [ -z "$TASK_EXIT_CODE" ] || [ "$TASK_EXIT_CODE" -gt "0" ]; then
             exit 1;
           fi
 
