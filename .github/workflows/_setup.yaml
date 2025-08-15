@@ -11,6 +11,9 @@ on:
       cluster:
         description: ECS Cluster name
         value: ${{ jobs.setup-vars.outputs.cluster }}
+      ecr-repo:
+        description: ECR Repository
+        value: ${{ jobs.setup-vars.outputs.ecr-repo }}
     inputs:
       env-name:
         required: true
@@ -75,8 +78,21 @@ jobs:
               echo "cluster=cmiml-${ENV_NAME}" >> "$GITHUB_OUTPUT"
               ;;
           esac
+      - name: Map env to ECR repo
+        id: ecr
+        run: |
+          ENV_NAME="${{ inputs.env-name }}"
+          case "$ENV_NAME" in
+            "prod-dr")
+              echo "repo=973422231492.dkr.ecr.us-east-1.amazonaws.com/api-server" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "repo=917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
     outputs:
       role: ${{ steps.role.outputs.role }}
       region: ${{ steps.region.outputs.region }}
       cluster: ${{ steps.cluster.outputs.cluster }}
+      ecr-repo: ${{ steps.ecr.outputs.repo }}

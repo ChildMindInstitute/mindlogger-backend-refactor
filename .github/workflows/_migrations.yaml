@@ -24,6 +24,7 @@ permissions:
   id-token: write
   contents: read
 
+
 jobs:
   setup-vars:
     uses: ./.github/workflows/_setup.yaml
@@ -52,7 +53,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: migrate
-          image: ${{ env.ECR_REPO }}:${{ inputs.image-tag }}
+          image: ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.image-tag }}
           command: /fastapi-migrate
           environment-variables: |
             DD_VERSION=${{ inputs.image-tag }}

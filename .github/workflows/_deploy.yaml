@@ -42,10 +42,6 @@ permissions:
   contents: read
   issues: write
 
-env:
-  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
-
 jobs:
   setup-vars:
     uses: ./.github/workflows/_setup.yaml
@@ -86,7 +82,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ matrix.apps.container }}
-          image: ${{ env.ECR_REPO }}:${{ inputs.image-tag }}
+          image: ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.image-tag }}
 
       - name: Update Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
