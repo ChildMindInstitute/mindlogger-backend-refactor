@@ -8,6 +8,11 @@ on:
         required: false
         default: latest
         type: string
+      git-ref:
+        description: Git Ref to build from
+        required: false
+        type: string
+        default: develop
 
 # Safe to cancel builds in progress
 concurrency:
@@ -41,6 +46,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs. }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
