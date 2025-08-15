@@ -66,6 +66,7 @@ jobs:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
       - name: Run migration
         run: |-
+          set -e
           CONTAINER_NAME=migrate
           start=`date +%s`
 
