@@ -103,7 +103,7 @@ jobs:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
-          SLACK_TITLE: Database Migration in DEV environment
+          SLACK_TITLE: Database Migration in ${{ inputs.env-name }} environment
           SLACK_MESSAGE: '🚨 Error when executing migration!'
 
   on-migration-success:
@@ -119,5 +119,5 @@ jobs:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.slack-webhook  }}
           MSG_MINIMAL: actions url
-          SLACK_TITLE: Database Migration in DEV environment
+          SLACK_TITLE: Database Migration in ${{ inputs.env-name }} environment
           SLACK_MESSAGE: '🎉 Migration was successful!'
