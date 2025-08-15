@@ -513,7 +513,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_by_applet_activity_created_at(
+    async def get_by_applet_activity_submit_or_user_id(
         self,
         applet_id: uuid.UUID,
         activity_id: str,
