@@ -3,26 +3,25 @@
 # ------------------------------
 FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.6.6 /uv /bin/uv
-ENV UV_PYTHON_INSTALL_DIR=/opt/uv/python
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH="src/"
 
-# Install system dependencies and pipenv
-RUN apt update && apt install -y --no-install-recommends \
-    build-essential \
-    curl \
-    libtool \
-    autoconf \
-    automake \
-    pkg-config \
-    zlib1g-dev \
-    python3-dev \
-    ca-certificates \
-    git \
-    python3-pip \
- && apt clean && rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+#RUN apt update && apt install -y --no-install-recommends \
+#    build-essential \
+#    curl \
+#    libtool \
+#    autoconf \
+#    automake \
+#    pkg-config \
+#    zlib1g-dev \
+#    python3-dev \
+#    ca-certificates \
+#    git \
+#    python3-pip \
+# && apt clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
