@@ -870,7 +870,7 @@ async def answers_existence_check(
     await AppletService(session, user.id).exist_by_id(schema.applet_id)
     await CheckAccessService(session, user.id).check_answer_check_access(schema.applet_id)
     is_exist = await AnswerService(session, user.id, answer_session).is_answers_uploaded(
-        schema.applet_id, schema.activity_id, schema.created_at, schema.submit_id
+        schema.applet_id, schema.activity_id, schema.submit_id
     )
 
     logger.info(

@@ -1692,11 +1692,11 @@ class AnswerService:
         return result
 
     async def is_answers_uploaded(
-        self, applet_id: uuid.UUID, activity_id: str, created_at: int, submit_id: uuid.UUID | None = None
+        self, applet_id: uuid.UUID, activity_id: str, submit_id: uuid.UUID | None = None
     ) -> bool:
         # check by submit id if provided otherwise by user_id
         answers = await AnswersCRUD(self.answer_session).get_by_applet_activity_submit_or_user_id(
-            applet_id, activity_id, created_at, self.user_id if not submit_id else None, submit_id
+            applet_id, activity_id, self.user_id if not submit_id else None, submit_id
         )
         if not answers:
             return False
