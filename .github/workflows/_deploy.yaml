@@ -106,7 +106,7 @@ jobs:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
-          SLACK_TITLE: Deployment to DEV environment
+          SLACK_TITLE: Deployment to ${{ inputs.env-name }} environment
           SLACK_MESSAGE: '🚨 Error when executing deployment!'
 
   on-deploy-success:
@@ -122,5 +122,5 @@ jobs:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
-          SLACK_TITLE: Deployment to DEV environment
+          SLACK_TITLE: Deployment to ${{ inputs.env-name }} environment
           SLACK_MESSAGE: '🚀 Deployment was successful!'
