@@ -8,7 +8,7 @@ import time
 import uuid
 from collections import defaultdict
 from json import JSONDecodeError
-from typing import Callable, List, Optional
+from typing import Callable, List, Mapping, Optional
 
 import aiohttp
 import pydantic
@@ -1680,12 +1680,12 @@ class AnswerService:
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: dict[uuid.UUID, Optional[str]],
+        applets_version_map: Mapping[uuid.UUID, Optional[str]],
         from_date: datetime.date,
     ) -> list[AppletCompletedEntities]:
         assert self.user_id
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data_list(
-            applets_version_map,
+            dict(applets_version_map),
             self.user_id,
             from_date,
         )
