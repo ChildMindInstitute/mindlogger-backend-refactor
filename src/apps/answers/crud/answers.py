@@ -8,7 +8,6 @@ from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
 from sqlalchemy.sql import Values
-from sqlalchemy.sql.elements import BooleanClauseList
 
 from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
@@ -605,7 +604,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
-                *( [AnswerSchema.version == version] if version else [] )
+                *([AnswerSchema.version == version] if version else []),
             )
             .order_by(
                 AnswerSchema.activity_history_id,
