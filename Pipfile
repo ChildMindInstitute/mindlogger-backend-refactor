@@ -29,7 +29,7 @@ pyOpenSSL = "==25.1.0"
 python-multipart = "==0.0.20"
 python-slugify = "==8.0.4"
 redis = "==5.2.*"
-sentry-sdk = "~=2.13"
+sentry-sdk = "~=2.35"
 sqlalchemy = { extras = ["asyncio"], version = "==1.4.53" }
 sqlalchemy-utils = "==0.41.2"
 structlog = "==25.4.0"
