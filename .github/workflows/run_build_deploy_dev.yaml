@@ -18,29 +18,45 @@ permissions:
 
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get git short sha
+        id: sha
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    outputs:
+      short-sha: ${{ steps.sha.outputs.sha }}
+
   build:
     name: Docker Build and Push
+    needs: version
     secrets: inherit
     uses: ./.github/workflows/_build.yaml
+    with:
+      tag-name: ${{ needs.version.outputs.short-sha }}
 
   migrations:
-    needs: build
+    needs: [version, build]
     name: Run Migrations in Dev
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
     uses: ./.github/workflows/_migrations.yaml
     with:
       env-name: dev
-      image-tag: latest
+      image-tag: ${{ needs.version.outputs.short-sha }}
 
   deploy:
     name: Deploy to Dev
-    needs: [ build, migrations ]
+    needs: [ version, build, migrations ]
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DEV }}
     uses: ./.github/workflows/_deploy.yaml
     with:
-      image-tag: latest
+      image-tag: ${{ needs.version.outputs.short-sha }}
       env-name: dev
 
   run-e2e-tests:

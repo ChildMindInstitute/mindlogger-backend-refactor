@@ -1,6 +1,9 @@
 name: Build and Deploy to Prod
 
 on:
+  release:
+    types:
+      - released
   workflow_dispatch:
     inputs:
       target-ref:
@@ -19,53 +22,50 @@ permissions:
   issues: write
 
 jobs:
-#  ref:
-#    name: Get target ref
-#    runs-on: ubuntu-latest
-#    outputs:
-#      target-ref: ${{ steps.ref.outputs.ref }}
-#    steps:
-#      - id: ref
-#        name: Select Ref
-#        run: |
-#          TARGET_REF="${{ github.event.inputs.target_ref }}"
-#          # Use shell parameter expansion to provide a default value if input is unset or empty
-#          # github.ref_name will be used if the input is not provided or empty
-#          # Remove "refs/heads/" or "refs/tags/" if present in github.ref_name
-#          TARGET_REF=${TARGET_REF:-$(echo "${{ github.ref_name }}" | sed 's/refs\/heads\///g' | sed 's/refs\/tags\///g')}
-#
-#          echo "Target reference: $TARGET_REF"
-#          echo "ref=$TARGET_REF" >> $GITHUB_OUTPUT
+  ref:
+    name: Get target ref
+    runs-on: ubuntu-latest
+    outputs:
+      target-ref: ${{ steps.ref.outputs.ref }}
+    steps:
+      - id: ref
+        name: Select Ref
+        run: |
+          TARGET_REF="${{ github.event.inputs.target-ref }}"
+          # Use shell parameter expansion to provide a default value if input is unset or empty
+          # github.ref_name will be used if the input is not provided or empty
+          # Remove "refs/heads/" or "refs/tags/" if present in github.ref_name
+          TARGET_REF=${TARGET_REF:-$(echo "${{ github.event.release.tag_name }}" | sed 's/refs\/heads\///g' | sed 's/refs\/tags\///g')}
+
+          echo "Target reference: $TARGET_REF"
+          echo "ref=$TARGET_REF" >> $GITHUB_OUTPUT
 
   build:
     name: Build
-#    needs: ref
+    needs: ref
     secrets: inherit
     uses: ./.github/workflows/_build.yaml
     with:
-      tag-name: ${{ inputs.target-ref }}
-#      tag-name: ${{ needs.ref.outputs.target-ref }}
-      #${{ github.ref_name }}
+      tag-name: ${{ needs.ref.outputs.target-ref }}
+      git-ref: ${{ needs.ref.outputs.target-ref }}
 
   migrations:
     name: Run Migrations in Prod
-    needs: build
+    needs: [build, ref]
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_PROD }}
     uses: ./.github/workflows/_migrations.yaml
     with:
       env-name: prod
-      image-tag: ${{ inputs.target-ref }}
-#      image-tag: ${{ needs.ref.outputs.target-ref }}
+      image-tag: ${{ needs.ref.outputs.target-ref }}
 
 
   deploy-prod:
     name: Deploy to Prod
-    needs: [ build, migrations ]
+    needs: [ build, migrations, ref ]
     secrets:
-      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_Prod }}
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_PROD }}
     uses: ./.github/workflows/_deploy.yaml
     with:
-      image-tag: ${{ inputs.target-ref }}
-#      image-tag: ${{ needs.ref.outputs.target-ref }}
       env-name: prod
+      image-tag: ${{ needs.ref.outputs.target-ref }}
