@@ -39,7 +39,7 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
     )
     def convert_string_to_list(cls, v):
         """Convert legacy JSON string format to array format for backward compatibility.
-        
+
         Mobile apps < v1.0.8 send notification fields as JSON strings.
         This validator ensures compatibility by converting strings to arrays.
         """
