@@ -56,9 +56,12 @@ jobs:
           image: ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.image-tag }}
           command: /fastapi-migrate
           environment-variables: |
+            VERSION=${{ inputs.image-tag }}
             DD_VERSION=${{ inputs.image-tag }}
+            SENTRY_RELEASE=${{ inputs.image-tag }}
           docker-labels: |
             com.datadoghq.tags.version=${{ inputs.image-tag }}
+
       - name: Update Task Definition
         id: taskdef
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2

@@ -83,7 +83,12 @@ jobs:
           task-definition: task-definition.json
           container-name: ${{ matrix.apps.container }}
           image: ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.image-tag }}
-
+          environment-variables: |
+            VERSION=${{ inputs.image-tag }}
+            DD_VERSION=${{ inputs.image-tag }}
+            SENTRY_RELEASE=${{ inputs.image-tag }}
+          docker-labels: |
+            com.datadoghq.tags.version=${{ inputs.image-tag }}
       - name: Update Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
