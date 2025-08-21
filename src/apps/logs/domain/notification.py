@@ -31,6 +31,38 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
     notification_in_queue: list[dict] | None
     scheduled_notifications: list[dict] | None
 
+    @validator(
+        "notification_descriptions",
+        "notification_in_queue",
+        "scheduled_notifications",
+        pre=True,
+    )
+    def convert_string_to_list(cls, v):
+        """Convert legacy JSON string format to array format for backward compatibility.
+        
+        Mobile apps < v1.0.8 send notification fields as JSON strings.
+        This validator ensures compatibility by converting strings to arrays.
+        """
+        if v is None:
+            return None
+
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                elif isinstance(parsed, dict):
+                    return [parsed]
+                return None
+            except json.JSONDecodeError:
+                # Handle malformed JSON gracefully
+                return None
+
+        if isinstance(v, list):
+            return v
+
+        return None
+
     @root_validator
     def validate_json_fields(cls, values):
         if not any(
