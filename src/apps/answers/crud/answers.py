@@ -645,6 +645,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         applets_version_map: dict[uuid.UUID, Optional[str]],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
+        use_version_filter: bool = False,
     ) -> list[AppletCompletedEntities]:
         is_completed = or_(
             AnswerSchema.is_flow_completed,
@@ -652,6 +653,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         applet_ids = list(applets_version_map.keys())
+        if use_version_filter:
+            applet_predicate = or_(
+                *[
+                    and_(AnswerSchema.applet_id == applet_id, AnswerSchema.version == version)
+                    if version
+                    else (AnswerSchema.applet_id == applet_id)
+                    for applet_id, version in applets_version_map.items()
+                ]
+            )
+        else:
+            applet_predicate = AnswerSchema.applet_id.in_(applet_ids)
 
         query: Query = (
             select(
@@ -670,7 +682,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
-                AnswerSchema.applet_id.in_(applet_ids),
+                applet_predicate,
             )
             .order_by(
                 AnswerSchema.activity_history_id,
