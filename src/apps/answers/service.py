@@ -8,7 +8,7 @@ import time
 import uuid
 from collections import defaultdict
 from json import JSONDecodeError
-from typing import Callable, List
+from typing import Callable, List, Mapping, Optional
 
 import aiohttp
 import pydantic
@@ -1667,7 +1667,7 @@ class AnswerService:
         await self.send_alert_mail(persons)
 
     async def get_completed_answers_data(
-        self, applet_id: uuid.UUID, version: str, from_date: datetime.date
+        self, applet_id: uuid.UUID, version: Optional[str], from_date: datetime.date
     ) -> AppletCompletedEntities:
         assert self.user_id
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data(
@@ -1680,14 +1680,16 @@ class AnswerService:
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: dict[uuid.UUID, str],
+        applets_version_map: Mapping[uuid.UUID, Optional[str]],
         from_date: datetime.date,
+        use_version_filter: bool = False,
     ) -> list[AppletCompletedEntities]:
         assert self.user_id
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data_list(
-            applets_version_map,
+            dict(applets_version_map),
             self.user_id,
             from_date,
+            use_version_filter=use_version_filter,
         )
         return result
 

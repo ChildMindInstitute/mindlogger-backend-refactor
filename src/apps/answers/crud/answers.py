@@ -1,14 +1,13 @@
 import asyncio
 import datetime
 import uuid
-from typing import Collection
+from typing import Collection, Optional
 
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
 from sqlalchemy.sql import Values
-from sqlalchemy.sql.elements import BooleanClauseList
 
 from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
@@ -579,7 +578,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_completed_answers_data(
         self,
         applet_id: uuid.UUID,
-        version: str,
+        version: Optional[str],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
     ) -> AppletCompletedEntities:
@@ -602,10 +601,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 AnswerSchema.applet_id == applet_id,
-                AnswerSchema.version == version,
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
+                *([AnswerSchema.version == version] if version else []),
             )
             .order_by(
                 AnswerSchema.activity_history_id,
@@ -643,24 +642,28 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: dict[uuid.UUID, str],
+        applets_version_map: dict[uuid.UUID, Optional[str]],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
+        use_version_filter: bool = False,
     ) -> list[AppletCompletedEntities]:
         is_completed = or_(
             AnswerSchema.is_flow_completed,
             AnswerSchema.flow_history_id.is_(None),
         )
 
-        applet_version_filter_list: list[BooleanClauseList] = list()
-        for applet_id, version in applets_version_map.items():
-            applet_version_filter_list.append(
-                and_(
-                    AnswerSchema.applet_id == applet_id,
-                    AnswerSchema.version == version,
-                )
+        applet_ids = list(applets_version_map.keys())
+        if use_version_filter:
+            applet_predicate = or_(
+                *[
+                    and_(AnswerSchema.applet_id == applet_id, AnswerSchema.version == version)
+                    if version
+                    else (AnswerSchema.applet_id == applet_id)
+                    for applet_id, version in applets_version_map.items()
+                ]
             )
-        applet_version_filter: BooleanClauseList = or_(*applet_version_filter_list)
+        else:
+            applet_predicate = AnswerSchema.applet_id.in_(applet_ids)
 
         query: Query = (
             select(
@@ -679,8 +682,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
+                applet_predicate,
             )
-            .where(applet_version_filter)
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,

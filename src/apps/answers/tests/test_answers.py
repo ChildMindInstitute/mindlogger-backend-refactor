@@ -2375,15 +2375,40 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         answer_create.answer.local_end_date = cast(datetime.date, answer_create.answer.local_end_date)
         answer_create.answer.local_end_time = cast(datetime.time, answer_create.answer.local_end_time)
-        response = await client.get(
+
+        response_without_version = await client.get(
+            self.applet_answers_completions_url.format(
+                applet_id=str(answer.applet_id),
+            ),
+            {"fromDate": answer_create.answer.local_end_date.isoformat()},
+        )
+
+        assert response_without_version.status_code == http.HTTPStatus.OK
+        data_no_version = response_without_version.json()["result"]
+        assert set(data_no_version.keys()) == {"id", "version", "activities", "activityFlows"}
+        assert len(data_no_version["activities"]) == 1
+        activity_no_version = data_no_version["activities"][0]
+        assert set(activity_no_version.keys()) == {
+            "id",
+            "answerId",
+            "submitId",
+            "targetSubjectId",
+            "scheduledEventId",
+            "localEndDate",
+            "localEndTime",
+        }
+        assert activity_no_version["answerId"] == str(answer.id)
+        assert activity_no_version["localEndTime"] == str(answer_create.answer.local_end_time)
+
+        response_with_version = await client.get(
             self.applet_answers_completions_url.format(
                 applet_id=str(answer.applet_id),
             ),
             {"fromDate": answer_create.answer.local_end_date.isoformat(), "version": answer.version},
         )
 
-        assert response.status_code == http.HTTPStatus.OK
-        data = response.json()["result"]
+        assert response_with_version.status_code == http.HTTPStatus.OK
+        data = response_with_version.json()["result"]
         assert set(data.keys()) == {
             "id",
             "version",
@@ -2410,14 +2435,15 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         answer_create.answer.local_end_date = cast(datetime.date, answer_create.answer.local_end_date)
         answer_create.answer.local_end_time = cast(datetime.time, answer_create.answer.local_end_time)
+
         # test completions
-        response = await client.get(
+        response_without_version = await client.get(
             url=self.applets_answers_completions_url,
             query={"fromDate": answer_create.answer.local_end_date.isoformat()},
         )
 
-        assert response.status_code == http.HTTPStatus.OK
-        data = response.json()["result"]
+        assert response_without_version.status_code == http.HTTPStatus.OK
+        data = response_without_version.json()["result"]
         # 2 session applets and 1 for answers
         assert len(data) == 3
         applet_with_answer = next(i for i in data if i["id"] == str(answer.applet_id))
@@ -2440,6 +2466,45 @@ class TestAnswerActivityItems(BaseTest):
         assert activity_answer_data["localEndDate"] == answer_create.answer.local_end_date.isoformat()
         assert activity_answer_data["localEndTime"] == str(answer_create.answer.local_end_time)
         for applet_data in data:
+            if applet_data["id"] != str(answer.applet_id):
+                assert not applet_data["activities"]
+                assert not applet_data["activityFlows"]
+
+        response_with_version = await client.get(
+            url=self.applets_answers_completions_url,
+            query={
+                "fromDate": answer_create.answer.local_end_date.isoformat(),
+                "filterByVersion": True,
+            },
+        )
+        assert response_with_version.status_code == http.HTTPStatus.OK
+        data2 = response_with_version.json()["result"]
+
+        # Still expecting the same 3 applets in the response structure
+        assert len(data2) == 3
+
+        applet_with_answer_2 = next(i for i in data2 if i["id"] == str(answer.applet_id))
+        assert applet_with_answer_2["id"] == str(answer.applet_id)
+        assert applet_with_answer_2["version"] == answer.version
+        assert len(applet_with_answer_2["activities"]) == 1
+
+        activity_answer_data_2 = applet_with_answer_2["activities"][0]
+        assert set(activity_answer_data_2.keys()) == {
+            "id",
+            "answerId",
+            "submitId",
+            "targetSubjectId",
+            "scheduledEventId",
+            "localEndDate",
+            "localEndTime",
+        }
+        assert activity_answer_data_2["answerId"] == str(answer.id)
+        assert activity_answer_data_2["scheduledEventId"] == answer_create.answer.scheduled_event_id
+        assert activity_answer_data_2["localEndDate"] == answer_create.answer.local_end_date.isoformat()
+        assert activity_answer_data_2["localEndTime"] == str(answer_create.answer.local_end_time)
+
+        # Other applets must be empty (again, for the filtered case)
+        for applet_data in data2:
             if applet_data["id"] != str(answer.applet_id):
                 assert not applet_data["activities"]
                 assert not applet_data["activityFlows"]
