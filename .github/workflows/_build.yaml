@@ -1,5 +1,5 @@
-
 name: Build
+
 on:
   workflow_call:
     inputs:
@@ -8,11 +8,16 @@ on:
         required: false
         default: latest
         type: string
+      git-ref:
+        description: Git Ref to build from
+        required: false
+        type: string
+        default: develop
 
 # Safe to cancel builds in progress
 concurrency:
   cancel-in-progress: true
-  group: api-build
+  group: api-build-${{ inputs.tag-name }}
 
 permissions:
   id-token: write
@@ -41,6 +46,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git-ref }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -87,6 +94,7 @@ jobs:
             ${{ env.ECR_REPO }}:${{ steps.sha.outputs.SHORT_SHA }}
           platforms: linux/amd64,linux/arm64
 
+      # TODO What is this used for?  Leftover artifact from Jenkins
       - name: Extract Jira ticket numbers from commit message
         run: |
           tickets=$(git log -1 --pretty=%B | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')

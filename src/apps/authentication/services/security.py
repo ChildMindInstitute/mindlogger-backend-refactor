@@ -95,3 +95,10 @@ class AuthenticationService:
 
     async def is_revoked(self, token: InternalToken):
         return await TokensService(self.session).is_revoked(token)
+
+    async def update_last_seen_at(self, user: User):
+        """Update last seen at, but only every 15 minutes."""
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        if user.last_seen_at is None or now - user.last_seen_at > timedelta(minutes=15):
+            await UsersCRUD(self.session).update_last_seen_by_id(user.id)
