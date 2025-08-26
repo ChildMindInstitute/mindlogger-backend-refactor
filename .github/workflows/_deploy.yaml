@@ -42,10 +42,6 @@ permissions:
   contents: read
   issues: write
 
-env:
-  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
-
 jobs:
   setup-vars:
     uses: ./.github/workflows/_setup.yaml
@@ -86,8 +82,13 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ matrix.apps.container }}
-          image: ${{ env.ECR_REPO }}:${{ inputs.image-tag }}
-
+          image: ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.image-tag }}
+          environment-variables: |
+            VERSION=${{ inputs.image-tag }}
+            DD_VERSION=${{ inputs.image-tag }}
+            SENTRY_RELEASE=${{ inputs.image-tag }}
+          docker-labels: |
+            com.datadoghq.tags.version=${{ inputs.image-tag }}
       - name: Update Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
@@ -110,7 +111,7 @@ jobs:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
-          SLACK_TITLE: Deployment to DEV environment
+          SLACK_TITLE: Deployment to ${{ inputs.env-name }} environment
           SLACK_MESSAGE: '🚨 Error when executing deployment!'
 
   on-deploy-success:
@@ -120,11 +121,25 @@ jobs:
       - deploy
     steps:
       - uses: actions/checkout@v4
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::917902836630:role/ssm-versions-oidc-github-role
+          role-session-name: OIDC-GHA-session-version
+          aws-region: us-east-1
+      - name: Store version in SSM
+        run: |
+          aws ssm put-parameter \
+                  --name "/curious/app/backend/${{ inputs.env-name }}/version" \
+                  --value "${{ inputs.image-tag }}" \
+                  --type "String" \
+                  --overwrite
+
       - name: "Send Slack message on success"
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
-          SLACK_TITLE: Deployment to DEV environment
-          SLACK_MESSAGE: '🚀 Deployment was successful!'
+          SLACK_TITLE: Deployment to ${{ inputs.env-name }} environment
+          SLACK_MESSAGE: '🚀 Deployment was successful. Version: *${{ inputs.image-tag }}*'
