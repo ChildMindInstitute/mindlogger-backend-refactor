@@ -17,3 +17,6 @@ buildspec.yaml
 .env.default
 copilot
 .idea
+docs
+
+htmlcov

@@ -2,10 +2,7 @@
 
 This repository is used for the backend of the [Curious](https://mindlogger.org/) application stack.
 
-[![Automated tests](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml/badge.svg)](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml)
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/ChildMindInstitute/mindlogger-backend-refactor" target="_blank">
-    <img src="https://coverage-badge.samuelcolvin.workers.dev/ChildMindInstitute/mindlogger-backend-refactor.svg" alt="Coverage">
-</a>
+---
 
 ## Getting Started
 
@@ -14,17 +11,12 @@ This repository is used for the backend of the [Curious](https://mindlogger.org/
 * Curious Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
 * Curious Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
 
-
-## Features
-
-See
-Curious's [Knowledge Base article](https://mindlogger.atlassian.net/servicedesk/customer/portal/3/topic/4d9a9ad4-c663-443b-b7fc-be9faf5d9383/article/337444910)
-to discover the Curious application stack's features.
+---
 
 ## Technologies
 
 - ✅ [Python 3.13](https://www.python.org/downloads/release/python-3132/)
-- ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
+- ✅ [uv](https://docs.astral.sh/uv/)
 - ✅ [FastAPI](https://fastapi.tiangolo.com)
 - ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
 - ✅ [Redis](https://redis.io)
@@ -42,7 +34,7 @@ And
 - ✅ [mypy](https://github.com/python/mypy)
 - ✅ [pytest](https://github.com/pytest-dev/pytest)
 
-## Application
+## Getting Started
 
 ### Prerequisites
 
@@ -78,7 +70,9 @@ Install all deps from pyproject.toml
 uv sync
 ```
 
-## Project Setup
+---
+
+## Initial Project Setup
 
 ### Environment Variables
 
@@ -131,6 +125,7 @@ cp .env.default .env
 >
 > As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
 
+---
 
 ## Running Supporting Services
 
@@ -142,7 +137,7 @@ If mail services are needed, mailhog is required and is provided via docker comp
 If uploading media files to applets or answers, then an S3 compatible service is needed.  Minio is provided
 via docker compose.
 
-#### Run services using Docker
+### Run services using Docker
 
 - Run Postgres
   ```bash
@@ -180,13 +175,22 @@ via docker compose.
 > 🛑 **NOTE:** If the application can't find the `RabbitMQ` service even though it's running normally, change your
 `RABBITMQ__URL` to your local ip address instead of `localhost`
 
+
+### Run services using other means
+
+It is not recommended to run the services natively.  Please use the provided docker setup.
+
+---
+
 ## Run the migrations
 
-The database needs to be initialized with tables and starting data.
+The database needs to be initialized with tables and starting data via alembic.
 
 ```bash
 uv run alembic upgrade head
 ```
+
+---
 
 ## Other Local Setup
 
@@ -200,6 +204,8 @@ done with elevated privileges (ex: `sudo vi /etc/hosts`)
   127.0.0.1 redis
   127.0.0.1 mailhog
   ```
+
+---
 
 ## Running the app
 
@@ -229,7 +235,9 @@ Alternatively, you may run the application using [make](#running-using-makefile)
 make run
 ```
 
+### Running via Pycharm
 
+---
 
 ## Project Makefile
 
@@ -304,58 +312,9 @@ make dtest
 make dcheck
 ```
 
-## Scripts
-
-### Using pre-commit hooks
-
-It is a good practice to use Git hooks to provide better commits.
-
-For increased security during development, install `git-secrets` to scan code for aws keys.
-
-Please use this link for that: https://github.com/awslabs/git-secrets#installing-git-secrets
-
-`.pre-commit-config.yaml` is placed in the root of the repository.
-
-👉 Once you have installed `git-secrets` and `pre-commit` simply run the following command.
-
-```bash
-make aws-scan
-```
-
-👉 Then all your staged changes will be checked via git hooks on every `git commit`
-
-
-### Update gender_screen and age_screen activity items strings to greek for an applet
-
-```bash
-python src/cli.py patch exec M2-8568 -a <applet_id>
-```
-
-> [!NOTE]
-> You can use environment variables to overwrite default values.
->
-> | Environment variable | Text string |
-> | - | - |
-> | `AGE_SCREEN_QUESTION_TRANSLATION` | Question text for the Age screen |
-> | `GENDER_SCREEN_QUESTION_TRANSLATION` | Question text for the Gender screen |
-> | `GENDER_SCREEN_RESPONSE_MALE_TRANSLATION` | "Male" response text |
-> | `GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION` | "Female" response text |
-
-### Library cleanup
-
-You can use the following command to remove entries from the `library` table (as the Library feature lacks a delete endpoint):
-
-```bash
-python src/cli.py patch exec M2-9015 --applets '{"<applet_id>": "<applet_name>", ...}'
-```
-
-
-
-
 
 ## License
 Common Public Attribution License Version 1.0 (CPAL-1.0)
 
 Refer to [LICENSE.md](./LICENSE.MD)
 
----
