@@ -1,0 +1,2 @@
+INFO     root:service.py:2236 Sending request to the report server localhost/send-pdf-report?activityId=3eb3a4f6-32ec-4b73-af1b-b79548312be8&activityFlowId=697adb93-deb9-4e18-ba1c-a7e1c1209bc4.
+INFO     root:service.py:2244 Successful request in 0.0 seconds.
