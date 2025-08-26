@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-from pytest import FixtureRequest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -107,30 +106,29 @@ async def test_get_applets_by_display_name__applet_deleted(applet: AppletSchema,
 @pytest.mark.parametrize(
     "require_login, result",
     (
-        (False, applet), # public
-        (True, None), # public
-    )
+        (False, applet),  # public
+        (True, None),  # public
+    ),
 )
-async def test_public_applet(session: AsyncSession,
-    applet_with_public_link: AppletSchema,
-    require_login: bool,
-    result: AppletSchema | None) -> None:
+async def test_public_applet(
+    session: AsyncSession, applet_with_public_link: AppletSchema, require_login: bool, result: AppletSchema | None
+) -> None:
     crud = AppletsCRUD(session)
     instance = await crud.get_by_link(applet_with_public_link.link, require_login)
     if instance:
         assert instance.id == applet_with_public_link.id
 
+
 @pytest.mark.parametrize(
     "require_login, result",
     (
-        (False, None), # link
-        (True, applet), # link
-    )
+        (False, None),  # link
+        (True, applet),  # link
+    ),
 )
-async def test_private_applet(session: AsyncSession,
-    applet_with_link: AppletSchema,
-    require_login: bool,
-    result: AppletSchema | None) -> None:
+async def test_private_applet(
+    session: AsyncSession, applet_with_link: AppletSchema, require_login: bool, result: AppletSchema | None
+) -> None:
     crud = AppletsCRUD(session)
     instance = await crud.get_by_link(applet_with_link.link, require_login)
     if instance:
