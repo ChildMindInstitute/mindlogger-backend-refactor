@@ -15,23 +15,6 @@ This repository is used for the backend of the [Curious](https://mindlogger.org/
 * Curious Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
 
 
-## Contents
-- [Features](#features)
-- [Technologies](#technologies)
-- [Application](#application-stack)
-  - [Prerequisites](#prerequisites)
-  - [Environment Variables](#environment-variables)
-- [Installation](#installation)
-- [Running the app](#running-the-app)
-  - [Running locally](#running-locally)
-  - [Running via docker](#running-via-docker)
-  - [Running using Makefile](#running-using-makefile)
-  - [Docker development](#docker-development)
-- [Testing](#testing)
-- [Scripts](#scripts)
-- [Arbitrary setup](#arbitrary-setup)
-- [License](#license)
-
 ## Features
 
 See
@@ -63,20 +46,56 @@ And
 
 ### Prerequisites
 
-- Python 3.13
+- [Homebrew](https://brew.sh/) (MacOS)
+- [uv](https://docs.astral.sh/uv/)
 - [Docker](https://docs.docker.com/get-docker/)
 
-#### Recommended Extras
-
-Installing [pyenv](https://github.com/pyenv/pyenv) is recommended to automatically manage Python version in the virtual environment specified in the `Pipfile`
-
-Alternatively, on macOS you can use a tool like [Homebrew](https://brew.sh/) to install multiple versions and specify when creating the virtual environment:
-
+On MacOS:
 ```bash
-pipenv --python /opt/homebrew/bin/python3.13
+brew install uv
 ```
 
+On other plaftorms, follow the [uv install instructions](https://docs.astral.sh/uv/getting-started/installation/)
+
+### Installing Dependencies
+
+uv is used as a default dependencies and python manager.
+
+#### Install Python
+
+uv can automatically install the python version defined in `.python-version`.  It will use this version when
+performing any python operations.
+
+```bash
+uv python install
+```
+
+> ⚠️ If the python version changes (ex: from 3.12 to 3.13) this command will need to be rerun
+
+#### Install Project Dependencies
+Install all deps from pyproject.toml
+```bash
+uv sync
+```
+
+## Project Setup
+
 ### Environment Variables
+
+#### Create `.env` file for local development
+
+It is highly recommended to create an `.env` file as far as it is needed for setting up the project with 
+local and Docker approaches.
+
+Use `.env.default` as a baseline to get started.  It has valid defaults for local development set:
+
+```bash
+cp .env.default .env
+```
+
+> 🛑 **NOTE:** Make sure to set `RABBITMQ__USE_SSL=False` for local development
+
+### Environment Variable Reference
 
 | Key                                                          | Default value              | Description                                                                                                                                                                                                                                                                                                                            |
 |--------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -108,45 +127,20 @@ pipenv --python /opt/homebrew/bin/python3.13
 | ONEUP\_HEALTH\_\_CLIENT\_SECRET                              | -                          | OneUpHealth API Client secret                                                                                                                                                                                                                                                                                                          |
 | ONEUP\_HEALTH\_\_MAX\_ERROR\_RETRIES                         | 5                          | Maximum number of times to re-attempt fetching health data from the OneUpHealth API. The overall total number of attempts will be this value plus one                                                                                                                                                                                  |
 
-##### ✋ Mandatory:
-
-> You can see that some environment variables have double underscore (`__`) instead of `_`.
+> ✋You can see that some environment variables have double underscore (`__`) instead of `_`.
 >
 > As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
 
-## Installation
 
-### Create `.env` file for future needs
+## Running Supporting Services
 
-It is highly recommended to create an `.env` file as far as it is needed for setting up the project with Local and Docker approaches.
-Use `.env.default` to get started:\
-```bash
-cp .env.default .env
-```
+The application requires Postgres, Redis and RabbitMQ to be running to start up and serve requests
+(as well as run the test suite).
 
-> 🛑 **NOTE:** Make sure to set `RABBITMQ__USE_SSL=False` for local development
+If mail services are needed, mailhog is required and is provided via docker compose.
 
-### Generate secret keys, update .env with values
-
-```bash
-openssl rand -hex 32
-```
-
-Generate a key and update `.env` values:
-
-* `AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY`
-* `AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY`
-
-### Required Services
-
-- Postgres
-- Redis
-- RabbitMQ
-- Mailhog - Only used for running mail services locally
-
-Running required services using Docker is **highly** recommended even if you intend to run the app locally.
-
-> 🛑 **NOTE:** Make sure to update your environment variables to point to the correct hostname and port for each service.
+If uploading media files to applets or answers, then an S3 compatible service is needed.  Minio is provided
+via docker compose.
 
 #### Run services using Docker
 
@@ -165,103 +159,41 @@ Running required services using Docker is **highly** recommended even if you int
   docker-compose up -d rabbitmq
   ```
 
-- Alternatively, you can run all required services:
+- Alternatively, you can run all required for the backend:
   ```bash
-  docker-compose up
+  docker-compose up postgres redis rabbitmq
   ```
 
-#### Run services manually
+- If you also need mail and S3 storage service
+  ```bash
+  docker-compose up postgres redis rabbitmq mailhog minio
+  ```
 
-For manual installation refer to each service's documentation:
+> ⚠️ When using Minio more configuration is needed to configure boto3 to talk to the local endpoints
+> ```
+> AWS_ACCESS_KEY_ID=minioadmin
+> AWS_SECRET_ACCESS_KEY=minioadmin
+> AWS_ENDPOINT_URL=http://localhost:9000
+> AWS_DEFAULT_REGION=us-east-1
+> ```
 
-- [PostgreSQL Downloads](https://www.postgresql.org/download/)
-- [Redis: Install Redis](https://redis.io/docs/install/install-redis/)
-- [RabbitMQ documentation](https://rabbitmq-website.pages.dev/docs/download)
-
-
-### Install all project dependencies
-
-Pipenv used as a default dependencies manager
-Create your virtual environment:
-
-> **NOTE:**
-> Pipenv used as a default dependencies manager.
-> When developing on the API be sure to work from within an active shell.
-> If using VScode, open the terminal from w/in the active shell. Ideally, avoid using the integrated terminal during this process.
-
-```bash
-# Activate your environment
-pipenv shell
-```
-
-If `pyenv` is installed Python 3.13 should automatically be installed in the virtual environment, you can check the
-correct version of Python is active by running:
-```bash
-python --version
-```
-
-If the active version is **not** 3.13, you can manually specify a version while creating your virtual environment:
-```bash
-pipenv --python /opt/homebrew/bin/python3.13
-```
-
-Install all dependencies
-```bash
-# Install all deps from Pipfile.lock
-# to install venv to current directory use `export PIPENV_VENV_IN_PROJECT=1`
-pipenv sync --dev --system
-```
-
-> 🛑 **NOTE:** if you don't use `pipenv` for some reason remember that you will not have automatically exported variables from your `.env` file.
->
-> 🔗 [Pipenv docs](https://docs.pipenv.org/advanced/#automatic-loading-of-env)
-
-So then you have to do it by your own manually
-
-```bash
-# Manual exporting in Unix (like this)
-export PYTHONPATH=src/
-export BASIC_AUTH__PASSWORD=1234
-...
-```
-
-...or using a Bash-script
-
-```bash
-set -o allexport; source .env; set +o allexport
-```
-
-
-> 🛑 **NOTE 2:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
-
-> 🛑 **NOTE 3:** If the application can't find the `RabbitMQ` service even though it's running normally, change your
+> 🛑 **NOTE:** If the application can't find the `RabbitMQ` service even though it's running normally, change your
 `RABBITMQ__URL` to your local ip address instead of `localhost`
 
 ## Run the migrations
+
+The database needs to be initialized with tables and starting data.
+
 ```bash
-alembic upgrade head
+uv run alembic upgrade head
 ```
 
-> 🛑 **NOTE:** If you run into role based errors e.g. `role "postgres" does not exist`, check to see if that program is running anywhere else (e.g. Homebrew), run... `ps -ef | grep {program-that-errored}`
-> You can attempt to kill the process with the following command `kill -9 {PID-to-program-that-errored}`, followed by rerunning the previous check to confirm if the program has stopped.
+## Other Local Setup
 
-## Running the app
+If you are on a unix type system (Linux, MacOS, WSL, etc) add these entries to `/etc/hosts`.  This will need to be
+done with elevated privileges (ex: `sudo vi /etc/hosts`)
 
-### Running locally
-
-This option allows you to run the app for development purposes without having to manually build the Docker image (i.e. When developing on the Web or Admin project).
-
-- Make sure all [required services](#required-services) are properly setup
-- If you're running required services using Docker, disable the `app` service from `docker-compose` before running:
-  ```bash
-  docker-compose up -d
-  ```
-
-  Alternatively, you may run these services using [make](#running-using-makefile) (i.e. When developing the API):
-
-   - You'll need to sudo into `/etc/hosts` and append the following changes.
-
-  ```
+```
   #mindlogger
   127.0.0.1 postgres
   127.0.0.1 rabbitmq
@@ -269,20 +201,24 @@ This option allows you to run the app for development purposes without having to
   127.0.0.1 mailhog
   ```
 
-  Then run the following command from within the active virtual environment shell...
+## Running the app
 
+### Running locally via Docker
+
+To run all services:
+```bash
+docker-compose up app
+```
+
+To run just the application:
+Make sure all [required services](#required-services) are properly setup and running
+
+Then start just the app:
   ```bash
-  make run_local
+  docker-compose up app
   ```
 
-> 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
-- To test that the API is up and running navigate to `http://localhost:8000/docs` in a browser.
-
-In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
-
-To do this we must have `src/` folder specified in a **PATH**.
-
-P.S. You don't need to do this additional step if you run application via Docker container 🤫
+### Running locally via the CLI
 
 ```bash
 uvicorn src.main:app --proxy-headers --port {PORT} --reload
@@ -292,32 +228,9 @@ Alternatively, you may run the application using [make](#running-using-makefile)
 ```bash
 make run
 ```
-### Running via docker
 
-- [Build the application](#build-application-images)
-- Run the app using Docker:
-```bash
-docker-compose up
-```
 
-Additional `docker-compose up` flags that might be useful for development
 
-```bash
--d  # Run docker containers as deamons (in background)
---no-recreate  # If containers already exist, don't recreate them
-```
-
-#### Stop the application 🛑
-
-```bash
-docker-compose down
-```
-
-Additional `docker-compose down` flags that might be useful for development
-
-```bash
--v  # Remove with all volumes
-```
 ### Running using Makefile
 
 You can use the `Makefile` to work with project (run the application / code quality tools / tests ...)
@@ -836,3 +749,18 @@ Some commands (such as applet seeding) have detailed documentation in their resp
 - [`src/apps/applets/commands/applet/seed/v1/README.md`](src/apps/applets/commands/applet/seed/v1/README.md)
 
 Refer to these files for configuration schemas and advanced usage.
+
+
+---------------------------
+Other junk
+
+### Generate secret keys, update .env with values
+
+```bash
+openssl rand -hex 32
+```
+
+Generate a key and update `.env` values:
+
+* `AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY`
+* `AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY`
