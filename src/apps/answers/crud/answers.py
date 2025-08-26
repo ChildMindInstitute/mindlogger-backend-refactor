@@ -645,15 +645,21 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         applets_version_map: dict[uuid.UUID, Optional[str]],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
-        use_version_filter: bool = False,
+        filter_by_version: bool = False,
     ) -> list[AppletCompletedEntities]:
         is_completed = or_(
             AnswerSchema.is_flow_completed,
             AnswerSchema.flow_history_id.is_(None),
         )
 
-        applet_ids = list(applets_version_map.keys())
-        if use_version_filter:
+        """
+         -Create applet filter:
+         -When filter_by_version is True, we match both applet_id and version
+            to avoid mixing data across versions.
+         -When False, we use only applet_id to keep existing behavior 
+            and include all versions for backward compatibility.
+        """
+        if filter_by_version:
             applet_predicate = or_(
                 *[
                     and_(AnswerSchema.applet_id == applet_id, AnswerSchema.version == version)
@@ -663,7 +669,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 ]
             )
         else:
-            applet_predicate = AnswerSchema.applet_id.in_(applet_ids)
+            applet_predicate = AnswerSchema.applet_id.in_(list(applets_version_map.keys()))
 
         query: Query = (
             select(

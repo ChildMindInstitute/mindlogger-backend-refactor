@@ -806,7 +806,7 @@ async def _get_arbitrary_answer(
 
 async def applets_completed_entities(
     from_date: datetime.date = Query(..., alias="fromDate"),
-    filterByVersion: bool = Query(False),
+    filter_by_version: bool = Query(False),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> ResponseMulti[AppletCompletedEntities]:
@@ -848,7 +848,7 @@ async def applets_completed_entities(
             data = AnswerService(session, user_id=user.id).get_completed_answers_data_list(
                 applets_version_map=applets_version_arb_map,
                 from_date=from_date,
-                use_version_filter=filterByVersion,
+                filter_by_version=filter_by_version,
             )
         data_future_list.append(data)
 
