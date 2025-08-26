@@ -38,7 +38,7 @@ taskiq-aio-pika = "==0.4.2"
 taskiq-fastapi = "==0.3.*"
 taskiq-redis = "==1.0.8"
 typer = "==0.16.0"
-uvicorn = { extras = ["standard"], version = "==0.34.*" }
+uvicorn = { extras = ["standard"], version = "==0.35.*" }
 
 [dev-packages]
 allure-pytest = "==2.14.*"
