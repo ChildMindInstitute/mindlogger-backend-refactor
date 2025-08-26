@@ -673,15 +673,8 @@ class AppletCompletedEntities(InternalModel):
 
 class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
-    created_at: int
     activity_id: str
     submit_id: uuid.UUID | None = None
-
-    @validator("created_at")
-    def convert_time_to_unix_timestamp(cls, value: int):
-        if value:
-            return value / 1000  # wtf, rework this
-        return value
 
 
 class AnswerExistenceResponse(PublicModel):
