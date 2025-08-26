@@ -673,6 +673,10 @@ class AppletCompletedEntities(InternalModel):
 
 class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
+    # TODO: created_at can be safely removed after
+    # the corresponding mobile PR is merged
+    # https://github.com/mindlogger/mindlogger-app-refactor/pull/1024
+    created_at: int | None = None
     activity_id: str
     submit_id: uuid.UUID | None = None
 
