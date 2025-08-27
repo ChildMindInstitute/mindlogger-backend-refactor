@@ -4,7 +4,7 @@ This repository is used for the backend of the [Curious](https://mindlogger.org/
 
 ---
 
-## Getting Started
+## Curious Application Stack
 
 * Curious Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
 * Curious Backend - **This Repo**
@@ -12,27 +12,6 @@ This repository is used for the backend of the [Curious](https://mindlogger.org/
 * Curious Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
 
 ---
-
-## Technologies
-
-- ✅ [Python 3.13](https://www.python.org/downloads/release/python-3132/)
-- ✅ [uv](https://docs.astral.sh/uv/)
-- ✅ [FastAPI](https://fastapi.tiangolo.com)
-- ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
-- ✅ [Redis](https://redis.io)
-- ✅ [Docker](https://docs.docker.com/get-docker/)
-- ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
-- ✅ [SQLAlchemy](https://www.sqlalchemy.org/)
-
-And
-
-- ✅ [The 12-Factor App](https://12factor.net)
-
-**Code quality tools:**
-
-- ✅ [ruff](https://github.com/astral-sh/ruff)
-- ✅ [mypy](https://github.com/python/mypy)
-- ✅ [pytest](https://github.com/pytest-dev/pytest)
 
 ## Getting Started
 
@@ -47,16 +26,17 @@ On MacOS:
 brew install uv
 ```
 
-On other plaftorms, follow the [uv install instructions](https://docs.astral.sh/uv/getting-started/installation/)
+On other platforms, follow the [uv install instructions](https://docs.astral.sh/uv/getting-started/installation/)
 
-### Installing Dependencies
+### Managing Python and Project Dependencies
 
-uv is used as a default dependencies and python manager.
+Python versions and dependencies are managed via `uv`. There is no need to use other tooling such as pip,
+pyenv, pipenv, etc.
+
 
 #### Install Python
 
-uv can automatically install the python version defined in `.python-version`.  It will use this version when
-performing any python operations.
+Install the python version specified in pyproject.toml
 
 ```bash
 uv python install
@@ -65,7 +45,7 @@ uv python install
 > ⚠️ If the python version changes (ex: from 3.12 to 3.13) this command will need to be rerun
 
 #### Install Project Dependencies
-Install all deps from pyproject.toml
+Install all dependencies from pyproject.toml
 ```bash
 uv sync
 ```
@@ -78,10 +58,12 @@ uv sync
 
 #### Create `.env` file for local development
 
-It is highly recommended to create an `.env` file as far as it is needed for setting up the project with 
-local and Docker approaches.
+The backend leverages the python package `dotenv` to read environment variables from a `.env` file
+on the file system.  This is useful during local development due to the large number
+of necessary environment variables to configure the application.
 
-Use `.env.default` as a baseline to get started.  It has valid defaults for local development set:
+Use the supplied `.env.default` as a baseline to get started.  It has valid defaults for for nearly
+all local development:
 
 ```bash
 cp .env.default .env
@@ -121,23 +103,24 @@ cp .env.default .env
 | ONEUP\_HEALTH\_\_CLIENT\_SECRET                              | -                          | OneUpHealth API Client secret                                                                                                                                                                                                                                                                                                          |
 | ONEUP\_HEALTH\_\_MAX\_ERROR\_RETRIES                         | 5                          | Maximum number of times to re-attempt fetching health data from the OneUpHealth API. The overall total number of attempts will be this value plus one                                                                                                                                                                                  |
 
-> ✋You can see that some environment variables have double underscore (`__`) instead of `_`.
+> ✋Note: most environment variables have double underscore (`__`) instead of `_`.
 >
-> As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
+> The application leverages `pydantic-settings` which supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) 
+> to effectively namespace related settings.
 
 ---
 
 ## Running Supporting Services
 
-The application requires Postgres, Redis and RabbitMQ to be running to start up and serve requests
-(as well as run the test suite).
+The application requires Postgres, Redis, and RabbitMQ to be running to start up and serve requests
+(as well as running the test suite).
 
 If mail services are needed, mailhog is required and is provided via docker compose.
 
 If uploading media files to applets or answers, then an S3 compatible service is needed.  Minio is provided
 via docker compose.
 
-### Run services using Docker
+### Start Supporting Services using Docker
 
 - Run Postgres
   ```bash
@@ -182,7 +165,7 @@ It is not recommended to run the services natively.  Please use the provided doc
 
 ---
 
-## Run the migrations
+## Run Database Migrations
 
 The database needs to be initialized with tables and starting data via alembic.
 
@@ -195,7 +178,7 @@ uv run alembic upgrade head
 ## Other Local Setup
 
 If you are on a unix type system (Linux, MacOS, WSL, etc) add these entries to `/etc/hosts`.  This will need to be
-done with elevated privileges (ex: `sudo vi /etc/hosts`)
+done with elevated privileges (ex: `sudo vi /etc/hosts`).
 
 ```
   #mindlogger
@@ -211,10 +194,6 @@ done with elevated privileges (ex: `sudo vi /etc/hosts`)
 
 ### Running locally via Docker
 
-To run all services:
-```bash
-docker-compose up app
-```
 
 To run just the application:
 Make sure all [required services](#required-services) are properly setup and running
@@ -224,10 +203,15 @@ Then start just the app:
   docker-compose up app
   ```
 
+To run all services (useful when developing the other applications in the stack):
+```bash
+docker-compose up
+```
+
 ### Running locally via the CLI
 
 ```bash
-uvicorn src.main:app --proxy-headers --port {PORT} --reload
+uvicorn src.main:app --proxy-headers --port 8000 --reload
 ```
 
 Alternatively, you may run the application using [make](#running-using-makefile):
@@ -235,7 +219,9 @@ Alternatively, you may run the application using [make](#running-using-makefile)
 make run
 ```
 
-### Running via Pycharm
+### Running via PyCharm
+
+See the [PyCharm documentation](docs/pycharm.md) for details.
 
 ---
 
@@ -249,14 +235,14 @@ For local usage:
 # Run the application
 make run
 
+# Run the test suite
+make test
+
 # Check the code quality
 make cq
 
 # Check and fix code quality
 make cqf
-
-# Check tests passing
-make test
 
 # Check everything in one hop
 make check
@@ -265,7 +251,7 @@ make check
 
 ### Adjust your database for using with tests
 
-⚠️️ Remember that you have to do this only once before the first test.
+⚠️️ You have to do this only once before running the test suite.
 
 ```base
 # Connect to the database with Docker
@@ -288,29 +274,6 @@ psql# create user test;
 psql# alter user test with password 'test';
 ```
 
-### Test coverage
-
-To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:
-
-```bash
-coverage run --branch --concurrency=thread,gevent -m pytest
-coverage report -m
-```
-
-### Running test via docker
-
-(This is how tests are running on CI)
-
-```bash
-# Check the code quality
-make dcq
-
-# Check tests passing
-make dtest
-
-# Check everything in one hop
-make dcheck
-```
 
 
 ## License
