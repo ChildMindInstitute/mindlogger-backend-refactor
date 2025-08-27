@@ -20,3 +20,4 @@ copilot
 docs
 
 htmlcov
+.coverage

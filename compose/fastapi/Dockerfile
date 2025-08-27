@@ -25,10 +25,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+#COPY pyproject.toml uv.lock ./
+#RUN uv pip freeze > requirements.txt && pip wheel --wheel-dir=/wheels -r requirements.txt
+#uv pip freeze > requirements.txt && \
+
+# uv export --no-hashes --no-header --format requirements-txt > requirements.txt && \
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv export --no-hashes --no-header --format requirements-txt > requirements.txt && \
+    uv sync --locked --no-install-project --no-dev
+
+COPY . /app
+RUN uv sync --locked --no-dev && \
+    uv pip freeze > requirements.txt && \
     pip wheel --wheel-dir=/wheels -r requirements.txt
 
 
@@ -51,10 +60,6 @@ RUN adduser --disabled-password --gecos '' code
 
 WORKDIR /app
 
-# Install runtime dependencies from wheelhouse
-COPY --from=builder /wheels /wheels
-COPY --from=builder /app/requirements.txt .
-RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt
 
 ## Copy infrustructure scripts
 # Application scripts
@@ -75,8 +80,13 @@ COPY --chown=code:code --chmod=775 ./compose/fastapi/ecs-start-feature /ecs-star
 COPY --chmod=775 --chown=code:code ./compose/fastapi/start-worker /start-worker
 COPY --chmod=775 --chown=code:code ./compose/fastapi/start-scheduler /start-scheduler
 
+# Install runtime dependencies from wheelhouse
+COPY --from=builder /wheels /wheels
+#COPY --from=builder /app/requirements.txt .
 # Copy app code
-COPY --chown=code:code . .
+COPY --from=builder --chown=code:code /app .
+RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt
+
 
 VOLUME /app/uploads /tmp
 

@@ -37,7 +37,7 @@ services:
     container_name: mindlogger_backend
     build:
       context: .
-      dockerfile: ./compose/fastapi/Dockerfile
+      dockerfile: ./compose/fastapi/Dockerfile.uv2
     entrypoint: /fastapi-entrypoint
     command: /start-backend-datadog
     env_file: .env
