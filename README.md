@@ -274,6 +274,15 @@ psql# create user test;
 psql# alter user test with password 'test';
 ```
 
+## Further Reading
+
+- [Alembic details](docs/alembic.md)
+- [Arbitrary Server](docs/arbitrary.md)
+- [Curious CLI](docs/cli.md)
+- [Database](docs/db.md)
+- [Git Helpers](docs/git.md)
+- [PyCharm Setup](docs/pycharm.md)
+- [Security tokens (for deployments)](docs/tokens.md)
 
 
 ## License

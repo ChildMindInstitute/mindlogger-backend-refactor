@@ -25,10 +25,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-#COPY pyproject.toml uv.lock ./
-#RUN uv export --no-hashes --no-header --format requirements-txt > requirements.txt && \
-#    pip wheel --wheel-dir=/wheels -r requirements.txt
-
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \

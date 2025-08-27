@@ -1,3 +1,5 @@
+# Test Suite
+
 ## Test coverage
 
 To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:

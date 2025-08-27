@@ -1,4 +1,4 @@
-## Database relation structure
+# Database relation structure
 
 ```mermaid
 

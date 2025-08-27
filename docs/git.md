@@ -1,6 +1,6 @@
-## Scripts
+# Git Stuff
 
-### Using pre-commit hooks
+## Using pre-commit hooks
 
 It is a good practice to use Git hooks to provide better commits.
 
