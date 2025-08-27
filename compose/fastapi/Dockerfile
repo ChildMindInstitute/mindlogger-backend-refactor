@@ -1,100 +1,72 @@
 # ------------------------------
 # Stage 1: Build
 # ------------------------------
-FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm AS builder
-COPY --from=ghcr.io/astral-sh/uv:0.6.6 /uv /bin/uv
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS builder
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH="src/"
+# Configure the Python directory so it is consistent
+ENV UV_PYTHON_INSTALL_DIR=/python
 
-# Install system dependencies
-#RUN apt update && apt install -y --no-install-recommends \
-#    build-essential \
-#    curl \
-#    libtool \
-#    autoconf \
-#    automake \
-#    pkg-config \
-#    zlib1g-dev \
-#    python3-dev \
-#    ca-certificates \
-#    git \
-#    python3-pip \
-# && apt clean && rm -rf /var/lib/apt/lists/*
+# Only use the managed Python version
+ENV UV_PYTHON_PREFERENCE=only-managed
+
+# Install Python before the project for caching
+RUN uv python install 3.13
 
 WORKDIR /app
 
-#COPY pyproject.toml uv.lock ./
-#RUN uv pip freeze > requirements.txt && pip wheel --wheel-dir=/wheels -r requirements.txt
-#uv pip freeze > requirements.txt && \
-
-# uv export --no-hashes --no-header --format requirements-txt > requirements.txt && \
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --no-dev
 
 COPY . /app
-RUN uv sync --locked --no-dev && \
-    uv pip freeze > requirements.txt && \
-    pip wheel --wheel-dir=/wheels -r requirements.txt
 
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
 
-# ------------------------------
-# Stage 2: Runtime
-# ------------------------------
-FROM public.ecr.aws/docker/library/python:3.13-slim-bookworm AS base
+# Then, use a final image without uv
+FROM debian:bookworm-slim AS base
+# It is important to use the image that matches the builder, as the path to the
+# Python executable must be the same, e.g., using `python:3.11-slim-bookworm`
+# will fail.
+
+RUN adduser --disabled-password --gecos '' app
+
+COPY --from=builder --chown=python:python /python /python
+
+WORKDIR /app
+
+## Copy infrustructure scripts
+# Application scripts
+COPY --chown=app:app --chmod=775 ./compose/fastapi/entrypoint /fastapi-entrypoint
+
+# Copy to fastapi-start and fastapi-start-datadog to not break current ECS task config
+COPY --chown=app:app --chmod=775 ./compose/fastapi/start-backend-datadog /start-backend-datadog
+COPY --chown=app:app --chmod=775 ./compose/fastapi/start-backend-datadog /fastapi-start-datadog
+
+# Migration script
+COPY --chown=app:app --chmod=775 ./compose/fastapi/migrate /fastapi-migrate
+
+# ECS
+COPY --chown=app:app --chmod=775 ./compose/fastapi/ecs-start /ecs-start
+COPY --chown=app:app --chmod=775 ./compose/fastapi/ecs-start-feature /ecs-start-feature
+
+# Scheduler and worker
+COPY --chmod=775 --chown=app:app ./compose/fastapi/start-worker /start-worker
+COPY --chmod=775 --chown=app:app ./compose/fastapi/start-scheduler /start-scheduler
+
+# Copy the application from the builder
+COPY --from=builder --chown=app:app /app /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH="src/"
 
-# Startup dependencies
-RUN apt update -y && apt install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/
+# Place executables in the environment at the front of the path
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Add non-root user
-RUN adduser --disabled-password --gecos '' code
-
-WORKDIR /app
-
-
-## Copy infrustructure scripts
-# Application scripts
-COPY --chown=code:code --chmod=775 ./compose/fastapi/entrypoint /fastapi-entrypoint
-
-# Copy to fastapi-start and fastapi-start-datadog to not break current ECS task config
-COPY --chown=code:code --chmod=775 ./compose/fastapi/start-backend-datadog /start-backend-datadog
-COPY --chown=code:code --chmod=775 ./compose/fastapi/start-backend-datadog /fastapi-start-datadog
-
-# Migration script
-COPY --chown=code:code --chmod=775 ./compose/fastapi/migrate /fastapi-migrate
-
-# ECS
-COPY --chown=code:code --chmod=775 ./compose/fastapi/ecs-start /ecs-start
-COPY --chown=code:code --chmod=775 ./compose/fastapi/ecs-start-feature /ecs-start-feature
-
-# Scheduler and worker
-COPY --chmod=775 --chown=code:code ./compose/fastapi/start-worker /start-worker
-COPY --chmod=775 --chown=code:code ./compose/fastapi/start-scheduler /start-scheduler
-
-# Install runtime dependencies from wheelhouse
-COPY --from=builder /wheels /wheels
-#COPY --from=builder /app/requirements.txt .
-# Copy app code
-COPY --from=builder --chown=code:code /app .
-RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt
-
-
-VOLUME /app/uploads /tmp
-
-RUN mkdir -p /app/uploads && \
-    chown -R code /app/uploads
-
-# Switch to non-root user
-USER code
+USER app
 
 # These are down here to prevent cache busting
 ARG DD_GIT_REPOSITORY_URL
@@ -111,7 +83,6 @@ VOLUME ["/app/uploads"]
 
 FROM base AS app
 # This is a hack to allow Fargate to exist since docker will build the last defined target if none is specified
-EXPOSE 8080
-
+EXPOSE 8000
 
 
