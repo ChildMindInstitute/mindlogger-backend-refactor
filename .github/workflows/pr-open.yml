@@ -39,7 +39,7 @@ jobs:
           MSG_MINIMAL: actions url
 
   run-unit-tests:
-    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/tests.yaml@develop
+    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/tests.yaml
     secrets: inherit
 
   comment-unit-tests:
