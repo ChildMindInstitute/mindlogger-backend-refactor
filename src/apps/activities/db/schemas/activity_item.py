@@ -22,7 +22,7 @@ class _BaseActivityItemSchema:
 class ActivityItemSchema(_BaseActivityItemSchema, Base):
     __tablename__ = "activity_items"
 
-    activity_id = Column(ForeignKey("activities.id", ondelete="CASCADE"), nullable=False)
+    activity_id = Column(ForeignKey("activities.id", ondelete="CASCADE"), nullable=False, index=True)
 
 
 class ActivityItemHistorySchema(_BaseActivityItemSchema, Base):

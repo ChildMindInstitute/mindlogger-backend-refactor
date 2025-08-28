@@ -96,7 +96,7 @@ async def get_current_user(
             raise AuthenticationError
 
         user = await UsersCRUD(session).get_by_id(id_=token.payload.sub)
-        await UsersCRUD(session).update_last_seen_by_id(token.payload.sub)
+        await AuthenticationService(session).update_last_seen_at(user)
 
     return user
 

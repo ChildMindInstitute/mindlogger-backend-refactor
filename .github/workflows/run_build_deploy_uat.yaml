@@ -1,0 +1,123 @@
+name: Build and Deploy to UAT
+
+on:
+  push:
+    tags:
+      - "*-rc[0-9]+"
+  workflow_dispatch:
+    inputs:
+      target-ref:
+        description: The RC tag to use
+        required: true
+        type: string
+
+
+concurrency:
+  cancel-in-progress: false
+  group: api-build-deploy-uat
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+jobs:
+  ref:
+    name: Get target ref
+    runs-on: ubuntu-latest
+    outputs:
+      target-ref: ${{ steps.ref.outputs.ref }}
+    steps:
+      - id: ref
+        name: Select Ref
+        run: |
+          TARGET_REF="${{ github.event.inputs.target_ref }}"
+          # Use shell parameter expansion to provide a default value if input is unset or empty
+          # github.ref_name will be used if the input is not provided or empty
+          # Remove "refs/heads/" or "refs/tags/" if present in github.ref_name
+          TARGET_REF=${TARGET_REF:-$(echo "${{ github.ref_name }}" | sed 's/refs\/heads\///g' | sed 's/refs\/tags\///g')} 
+          
+          echo "Target reference: $TARGET_REF"
+          echo "ref=$TARGET_REF" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build Release Candidate
+    needs: ref
+    secrets: inherit
+    uses: ./.github/workflows/_build.yaml
+    with:
+      tag-name: ${{ needs.ref.outputs.target-ref }}
+      git-ref: ${{ needs.ref.outputs.target-ref }}
+
+
+  migrations:
+    name: Run Migrations in UAT
+    needs: [build, ref]
+    secrets:
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_UAT }}
+    uses: ./.github/workflows/_migrations.yaml
+    with:
+      env-name: uat
+      image-tag: ${{ needs.ref.outputs.target-ref }}
+
+
+  deploy-uat:
+    name: Deploy to UAT
+    needs: [ build, migrations, ref ]
+    secrets:
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_UAT }}
+    uses: ./.github/workflows/_deploy.yaml
+    with:
+      image-tag: ${{ needs.ref.outputs.target-ref }}
+      env-name: uat
+
+#  run-e2e-tests:
+#    name: Run E2E Test Suite
+#    needs: [ deploy-uat ]
+#    if: ${{ !cancelled() && needs.deploy-dev.result == 'success' }}
+#    uses: ChildMindInstitute/mindlogger-backend-refactor/.github/workflows/e2e-tests.yaml@develop
+#    secrets: inherit
+#    permissions:
+#      contents: write
+#      id-token: write
+#    with:
+#      service-url: https://api-uat.cmiml.net
+#
+#  comment-e2e-tests:
+#    name: Comment on test outcome
+#    if: ${{ !cancelled() }}
+#    runs-on: ubuntu-latest
+#    permissions:
+#      issues: write
+#      pull-requests: write
+#      statuses: write
+#    needs: [run-e2e-tests]
+#    steps:
+#      - name: "Send Slack message on failure"
+#        if: ${{ needs.run-e2e-tests.result != 'success' }}
+#        uses: rtCamp/action-slack-notify@v2
+#        env:
+#          SLACK_COLOR: failure
+#          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_TEST_RESULTS }}
+#          SLACKIFY_MARKDOWN: true
+#          SLACK_TITLE: |
+#            :rotating_light: E2E test suite failed
+#          SLACK_MESSAGE: >-
+#            E2E tests for dev failed in ${{ github.repository }}
+#            \n\n
+#            :arrow_right: [Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+#            \n\n
+#            :label: [Commit](${{ github.event.head_commit.url }}) | :chart_with_upwards_trend: [Test Report](${{ needs.run-e2e-tests.outputs.report-url }})
+#          SLACK_ICON: https://github.com/github.png?size=48
+#          MSG_MINIMAL: true
+#
+#
+#      - name: Post the link to the report
+#        if: ${{ !cancelled() }}
+#        uses: guibranco/github-status-action-v2@v1
+#        with:
+#          authToken: ${{secrets.GITHUB_TOKEN}}
+#          context: 'E2E Test report'
+#          state: ${{ needs.run-e2e-tests.result }}
+#          sha: ${{ github.head_ref }}
+#          target_url: ${{ needs.run-e2e-tests.outputs.report-url }}

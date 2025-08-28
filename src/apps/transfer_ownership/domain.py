@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import EmailStr
+from pydantic import EmailStr, validator
 
 from apps.shared.domain import InternalModel
 from apps.transfer_ownership.constants import TransferOwnershipStatus
@@ -21,6 +21,18 @@ class Transfer(InternalModel):
     from_user_id: uuid.UUID
     to_user_id: uuid.UUID | None = None
 
+    @validator("email", pre=True)
+    def normalize_email(cls, v: str) -> str:
+        """Normalize email to lowercase and strip whitespace."""
+        return v.lower().strip()
+
 
 class InitiateTransfer(InternalModel):
+    """Model for initiating transfer ownership."""
+
     email: EmailStr
+
+    @validator("email", pre=True)
+    def normalize_email(cls, v: str) -> str:
+        """Normalize email to lowercase and strip whitespace."""
+        return v.lower().strip()
