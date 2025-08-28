@@ -1,0 +1,44 @@
+INFO     root:tasks.py:25 Reencryption a9846eca-5553-460f-ba55-ff8a18f897e2: reencrypt_answers start
+ERROR    root:tasks.py:85 Reencryption a9846eca-5553-460f-ba55-ff8a18f897e2: cannot process applet cc9cfa46-dcfa-45ae-85e0-f2c61a2ffe86, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+               ~~~~~~^^^^^^^^^
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2321, in _execute_mock_call
+    raise effect
+Exception: ERROR
+INFO     root:tasks.py:103 Reencryption a9846eca-5553-460f-ba55-ff8a18f897e2: schedule retry
+INFO     root:tasks.py:25 Reencryption a9846eca-5553-460f-ba55-ff8a18f897e2: reencrypt_answers start
+ERROR    root:tasks.py:85 Reencryption a9846eca-5553-460f-ba55-ff8a18f897e2: cannot process applet cc9cfa46-dcfa-45ae-85e0-f2c61a2ffe86, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+               ~~~~~~^^^^^^^^^
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2321, in _execute_mock_call
+    raise effect
+  File "/app/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+               ~~~~~~^^^^^^^^^
+  File "/app/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+    )
+    ^
+  File "/usr/local/lib/python3.13/unittest/mock.py", line 2321, in _execute_mock_call
+    raise effect
+Exception: ERROR
