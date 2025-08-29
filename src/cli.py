@@ -7,8 +7,8 @@ os.chdir(dname)
 
 import typer  # noqa: E402,I001
 
-from apps.activities.commands.reindex_items import app as reindex_items_cli
-from apps.activities.commands.delete_subscales import app as delete_subscales_cli
+from apps.activities.commands.reindex_items import app as reindex_items_cli  # noqa: E402
+from apps.activities.commands.delete_subscales import app as delete_subscales_cli  # noqa: E402
 
 from apps.answers.commands import convert_assessments  # noqa: E402
 from apps.applets.commands import (  # noqa: E402
