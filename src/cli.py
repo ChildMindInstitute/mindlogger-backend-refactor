@@ -7,7 +7,9 @@ os.chdir(dname)
 
 import typer  # noqa: E402,I001
 
-from apps.activities.commands import activities  # noqa: E402
+from apps.activities.commands.reindex_items import app as reindex_items_cli
+from apps.activities.commands.delete_subscales import app as delete_subscales_cli
+
 from apps.answers.commands import convert_assessments  # noqa: E402
 from apps.applets.commands import (  # noqa: E402
     applet_cli,  # noqa: E402
@@ -21,7 +23,8 @@ from apps.workspaces.commands import arbitrary_server_cli  # noqa: E402
 cli = typer.Typer()
 cli.add_typer(arbitrary_server_cli, name="arbitrary")
 cli.add_typer(convert_assessments, name="assessments")
-cli.add_typer(activities, name="activities")
+cli.add_typer(reindex_items_cli, name="reindex")
+cli.add_typer(delete_subscales_cli, name="delete-subscales")
 cli.add_typer(token_cli, name="token")
 cli.add_typer(patch, name="patch")
 cli.add_typer(encryption_cli, name="encryption")
