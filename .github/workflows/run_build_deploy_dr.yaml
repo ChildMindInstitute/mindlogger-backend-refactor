@@ -46,6 +46,7 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_build.yaml
     with:
+      env-name: prod-dr-us-west-2
       tag-name: ${{ needs.ref.outputs.target-ref }}
       git-ref: ${{ needs.ref.outputs.target-ref }}
 
@@ -53,7 +54,7 @@ jobs:
     name: Run Migrations in Prod
     needs: [build, ref]
     secrets:
-      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_PROD }}
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DR }}
     uses: ./.github/workflows/_migrations.yaml
     with:
       env-name: prod-dr-us-west-2
@@ -64,7 +65,7 @@ jobs:
     name: Deploy to Prod
     needs: [ build, migrations, ref ]
     secrets:
-      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_PROD }}
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DR }}
     uses: ./.github/workflows/_deploy.yaml
     with:
       env-name: prod-dr-us-west-2
