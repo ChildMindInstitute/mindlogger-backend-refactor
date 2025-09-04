@@ -94,26 +94,26 @@ jobs:
             ${{ env.ECR_REPO }}:${{ steps.sha.outputs.SHORT_SHA }}
           platforms: linux/amd64,linux/arm64
 
-      # TODO What is this used for?  Leftover artifact from Jenkins
-      - name: Extract Jira ticket numbers from commit message
-        run: |
-          tickets=$(git log -1 --pretty=%B | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
-          if [ -z "$tickets" ]; then
-              echo "No Jira tickets found in the latest commit message."
-          else
-              echo "Jira ticket numbers found: ${tickets}"
-              if [ "${GITHUB_BRANCH_OR_TAG}" != "develop" ]; then
-                  echo "Skipping saving Jira ticket numbers to a file because the branch is not develop"
-              else
-                file="jira-tickets.json"
-                echo "{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }" > "${file}"
-                echo "Jira ticket numbers saved to ${file}"
-              fi
-          fi
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
+#      # TODO What is this used for?  Leftover artifact from Jenkins
+#      - name: Extract Jira ticket numbers from commit message
+#        run: |
+#          tickets=$(git log -1 --pretty=%B | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
+#          if [ -z "$tickets" ]; then
+#              echo "No Jira tickets found in the latest commit message."
+#          else
+#              echo "Jira ticket numbers found: ${tickets}"
+#              if [ "${GITHUB_BRANCH_OR_TAG}" != "develop" ]; then
+#                  echo "Skipping saving Jira ticket numbers to a file because the branch is not develop"
+#              else
+#                file="jira-tickets.json"
+#                echo "{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }" > "${file}"
+#                echo "Jira ticket numbers saved to ${file}"
+#              fi
+#          fi
+#
+#      - name: Upload artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: build-artifacts
+#          path: |
+#            ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json
