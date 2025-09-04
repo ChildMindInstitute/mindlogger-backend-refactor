@@ -87,7 +87,7 @@ jobs:
               echo "repo=973422231492.dkr.ecr.us-east-1.amazonaws.com" >> "$GITHUB_OUTPUT"
               ;;
             *)
-              echo "repo=917902836630.dkr.ecr.us-east-1.amazonaws.com" >> "$GITHUB_OUTPUT"
+              echo "repo=917902836630.dkr.ecr.us-west-2.amazonaws.com" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
