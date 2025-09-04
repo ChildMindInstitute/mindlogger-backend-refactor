@@ -51,7 +51,7 @@ jobs:
       git-ref: ${{ needs.ref.outputs.target-ref }}
 
   migrations:
-    name: Run Migrations in Prod
+    name: Run Migrations in Prod-DR
     needs: [build, ref]
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DR }}
@@ -62,7 +62,7 @@ jobs:
 
 
   deploy-prod:
-    name: Deploy to Prod
+    name: Deploy to Prod-DR
     needs: [ build, migrations, ref ]
     secrets:
       slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DR }}
