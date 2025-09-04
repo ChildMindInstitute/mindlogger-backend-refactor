@@ -64,10 +64,11 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
+          role-to-assume: ${{ needs.setup-vars.outputs.role }}
           role-session-name: gha-oidc-runner
           aws-region: ${{ env.AWS_REGION }}
 
+        # TODO This might not be needed anymore
       - name: Get secrets by name and by ARN
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
