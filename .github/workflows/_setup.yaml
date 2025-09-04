@@ -46,7 +46,7 @@ jobs:
             "prod")
               echo 'role=arn:aws:iam::410431445687:role/cmiml-prod-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
-            "prod-dr")
+            "prod-dr-us-west-2")
               echo 'role=arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             *)
@@ -59,7 +59,7 @@ jobs:
         run: |
           ENV_NAME="${{ inputs.env-name }}"
           case "$ENV_NAME" in
-            "prod-dr")
+            "prod-dr-us-west-2")
               echo "region=us-west-2" >> "$GITHUB_OUTPUT"
               ;;
             *)
@@ -71,7 +71,7 @@ jobs:
         run: |
           ENV_NAME="${{ inputs.env-name }}"
           case "$ENV_NAME" in
-            "prod-dr")
+            "prod-dr-us-west-2")
               echo "cluster=prod-dr-us-west-2" >> "$GITHUB_OUTPUT"
               ;;
             *)
@@ -83,7 +83,7 @@ jobs:
         run: |
           ENV_NAME="${{ inputs.env-name }}"
           case "$ENV_NAME" in
-            "prod-dr")
+            "prod-dr-us-west-2")
               echo "repo=973422231492.dkr.ecr.us-east-1.amazonaws.com" >> "$GITHUB_OUTPUT"
               ;;
             *)
