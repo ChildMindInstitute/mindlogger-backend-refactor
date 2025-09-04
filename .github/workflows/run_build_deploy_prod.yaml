@@ -48,6 +48,7 @@ jobs:
     with:
       tag-name: ${{ needs.ref.outputs.target-ref }}
       git-ref: ${{ needs.ref.outputs.target-ref }}
+      env-name: prod
 
   migrations:
     name: Run Migrations in Prod
