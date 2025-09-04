@@ -77,7 +77,7 @@ jobs:
 
       - name: Login to ECR
         run: |
-          aws ecr get-login-password --region ${{ needs.setup-vars.outputs.region }}/api-server | docker login --username AWS --password-stdin ${{ needs.setup-vars.outputs.ecr-repo }}
+          aws ecr get-login-password --region ${{ needs.setup-vars.outputs.region }} | docker login --username AWS --password-stdin ${{ needs.setup-vars.outputs.ecr-repo }}
 
       - name: Generate short sha
         id: sha
