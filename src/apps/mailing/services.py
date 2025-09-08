@@ -53,6 +53,11 @@ class MailingService:
             autoescape=select_autoescape(["html", "xml"]),
         )
 
+        self.env_text = Environment(
+            loader=PackageLoader("apps.mailing", "static/templates/subjects"),
+            autoescape=False,
+        )
+
         self._initialized = True
 
     async def send(self, message: MessageSchema) -> None:
@@ -61,6 +66,15 @@ class MailingService:
             mailing_class = TestMail
         fm = mailing_class(self._connection)
         await fm.send_message(message)
+    
+    def get_localized_text_template(self, template_name: str, language: str, **kwargs) -> str:
+        # Use the language exactly as given; only fallback is 'en'
+        try:
+            return self.env_text.get_template(f"{template_name}_{language}.txt").render(**kwargs).strip()
+        except TemplateNotFound:
+            if language != "en":
+                return self.env_text.get_template(f"{template_name}_en.txt").render(**kwargs).strip()
+            raise
 
     def get_localized_html_template(self, template_name: str, language: str, **kwargs) -> str:
         kwargs["language"] = language

@@ -178,9 +178,15 @@ class ActivityAssignmentService:
                 else f"{domain}/{path}/{applet.id}"
             )
 
+            subject_text = service.get_localized_text_template(
+                template_name="assignment_notification",
+                language=language,
+                applet_name=applet.display_name,
+            )
+
             message = MessageSchema(
                 recipients=[respondent_subject.email],
-                subject=self._get_email_assignment_subject(language),
+                subject=subject_text,
                 body=service.get_localized_html_template(
                     template_name=self._get_email_template_name(),
                     language=language,
@@ -482,11 +488,3 @@ class ActivityAssignmentService:
     @staticmethod
     def _get_email_template_name() -> str:
         return "new_activity_assignments"
-
-    @staticmethod
-    def _get_email_assignment_subject(language: str) -> str:
-        translations = {
-            "en": "Assignment Notification",
-            "fr": "Notification d'attribution",
-        }
-        return translations.get(language, translations["en"])
