@@ -65,17 +65,10 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ needs.setup-vars.outputs.role }}
+          role-to-assume: ${{ needs.setup-vars.outputs.devops-role }}
           role-session-name: gha-oidc-runner
           aws-region: ${{ needs.setup-vars.outputs.region }}
 
-        # TODO This might not be needed anymore
-      - name: Get secrets by name and by ARN
-        uses: aws-actions/aws-secretsmanager-get-secrets@v2
-        with:
-          parse-json-secrets: true
-          secret-ids: |
-            ,cmiml-devops
 
       - name: Login to ECR
         run: |
