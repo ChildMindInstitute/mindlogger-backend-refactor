@@ -66,7 +66,7 @@ class MailingService:
             mailing_class = TestMail
         fm = mailing_class(self._connection)
         await fm.send_message(message)
-    
+
     def get_localized_text_template(self, template_name: str, language: str, **kwargs) -> str:
         # Use the language exactly as given; only fallback is 'en'
         try:
