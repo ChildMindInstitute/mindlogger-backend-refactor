@@ -93,8 +93,7 @@ jobs:
               echo "repo=917902836630.dkr.ecr.us-east-1.amazonaws.com" >> "$GITHUB_OUTPUT"
               ;;
           esac
-          
-            - name: Map env to ECR repo
+
       - name: Map env to devops role
         id: devops-role
         run: |
