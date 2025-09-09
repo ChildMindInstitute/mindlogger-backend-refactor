@@ -2538,8 +2538,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(answer.applet_id),
             "activity_id": answer.activity_history_id.split("_")[0],
-            # On backend we devide on 1000
-            "created_at": answer.created_at.timestamp() * 1000,
         }
         resp = await client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
@@ -2547,10 +2545,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.parametrize(
         "column,value",
-        (
-            ("activity_id", "00000000-0000-0000-0000-000000000000_99"),
-            ("created_at", datetime.datetime.now(datetime.UTC).timestamp() * 1000),
-        ),
+        (("activity_id", "00000000-0000-0000-0000-000000000000_99"),),
     )
     async def test_check_existence_answer_does_not_exist(
         self, client: TestClient, tom: User, answer: AnswerSchema, column: str, value: str
@@ -2559,7 +2554,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(answer.applet_id),
             "activity_id": answer.activity_history_id.split("_")[0],
-            "created_at": answer.created_at.timestamp(),
         }
         data[column] = value
         resp = await client.post(self.check_existence_url, data=data)
@@ -2573,7 +2567,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(applet_one.id),
             "activity_id": answer.activity_history_id.split("_")[0],
-            "created_at": answer.created_at.timestamp(),
         }
         resp = await client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
@@ -2587,8 +2580,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "appletId": str(answer.applet_id),
             "activityId": answer.activity_history_id.split("_")[0],
-            # On backend we devide on 1000
-            "createdAt": answer.created_at.timestamp() * 1000,
             "submitId": str(answer.submit_id),
         }
         resp = await client.post(self.check_existence_url, data=data)

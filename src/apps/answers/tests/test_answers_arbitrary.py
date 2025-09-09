@@ -965,8 +965,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(answer_arbitrary.applet_id),
             "activity_id": answer_arbitrary.activity_history_id.split("_")[0],
-            # On backend we devide on 1000
-            "created_at": answer_arbitrary.created_at.timestamp() * 1000,
         }
         resp = await arbitrary_client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
@@ -974,10 +972,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.parametrize(
         "column,value",
-        (
-            ("activity_id", "00000000-0000-0000-0000-000000000000_99"),
-            ("created_at", datetime.datetime.now(datetime.UTC).timestamp() * 1000),
-        ),
+        (("activity_id", "00000000-0000-0000-0000-000000000000_99"),),
     )
     async def test_check_existance_answer_does_not_exist(
         self, arbitrary_client: TestClient, tom: User, answer_arbitrary: AnswerSchema, column: str, value: str
@@ -986,7 +981,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(answer_arbitrary.applet_id),
             "activity_id": answer_arbitrary.activity_history_id.split("_")[0],
-            "created_at": answer_arbitrary.created_at.timestamp(),
             column: value,
         }
         resp = await arbitrary_client.post(self.check_existence_url, data=data)
@@ -1000,7 +994,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(applet_one.id),
             "activity_id": answer_arbitrary.activity_history_id.split("_")[0],
-            "created_at": answer_arbitrary.created_at.timestamp(),
         }
         resp = await arbitrary_client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
