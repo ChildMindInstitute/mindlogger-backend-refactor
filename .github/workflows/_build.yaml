@@ -3,6 +3,9 @@ name: Build
 on:
   workflow_call:
     inputs:
+      env-name:
+        required: true
+        type: string
       tag-name:
         description: Docker tag to create
         required: false
@@ -30,16 +33,23 @@ env:
   BUILD_NUMBER: ${{github.run_id}}
 
   OUT_DIR: ./out
-  AWS_REGION : "us-east-1"
 
-  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
-  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
+#  ECR_REPO: 917902836630.dkr.ecr.us-east-1.amazonaws.com/api-server
+#  ECR_ADDRESS: 917902836630.dkr.ecr.us-east-1.amazonaws.com
 
 
 jobs:
+  setup-vars:
+    uses: ./.github/workflows/_setup.yaml
+    with:
+      env-name: ${{ inputs.env-name }}
+
   build:
     name: Docker Build and Push
     runs-on: ubuntu-latest
+    needs: setup-vars
+    env:
+      AWS_REGION: ${{ needs.setup-vars.outputs.region }}
     outputs:
       image-name: ${{ steps.sha.outputs.IMAGE_NAME }}
       image-sha: ${{ steps.sha.outputs.SHORT_SHA }}
@@ -55,27 +65,21 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
+          role-to-assume: ${{ needs.setup-vars.outputs.devops-role }}
           role-session-name: gha-oidc-runner
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ needs.setup-vars.outputs.region }}
 
-      - name: Get secrets by name and by ARN
-        uses: aws-actions/aws-secretsmanager-get-secrets@v2
-        with:
-          parse-json-secrets: true
-          secret-ids: |
-            ,cmiml-devops
 
       - name: Login to ECR
         run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_ADDRESS }}
+          aws ecr get-login-password --region ${{ needs.setup-vars.outputs.region }} | docker login --username AWS --password-stdin ${{ needs.setup-vars.outputs.ecr-repo }}
 
       - name: Generate short sha
         id: sha
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
           echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "IMAGE_NAME=${ECR_REPO}:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_NAME=${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -87,33 +91,10 @@ jobs:
             PIPENV_EXTRA_ARGS=--dev
             DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
             DD_GIT_COMMIT_SHA=${{ github.sha }}
-          cache-to: mode=max,image-manifest=true,oci-mediatypes=true,type=registry,ref=${{ env.ECR_REPO }}:cache
-          cache-from: type=registry,ref=${{ env.ECR_REPO }}:cache
+          cache-to: mode=max,image-manifest=true,oci-mediatypes=true,type=registry,ref=${{ needs.setup-vars.outputs.ecr-repo }}/api-server:cache
+          cache-from: type=registry,ref=${{ needs.setup-vars.outputs.ecr-repo }}/api-server:cache
           tags: |
-            ${{ env.ECR_REPO }}:${{ inputs.tag-name }}
-            ${{ env.ECR_REPO }}:${{ steps.sha.outputs.SHORT_SHA }}
+            ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.tag-name }}
+            ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ steps.sha.outputs.SHORT_SHA }}
           platforms: linux/amd64,linux/arm64
 
-#      # TODO What is this used for?  Leftover artifact from Jenkins
-#      - name: Extract Jira ticket numbers from commit message
-#        run: |
-#          tickets=$(git log -1 --pretty=%B | grep -io 'M2-[0-9]\+' | tr '[:lower:]' '[:upper:]' | sort | uniq | tr '\n' ' ')
-#          if [ -z "$tickets" ]; then
-#              echo "No Jira tickets found in the latest commit message."
-#          else
-#              echo "Jira ticket numbers found: ${tickets}"
-#              if [ "${GITHUB_BRANCH_OR_TAG}" != "develop" ]; then
-#                  echo "Skipping saving Jira ticket numbers to a file because the branch is not develop"
-#              else
-#                file="jira-tickets.json"
-#                echo "{ \"issues\": $(echo "${tickets}" | jq -R -s -c 'split(" ")[:-1]') }" > "${file}"
-#                echo "Jira ticket numbers saved to ${file}"
-#              fi
-#          fi
-#
-#      - name: Upload artifacts
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: build-artifacts
-#          path: |
-#            ${GITHUB_REPO_NAME}/${OUT_DIR}/jira-tickets.json

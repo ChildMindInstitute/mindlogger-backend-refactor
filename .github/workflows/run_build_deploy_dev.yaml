@@ -38,6 +38,7 @@ jobs:
     uses: ./.github/workflows/_build.yaml
     with:
       tag-name: ${{ needs.version.outputs.short-sha }}
+      env-name: dev
 
   migrations:
     needs: [version, build]

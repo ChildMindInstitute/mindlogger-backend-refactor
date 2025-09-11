@@ -2,7 +2,7 @@ import datetime
 import enum
 import uuid
 from copy import deepcopy
-from typing import Any, Generic
+from typing import Any, Generic, Optional
 
 from pydantic import BaseModel, Field, root_validator, validator
 from pydantic.generics import GenericModel
@@ -665,7 +665,7 @@ class CompletedEntity(PublicModel):
 
 class AppletCompletedEntities(InternalModel):
     id: uuid.UUID
-    version: str
+    version: Optional[str] = None
 
     activities: list[CompletedEntity]
     activity_flows: list[CompletedEntity]
@@ -673,15 +673,12 @@ class AppletCompletedEntities(InternalModel):
 
 class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
-    created_at: int
+    # TODO: created_at can be safely removed after
+    # the corresponding mobile PR is merged
+    # https://mindlogger.atlassian.net/browse/M2-9693
+    created_at: int | None = None
     activity_id: str
     submit_id: uuid.UUID | None = None
-
-    @validator("created_at")
-    def convert_time_to_unix_timestamp(cls, value: int):
-        if value:
-            return value / 1000  # wtf, rework this
-        return value
 
 
 class AnswerExistenceResponse(PublicModel):

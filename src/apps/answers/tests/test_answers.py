@@ -31,6 +31,7 @@ from apps.answers.domain import (
     ItemAnswerCreate,
 )
 from apps.answers.service import AnswerService
+from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
@@ -88,12 +89,34 @@ async def sam(sam_create: UserCreate, global_session: AsyncSession, pytestconfig
 
 
 @pytest.fixture(scope="session", autouse=True)
+async def olive(olive_create: UserCreate, global_session: AsyncSession, pytestconfig: Config) -> AsyncGenerator:
+    crud = UsersCRUD(global_session)
+    user = await _get_or_create_user(
+        crud, olive_create, global_session, uuid.UUID("b1f5f3e2-3c4b-4d2a-9f1e-8f3c6d7e9a12")
+    )
+    yield user
+    if not pytestconfig.getoption("--keepdb"):
+        await crud._delete(id=user.id)
+        await global_session.commit()
+
+
+@pytest.fixture(scope="session", autouse=True)
 def sam_create() -> UserCreate:
     return UserCreate(
         email=EmailStr("sam@mindlogger.com"),
         password="Test1234!",
         first_name="Sam",
         last_name="Smith",
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def olive_create() -> UserCreate:
+    return UserCreate(
+        email=EmailStr("olive@mindlogger.com"),
+        password="Test1234!",
+        first_name="Olive",
+        last_name="Johnson",
     )
 
 
@@ -104,9 +127,27 @@ async def applet_one_sam_respondent(session: AsyncSession, applet_one: AppletFul
 
 
 @pytest.fixture
+async def applet_one_olive_respondent(
+    session: AsyncSession, applet_one: AppletFull, tom: User, olive: User
+) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_one.id).add_role(olive.id, Role.RESPONDENT)
+    return applet_one
+
+
+@pytest.fixture
 async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, sam: User) -> Subject:
     applet_id = applet_one.id
     user_id = sam.id
+    query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
+    res = await session.execute(query, execution_options={"synchronize_session": False})
+    model = res.scalars().one()
+    return Subject.from_orm(model)
+
+
+@pytest.fixture
+async def applet_one_olive_subject(session: AsyncSession, applet_one: AppletFull, olive: User) -> Subject:
+    applet_id = applet_one.id
+    user_id = olive.id
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
@@ -176,6 +217,107 @@ def tom_answer_assessment_create_data(tom, applet_with_reviewable_activity) -> A
         reviewer_public_key=f"{tom.id}",
         assessment_version_id=f"{activity_assessment_id}_{applet_with_reviewable_activity.version}",
     )
+
+
+@pytest.fixture
+async def olive_answer_on_applet_one(
+    session: AsyncSession,
+    applet_one_olive_subject: Subject,
+    applet_one: AppletFull,
+) -> AnswerSchema:
+    answer_service = AnswerService(session, applet_one_olive_subject.user_id)
+    return await answer_service.create_answer(
+        AppletAnswerCreate(
+            applet_id=applet_one.id,
+            version=applet_one.version,
+            submit_id=uuid.uuid4(),
+            activity_id=applet_one.activities[0].id,
+            answer=ItemAnswerCreate(
+                item_ids=[applet_one.activities[0].items[0].id],
+                start_time=datetime.datetime.now(datetime.UTC),
+                end_time=datetime.datetime.now(datetime.UTC),
+                user_public_key=applet_one_olive_subject.user_id,
+            ),
+            client=ClientMeta(app_id=f"{uuid.uuid4()}", app_version="1.1", width=984, height=623),
+            consent_to_share=False,
+        )
+    )
+
+
+@pytest.fixture
+async def olive_answer_and_create(
+    session: AsyncSession,
+    olive: User,
+    tom: User,
+    answer_create: AppletAnswerCreate,
+) -> Tuple[AnswerSchema, AppletAnswerCreate]:
+    await UserAppletAccessService(session, tom.id, answer_create.applet_id).add_role(olive.id, Role.RESPONDENT)
+    subject = await SubjectsService(session, olive.id).get_by_user_and_applet(olive.id, answer_create.applet_id)
+    if not subject:
+        subject = await SubjectsService(session, olive.id).create(
+            SubjectCreate(
+                applet_id=answer_create.applet_id,
+                first_name="Olive",
+                last_name="Johnson",
+                creator_id=tom.id,
+                secret_user_id=olive.id,
+            )
+        )
+    ans = await AnswerService(session, olive.id).create_answer(answer_create)
+    return ans, answer_create
+
+
+@pytest.fixture
+async def olive_assigned_three_applets_one_answer(
+    session: AsyncSession,
+    olive: User,
+    tom: User,
+    applet: AppletFull,
+    applet_one: AppletFull,
+    applet_two: AppletFull,
+    answer_create: AppletAnswerCreate,
+) -> tuple[AnswerSchema, AppletAnswerCreate]:
+    """Assign Olive to applet, applet_one, applet_two and submit one answer."""
+    # Grant the respondent role on all three applets
+    for app in (applet, applet_one, applet_two):
+        await UserAppletAccessService(session, tom.id, app.id).add_role(olive.id, Role.RESPONDENT)
+    # Ensure Olive’s subject on the applet that answer_create references
+    subject = await SubjectsService(session, olive.id).get_by_user_and_applet(olive.id, answer_create.applet_id)
+    if not subject:
+        subject = await SubjectsService(session, olive.id).create(
+            SubjectCreate(
+                applet_id=answer_create.applet_id,
+                first_name="Olive",
+                last_name="Johnson",
+                creator_id=tom.id,
+                secret_user_id=olive.id,
+            )
+        )
+    ans = await AnswerService(session, olive.id).create_answer(answer_create)
+    return ans, answer_create
+
+
+@pytest.fixture
+async def olive_assigned_two_app_different_versions(
+    session: AsyncSession,
+    tom: User,
+    olive: User,
+    applet_one: AppletFull,
+    applet_two: AppletFull,
+) -> list[AppletFull]:
+    """
+    Assign Olive to two existing applets (applet_one and applet_two) for the
+    version-difference test. We rely on the versions already defined
+    in those fixtures instead of creating new applets via AppletService.
+
+    If the versions of these applets happen to be equal, the test will update one
+    of them via the session in the test itself.
+    """
+    for app in (applet_one, applet_two):
+        await UserAppletAccessService(session, tom.id, app.id).add_role(olive.id, Role.RESPONDENT)
+
+    await session.commit()
+    return [applet_one, applet_two]
 
 
 @pytest.fixture
@@ -760,6 +902,8 @@ class TestAnswerActivityItems(BaseTest):
 
     activity_answers_url = "/answers/applet/{applet_id}/activities/{activity_id}/answers"
     flow_submissions_url = "/answers/applet/{applet_id}/flows/{flow_id}/submissions"
+    applet_answers_completions_url = "/answers/applet/{applet_id}/completions"
+    applets_answers_completions_url = "/answers/applet/completions"
     applet_submissions_list_url = "/answers/applet/{applet_id}/submissions"
     applet_answers_export_url = "/answers/applet/{applet_id}/data"
     applet_answers_completions_url = "/answers/applet/{applet_id}/completions"
@@ -2369,81 +2513,6 @@ class TestAnswerActivityItems(BaseTest):
         assert result["count"] == 1
         assert result["result"][0]["answerId"] == str(answer.id)
 
-    async def test_applet_completions(
-        self, client: TestClient, tom: User, answer: AnswerSchema, answer_create: AppletAnswerCreate
-    ):
-        client.login(tom)
-        answer_create.answer.local_end_date = cast(datetime.date, answer_create.answer.local_end_date)
-        answer_create.answer.local_end_time = cast(datetime.time, answer_create.answer.local_end_time)
-        response = await client.get(
-            self.applet_answers_completions_url.format(
-                applet_id=str(answer.applet_id),
-            ),
-            {"fromDate": answer_create.answer.local_end_date.isoformat(), "version": answer.version},
-        )
-
-        assert response.status_code == http.HTTPStatus.OK
-        data = response.json()["result"]
-        assert set(data.keys()) == {
-            "id",
-            "version",
-            "activities",
-            "activityFlows",
-        }
-        assert len(data["activities"]) == 1
-        activity_answer_data = data["activities"][0]
-        assert set(activity_answer_data.keys()) == {
-            "id",
-            "answerId",
-            "submitId",
-            "targetSubjectId",
-            "scheduledEventId",
-            "localEndDate",
-            "localEndTime",
-        }
-        assert activity_answer_data["answerId"] == str(answer.id)
-        assert activity_answer_data["localEndTime"] == str(answer_create.answer.local_end_time)
-
-    async def test_applets_completions(
-        self, client: TestClient, tom: User, answer: AnswerSchema, answer_create: AppletAnswerCreate
-    ):
-        client.login(tom)
-        answer_create.answer.local_end_date = cast(datetime.date, answer_create.answer.local_end_date)
-        answer_create.answer.local_end_time = cast(datetime.time, answer_create.answer.local_end_time)
-        # test completions
-        response = await client.get(
-            url=self.applets_answers_completions_url,
-            query={"fromDate": answer_create.answer.local_end_date.isoformat()},
-        )
-
-        assert response.status_code == http.HTTPStatus.OK
-        data = response.json()["result"]
-        # 2 session applets and 1 for answers
-        assert len(data) == 3
-        applet_with_answer = next(i for i in data if i["id"] == str(answer.applet_id))
-
-        assert applet_with_answer["id"] == str(answer.applet_id)
-        assert applet_with_answer["version"] == answer.version
-        assert len(applet_with_answer["activities"]) == 1
-        activity_answer_data = applet_with_answer["activities"][0]
-        assert set(activity_answer_data.keys()) == {
-            "id",
-            "answerId",
-            "submitId",
-            "targetSubjectId",
-            "scheduledEventId",
-            "localEndDate",
-            "localEndTime",
-        }
-        assert activity_answer_data["answerId"] == str(answer.id)
-        assert activity_answer_data["scheduledEventId"] == answer_create.answer.scheduled_event_id
-        assert activity_answer_data["localEndDate"] == answer_create.answer.local_end_date.isoformat()
-        assert activity_answer_data["localEndTime"] == str(answer_create.answer.local_end_time)
-        for applet_data in data:
-            if applet_data["id"] != str(answer.applet_id):
-                assert not applet_data["activities"]
-                assert not applet_data["activityFlows"]
-
     async def test_summary_restricted_for_reviewer_if_external_respondent(
         self, client: TestClient, user: User, user_reviewer_applet_one: AppletFull
     ):
@@ -2469,8 +2538,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(answer.applet_id),
             "activity_id": answer.activity_history_id.split("_")[0],
-            # On backend we devide on 1000
-            "created_at": answer.created_at.timestamp() * 1000,
         }
         resp = await client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
@@ -2478,10 +2545,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.parametrize(
         "column,value",
-        (
-            ("activity_id", "00000000-0000-0000-0000-000000000000_99"),
-            ("created_at", datetime.datetime.now(datetime.UTC).timestamp() * 1000),
-        ),
+        (("activity_id", "00000000-0000-0000-0000-000000000000_99"),),
     )
     async def test_check_existence_answer_does_not_exist(
         self, client: TestClient, tom: User, answer: AnswerSchema, column: str, value: str
@@ -2490,7 +2554,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(answer.applet_id),
             "activity_id": answer.activity_history_id.split("_")[0],
-            "created_at": answer.created_at.timestamp(),
         }
         data[column] = value
         resp = await client.post(self.check_existence_url, data=data)
@@ -2504,7 +2567,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "applet_id": str(applet_one.id),
             "activity_id": answer.activity_history_id.split("_")[0],
-            "created_at": answer.created_at.timestamp(),
         }
         resp = await client.post(self.check_existence_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
@@ -2518,8 +2580,6 @@ class TestAnswerActivityItems(BaseTest):
         data = {
             "appletId": str(answer.applet_id),
             "activityId": answer.activity_history_id.split("_")[0],
-            # On backend we devide on 1000
-            "createdAt": answer.created_at.timestamp() * 1000,
             "submitId": str(answer.submit_id),
         }
         resp = await client.post(self.check_existence_url, data=data)
@@ -4693,3 +4753,200 @@ class TestAnswerActivityItems(BaseTest):
         )
 
         assert _answer["ehrDataFile"] == filename
+
+    @pytest.mark.parametrize("filter_by_version", [False, True])
+    @pytest.mark.asyncio
+    async def test_applets_completions_empty_version_map(
+        self,
+        client: TestClient,
+        olive: User,
+        filter_by_version: bool,
+    ):
+        """
+        Use Olive with no assignments and expect an empty completions list.
+        """
+        client.login(olive)
+        response = await client.get(
+            url=self.applets_answers_completions_url,
+            query={"fromDate": "2023-01-01", "filter_by_version": filter_by_version},
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"] == []
+
+    @pytest.mark.asyncio
+    async def test_applet_completions_invalid_applet_id(
+        self,
+        client: TestClient,
+        olive: User,
+    ):
+        """Check that requesting a bad applet ID returns NOT_FOUND."""
+        client.login(olive)
+        temporary_applet_id = str(uuid.uuid4())
+        response = await client.get(
+            self.applet_answers_completions_url.format(applet_id=temporary_applet_id),
+            query={"fromDate": "2023-01-01", "version": "1.0.0"},
+        )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+    @pytest.mark.parametrize("use_version", [False, True])
+    async def test_applet_completions(
+        self,
+        client: TestClient,
+        olive: User,
+        olive_answer_and_create: tuple[AnswerSchema, AppletAnswerCreate],
+        use_version: bool,
+    ):
+        """Validate per‑applet completions for Olive."""
+        olive_answer, olive_answer_create = olive_answer_and_create
+        client.login(olive)
+
+        # Ensure date/time fields are cast correctly (mirrors original test)
+        olive_answer_create.answer.local_end_date = cast(datetime.date, olive_answer_create.answer.local_end_date)
+        olive_answer_create.answer.local_end_time = cast(datetime.time, olive_answer_create.answer.local_end_time)
+
+        params = {"fromDate": olive_answer_create.answer.local_end_date.isoformat()}
+        if use_version:
+            params["version"] = olive_answer.version
+
+        response = await client.get(
+            self.applet_answers_completions_url.format(applet_id=str(olive_answer.applet_id)),
+            params,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()["result"]
+        assert set(data.keys()) == {"id", "version", "activities", "activityFlows"}
+        assert len(data["activities"]) == 1
+        activity = data["activities"][0]
+        assert set(activity.keys()) == {
+            "id",
+            "answerId",
+            "submitId",
+            "targetSubjectId",
+            "scheduledEventId",
+            "localEndDate",
+            "localEndTime",
+        }
+        assert activity["answerId"] == str(olive_answer.id)
+        assert activity["localEndTime"] == str(olive_answer_create.answer.local_end_time)
+
+    @pytest.mark.parametrize("filter_by_version", [False, True])
+    async def test_applets_completions(
+        self,
+        client: TestClient,
+        olive: User,
+        olive_assigned_three_applets_one_answer: tuple[AnswerSchema, AppletAnswerCreate],
+        filter_by_version: bool,
+    ):
+        """
+        Aggregate completions for Olive across three applets: one with an answer and two without.
+        """
+        olive_answer, olive_answer_create = olive_assigned_three_applets_one_answer
+        client.login(olive)
+
+        olive_answer_create.answer.local_end_date = cast(datetime.date, olive_answer_create.answer.local_end_date)
+        olive_answer_create.answer.local_end_time = cast(datetime.time, olive_answer_create.answer.local_end_time)
+
+        query_params = {"fromDate": olive_answer_create.answer.local_end_date.isoformat()}
+        if filter_by_version:
+            query_params["filter_by_version"] = "true"
+
+        response = await client.get(
+            url=self.applets_answers_completions_url,
+            query=query_params,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()["result"]
+
+        # Still expecting the same 3 applets in the response structure
+        # This test setup seeds three applets in total:
+        # - One applet has a submitted answer and is expected to return non-empty
+        #   'activities' and 'activityFlows' in the completions response.
+        # - The other two applets are included in the test data but have no answers,
+        #   so their 'activities' and 'activityFlows' should be empty.
+        assert len(data) == 3
+        applet_with_answer = next(i for i in data if i["id"] == str(olive_answer.applet_id))
+        assert applet_with_answer["version"] == olive_answer.version
+        assert len(applet_with_answer["activities"]) == 1
+
+        activity_data = applet_with_answer["activities"][0]
+        assert set(activity_data.keys()) == {
+            "id",
+            "answerId",
+            "submitId",
+            "targetSubjectId",
+            "scheduledEventId",
+            "localEndDate",
+            "localEndTime",
+        }
+        assert activity_data["answerId"] == str(olive_answer.id)
+        assert activity_data["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
+        assert activity_data["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
+        assert activity_data["localEndTime"] == str(olive_answer_create.answer.local_end_time)
+
+        for applet_data in data:
+            if applet_data["id"] != str(olive_answer.applet_id):
+                assert not applet_data["activities"]
+                assert not applet_data["activityFlows"]
+
+    @pytest.mark.asyncio
+    async def test_multiple_applets_with_different_versions(
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        olive: User,
+        olive_assigned_two_app_different_versions: list[AppletFull],
+    ) -> None:
+        """
+        Ensure Olive can query multiple applets with different versions.
+        """
+        client.login(olive)
+        start_date = "2000-01-01"
+
+        # Fetch all applets for Olive (filter_by_version=True)
+        response_all_applets = await client.get(
+            self.applets_answers_completions_url,
+            query={"fromDate": start_date, "filter_by_version": True},
+        )
+        assert response_all_applets.status_code == http.HTTPStatus.OK
+        applets_data = response_all_applets.json().get("result", [])
+        assert len(applets_data) >= 2, "Olive must be assigned to at least two applets"
+
+        applet_one = applets_data[0]
+        applet_two = applets_data[1]
+
+        # If versions are the same, update one of them
+        if applet_one["version"] == applet_two["version"]:
+            applet_to_update = await session.get(AppletSchema, uuid.UUID(applet_two["id"]))
+            applet_to_update.version = f"{applet_to_update.version}-test"
+            session.add(applet_to_update)
+            await session.commit()
+            await session.refresh(applet_to_update)
+
+            # Re-fetch completions to get updated version numbers
+            response_updated_applets = await client.get(
+                self.applets_answers_completions_url,
+                query={"fromDate": start_date, "filter_by_version": True},
+            )
+            assert response_updated_applets.status_code == http.HTTPStatus.OK
+            updated_applets_data = response_updated_applets.json().get("result", [])
+            applet_versions = {
+                a["id"]: a["version"] for a in updated_applets_data if a["id"] in {applet_one["id"], applet_two["id"]}
+            }
+            assert applet_versions[applet_one["id"]] != applet_versions[applet_two["id"]]
+            applet_one["version"] = applet_versions[applet_one["id"]]
+            applet_two["version"] = applet_versions[applet_two["id"]]
+        else:
+            assert applet_one["version"] != applet_two["version"]
+
+        # Check each per‑applet response
+        for applet in [applet_one, applet_two]:
+            response_single_applet = await client.get(
+                self.applet_answers_completions_url.format(applet_id=applet["id"]),
+                query={"fromDate": start_date, "version": applet["version"]},
+            )
+            assert response_single_applet.status_code == http.HTTPStatus.OK
+            single_applet_data = response_single_applet.json()["result"]
+            assert isinstance(single_applet_data, dict)
+            assert "activities" in single_applet_data and "activityFlows" in single_applet_data
+            assert single_applet_data["id"] == applet["id"]
+            assert single_applet_data["version"] == applet["version"]

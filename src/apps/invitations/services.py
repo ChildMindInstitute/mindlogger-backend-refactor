@@ -139,9 +139,14 @@ class InvitationsService:
 
         # Send email to the user
         service = MailingService()
+        subject_text = service.get_localized_text_template(
+            template_name="invitation",
+            language=schema.language,
+            applet_name=applet.display_name,
+        )
         message = MessageSchema(
             recipients=[schema.email],
-            subject=self._get_invitation_subject(applet),
+            subject=subject_text,
             body=service.get_localized_html_template(
                 template_name=self._get_email_template_name(invited_user_id),
                 language=schema.language,
