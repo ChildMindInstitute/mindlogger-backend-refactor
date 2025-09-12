@@ -125,30 +125,33 @@ via docker compose.
 
 ### Start Supporting Services using Docker
 
-- Run Postgres
-  ```bash
-  docker-compose up -d postgres
-  ```
-
-- Run Redis
-  ```bash
-  docker-compose up -d redis
-  ```
-
-- Run RabbitMQ
-  ```bash
-  docker-compose up -d rabbitmq
-  ```
-
-- Alternatively, you can run all required for the backend:
+To run all services required for the backend:
   ```bash
   docker-compose up postgres redis rabbitmq
   ```
 
-- If you also need mail and S3 storage service
+If you also need mail and S3 storage service
   ```bash
   docker-compose up postgres redis rabbitmq mailhog minio
   ```
+
+Also, services can be run individually:
+
+Run Postgres
+  ```bash
+  docker-compose up -d postgres
+  ```
+
+Run Redis
+  ```bash
+  docker-compose up -d redis
+  ```
+
+Run RabbitMQ
+  ```bash
+  docker-compose up -d rabbitmq
+  ```
+
 
 > ⚠️ When using Minio more configuration is needed to configure boto3 to talk to the local endpoints
 > ```
