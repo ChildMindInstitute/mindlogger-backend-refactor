@@ -40,11 +40,7 @@ test:
 
 .PHONY: migrate
 migrate:
-	./compose/fastapi/migrate
-
-.PHONY: migrate-arbitrary
-migrate-arbitrary:
-	./compose/fastapi/migrate arbitrary
+	uv run alembic upgrade head
 
 # NOTE: cq == "Code quality"
 .PHONY: cq
