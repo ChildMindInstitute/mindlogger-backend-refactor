@@ -1,4 +1,4 @@
-name: Build and Deploy to Prod
+name: Build and Deploy to DR
 
 on:
   release:
@@ -14,7 +14,7 @@ on:
 
 concurrency:
   cancel-in-progress: false
-  group: api-build-deploy-prod
+  group: api-build-deploy-dr
 
 permissions:
   id-token: write
@@ -46,27 +46,27 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_build.yaml
     with:
+      env-name: prod-dr-us-west-2
       tag-name: ${{ needs.ref.outputs.target-ref }}
       git-ref: ${{ needs.ref.outputs.target-ref }}
-      env-name: prod
 
   migrations:
-    name: Run Migrations in Prod
+    name: Run Migrations in Prod-DR
     needs: [build, ref]
     secrets:
-      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_PROD }}
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DR }}
     uses: ./.github/workflows/_migrations.yaml
     with:
-      env-name: prod
+      env-name: prod-dr-us-west-2
       image-tag: ${{ needs.ref.outputs.target-ref }}
 
 
   deploy-prod:
-    name: Deploy to Prod
+    name: Deploy to Prod-DR
     needs: [ build, migrations, ref ]
     secrets:
-      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_PROD }}
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_DEPLOY_TO_DR }}
     uses: ./.github/workflows/_deploy.yaml
     with:
-      env-name: prod
+      env-name: prod-dr-us-west-2
       image-tag: ${{ needs.ref.outputs.target-ref }}

@@ -5,7 +5,7 @@ import http
 import io
 import uuid
 import zipfile
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import Body, Depends, Header, Query
 from fastapi import Response as FastAPIResponse
@@ -771,7 +771,7 @@ async def applet_answers_export(
 
 async def applet_completed_entities(
     applet_id: uuid.UUID,
-    version: str,
+    version: Optional[str] = None,
     from_date: datetime.date = Query(..., alias="fromDate"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -790,7 +790,7 @@ async def _get_arbitrary_answer(
     session,
     from_date: datetime.date,
     arb_uri: str,
-    applets_version_map: dict[uuid.UUID, str],
+    applets_version_map: dict[uuid.UUID, Optional[str]],
     user_id: uuid.UUID | None = None,
 ) -> list[AppletCompletedEntities]:
     arb_session_maker = session_manager.get_session(arb_uri)
@@ -806,6 +806,7 @@ async def _get_arbitrary_answer(
 
 async def applets_completed_entities(
     from_date: datetime.date = Query(..., alias="fromDate"),
+    filter_by_version: bool = Query(False),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> ResponseMulti[AppletCompletedEntities]:
@@ -822,7 +823,7 @@ async def applets_completed_entities(
         exclude_without_encryption=True,
     )
 
-    applets_version_map: dict[uuid.UUID, str] = dict()
+    applets_version_map: dict[uuid.UUID, Optional[str]] = dict()
     for applet in applets:
         applets_version_map[applet.id] = applet.version
     applet_ids: list[uuid.UUID] = list(applets_version_map.keys())
@@ -831,7 +832,7 @@ async def applets_completed_entities(
 
     data_future_list = []
     for arb_uri, arb_applet_ids in arb_uri_applet_ids_map.items():
-        applets_version_arb_map: dict[uuid.UUID, str] = dict()
+        applets_version_arb_map: dict[uuid.UUID, Optional[str]] = dict()
         for applet_id in arb_applet_ids:
             applets_version_arb_map[applet_id] = applets_version_map[applet_id]
 
@@ -845,7 +846,9 @@ async def applets_completed_entities(
             )
         else:
             data = AnswerService(session, user_id=user.id).get_completed_answers_data_list(
-                applets_version_arb_map, from_date
+                applets_version_map=applets_version_arb_map,
+                from_date=from_date,
+                filter_by_version=filter_by_version,
             )
         data_future_list.append(data)
 
@@ -870,12 +873,12 @@ async def answers_existence_check(
     await AppletService(session, user.id).exist_by_id(schema.applet_id)
     await CheckAccessService(session, user.id).check_answer_check_access(schema.applet_id)
     is_exist = await AnswerService(session, user.id, answer_session).is_answers_uploaded(
-        schema.applet_id, schema.activity_id, schema.created_at, schema.submit_id
+        schema.applet_id, schema.activity_id, schema.submit_id
     )
 
     logger.info(
         f"check-existence: applet_id={schema.applet_id}, activity_id={schema.activity_id}, user_id={user.id}, "
-        f"created_at={schema.created_at}, exists={is_exist}, ip={client_ip}"
+        f"submit_id={schema.submit_id}, exists={is_exist}, ip={client_ip}"
     )
 
     return Response[AnswerExistenceResponse](result=AnswerExistenceResponse(exists=is_exist))

@@ -8,7 +8,7 @@ import time
 import uuid
 from collections import defaultdict
 from json import JSONDecodeError
-from typing import Callable, List
+from typing import Callable, List, Mapping, Optional
 
 import aiohttp
 import pydantic
@@ -1667,7 +1667,7 @@ class AnswerService:
         await self.send_alert_mail(persons)
 
     async def get_completed_answers_data(
-        self, applet_id: uuid.UUID, version: str, from_date: datetime.date
+        self, applet_id: uuid.UUID, version: Optional[str], from_date: datetime.date
     ) -> AppletCompletedEntities:
         assert self.user_id
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data(
@@ -1680,23 +1680,25 @@ class AnswerService:
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: dict[uuid.UUID, str],
+        applets_version_map: Mapping[uuid.UUID, Optional[str]],
         from_date: datetime.date,
+        filter_by_version: bool = False,
     ) -> list[AppletCompletedEntities]:
         assert self.user_id
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data_list(
-            applets_version_map,
+            dict(applets_version_map),
             self.user_id,
             from_date,
+            filter_by_version=filter_by_version,
         )
         return result
 
     async def is_answers_uploaded(
-        self, applet_id: uuid.UUID, activity_id: str, created_at: int, submit_id: uuid.UUID | None = None
+        self, applet_id: uuid.UUID, activity_id: str, submit_id: uuid.UUID | None = None
     ) -> bool:
         # check by submit id if provided otherwise by user_id
-        answers = await AnswersCRUD(self.answer_session).get_by_applet_activity_created_at(
-            applet_id, activity_id, created_at, self.user_id if not submit_id else None, submit_id
+        answers = await AnswersCRUD(self.answer_session).get_by_applet_activity_submit_or_user_id(
+            applet_id, activity_id, self.user_id if not submit_id else None, submit_id
         )
         if not answers:
             return False

@@ -1,14 +1,13 @@
 import asyncio
 import datetime
 import uuid
-from typing import Collection
+from typing import Collection, Optional
 
 from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
 from sqlalchemy.sql import Values
-from sqlalchemy.sql.elements import BooleanClauseList
 
 from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
@@ -513,19 +512,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().all()
 
-    async def get_by_applet_activity_created_at(
+    async def get_by_applet_activity_submit_or_user_id(
         self,
         applet_id: uuid.UUID,
         activity_id: str,
-        created_at: int,
         user_id: uuid.UUID | None = None,
         submit_id: uuid.UUID | None = None,
     ) -> list[AnswerSchema]:
-        # TODO: investigate this later
-        created_time = datetime.datetime.fromtimestamp(created_at)
+        # We're not using created_at for filtering as it causes issues with mobile submissions
+        # The combination of applet_id, activity_id, and either user_id or submit_id should be sufficient
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
-        query = query.where(AnswerSchema.created_at == created_time)
         query = query.filter(AnswerSchema.activity_history_id.startswith(activity_id))
         if submit_id:
             query = query.where(AnswerSchema.submit_id == submit_id)
@@ -579,7 +576,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_completed_answers_data(
         self,
         applet_id: uuid.UUID,
-        version: str,
+        version: Optional[str],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
     ) -> AppletCompletedEntities:
@@ -602,10 +599,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 AnswerSchema.applet_id == applet_id,
-                AnswerSchema.version == version,
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
+                *([AnswerSchema.version == version] if version else []),
             )
             .order_by(
                 AnswerSchema.activity_history_id,
@@ -643,24 +640,34 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: dict[uuid.UUID, str],
+        applets_version_map: dict[uuid.UUID, Optional[str]],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
+        filter_by_version: bool = False,
     ) -> list[AppletCompletedEntities]:
         is_completed = or_(
             AnswerSchema.is_flow_completed,
             AnswerSchema.flow_history_id.is_(None),
         )
 
-        applet_version_filter_list: list[BooleanClauseList] = list()
-        for applet_id, version in applets_version_map.items():
-            applet_version_filter_list.append(
-                and_(
-                    AnswerSchema.applet_id == applet_id,
-                    AnswerSchema.version == version,
-                )
+        """
+         -Create applet filter:
+         -When filter_by_version is True, we match both applet_id and version
+            to avoid mixing data across versions.
+         -When False, we use only applet_id to keep existing behavior 
+            and include all versions for backward compatibility.
+        """
+        if filter_by_version:
+            applet_predicate = or_(
+                *[
+                    and_(AnswerSchema.applet_id == applet_id, AnswerSchema.version == version)
+                    if version
+                    else (AnswerSchema.applet_id == applet_id)
+                    for applet_id, version in applets_version_map.items()
+                ]
             )
-        applet_version_filter: BooleanClauseList = or_(*applet_version_filter_list)
+        else:
+            applet_predicate = AnswerSchema.applet_id.in_(list(applets_version_map.keys()))
 
         query: Query = (
             select(
@@ -679,8 +686,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
                 is_completed,
+                applet_predicate,
             )
-            .where(applet_version_filter)
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,

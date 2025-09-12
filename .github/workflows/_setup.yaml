@@ -3,8 +3,11 @@ on:
   workflow_call:
     outputs:
       role:
-        description: Role name
+        description: Environment Role ARN
         value: ${{ jobs.setup-vars.outputs.role }}
+      devops-role:
+        description: Environment Devops Role ARN
+        value: ${{ jobs.setup-vars.outputs.devops-role }}
       region:
         description: AWS Region name
         value: ${{ jobs.setup-vars.outputs.region }}
@@ -46,7 +49,7 @@ jobs:
             "prod")
               echo 'role=arn:aws:iam::410431445687:role/cmiml-prod-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
-            "prod-dr")
+            "prod-dr-us-west-2")
               echo 'role=arn:aws:iam::973422231492:role/cmiml-dr-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             *)
@@ -59,7 +62,7 @@ jobs:
         run: |
           ENV_NAME="${{ inputs.env-name }}"
           case "$ENV_NAME" in
-            "prod-dr")
+            "prod-dr-us-west-2")
               echo "region=us-west-2" >> "$GITHUB_OUTPUT"
               ;;
             *)
@@ -71,7 +74,7 @@ jobs:
         run: |
           ENV_NAME="${{ inputs.env-name }}"
           case "$ENV_NAME" in
-            "prod-dr")
+            "prod-dr-us-west-2")
               echo "cluster=prod-dr-us-west-2" >> "$GITHUB_OUTPUT"
               ;;
             *)
@@ -83,11 +86,24 @@ jobs:
         run: |
           ENV_NAME="${{ inputs.env-name }}"
           case "$ENV_NAME" in
-            "prod-dr")
-              echo "repo=973422231492.dkr.ecr.us-east-1.amazonaws.com" >> "$GITHUB_OUTPUT"
+            "prod-dr-us-west-2")
+              echo "repo=973422231492.dkr.ecr.us-west-2.amazonaws.com" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "repo=917902836630.dkr.ecr.us-east-1.amazonaws.com" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Map env to devops role
+        id: devops-role
+        run: |
+          ENV_NAME="${{ inputs.env-name }}"
+          case "$ENV_NAME" in
+            "prod-dr-us-west-2")
+              echo "role=arn:aws:iam::973422231492:role/cmiml-devops-oidc-github-role" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "role=arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
@@ -96,3 +112,4 @@ jobs:
       region: ${{ steps.region.outputs.region }}
       cluster: ${{ steps.cluster.outputs.cluster }}
       ecr-repo: ${{ steps.ecr.outputs.repo }}
+      devops-role: ${{ steps.devops-role.outputs.role }}

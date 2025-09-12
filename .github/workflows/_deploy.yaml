@@ -111,7 +111,7 @@ jobs:
           SLACK_COLOR: failure
           SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
-          SLACK_TITLE: Deployment to ${{ inputs.env-name }} environment
+          SLACK_TITLE: Backend deployed to ${{ inputs.env-name }}
           SLACK_MESSAGE: '🚨 Error when executing deployment!'
 
   on-deploy-success:
@@ -120,7 +120,15 @@ jobs:
     needs:
       - deploy
     steps:
-      - uses: actions/checkout@v4
+      - name: "Send Slack message on success"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_COLOR: success
+          SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
+          MSG_MINIMAL: actions url
+          SLACK_TITLE: Backend deployed to ${{ inputs.env-name }}
+          SLACK_MESSAGE: '🚀 Deployment was successful. Version: *${{ inputs.image-tag }}*'
+
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -135,11 +143,4 @@ jobs:
                   --type "String" \
                   --overwrite
 
-      - name: "Send Slack message on success"
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_COLOR: success
-          SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
-          MSG_MINIMAL: actions url
-          SLACK_TITLE: Deployment to ${{ inputs.env-name }} environment
-          SLACK_MESSAGE: '🚀 Deployment was successful. Version: *${{ inputs.image-tag }}*'
+      
