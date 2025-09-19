@@ -61,7 +61,7 @@ class CDNClient:
                 config=client_config,
             )
         try:
-            return boto3.client("s3", region_name=config.region, endpoint_url=config.enpoint_url)
+            return boto3.client("s3", region_name=config.region, endpoint_url=config.endpoint_url)
         # TODO: do we need this? If exception is caught self.client will be None
         except KeyError:
             logger.warning("CDN configuration is not full")
