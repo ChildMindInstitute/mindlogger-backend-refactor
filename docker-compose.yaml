@@ -17,6 +17,23 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
 
+  postgres-arb:
+    build:
+      context: .
+      dockerfile: ./compose/postgres/Dockerfile
+    image: mindlogger_postgres_arb
+    container_name: mindlogger_postgres_arb
+    environment:
+      POSTGRES_HOST: ${DATABASE__HOST}
+      POSTGRES_PORT: 65432
+      POSTGRES_PASSWORD: ${DATABASE__PASSWORD}
+      POSTGRES_USER: ${DATABASE__USER}
+      POSTGRES_DB: ${DATABASE__DB}
+    ports:
+      - "65432:65432"
+    volumes:
+      - pg_arb_data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: mindlogger_rabbitmq
@@ -132,4 +149,5 @@ services:
 
 volumes:
   pg_data: {}
+  pg_arb_data: {}
   datastore: {}

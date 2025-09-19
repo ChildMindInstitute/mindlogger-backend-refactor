@@ -173,7 +173,8 @@ It is not recommended to run the services natively.  Please use the provided doc
 
 ## Run Database Migrations
 
-The database needs to be initialized with tables and starting data via alembic.
+The database needs to be initialized with tables and starting data via alembic (ensure your postgres container
+is running).
 
 ```bash
 uv run alembic upgrade head
