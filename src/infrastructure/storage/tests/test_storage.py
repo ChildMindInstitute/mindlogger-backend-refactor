@@ -1,8 +1,10 @@
+from uuid import uuid4
+
 from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from config import settings
 from infrastructure.storage.cdn_arbitrary import ArbitraryS3CdnClient
 from infrastructure.storage.storage import create_answer_client
-from uuid import uuid4
+
 
 def test_create_answer_client() -> None:
     """Test a non arbitrary server client"""
@@ -19,9 +21,18 @@ def test_create_answer_client_arbitrary():
     storage_url = "https://s3.eu-central-2.amazonaws.com"
     storage_region = "eu-central-2"
     bucket = "test-bucket"
-    info = WorkspaceArbitrary(database_uri=db_uri, storage_url=storage_url, storage_region=storage_region,
-                              use_arbitrary=True, storage_type="s3", storage_bucket=bucket, storage_access_key="AAAAA",
-                              storage_secret_key="BBBBB", user_id=uuid4(), id=uuid4())
+    info = WorkspaceArbitrary(
+        database_uri=db_uri,
+        storage_url=storage_url,
+        storage_region=storage_region,
+        use_arbitrary=True,
+        storage_type="s3",
+        storage_bucket=bucket,
+        storage_access_key="AAAAA",
+        storage_secret_key="BBBBB",
+        user_id=uuid4(),
+        id=uuid4(),
+    )
 
     client = create_answer_client(info)
 
@@ -33,4 +44,4 @@ def test_create_answer_client_arbitrary():
     assert client.config.region == storage_region
 
     presign = client.generate_presigned_post("asdf.jpg")
-    assert storage_region in presign['url']
+    assert storage_region in presign["url"]
