@@ -52,6 +52,7 @@ def create_answer_client(info: WorkspaceArbitrary | None) -> CDNClient:
     arbitrary_cdn_config = CdnConfig(
         region=info.storage_region,
         bucket=info.storage_bucket,
+        endpoint_url=info.storage_url,
         ttl_signed_urls=settings.cdn.ttl_signed_urls,
         access_key=info.storage_access_key,
         secret_key=info.storage_secret_key,
