@@ -13,6 +13,7 @@ def test_create_answer_client() -> None:
     assert client.config.bucket == settings.cdn.bucket_answer
     presign = client.generate_presigned_post("asdf.jpg")
     assert presign is not None
+    assert "localhost" in presign["url"]
 
 
 def test_create_answer_client_arbitrary():
