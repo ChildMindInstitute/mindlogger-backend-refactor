@@ -15,7 +15,7 @@ def test_create_answer_client() -> None:
 
     presign = client.generate_presigned_post("asdf.jpg")
     assert presign is not None
-    assert "localhost" in presign["url"]
+    assert client.config.endpoint_url in presign["url"]
 
 
 def test_create_answer_client_arbitrary():
