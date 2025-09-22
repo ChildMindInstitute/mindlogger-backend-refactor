@@ -115,25 +115,28 @@ async def tom_workspace_arbitrary_azure(tom: User, arbitrary_db_url: str, sessio
     return ws
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def cdn_settings() -> Generator[CDNSettings, Any, None]:
-    settings.cdn.access_key = "access_key"
-    settings.cdn.secret_key = "secret_key"
-    settings.cdn.bucket = "bucket"
-    settings.cdn.bucket_answer = "bucket_answer"
-    settings.cdn.bucket_operations = "bucket_operations"
-    settings.cdn.region = "us-east-1"
-    settings.cdn.domain = "mindlogger"
-    settings.cdn.legacy_prefix = "mindlogger/legacy-answer"
+    # TODO This fixture is leaky.  Might be a better fix in the future
     yield settings.cdn
-    settings.cdn.bucket_operations = None
-    settings.cdn.access_key = None
-    settings.cdn.secret_key = None
-    settings.cdn.bucket = None
-    settings.cdn.bucket_answer = None
-    settings.cdn.region = None
-    settings.cdn.domain = ""
-    settings.cdn.legacy_prefix = None
+
+    # settings.cdn.access_key = "access_key"
+    # settings.cdn.secret_key = "secret_key"
+    # settings.cdn.bucket = "bucket"
+    # settings.cdn.bucket_answer = "bucket_answer"
+    # settings.cdn.bucket_operations = "bucket_operations"
+    # settings.cdn.region = "us-east-1"
+    # settings.cdn.domain = "mindlogger"
+    # settings.cdn.legacy_prefix = "mindlogger/legacy-answer"
+    # yield settings.cdn
+    # settings.cdn.bucket_operations = None
+    # settings.cdn.access_key = None
+    # settings.cdn.secret_key = None
+    # settings.cdn.bucket = None
+    # settings.cdn.bucket_answer = None
+    # settings.cdn.region = None
+    # settings.cdn.domain = ""
+    # settings.cdn.legacy_prefix = None
 
 
 @pytest.fixture(scope="class")
