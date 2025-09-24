@@ -1,9 +1,12 @@
 name: Build and Deploy to UAT
 
 on:
-  push:
-    tags:
-      - "*-rc[0-9]+"
+#  push:
+#    tags:
+#      - "*-rc[0-9]+"
+  release:
+    types:
+      - prereleased
   workflow_dispatch:
     inputs:
       target-ref:
@@ -35,7 +38,7 @@ jobs:
           # Use shell parameter expansion to provide a default value if input is unset or empty
           # github.ref_name will be used if the input is not provided or empty
           # Remove "refs/heads/" or "refs/tags/" if present in github.ref_name
-          TARGET_REF=${TARGET_REF:-$(echo "${{ github.ref_name }}" | sed 's/refs\/heads\///g' | sed 's/refs\/tags\///g')} 
+          TARGET_REF=${TARGET_REF:-$(echo "${{ github.event.release.tag_name }}" | sed 's/refs\/heads\///g' | sed 's/refs\/tags\///g')} 
           
           echo "Target reference: $TARGET_REF"
           echo "ref=$TARGET_REF" >> $GITHUB_OUTPUT
