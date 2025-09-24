@@ -18,8 +18,8 @@ jobs:
         run: |
           cp .env.default .env
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
-          docker compose up -d
-          make dtest
+          docker compose up -d postgres rabbitmq redis
+          make test
 
       - name: Collect artifacts
         uses: actions/upload-artifact@v4

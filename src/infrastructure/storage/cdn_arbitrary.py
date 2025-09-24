@@ -20,6 +20,7 @@ class ArbitraryS3CdnClient(CDNClient):
             aws_access_key_id=self.config.access_key,
             aws_secret_access_key=self.config.secret_key,
             region_name=self.config.region,
+            endpoint_url=self.config.endpoint_url,
             config=client_config,
         )
 
