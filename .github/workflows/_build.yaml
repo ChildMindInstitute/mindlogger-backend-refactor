@@ -20,7 +20,7 @@ on:
 # Safe to cancel builds in progress
 concurrency:
   cancel-in-progress: true
-  group: api-build-${{ inputs.tag-name }}
+  group: api-build-${{ inputs.env-name }}
 
 permissions:
   id-token: write

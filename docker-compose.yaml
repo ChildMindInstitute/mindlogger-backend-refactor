@@ -43,6 +43,11 @@ services:
     entrypoint: /fastapi-entrypoint
     command: /start-backend-datadog
     env_file: .env
+    environment:
+      DATABASE__HOST: postgres
+      REDIS__HOST: redis
+      MAILING__MAIL__SERVER: mailhog
+      RABBITMQ__URL: rabbitmq
     depends_on:
       - postgres
       - redis
