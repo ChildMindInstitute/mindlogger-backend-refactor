@@ -3,7 +3,6 @@ import http
 import uuid
 from unittest.mock import patch
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.domain import AppletAnswerCreate, ClientMeta, ItemAnswerCreate
@@ -24,7 +23,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         answer_create: AppletAnswerCreate,
         applet_with_flow: AppletFull,
     ):
-        """Test that when activities arrive out of order, all are accepted even if the last one has is_flow_completed=True"""
+        """Out-of-order uploads still finish the flow when last activity arrives first."""
         client.login(tom)
         flow = applet_with_flow.activity_flows[1]  # Flow with 3 activities
         submit_id = uuid.uuid4()
