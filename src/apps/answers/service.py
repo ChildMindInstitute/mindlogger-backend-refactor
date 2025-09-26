@@ -6,7 +6,7 @@ import json
 import os
 import time
 import uuid
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from json import JSONDecodeError
 from typing import Callable, List, Mapping, Optional
 
