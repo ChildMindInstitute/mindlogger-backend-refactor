@@ -6,7 +6,7 @@ import json
 import os
 import time
 import uuid
-from collections import defaultdict
+from collections import Counter, defaultdict
 from json import JSONDecodeError
 from typing import Callable, List, Mapping, Optional
 
@@ -211,9 +211,34 @@ class AnswerService:
             # check current answer is provided in right order in the flow, so prev activities already answered
             prev_answers_count = len(existed_answers)
             is_flow_completed = any(answer.is_flow_completed for answer in existed_answers)
+
+            # Smart flow completion check
             if is_flow_completed:
-                raise ValidationError("Flow is already completed")
-            if prev_answers_count not in activity_indexes:
+                # Count expected and already persisted activity occurrences
+                flow_activity_counts = Counter(item.activity_id for item in flow_history.items)
+                submitted_counts = Counter(answer.activity_history_id for answer in existed_answers)
+
+                # If all activities already persisted before this submission, the flow truly finished
+                if all(submitted_counts.get(act_id, 0) >= count for act_id, count in flow_activity_counts.items()):
+                    raise ValidationError("Flow is already completed")
+
+                current_expected_total = flow_activity_counts.get(activity_history_id, 0)
+                current_submitted = submitted_counts.get(activity_history_id, 0)
+
+                # Reject duplicates that exceed expected occurrences for the activity
+                if current_submitted >= current_expected_total:
+                    raise ValidationError("Flow is already completed")
+
+                logger.info(
+                    "Allowing late submission for flow %s, activity %s, submit_id %s",
+                    flow_history_id,
+                    activity_history_id,
+                    applet_answer.submit_id,
+                )
+
+            # Continue with existing order validation only if flow not marked complete
+            # When is_flow_completed=True, we allow out-of-order submissions
+            if not is_flow_completed and prev_answers_count not in activity_indexes:
                 assert latest_activity_index is not None
                 # allow latest activity for flow autocompletion FE logic
                 if not (
@@ -224,8 +249,13 @@ class AnswerService:
                     raise ValidationError("Wrong activity order in the flow")
 
         elif flow_history_id and 0 not in activity_indexes:
-            # check first flow answer
-            raise ValidationError("Wrong activity order in the flow")
+            # check first flow answer - but allow if flow is marked as complete
+            # Check both existing answers and current answer for is_flow_completed
+            if not (
+                (existed_answers and any(answer.is_flow_completed for answer in existed_answers))
+                or applet_answer.is_flow_completed
+            ):
+                raise ValidationError("Wrong activity order in the flow")
 
         activity_history = await ActivityHistoriesCRUD(self.session).get_by_id(activity_history_id)
 
