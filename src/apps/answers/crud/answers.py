@@ -518,9 +518,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         activity_id: str,
         user_id: uuid.UUID | None = None,
         submit_id: uuid.UUID | None = None,
+        created_at: int | None = None,
     ) -> list[AnswerSchema]:
-        # We're not using created_at for filtering as it causes issues with mobile submissions
-        # The combination of applet_id, activity_id, and either user_id or submit_id should be sufficient
+        # created_at is used to distinguish between duplicate activities in flows
         query: Query = select(AnswerSchema)
         query = query.where(AnswerSchema.applet_id == applet_id)
         query = query.filter(AnswerSchema.activity_history_id.startswith(activity_id))
@@ -528,6 +528,12 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             query = query.where(AnswerSchema.submit_id == submit_id)
         if user_id:
             query = query.where(AnswerSchema.respondent_id == user_id)
+        if created_at is not None:
+            # Convert Unix timestamp (milliseconds) to datetime for comparison
+            created_at_datetime = datetime.datetime.fromtimestamp(
+                created_at / 1000.0, tz=datetime.timezone.utc
+            ).replace(tzinfo=None)
+            query = query.where(AnswerSchema.created_at == created_at_datetime)
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
