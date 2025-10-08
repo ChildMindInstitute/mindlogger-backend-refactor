@@ -6,7 +6,7 @@ import json
 import os
 import time
 import uuid
-from collections import Counter, defaultdict
+from collections import defaultdict
 from json import JSONDecodeError
 from typing import Callable, List, Mapping, Optional
 
@@ -89,6 +89,7 @@ from apps.answers.errors import (
     WrongRespondentForAnswerGroup,
 )
 from apps.answers.filters import AppletSubmitDateFilter, ReviewAppletItemFilter, SummaryActivityFilter
+from apps.answers.flow_submission_progress import FlowSubmissionProgress
 from apps.answers.tasks import create_report
 from apps.applets.crud import AppletsCRUD
 from apps.applets.domain.applet_history import Version
@@ -150,46 +151,38 @@ class AnswerService:
     async def _create_respondent_answer(
         self, activity_answer: AppletAnswerCreate, device_id: str | None
     ) -> AnswerSchema:
-        await self._validate_respondent_answer(activity_answer)
-        return await self._create_answer(activity_answer, device_id)
+        flow_progress = await self._validate_respondent_answer(activity_answer)
+        return await self._create_answer(activity_answer, device_id, flow_progress)
 
     async def _create_anonymous_answer(
         self, activity_answer: AppletAnswerCreate, device_id: str | None
     ) -> AnswerSchema:
-        await self._validate_anonymous_answer(activity_answer)
-        return await self._create_answer(activity_answer, device_id)
+        flow_progress = await self._validate_anonymous_answer(activity_answer)
+        return await self._create_answer(activity_answer, device_id, flow_progress)
 
-    async def _validate_respondent_answer(self, activity_answer: AppletAnswerCreate) -> None:
-        await self._validate_answer(activity_answer)
+    async def _validate_respondent_answer(self, activity_answer: AppletAnswerCreate) -> FlowSubmissionProgress | None:
+        flow_progress = await self._validate_answer(activity_answer)
         await self._validate_applet_for_user_response(activity_answer.applet_id)
 
-    async def _validate_anonymous_answer(self, activity_answer: AppletAnswerCreate) -> None:
-        await self._validate_applet_for_anonymous_response(activity_answer.applet_id, activity_answer.version)
-        await self._validate_answer(activity_answer)
+        return flow_progress
 
-    async def _validate_answer(self, applet_answer: AppletAnswerCreate) -> None:  # noqa: C901
+    async def _validate_anonymous_answer(self, activity_answer: AppletAnswerCreate) -> FlowSubmissionProgress | None:
+        await self._validate_applet_for_anonymous_response(activity_answer.applet_id, activity_answer.version)
+        return await self._validate_answer(activity_answer)
+
+    async def _validate_answer(self, applet_answer: AppletAnswerCreate) -> FlowSubmissionProgress | None:  # noqa: C901
         pk = self._generate_history_id(applet_answer.version)
         existed_answers = await AnswersCRUD(self.answer_session).get_by_submit_id(applet_answer.submit_id)
 
         activity_history_id = pk(applet_answer.activity_id)
         flow_history_id = pk(applet_answer.flow_id) if applet_answer.flow_id else None
-
-        activity_indexes = set()  # same activity is allowed multiple times in flow
-        latest_activity_index = None
+        flow_progress: FlowSubmissionProgress | None = None
         if flow_history_id:
-            flow_histories = await FlowsHistoryCRUD(self.session).load_full(
-                [pk(applet_answer.flow_id)], load_activities=False
-            )
-            if not flow_histories:
+            flow_progress = FlowSubmissionProgress(self.session, self.answer_session)
+            await flow_progress.load(flow_history_id, applet_answer.submit_id)
+            if not flow_progress.has_flow_history:
                 raise ValidationError("Flow not found")
-            flow_history = next(iter(flow_histories))
-
-            # check activity in the flow
-            for i, item in enumerate(flow_history.items):
-                if item.activity_id == activity_history_id:
-                    activity_indexes.add(i)
-            latest_activity_index = len(flow_history.items) - 1
-            if not activity_indexes:
+            if not flow_progress.contains_activity(activity_history_id):
                 raise ValidationError("Activity not found in the flow")
 
         if existed_answers:
@@ -208,59 +201,27 @@ class AnswerService:
             if flow_history_id != existed_answer.flow_history_id:
                 raise ValidationError("Submit id duplicate error")
 
-            # check current answer is provided in right order in the flow, so prev activities already answered
-            prev_answers_count = len(existed_answers)
-            is_flow_completed = any(answer.is_flow_completed for answer in existed_answers)
+        if flow_progress:
+            if flow_progress.is_complete_before_current():
+                raise ValidationError("Flow is already completed")
 
-            # Smart flow completion check
-            if is_flow_completed:
-                # Count expected and already persisted activity occurrences
-                flow_activity_counts = Counter(item.activity_id for item in flow_history.items)
-                submitted_counts = Counter(answer.activity_history_id for answer in existed_answers)
+            if not flow_progress.can_accept(activity_history_id):
+                raise ValidationError("Activity submission exceeds expected occurrences for this flow")
 
-                # If all activities already persisted before this submission, the flow truly finished
-                if all(submitted_counts.get(act_id, 0) >= count for act_id, count in flow_activity_counts.items()):
-                    raise ValidationError("Flow is already completed")
-
-                current_expected_total = flow_activity_counts.get(activity_history_id, 0)
-                current_submitted = submitted_counts.get(activity_history_id, 0)
-
-                # Reject duplicates that exceed expected occurrences for the activity
-                if current_submitted >= current_expected_total:
-                    raise ValidationError("Flow is already completed")
-
+            if existed_answers:
                 logger.info(
-                    "Allowing late submission for flow %s, activity %s, submit_id %s",
+                    "Allowing flow submission for flow %s, activity %s, submit_id %s",
                     flow_history_id,
                     activity_history_id,
                     applet_answer.submit_id,
                 )
 
-            # Continue with existing order validation only if flow not marked complete
-            # When is_flow_completed=True, we allow out-of-order submissions
-            if not is_flow_completed and prev_answers_count not in activity_indexes:
-                assert latest_activity_index is not None
-                # allow latest activity for flow autocompletion FE logic
-                if not (
-                    prev_answers_count < latest_activity_index + 1
-                    and max(activity_indexes) == latest_activity_index
-                    and applet_answer.is_flow_completed
-                ):
-                    raise ValidationError("Wrong activity order in the flow")
-
-        elif flow_history_id and 0 not in activity_indexes:
-            # check first flow answer - but allow if flow is marked as complete
-            # Check both existing answers and current answer for is_flow_completed
-            if not (
-                (existed_answers and any(answer.is_flow_completed for answer in existed_answers))
-                or applet_answer.is_flow_completed
-            ):
-                raise ValidationError("Wrong activity order in the flow")
-
         activity_history = await ActivityHistoriesCRUD(self.session).get_by_id(activity_history_id)
 
         if not activity_history.applet_id.startswith(f"{applet_answer.applet_id}"):
             raise ActivityHistoryDoeNotExist()
+
+        return flow_progress
 
     async def _validate_applet_for_anonymous_response(self, applet_id: uuid.UUID, version: str) -> None:
         await AppletHistoryService(self.session, applet_id, version).get()
@@ -346,11 +307,40 @@ class AnswerService:
 
         return relation.relation
 
-    async def _create_answer(self, applet_answer: AppletAnswerCreate, device_id: str | None) -> AnswerSchema:
+    async def _create_answer(
+        self,
+        applet_answer: AppletAnswerCreate,
+        device_id: str | None,
+        flow_progress: FlowSubmissionProgress | None,
+    ) -> AnswerSchema:
         assert self.user_id
         pk = self._generate_history_id(applet_answer.version)
         created_at = applet_answer.created_at or datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
         subject_crud = SubjectsCrud(self.session)
+
+        activity_history_id = pk(applet_answer.activity_id)
+        flow_history_id = pk(applet_answer.flow_id) if applet_answer.flow_id else None
+        client_flow_completed_flag = bool(applet_answer.is_flow_completed) if applet_answer.flow_id else None
+
+        is_flow_completed_backend = None
+        if applet_answer.flow_id:
+            if flow_progress:
+                is_flow_completed_backend = flow_progress.completion_state_after_add(activity_history_id)
+                if client_flow_completed_flag is not None and client_flow_completed_flag != is_flow_completed_backend:
+                    logger.info(
+                        "Flow completion mismatch for flow %s, activity %s, submit_id %s: client=%s backend=%s",
+                        flow_history_id,
+                        activity_history_id,
+                        applet_answer.submit_id,
+                        client_flow_completed_flag,
+                        is_flow_completed_backend,
+                    )
+            else:
+                is_flow_completed_backend = client_flow_completed_flag
+
+        migrated_data = None
+        if client_flow_completed_flag is not None:
+            migrated_data = {"client_flow_completed_flag": client_flow_completed_flag}
 
         respondent_subject = await subject_crud.get_user_subject(
             user_id=self.user_id, applet_id=applet_answer.applet_id
@@ -413,11 +403,11 @@ class AnswerService:
                 applet_id=applet_answer.applet_id,
                 version=applet_answer.version,
                 applet_history_id=pk(applet_answer.applet_id),
-                flow_history_id=pk(applet_answer.flow_id) if applet_answer.flow_id else None,
-                activity_history_id=pk(applet_answer.activity_id),
+                flow_history_id=flow_history_id,
+                activity_history_id=activity_history_id,
                 respondent_id=self.user_id,
                 client=applet_answer.client.dict(),
-                is_flow_completed=bool(applet_answer.is_flow_completed) if applet_answer.flow_id else None,
+                is_flow_completed=is_flow_completed_backend,
                 target_subject_id=target_subject.id,
                 source_subject_id=source_subject.id,
                 input_subject_id=input_subject.id,
@@ -425,6 +415,7 @@ class AnswerService:
                 consent_to_share=applet_answer.consent_to_share,
                 event_history_id=applet_answer.event_history_id,
                 device_id=device_id,
+                migrated_data=migrated_data,
             )
         )
         item_answer = applet_answer.answer

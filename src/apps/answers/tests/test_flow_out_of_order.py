@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.domain import AppletAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
@@ -61,6 +62,37 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         response = await client.post(self.answer_url, data=data_b)
         assert response.status_code == http.HTTPStatus.CREATED, f"Failed to create activity B: {response.json()}"
 
+    async def test_backend_marks_only_last_activity_complete_for_legacy_clients(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+        session: AsyncSession,
+    ):
+        """Legacy clients set completion on every activity; backend should mark only the last one."""
+        client.login(tom)
+        flow = applet_with_flow.activity_flows[1]
+        submit_id = uuid.uuid4()
+
+        for item in flow.items:
+            data = answer_create.copy(deep=True)
+            data.submit_id = submit_id
+            data.applet_id = applet_with_flow.id
+            data.flow_id = flow.id
+            data.activity_id = item.activity_id
+            data.is_flow_completed = True  # Legacy behaviour
+
+            response = await client.post(self.answer_url, data=data)
+            assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+        stored_answers = await AnswersCRUD(session).get_by_submit_id(submit_id)
+        assert stored_answers is not None
+        assert len(stored_answers) == len(flow.items)
+        backend_flags = [answer.is_flow_completed for answer in stored_answers]
+        assert all(flag is False for flag in backend_flags[:-1])
+        assert backend_flags[-1] is True
+
     async def test_duplicate_activity_rejected_after_flow_complete(
         self,
         client: TestClient,
@@ -102,18 +134,18 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         client: TestClient,
         tom: User,
         answer_create: AppletAnswerCreate,
-        applet_with_flow: AppletFull,
+        applet_with_flow_duplicated_activities: AppletFull,
     ):
         """Test flow where the same activity appears multiple times"""
         client.login(tom)
-        flow = applet_with_flow.activity_flows[0]  # Flow with duplicate activities
+        flow = applet_with_flow_duplicated_activities.activity_flows[0]  # Flow with duplicate activities
         submit_id = uuid.uuid4()
 
         # Assume flow has activity A twice (at positions 0 and 2)
         # Submit first occurrence
         data1 = answer_create.copy(deep=True)
         data1.submit_id = submit_id
-        data1.applet_id = applet_with_flow.id
+        data1.applet_id = applet_with_flow_duplicated_activities.id
         data1.flow_id = flow.id
         data1.activity_id = flow.items[0].activity_id
         data1.is_flow_completed = False
@@ -124,15 +156,25 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         # Submit second occurrence should still be accepted
         data2 = answer_create.copy(deep=True)
         data2.submit_id = submit_id
-        data2.applet_id = applet_with_flow.id
+        data2.applet_id = applet_with_flow_duplicated_activities.id
         data2.flow_id = flow.id
         data2.activity_id = flow.items[0].activity_id  # Same activity ID
         data2.is_flow_completed = True
 
         response = await client.post(self.answer_url, data=data2)
-        # This test assumes the flow actually has duplicates - adjust based on test fixtures
-        # For now, we'll check that it's handled without error
-        assert response.status_code in [http.HTTPStatus.CREATED, http.HTTPStatus.BAD_REQUEST]
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        # Third occurrence should be rejected as it exceeds expected count
+        data3 = answer_create.copy(deep=True)
+        data3.submit_id = submit_id
+        data3.applet_id = applet_with_flow_duplicated_activities.id
+        data3.flow_id = flow.id
+        data3.activity_id = flow.items[0].activity_id
+        data3.is_flow_completed = False
+
+        response = await client.post(self.answer_url, data=data3)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert "Flow is already completed" in response.json()["result"][0]["message"]
 
     @patch("apps.answers.service.logger")
     async def test_late_submission_logs_correctly(
@@ -190,7 +232,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         # Verify logging was called
         mock_logger.info.assert_called()
         log_call = mock_logger.info.call_args[0][0]
-        assert "Allowing late submission" in log_call
+        assert "Allowing flow submission" in log_call
 
     async def test_normal_flow_behavior_unchanged(
         self,
