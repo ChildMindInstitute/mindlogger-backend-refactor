@@ -172,12 +172,28 @@ class AnswerService:
 
     async def _validate_answer(self, applet_answer: AppletAnswerCreate) -> FlowSubmissionProgress | None:  # noqa: C901
         pk = self._generate_history_id(applet_answer.version)
+
+        # Timestamp-based duplicate detection: when created_at provided, check for exact duplicate
+        # Each unique timestamp represents a distinct submission, bypassing occurrence limits
+        if applet_answer.created_at is not None:
+            created_at_ms = int(applet_answer.created_at.timestamp() * 1000)
+            existing_with_timestamp = await AnswersCRUD(self.answer_session).get_by_applet_activity_submit_or_user_id(
+                applet_answer.applet_id,
+                str(applet_answer.activity_id),
+                None,
+                applet_answer.submit_id,
+                created_at_ms,
+            )
+            if existing_with_timestamp:
+                raise ValidationError("Duplicate answer with same timestamp already exists")
+
         existed_answers = await AnswersCRUD(self.answer_session).get_by_submit_id(applet_answer.submit_id)
 
         activity_history_id = pk(applet_answer.activity_id)
         flow_history_id = pk(applet_answer.flow_id) if applet_answer.flow_id else None
         flow_progress: FlowSubmissionProgress | None = None
-        if flow_history_id:
+        # Only use occurrence-based flow validation when created_at is NOT provided
+        if flow_history_id and applet_answer.created_at is None:
             flow_progress = FlowSubmissionProgress(self.session, self.answer_session)
             await flow_progress.load(flow_history_id, applet_answer.submit_id)
             if not flow_progress.has_flow_history:

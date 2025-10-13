@@ -674,7 +674,7 @@ class AppletCompletedEntities(InternalModel):
 class AnswersCheck(PublicModel):
     applet_id: uuid.UUID
     # Used to distinguish between duplicate activities in flows
-    created_at: int
+    created_at: int | None = None
     activity_id: str
     submit_id: uuid.UUID | None = None
 

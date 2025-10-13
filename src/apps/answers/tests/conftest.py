@@ -235,7 +235,7 @@ def answer_create(
         submit_id=uuid.uuid4(),
         activity_id=applet.activities[0].id,
         answer=answer_item_create,
-        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
+        created_at=None,  # None by default - uses occurrence-based validation
         client=client_meta,
         consent_to_share=False,
     )

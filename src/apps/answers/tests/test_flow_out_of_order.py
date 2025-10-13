@@ -184,12 +184,12 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         tom: User,
         applet_with_flow: AppletFull,
     ):
-        """Test that late submissions are logged for monitoring"""
+        """Test that late submissions are logged for monitoring (occurrence-based validation)"""
         service = AnswerService(session, tom.id)
         flow = applet_with_flow.activity_flows[1]
         submit_id = uuid.uuid4()
 
-        # Create last activity with is_flow_completed=True
+        # Create last activity with is_flow_completed=True (without created_at for occurrence-based validation)
         answer_c = AppletAnswerCreate(
             applet_id=applet_with_flow.id,
             version=applet_with_flow.version,
@@ -203,7 +203,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
                 end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key="test_key",
             ),
-            created_at=datetime.datetime.now(datetime.UTC),
+            created_at=None,  # Use occurrence-based validation
             client=ClientMeta(app_id="test", app_version="1.0.0"),
         )
 
@@ -223,7 +223,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
                 end_time=datetime.datetime.now(datetime.UTC),
                 user_public_key="test_key",
             ),
-            created_at=datetime.datetime.now(datetime.UTC),
+            created_at=None,  # Use occurrence-based validation
             client=ClientMeta(app_id="test", app_version="1.0.0"),
         )
 
@@ -324,3 +324,145 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         response = await client.post(self.answer_url, data=duplicate_data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         assert "Flow is already completed" in response.json()["result"][0]["message"]
+
+    async def test_timestamp_allows_duplicate_activities_with_different_timestamps(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        """When created_at is provided, different timestamps allow duplicate activities"""
+        client.login(tom)
+        flow = applet_with_flow.activity_flows[1]
+        submit_id = uuid.uuid4()
+
+        # Submit same activity with first timestamp
+        data1 = answer_create.copy(deep=True)
+        data1.submit_id = submit_id
+        data1.applet_id = applet_with_flow.id
+        data1.flow_id = flow.id
+        data1.activity_id = flow.items[0].activity_id
+        data1.created_at = datetime.datetime(2024, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
+        data1.is_flow_completed = False
+
+        response = await client.post(self.answer_url, data=data1)
+        assert response.status_code == http.HTTPStatus.CREATED, f"First submission failed: {response.json()}"
+
+        # Submit same activity with different timestamp (should be accepted)
+        data2 = answer_create.copy(deep=True)
+        data2.submit_id = submit_id
+        data2.applet_id = applet_with_flow.id
+        data2.flow_id = flow.id
+        data2.activity_id = flow.items[0].activity_id
+        data2.created_at = datetime.datetime(2024, 1, 1, 12, 30, 0, tzinfo=datetime.UTC)
+        data2.is_flow_completed = False
+
+        response = await client.post(self.answer_url, data=data2)
+        assert response.status_code == http.HTTPStatus.CREATED, f"Second submission with different timestamp failed: {response.json()}"
+
+    async def test_timestamp_rejects_duplicate_with_same_timestamp(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        """When created_at is provided, same timestamp rejects duplicate"""
+        client.login(tom)
+        flow = applet_with_flow.activity_flows[1]
+        submit_id = uuid.uuid4()
+        timestamp = datetime.datetime(2024, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
+
+        # Submit activity with timestamp
+        data1 = answer_create.copy(deep=True)
+        data1.submit_id = submit_id
+        data1.applet_id = applet_with_flow.id
+        data1.flow_id = flow.id
+        data1.activity_id = flow.items[0].activity_id
+        data1.created_at = timestamp
+        data1.is_flow_completed = False
+
+        response = await client.post(self.answer_url, data=data1)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        # Try to submit same activity with same timestamp (should be rejected)
+        data2 = answer_create.copy(deep=True)
+        data2.submit_id = submit_id
+        data2.applet_id = applet_with_flow.id
+        data2.flow_id = flow.id
+        data2.activity_id = flow.items[0].activity_id
+        data2.created_at = timestamp
+        data2.is_flow_completed = False
+
+        response = await client.post(self.answer_url, data=data2)
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
+        assert "Duplicate answer with same timestamp" in response.json()["result"][0]["message"]
+
+    async def test_timestamp_bypasses_occurrence_limits(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        """When created_at is provided, occurrence counting is bypassed"""
+        client.login(tom)
+        flow = applet_with_flow.activity_flows[1]
+        submit_id = uuid.uuid4()
+
+        # Submit same activity multiple times with different timestamps
+        # This would normally be rejected by occurrence counting
+        for i in range(5):
+            data = answer_create.copy(deep=True)
+            data.submit_id = submit_id
+            data.applet_id = applet_with_flow.id
+            data.flow_id = flow.id
+            data.activity_id = flow.items[0].activity_id
+            data.created_at = datetime.datetime(2024, 1, 1, 12, i, 0, tzinfo=datetime.UTC)
+            data.is_flow_completed = False
+
+            response = await client.post(self.answer_url, data=data)
+            assert response.status_code == http.HTTPStatus.CREATED, f"Submission {i} failed: {response.json()}"
+
+    async def test_check_existence_consistent_with_upload_validation(
+        self,
+        client: TestClient,
+        tom: User,
+        answer_create: AppletAnswerCreate,
+        applet_with_flow: AppletFull,
+    ):
+        """Check-existence endpoint should match upload validation behavior"""
+        client.login(tom)
+        flow = applet_with_flow.activity_flows[1]
+        submit_id = uuid.uuid4()
+        timestamp = datetime.datetime(2024, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
+
+        # Submit activity with timestamp
+        data = answer_create.copy(deep=True)
+        data.submit_id = submit_id
+        data.applet_id = applet_with_flow.id
+        data.flow_id = flow.id
+        data.activity_id = flow.items[0].activity_id
+        data.created_at = timestamp
+        data.is_flow_completed = False
+
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        # Check existence with same timestamp (should return true)
+        check_data = {
+            "applet_id": str(applet_with_flow.id),
+            "activity_id": str(flow.items[0].activity_id),
+            "submit_id": str(submit_id),
+            "created_at": int(timestamp.timestamp() * 1000),
+        }
+        response = await client.post("/answers/check-existence", data=check_data)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["exists"] is True
+
+        # Check existence with different timestamp (should return false)
+        check_data["created_at"] = int(datetime.datetime(2024, 1, 1, 13, 0, 0, tzinfo=datetime.UTC).timestamp() * 1000)
+        response = await client.post("/answers/check-existence", data=check_data)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["exists"] is False
