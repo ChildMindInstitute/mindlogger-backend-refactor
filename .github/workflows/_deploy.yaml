@@ -126,6 +126,7 @@ jobs:
           SLACK_COLOR: success
           SLACK_WEBHOOK: ${{ secrets.slack-webhook }}
           MSG_MINIMAL: actions url
+          SLACKIFY_MARKDOWN: true
           SLACK_TITLE: Backend deployed to ${{ inputs.env-name }}
           SLACK_MESSAGE: '🚀 Deployment was successful. Version: *${{ inputs.image-tag }}*'
 
