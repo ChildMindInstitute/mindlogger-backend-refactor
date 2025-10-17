@@ -359,7 +359,9 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         data2.is_flow_completed = False
 
         response = await client.post(self.answer_url, data=data2)
-        assert response.status_code == http.HTTPStatus.CREATED, f"Second submission with different timestamp failed: {response.json()}"
+        assert response.status_code == http.HTTPStatus.CREATED, (
+            f"Second submission with different timestamp failed: {response.json()}"
+        )
 
     async def test_timestamp_rejects_duplicate_with_same_timestamp(
         self,
