@@ -75,6 +75,19 @@ jobs:
       image-tag: ${{ needs.ref.outputs.target-ref }}
       env-name: uat
 
+  notify:
+    name: Notifications
+    needs: [ ref, deploy-uat ]
+    uses: ./.github/workflows/_notify-jira.yaml
+    with:
+      env-name: uat
+      git-tag: ${{ needs.ref.outputs.target-ref }}
+    secrets:
+      devops-repo-key: ${{ secrets.DEVOPS_REPO_KEY }}
+      jira-api-token: ${{ secrets.JIRA_API_TOKEN }}
+      github-pat: ${{ secrets.DEVOPS_GITHUB_TOKEN }}
+      slack-webhook: ${{ secrets.SLACK_WEBHOOK_RELEASE_COMMUNICATIONS }}
+
 #  run-e2e-tests:
 #    name: Run E2E Test Suite
 #    needs: [ deploy-uat ]
