@@ -23,6 +23,7 @@ __pycache__/
 # Unit test / coverage reports
 .coverage
 .coverage.*
+htmlcov
 
 # Hypothesis
 .hypothesis/
@@ -41,11 +42,8 @@ data/
 ## Logs
 *.log
 
-
-
 ## Docker stuff
 docker-compose.local.yaml
-
 
 
 ## Project configurations

@@ -1,13 +1,11 @@
 version: 2
 updates:
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
     allow:
       - dependency-type: "all"
-    ignore:
-      - dependency-name: "pipenv"
     commit-message:
       prefix: "[pip] Dependabot:"
       prefix-development: "[pip-dev] Dependabot:"

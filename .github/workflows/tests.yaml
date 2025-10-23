@@ -14,11 +14,23 @@ jobs:
       - uses: KengoTODA/actions-setup-docker-compose@v1
         with:
           version: '2.23.3'
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'  # or your preferred version
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: |
+          uv sync --locked
+
       - name: "Running tests"
         run: |
           cp .env.default .env
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
-          docker compose up -d postgres rabbitmq redis
+          docker compose up -d rabbitmq postgres redis mailhog
           make test
 
       - name: Collect artifacts

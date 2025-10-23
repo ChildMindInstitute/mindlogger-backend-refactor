@@ -13,3 +13,11 @@ allure-results
 Jenkinsfile.groovy
 Makefile
 buildspec.yaml
+.venv
+.env.default
+copilot
+.idea
+docs
+
+htmlcov
+.coverage

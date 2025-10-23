@@ -4,7 +4,6 @@ from copy import deepcopy
 from typing import Any, Generic, Type, TypeVar
 
 from sqlalchemy import delete, func, select, update
-from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.engine import Result
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.orm import Query
@@ -26,7 +25,7 @@ class BaseCRUD(Generic[ConcreteSchema]):
         """Executes the specified query and returns the result"""
         return await self.session.execute(
             query,
-            execution_options=immutabledict({"synchronize_session": False}),
+            execution_options={"synchronize_session": False},
         )
 
     async def _update_one(self, lookup: str, value: Any, schema: ConcreteSchema) -> ConcreteSchema:
