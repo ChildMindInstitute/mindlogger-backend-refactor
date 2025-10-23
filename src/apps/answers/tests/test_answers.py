@@ -503,12 +503,13 @@ async def tom_answer_activity_flow_incomplete(
     session: AsyncSession, tom: User, applet_with_flow: AppletFull
 ) -> AnswerSchema:
     answer_service = AnswerService(session, tom.id)
+    # Use flow[1] which has 3 activities and only submit the first one to create truly incomplete flow
     return await answer_service.create_answer(
         AppletAnswerCreate(
             applet_id=applet_with_flow.id,
             version=applet_with_flow.version,
             submit_id=uuid.uuid4(),
-            flow_id=applet_with_flow.activity_flows[0].id,
+            flow_id=applet_with_flow.activity_flows[1].id,
             is_flow_completed=False,
             activity_id=applet_with_flow.activities[0].id,
             answer=ItemAnswerCreate(
@@ -551,7 +552,7 @@ def applet_with_flow_answer_create(applet_with_flow: AppletFull) -> list[AppletA
             **answer_data,
             consent_to_share=False,
         ),
-        # flow#2 submission#1
+        # flow#2 submission#1 (flow[1] has 3 activities)
         AppletAnswerCreate(
             submit_id=submit_id,
             flow_id=applet_with_flow.activity_flows[1].id,
@@ -568,9 +569,18 @@ def applet_with_flow_answer_create(applet_with_flow: AppletFull) -> list[AppletA
         AppletAnswerCreate(
             submit_id=submit_id,
             flow_id=applet_with_flow.activity_flows[1].id,
-            is_flow_completed=True,
+            is_flow_completed=False,
             activity_id=applet_with_flow.activities[1].id,
             answer=ItemAnswerCreate(item_ids=[applet_with_flow.activities[1].items[0].id], **answer_item_data),
+            **answer_data,
+            consent_to_share=False,
+        ),
+        AppletAnswerCreate(
+            submit_id=submit_id,
+            flow_id=applet_with_flow.activity_flows[1].id,
+            is_flow_completed=True,
+            activity_id=applet_with_flow.activities[2].id,
+            answer=ItemAnswerCreate(item_ids=[applet_with_flow.activities[2].items[0].id], **answer_item_data),
             **answer_data,
             consent_to_share=False,
         ),
@@ -1255,18 +1265,24 @@ class TestAnswerActivityItems(BaseTest):
         data.flow_id = applet_with_flow.activity_flows[1].id
         data.activity_id = applet_with_flow.activity_flows[1].items[1].activity_id
 
-        response = await client.post(self.answer_url, data=data)
-        assert response.status_code == http.HTTPStatus.BAD_REQUEST
-
-        # different submit_id for second activity
-        data.activity_id = applet_with_flow.activity_flows[1].items[0].activity_id
-
+        # With our out-of-order fix, submitting the second activity first is now allowed
         response = await client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.CREATED
 
-        data.submit_id = uuid.uuid4()
-        data.activity_id = applet_with_flow.activity_flows[1].items[1].activity_id
+        # Submit first activity with same submit_id
+        data.activity_id = applet_with_flow.activity_flows[1].items[0].activity_id
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
 
+        # Submit third activity to complete the flow (flow[1] has 3 activities)
+        data.activity_id = applet_with_flow.activity_flows[1].items[2].activity_id
+        data.is_flow_completed = True
+        response = await client.post(self.answer_url, data=data)
+        assert response.status_code == http.HTTPStatus.CREATED
+
+        # Now trying to submit any activity with the SAME submit_id should fail (flow already complete)
+        # Keep the same submit_id to test duplicate submission
+        data.activity_id = applet_with_flow.activity_flows[1].items[0].activity_id
         response = await client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
@@ -2379,8 +2395,9 @@ class TestAnswerActivityItems(BaseTest):
         tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet.id)
         assert tom_subject
 
+        # Use flow[1] which is the incomplete flow from the fixture
         identifier_url = self.flow_identifiers_url.format(
-            applet_id=applet.id, flow_id=applet_with_flow.activity_flows[0].id
+            applet_id=applet.id, flow_id=applet_with_flow.activity_flows[1].id
         )
         response = await client.get(identifier_url, dict(targetSubjectId=tom_subject.id))
 
@@ -3035,7 +3052,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         url = self.flow_submission_url.format(
             applet_id=applet_with_flow.id,
-            flow_id=applet_with_flow.activity_flows[0].id,
+            flow_id=applet_with_flow.activity_flows[1].id,  # Use flow[1] which matches the fixture
             submit_id=tom_answer_activity_flow_incomplete.submit_id,
         )
         response = await client.get(url)
@@ -3045,7 +3062,8 @@ class TestAnswerActivityItems(BaseTest):
         data = data["result"]
         assert set(data.keys()) == {"flow", "submission", "summary"}
         assert data["submission"]["isCompleted"] is False
-        assert len(data["submission"]["answers"]) == len(applet_with_flow.activity_flows[0].items)
+        # Only 1 answer submitted out of 3 activities in flow[1]
+        assert len(data["submission"]["answers"]) == 1
 
     async def test_flow_submission_no_flow(
         self, client, tom: User, applet_with_flow: AppletFull, tom_answer_activity_no_flow
@@ -3171,7 +3189,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         url = self.flow_submissions_url.format(
             applet_id=applet_with_flow.id,
-            flow_id=applet_with_flow.activity_flows[0].id,
+            flow_id=applet_with_flow.activity_flows[1].id,  # Use flow[1] which matches the fixture
         )
 
         tom_subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet_with_flow.id)
