@@ -39,6 +39,7 @@ dependencies = [
     "typer==0.16.0",
     "uvicorn[standard]==0.34.*",
     "boto3-stubs==1.40.34",
+    "orjson>=3.11.4",
 ]
 
 [tool.ruff]

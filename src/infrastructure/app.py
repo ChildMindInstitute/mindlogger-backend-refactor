@@ -5,9 +5,8 @@ from asgi_correlation_id import CorrelationIdMiddleware
 from asyncpg import InvalidPasswordError
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from fastapi.routing import APIRouter
 from fastapi.responses import ORJSONResponse  # Fast, efficient JSON response
-
+from fastapi.routing import APIRouter
 
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
