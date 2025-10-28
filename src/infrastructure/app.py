@@ -6,6 +6,8 @@ from asyncpg import InvalidPasswordError
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRouter
+from fastapi.responses import ORJSONResponse  # Fast, efficient JSON response
+
 
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
@@ -98,6 +100,7 @@ def create_app():
     # Create base FastAPI application
     app = FastAPI(
         description=f"Commit id: <b>{settings.commit_id}</b><br>Version: <b>{settings.version}</b>",
+        default_response_class=ORJSONResponse,
         debug=settings.debug,
     )
 
