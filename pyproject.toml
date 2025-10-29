@@ -10,7 +10,7 @@ dependencies = [
     "asgi-correlation-id~=4.3.4",
     "asyncpg~=0.30.0",
     "azure-storage-blob==12.25.*",
-    "bcrypt~=4.3.0",
+    "bcrypt~=5.0.0",
     "boto3~=1.40.60",
     "bytecode==0.16.*",
     "ddtrace~=3.17.1",
