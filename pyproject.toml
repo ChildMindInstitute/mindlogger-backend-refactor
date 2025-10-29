@@ -38,7 +38,7 @@ dependencies = [
     "taskiq-redis==1.0.8",
     "typer==0.16.0",
     "uvicorn[standard]==0.38.*",
-    "boto3-stubs==1.40.34",
+    "boto3-stubs==1.40.60",
     "orjson>=3.11.4",
 ]
 

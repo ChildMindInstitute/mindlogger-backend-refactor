@@ -39,7 +39,7 @@ jobs:
 #          MSG_MINIMAL: actions url
 
   run-unit-tests:
-    uses: .github/workflows/tests.yaml
+    uses: ./.github/workflows/tests.yaml
     secrets: inherit
 
   comment-unit-tests:
