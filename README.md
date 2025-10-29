@@ -120,7 +120,7 @@ The application requires Postgres, Redis, and RabbitMQ to be running to start up
 
 If mail services are needed, mailhog is required and is provided via docker compose.
 
-If uploading media files to applets or answers, then an S3 compatible service is needed.  Minio is provided
+If uploading media files to applets or answers, then an S3 compatible service is needed. MinIO is provided
 via docker compose.
 
 ### Start Supporting Services using Docker
@@ -153,7 +153,7 @@ Run RabbitMQ
   ```
 
 
-> ⚠️ When using Minio more configuration is needed to configure boto3 to talk to the local endpoints
+> ⚠️ When using MinIO more configuration is needed to configure boto3 to talk to the local endpoints
 > ```
 > AWS_ACCESS_KEY_ID=minioaccess
 > AWS_SECRET_ACCESS_KEY=miniosecret
