@@ -12,7 +12,6 @@ import typer
 from pydantic import parse_obj_as
 from rich import print
 from sqlalchemy import Date, and_, case, false, func, literal, null, select, text
-from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.db.schemas import ActivityHistorySchema as ActivityHistory
@@ -193,7 +192,7 @@ async def _export_flows(applet_id: uuid.UUID, path_prefix: str):
         )
         res = await session.execute(
             query,
-            execution_options=immutabledict({"synchronize_session": False}),
+            execution_options={"synchronize_session": False},
         )
         data = res.all()
 

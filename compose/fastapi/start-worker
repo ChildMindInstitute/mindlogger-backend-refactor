@@ -10,4 +10,4 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-taskiq worker worker:worker -fsd
+taskiq worker worker:worker -fsd -tp src/**/tasks.py

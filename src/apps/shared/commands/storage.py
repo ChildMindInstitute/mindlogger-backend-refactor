@@ -33,7 +33,7 @@ TABLES = {
         ("config", "jsonb"),
         ("response_values", "jsonb"),
         ("question", "jsonb"),
-        ("response_values", "jsonb"),
+        ("extra_fields", "jsonb"),
     ],
     "applet_histories": [
         ("report_email_body", "text"),

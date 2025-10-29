@@ -2,81 +2,76 @@
 
 This repository is used for the backend of the [Curious](https://mindlogger.org/) application stack.
 
-[![Automated tests](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml/badge.svg)](https://github.com/ChildMindInstitute/mindlogger-backend-refactor/actions/workflows/tests.yaml)
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/ChildMindInstitute/mindlogger-backend-refactor" target="_blank">
-    <img src="https://coverage-badge.samuelcolvin.workers.dev/ChildMindInstitute/mindlogger-backend-refactor.svg" alt="Coverage">
-</a>
+---
 
-## Getting Started
+## Curious Application Stack
 
 * Curious Admin - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-admin)
 * Curious Backend - **This Repo**
 * Curious Mobile App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-app-refactor)
 * Curious Web App - [GitHub Repo](https://github.com/ChildMindInstitute/mindlogger-web-refactor)
 
+---
 
-## Contents
-- [Features](#features)
-- [Technologies](#technologies)
-- [Application](#application-stack)
-  - [Prerequisites](#prerequisites)
-  - [Environment Variables](#environment-variables)
-- [Installation](#installation)
-- [Running the app](#running-the-app)
-  - [Running locally](#running-locally)
-  - [Running via docker](#running-via-docker)
-  - [Running using Makefile](#running-using-makefile)
-  - [Docker development](#docker-development)
-- [Testing](#testing)
-- [Scripts](#scripts)
-- [Arbitrary setup](#arbitrary-setup)
-- [License](#license)
-
-## Features
-
-See
-Curious's [Knowledge Base article](https://mindlogger.atlassian.net/servicedesk/customer/portal/3/topic/4d9a9ad4-c663-443b-b7fc-be9faf5d9383/article/337444910)
-to discover the Curious application stack's features.
-
-## Technologies
-
-- ✅ [Python 3.13](https://www.python.org/downloads/release/python-3132/)
-- ✅ [Pipenv](https://pipenv.pypa.io/en/latest/)
-- ✅ [FastAPI](https://fastapi.tiangolo.com)
-- ✅ [Postgresql](https://www.postgresql.org/docs/14/index.html)
-- ✅ [Redis](https://redis.io)
-- ✅ [Docker](https://docs.docker.com/get-docker/)
-- ✅ [Pydantic](https://pydantic-docs.helpmanual.io)
-- ✅ [SQLAlchemy](https://www.sqlalchemy.org/)
-
-And
-
-- ✅ [The 12-Factor App](https://12factor.net)
-
-**Code quality tools:**
-
-- ✅ [ruff](https://github.com/astral-sh/ruff)
-- ✅ [mypy](https://github.com/python/mypy)
-- ✅ [pytest](https://github.com/pytest-dev/pytest)
-
-## Application
+## Getting Started
 
 ### Prerequisites
 
-- Python 3.13
+- [Homebrew](https://brew.sh/) (MacOS)
+- [uv](https://docs.astral.sh/uv/)
 - [Docker](https://docs.docker.com/get-docker/)
 
-#### Recommended Extras
-
-Installing [pyenv](https://github.com/pyenv/pyenv) is recommended to automatically manage Python version in the virtual environment specified in the `Pipfile`
-
-Alternatively, on macOS you can use a tool like [Homebrew](https://brew.sh/) to install multiple versions and specify when creating the virtual environment:
-
+On MacOS:
 ```bash
-pipenv --python /opt/homebrew/bin/python3.13
+brew install uv
 ```
 
+On other platforms, follow the [uv install instructions](https://docs.astral.sh/uv/getting-started/installation/)
+
+### Managing Python and Project Dependencies
+
+Python versions and dependencies are managed via `uv`. There is no need to use other tooling such as pip,
+pyenv, pipenv, etc.
+
+
+#### Install Python
+
+Install the python version specified in pyproject.toml
+
+```bash
+uv python install
+```
+
+> ⚠️ If the python version changes (ex: from 3.12 to 3.13) this command will need to be rerun
+
+#### Install Project Dependencies
+Install all dependencies from pyproject.toml
+```bash
+uv sync
+```
+
+---
+
+## Initial Project Setup
+
 ### Environment Variables
+
+#### Create `.env` file for local development
+
+The backend leverages the python package `dotenv` to read environment variables from a `.env` file
+on the file system.  This is useful during local development due to the large number
+of necessary environment variables to configure the application.
+
+Use the supplied `.env.default` as a baseline to get started.  It has valid defaults for for nearly
+all local development:
+
+```bash
+cp .env.default .env
+```
+
+> 🛑 **NOTE:** Make sure to set `RABBITMQ__USE_SSL=False` for local development
+
+### Environment Variable Reference
 
 | Key                                                          | Default value              | Description                                                                                                                                                                                                                                                                                                                            |
 |--------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -111,160 +106,88 @@ pipenv --python /opt/homebrew/bin/python3.13
 | ONEUP\_HEALTH\_\_CLIENT\_SECRET                              | -                          | OneUpHealth API Client secret                                                                                                                                                                                                                                                                                                          |
 | ONEUP\_HEALTH\_\_MAX\_ERROR\_RETRIES                         | 5                          | Maximum number of times to re-attempt fetching health data from the OneUpHealth API. The overall total number of attempts will be this value plus one                                                                                                                                                                                  |
 
-##### ✋ Mandatory:
-
-> You can see that some environment variables have double underscore (`__`) instead of `_`.
+> ✋Note: most environment variables have double underscore (`__`) instead of `_`.
 >
-> As far as `pydantic` supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) it uses to have cleaner code
+> The application leverages `pydantic-settings` which supports [nested settings models](https://pydantic-docs.helpmanual.io/usage/settings/) 
+> to effectively namespace related settings.
 
-## Installation
+---
 
-### Create `.env` file for future needs
+## Running Supporting Services
 
-It is highly recommended to create an `.env` file as far as it is needed for setting up the project with Local and Docker approaches.
-Use `.env.default` to get started:\
-```bash
-cp .env.default .env
-```
+The application requires Postgres, Redis, and RabbitMQ to be running to start up and serve requests
+(as well as running the test suite).
 
-> 🛑 **NOTE:** Make sure to set `RABBITMQ__USE_SSL=False` for local development
+If mail services are needed, mailhog is required and is provided via docker compose.
 
-### Generate secret keys, update .env with values
+If uploading media files to applets or answers, then an S3 compatible service is needed.  Minio is provided
+via docker compose.
 
-```bash
-openssl rand -hex 32
-```
+### Start Supporting Services using Docker
 
-Generate a key and update `.env` values:
+To run all services required for the backend:
+  ```bash
+  docker-compose up postgres redis rabbitmq
+  ```
 
-* `AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY`
-* `AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY`
+If you also need mail and S3 storage service
+  ```bash
+  docker-compose up postgres redis rabbitmq mailhog minio
+  ```
 
-### Required Services
+Also, services can be run individually:
 
-- Postgres
-- Redis
-- RabbitMQ
-- Mailhog - Only used for running mail services locally
-
-Running required services using Docker is **highly** recommended even if you intend to run the app locally.
-
-> 🛑 **NOTE:** Make sure to update your environment variables to point to the correct hostname and port for each service.
-
-#### Run services using Docker
-
-- Run Postgres
+Run Postgres
   ```bash
   docker-compose up -d postgres
   ```
 
-- Run Redis
+Run Redis
   ```bash
   docker-compose up -d redis
   ```
 
-- Run RabbitMQ
+Run RabbitMQ
   ```bash
   docker-compose up -d rabbitmq
   ```
 
-- Alternatively, you can run all required services:
-  ```bash
-  docker-compose up
-  ```
 
-#### Run services manually
+> ⚠️ When using Minio more configuration is needed to configure boto3 to talk to the local endpoints
+> ```
+> AWS_ACCESS_KEY_ID=minioadmin
+> AWS_SECRET_ACCESS_KEY=minioadmin
+> AWS_ENDPOINT_URL=http://localhost:9000
+> AWS_DEFAULT_REGION=us-east-1
+> ```
 
-For manual installation refer to each service's documentation:
-
-- [PostgreSQL Downloads](https://www.postgresql.org/download/)
-- [Redis: Install Redis](https://redis.io/docs/install/install-redis/)
-- [RabbitMQ documentation](https://rabbitmq-website.pages.dev/docs/download)
-
-
-### Install all project dependencies
-
-Pipenv used as a default dependencies manager
-Create your virtual environment:
-
-> **NOTE:**
-> Pipenv used as a default dependencies manager.
-> When developing on the API be sure to work from within an active shell.
-> If using VScode, open the terminal from w/in the active shell. Ideally, avoid using the integrated terminal during this process.
-
-```bash
-# Activate your environment
-pipenv shell
-```
-
-If `pyenv` is installed Python 3.13 should automatically be installed in the virtual environment, you can check the
-correct version of Python is active by running:
-```bash
-python --version
-```
-
-If the active version is **not** 3.13, you can manually specify a version while creating your virtual environment:
-```bash
-pipenv --python /opt/homebrew/bin/python3.13
-```
-
-Install all dependencies
-```bash
-# Install all deps from Pipfile.lock
-# to install venv to current directory use `export PIPENV_VENV_IN_PROJECT=1`
-pipenv sync --dev --system
-```
-
-> 🛑 **NOTE:** if you don't use `pipenv` for some reason remember that you will not have automatically exported variables from your `.env` file.
->
-> 🔗 [Pipenv docs](https://docs.pipenv.org/advanced/#automatic-loading-of-env)
-
-So then you have to do it by your own manually
-
-```bash
-# Manual exporting in Unix (like this)
-export PYTHONPATH=src/
-export BASIC_AUTH__PASSWORD=1234
-...
-```
-
-...or using a Bash-script
-
-```bash
-set -o allexport; source .env; set +o allexport
-```
-
-
-> 🛑 **NOTE 2:** Please do not forget about environment variables! Now all environment variables for the Postgres Database which runs in docker are already passed to docker-compose.yaml from the .env file.
-
-> 🛑 **NOTE 3:** If the application can't find the `RabbitMQ` service even though it's running normally, change your
+> 🛑 **NOTE:** If the application can't find the `RabbitMQ` service even though it's running normally, change your
 `RABBITMQ__URL` to your local ip address instead of `localhost`
 
-## Run the migrations
+
+### Run services using other means
+
+It is not recommended to run the services natively.  Please use the provided docker setup.
+
+---
+
+## Run Database Migrations
+
+The database needs to be initialized with tables and starting data via alembic (ensure your postgres container
+is running).
+
 ```bash
-alembic upgrade head
+uv run alembic upgrade head
 ```
 
-> 🛑 **NOTE:** If you run into role based errors e.g. `role "postgres" does not exist`, check to see if that program is running anywhere else (e.g. Homebrew), run... `ps -ef | grep {program-that-errored}`
-> You can attempt to kill the process with the following command `kill -9 {PID-to-program-that-errored}`, followed by rerunning the previous check to confirm if the program has stopped.
+---
 
-## Running the app
+## Other Local Setup
 
-### Running locally
+If you are on a unix type system (Linux, MacOS, WSL, etc) add these entries to `/etc/hosts`.  This will need to be
+done with elevated privileges (ex: `sudo vi /etc/hosts`).
 
-This option allows you to run the app for development purposes without having to manually build the Docker image (i.e. When developing on the Web or Admin project).
-
-- Make sure all [required services](#required-services) are properly setup
-- If you're running required services using Docker, disable the `app` service from `docker-compose` before running:
-  ```bash
-  docker-compose up -d
-  ```
-
-  Alternatively, you may run these services using [make](#running-using-makefile) (i.e. When developing the API):
-
-   - You'll need to sudo into `/etc/hosts` and append the following changes.
-
-  ```
+```
   #mindlogger
   127.0.0.1 postgres
   127.0.0.1 rabbitmq
@@ -272,56 +195,44 @@ This option allows you to run the app for development purposes without having to
   127.0.0.1 mailhog
   ```
 
-  Then run the following command from within the active virtual environment shell...
+---
 
+## Running the app
+
+### Running locally via Docker
+
+
+To run just the application:
+Make sure all [required services](#required-services) are properly setup and running
+
+Then start just the app:
   ```bash
-  make run_local
+  docker-compose up app
   ```
 
-> 🛑 **NOTE:** Don't forget to set the `PYTHONPATH` environment variable, e.g: export PYTHONPATH=src/
-- To test that the API is up and running navigate to `http://localhost:8000/docs` in a browser.
+To run all services (useful when developing the other applications in the stack):
+```bash
+docker-compose up
+```
 
-In project we use simplified version of imports: `from apps.application_name import class_name, function_name, module_nanme`.
-
-To do this we must have `src/` folder specified in a **PATH**.
-
-P.S. You don't need to do this additional step if you run application via Docker container 🤫
+### Running locally via the CLI
 
 ```bash
-uvicorn src.main:app --proxy-headers --port {PORT} --reload
+uvicorn src.main:app --proxy-headers --port 8000 --reload
 ```
 
 Alternatively, you may run the application using [make](#running-using-makefile):
 ```bash
 make run
 ```
-### Running via docker
 
-- [Build the application](#build-application-images)
-- Run the app using Docker:
-```bash
-docker-compose up
-```
+### Running via PyCharm
 
-Additional `docker-compose up` flags that might be useful for development
+See the [PyCharm documentation](docs/pycharm.md) for details.
 
-```bash
--d  # Run docker containers as deamons (in background)
---no-recreate  # If containers already exist, don't recreate them
-```
+---
 
-#### Stop the application 🛑
-
-```bash
-docker-compose down
-```
-
-Additional `docker-compose down` flags that might be useful for development
-
-```bash
--v  # Remove with all volumes
-```
-### Running using Makefile
+## Project Makefile
 
 You can use the `Makefile` to work with project (run the application / code quality tools / tests ...)
 
@@ -331,54 +242,23 @@ For local usage:
 # Run the application
 make run
 
+# Run the test suite
+make test
+
 # Check the code quality
 make cq
 
 # Check and fix code quality
 make cqf
 
-# Check tests passing
-make test
-
 # Check everything in one hop
 make check
 ```
-### Docker development
 
-#### Build application images
-
-```bash
-docker-compose build
-```
-
-✅ Make sure that you completed `.env` file. It is using by default in `docker-compose.yaml` file for buildnig.
-
-✅ Check building with `docker images` command. You should see the record with `fastapi_service`.
-
-💡 If you would like to debug the application insode Docker comtainer make sure that you use `COMPOSE_FILE=docker-compose.dev.yaml` in `.env`. It has opened stdin and tty.
-
-## Testing
-
-The `pytest` framework is using in order to write unit tests.
-Currently postgresql is used as a database for tests with running configurations that are defined in `pyproject.toml`
-
-```toml
-DATABASE__HOST=postgres
-DATABASE__PORT=5432
-DATABASE__PASSWORD=postgres
-DATABASE__USER=postgres
-DATABASE__DB=test
-```
-
-> 🛑 **NOTE:** To run tests localy without changing DATABASE_HOST please add row below to the `/etc/hosts` file (macOS, Linux). It will automatically redirect postgres to the localhost.
-
-```
-127.0.0.1       postgres
-```
 
 ### Adjust your database for using with tests
 
-⚠️️ Remember that you have to do this only once before the first test.
+⚠️️ You have to do this only once before running the test suite.
 
 ```base
 # Connect to the database with Docker
@@ -401,441 +281,19 @@ psql# create user test;
 psql# alter user test with password 'test';
 ```
 
-### Test coverage
+## Further Reading
+
+- [Alembic details](docs/alembic.md)
+- [Arbitrary Server](docs/arbitrary.md)
+- [Curious CLI](docs/cli.md)
+- [Database](docs/db.md)
+- [Git Helpers](docs/git.md)
+- [PyCharm Setup](docs/pycharm.md)
+- [Security tokens (for deployments)](docs/tokens.md)
 
-To correctly calculate test coverage, you need to run the coverage with the `--concurrency=thread,gevent` parameter:
-
-```bash
-coverage run --branch --concurrency=thread,gevent -m pytest
-coverage report -m
-```
-
-### Running test via docker
-
-(This is how tests are running on CI)
-
-```bash
-# Check the code quality
-make dcq
-
-# Check tests passing
-make dtest
-
-# Check everything in one hop
-make dcheck
-```
-
-## Scripts
-
-### Using pre-commit hooks
-
-It is a good practice to use Git hooks to provide better commits.
-
-For increased security during development, install `git-secrets` to scan code for aws keys.
-
-Please use this link for that: https://github.com/awslabs/git-secrets#installing-git-secrets
-
-`.pre-commit-config.yaml` is placed in the root of the repository.
-
-👉 Once you have installed `git-secrets` and `pre-commit` simply run the following command.
-
-```bash
-make aws-scan
-```
-
-👉 Then all your staged changes will be checked via git hooks on every `git commit`
-
-### Alembic (migration)
-
-#### Add a new migrations file 🔨
-
-```bash
-alembic revision --autogenerate -m "Add a new field"
-```
-
-#### Upgrade to the latest migration 🔨
-
-```bash
-alembic upgrade head
-```
-
-#### Downgrade to the specific one 🔨
-
-```bash
-alembic downgrade 0e43c346b90d
-```
-
-✅ This hash is taken from the generated file in the migrations folder
-
-#### Downgrade to the specific one 🔨
-
-```bash
-alembic downgrade 0e43c346b90d
-```
-
-#### Removing the migration 🔨
-
-💡 Do not forget that alembic saves the migration version into the database.
-
-```bash
-delete from alembic_version;
-```
-
-#### Upgrade arbitrary servers
-
-```bash
-alembic -c alembic_arbitrary.ini upgrade head
-```
-
-### Update gender_screen and age_screen activity items strings to greek for an applet
-
-```bash
-python src/cli.py patch exec M2-8568 -a <applet_id>
-```
-
-> [!NOTE]
-> You can use environment variables to overwrite default values.
->
-> | Environment variable | Text string |
-> | - | - |
-> | `AGE_SCREEN_QUESTION_TRANSLATION` | Question text for the Age screen |
-> | `GENDER_SCREEN_QUESTION_TRANSLATION` | Question text for the Gender screen |
-> | `GENDER_SCREEN_RESPONSE_MALE_TRANSLATION` | "Male" response text |
-> | `GENDER_SCREEN_RESPONSE_FEMALE_TRANSLATION` | "Female" response text |
-
-### Library cleanup
-
-You can use the following command to remove entries from the `library` table (as the Library feature lacks a delete endpoint):
-
-```bash
-python src/cli.py patch exec M2-9015 --applets '{"<applet_id>": "<applet_name>", ...}'
-```
-
-## Database relation structure
-
-```mermaid
-
-erDiagram
-
-User_applet_accesses ||--o{ Applets: ""
-
-    User_applet_accesses {
-        int id
-        datetime created_at
-        datetime updated_at
-        int user_id FK
-        int applet_id FK
-        string role
-    }
-
-    Users {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        string email
-        string full_name
-        string hashed_password
-    }
-
- Users||--o{ Applets : ""
-
-    Applets {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        string display_name
-        jsonb description
-        jsonb about
-        string image
-        string watermark
-        int theme_id
-        string version
-        int creator_id FK
-        text report_server_id
-        text report_public_key
-        jsonb report_recipients
-        boolean report_include_user_id
-        boolean report_include_case_id
-        text report_email_body
-    }
-
-Applet_histories }o--|| Users: ""
-
-    Applet_histories {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        jsonb description
-        jsonb about
-        string image
-        string watermark
-        int theme_id
-        string version
-        int account_id
-        text report_server_id
-        text report_public_key
-        jsonb report_recipients
-        boolean report_include_user_id
-        boolean report_include_case_id
-        text report_email_body
-        string id_version
-        string display_name
-        int creator_id FK
-    }
-
-Answers_activity_items }o--|| Applets: ""
-Answers_activity_items }o--|| Users: ""
-Answers_activity_items }o--|| Activity_item_histories: ""
-
-    Answers_activity_items {
-        int id
-        datetime created_at
-        datetime updated_at
-        jsonb answer
-        int applet_id FK
-        int respondent_id FK
-        int activity_item_history_id_version FK
-    }
-
-Answers_flow_items }o--|| Applets: ""
-Answers_flow_items }o--|| Users: ""
-Answers_flow_items ||--o{ Flow_item_histories: ""
-
-    Answers_flow_items {
-        int id
-        datetime created_at
-        datetime updated_at
-        jsonb answer
-        int applet_id FK
-        int respondent_id FK
-        int flow_item_history_id_version FK
-    }
-
-Activities }o--|| Applets: ""
-
-    Activities {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        UUID guid
-        string name
-        jsonb description
-        text splash_screen
-        text image
-        boolean show_all_at_once
-        boolean is_skippable
-        boolean is_reviewable
-        boolean response_is_editable
-        int ordering
-        int applet_id FK
-    }
-
-Activity_histories }o--|| Applets: ""
-
-    Activity_histories {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        UUID guid
-        string name
-        jsonb description
-        text splash_screen
-        text image
-        boolean show_all_at_once
-        boolean is_skippable
-        boolean is_reviewable
-        boolean response_is_editable
-        int ordering
-        int applet_id FK
-    }
-
-Activity_item_histories }o--|| Activity_histories: ""
-
-    Activity_item_histories {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        jsonb question
-        string response_type
-        jsonb answers
-        text color_palette
-        int timer
-        boolean has_token_value
-        boolean is_skippable
-        boolean has_alert
-        boolean has_score
-        boolean is_random
-        boolean is_able_to_move_to_previous
-        boolean has_text_response
-        int ordering
-        string id_version
-        int activity_id FK
-    }
-
-Activity_items }o--|| Activities: ""
-
-    Activity_items {
-        int id
-        datetime created_at
-        datetime updated_at
-        jsonb question
-        string response_type
-        jsonb answers
-        text color_palette
-        int timer
-        boolean has_token_value
-        boolean is_skippable
-        boolean has_alert
-        boolean has_score
-        boolean is_random
-        boolean is_able_to_move_to_previous
-        boolean has_text_response
-        int ordering
-        int activity_id FK
-    }
-
-
-
-Flows }o--|| Applets: ""
-
-    Flows {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        string name
-        UUID guid
-        jsonb description
-        boolean is_single_report
-        boolean hide_badge
-        int ordering
-        int applet_id FK
-    }
-
-Flow_items }o--|| Flows: ""
-Flow_items }o--|| Activities: ""
-
-    Flow_items {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        int ordering
-        int activity_flow_id FK
-        int activity_id FK
-    }
-
-Flow_item_histories }o--|| Flow_histories: ""
-Flow_item_histories }o--|| Activity_histories: ""
-
-    Flow_item_histories {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        string id_version
-        int activity_flow_id FK
-        int activity_id FK
-    }
-
-Flow_histories }o--|| Applet_histories: ""
-
-    Flow_histories {
-        int id
-        datetime created_at
-        datetime updated_at
-        boolean is_deleted
-        string name
-        UUID guid
-        jsonb description
-        boolean is_single_report
-        boolean hide_badge
-        int ordering
-        string id_version
-        int applet_id FK
-    }
-
-
-```
-
-## Arbitrary setup
-
-You can connect arbitrary file storage and database by filling special fields in table `user_workspaces`.
-
-### PostgreSQL
-
-Add your database connection string into `database_uri`
-In next format:
-
-```
-postgresql+asyncpg://<username>:<password>@<hostname>:port/database
-```
-
-### AWS S3 and GCP S3
-
-For AWS S3 bucket next fields are required:
-`storage_region`,`storage_bucket`, `storage_access_key`,`storage_secret_key`.
-
-### Azure Blob
-
-In case of Azure blob, specify your connection string into field `storage_secret_key`
 
 ## License
 Common Public Attribution License Version 1.0 (CPAL-1.0)
 
 Refer to [LICENSE.md](./LICENSE.MD)
 
----
-
-## Command Line Interface (CLI)
-
-This project provides a powerful CLI for backend operations, available via `src/cli.py` and powered by [Typer](https://typer.tiangolo.com/). You can use it to manage migrations, patches, encryption, applet seeding, arbitrary server settings, and more.
-
-### Usage
-
-```bash
-python src/cli.py [COMMAND] [SUBCOMMAND] [OPTIONS]
-```
-
-### Available Top-Level Commands
-- `arbitrary` – Manage arbitrary server settings and data transfer
-- `patch` – Execute or list database/data patches
-- `encryption` – Encrypt, decrypt, or re-encrypt data
-- `applet` – Applet management and seeding
-- `applet-ema` – Export EMA schedules
-- `activities` – Commands for processing activities
-- `assessments` – Commands for processing assessments
-- `token` - Generate access token
-
-### Getting Help
-All commands and subcommands support `--help` for detailed usage, arguments, and options:
-
-```bash
-python src/cli.py [COMMAND] --help
-```
-
-### Example Commands
-- Run a patch:
-  ```bash
-  python src/cli.py patch exec M2-8568 -a <applet_id>
-  ```
-- Seed applet data from YAML:
-  ```bash
-  python src/cli.py applet seed /path/to/config.yaml
-  ```
-- Add arbitrary server settings:
-  ```bash
-  python src/cli.py arbitrary add <owner_email> --db-uri <uri> --storage-type <type> --storage-secret-key <key>
-  ```
-
-### More CLI Documentation
-Some commands (such as applet seeding) have detailed documentation in their respective subfolders, e.g.:
-- [`src/apps/applets/commands/applet/seed/v1/README.md`](src/apps/applets/commands/applet/seed/v1/README.md)
-
-Refer to these files for configuration schemas and advanced usage.

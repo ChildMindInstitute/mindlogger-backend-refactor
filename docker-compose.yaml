@@ -17,6 +17,23 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
 
+  postgres-arb:
+    build:
+      context: .
+      dockerfile: ./compose/postgres/Dockerfile
+    image: mindlogger_postgres_arb
+    container_name: mindlogger_postgres_arb
+    environment:
+      POSTGRES_HOST: ${DATABASE__HOST}
+      POSTGRES_PORT: 65432
+      POSTGRES_PASSWORD: ${DATABASE__PASSWORD}
+      POSTGRES_USER: ${DATABASE__USER}
+      POSTGRES_DB: ${DATABASE__DB}
+    ports:
+      - "65432:65432"
+    volumes:
+      - pg_arb_data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: mindlogger_rabbitmq
@@ -38,8 +55,6 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-      args:
-        - PIPENV_EXTRA_ARGS=--dev
     entrypoint: /fastapi-entrypoint
     command: /start-backend-datadog
     env_file: .env
@@ -55,25 +70,46 @@ services:
       - mailhog
     ports:
       - "8000:80"
-    volumes:
-      - ./:/app/
-#      - /tmp:/tmp
-#      - ./uploads/:/app/uploads/
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          # Exclude the project virtual environment
+          ignore:
+            - .venv/
+
+        # Rebuild the image on changes to the `pyproject.toml`
+        - action: rebuild
+          path: ./pyproject.toml
+
 
   worker:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-#      target: worker
-      args:
-        - PIPENV_EXTRA_ARGS=--dev
     image: mindlogger_worker
     container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
     command: ['/start-worker']
     env_file: .env
-    volumes:
-      - ./:/app/
+    environment:
+      DATABASE__HOST: postgres
+      REDIS__HOST: redis
+      MAILING__MAIL__SERVER: mailhog
+      RABBITMQ__URL: rabbitmq
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          # Exclude the project virtual environment
+          ignore:
+            - .venv/
+
+        # Rebuild the image on changes to the `pyproject.toml`
+        - action: rebuild
+          path: ./pyproject.toml
     depends_on:
       - postgres
       - redis
@@ -84,16 +120,28 @@ services:
     build:
       context: .
       dockerfile: ./compose/fastapi/Dockerfile
-#      target: base
-      args:
-        - PIPENV_EXTRA_ARGS=--dev
     image: mindlogger_scheduler
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
     command: ['/start-scheduler']
     env_file: .env
-    volumes:
-      - ./:/app/
+    environment:
+      DATABASE__HOST: postgres
+      REDIS__HOST: redis
+      MAILING__MAIL__SERVER: mailhog
+      RABBITMQ__URL: rabbitmq
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          # Exclude the project virtual environment
+          ignore:
+            - .venv/
+
+        # Rebuild the image on changes to the `pyproject.toml`
+        - action: rebuild
+          path: ./pyproject.toml
     depends_on:
       - postgres
       - redis
@@ -136,4 +184,5 @@ services:
 
 volumes:
   pg_data: {}
+  pg_arb_data: {}
   datastore: {}
