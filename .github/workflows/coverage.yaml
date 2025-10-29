@@ -1,8 +1,9 @@
 name: Coverage
 on:
-  push:
-    branches:
-      - develop
+  workflow_dispatch: {}
+#  push:
+#    branches:
+#      - develop
 
 permissions:
   statuses: write
