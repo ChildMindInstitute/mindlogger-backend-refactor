@@ -82,7 +82,7 @@ cp .env.default .env
 | DATABASE\_\_POOL\_SIZE                                       | 5                          | Database connection pool size                                                                                                                                                                                                                                                                                                          |
 | DATABASE\_\_POOL\_OVERFLOW\_SIZE                             | 10                         | Allowed overflow size of the connection pool                                                                                                                                                                                                                                                                                           |
 | DATABASE\_\_POOL\_TIMEOUT                                    | 30                         | The number of seconds to wait for a connection from the pool to become available                                                                                                                                                                                                                                                       |
-| CORS\_\_ALLOW\_ORIGINS                                       | `*`                        | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localohst:8000`                                                                                                                                                                                                 |
+| CORS\_\_ALLOW\_ORIGINS                                       | `*`                        | Represents the list of allowed origins. Set the `Access-Control-Allow-Origin` header. Example: `https://dev.com,http://localhost:8000`                                                                                                                                                                                                 |
 | CORS\_\_ALLOW\_ORIGINS\_REGEX                                | -                          | Regex pattern of allowed origins.                                                                                                                                                                                                                                                                                                      |
 | CORS\_\_ALLOW\_CREDENTIALS                                   | true                       | Set the `Access-Control-Allow-Credentials` header                                                                                                                                                                                                                                                                                      |
 | CORS\_\_ALLOW_METHODS                                        | `*`                        | Set the `Access-Control-Allow-Methods` header                                                                                                                                                                                                                                                                                          |
@@ -155,8 +155,8 @@ Run RabbitMQ
 
 > ⚠️ When using Minio more configuration is needed to configure boto3 to talk to the local endpoints
 > ```
-> AWS_ACCESS_KEY_ID=minioadmin
-> AWS_SECRET_ACCESS_KEY=minioadmin
+> AWS_ACCESS_KEY_ID=minioaccess
+> AWS_SECRET_ACCESS_KEY=miniosecret
 > AWS_ENDPOINT_URL=http://localhost:9000
 > AWS_DEFAULT_REGION=us-east-1
 > ```
