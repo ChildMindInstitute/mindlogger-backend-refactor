@@ -1,0 +1,2 @@
+INFO     root:service.py:228 Allowing flow submission for flow 6093e2fe-87fc-41c3-8878-a0a1659ff311_1.1.0, activity 77e1a7e5-8143-4e68-88f9-0ef57524d862_1.1.0, submit_id 260e89ae-8439-49ae-8a8b-a70dd134c817
+INFO     root:service.py:346 Flow completion mismatch for flow 6093e2fe-87fc-41c3-8878-a0a1659ff311_1.1.0, activity 77e1a7e5-8143-4e68-88f9-0ef57524d862_1.1.0, submit_id 260e89ae-8439-49ae-8a8b-a70dd134c817: client=False backend=True

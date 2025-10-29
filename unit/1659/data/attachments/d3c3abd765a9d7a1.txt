@@ -1,0 +1,2 @@
+INFO     root:service.py:346 Flow completion mismatch for flow b7f5d53a-174c-412f-9de3-a5788bf50cc5_1.1.0, activity c6c91a44-968f-4155-9676-0b72a99a33ca_1.1.0, submit_id 11467c87-cb60-48ab-98fa-de056293f766: client=False backend=True
+ERROR    root:api.py:130 Answer creation failed: applet_id=fc7599dd-8cdb-447d-b64f-d1cc87ea4c36, user_id=7484f34a-3acc-4ee6-8a94-fd7299502fa1,                     activity_id=c6c91a44-968f-4155-9676-0b72a99a33ca, error=ValidationError: Bad request.

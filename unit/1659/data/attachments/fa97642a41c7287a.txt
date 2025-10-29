@@ -1,0 +1,2 @@
+INFO     root:service.py:228 Allowing flow submission for flow 40a602b0-3190-459b-a84a-71307be1048b_1.1.0, activity 60f4170f-e091-455c-8247-2813459afdb0_1.1.0, submit_id 1489f245-c671-45a1-95a0-a72a50067d36
+INFO     root:service.py:228 Allowing flow submission for flow 40a602b0-3190-459b-a84a-71307be1048b_1.1.0, activity ac05c53c-42c6-4775-9cec-b440d9826d9f_1.1.0, submit_id 1489f245-c671-45a1-95a0-a72a50067d36

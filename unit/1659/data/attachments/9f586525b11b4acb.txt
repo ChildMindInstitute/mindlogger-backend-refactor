@@ -1,0 +1,4 @@
+INFO     root:service.py:228 Allowing flow submission for flow 928631e0-ea80-4df3-86c8-8cd983685c26_1.1.0, activity 3c061178-ff73-4cb2-ad31-4c934f50b2f4_1.1.0, submit_id 807b51da-f1bb-4b04-bbe7-86720049edc7
+INFO     root:service.py:228 Allowing flow submission for flow 928631e0-ea80-4df3-86c8-8cd983685c26_1.1.0, activity e05d1b17-a049-44b7-a2f2-d552d42ce61e_1.1.0, submit_id 807b51da-f1bb-4b04-bbe7-86720049edc7
+INFO     root:service.py:2275 Sending request to the report server localhost/send-pdf-report?activityId=1c099623-0bbc-47e0-b5a0-be075a89554a&activityFlowId=427c515b-9bd3-4c3d-a275-b00c941888ca.
+INFO     root:service.py:2283 Successful request in 0.0 seconds.

@@ -1,0 +1,16 @@
+INFO     root:tasks.py:25 Reencryption 3c9bafb4-f3b7-4097-951f-d8486c4a6880: reencrypt_answers start
+ERROR    root:tasks.py:85 Reencryption 3c9bafb4-f3b7-4097-951f-d8486c4a6880: cannot process applet 0bb9edf2-bd89-4a20-9771-83068ddef42d, skip
+ERROR    root:tasks.py:86 ERROR
+Traceback (most recent call last):
+  File "/home/runner/work/mindlogger-backend-refactor/mindlogger-backend-refactor/src/apps/users/tasks.py", line 67, in reencrypt_answers
+    async with atomic(session):
+               ~~~~~~^^^^^^^^^
+  File "/home/runner/work/mindlogger-backend-refactor/mindlogger-backend-refactor/src/apps/users/tasks.py", line 69, in reencrypt_answers
+    count = await service.reencrypt_user_answers(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+    )
+    ^
+  File "/opt/hostedtoolcache/Python/3.13.7/x64/lib/python3.13/unittest/mock.py", line 2321, in _execute_mock_call
+    raise effect
+Exception: ERROR

@@ -1,0 +1,3 @@
+INFO     root:service.py:228 Allowing flow submission for flow 804c25e7-b8c7-4084-aa48-a77b02169060_1.1.0, activity 17acb9ce-eeac-4549-bd3f-d826d1f2c7ec_1.1.0, submit_id d5acfec1-f2fe-41cf-b6e8-febcac6822a0
+INFO     root:service.py:228 Allowing flow submission for flow 804c25e7-b8c7-4084-aa48-a77b02169060_1.1.0, activity 2c19d3a1-a65a-4dca-8db7-f748a7332e70_1.1.0, submit_id d5acfec1-f2fe-41cf-b6e8-febcac6822a0
+ERROR    root:api.py:130 Answer creation failed: applet_id=38d74199-6e16-454f-a662-ee418b3c670d, user_id=7484f34a-3acc-4ee6-8a94-fd7299502fa1,                     activity_id=8ce9b778-4d9b-4359-b799-8c2d7ac8806b, error=ValidationError: Bad request.

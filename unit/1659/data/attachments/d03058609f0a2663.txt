@@ -1,0 +1,4 @@
+INFO     root:service.py:346 Flow completion mismatch for flow 13710237-7576-4c48-b183-1dc72f231cb7_1.1.0, activity 8bb10ea6-2fbb-4f9f-ad12-dba5d1d9666d_1.1.0, submit_id 21b14979-0036-4f57-940f-cf10ebb243c0: client=True backend=False
+INFO     root:service.py:228 Allowing flow submission for flow 13710237-7576-4c48-b183-1dc72f231cb7_1.1.0, activity 8b062440-5dcc-43d1-a915-8f8bda2d7f5d_1.1.0, submit_id 21b14979-0036-4f57-940f-cf10ebb243c0
+INFO     root:service.py:228 Allowing flow submission for flow 13710237-7576-4c48-b183-1dc72f231cb7_1.1.0, activity c85ef801-eb7e-4c8d-b3d0-f3f4a2a8dedb_1.1.0, submit_id 21b14979-0036-4f57-940f-cf10ebb243c0
+INFO     root:service.py:346 Flow completion mismatch for flow 13710237-7576-4c48-b183-1dc72f231cb7_1.1.0, activity c85ef801-eb7e-4c8d-b3d0-f3f4a2a8dedb_1.1.0, submit_id 21b14979-0036-4f57-940f-cf10ebb243c0: client=False backend=True
