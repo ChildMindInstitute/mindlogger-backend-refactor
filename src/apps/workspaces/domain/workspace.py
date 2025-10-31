@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import Field, root_validator, validator
+from pydantic import field_validator, model_validator, Field, validator
 from sqlalchemy import Unicode
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
@@ -43,7 +43,8 @@ class PublicWorkspace(PublicModel):
     )
     use_arbitrary: bool | None = None
 
-    @validator("use_arbitrary")
+    @field_validator("use_arbitrary")
+    @classmethod
     def null_to_false(cls, value):
         if value is None:
             value = False
@@ -93,7 +94,8 @@ class WorkspaceRespondentDetails(InternalModel):
     invitation: InvitationDetail | None = None
     roles: list[Role]
 
-    @validator("respondent_nickname", "subject_first_name", "subject_last_name", pre=True)
+    @field_validator("respondent_nickname", "subject_first_name", "subject_last_name", mode="before")
+    @classmethod
     def decrypt_fields(cls, value):
         if value:
             value = StringEncryptedType(Unicode, get_key).process_result_value(value, dialect=PGDialect_asyncpg.name)
@@ -145,13 +147,16 @@ class WorkspaceManager(InternalModel):
     status: InvitationStatus
     invitation_key: uuid.UUID | None
 
-    @validator("titles", pre=True)
+    @field_validator("titles", mode="before")
+    @classmethod
     def get_titles(cls, value):
         if len(value) > 0:
             value = [v for v in value if v is not None]
 
         return value
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("title", always=True)
     def get_title(cls, value, values):
         if len(values.get("titles")) > 0:
@@ -159,7 +164,8 @@ class WorkspaceManager(InternalModel):
 
         return value
 
-    @validator("applets", pre=True)
+    @field_validator("applets", mode="before")
+    @classmethod
     def group_applets(cls, value):
         applets = {}
         for applet_role in value:
@@ -345,6 +351,8 @@ class WorkspaceArbitraryFields(InternalModel):
             ]
         )
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("use_arbitrary", always=True, pre=True)
     def to_bool(cls, value):
         if value is None:
@@ -358,7 +366,8 @@ class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
     email: str
     alembic_version: str | None
 
-    @validator("use_arbitrary")
+    @field_validator("use_arbitrary")
+    @classmethod
     def format_arbitrary_usage(cls, value):
         if value:
             return "[green]True[/green]"
@@ -370,7 +379,8 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
     storage_secret_key: str
     storage_type: StorageType
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_storage_settings(cls, values):
         storage_type = values["storage_type"]
         required = []
@@ -384,7 +394,8 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
 
         return values
 
-    @validator("database_uri")
+    @field_validator("database_uri")
+    @classmethod
     def validate_database_uri(cls, value: str) -> str:
         driver_path = "postgresql+asyncpg://"
         if not value.startswith(driver_path):
@@ -418,7 +429,8 @@ class AnswerDbApplets(InternalModel):
 class AppletIdsQuery(InternalModel):
     applet_ids: str | None = Field(None, alias="appletIDs")
 
-    @validator("applet_ids")
+    @field_validator("applet_ids")
+    @classmethod
     def convert_str_to_uuid(cls, value) -> list[uuid.UUID]:
         if not value:
             return []

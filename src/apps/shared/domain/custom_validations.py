@@ -8,8 +8,8 @@ from urllib.parse import urlparse
 import nh3
 import requests
 from pydantic import BaseModel, HttpUrl
-from pydantic.color import Color
 from pydantic.error_wrappers import ValidationError as PValidationError
+from pydantic_extra_types.color import Color
 
 __all__ = [
     "validate_image",

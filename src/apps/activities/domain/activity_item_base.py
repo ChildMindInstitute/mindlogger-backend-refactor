@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import field_validator, model_validator, BaseModel, Field, validator
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.response_type_config import ResponseType, ResponseTypeConfig
@@ -54,7 +54,8 @@ class BaseActivityItem(BaseModel):
     #         },
     #     }
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, value):
         # name must contain only alphanumeric symbols or underscore
         value = value.replace(" ", "")  # TODO: remove after migration
@@ -62,12 +63,15 @@ class BaseActivityItem(BaseModel):
             raise IncorrectNameCharactersError()
         return value
 
-    @validator("response_type", pre=True)
+    @field_validator("response_type", mode="before")
+    @classmethod
     def validate_response_type(cls, value):
         if value not in ResponseTypeValueConfig:
             raise IncorrectResponseValueError(type=ResponseType)
         return value
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("config", pre=True)
     def validate_config(cls, value, values):
         response_type = values.get("response_type")
@@ -84,6 +88,8 @@ class BaseActivityItem(BaseModel):
 
         return value
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("response_values", pre=True)
     def validate_response_values(cls, value, values):
         response_type = values.get("response_type")
@@ -102,7 +108,8 @@ class BaseActivityItem(BaseModel):
             raise IncorrectResponseValueError(type=ResponseTypeValueConfig[response_type]["value"])
         return value
 
-    @validator("question")
+    @field_validator("question")
+    @classmethod
     def validate_question(cls, value):
         if isinstance(value, dict):
             for key in value:
@@ -111,7 +118,8 @@ class BaseActivityItem(BaseModel):
             value = sanitize_string(value)
         return value
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(skip_on_failure=True)
+    @classmethod
     def validate_score_required(cls, values):
         # validate score fields of response values for each response type
 
@@ -153,7 +161,8 @@ class BaseActivityItem(BaseModel):
 
         return values
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(skip_on_failure=True)
+    @classmethod
     def validate_is_hidden(cls, values):
         # cannot hide if conditional logic is set
         value = values.get("is_hidden")
@@ -161,7 +170,8 @@ class BaseActivityItem(BaseModel):
             raise HiddenWhenConditionalLogicSetError()
         return values
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(skip_on_failure=True)
+    @classmethod
     def validate_slider_value_alert(cls, values):
         # validate slider value alert
         response_type = values.get("response_type")
@@ -191,7 +201,8 @@ class BaseActivityItem(BaseModel):
 
         return values
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(skip_on_failure=True)
+    @classmethod
     def validate_single_multi_alert(cls, values):
         # validate single/multi selection type alerts
         response_type = values.get("response_type")

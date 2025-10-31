@@ -22,8 +22,8 @@ def _validate_assignments(values):
 
 
 class ActivityAssignmentCreate(BaseModel):
-    activity_id: UUID | None
-    activity_flow_id: UUID | None
+    activity_id: UUID | None = None
+    activity_flow_id: UUID | None = None
     respondent_subject_id: UUID
     target_subject_id: UUID
 
@@ -68,8 +68,8 @@ class ActivitiesAssignmentsWithSubjects(PublicModel):
 
 
 class ActivityAssignmentDelete(BaseModel):
-    activity_id: UUID | None
-    activity_flow_id: UUID | None
+    activity_id: UUID | None = None
+    activity_flow_id: UUID | None = None
     respondent_subject_id: UUID
     target_subject_id: UUID
 

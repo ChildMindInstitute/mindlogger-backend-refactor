@@ -134,6 +134,8 @@ class TextConfig(_ScreenConfig):
     response_required: bool
     is_identifier: bool | None = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("correct_answer")
     def validate_correct_answer(cls, value, values):
         # correct_answer must be set if correct_answer_required is True
@@ -392,6 +394,8 @@ class ABTrailsConfig(PublicModel):
     #       of class attributes ordering. Using root_validator over it
     #       might be preferable since it is more transparent.
     #       This approach is used in order to follow the consistency.
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("tutorials", pre=True)
     def validate_tutorials(cls, value, values) -> ABTrailsTutorial | None:
         if values.get("device_type") == ABTrailsDeviceType.TABLET:
@@ -416,6 +420,8 @@ class ABTrailsConfig(PublicModel):
 
         return value
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("nodes", pre=True)
     def validate_nodes(cls, value, values) -> ABTrailsNodes | None:
         if values.get("device_type") == ABTrailsDeviceType.TABLET:

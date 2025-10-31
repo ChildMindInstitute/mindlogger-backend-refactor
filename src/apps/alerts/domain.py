@@ -2,7 +2,7 @@ import datetime
 import uuid
 from enum import Enum
 
-from pydantic import Field, validator
+from pydantic import field_validator, Field
 
 from apps.shared.domain import InternalModel, PublicModel, ResponseMulti, dict_keys_to_camel_case
 
@@ -57,7 +57,8 @@ class AlertPublic(PublicModel):
     subject_id: uuid.UUID | None
     type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
-    @validator("encryption", pre=True)
+    @field_validator("encryption", mode="before")
+    @classmethod
     def convert_response_values_keys(cls, response_values):
         if response_values and isinstance(response_values, dict):
             return dict_keys_to_camel_case(response_values)

@@ -1,11 +1,12 @@
 from enum import StrEnum
-from typing import Any
+from typing import List, Any
 
-from pydantic import Field, conlist
+from pydantic import Field
 from starlette import status
 
 from apps.shared.domain.base import PublicModel
 from apps.shared.domain.types import ResponseType
+from typing_extensions import Annotated
 
 
 class ErrorResponseType(StrEnum):
@@ -38,7 +39,7 @@ class ErrorResponse(PublicModel):
 class ErrorResponseMulti(PublicModel):
     """The public error respnse model that includes multiple objects."""
 
-    result: conlist(ErrorResponse)  # type: ignore
+    result: Annotated[List[ErrorResponse], Field()]  # type: ignore
 
 
 # NOTE: This constant represents the default error response for each request

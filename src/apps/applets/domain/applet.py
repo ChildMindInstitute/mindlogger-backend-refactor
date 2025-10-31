@@ -2,8 +2,7 @@ import datetime
 import uuid
 from typing import Generic
 
-from pydantic import Field, IPvAnyAddress, PositiveInt, root_validator
-from pydantic.generics import GenericModel
+from pydantic import model_validator, BaseModel, Field, IPvAnyAddress, PositiveInt
 
 from apps.activities.domain.activity import (
     ActivityBaseInfo,
@@ -121,7 +120,8 @@ class AppletDataRetention(InternalModel):
     retention: DataRetention
     period: PositiveInt | None = None
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_period(cls, values):
         retention = values.get("retention")
         value = values.get("period")
@@ -136,7 +136,7 @@ class AppletMeta(PublicModel):
     has_assessment: bool = False
 
 
-class AppletRetrieveResponse(PublicModel, GenericModel, Generic[_BaseModel]):
+class AppletRetrieveResponse(PublicModel, BaseModel, Generic[_BaseModel]):
     result: _BaseModel
     respondent_meta: dict | None = None
     applet_meta: AppletMeta | None = None

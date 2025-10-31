@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import field_validator, BaseModel, Field
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.domain.scores_reports import ScoresAndReports, SubscaleSetting
@@ -23,11 +23,13 @@ class ActivityBase(BaseModel):
     is_performance_task: bool = False
     auto_assign: bool | None = True
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_string(cls, value):
         return sanitize_string(value)
 
-    @validator("description")
+    @field_validator("description")
+    @classmethod
     def validate_description(cls, value):
         if isinstance(value, dict):
             for key in value:

@@ -15,8 +15,8 @@ class BasePeriodicity(BaseModel):
     """Periodicity of an event"""
 
     type: PeriodicityType
-    start_date: date | None
-    end_date: date | None
+    start_date: date | None = None
+    end_date: date | None = None
     selected_date: date | None = Field(
         None,
         description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
@@ -55,7 +55,7 @@ class BaseEvent(BaseModel):
     timer: timedelta | None = Field(
         None,
         description="If timer_type is TIMER or IDLE, timer must be set.",
-        example="00:01:00",
+        examples=["00:01:00"],
     )
     timer_type: TimerType
 

@@ -4,8 +4,6 @@ from abc import ABC, abstractmethod
 from copy import copy, deepcopy
 from typing import Type
 
-from pydantic.color import Color
-
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.conditions import AnyCondition, ConditionType
 from apps.activities.domain.response_type_config import (
@@ -73,6 +71,7 @@ from apps.jsonld_converter.service.document.conditional_logic import (
     ConditionValueResolver,
     ResolvesConditionalLogic,
 )
+from pydantic_extra_types.color import Color
 
 
 class ReproFieldBase(LdDocumentBase, CommonFieldsMixin, ResolvesConditionalLogic):

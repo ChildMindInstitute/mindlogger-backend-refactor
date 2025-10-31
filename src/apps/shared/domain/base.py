@@ -3,8 +3,8 @@ import json
 import re
 from typing import TypeVar
 
-from pydantic import BaseModel as PBaseModel
-from pydantic import Extra, validator
+from pydantic import field_validator, ConfigDict, BaseModel as PBaseModel
+from pydantic import Extra
 
 __all__ = [
     "InternalModel",
@@ -83,7 +83,8 @@ class BaseModel(PBaseModel):
     def field_alias(cls, field_name: str):
         return cls.__fields__[field_name].alias
 
-    @validator("*", pre=True)
+    @field_validator("*", mode="before")
+    @classmethod
     def remove_timezone(cls, v):
         if isinstance(v, datetime.datetime):
             return v.replace(tzinfo=None)
@@ -91,27 +92,15 @@ class BaseModel(PBaseModel):
 
 
 class InternalModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.forbid
-        orm_mode = True
-        use_enum_values = True
-        allow_population_by_field_name = True
-        validate_assignment = True
-        alias_generator = to_camelcase
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid", from_attributes=True, use_enum_values=True, populate_by_name=True, validate_assignment=True, alias_generator=to_camelcase)
 
 
 class PublicModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.ignore
-        orm_mode = True
-        use_enum_values = True
-        allow_population_by_field_name = True
-        validate_assignment = True
-        alias_generator = to_camelcase
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="ignore", from_attributes=True, use_enum_values=True, populate_by_name=True, validate_assignment=True, alias_generator=to_camelcase)
 
 
 class PublicModelNoExtra(PublicModel):
+    # TODO[pydantic]: The `Config` class inherits from another class, please create the `model_config` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     class Config(PublicModel.Config):
         extra = Extra.forbid

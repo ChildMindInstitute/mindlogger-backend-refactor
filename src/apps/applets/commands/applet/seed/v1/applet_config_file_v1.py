@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, date, datetime, time
 from typing import Annotated, Literal, Optional, Union, cast
 
-from pydantic import AnyHttpUrl, BaseModel, Extra, Field, validator
+from pydantic import field_validator, ConfigDict, AnyHttpUrl, BaseModel, Field, validator
 
 from apps.applets.commands.applet.seed.errors import (
     AppletOwnerWithInvalidRolesError,
@@ -20,8 +20,7 @@ from apps.applets.commands.applet.seed.errors import (
 
 
 class StrictBaseModel(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
 
 class UserConfig(StrictBaseModel):
@@ -34,7 +33,8 @@ class UserConfig(StrictBaseModel):
         default=datetime.now(tz=UTC).replace(tzinfo=None), description="The date when the user was created"
     )
 
-    @validator("created_at")
+    @field_validator("created_at")
+    @classmethod
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
@@ -59,10 +59,13 @@ class SubjectConfig(StrictBaseModel):
     )
     tag: Optional[Literal["Child", "Parent", "Teacher", "Team"]] = Field(default=None, description="Subject tag")
 
-    @validator("created_at")
+    @field_validator("created_at")
+    @classmethod
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("roles")
     def validate_respondent_role(cls, roles, values: dict):
         subject_id = cast(uuid.UUID, values.get("id"))
@@ -83,6 +86,8 @@ class SubjectConfig(StrictBaseModel):
 
         return roles
 
+    # TODO[pydantic]: We couldn't refactor this class, please create the `model_config` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     class Config:
         @staticmethod
         def schema_extra(schema: dict):
@@ -136,7 +141,7 @@ class BaseEventConfig(StrictBaseModel):
     user_id: Optional[uuid.UUID] = Field(None, description="User ID for individual schedule events")
     is_deleted: bool = Field(default=False, description="Whether the event has been deleted. Default is False")
     version: str = Field(
-        ..., description="Event version in the format YYYYMMdd-n (e.g. 20250301-1)", regex=r"^\d{8}-\d{1,4}$"
+        ..., description="Event version in the format YYYYMMdd-n (e.g. 20250301-1)", pattern=r"^\d{8}-\d{1,4}$"
     )
     created_at: datetime = Field(..., description="Date when the event was created")
     notifications: list[NotificationConfig] = Field(
@@ -145,7 +150,8 @@ class BaseEventConfig(StrictBaseModel):
     )
     reminder: Optional[ReminderConfig] = Field(default=None, description="Reminder settings for the event")
 
-    @validator("created_at")
+    @field_validator("created_at")
+    @classmethod
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
@@ -275,12 +281,15 @@ class ActivityConfig(StrictBaseModel):
         datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the activity was created"
     )
     auto_assign: bool = Field(True, description="Whether the activity is auto-assigned to all participants")
-    events: list[EventConfig] = Field(..., min_items=1, description="List of scheduled events for this activity")
+    events: list[EventConfig] = Field(..., min_length=1, description="List of scheduled events for this activity")
 
-    @validator("created_at")
+    @field_validator("created_at")
+    @classmethod
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("events")
     def validate_events(cls, events: list[EventConfig], values: dict):
         first_event = events[0]
@@ -301,13 +310,14 @@ class FlowConfig(StrictBaseModel):
         datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the flow was created"
     )
     auto_assign: bool = Field(True, description="Whether the flow is auto-assigned to all participants")
-    events: list[EventConfig] = Field(..., min_items=1, description="List of scheduled events for this flow")
+    events: list[EventConfig] = Field(..., min_length=1, description="List of scheduled events for this flow")
     assignments: list[AssignmentConfig] = Field(default=[], description="List of flow assignments")
     activities: list[uuid.UUID] = Field(
-        ..., min_items=1, description="List of activity IDs in the flow, arranged in the desired order"
+        ..., min_length=1, description="List of activity IDs in the flow, arranged in the desired order"
     )
 
-    @validator("created_at")
+    @field_validator("created_at")
+    @classmethod
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
@@ -330,17 +340,20 @@ class AppletConfig(StrictBaseModel):
         datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the applet was created"
     )
     subjects: list[SubjectConfig] = Field(
-        ..., min_items=1, description="List of subjects in the applet. You must provide at least the applet owner"
+        ..., min_length=1, description="List of subjects in the applet. You must provide at least the applet owner"
     )
-    activities: list[ActivityConfig] = Field(..., min_items=1, description="List of activities in the applet")
+    activities: list[ActivityConfig] = Field(..., min_length=1, description="List of activities in the applet")
     report_server: Optional[ReportServerConfig] = Field(
         default=None, description="Report server settings for the applet"
     )
 
-    @validator("created_at")
+    @field_validator("created_at")
+    @classmethod
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("activities")
     def validate_activities(cls, activities: list[ActivityConfig], values: dict):
         activity_id_counts: dict[uuid.UUID, int] = {}
@@ -382,6 +395,8 @@ class AppletConfig(StrictBaseModel):
 
         return activities
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("subjects")
     def validate_subjects(cls, subjects: list[SubjectConfig], values: dict):
         subject_id_counts: dict[uuid.UUID, int] = {}
@@ -431,7 +446,8 @@ class AppletConfigFileV1(StrictBaseModel):
     users: list[UserConfig] = Field(default=[], description="List of users to create")
     applets: list[AppletConfig] = Field(default=[], description="List of applets to create")
 
-    @validator("users")
+    @field_validator("users")
+    @classmethod
     def validate_user_ids(cls, users: list[UserConfig]):
         user_id_counts: dict[uuid.UUID, int] = {}
         user_email_counts: dict[str, int] = {}
@@ -456,6 +472,8 @@ class AppletConfigFileV1(StrictBaseModel):
 
         return users
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("applets")
     def validate_applet_ids(cls, applets: list[AppletConfig], values: dict):
         applet_id_counts: dict[uuid.UUID, int] = {}

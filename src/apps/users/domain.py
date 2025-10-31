@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import EmailStr, Field, root_validator, validator
+from pydantic import field_validator, EmailStr, Field, root_validator
 
 from apps.shared.bcrypt import get_password_hash
 from apps.shared.domain import InternalModel, PublicModel
@@ -45,7 +45,8 @@ class UserCreateRequest(PublicModel):
         min_length=1,
     )
 
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def validate_password(cls, value: str) -> str:
         if " " in value:
             raise PasswordHasSpacesError()
@@ -134,7 +135,8 @@ class ChangePasswordRequest(InternalModel):
     password: str
     prev_password: str
 
-    @validator("password", "prev_password")
+    @field_validator("password", "prev_password")
+    @classmethod
     def validate_password(cls, value: str) -> str:
         if " " in value:
             raise PasswordHasSpacesError()

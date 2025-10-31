@@ -1,6 +1,6 @@
 import enum
 
-from pydantic import Field, PositiveInt, validator
+from pydantic import field_validator, Field, PositiveInt, validator
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
@@ -21,6 +21,7 @@ from apps.activities.errors import (
 )
 from apps.shared.domain import PublicModel
 from apps.shared.domain.custom_validations import sanitize_string
+from typing import Literal
 
 
 class CalculationType(enum.StrEnum):
@@ -43,7 +44,8 @@ class ScoreConditionalLogic(PublicModel):
     match: Match = Field(default=Match.ALL)
     conditions: list[ScoreCondition]
 
-    @validator("message")
+    @field_validator("message")
+    @classmethod
     def validate_string(cls, value):
         if value is not None:
             return sanitize_string(value)
@@ -56,7 +58,7 @@ class ReportType(enum.StrEnum):
 
 
 class Score(PublicModel):
-    type: str = Field(ReportType.score, const=True)
+    type: Literal[ReportType.score] = ReportType.score
     name: str
     id: str
     calculation_type: CalculationType
@@ -67,6 +69,8 @@ class Score(PublicModel):
     scoring_type: ScoringType | None = None
     subscale_name: str | None = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("conditional_logic")
     def validate_conditional_logic(cls, value, values):
         if value:
@@ -79,7 +83,8 @@ class Score(PublicModel):
 
         return value
 
-    @validator("items_score")
+    @field_validator("items_score")
+    @classmethod
     def validate_items_score(cls, value):
         if value:
             # check if there are duplicate item names
@@ -88,7 +93,8 @@ class Score(PublicModel):
 
         return value
 
-    @validator("message")
+    @field_validator("message")
+    @classmethod
     def validate_string(cls, value):
         if value is not None:
             return sanitize_string(value)
@@ -101,13 +107,14 @@ class SectionConditionalLogic(PublicModel):
 
 
 class Section(PublicModel):
-    type: str = Field(ReportType.section, const=True)
+    type: Literal[ReportType.section] = ReportType.section
     name: str
     message: str | None = None
     items_print: list[str] | None = Field(default_factory=list)
     conditional_logic: SectionConditionalLogic | None = None
 
-    @validator("message")
+    @field_validator("message")
+    @classmethod
     def validate_string(cls, value):
         if value is not None:
             return sanitize_string(value)
@@ -119,7 +126,8 @@ class ScoresAndReports(PublicModel):
     show_score_summary: bool = False
     reports: list[Score | Section] | None = Field(default_factory=list)
 
-    @validator("reports")
+    @field_validator("reports")
+    @classmethod
     def validate_reports(cls, value):
         scores_flt = filter(lambda v: v.type == ReportType.score, value)
         sections_flt = filter(lambda v: v.type == ReportType.section, value)
@@ -180,19 +188,22 @@ class SubScaleLookupTable(PublicModel):
     score: str
     raw_score: str
     age: PositiveInt | str | None = None
-    sex: str | None = Field(default=None, regex="^(M|F)$", description="M or F")
+    sex: str | None = Field(default=None, pattern="^(M|F)$", description="M or F")
     optional_text: str | None = None
-    severity: str | None = Field(default=None, regex="^(Minimal|Mild|Moderate|Severe)$")
+    severity: str | None = Field(default=None, pattern="^(Minimal|Mild|Moderate|Severe)$")
 
-    @validator("raw_score")
+    @field_validator("raw_score")
+    @classmethod
     def validate_raw_score_lookup(cls, value):
         return validate_raw_score_subscale(value)
 
-    @validator("score")
+    @field_validator("score")
+    @classmethod
     def validate_score_lookup(cls, value):
         return validate_score_subscale_table(value)
 
-    @validator("age")
+    @field_validator("age")
+    @classmethod
     def validate_age_lookup(cls, value):
         return validate_age_subscale(value)
 
@@ -218,7 +229,8 @@ class TotalScoreTable(PublicModel):
     raw_score: str
     optional_text: str | None = None
 
-    @validator("raw_score")
+    @field_validator("raw_score")
+    @classmethod
     def validate_raw_score(cls, value):
         return validate_raw_score_subscale(value)
 
@@ -228,7 +240,8 @@ class SubscaleSetting(PublicModel):
     subscales: list[Subscale] | None = Field(default_factory=list)
     total_scores_table_data: list[TotalScoreTable] | None = Field(default_factory=list)
 
-    @validator("subscales")
+    @field_validator("subscales")
+    @classmethod
     def validate_unique_subscale_names(cls, value):
         if value:
             # check if there are duplicate subscale names

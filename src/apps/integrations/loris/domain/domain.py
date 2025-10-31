@@ -2,7 +2,7 @@ import datetime
 import uuid
 from enum import Enum
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import ConfigDict, BaseModel, Field
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
 
@@ -38,12 +38,12 @@ class Item(BaseModel):
     id: uuid.UUID
     question: str
     responseType: str
-    responseValues: dict | None
-    config: dict | None
+    responseValues: dict | None = None
+    config: dict | None = None
     name: str
-    isHidden: bool | None
-    conditionalLogic: ConditionalLogic | None
-    allowEdit: bool | None
+    isHidden: bool | None = None
+    conditionalLogic: ConditionalLogic | None = None
+    allowEdit: bool | None = None
 
 
 class Activitie(BaseModel):
@@ -81,14 +81,7 @@ def to_camelcase(payload: str) -> str:
 
 
 class InternalModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.forbid
-        orm_mode = True
-        use_enum_values = True
-        allow_population_by_field_name = True
-        validate_assignment = True
-        alias_generator = to_camelcase
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid", from_attributes=True, use_enum_values=True, populate_by_name=True, validate_assignment=True, alias_generator=to_camelcase)
 
 
 class ConsentCreate(InternalModel):

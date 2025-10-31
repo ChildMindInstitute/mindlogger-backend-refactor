@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import EmailStr, Extra, Field, root_validator, validator
+from pydantic import ConfigDict, EmailStr, Field, root_validator, validator
 
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
@@ -130,9 +130,7 @@ class ReviewerMeta(InternalModel):
     """This model is used for internal needs
     for representation reviewer meta information.
     """
-
-    class Config:
-        extra = Extra.ignore
+    model_config = ConfigDict(extra="ignore")
 
     subjects: list[str]
 

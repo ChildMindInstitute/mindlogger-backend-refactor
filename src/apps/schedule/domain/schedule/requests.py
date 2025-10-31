@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import Field, root_validator, validator
+from pydantic import field_validator, Field, root_validator
 
 from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType
 from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
@@ -39,7 +39,8 @@ class Notification(PublicModel):
     notifications: list[NotificationSettingRequest] | None = None
     reminder: ReminderSettingRequest | None = None
 
-    @validator("notifications")
+    @field_validator("notifications")
+    @classmethod
     def validate_notification_order(cls, value):
         if value:
             # set order of notifications

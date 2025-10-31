@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel, Field, validator
+from pydantic import field_validator, BaseModel, Field
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.shared.domain import InternalModel, PublicModel
@@ -25,7 +25,8 @@ class AppletLibraryCreate(InternalModel):
     keywords: list[str] = Field(default_factory=list)
     name: str
 
-    @validator("keywords", pre=True)
+    @field_validator("keywords", mode="before")
+    @classmethod
     def validate_keywords(cls, keywords: list[str] | None):
         return keywords if keywords is not None else []
 

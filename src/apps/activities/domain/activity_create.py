@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from pydantic import Field, root_validator
+from pydantic import model_validator, Field
 
 from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem
@@ -31,7 +31,8 @@ class ActivityCreate(ActivityBase, InternalModel):
     items: list[ActivityItemCreate]
     extra_fields: dict = Field(default_factory=dict)
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
         items: list[ActivityItemCreate] = values.get("items", [])
 
@@ -42,26 +43,32 @@ class ActivityCreate(ActivityBase, InternalModel):
             item_names.add(item.name)
         return values
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_item_flow_conditional_logic(cls, values):
         return validate_item_flow(values)
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_scores_and_reports_conditional_logic(cls, values):
         return validate_score_and_sections(values)
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_subscales(cls, values):
         return validate_subscales(values)
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_performance_task_type(cls, values):
         return validate_performance_task_type(values)
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_phrasal_templates(cls, values):
         return validate_phrasal_templates(values)
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_request_health_record_data(cls, values):
         return validate_request_health_record_data(values)

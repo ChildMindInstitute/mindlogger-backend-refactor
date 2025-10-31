@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from pydantic import AnyHttpUrl, BaseModel, validator
+from pydantic import field_validator, AnyHttpUrl, BaseModel
 
 __all__ = ["CorsSettings"]
 
@@ -14,12 +14,12 @@ class CorsSettings(BaseModel):
     expose_headers: list[str] = []
     max_age: int = 600
 
-    @validator(
+    @field_validator(
         "allow_origins",
         "allow_methods",
         "allow_headers",
         "expose_headers",
-        pre=True,
-    )
+        mode="before")
+    @classmethod
     def as_list(cls, value: str):
         return value.split(",")

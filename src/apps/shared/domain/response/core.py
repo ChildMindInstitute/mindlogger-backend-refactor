@@ -1,25 +1,24 @@
 from typing import Generic
 
-from pydantic.generics import GenericModel
-
 from apps.shared.domain.base import PublicModel
 from apps.shared.domain.types import _BaseModel
+from pydantic import BaseModel
 
 
-class ResponseMulti(PublicModel, GenericModel, Generic[_BaseModel]):
+class ResponseMulti(PublicModel, BaseModel, Generic[_BaseModel]):
     """Generic response model that consists of multiple results."""
 
     result: list[_BaseModel]
     count: int = 0
 
 
-class ResponseMultiOrdering(ResponseMulti, GenericModel, Generic[_BaseModel]):
+class ResponseMultiOrdering(ResponseMulti, BaseModel, Generic[_BaseModel]):
     """Generic response model that consists of multiple results and a list of sortable fields."""
 
     ordering_fields: list[str]
 
 
-class Response(PublicModel, GenericModel, Generic[_BaseModel]):
+class Response(PublicModel, BaseModel, Generic[_BaseModel]):
     """Generic response model that consists of only one result."""
 
-    result: _BaseModel | None
+    result: _BaseModel | None = None

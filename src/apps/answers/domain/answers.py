@@ -4,8 +4,7 @@ import uuid
 from copy import deepcopy
 from typing import Any, Generic, Optional
 
-from pydantic import BaseModel, Field, root_validator, validator
-from pydantic.generics import GenericModel
+from pydantic import field_validator, BaseModel, Field, root_validator, validator
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
 from apps.activities.domain.activity_history import (
@@ -160,14 +159,14 @@ class PublicAnswerDate(PublicModel):
     end_datetime: datetime.datetime
 
 
-class ReviewItem(PublicModel, GenericModel, Generic[_BaseModel]):
+class ReviewItem(PublicModel, BaseModel, Generic[_BaseModel]):
     id: uuid.UUID
     name: str
     answer_dates: list[_BaseModel] = Field(default_factory=list)
 
 
 class PublicReviewActivity(ReviewItem[PublicAnswerDate]):
-    last_answer_date: datetime.datetime | None
+    last_answer_date: datetime.datetime | None = None
 
     @root_validator
     def calculate_last_answer_date(cls, values):
@@ -192,6 +191,8 @@ class ReviewFlow(ReviewItem[SubmissionDate]): ...
 class PublicReviewFlow(ReviewFlow):
     last_answer_date: datetime.datetime | None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("last_answer_date", always=True)
     def calculate_last_answer_date(cls, value, values):
         answer_dates = values.get("answer_dates", [])
@@ -254,6 +255,8 @@ class ActivityAnswer(PublicModel):
     created_at: datetime.datetime
     source_subject: SubjectReadResponse | None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("activity_id", always=True)
     def extract_activity_id(cls, value, values):
         if val := values.get("activity_history_id"):
@@ -275,6 +278,8 @@ class ActivitySubmission(PublicModel):
 class ActivitySubmissionResponse(ActivitySubmission):
     summary: SubmissionSummary | None = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("summary", always=True)
     def generate_summary(cls, value, values) -> list[Any]:
         if not value:
@@ -343,6 +348,8 @@ class FlowSubmissionsResponse(PublicModel):
     submissions: list[FlowSubmission]
     flows: list[FlowHistoryWithActivityFlat]
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("flows", pre=True)
     def format_flows(cls, value, values):
         if value:
@@ -379,6 +386,8 @@ class FlowSubmissionResponse(PublicModel):
     flow: FlowHistoryWithActivityFlat
     summary: SubmissionSummary | None = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("flow", pre=True)
     def format_flow(cls, value, values):
         if isinstance(value, dict) and "items" in value:
@@ -393,6 +402,8 @@ class FlowSubmissionResponse(PublicModel):
 
         return value
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("summary", always=True)
     def generate_summary(cls, value, values) -> list[Any]:
         if not value:
@@ -547,7 +558,7 @@ class UserAnswerDataBase(BaseModel):
     input_user_nickname: str | None = None
     relation: str | None = None
     legacy_profile_id: str | None = None
-    user_public_key: str | None
+    user_public_key: str | None = None
     answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     events: str | None = None
@@ -559,11 +570,11 @@ class UserAnswerDataBase(BaseModel):
     scheduled_event_id: uuid.UUID | str | None = None
     scheduled_event_history_id: str | None = None
     applet_history_id: str
-    activity_history_id: str | None
-    flow_history_id: str | None
-    flow_name: str | None
-    reviewed_answer_id: uuid.UUID | str | None
-    reviewed_flow_submit_id: uuid.UUID | str | None
+    activity_history_id: str | None = None
+    flow_history_id: str | None = None
+    flow_name: str | None = None
+    reviewed_answer_id: uuid.UUID | str | None = None
+    reviewed_flow_submit_id: uuid.UUID | str | None = None
     created_at: datetime.datetime
     migrated_data: dict | None = None
     client: ClientMeta | None = None
@@ -576,25 +587,32 @@ class RespondentAnswerData(UserAnswerDataBase, InternalModel):
 
 
 class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
-    applet_id: str | None
-    activity_id: str | None
-    flow_id: str | None
+    applet_id: str | None = None
+    activity_id: str | None = None
+    flow_id: str | None = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("applet_id", always=True)
     def extract_applet_id(cls, value, values):
         return values["applet_history_id"][:36]
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("activity_id", always=True)
     def extract_activity_id(cls, value, values):
         if val := values.get("activity_history_id"):
             return val[:36]
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("flow_id", always=True)
     def extract_flow_id(cls, value, values):
         if val := values.get("flow_history_id"):
             return val[:36]
 
-    @validator("start_datetime", "end_datetime", "scheduled_datetime")
+    @field_validator("start_datetime", "end_datetime", "scheduled_datetime")
+    @classmethod
     def convert_to_timestamp(cls, value: datetime.datetime):
         if value:
             return value.replace(tzinfo=datetime.timezone.utc).timestamp()
@@ -658,7 +676,8 @@ class CompletedEntity(PublicModel):
     local_end_date: datetime.date
     local_end_time: datetime.time
 
-    @validator("id", pre=True)
+    @field_validator("id", mode="before")
+    @classmethod
     def id_from_history_id(cls, value):
         return uuid.UUID(str(value)[:36])
 

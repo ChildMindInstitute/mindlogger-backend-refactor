@@ -1,8 +1,7 @@
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import Field, NonNegativeInt, root_validator, validator
-from pydantic.color import Color
+from pydantic import field_validator, model_validator, Field, NonNegativeInt, root_validator, validator
 
 from apps.activities.domain.response_type_config import (
     ABTrailsConfig,
@@ -40,6 +39,7 @@ from apps.activities.errors import (
     MultiSelectNoneOptionError,
 )
 from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
+from pydantic_extra_types.color import Color
 
 
 class RequestHealthRecordDataOptType(StrEnum):
@@ -125,27 +125,31 @@ class _SingleSelectionValue(PublicModel):
     alert: str | None = None
     value: int | None = None
 
-    @validator("score")
+    @field_validator("score")
+    @classmethod
     def validate_score(cls, value):
         # validate score value to be 2 decimals max
         if value:
             return round(value, 2)
         return value
 
-    @validator("image")
+    @field_validator("image")
+    @classmethod
     def validate_image(cls, value):
         # validate image if not None
         if value is not None:
             return validate_image(value)
         return value
 
-    @validator("color")
+    @field_validator("color")
+    @classmethod
     def validate_color(cls, value):
         if value is not None:
             return validate_color(value)
         return value
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
 
@@ -155,7 +159,8 @@ class SingleSelectionValues(PublicModel):
     palette_name: str | None
     options: list[_SingleSelectionValue]
 
-    @validator("options")
+    @field_validator("options")
+    @classmethod
     def validate_options(cls, value):
         return validate_options_value(value)
 
@@ -169,11 +174,13 @@ class MultiSelectionValues(PublicModel):
     palette_name: str | None
     options: list[_MultiSelectionValue]
 
-    @validator("options")
+    @field_validator("options")
+    @classmethod
     def validate_options(cls, value):
         return validate_options_value(value)
 
-    @validator("options")
+    @field_validator("options")
+    @classmethod
     def validate_none_option_flag(cls, value):
         return validate_none_option_flag(value)
 
@@ -187,7 +194,8 @@ class SliderValueAlert(PublicModel):
     max_value: int | None
     alert: str
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_min_max_values(cls, values):
         if values.get("min_value") is not None and values.get("max_value") is not None:
             if values.get("min_value") >= values.get("max_value"):
@@ -205,14 +213,16 @@ class SliderValuesBase(PublicModel):
     scores: list[float] | None = None
     alerts: list[SliderValueAlert] | None = None
 
-    @validator("scores")
+    @field_validator("scores")
+    @classmethod
     def validate_score(cls, value):
         # validate each score values to be 2 decimals max
         if value:
             value = [round(score, 2) for score in value]
         return value
 
-    @validator("min_image", "max_image")
+    @field_validator("min_image", "max_image")
+    @classmethod
     def validate_image(cls, value):
         if value is not None:
             return validate_image(value)
@@ -260,7 +270,8 @@ class DrawingValues(PublicModel):
     drawing_background: str | None
     proportion: DrawingProportion | None = None
 
-    @validator("drawing_example", "drawing_background")
+    @field_validator("drawing_example", "drawing_background")
+    @classmethod
     def validate_image(cls, value):
         if value is not None:
             return validate_image(value)
@@ -271,7 +282,8 @@ class SliderRowsValue(SliderValuesBase, PublicModel):
     id: str | None = None
     label: str = Field(..., max_length=100)
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
 
@@ -287,13 +299,15 @@ class _SingleSelectionOption(PublicModel):
     image: str | None = None
     tooltip: str | None = None
 
-    @validator("image")
+    @field_validator("image")
+    @classmethod
     def validate_image(cls, value):
         if value is not None:
             return validate_image(value)
         return value
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
 
@@ -304,13 +318,15 @@ class _SingleSelectionRow(PublicModel):
     row_image: str | None = None
     tooltip: str | None = None
 
-    @validator("row_image")
+    @field_validator("row_image")
+    @classmethod
     def validate_image(cls, value):
         if value is not None:
             return validate_image(value)
         return value
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
 
@@ -326,7 +342,8 @@ class _SingleSelectionDataRow(PublicModel):
     row_id: str
     options: list[_SingleSelectionDataOption]
 
-    @validator("options")
+    @field_validator("options")
+    @classmethod
     def validate_options(cls, value):
         return validate_options_value(value)
 
@@ -337,6 +354,8 @@ class SingleSelectionRowsValues(PublicModel):
     options: list[_SingleSelectionOption]
     data_matrix: list[_SingleSelectionDataRow] | None = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("data_matrix")
     def validate_data_matrix(cls, value, values):
         if value is not None:

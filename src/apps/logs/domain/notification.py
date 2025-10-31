@@ -2,7 +2,7 @@ import datetime
 import json
 import uuid
 
-from pydantic import BaseModel, root_validator, validator
+from pydantic import field_validator, BaseModel, root_validator
 from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
@@ -27,16 +27,16 @@ class NotificationLogQuery(BaseModel):
 
 
 class NotificationLogCreate(_NotificationLogBase, InternalModel):
-    notification_descriptions: list[dict] | None
-    notification_in_queue: list[dict] | None
-    scheduled_notifications: list[dict] | None
+    notification_descriptions: list[dict] | None = None
+    notification_in_queue: list[dict] | None = None
+    scheduled_notifications: list[dict] | None = None
 
-    @validator(
+    @field_validator(
         "notification_descriptions",
         "notification_in_queue",
         "scheduled_notifications",
-        pre=True,
-    )
+        mode="before")
+    @classmethod
     def convert_string_to_list(cls, v):
         """Convert legacy JSON string format to array format for backward compatibility.
 
@@ -85,17 +85,17 @@ class PublicNotificationLog(_NotificationLogBase, PublicModel):
     """Public NotificationLog model."""
 
     id: uuid.UUID
-    notification_descriptions: list | None
-    notification_in_queue: list | None
-    scheduled_notifications: list | None
+    notification_descriptions: list | None = None
+    notification_in_queue: list | None = None
+    scheduled_notifications: list | None = None
     created_at: datetime.datetime
 
-    @validator(
+    @field_validator(
         "notification_descriptions",
         "notification_in_queue",
         "scheduled_notifications",
-        pre=True,
-    )
+        mode="before")
+    @classmethod
     def validate_json(cls, v):
         try:
             if isinstance(v, str):

@@ -1,7 +1,7 @@
 import uuid
 from gettext import gettext as _
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from apps.activity_flows.domain.base import FlowBase
 from apps.shared.domain import PublicModel
@@ -27,7 +27,8 @@ class ActivityFlowReportConfiguration(PublicModel):
     report_included_activity_name: str | None
     report_included_item_name: str | None
 
-    @root_validator()
+    @model_validator()
+    @classmethod
     def validate_score_required(cls, values):
         activity_name = values.get("report_included_activity_name")
         item_name = values.get("report_included_item_name")
