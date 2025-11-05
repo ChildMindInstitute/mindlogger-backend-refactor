@@ -52,41 +52,6 @@ cq:
 cqf:
 	${RUFF_COMMAND} format . && ${RUFF_COMMAND} check --fix . && ${MYPY_COMMAND} .
 
-# ###############
-# Docker
-# ###############
-
-# NOTE: dcq == "Docker code quality"
-.PHONY: dcq
-dcq:
-	${DOCKER_EXEC} \
-		${RUFF_COMMAND} check ./ && ${MYPY_COMMAND} ./
-
-.PHONY: dtest
-dtest:
-	${DOCKER_EXEC} \
-		${TEST_COMMAND} ./
-
-.PHONY: ctest
-ctest:
-	${COVERAGE_DOCKER_EXEC} \
-		${COVERAGE_COMMAND}
-
-.PHONY: creport
-creport:
-	${COVERAGE_DOCKER_EXEC} \
-		${REPORT_COVERAGE_COMMAND}
-
-
-.PHONY: dcheck
-dcheck:
-	${DOCKER_EXEC} \
-		${RUFF_COMMAND} check ./ && ${MYPY_COMMAND} ./ && ${TEST_COMMAND}
-
-.PHONY: save_specs
-save_specs:
-	${DOCKER_EXEC} \
-		${EXPORT_COMMAND} ./
 
 # Setting pre-commit hooks to search for aws keys
 .PHONY: aws-scan
