@@ -1,6 +1,7 @@
 import enum
 
-from pydantic import field_validator, Field, PositiveInt, validator
+from pydantic import Field, PositiveInt, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
@@ -69,16 +70,15 @@ class Score(PublicModel):
     scoring_type: ScoringType | None = None
     subscale_name: str | None = None
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("conditional_logic")
-    def validate_conditional_logic(cls, value, values):
+    @field_validator("conditional_logic")
+    @classmethod
+    def validate_conditional_logic(cls, value, info: ValidationInfo):
         if value:
-            # check if all item names are same as values.id
+            # check if all item names are same as info.data.id
             item_names = []
             for v in value:
                 item_names += [condition.item_name for condition in v.conditions]
-            if set(item_names) != {values.get("id")}:
+            if set(item_names) != {info.data.get("id")}:
                 raise ScoreConditionItemNameError()
 
         return value

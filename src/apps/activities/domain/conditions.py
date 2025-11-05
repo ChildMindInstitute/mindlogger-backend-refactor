@@ -2,7 +2,7 @@ import datetime
 from enum import StrEnum
 from typing import Literal, Any, Dict, Optional
 
-from pydantic import field_validator, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from apps.activities.errors import IncorrectMaxTimeRange, IncorrectMinTimeRange, IncorrectTimeRange
 from apps.shared.domain import PublicModel, PublicModelNoExtra
@@ -142,11 +142,10 @@ class SingleDatePayload(PublicModel):
 class DateRangePayload(PublicModel):
     minDate: datetime.date
     maxDate: datetime.date
-    fieldName: FieldNamePayloadType | None = None
+    fieldName: FieldNamePayloadType | None = Field(default=None, validate_default=True)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("fieldName", pre=True, always=True)
+    @field_validator("fieldName", mode="before")
+    @classmethod
     def validate_field_name(cls, v):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
@@ -182,11 +181,10 @@ class SingleTimePayload(PublicModel):
     time: Optional[datetime.time] = None
     max_value: Optional[datetime.time] = None
     min_value: Optional[datetime.time] = None
-    fieldName: FieldNamePayloadType | None = None
+    fieldName: FieldNamePayloadType | None = Field(default=None, validate_default=True)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("fieldName", pre=True, always=True)
+    @field_validator("fieldName", mode="before")
+    @classmethod
     def validate_field_name(cls, v):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
@@ -253,11 +251,10 @@ class SingleTimePayload(PublicModel):
 class MinMaxTimePayload(PublicModel):
     minTime: Optional[datetime.time] = None
     maxTime: Optional[datetime.time] = None
-    fieldName: FieldNamePayloadType | None = None
+    fieldName: FieldNamePayloadType | None = Field(default=None, validate_default=True)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("fieldName", pre=True, always=True)
+    @field_validator("fieldName", mode="before")
+    @classmethod
     def validate_field_name(cls, v):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")

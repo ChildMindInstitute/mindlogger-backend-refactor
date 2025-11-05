@@ -1,7 +1,8 @@
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import Field, NonNegativeInt, PositiveInt, validator
+from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.constants_ab_trails_mobile import (
     MOBILE_NODES_FIRST,
@@ -134,12 +135,11 @@ class TextConfig(_ScreenConfig):
     response_required: bool
     is_identifier: bool | None = None
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("correct_answer")
-    def validate_correct_answer(cls, value, values):
+    @field_validator("correct_answer")
+    @classmethod
+    def validate_correct_answer(cls, value, info: ValidationInfo):
         # correct_answer must be set if correct_answer_required is True
-        if values.get("correct_answer_required") and not value:
+        if info.data.get("correct_answer_required") and not value:
             raise CorrectAnswerRequiredError()
         return value
 
@@ -394,54 +394,52 @@ class ABTrailsConfig(PublicModel):
     #       of class attributes ordering. Using root_validator over it
     #       might be preferable since it is more transparent.
     #       This approach is used in order to follow the consistency.
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("tutorials", pre=True)
-    def validate_tutorials(cls, value, values) -> ABTrailsTutorial | None:
-        if values.get("device_type") == ABTrailsDeviceType.TABLET:
-            if values.get("order_name") == ABTrailsOrder.FIRST:
+    @field_validator("tutorials", mode="before")
+    @classmethod
+    def validate_tutorials(cls, value, info: ValidationInfo) -> ABTrailsTutorial | None:
+        if info.data.get("device_type") == ABTrailsDeviceType.TABLET:
+            if info.data.get("order_name") == ABTrailsOrder.FIRST:
                 return TABLET_TUTORIALS_FIRST
-            if values.get("order_name") == ABTrailsOrder.SECOND:
+            if info.data.get("order_name") == ABTrailsOrder.SECOND:
                 return TABLET_TUTORIALS_SECOND
-            if values.get("order_name") == ABTrailsOrder.THIRD:
+            if info.data.get("order_name") == ABTrailsOrder.THIRD:
                 return TABLET_TUTORIALS_THIRD
-            if values.get("order_name") == ABTrailsOrder.FOURTH:
+            if info.data.get("order_name") == ABTrailsOrder.FOURTH:
                 return TABLET_TUTORIALS_FOURTH
 
-        if values.get("device_type") == ABTrailsDeviceType.MOBILE:
-            if values.get("order_name") == ABTrailsOrder.FIRST:
+        if info.data.get("device_type") == ABTrailsDeviceType.MOBILE:
+            if info.data.get("order_name") == ABTrailsOrder.FIRST:
                 return MOBILE_TUTORIALS_FIRST
-            if values.get("order_name") == ABTrailsOrder.SECOND:
+            if info.data.get("order_name") == ABTrailsOrder.SECOND:
                 return MOBILE_TUTORIALS_SECOND
-            if values.get("order_name") == ABTrailsOrder.THIRD:
+            if info.data.get("order_name") == ABTrailsOrder.THIRD:
                 return MOBILE_TUTORIALS_THIRD
-            if values.get("order_name") == ABTrailsOrder.FOURTH:
+            if info.data.get("order_name") == ABTrailsOrder.FOURTH:
                 return MOBILE_TUTORIALS_FOURTH
 
         return value
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("nodes", pre=True)
-    def validate_nodes(cls, value, values) -> ABTrailsNodes | None:
-        if values.get("device_type") == ABTrailsDeviceType.TABLET:
-            if values.get("order_name") == ABTrailsOrder.FIRST:
+    @field_validator("nodes", mode="before")
+    @classmethod
+    def validate_nodes(cls, value, info: ValidationInfo) -> ABTrailsNodes | None:
+        if info.data.get("device_type") == ABTrailsDeviceType.TABLET:
+            if info.data.get("order_name") == ABTrailsOrder.FIRST:
                 return TABLET_NODES_FIRST
-            if values.get("order_name") == ABTrailsOrder.SECOND:
+            if info.data.get("order_name") == ABTrailsOrder.SECOND:
                 return TABLET_NODES_SECOND
-            if values.get("order_name") == ABTrailsOrder.THIRD:
+            if info.data.get("order_name") == ABTrailsOrder.THIRD:
                 return TABLET_NODES_THIRD
-            if values.get("order_name") == ABTrailsOrder.FOURTH:
+            if info.data.get("order_name") == ABTrailsOrder.FOURTH:
                 return TABLET_NODES_FOURTH
 
-        if values.get("device_type") == ABTrailsDeviceType.MOBILE:
-            if values.get("order_name") == ABTrailsOrder.FIRST:
+        if info.data.get("device_type") == ABTrailsDeviceType.MOBILE:
+            if info.data.get("order_name") == ABTrailsOrder.FIRST:
                 return MOBILE_NODES_FIRST
-            if values.get("order_name") == ABTrailsOrder.SECOND:
+            if info.data.get("order_name") == ABTrailsOrder.SECOND:
                 return MOBILE_NODES_SECOND
-            if values.get("order_name") == ABTrailsOrder.THIRD:
+            if info.data.get("order_name") == ABTrailsOrder.THIRD:
                 return MOBILE_NODES_THIRD
-            if values.get("order_name") == ABTrailsOrder.FOURTH:
+            if info.data.get("order_name") == ABTrailsOrder.FOURTH:
                 return MOBILE_NODES_FOURTH
 
         return value

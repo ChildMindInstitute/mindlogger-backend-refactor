@@ -2,7 +2,8 @@ import uuid
 from datetime import UTC, date, datetime, time
 from typing import Annotated, Literal, Optional, Union, cast
 
-from pydantic import field_validator, ConfigDict, AnyHttpUrl, BaseModel, Field, validator
+from pydantic import field_validator, ConfigDict, AnyHttpUrl, BaseModel, Field
+from pydantic_core.core_schema import ValidationInfo
 
 from apps.applets.commands.applet.seed.errors import (
     AppletOwnerWithInvalidRolesError,
@@ -64,24 +65,23 @@ class SubjectConfig(StrictBaseModel):
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("roles")
-    def validate_respondent_role(cls, roles, values: dict):
-        subject_id = cast(uuid.UUID, values.get("id"))
-        if values.get("user_id") is not None and "respondent" not in roles:
+    @field_validator("roles")
+    @classmethod
+    def validate_respondent_role(cls, roles, info: ValidationInfo):
+        subject_id = cast(uuid.UUID, info.data.get("id"))
+        if info.data.get("user_id") is not None and "respondent" not in roles:
             raise FullAccountWithoutRespondentRoleError(subject_id)
 
-        if values.get("user_id") is None and len(roles) > 0:
+        if info.data.get("user_id") is None and len(roles) > 0:
             raise LimitedAccountWithRolesError(subject_id)
 
         if "owner" in roles:
             if len(roles) > 2:
                 raise AppletOwnerWithInvalidRolesError(subject_id)
-            elif values.get("user_id") is None:
+            elif info.data.get("user_id") is None:
                 raise AppletOwnerWithoutUserIdError(subject_id)
 
-        if values.get("reviewer_subjects") is not None and "reviewer" not in roles:
+        if info.data.get("reviewer_subjects") is not None and "reviewer" not in roles:
             raise NonReviewerSubjectWithRevieweesError(subject_id)
 
         return roles
@@ -288,10 +288,9 @@ class ActivityConfig(StrictBaseModel):
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("events")
-    def validate_events(cls, events: list[EventConfig], values: dict):
+    @field_validator("events")
+    @classmethod
+    def validate_events(cls, events: list[EventConfig]):
         first_event = events[0]
         if first_event.periodicity != "ALWAYS":
             raise InvalidFirstEventError(first_event.id, "Periodicity must be set to ALWAYS")
@@ -352,13 +351,12 @@ class AppletConfig(StrictBaseModel):
     def remove_timezone(cls, created_at: datetime):
         return created_at.replace(tzinfo=None)
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("activities")
-    def validate_activities(cls, activities: list[ActivityConfig], values: dict):
+    @field_validator("activities")
+    @classmethod
+    def validate_activities(cls, activities: list[ActivityConfig], info: ValidationInfo):
         activity_id_counts: dict[uuid.UUID, int] = {}
         duplicate_activity_ids: set[uuid.UUID] = set()
-        applet_id = cast(uuid.UUID, values.get("id"))
+        applet_id = cast(uuid.UUID, info.data.get("id"))
 
         if len(activities) == 0:
             # We'll need to update this validation when we start supporting flows
@@ -395,16 +393,15 @@ class AppletConfig(StrictBaseModel):
 
         return activities
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("subjects")
-    def validate_subjects(cls, subjects: list[SubjectConfig], values: dict):
+    @field_validator("subjects")
+    @classmethod
+    def validate_subjects(cls, subjects: list[SubjectConfig], info: ValidationInfo):
         subject_id_counts: dict[uuid.UUID, int] = {}
         secret_user_id_counts: dict[str, int] = {}
         duplicate_subject_ids: set[uuid.UUID] = set()
         duplicate_secret_user_ids: set[str] = set()
         owner_subject_ids: set[uuid.UUID] = set()
-        applet_id = cast(uuid.UUID, values.get("id"))
+        applet_id = cast(uuid.UUID, info.data.get("id"))
 
         for subject in subjects:
             subject_id_counts[subject.id] = subject_id_counts.get(subject.id, 0) + 1
@@ -472,15 +469,14 @@ class AppletConfigFileV1(StrictBaseModel):
 
         return users
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("applets")
-    def validate_applet_ids(cls, applets: list[AppletConfig], values: dict):
+    @field_validator("applets")
+    @classmethod
+    def validate_applet_ids(cls, applets: list[AppletConfig], info: ValidationInfo):
         applet_id_counts: dict[uuid.UUID, int] = {}
         duplicate_applet_ids: set[uuid.UUID] = set()
 
         # Ensure all full account applet subjects are in the users list
-        user_ids: set[uuid.UUID] = {user.id for user in values.get("users", [])}
+        user_ids: set[uuid.UUID] = {user.id for user in info.data.get("users", [])}
         for applet in applets:
             applet_id_counts[applet.id] = applet_id_counts.get(applet.id, 0) + 1
             if applet_id_counts[applet.id] > 1:

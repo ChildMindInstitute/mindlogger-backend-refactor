@@ -1,4 +1,5 @@
-from pydantic import field_validator, model_validator, BaseModel, Field, validator
+from pydantic import field_validator, model_validator, BaseModel, Field
+from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
 from apps.activities.domain.response_type_config import ResponseType, ResponseTypeConfig
@@ -70,11 +71,10 @@ class BaseActivityItem(BaseModel):
             raise IncorrectResponseValueError(type=ResponseType)
         return value
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("config", pre=True)
-    def validate_config(cls, value, values):
-        response_type = values.get("response_type")
+    @field_validator("config", mode="before")
+    @classmethod
+    def validate_config(cls, value, info: ValidationInfo):
+        response_type = info.data.get("response_type")
         # response type is checked in separate validator
         if not response_type:
             return value
@@ -88,11 +88,10 @@ class BaseActivityItem(BaseModel):
 
         return value
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("response_values", pre=True)
-    def validate_response_values(cls, value, values):
-        response_type = values.get("response_type")
+    @field_validator("response_values", mode="before")
+    @classmethod
+    def validate_response_values(cls, value, info: ValidationInfo):
+        response_type = info.data.get("response_type")
         if not response_type:
             return value
         if response_type not in ResponseType.get_non_response_types():

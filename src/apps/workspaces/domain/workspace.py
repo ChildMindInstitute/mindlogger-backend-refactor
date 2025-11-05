@@ -1,7 +1,8 @@
 import datetime
 import uuid
 
-from pydantic import field_validator, model_validator, Field, validator
+from pydantic import field_validator, model_validator, Field
+from pydantic_core.core_schema import ValidationInfo
 from sqlalchemy import Unicode
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
@@ -143,7 +144,7 @@ class WorkspaceManager(InternalModel):
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
     titles: list[str] | None
-    title: str | None
+    title: str | None = Field(default=None, validate_default=True)
     status: InvitationStatus
     invitation_key: uuid.UUID | None
 
@@ -155,12 +156,11 @@ class WorkspaceManager(InternalModel):
 
         return value
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("title", always=True)
-    def get_title(cls, value, values):
-        if len(values.get("titles")) > 0:
-            value = next(iter([v for v in values.get("titles") if v is not None]))
+    @field_validator("title")
+    @classmethod
+    def get_title(cls, value, info: ValidationInfo):
+        if len(info.data.get("titles")) > 0:
+            value = next(iter([v for v in info.data.get("titles") if v is not None]))
 
         return value
 
@@ -335,7 +335,7 @@ class WorkspaceArbitraryFields(InternalModel):
     storage_secret_key: str | None = None
     storage_region: str | None = None
     storage_bucket: str | None = None
-    use_arbitrary: bool
+    use_arbitrary: bool | None = Field(default=None, validate_default=True)
 
     def is_arbitrary_empty(self):
         return not any(
@@ -351,15 +351,14 @@ class WorkspaceArbitraryFields(InternalModel):
             ]
         )
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("use_arbitrary", always=True, pre=True)
+    @field_validator("use_arbitrary", mode="before")
+    @classmethod
     def to_bool(cls, value):
         if value is None:
             return False
 
-        return value
 
+        return value
 
 class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
     user_id: uuid.UUID

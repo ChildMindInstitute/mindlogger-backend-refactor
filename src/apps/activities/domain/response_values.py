@@ -1,7 +1,8 @@
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import field_validator, model_validator, Field, NonNegativeInt, root_validator, validator
+from pydantic import Field, NonNegativeInt, field_validator, model_validator, root_validator
+from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.response_type_config import (
     ABTrailsConfig,
@@ -354,15 +355,14 @@ class SingleSelectionRowsValues(PublicModel):
     options: list[_SingleSelectionOption]
     data_matrix: list[_SingleSelectionDataRow] | None = None
 
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("data_matrix")
-    def validate_data_matrix(cls, value, values):
+    @field_validator("data_matrix")
+    @classmethod
+    def validate_data_matrix(cls, value, info: ValidationInfo):
         if value is not None:
-            if len(value) != len(values["rows"]):
+            if len(value) != len(info.data["rows"]):
                 raise InvalidDataMatrixError()
             for row in value:
-                if len(row.options) != len(values["options"]):
+                if len(row.options) != len(info.data["options"]):
                     raise InvalidDataMatrixByOptionError()
         return value
 
