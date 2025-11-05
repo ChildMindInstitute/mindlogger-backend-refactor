@@ -30,9 +30,22 @@ COVERAGE_DOCKER_EXEC = ${DOCKER_COMPOSE_CMD} run --rm -u root app
 run:
 	PYTHONPATH=src uv run uvicorn src.main:app --proxy-headers --host ${HOST} --port ${PORT} --reload
 
-.PHONY: run_local
-run_local:
-	${DOCKER_COMPOSE_CMD} up -d redis postgres mailhog rabbitmq minio
+# Start every dependency.  Not always needed
+.PHONY: start-all-deps
+start-all-deps:
+	${DOCKER_COMPOSE_CMD} up -d redis postgres mailhog rabbitmq minio worker scheduler
+
+# Start just the necessary day-to-day dependencies
+.PHONY: start-deps
+start-deps:
+	${DOCKER_COMPOSE_CMD} up redis postgres rabbitmq
+
+
+# Build everything in the compose file
+.PHONY: build-all
+build-all:
+	${DOCKER_COMPOSE_CMD} build app worker scheduler postgres
+
 
 .PHONY: test
 test:
