@@ -16,7 +16,7 @@ class CDNSettings(BaseModel):
     domain: str = ""
     ttl_signed_urls: int = 3600
 
-    gcp_endpoint_url = "https://storage.googleapis.com"
+    gcp_endpoint_url: str = "https://storage.googleapis.com"
     endpoint_url: str | None = None
     storage_address: str | None = None
     max_concurrent_tasks: int = 10
