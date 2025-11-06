@@ -1,10 +1,10 @@
 import uuid
 
-from pydantic import Field, BaseModel
+from pydantic import BaseModel, Field
+from typing_extensions import Annotated
 
 from apps.activities.domain.constants import InputType
 from apps.shared.domain import InternalModel, PublicModel
-from typing_extensions import Annotated
 
 __all__ = [
     "ReusableItemChoiceCreate",

@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import model_validator, Field, root_validator
+from pydantic import Field, model_validator, root_validator
 
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate

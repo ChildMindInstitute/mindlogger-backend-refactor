@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from pydantic import model_validator, Field
+from pydantic import Field, model_validator
 
 from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_item_base import BaseActivityItem

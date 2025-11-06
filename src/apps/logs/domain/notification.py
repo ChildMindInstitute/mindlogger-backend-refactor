@@ -2,7 +2,7 @@ import datetime
 import json
 import uuid
 
-from pydantic import field_validator, BaseModel, root_validator
+from pydantic import BaseModel, field_validator, root_validator
 from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel

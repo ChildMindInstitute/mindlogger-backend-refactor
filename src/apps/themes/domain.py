@@ -1,9 +1,9 @@
 import uuid
 
-from pydantic import field_validator, BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from pydantic_extra_types.color import Color
 
 from apps.shared.domain import InternalModel, PublicModel
-from pydantic_extra_types.color import Color
 
 __all__ = [
     "ThemeRequest",

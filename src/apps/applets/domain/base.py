@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import field_validator, BaseModel, Field, IPvAnyAddress, PositiveInt
+from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, field_validator
 
 from apps.shared.domain import InternalModel
 from apps.shared.domain.custom_validations import sanitize_string

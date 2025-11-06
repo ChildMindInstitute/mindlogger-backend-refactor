@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Generic
 
-from pydantic import model_validator, BaseModel, Field, IPvAnyAddress, PositiveInt
+from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, model_validator
 
 from apps.activities.domain.activity import (
     ActivityBaseInfo,

@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import field_validator, Field, root_validator
+from pydantic import Field, field_validator, root_validator
 
 from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType
 from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting

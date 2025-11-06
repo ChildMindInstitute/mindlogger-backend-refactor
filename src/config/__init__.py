@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from config.alerts import AlertsSettings
 from config.anonymous_respondent import AnonymousRespondent
 from config.applet import AppletEMASettings
@@ -21,7 +23,6 @@ from config.sentry import SentrySettings
 from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
 from config.task import AnswerEncryption, AudioFileConvert, ImageConvert
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # NOTE: Settings powered by pydantic

@@ -2,7 +2,7 @@ import datetime
 import uuid
 from enum import Enum
 
-from pydantic import field_validator, Field
+from pydantic import Field, field_validator
 
 from apps.shared.domain import InternalModel, PublicModel, ResponseMulti, dict_keys_to_camel_case
 

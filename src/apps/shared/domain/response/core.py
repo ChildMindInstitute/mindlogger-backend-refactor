@@ -1,8 +1,9 @@
 from typing import Generic
 
+from pydantic import BaseModel
+
 from apps.shared.domain.base import PublicModel
 from apps.shared.domain.types import _BaseModel
-from pydantic import BaseModel
 
 
 class ResponseMulti(PublicModel, BaseModel, Generic[_BaseModel]):

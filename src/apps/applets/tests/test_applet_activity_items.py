@@ -4,6 +4,7 @@ import uuid
 from typing import cast
 
 import pytest
+from pydantic_extra_types.color import Color
 from pytest import FixtureRequest
 
 from apps.activities import errors as activity_errors
@@ -28,7 +29,6 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.shared.enums import Language
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
-from pydantic_extra_types.color import Color
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from pydantic import field_validator, AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, field_validator
 
 __all__ = ["CorsSettings"]
 

@@ -1,4 +1,5 @@
 import enum
+from typing import Literal
 
 from pydantic import Field, PositiveInt, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -22,7 +23,6 @@ from apps.activities.errors import (
 )
 from apps.shared.domain import PublicModel
 from apps.shared.domain.custom_validations import sanitize_string
-from typing import Literal
 
 
 class CalculationType(enum.StrEnum):

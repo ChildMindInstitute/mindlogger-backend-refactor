@@ -3,8 +3,8 @@ import json
 import re
 from typing import TypeVar
 
-from pydantic import field_validator, ConfigDict, BaseModel as PBaseModel
-from pydantic import Extra
+from pydantic import BaseModel as PBaseModel
+from pydantic import ConfigDict, Extra, field_validator
 
 __all__ = [
     "InternalModel",

@@ -1,4 +1,4 @@
-from pydantic import field_validator, BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.activities.domain.scores_reports import ScoresAndReports, SubscaleSetting

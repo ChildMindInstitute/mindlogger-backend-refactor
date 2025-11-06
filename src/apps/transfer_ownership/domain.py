@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import field_validator, EmailStr
+from pydantic import EmailStr, field_validator
 
 from apps.shared.domain import InternalModel
 from apps.transfer_ownership.constants import TransferOwnershipStatus

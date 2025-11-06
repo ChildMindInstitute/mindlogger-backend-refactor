@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 from typing import Any, Generic, Optional
 
-from pydantic import field_validator, BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, field_validator, root_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull

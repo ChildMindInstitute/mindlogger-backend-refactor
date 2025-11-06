@@ -1,6 +1,7 @@
 
-from apps.shared.test import BaseTest
 from pydantic_extra_types.color import Color
+
+from apps.shared.test import BaseTest
 
 
 class TestThemes(BaseTest):

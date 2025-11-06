@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import field_validator, model_validator, Field
+from pydantic import Field, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
 from sqlalchemy import Unicode
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg

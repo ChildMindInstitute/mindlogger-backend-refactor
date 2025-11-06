@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Generic
 
-from infrastructure.cache.types import _InputObject
 from pydantic import BaseModel
+
+from infrastructure.cache.types import _InputObject
 
 
 class CacheEntry(BaseModel, Generic[_InputObject]):

@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import Field, NonNegativeInt, field_validator, model_validator, root_validator
 from pydantic_core.core_schema import ValidationInfo
+from pydantic_extra_types.color import Color
 
 from apps.activities.domain.response_type_config import (
     ABTrailsConfig,
@@ -40,7 +41,6 @@ from apps.activities.errors import (
     MultiSelectNoneOptionError,
 )
 from apps.shared.domain import PublicModel, validate_color, validate_image, validate_uuid
-from pydantic_extra_types.color import Color
 
 
 class RequestHealthRecordDataOptType(StrEnum):

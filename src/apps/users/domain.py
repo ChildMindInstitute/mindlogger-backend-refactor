@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import field_validator, EmailStr, Field, root_validator
+from pydantic import EmailStr, Field, field_validator, root_validator
 
 from apps.shared.bcrypt import get_password_hash
 from apps.shared.domain import InternalModel, PublicModel

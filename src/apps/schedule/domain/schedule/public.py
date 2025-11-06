@@ -2,7 +2,7 @@ import datetime
 import uuid
 from datetime import date
 
-from pydantic import field_validator, NonNegativeInt
+from pydantic import NonNegativeInt, field_validator
 
 from apps.schedule.domain.constants import AvailabilityType, NotificationTriggerType, PeriodicityType
 from apps.schedule.domain.schedule import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting

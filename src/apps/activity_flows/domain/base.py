@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import field_validator, BaseModel
+from pydantic import BaseModel, field_validator
 
 from apps.shared.domain.custom_validations import sanitize_string
 from apps.shared.enums import Language

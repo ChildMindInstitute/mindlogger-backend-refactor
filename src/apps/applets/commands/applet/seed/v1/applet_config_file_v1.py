@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, date, datetime, time
 from typing import Annotated, Literal, Optional, Union, cast
 
-from pydantic import field_validator, ConfigDict, AnyHttpUrl, BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.applets.commands.applet.seed.errors import (
