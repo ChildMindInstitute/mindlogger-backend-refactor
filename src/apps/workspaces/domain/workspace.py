@@ -357,8 +357,8 @@ class WorkspaceArbitraryFields(InternalModel):
         if value is None:
             return False
 
-
         return value
+
 
 class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
     user_id: uuid.UUID

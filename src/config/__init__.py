@@ -102,6 +102,7 @@ class Settings(BaseSettings):
     @property
     def uploads_dir(self):
         return self.root_dir.parent / "uploads"
+
     model_config = SettingsConfigDict(env_nested_delimiter="__", env_file=".env")
 
 

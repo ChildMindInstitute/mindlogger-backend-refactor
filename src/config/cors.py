@@ -14,12 +14,7 @@ class CorsSettings(BaseModel):
     expose_headers: list[str] = []
     max_age: int = 600
 
-    @field_validator(
-        "allow_origins",
-        "allow_methods",
-        "allow_headers",
-        "expose_headers",
-        mode="before")
+    @field_validator("allow_origins", "allow_methods", "allow_headers", "expose_headers", mode="before")
     @classmethod
     def as_list(cls, value: str):
         return value.split(",")

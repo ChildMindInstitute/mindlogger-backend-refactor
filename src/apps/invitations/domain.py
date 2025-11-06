@@ -130,6 +130,7 @@ class ReviewerMeta(InternalModel):
     """This model is used for internal needs
     for representation reviewer meta information.
     """
+
     model_config = ConfigDict(extra="ignore")
 
     subjects: list[str]

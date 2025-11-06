@@ -31,11 +31,7 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
     notification_in_queue: list[dict] | None = None
     scheduled_notifications: list[dict] | None = None
 
-    @field_validator(
-        "notification_descriptions",
-        "notification_in_queue",
-        "scheduled_notifications",
-        mode="before")
+    @field_validator("notification_descriptions", "notification_in_queue", "scheduled_notifications", mode="before")
     @classmethod
     def convert_string_to_list(cls, v):
         """Convert legacy JSON string format to array format for backward compatibility.
@@ -90,11 +86,7 @@ class PublicNotificationLog(_NotificationLogBase, PublicModel):
     scheduled_notifications: list | None = None
     created_at: datetime.datetime
 
-    @field_validator(
-        "notification_descriptions",
-        "notification_in_queue",
-        "scheduled_notifications",
-        mode="before")
+    @field_validator("notification_descriptions", "notification_in_queue", "scheduled_notifications", mode="before")
     @classmethod
     def validate_json(cls, v):
         try:

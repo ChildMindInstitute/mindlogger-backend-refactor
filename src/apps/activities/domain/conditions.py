@@ -344,11 +344,15 @@ class _IncludesOptionCondition(BaseCondition):
 
 
 class _IncludesOptionPerRowCondition(BaseCondition):
-    type: Literal[MultiSelectionsPerRowConditionType.INCLUDES_ROW_OPTION] = MultiSelectionsPerRowConditionType.INCLUDES_ROW_OPTION
+    type: Literal[MultiSelectionsPerRowConditionType.INCLUDES_ROW_OPTION] = (
+        MultiSelectionsPerRowConditionType.INCLUDES_ROW_OPTION
+    )
 
 
 class _NotIncludesOptionPerRowCondition(BaseCondition):
-    type: Literal[MultiSelectionsPerRowConditionType.NOT_INCLUDES_ROW_OPTION] = MultiSelectionsPerRowConditionType.NOT_INCLUDES_ROW_OPTION
+    type: Literal[MultiSelectionsPerRowConditionType.NOT_INCLUDES_ROW_OPTION] = (
+        MultiSelectionsPerRowConditionType.NOT_INCLUDES_ROW_OPTION
+    )
 
 
 class _NotIncludesOptionCondition(BaseCondition):
@@ -360,11 +364,15 @@ class _EqualToOptionCondition(BaseCondition):
 
 
 class _EqualToRowOptionCondition(BaseCondition):
-    type: Literal[SingleSelectionPerRowConditionType.EQUAL_TO_ROW_OPTION] = SingleSelectionPerRowConditionType.EQUAL_TO_ROW_OPTION
+    type: Literal[SingleSelectionPerRowConditionType.EQUAL_TO_ROW_OPTION] = (
+        SingleSelectionPerRowConditionType.EQUAL_TO_ROW_OPTION
+    )
 
 
 class _NotEqualToRowOptionCondition(BaseCondition):
-    type: Literal[SingleSelectionPerRowConditionType.NOT_EQUAL_TO_ROW_OPTION] = SingleSelectionPerRowConditionType.NOT_EQUAL_TO_ROW_OPTION
+    type: Literal[SingleSelectionPerRowConditionType.NOT_EQUAL_TO_ROW_OPTION] = (
+        SingleSelectionPerRowConditionType.NOT_EQUAL_TO_ROW_OPTION
+    )
 
 
 class _NotEqualToOptionCondition(BaseCondition):

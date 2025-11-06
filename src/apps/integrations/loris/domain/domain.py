@@ -81,7 +81,15 @@ def to_camelcase(payload: str) -> str:
 
 
 class InternalModel(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid", from_attributes=True, use_enum_values=True, populate_by_name=True, validate_assignment=True, alias_generator=to_camelcase)
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid",
+        from_attributes=True,
+        use_enum_values=True,
+        populate_by_name=True,
+        validate_assignment=True,
+        alias_generator=to_camelcase,
+    )
 
 
 class ConsentCreate(InternalModel):
