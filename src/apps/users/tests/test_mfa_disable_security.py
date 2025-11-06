@@ -60,11 +60,9 @@ class TestMFADisableSecurity:
     ):
         """User cannot disable another user's MFA."""
         # Create a second user (different from user_with_mfa)
-        from pydantic import EmailStr
-
         user_service = UserService(session)
         user2_create = UserCreate(
-            email=EmailStr("attacker@example.com"),
+            email="attacker@example.com",
             password="Attacker123!",
             first_name="Attacker",
             last_name="User",
