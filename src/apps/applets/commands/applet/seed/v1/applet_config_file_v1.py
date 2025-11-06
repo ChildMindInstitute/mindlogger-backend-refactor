@@ -86,20 +86,19 @@ class SubjectConfig(StrictBaseModel):
 
         return roles
 
-    # TODO[pydantic]: We couldn't refactor this class, please create the `model_config` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    class Config:
-        @staticmethod
-        def schema_extra(schema: dict):
-            roles_schema = schema.get("properties", {}).get("roles", {})
-            roles_schema.update(
-                {
-                    "contains": {"const": "respondent"},
-                    "minContains": 1,
-                    "errorMessage": "Must contain the 'respondent' role",
-                }
-            )
-            schema["properties"]["roles"] = roles_schema
+    @staticmethod
+    def json_schema_extra(schema: dict):
+        roles_schema = schema.get("properties", {}).get("roles", {})
+        roles_schema.update(
+            {
+                "contains": {"const": "respondent"},
+                "minContains": 1,
+                "errorMessage": "Must contain the 'respondent' role",
+            }
+        )
+        schema["properties"]["roles"] = roles_schema
+
+    model_config = ConfigDict(StrictBaseModel.model_config, json_schema_extra=json_schema_extra)
 
 
 class FixedNotificationConfig(StrictBaseModel):
