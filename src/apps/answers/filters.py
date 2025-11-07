@@ -1,8 +1,9 @@
 import datetime
 import uuid
+from typing import Self
 
 from fastapi import Query
-from pydantic import Field, root_validator, validator
+from pydantic import Field, model_validator, validator
 
 from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import array_from_string
@@ -38,14 +39,13 @@ class AppletSubmitDateFilter(BaseQueryParams):
     to_date: datetime.date
     activity_or_flow_id: uuid.UUID | None = None
 
-    @classmethod
-    @root_validator
-    def check_both_fields_not_none(cls, values):
-        respondent_id = values.get("respondent_id")
-        target_subject_id = values.get("target_subject_id")
+    @model_validator(mode="after")
+    def check_both_fields_not_none(self) -> Self:
+        respondent_id = values.respondent_id
+        target_subject_id = values.target_subject_id
         if respondent_id is None and target_subject_id is None:
             raise ValueError("At least one of fields be provided")
-        return values
+        return self
 
 
 class AnswerExportFilters(BaseQueryParams):

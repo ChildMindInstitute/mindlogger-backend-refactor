@@ -391,7 +391,7 @@ class ABTrailsConfig(PublicModel):
     nodes: ABTrailsNodes | None = None
 
     # HACK: Remember that values get into this validator only because
-    #       of class attributes ordering. Using root_validator over it
+    #       of class attributes ordering. Using model_validator over it
     #       might be preferable since it is more transparent.
     #       This approach is used in order to follow the consistency.
     @field_validator("tutorials", mode="before")

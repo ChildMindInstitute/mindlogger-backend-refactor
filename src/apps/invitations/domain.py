@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import ConfigDict, EmailStr, Field, root_validator, validator
+from pydantic import ConfigDict, EmailStr, Field, model_validator, validator
 
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
@@ -47,9 +47,16 @@ class _InvitationRequest(PublicModel):
     )
     language: InvitationLanguage = Field(description="This field represents the language of invitation")
 
-    @root_validator
-    def email_validation(cls, values):
-        return lowercase_email(values)
+    @model_validator(mode="before")
+    @classmethod
+    def email_validation(cls, data: dict) -> dict:
+        """Normalize email to lowercase.
+
+        We ran this as an "after" validator (pre=False) before migrating
+        Pydantic 1 to Pydantic 2, but it works better as a "before"
+        validator because we are updating the value of a field.
+        """
+        return lowercase_email(data)
 
 
 class InvitationRespondentRequest(_InvitationRequest):

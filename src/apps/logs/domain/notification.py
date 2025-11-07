@@ -1,8 +1,9 @@
 import datetime
 import json
 import uuid
+from typing import Self
 
-from pydantic import BaseModel, field_validator, root_validator
+from pydantic import BaseModel, field_validator, model_validator
 from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
@@ -59,13 +60,13 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
 
         return None
 
-    @root_validator
-    def validate_json_fields(cls, values):
+    @model_validator(mode="after")
+    def validate_json_fields(self) -> Self:
         if not any(
             [
-                values.get("notification_descriptions"),
-                values.get("notification_in_queue"),
-                values.get("scheduled_notifications"),
+                self.notification_descriptions,
+                self.notification_in_queue,
+                self.scheduled_notifications,
             ]
         ):
             raise ValueError(
@@ -74,7 +75,7 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
                 notification_in_queue,
                 scheduled_notifications) must be provided"""
             )
-        return values
+        return self
 
 
 class PublicNotificationLog(_NotificationLogBase, PublicModel):

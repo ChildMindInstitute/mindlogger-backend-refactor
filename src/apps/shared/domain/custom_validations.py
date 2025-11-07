@@ -126,11 +126,11 @@ def datetime_from_ms(value):
     return value
 
 
-def lowercase_email(values):
-    email = values.get("email")
+def lowercase_email(data: dict) -> dict:
+    email = data.get("email")
     if email:
-        values["email"] = email.lower()
-    return values
+        data["email"] = email.lower()
+    return data
 
 
 def translate(val):

@@ -1,7 +1,7 @@
-import uuid
+from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 
 from apps.activity_assignments.errors import (
     ActivityAssignmentActivityOrFlowError,
@@ -11,14 +11,11 @@ from apps.shared.domain import InternalModel, PublicModel
 from apps.subjects.domain import SubjectReadResponse
 
 
-def _validate_assignments(values):
-    if not values.get("activity_id") and not values.get("activity_flow_id"):
+def _validate_assignments(activity_id: UUID | None, activity_flow_id: UUID | None) -> None:
+    if not activity_id and not activity_flow_id:
         raise ActivityAssignmentNotActivityAndFlowError()
-
-    if values.get("activity_id") and values.get("activity_flow_id"):
+    if activity_id and activity_flow_id:
         raise ActivityAssignmentActivityOrFlowError("Only one of activity_id or activity_flow_id must be provided")
-
-    return values
 
 
 class ActivityAssignmentCreate(BaseModel):
@@ -27,9 +24,9 @@ class ActivityAssignmentCreate(BaseModel):
     respondent_subject_id: UUID
     target_subject_id: UUID
 
-    @root_validator
-    def validate_assignments(cls, values):
-        return _validate_assignments(values)
+    @model_validator(mode="after")
+    def validate_assignments(self) -> Self:
+        return _validate_assignments(self.activity_id, self.activity_flow_id)
 
 
 class ActivitiesAssignmentsCreate(InternalModel):
@@ -73,9 +70,9 @@ class ActivityAssignmentDelete(BaseModel):
     respondent_subject_id: UUID
     target_subject_id: UUID
 
-    @root_validator
-    def validate_assignments(cls, values):
-        return _validate_assignments(values)
+    @model_validator(mode="after")
+    def validate_assignments(self) -> Self:
+        return _validate_assignments(self.activity_id, self.activity_flow_id)
 
 
 class ActivitiesAssignmentsDelete(InternalModel):
@@ -83,12 +80,12 @@ class ActivitiesAssignmentsDelete(InternalModel):
 
 
 class AssignmentsSubjectCounters(PublicModel):
-    respondents: set[uuid.UUID] = Field(default_factory=set)
-    subjects: set[uuid.UUID] = Field(default_factory=set)
+    respondents: set[UUID] = Field(default_factory=set)
+    subjects: set[UUID] = Field(default_factory=set)
     subject_assignments_count: int = 0
     respondent_assignments_count: int = 0
 
 
 class AssignmentsActivityCountBySubject(PublicModel):
-    subject_id: uuid.UUID
-    activities: dict[uuid.UUID, AssignmentsSubjectCounters] = Field(default_factory=dict)
+    subject_id: UUID
+    activities: dict[UUID, AssignmentsSubjectCounters] = Field(default_factory=dict)

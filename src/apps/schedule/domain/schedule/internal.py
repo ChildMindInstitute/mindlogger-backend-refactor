@@ -1,7 +1,8 @@
 import uuid
 from datetime import date
+from typing import Self
 
-from pydantic import Field, NonNegativeInt, root_validator
+from pydantic import Field, NonNegativeInt, model_validator
 
 from apps.schedule.domain.constants import AvailabilityType, EventType, PeriodicityType, TimerType
 from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BaseReminderSetting
@@ -44,15 +45,15 @@ class EventCreate(BaseEvent, InternalModel):
     activity_flow_id: uuid.UUID | None = None
     event_type: EventType
 
-    @root_validator
-    def validate_periodicity(cls, values):
-        if values.get("periodicity") in [
+    @model_validator(mode="after")
+    def validate_periodicity(self) -> Self:
+        if self.periodicity in [
             PeriodicityType.ONCE,
             PeriodicityType.WEEKLY,
             PeriodicityType.MONTHLY,
-        ] and not values.get("selected_date"):
+        ] and not self.selected_date:
             raise SelectedDateRequiredError()
-        return values
+        return self
 
 
 class EventUpdate(EventCreate):

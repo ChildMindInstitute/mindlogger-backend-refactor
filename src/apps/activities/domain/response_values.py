@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Literal, Self
 
-from pydantic import Field, NonNegativeInt, field_validator, model_validator, root_validator
+from pydantic import Field, NonNegativeInt, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_extra_types.color import Color
 
@@ -228,20 +228,20 @@ class SliderValuesBase(PublicModel):
             return validate_image(value)
         return value
 
-    @root_validator
-    def validate_min_max(cls, values):
-        if values.get("min_value") >= values.get("max_value"):
+    @model_validator(mode="after")
+    def validate_min_max(self) -> Self:
+        if self.min_value >= self.max_value:
             raise MinValueError()
-        return values
+        return self
 
-    @root_validator
-    def validate_scores(cls, values):
+    @model_validator(mode="after")
+    def validate_scores(self) -> Self:
         # length of scores must be equal to max_value - min_value + 1
         scores = values.get("scores", [])
         if scores:
-            if len(scores) != values.get("max_value") - values.get("min_value") + 1:
+            if len(scores) != self.max_value - self.min_value + 1:
                 raise InvalidScoreLengthError()
-        return values
+        return self
 
 
 class SliderValues(SliderValuesBase):
@@ -253,11 +253,11 @@ class NumberSelectionValues(PublicModel):
     min_value: NonNegativeInt = Field(default=0)
     max_value: NonNegativeInt = Field(default=100)
 
-    @root_validator
-    def validate_min_max(cls, values):
-        if values.get("min_value") >= values.get("max_value"):
+    @model_validator(mode="after")
+    def validate_min_max(self) -> Self:
+        if self.min_value >= self.max_value:
             raise MinValueError()
-        return values
+        return self
 
 
 class DrawingProportion(PublicModel):

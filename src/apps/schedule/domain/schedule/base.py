@@ -1,6 +1,7 @@
 from datetime import date, time, timedelta
+from typing import Self
 
-from pydantic import BaseModel, Field, NonNegativeInt, root_validator
+from pydantic import BaseModel, Field, NonNegativeInt, model_validator
 
 from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType, TimerType
 from apps.schedule.errors import (
@@ -22,15 +23,15 @@ class BasePeriodicity(BaseModel):
         description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
     )
 
-    @root_validator
-    def validate_periodicity(cls, values):
-        if values.get("type") in [
+    @model_validator(mode="after")
+    def validate_periodicity(self) -> Self:
+        if self.type in [
             PeriodicityType.ONCE,
             PeriodicityType.WEEKLY,
             PeriodicityType.MONTHLY,
-        ] and not values.get("selected_date"):
+        ] and not self.selected_date:
             raise SelectedDateRequiredError()
-        return values
+        return self
 
 
 class BaseEvent(BaseModel):
@@ -59,12 +60,11 @@ class BaseEvent(BaseModel):
     )
     timer_type: TimerType
 
-    @root_validator
-    def validate_timer(cls, values):
-        if values.get("timer_type") != TimerType.NOT_SET and not values.get("timer"):
+    @model_validator(mode="after")
+    def validate_timer(self) -> Self:
+        if self.timer_type != TimerType.NOT_SET and not self.timer:
             raise TimerRequiredError()
-
-        return values
+        return self
 
 
 class BaseNotificationSetting(BaseModel):
@@ -85,15 +85,15 @@ class BaseNotificationSetting(BaseModel):
     )
     order: int | None = None
 
-    @root_validator
-    def validate_notification(cls, values):
-        if values.get("trigger_type") == NotificationTriggerType.FIXED:
-            if not values.get("at_time"):
+    @model_validator(mode="after")
+    def validate_notification(self) -> Self:
+        if self.trigger_type == NotificationTriggerType.FIXED:
+            if not self.at_time:
                 raise AtTimeFieldRequiredError()
-        elif values.get("trigger_type") == NotificationTriggerType.RANDOM:
-            if not values.get("from_time") or not values.get("to_time"):
+        elif self.trigger_type == NotificationTriggerType.RANDOM:
+            if not self.from_time or not self.to_time:
                 raise FromTimeToTimeRequiredError()
-        return values
+        return self
 
 
 class BaseReminderSetting(BaseModel):

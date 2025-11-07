@@ -1,6 +1,6 @@
 from typing import Self
 
-from pydantic import Field, model_validator, root_validator
+from pydantic import Field, model_validator
 
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
@@ -52,9 +52,9 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
                     raise FlowItemActivityKeyNotFoundError()
         return self
 
-    @root_validator
-    def validate_performance_task_type(cls, values):
-        return validate_performance_task_type(values)
+    @model_validator(mode="before")
+    def validate_performance_task_type(cls, data: dict) -> dict:
+        return validate_performance_task_type(data)
 
 
 class AppletUpdate(AppletBase, PublicModel):
