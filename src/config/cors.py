@@ -1,17 +1,19 @@
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
 from pydantic import AnyHttpUrl, BaseModel, field_validator
+from pydantic_settings import NoDecode
 
 __all__ = ["CorsSettings"]
 
 
 class CorsSettings(BaseModel):
-    allow_origins: list[AnyHttpUrl | Literal["*"]] = ["*"]
+    # Annotated[*, NoDecode] to avoid parsing environment variable as JSON
+    allow_origins: Annotated[list[AnyHttpUrl | Literal["*"]], NoDecode] = ["*"]
     allow_origin_regex: Optional[str] = None
-    allow_methods: list[str] = ["*"]
-    allow_headers: list[str] = ["*"]
+    allow_methods: Annotated[list[str], NoDecode] = ["*"]
+    allow_headers: Annotated[list[str], NoDecode] = ["*"]
     allow_credentials: bool = True
-    expose_headers: list[str] = []
+    expose_headers: Annotated[list[str], NoDecode] = []
     max_age: int = 600
 
     @field_validator("allow_origins", "allow_methods", "allow_headers", "expose_headers", mode="before")
