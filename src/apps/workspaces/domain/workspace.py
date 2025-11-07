@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Self
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -378,9 +379,8 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
     storage_secret_key: str
     storage_type: StorageType
 
-    @model_validator()
-    @classmethod
-    def validate_storage_settings(cls, values):
+    @model_validator(mode="after")
+    def validate_storage_settings(self) -> Self:
         storage_type = values["storage_type"]
         required = []
         if storage_type == StorageType.AWS:
@@ -388,10 +388,10 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
         elif storage_type == StorageType.GCP:
             required = ["storage_url", "storage_bucket", "storage_access_key"]
 
-        if required and not all((values[itm] is not None) for itm in required):
+        if required and not all(getattr(self, field) is not None for field in required):
             raise ValueError(f"{', '.join(required)} are required for {storage_type} storage")
 
-        return values
+        return self
 
     @field_validator("database_uri")
     @classmethod

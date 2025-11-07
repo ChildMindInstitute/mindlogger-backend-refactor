@@ -1,6 +1,6 @@
 from apps.activities.domain.response_type_config import PerformanceTaskType, ResponseType
 from apps.activities.domain.response_values import PhrasalTemplateFieldType, RequestHealthRecordDataOptType
-from apps.activities.domain.scores_reports import ReportType, Score, SubscaleItemType, SubscaleSetting
+from apps.activities.domain.scores_reports import ReportType, Score, ScoresAndReports, SubscaleItemType, SubscaleSetting
 from apps.activities.errors import (
     IncorrectConditionItemError,
     IncorrectConditionItemIndexError,
@@ -30,10 +30,9 @@ from apps.activities.errors import (
 )
 
 
-def validate_item_flow(values: dict):
-    items = values.get("items", [])
-    item_names = [item.name for item in items]
+def validate_item_flow(items: list) -> None:
 
+    item_names = [item.name for item in items]
     # conditional logic for item flow
     for index in range(len(items)):
         if items[index].conditional_logic is not None:
@@ -70,8 +69,6 @@ def validate_item_flow(values: dict):
                         if selected_option not in option_values:
                             raise IncorrectConditionOptionError()
 
-    return values
-
 
 def validate_subscale_setting_match_reports(report: Score, subscale_setting: SubscaleSetting):
     report_subscale_linked = report.subscale_name
@@ -90,10 +87,8 @@ def validate_subscale_setting_match_reports(report: Score, subscale_setting: Sub
             raise SubscaleItemTypeItemDoesNotExist()
 
 
-def validate_score_and_sections(values: dict):  # noqa: C901
-    items = values.get("items", [])
+def validate_score_and_sections(items: list, scores_and_reports: ScoresAndReports | None, subscale_setting: SubscaleSetting | None) -> None:  # noqa: C901
     item_names = [item.name for item in items]
-    scores_and_reports = values.get("scores_and_reports")
     if scores_and_reports:
         score_item_ids = []
         score_condition_item_ids = []
@@ -106,7 +101,6 @@ def validate_score_and_sections(values: dict):  # noqa: C901
         for report in list(scores):
             score_item_ids.append(report.id)
             if report.scoring_type == "score":
-                subscale_setting = values.get("subscale_setting")
                 if not subscale_setting:  # report of type score exist then we need a subscale setting
                     raise SubscaleSettingDoesNotExist()
                 else:
@@ -179,16 +173,12 @@ def validate_score_and_sections(values: dict):  # noqa: C901
                         if not any(dependency_conditions):
                             raise IncorrectSectionConditionItemError()
 
-    return values
 
-
-def validate_subscales(values: dict):
+def validate_subscales(items: list, subscale_setting: SubscaleSetting | None) -> None:
     # validate items inside subscale exist
     # and scores for them are set
-    subscale_setting = values.get("subscale_setting")
     if subscale_setting:
         subscales = subscale_setting.subscales
-        items = values.get("items", [])
         item_names = [item.name for item in items]
         subscale_names = [subscale.name for subscale in subscales]
         for subscale in subscales:
@@ -218,30 +208,34 @@ def validate_subscales(values: dict):
                         if subscale_item_name.name == subscale.name:
                             raise SubscaleInsideSubscaleError()
 
-    return values
 
+def validate_performance_task_type(data: dict) -> dict:
+    """Set performance_task_type based on items type.
 
-def validate_performance_task_type(values: dict):
-    # if items type is performance task type or contains part of the name
-    # of some performance task, then performance task type must be set
-    items = values.get("items", [])
+    If items type is performance task type or contains part of the name
+    of some performance task, then performance task type must be set.
+
+    We ran this as an "after" validator (pre=False) before migrating
+    Pydantic 1 to Pydantic 2, but it works better as a "before"
+    validator because we are updating the value of a field.
+    """
+    items = data.get("items", [])
     for item in items:
         if item.response_type == ResponseType.STABILITYTRACKER:
             value = item.dict()["config"]["user_input_type"]
             for v in PerformanceTaskType.get_values():
                 if value == v:
-                    values["performance_task_type"] = value
+                    data["performance_task_type"] = value
         elif item.response_type in (
             ResponseType.FLANKER,
             ResponseType.ABTRAILS,
             ResponseType.UNITY,
         ):
-            values["performance_task_type"] = item.response_type
-    return values
+            data["performance_task_type"] = item.response_type
+    return data
 
 
-def validate_phrasal_templates(values: dict):
-    items = values.get("items", [])
+def validate_phrasal_templates(items: list) -> None:
     for item in items:
         if item.response_type == ResponseType.PHRASAL_TEMPLATE:
             phrases = item.response_values.phrases or []
@@ -273,11 +267,8 @@ def validate_phrasal_templates(values: dict):
                         if referenced_item.response_type in [ResponseType.SLIDERROWS] and field.item_index is None:
                             raise IncorrectPhrasalTemplateItemIndexError()
 
-    return values
 
-
-def validate_request_health_record_data(values: dict):
-    items = values.get("items", [])
+def validate_request_health_record_data(items: list) -> None:
     for item in items:
         if item.response_type == ResponseType.REQUEST_HEALTH_RECORD_DATA:
             if item.response_values.opt_in_out_options is None or len(item.response_values.opt_in_out_options) != 2:
@@ -302,5 +293,3 @@ def validate_request_health_record_data(values: dict):
             )
             if opt_out_item is None:
                 raise ValueError("Request Health Record Data item must have opt-out option")
-
-    return values

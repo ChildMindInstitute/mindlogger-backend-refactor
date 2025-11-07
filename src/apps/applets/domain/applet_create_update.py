@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Self
 
 from pydantic import Field, model_validator, root_validator
 
@@ -20,15 +20,14 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
-    activities: list[ActivityCreate]
-    activity_flows: list[FlowCreate]
+    activities: list[ActivityCreate] = Field(default_factory=list)
+    activity_flows: list[FlowCreate] = Field(default_factory=list)
     extra_fields: dict = Field(default_factory=dict)
 
-    @model_validator()
-    @classmethod
-    def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
-        activities: list[ActivityCreate] = values.get("activities", [])
-        flows: list[FlowCreate] = values.get("activity_flows", [])
+    @model_validator(mode="after")
+    def validate_existing_ids_for_duplicate(self) -> Self:
+        activities: list[ActivityCreate] = self.activities
+        flows: list[FlowCreate] = self.activity_flows
 
         activity_names = set()
         activity_keys = set()
@@ -51,7 +50,7 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
             for flow_item in flow.items:
                 if flow_item.activity_key not in activity_keys:
                     raise FlowItemActivityKeyNotFoundError()
-        return values
+        return self
 
     @root_validator
     def validate_performance_task_type(cls, values):
@@ -62,11 +61,10 @@ class AppletUpdate(AppletBase, PublicModel):
     activities: list[ActivityUpdate]
     activity_flows: list[FlowUpdate]
 
-    @model_validator()
-    @classmethod
-    def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
-        activities: list[ActivityUpdate] = values.get("activities", [])
-        flows: list[FlowUpdate] = values.get("activity_flows", [])
+    @model_validator(mode="after")
+    def validate_existing_ids_for_duplicate(self) -> Self:
+        activities: list[ActivityUpdate] = self.activities
+        flows: list[FlowUpdate] = self.activity_flows
 
         activity_names = set()
         activity_keys = set()
@@ -100,7 +98,7 @@ class AppletUpdate(AppletBase, PublicModel):
 
             flow_ids.add(flow.id)
             flow_names.add(flow.name)
-        return values
+        return self
 
 
 class AppletReportConfiguration(AppletReportConfigurationBase, InternalModel):

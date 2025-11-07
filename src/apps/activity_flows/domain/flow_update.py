@@ -27,13 +27,12 @@ class ActivityFlowReportConfiguration(PublicModel):
     report_included_activity_name: str | None
     report_included_item_name: str | None
 
-    @model_validator()
-    @classmethod
-    def validate_score_required(cls, values):
-        activity_name = values.get("report_included_activity_name")
-        item_name = values.get("report_included_item_name")
+    @model_validator(mode="after")
+    def validate_score_required(self) -> Self:
+        activity_name = self.report_included_activity_name
+        item_name = self.report_included_item_name
         if activity_name and not item_name:
             raise ValueError(_('Flow "activityName" missed'))
         if not activity_name and item_name:
             raise ValueError(_('Flow "itemName" missed'))
-        return values
+        return self

@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Literal, Self
 
 from pydantic import Field, NonNegativeInt, field_validator, model_validator, root_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -195,13 +195,12 @@ class SliderValueAlert(PublicModel):
     max_value: int | None
     alert: str
 
-    @model_validator()
-    @classmethod
-    def validate_min_max_values(cls, values):
-        if values.get("min_value") is not None and values.get("max_value") is not None:
-            if values.get("min_value") >= values.get("max_value"):
+    @model_validator(mode="after")
+    def validate_min_max_values(self) -> Self:
+        if values.min_value is not None and self.max_value is not None:
+            if values.min_value >= values.max_value:
                 raise MinValueError()
-        return values
+        return self
 
 
 class SliderValuesBase(PublicModel):
