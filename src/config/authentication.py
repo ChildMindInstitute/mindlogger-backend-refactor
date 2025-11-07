@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 
 class AccessTokenSettings(BaseSettings):
-    secret_key: str = Field("", validation_alias="AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY")
+    secret_key: str
     # Set in minutes
     expiration: int = 30
 
@@ -18,7 +18,7 @@ class AccessTokenSettings(BaseSettings):
 
 
 class RefreshTokenSettings(BaseSettings):
-    secret_key: str = Field("", validation_alias="AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY")
+    secret_key: str
     # Set in minutes
     expiration: int = 540
 
