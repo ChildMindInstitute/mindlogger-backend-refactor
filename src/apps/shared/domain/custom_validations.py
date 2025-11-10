@@ -7,7 +7,8 @@ from urllib.parse import urlparse
 
 import nh3
 import requests
-from pydantic import BaseModel, HttpUrl, ValidationError as PValidationError
+from pydantic import BaseModel, HttpUrl
+from pydantic import ValidationError as PValidationError
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_extra_types.color import Color
 

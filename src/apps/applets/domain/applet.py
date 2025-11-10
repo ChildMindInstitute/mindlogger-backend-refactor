@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Generic, Self
+from typing import Generic
 
 from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, model_validator
 
