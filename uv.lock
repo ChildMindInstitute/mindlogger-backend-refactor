@@ -628,7 +628,6 @@ dev = [
     { name = "types-pytz" },
     { name = "types-pyyaml" },
     { name = "types-requests" },
-    { name = "typing-extensions" },
 ]
 
 [package.metadata]
@@ -702,7 +701,6 @@ dev = [
     { name = "types-pytz", specifier = "==2025.2.0.*" },
     { name = "types-pyyaml", specifier = "==6.0.12.20250516" },
     { name = "types-requests", specifier = "==2.32.0.*" },
-    { name = "typing-extensions", specifier = "==4.12.2" },
 ]
 
 [[package]]

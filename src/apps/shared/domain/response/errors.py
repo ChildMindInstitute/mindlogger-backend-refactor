@@ -1,9 +1,8 @@
 from enum import StrEnum
-from typing import Any, List
+from typing import Annotated, Any, List
 
 from pydantic import Field
 from starlette import status
-from typing_extensions import Annotated
 
 from apps.shared.domain.base import PublicModel
 from apps.shared.domain.types import ResponseType

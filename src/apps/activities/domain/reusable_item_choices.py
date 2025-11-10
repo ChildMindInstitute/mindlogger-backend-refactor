@@ -1,7 +1,7 @@
 import uuid
+from typing import Annotated
 
 from pydantic import BaseModel, Field
-from typing_extensions import Annotated
 
 from apps.activities.domain.constants import InputType
 from apps.shared.domain import InternalModel, PublicModel
