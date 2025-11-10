@@ -197,8 +197,8 @@ class SliderValueAlert(PublicModel):
 
     @model_validator(mode="after")
     def validate_min_max_values(self) -> Self:
-        if values.min_value is not None and self.max_value is not None:
-            if values.min_value >= values.max_value:
+        if self.min_value is not None and self.max_value is not None:
+            if self.min_value >= self.max_value:
                 raise MinValueError()
         return self
 
@@ -237,7 +237,7 @@ class SliderValuesBase(PublicModel):
     @model_validator(mode="after")
     def validate_scores(self) -> Self:
         # length of scores must be equal to max_value - min_value + 1
-        scores = values.get("scores", [])
+        scores = self.scores
         if scores:
             if len(scores) != self.max_value - self.min_value + 1:
                 raise InvalidScoreLengthError()

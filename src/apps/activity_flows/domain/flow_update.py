@@ -1,5 +1,6 @@
 import uuid
 from gettext import gettext as _
+from typing import Self
 
 from pydantic import model_validator
 

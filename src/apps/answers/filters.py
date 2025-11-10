@@ -41,8 +41,8 @@ class AppletSubmitDateFilter(BaseQueryParams):
 
     @model_validator(mode="after")
     def check_both_fields_not_none(self) -> Self:
-        respondent_id = values.respondent_id
-        target_subject_id = values.target_subject_id
+        respondent_id = self.respondent_id
+        target_subject_id = self.target_subject_id
         if respondent_id is None and target_subject_id is None:
             raise ValueError("At least one of fields be provided")
         return self

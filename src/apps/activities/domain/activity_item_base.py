@@ -1,3 +1,5 @@
+from typing import Self
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
 
@@ -118,8 +120,7 @@ class BaseActivityItem(BaseModel):
         return value
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_score_required(self):
+    def validate_score_required(self) -> Self:
         # validate score fields of response values for each response type
 
         response_type = self.response_type
@@ -158,20 +159,18 @@ class BaseActivityItem(BaseModel):
                 if response_values.data_matrix is None:
                     raise DataMatrixRequiredError()
 
-        return values
+        return self
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_is_hidden(cls, values):
+    def validate_is_hidden(self) -> Self:
         # cannot hide if conditional logic is set
         value = self.is_hidden
         if value and self.conditional_logic:
             raise HiddenWhenConditionalLogicSetError()
-        return values
+        return self
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_slider_value_alert(cls, values):
+    def validate_slider_value_alert(self) -> Self:
         # validate slider value alert
         response_type = self.response_type
         config = self.config
@@ -198,11 +197,10 @@ class BaseActivityItem(BaseModel):
                         if alert.value is not None and not config.set_alerts:
                             raise AlertFlagMissingSliderItemError()
 
-        return values
+        return self
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_single_multi_alert(cls, values):
+    def validate_single_multi_alert(self) -> Self:
         # validate single/multi selection type alerts
         response_type = self.response_type
         config = self.config
@@ -224,4 +222,4 @@ class BaseActivityItem(BaseModel):
                     for option in data.options:
                         if option.alert is not None and not config.set_alerts:
                             raise AlertFlagMissingSingleMultiRowItemError()
-        return values
+        return self

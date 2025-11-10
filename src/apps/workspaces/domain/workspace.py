@@ -381,7 +381,7 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
 
     @model_validator(mode="after")
     def validate_storage_settings(self) -> Self:
-        storage_type = values["storage_type"]
+        storage_type = self.storage_type
         required = []
         if storage_type == StorageType.AWS:
             required = ["storage_access_key", "storage_region", "storage_bucket"]
