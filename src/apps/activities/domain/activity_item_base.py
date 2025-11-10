@@ -117,14 +117,14 @@ class BaseActivityItem(BaseModel):
             value = sanitize_string(value)
         return value
 
-    @model_validator(skip_on_failure=True)
+    @model_validator(mode="after")
     @classmethod
-    def validate_score_required(cls, values):
+    def validate_score_required(self):
         # validate score fields of response values for each response type
 
-        response_type = values.get("response_type")
-        response_values = values.get("response_values")
-        config = values.get("config")
+        response_type = self.response_type
+        response_values = self.response_values
+        config = self.config
 
         if response_type in [
             ResponseType.SINGLESELECT,
@@ -160,22 +160,22 @@ class BaseActivityItem(BaseModel):
 
         return values
 
-    @model_validator(skip_on_failure=True)
+    @model_validator(mode="after")
     @classmethod
     def validate_is_hidden(cls, values):
         # cannot hide if conditional logic is set
-        value = values.get("is_hidden")
-        if value and values.get("conditional_logic"):
+        value = self.is_hidden
+        if value and self.conditional_logic:
             raise HiddenWhenConditionalLogicSetError()
         return values
 
-    @model_validator(skip_on_failure=True)
+    @model_validator(mode="after")
     @classmethod
     def validate_slider_value_alert(cls, values):
         # validate slider value alert
-        response_type = values.get("response_type")
-        config = values.get("config")
-        response_values = values.get("response_values")
+        response_type = self.response_type
+        config = self.config
+        response_values = self.response_values
         if response_type == ResponseType.SLIDER:
             if response_values.alerts is not None:
                 if not config.set_alerts:
@@ -200,13 +200,13 @@ class BaseActivityItem(BaseModel):
 
         return values
 
-    @model_validator(skip_on_failure=True)
+    @model_validator(mode="after")
     @classmethod
     def validate_single_multi_alert(cls, values):
         # validate single/multi selection type alerts
-        response_type = values.get("response_type")
-        config = values.get("config")
-        response_values = values.get("response_values")
+        response_type = self.response_type
+        config = self.config
+        response_values = self.response_values
         if response_type in [
             ResponseType.SINGLESELECT,
             ResponseType.MULTISELECT,
