@@ -57,9 +57,7 @@ class EventUpdateRequest(BaseEvent, InternalModel):
     @model_validator(mode="after")
     def validate_optional_fields(self) -> Self:  # noqa: C901
         # if periodicity is Always, one_time_completion must be set.
-        if self.periodicity.type == PeriodicityType.ALWAYS and not isinstance(
-            self.one_time_completion, bool
-        ):
+        if self.periodicity.type == PeriodicityType.ALWAYS and not isinstance(self.one_time_completion, bool):
             raise OneTimeCompletionCaseError()
 
         start_time = self.start_time

@@ -47,11 +47,15 @@ class EventCreate(BaseEvent, InternalModel):
 
     @model_validator(mode="after")
     def validate_periodicity(self) -> Self:
-        if self.periodicity in [
-            PeriodicityType.ONCE,
-            PeriodicityType.WEEKLY,
-            PeriodicityType.MONTHLY,
-        ] and not self.selected_date:
+        if (
+            self.periodicity
+            in [
+                PeriodicityType.ONCE,
+                PeriodicityType.WEEKLY,
+                PeriodicityType.MONTHLY,
+            ]
+            and not self.selected_date
+        ):
             raise SelectedDateRequiredError()
         return self
 

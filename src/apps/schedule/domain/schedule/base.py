@@ -25,11 +25,15 @@ class BasePeriodicity(BaseModel):
 
     @model_validator(mode="after")
     def validate_periodicity(self) -> Self:
-        if self.type in [
-            PeriodicityType.ONCE,
-            PeriodicityType.WEEKLY,
-            PeriodicityType.MONTHLY,
-        ] and not self.selected_date:
+        if (
+            self.type
+            in [
+                PeriodicityType.ONCE,
+                PeriodicityType.WEEKLY,
+                PeriodicityType.MONTHLY,
+            ]
+            and not self.selected_date
+        ):
             raise SelectedDateRequiredError()
         return self
 

@@ -31,7 +31,6 @@ from apps.activities.errors import (
 
 
 def validate_item_flow(items: list) -> None:
-
     item_names = [item.name for item in items]
     # conditional logic for item flow
     for index in range(len(items)):
@@ -87,7 +86,9 @@ def validate_subscale_setting_match_reports(report: Score, subscale_setting: Sub
             raise SubscaleItemTypeItemDoesNotExist()
 
 
-def validate_score_and_sections(items: list, scores_and_reports: ScoresAndReports | None, subscale_setting: SubscaleSetting | None) -> None:  # noqa: C901
+def validate_score_and_sections(
+    items: list, scores_and_reports: ScoresAndReports | None, subscale_setting: SubscaleSetting | None
+) -> None:  # noqa: C901
     item_names = [item.name for item in items]
     if scores_and_reports:
         score_item_ids = []
