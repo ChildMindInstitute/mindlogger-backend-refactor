@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import field_validator, validator
+from pydantic import field_validator
 
 from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import datetime_from_ms
@@ -77,4 +77,4 @@ class ItemAnswerCreate(InternalModel):
     def convert_item_ids(cls, value: list[uuid.UUID]):
         return list(map(str, value))
 
-    _dates_from_ms = validator("start_time", "end_time", "scheduled_time", pre=True, allow_reuse=True)(datetime_from_ms)
+    _dates_from_ms = field_validator("start_time", "end_time", "scheduled_time", mode="before")(datetime_from_ms)

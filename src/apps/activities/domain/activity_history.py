@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_full import ActivityItemHistoryFull, PublicActivityFull, PublicActivityItemFull
@@ -62,10 +62,10 @@ class ActivityHistoryFull(ActivityHistory):
 
 class ActivityHistoryExport(PublicActivityFull):
     id_version: str
-    version: str | None = None
+    version: str | None = Field(default=None, validate_default=True)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
 
-    _version = validator("version", always=True, allow_reuse=True)(extract_history_version)
+    _version = field_validator("version")(extract_history_version)
 
     def translate(self, i18n: I18N) -> "ActivityHistoryTranslatedExport":
         as_dict = self.dict(by_alias=False)

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import ConfigDict, EmailStr, Field, model_validator, validator
+from pydantic import ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
@@ -407,7 +407,7 @@ class ShellAccountCreateRequest(PublicModel):
     email: str | None
     tag: str | None
 
-    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
+    _email_lower = field_validator("email", mode="before")(lowercase)
 
 
 class ShellAccountInvitation(PublicModel):
@@ -415,4 +415,4 @@ class ShellAccountInvitation(PublicModel):
     subject_id: uuid.UUID = Field(description="This field represents the subject id")
     language: InvitationLanguage | None = Field(description="This field represents the language of invitation")
 
-    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
+    _email_lower = field_validator("email", mode="before")(lowercase)

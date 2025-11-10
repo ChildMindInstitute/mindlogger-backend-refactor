@@ -3,7 +3,7 @@ import uuid
 from typing import Self
 
 from fastapi import Query
-from pydantic import Field, model_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import array_from_string
@@ -29,7 +29,7 @@ class AppletSubmissionsFilter(BaseQueryParams):
     empty_identifiers: bool = True
     target_subject_id: uuid.UUID | None
 
-    _parse_array = validator("versions", "identifiers", allow_reuse=True)(array_from_string(True))
+    _parse_array = field_validator("versions", "identifiers")(array_from_string(True))
 
 
 class AppletSubmitDateFilter(BaseQueryParams):

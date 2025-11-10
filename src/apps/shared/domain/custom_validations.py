@@ -9,6 +9,7 @@ import nh3
 import requests
 from pydantic import BaseModel, HttpUrl
 from pydantic.error_wrappers import ValidationError as PValidationError
+from pydantic_core.core_schema import ValidationInfo
 from pydantic_extra_types.color import Color
 
 __all__ = [
@@ -97,11 +98,11 @@ def validate_audio(value: str) -> str:
     raise InvalidAudioError()
 
 
-def extract_history_version(value, values):
+def extract_history_version(value: str | None, info: ValidationInfo) -> str | None:
     """
     Requires id_version in values. Format: <uuid4>_<version_str>
     """
-    if val := values.get("id_version"):
+    if val := info.data.get("id_version"):
         return val[37:]
 
     return value
