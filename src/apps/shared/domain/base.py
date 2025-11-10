@@ -4,7 +4,7 @@ import re
 from typing import TypeVar
 
 from pydantic import BaseModel as PBaseModel
-from pydantic import ConfigDict, Extra, field_validator
+from pydantic import ConfigDict, Extra, model_validator
 
 __all__ = [
     "InternalModel",
@@ -83,12 +83,10 @@ class BaseModel(PBaseModel):
     def field_alias(cls, field_name: str):
         return cls.__fields__[field_name].alias
 
-    @field_validator("*", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def remove_timezone(cls, v):
-        if isinstance(v, datetime.datetime):
-            return v.replace(tzinfo=None)
-        return v
+    def remove_timezone(cls, data: dict) -> dict:
+        return {k: v.replace(tzinfo=None) if isinstance(v, datetime.datetime) else v for k, v in data.items()}
 
 
 class InternalModel(BaseModel):
