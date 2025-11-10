@@ -64,55 +64,55 @@ class PhrasalTemplateDisplayMode(StrEnum):
 
 
 class TextValues(PublicModel):
-    type: Literal[ResponseType.TEXT] | None
+    type: Literal[ResponseType.TEXT]
 
 
 class ParagraphTextValues(PublicModel):
-    type: Literal[ResponseType.PARAGRAPHTEXT] | None
+    type: Literal[ResponseType.PARAGRAPHTEXT]
 
 
 class MessageValues(PublicModel):
-    type: Literal[ResponseType.MESSAGE] | None
+    type: Literal[ResponseType.MESSAGE]
 
 
 class TimeRangeValues(PublicModel):
-    type: Literal[ResponseType.TIMERANGE] | None
+    type: Literal[ResponseType.TIMERANGE]
 
 
 class TimeValues(PublicModel):
-    type: Literal[ResponseType.TIME] | None
+    type: Literal[ResponseType.TIME]
 
 
 class GeolocationValues(PublicModel):
-    type: Literal[ResponseType.GEOLOCATION] | None
+    type: Literal[ResponseType.GEOLOCATION]
 
 
 class PhotoValues(PublicModel):
-    type: Literal[ResponseType.PHOTO] | None
+    type: Literal[ResponseType.PHOTO]
 
 
 class VideoValues(PublicModel):
-    type: Literal[ResponseType.VIDEO] | None
+    type: Literal[ResponseType.VIDEO]
 
 
 class DateValues(PublicModel):
-    type: Literal[ResponseType.DATE] | None
+    type: Literal[ResponseType.DATE]
 
 
 class FlankerValues(PublicModel):
-    type: Literal[ResponseType.FLANKER] | None
+    type: Literal[ResponseType.FLANKER]
 
 
 class StabilityTrackerValues(PublicModel):
-    type: Literal[ResponseType.STABILITYTRACKER] | None
+    type: Literal[ResponseType.STABILITYTRACKER]
 
 
 class ABTrailsValues(PublicModel):
-    type: Literal[ResponseType.ABTRAILS] | None
+    type: Literal[ResponseType.ABTRAILS]
 
 
 class UnityValues(PublicModel):
-    type: Literal[ResponseType.UNITY] | None
+    type: Literal[ResponseType.UNITY]
 
 
 class _SingleSelectionValue(PublicModel):
@@ -156,7 +156,7 @@ class _SingleSelectionValue(PublicModel):
 
 
 class SingleSelectionValues(PublicModel):
-    type: Literal[ResponseType.SINGLESELECT] | None
+    type: Literal[ResponseType.SINGLESELECT]
     palette_name: str | None
     options: list[_SingleSelectionValue]
 
@@ -171,7 +171,7 @@ class _MultiSelectionValue(_SingleSelectionValue):
 
 
 class MultiSelectionValues(PublicModel):
-    type: Literal[ResponseType.MULTISELECT] | None
+    type: Literal[ResponseType.MULTISELECT]
     palette_name: str | None
     options: list[_MultiSelectionValue]
 
@@ -245,11 +245,11 @@ class SliderValuesBase(PublicModel):
 
 
 class SliderValues(SliderValuesBase):
-    type: Literal[ResponseType.SLIDER] | None
+    type: Literal[ResponseType.SLIDER]
 
 
 class NumberSelectionValues(PublicModel):
-    type: Literal[ResponseType.NUMBERSELECT] | None
+    type: Literal[ResponseType.NUMBERSELECT]
     min_value: NonNegativeInt = Field(default=0)
     max_value: NonNegativeInt = Field(default=100)
 
@@ -265,7 +265,7 @@ class DrawingProportion(PublicModel):
 
 
 class DrawingValues(PublicModel):
-    type: Literal[ResponseType.DRAWING] | None
+    type: Literal[ResponseType.DRAWING]
     drawing_example: str | None
     drawing_background: str | None
     proportion: DrawingProportion | None = None
@@ -289,7 +289,7 @@ class SliderRowsValue(SliderValuesBase, PublicModel):
 
 
 class SliderRowsValues(PublicModel):
-    type: Literal[ResponseType.SLIDERROWS] | None
+    type: Literal[ResponseType.SLIDERROWS]
     rows: list[SliderRowsValue]
 
 
@@ -349,7 +349,7 @@ class _SingleSelectionDataRow(PublicModel):
 
 
 class SingleSelectionRowsValues(PublicModel):
-    type: Literal[ResponseType.SINGLESELECTROWS] | None
+    type: Literal[ResponseType.SINGLESELECTROWS]
     rows: list[_SingleSelectionRow]
     options: list[_SingleSelectionOption]
     data_matrix: list[_SingleSelectionDataRow] | None = None
@@ -367,16 +367,16 @@ class SingleSelectionRowsValues(PublicModel):
 
 
 class MultiSelectionRowsValues(SingleSelectionRowsValues, PublicModel):
-    type: Literal[ResponseType.MULTISELECTROWS] | None  # type: ignore[assignment]
+    type: Literal[ResponseType.MULTISELECTROWS]  # type: ignore[assignment]
 
 
 class AudioValues(PublicModel):
-    type: Literal[ResponseType.AUDIO] | None
+    type: Literal[ResponseType.AUDIO]
     max_duration: NonNegativeInt = 300
 
 
 class AudioPlayerValues(PublicModel):
-    type: Literal[ResponseType.AUDIOPLAYER] | None
+    type: Literal[ResponseType.AUDIOPLAYER]
     file: str | None = Field(default=None)
 
 
@@ -407,7 +407,7 @@ class PhrasalTemplatePhrase(PublicModel):
 
 
 class PhrasalTemplateValues(PublicModel):
-    type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
+    type: Literal[ResponseType.PHRASAL_TEMPLATE]
     card_title: str
     phrases: list[PhrasalTemplatePhrase]
 
@@ -418,7 +418,7 @@ class RequestHealthRecordDataOption(PublicModel):
 
 
 class RequestHealthRecordDataValues(PublicModel):
-    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
+    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA]
     opt_in_out_options: list[RequestHealthRecordDataOption]
 
 

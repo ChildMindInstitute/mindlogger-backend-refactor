@@ -122,7 +122,7 @@ class _ScreenConfig(PublicModel):
 
 
 class TextConfig(_ScreenConfig):
-    type: Literal[ResponseType.TEXT] | None
+    type: Literal[ResponseType.TEXT]
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
     correct_answer: str | None = Field(
@@ -145,7 +145,7 @@ class TextConfig(_ScreenConfig):
 
 
 class ParagraphTextConfig(_ScreenConfig):
-    type: Literal[ResponseType.PARAGRAPHTEXT] | None
+    type: Literal[ResponseType.PARAGRAPHTEXT]
     max_response_length: PositiveInt = 1000
     response_required: bool
 
@@ -163,23 +163,23 @@ class _SelectionConfig(_ScreenConfig):
 
 
 class SingleSelectionConfig(_SelectionConfig, PublicModel):
-    type: Literal[ResponseType.SINGLESELECT] | None
+    type: Literal[ResponseType.SINGLESELECT]
     auto_advance: bool = False
     response_data_identifier: bool = False
 
 
 class MultiSelectionConfig(_SelectionConfig, PublicModel):
-    type: Literal[ResponseType.MULTISELECT] | None
+    type: Literal[ResponseType.MULTISELECT]
 
 
 class MessageConfig(PublicModel):
-    type: Literal[ResponseType.MESSAGE] | None
+    type: Literal[ResponseType.MESSAGE]
     remove_back_button: bool
     timer: NonNegativeInt | None
 
 
 class SliderConfig(_ScreenConfig):
-    type: Literal[ResponseType.SLIDER] | None
+    type: Literal[ResponseType.SLIDER]
     add_scores: bool
     set_alerts: bool
     additional_response_option: AdditionalResponseOption
@@ -190,7 +190,7 @@ class SliderConfig(_ScreenConfig):
 
 
 class NumberSelectionConfig(_ScreenConfig):
-    type: Literal[ResponseType.NUMBERSELECT] | None
+    type: Literal[ResponseType.NUMBERSELECT]
     additional_response_option: AdditionalResponseOption
 
 
@@ -200,19 +200,19 @@ class DefaultConfig(_ScreenConfig):
 
 
 class TimeRangeConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.TIMERANGE] | None
+    type: Literal[ResponseType.TIMERANGE]
 
 
 class TimeConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.TIME] | None
+    type: Literal[ResponseType.TIME]
 
 
 class GeolocationConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.GEOLOCATION] | None
+    type: Literal[ResponseType.GEOLOCATION]
 
 
 class DrawingConfig(_ScreenConfig):
-    type: Literal[ResponseType.DRAWING] | None
+    type: Literal[ResponseType.DRAWING]
     additional_response_option: AdditionalResponseOption
     timer: NonNegativeInt | None
     remove_undo_button: bool = False
@@ -220,26 +220,26 @@ class DrawingConfig(_ScreenConfig):
 
 
 class PhotoConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.PHOTO] | None
+    type: Literal[ResponseType.PHOTO]
 
 
 class VideoConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.VIDEO] | None
+    type: Literal[ResponseType.VIDEO]
 
 
 class DateConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.DATE] | None
+    type: Literal[ResponseType.DATE]
 
 
 class SliderRowsConfig(_ScreenConfig):
-    type: Literal[ResponseType.SLIDERROWS] | None
+    type: Literal[ResponseType.SLIDERROWS]
     add_scores: bool
     set_alerts: bool
     timer: NonNegativeInt | None
 
 
 class SingleSelectionRowsConfig(_ScreenConfig):
-    type: Literal[ResponseType.SINGLESELECTROWS] | None
+    type: Literal[ResponseType.SINGLESELECTROWS]
     timer: NonNegativeInt | None
     add_scores: bool
     set_alerts: bool
@@ -248,31 +248,31 @@ class SingleSelectionRowsConfig(_ScreenConfig):
 
 
 class MultiSelectionRowsConfig(SingleSelectionRowsConfig, PublicModel):
-    type: Literal[ResponseType.MULTISELECTROWS] | None  # type: ignore[assignment]
+    type: Literal[ResponseType.MULTISELECTROWS]  # type: ignore[assignment]
 
 
 class AudioConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.AUDIO] | None
+    type: Literal[ResponseType.AUDIO]
 
 
 class AudioPlayerConfig(_ScreenConfig):
-    type: Literal[ResponseType.AUDIOPLAYER] | None
+    type: Literal[ResponseType.AUDIOPLAYER]
     additional_response_option: AdditionalResponseOption
     play_once: bool
 
 
 class PhrasalTemplateConfig(PublicModel):
-    type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
+    type: Literal[ResponseType.PHRASAL_TEMPLATE]
     remove_back_button: bool
 
 
 class RequestHealthRecordDataConfig(_ScreenConfig):
-    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
+    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA]
     skippable_item: bool = False
 
 
 class UnityConfig(PublicModel):
-    type: Literal[ResponseType.UNITY] | None
+    type: Literal[ResponseType.UNITY]
     device_type: str | None
     file: str | None
 
@@ -288,7 +288,7 @@ class Phase(StrEnum):
 
 
 class StabilityTrackerConfig(PublicModel):
-    type: Literal[ResponseType.STABILITYTRACKER] | None
+    type: Literal[ResponseType.STABILITYTRACKER]
     user_input_type: InputType | None
     phase: Phase
     trials_number: int = 0
@@ -351,7 +351,7 @@ class FixationScreen(PublicModel):
 
 
 class FlankerConfig(PublicModel):
-    type: Literal[ResponseType.FLANKER] | None
+    type: Literal[ResponseType.FLANKER]
     stimulus_trials: list[StimulusConfiguration]
     blocks: list[BlockConfiguration]
     buttons: list[ButtonConfiguration]
@@ -384,7 +384,7 @@ class ABTrailsDeviceType(StrEnum):
 
 
 class ABTrailsConfig(PublicModel):
-    type: Literal[ResponseType.ABTRAILS] | None
+    type: Literal[ResponseType.ABTRAILS]
     device_type: ABTrailsDeviceType | None
     order_name: ABTrailsOrder
     tutorials: ABTrailsTutorial | None = None
