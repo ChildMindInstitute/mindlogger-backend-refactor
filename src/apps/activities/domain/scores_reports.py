@@ -41,7 +41,7 @@ class ScoreConditionalLogic(PublicModel):
     id: str
     flag_score: bool = False
     message: str | None = None
-    items_print: list[str] | None = Field(default_factory=list)
+    items_print: list[str] = Field(default_factory=list)
     match: Match = Field(default=Match.ALL)
     conditions: list[ScoreCondition]
 
@@ -63,9 +63,9 @@ class Score(PublicModel):
     name: str
     id: str
     calculation_type: CalculationType
-    items_score: list[str] | None = Field(default_factory=list)
+    items_score: list[str] = Field(default_factory=list)
     message: str | None = None
-    items_print: list[str] | None = Field(default_factory=list)
+    items_print: list[str] = Field(default_factory=list)
     conditional_logic: list[ScoreConditionalLogic] | None = None
     scoring_type: ScoringType | None = None
     subscale_name: str | None = None
@@ -110,7 +110,7 @@ class Section(PublicModel):
     type: Literal[ReportType.section] = ReportType.section
     name: str
     message: str | None = None
-    items_print: list[str] | None = Field(default_factory=list)
+    items_print: list[str] = Field(default_factory=list)
     conditional_logic: SectionConditionalLogic | None = None
 
     @field_validator("message")
@@ -124,7 +124,7 @@ class Section(PublicModel):
 class ScoresAndReports(PublicModel):
     generate_report: bool = False
     show_score_summary: bool = False
-    reports: list[Score | Section] | None = Field(default_factory=list)
+    reports: list[Score | Section] = Field(default_factory=list)
 
     @field_validator("reports")
     @classmethod
@@ -221,7 +221,7 @@ class SubscaleItem(PublicModel):
 class Subscale(PublicModel):
     name: str
     scoring: SubscaleCalculationType
-    items: list[SubscaleItem] | None = Field(default_factory=list)
+    items: list[SubscaleItem] = Field(default_factory=list)
     subscale_table_data: list[SubScaleLookupTable] | None = None
 
 
@@ -237,7 +237,7 @@ class TotalScoreTable(PublicModel):
 
 class SubscaleSetting(PublicModel):
     calculate_total_score: SubscaleCalculationType | None = None
-    subscales: list[Subscale] | None = Field(default_factory=list)
+    subscales: list[Subscale] = Field(default_factory=list)
     total_scores_table_data: list[TotalScoreTable] | None = Field(default_factory=list)
 
     @field_validator("subscales")

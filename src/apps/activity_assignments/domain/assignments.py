@@ -26,7 +26,8 @@ class ActivityAssignmentCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_assignments(self) -> Self:
-        return _validate_assignments(self.activity_id, self.activity_flow_id)
+        _validate_assignments(self.activity_id, self.activity_flow_id)
+        return self
 
 
 class ActivitiesAssignmentsCreate(InternalModel):
@@ -72,7 +73,8 @@ class ActivityAssignmentDelete(BaseModel):
 
     @model_validator(mode="after")
     def validate_assignments(self) -> Self:
-        return _validate_assignments(self.activity_id, self.activity_flow_id)
+        _validate_assignments(self.activity_id, self.activity_flow_id)
+        return self
 
 
 class ActivitiesAssignmentsDelete(InternalModel):

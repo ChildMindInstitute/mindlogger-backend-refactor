@@ -160,8 +160,8 @@ class WorkspaceManager(InternalModel):
     @field_validator("title")
     @classmethod
     def get_title(cls, value, info: ValidationInfo):
-        if len(info.data.get("titles")) > 0:
-            value = next(iter([v for v in info.data.get("titles") if v is not None]))
+        if titles := info.data.get("titles"):
+            value = next(iter([v for v in titles if v]))
 
         return value
 

@@ -206,8 +206,8 @@ class SliderValueAlert(PublicModel):
 class SliderValuesBase(PublicModel):
     min_label: str | None = Field(..., max_length=100)
     max_label: str | None = Field(..., max_length=100)
-    min_value: NonNegativeInt = Field(default=0, max_value=11)
-    max_value: NonNegativeInt = Field(default=12, max_value=12)
+    min_value: NonNegativeInt = Field(default=0, le=11)
+    max_value: NonNegativeInt = Field(default=12, le=12)
     min_image: str | None = None
     max_image: str | None = None
     scores: list[float] | None = None

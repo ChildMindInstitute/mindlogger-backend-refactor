@@ -155,11 +155,11 @@ class AppletActivitiesDetailsPublic(PublicModel):
 
 
 class ActivityLanguageWithItemsMobileDetailPublicType(ActivityLanguageWithItemsMobileDetailPublic):
-    type = "activity"
+    type: str = "activity"
 
 
 class PublicFlowFullType(PublicFlowFull):
-    type = "activityFlow"
+    type: str = "activityFlow"
 
 
 class AppletActivitiesAndFlowsDetailsPublic(PublicModel):
