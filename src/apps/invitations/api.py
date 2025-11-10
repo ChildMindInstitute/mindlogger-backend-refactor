@@ -4,8 +4,6 @@ from contextlib import asynccontextmanager
 from copy import deepcopy
 
 from fastapi import Body, Depends
-from fastapi.exceptions import RequestValidationError
-from pydantic.error_wrappers import ErrorWrapper
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
 from apps.answers.service import AnswerService
@@ -117,10 +115,8 @@ async def invitation_respondent_send(
                 SubjectCreate(creator_id=user.id, applet_id=applet_id, **invitation_schema.dict(by_alias=False))
             )
         except SecretIDUniqueViolationError:
-            wrapper = ErrorWrapper(
-                ValueError(NonUniqueValue()), ("body", InvitationRespondentRequest.field_alias("secret_user_id"))
-            )
-            raise RequestValidationError([wrapper])
+            raise NonUniqueValue(loc=("body", InvitationRespondentRequest.field_alias("secret_user_id")))
+
         invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
 
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))

@@ -3,8 +3,6 @@ from datetime import datetime, timedelta
 from typing import TypedDict
 
 from fastapi import Body, Depends
-from fastapi.exceptions import RequestValidationError
-from pydantic.error_wrappers import ErrorWrapper
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activity_assignments.service import ActivityAssignmentService
@@ -56,10 +54,7 @@ async def create_subject(
         try:
             subject = await service.create(SubjectCreate(creator_id=user.id, **schema.dict(by_alias=False)))
         except SecretIDUniqueViolationError:
-            wrapper = ErrorWrapper(
-                ValueError(NonUniqueValue()), ("body", SubjectCreateRequest.field_alias("secret_user_id"))
-            )
-            raise RequestValidationError([wrapper])
+            raise NonUniqueValue(loc=("body", SubjectCreateRequest.field_alias("secret_user_id")))
 
         return Response(result=subject)
 
