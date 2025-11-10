@@ -5,7 +5,7 @@ from itertools import groupby
 from typing import cast
 
 import typer
-from pydantic import EmailStr, NonNegativeInt
+from pydantic import NonNegativeInt
 from sqlalchemy import update
 from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.exc import IntegrityError
@@ -366,7 +366,7 @@ async def create_schema_user(session: AsyncSession, user_config: UserConfig) -> 
     user_service = UserService(session)
     schema_user = await user_service.create_user(
         UserCreate(
-            email=EmailStr(user_config.email),
+            email=user_config.email,
             first_name=user_config.first_name,
             last_name=user_config.last_name,
             password=user_config.password,
@@ -442,7 +442,7 @@ async def create_subjects(
             created_subject = await subject_service.create(
                 SubjectCreate(
                     applet_id=applet.id,
-                    email=EmailStr(subject_user.email_encrypted) if subject_user else None,
+                    email=subject_user.email_encrypted if subject_user else None,
                     creator_id=applet_owner.id,
                     user_id=subject_user.id if subject_user else None,
                     language="en",
@@ -478,7 +478,7 @@ async def create_subjects(
             ) = await invitation_service.send_respondent_invitation(
                 applet_id=applet.id,
                 schema=InvitationRespondentRequest(
-                    email=EmailStr(subject_user.email_encrypted),
+                    email=subject_user.email_encrypted,
                     language=InvitationLanguage.EN,
                     first_name=subject_user.first_name,
                     last_name=subject_user.last_name,
@@ -493,7 +493,7 @@ async def create_subjects(
             invitation = await invitation_service.send_reviewer_invitation(
                 applet_id=applet.id,
                 schema=InvitationReviewerRequest(
-                    email=EmailStr(subject_user.email_encrypted),
+                    email=subject_user.email_encrypted,
                     language=InvitationLanguage.EN,
                     first_name=subject_user.first_name,
                     last_name=subject_user.last_name,
@@ -509,7 +509,7 @@ async def create_subjects(
             invitation = await invitation_service.send_managers_invitation(
                 applet_id=applet.id,
                 schema=InvitationManagersRequest(
-                    email=EmailStr(subject_user.email_encrypted),
+                    email=subject_user.email_encrypted,
                     language=InvitationLanguage.EN,
                     first_name=subject_user.first_name,
                     last_name=subject_user.last_name,

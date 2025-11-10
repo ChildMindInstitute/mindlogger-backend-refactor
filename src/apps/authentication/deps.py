@@ -4,7 +4,7 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.websockets import WebSocket
-from pydantic import EmailStr, ValidationError
+from pydantic import ValidationError
 from starlette.requests import Request
 
 from apps.authentication.domain.login import UserLoginRequest
@@ -114,7 +114,7 @@ async def openapi_auth(
     session=Depends(get_session),
 ) -> dict[str, str]:
     async with atomic(session):
-        user_login_schema = UserLoginRequest(email=EmailStr(form_data.username), password=form_data.password)
+        user_login_schema = UserLoginRequest(email=form_data.username, password=form_data.password)
         user: User = await AuthenticationService(session).authenticate_user(user_login_schema)
         access_token = AuthenticationService.create_access_token({JWTClaim.sub: str(user.id)})
 

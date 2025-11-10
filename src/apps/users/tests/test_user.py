@@ -1,7 +1,6 @@
 from typing import cast
 
 import pytest
-from pydantic import EmailError, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -18,7 +17,7 @@ from apps.users.tests.factories import UserUpdateRequestFactory
 @pytest.fixture
 def request_data() -> UserCreateRequest:
     return UserCreateRequest(
-        email=EmailStr("tom2@mindlogger.com"),
+        email="tom2@mindlogger.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test1234!",
@@ -92,7 +91,7 @@ class TestUser:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         result = response.json()["result"]
         assert len(result) == 1
-        assert result[0]["message"] == EmailError.msg_template
+        assert result[0]["message"] == "foo"
 
     async def test_user_create_device(self, client: TestClient, device_create_data: UserDeviceCreate, user: User):
         client.login(user)

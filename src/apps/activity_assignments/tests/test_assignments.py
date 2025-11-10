@@ -3,7 +3,6 @@ import re
 import uuid
 
 import pytest
-from pydantic import EmailStr
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,7 +32,7 @@ from apps.users import User
 @pytest.fixture
 def invitation_respondent_data(bill_bronson: User) -> InvitationRespondentRequest:
     return InvitationRespondentRequest(
-        email=EmailStr(bill_bronson.email_encrypted),
+        email=bill_bronson.email_encrypted,
         first_name=bill_bronson.first_name,
         last_name=bill_bronson.last_name,
         language=InvitationLanguage.EN,

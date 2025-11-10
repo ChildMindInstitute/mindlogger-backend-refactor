@@ -93,7 +93,7 @@ async def applet_one_lucy_roles(
 @pytest.fixture
 def user_create_data() -> UserCreateRequest:
     return UserCreateRequest(
-        email=EmailStr("tom2@mindlogger.com"),
+        email="tom2@mindlogger.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test1234!",
@@ -335,7 +335,7 @@ class TestInvite(BaseTest):
             url = self.invite_respondent_url
         else:
             raise Exception(f"Invalid invitee_type: {invitee_type}")
-        payload.email = EmailStr(f"new{invitation_manager_data.email}")
+        payload.email = f"new{invitation_manager_data.email}"
         payload.language = InvitationLanguage(invite_language)
 
         response = await client.post(
@@ -403,7 +403,7 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
 
-        invitation_respondent_data.email = EmailStr("patric1@gmail.com")
+        invitation_respondent_data.email = "patric1@gmail.com"
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data,
@@ -508,7 +508,7 @@ class TestInvite(BaseTest):
         mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_respondent_data.email = EmailStr(lucy.email_encrypted)
+        invitation_respondent_data.email = lucy.email_encrypted
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one_lucy_respondent.id)),
             invitation_respondent_data,
@@ -529,7 +529,7 @@ class TestInvite(BaseTest):
         mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_editor_data.email = EmailStr(lucy.email_encrypted)
+        invitation_editor_data.email = lucy.email_encrypted
         response = await client.post(
             self.invite_manager_url.format(applet_id=applet_one_lucy_manager.id),
             invitation_editor_data,
@@ -561,7 +561,7 @@ class TestInvite(BaseTest):
     ) -> None:
         client.login(tom)
         new_email = f"new{invitation_manager_data.email}"
-        invitation_manager_data.email = EmailStr(new_email)
+        invitation_manager_data.email = new_email
         # Send an invite
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
@@ -571,7 +571,7 @@ class TestInvite(BaseTest):
         assert not response.json()["result"]["userId"]
 
         invitation_key = response.json()["result"]["key"]
-        user_create_data.email = EmailStr(new_email)
+        user_create_data.email = new_email
         # An invited user creates an account
         resp = await client.post("/users", data=user_create_data.dict())
         assert resp.status_code == http.HTTPStatus.CREATED
@@ -597,7 +597,7 @@ class TestInvite(BaseTest):
     ) -> None:
         client.login(tom)
         new_email = f"new{invitation_manager_data.email}"
-        invitation_manager_data.email = EmailStr(new_email)
+        invitation_manager_data.email = new_email
         # Send an invite
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
@@ -961,7 +961,7 @@ class TestInvite(BaseTest):
         user_id = tom.id
         # Create invitation to Mike
         client.login(tom)
-        invitation_respondent_data.email = EmailStr(user_email)
+        invitation_respondent_data.email = user_email
         subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=applet_id),

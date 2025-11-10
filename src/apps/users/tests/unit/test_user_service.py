@@ -2,7 +2,6 @@ import uuid
 from typing import cast
 
 import pytest
-from pydantic import EmailStr
 from sqlalchemy import true
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -159,7 +158,7 @@ async def test_create_user(session: AsyncSession):
     crud = UsersCRUD(session)
     srv = UserService(session)
     data = UserCreate(
-        email=EmailStr("test@example.com"),
+        email="test@example.com",
         first_name="first",
         last_name="last",
         password="pass",
@@ -177,7 +176,7 @@ async def test_create_user_with_test_id(session: AsyncSession):
     id_ = uuid.uuid4()
     srv = UserService(session)
     data = UserCreate(
-        email=EmailStr("test@example.com"),
+        email="test@example.com",
         first_name="first",
         last_name="last",
         password="pass",
