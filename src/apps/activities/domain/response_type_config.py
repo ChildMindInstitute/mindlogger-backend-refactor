@@ -159,7 +159,7 @@ class _SelectionConfig(_ScreenConfig):
     set_palette: bool
     add_tokens: bool | None
     additional_response_option: AdditionalResponseOption
-    portrait_layout: bool | None
+    portrait_layout: bool | None = None
 
 
 class SingleSelectionConfig(_SelectionConfig, PublicModel):
