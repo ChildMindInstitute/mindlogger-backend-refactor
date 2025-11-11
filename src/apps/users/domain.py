@@ -79,6 +79,8 @@ class User(InternalModel):
     last_name: str
     id: uuid.UUID
     is_super_admin: bool
+    mfa_enabled: bool = False
+    mfa_secret: str | None = None
     hashed_password: str
     email_encrypted: str | None
     last_seen_at: datetime.datetime | None

@@ -17,6 +17,8 @@ class UserSchema(Base):
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     is_super_admin = Column(Boolean(), default=False, server_default="false")
+    mfa_enabled = Column(Boolean(), default=False, server_default="false")
+    mfa_secret = Column(String(length=100), nullable=True)
     is_anonymous_respondent = Column(Boolean(), default=False, server_default="false")
     is_legacy_deleted_respondent = Column(Boolean(), default=False, server_default="false")
 
