@@ -11,6 +11,7 @@ from config.cors import CorsSettings
 from config.database import DatabaseSettings
 from config.logs import Logs
 from config.mailing import MailingSettings
+from config.mfa import MFASettings
 from config.multiinformant import MultiInformantSettings
 from config.notification import FirebaseCloudMessagingSettings
 from config.oneup_health import OneUpHealthSettings
@@ -93,6 +94,8 @@ class Settings(BaseSettings):
     logs: Logs = Logs()
 
     multi_informant: MultiInformantSettings = MultiInformantSettings()
+
+    mfa: MFASettings = MFASettings()
 
     oneup_health: OneUpHealthSettings = OneUpHealthSettings()
 
