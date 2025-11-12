@@ -21,6 +21,7 @@ __all__ = [
     "PasswordRecoveryRequest",
     "PasswordRecoveryInfo",
     "PasswordRecoveryApproveRequest",
+    "TOTPInitiateResponse",
 ]
 
 
@@ -201,3 +202,10 @@ class UserDevice(UserDeviceCreate):
             user_device.os = AppInfoOS(name=schema.os_name, version=schema.os_version)
 
         return user_device
+
+
+class TOTPInitiateResponse(PublicModel):
+    """Response model for TOTP setup initiation."""
+
+    provisioning_uri: str = Field(description="URI for generating QR code in authenticator app")
+    message: str = Field(description="Setup instructions for the user")

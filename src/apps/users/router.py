@@ -19,8 +19,9 @@ from apps.users.api import (
     user_retrieve,
     user_save_device,
     user_update,
+    user_mfa_totp_initiate,
 )
-from apps.users.domain import PublicUser, UserDevice
+from apps.users.domain import PublicUser, UserDevice, TOTPInitiateResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -124,3 +125,14 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(user_save_device)
+
+# TOTP initiate
+router.post(
+    "/me/mfa/totp/initiate",
+    response_model=Response[TOTPInitiateResponse],
+    responses={
+        status.HTTP_200_OK: {"model": Response[TOTPInitiateResponse]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_mfa_totp_initiate)

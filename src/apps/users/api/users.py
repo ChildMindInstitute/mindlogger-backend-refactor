@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
@@ -11,7 +13,9 @@ from apps.users.domain import (
     UserDevice,
     UserDeviceCreate,
     UserUpdateRequest,
+    TOTPInitiateResponse,
 )
+from apps.users.services.totp import totp_service
 from apps.users.services.user import UserService
 from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.service.workspace import WorkspaceService
@@ -71,3 +75,39 @@ async def user_save_device(
     async with atomic(session):
         device = await UserDeviceService(session, user.id).add_device(data)
     return Response(result=device)
+
+
+async def user_mfa_totp_initiate(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[TOTPInitiateResponse]:
+    """
+    Initiate TOTP setup for MFA.
+    
+    Generates a TOTP secret, encrypts it, stores it temporarily,
+    and returns a provisioning URI for QR code generation.
+    """
+    async with atomic(session):
+        # Generate a new TOTP secret
+        secret = totp_service.generate_secret()
+        
+        # Encrypt the secret for storage
+        encrypted_secret = totp_service.encrypt_secret(secret)
+        
+        # Store encrypted secret in pending_mfa_secret
+        crud = UsersCRUD(session)
+        await crud.update_pending_mfa(
+            user_id=user.id,
+            encrypted_secret=encrypted_secret,
+            created_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        )
+        
+        # Generate provisioning URI for QR code
+        provisioning_uri = totp_service.generate_provisioning_uri(secret, user.email_encrypted or user.email)
+        
+        result = TOTPInitiateResponse(
+            provisioning_uri=provisioning_uri,
+            message="Scan the QR code with your authenticator app and enter the 6-digit code to verify setup",
+        )
+    
+    return Response(result=result)
