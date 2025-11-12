@@ -14,6 +14,8 @@ from apps.users.domain import (
     UserDeviceCreate,
     UserUpdateRequest,
     TOTPInitiateResponse,
+    TOTPVerifyRequest,
+    TOTPVerifyResponse,
 )
 from apps.users.services.totp import totp_service
 from apps.users.services.user import UserService
@@ -109,5 +111,78 @@ async def user_mfa_totp_initiate(
             provisioning_uri=provisioning_uri,
             message="Scan the QR code with your authenticator app and enter the 6-digit code to verify setup",
         )
+    
+    return Response(result=result)
+
+
+async def user_mfa_totp_verify(
+    schema: TOTPVerifyRequest = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[TOTPVerifyResponse]:
+    """
+    Verify the TOTP code and complete MFA enrollment.
+    
+    This endpoint:
+    1. Validates that user has a pending MFA setup
+    2. Checks that the setup hasn't expired (10 minutes)
+    3. Decrypts the pending TOTP secret
+    4. Verifies the user-provided 6-digit code
+    5. If valid, activates MFA by moving pending_mfa_secret -> mfa_secret
+    6. Clears the pending setup data
+    
+    Security Flow:
+    - User must be authenticated (JWT token required)
+    - Pending setup expires after 10 minutes for security
+    - Code verification uses valid_window=1 (accepts ±30 seconds)
+    - Atomic database operation prevents partial activation
+    
+    Args:
+        schema: TOTPVerifyRequest with 6-digit code
+        user: Current authenticated user from JWT token
+        session: Database session for atomic transaction
+        
+    Returns:
+        Response containing TOTPVerifyResponse with success message and mfa_enabled=true
+        
+    Raises:
+        ValueError: If setup not found, expired, or code is invalid
+    """
+    # Step 1: Validate pending setup exists and is not expired
+    # This also decrypts and returns the secret for code verification
+    try:
+        decrypted_secret = totp_service.validate_pending_setup(user)
+    except ValueError as e:
+        # Re-raise with same message (setup not found or expired)
+        raise ValueError(str(e))
+    
+    # Step 2: Verify the TOTP code against the decrypted secret
+    # Uses pyotp's verify() with valid_window=1 (accepts codes from ±30 seconds)
+    is_valid = totp_service.verify_code(decrypted_secret, schema.code)
+    
+    if not is_valid:
+        # Code is incorrect - allow user to retry
+        # Don't clear pending setup, let them try again until expiration
+        raise ValueError(
+            "Invalid TOTP code. Please check your authenticator app and try again."
+        )
+    
+    # Step 3: Code is valid! Activate MFA
+    # This atomically:
+    # - Sets mfa_enabled = True
+    # - Moves pending_mfa_secret -> mfa_secret (already encrypted)
+    # - Clears pending_mfa_secret
+    # - Clears pending_mfa_created_at
+    async with atomic(session):
+        await UsersCRUD(session).activate_mfa(
+            user_id=user.id,
+            encrypted_secret=user.pending_mfa_secret,  # Already encrypted in DB
+        )
+    
+    # Step 4: Return success response
+    result = TOTPVerifyResponse(
+        message="TOTP MFA has been successfully enabled for your account.",
+        mfa_enabled=True,
+    )
     
     return Response(result=result)
