@@ -8,9 +8,12 @@ This service handles:
 - Verifying TOTP codes
 """
 
-import pyotp
-from cryptography.fernet import Fernet
+from datetime import datetime, timezone
 
+import pyotp
+from cryptography.fernet import Fernet, InvalidToken
+
+from apps.users.domain import User
 from config import settings
 
 
@@ -108,6 +111,64 @@ class TOTPService:
         """
         totp = pyotp.TOTP(secret)
         return totp.now()
+    
+    def is_pending_setup_expired(self, created_at: datetime) -> bool:
+        """
+        Check if the pending MFA setup has expired.
+
+        Args:
+            created_at: The datetime when the pending setup was created
+
+        Returns:
+            bool: True if expired (> expiration_seconds), False otherwise
+        """
+        if not created_at:
+            return True
+        
+        # Get current time without timezone (to match created_at which is naive)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        # Calculate elapsed time in seconds
+        elapsed_seconds = (now - created_at).total_seconds()
+        
+        # Check against configured expiration time (600 seconds = 10 minutes)
+        return elapsed_seconds > settings.mfa.pending_mfa_expiration_seconds
+    
+    def validate_pending_setup(self, user: User) -> str:
+        """
+        Validate that user has a valid pending MFA setup and return decrypted secret.
+
+        Args:
+            user: The user attempting to verify TOTP setup
+
+        Returns:
+            str: The decrypted TOTP secret
+
+        Raises:
+            ValueError: If no pending setup exists
+            ValueError: If pending setup has expired
+            ValueError: If decryption fails
+        """
+        # Check if user has pending MFA setup
+        if not user.pending_mfa_secret:
+            raise ValueError("No pending MFA setup found. Please initiate setup first.")
+        
+        if not user.pending_mfa_created_at:
+            raise ValueError("Invalid pending MFA setup state.")
+        
+        # Check if setup has expired
+        if self.is_pending_setup_expired(user.pending_mfa_created_at):
+            raise ValueError(
+                f"MFA setup has expired. Please restart the setup process. "
+                f"(Expiration time: {settings.mfa.pending_mfa_expiration_seconds} seconds)"
+            )
+        
+        # Decrypt and return the secret
+        try:
+            decrypted_secret = self.decrypt_secret(user.pending_mfa_secret)
+            return decrypted_secret
+        except InvalidToken:
+            raise ValueError("Failed to decrypt MFA secret. Setup may be corrupted.")
 
 
 # Create a singleton instance

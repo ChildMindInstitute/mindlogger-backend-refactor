@@ -22,6 +22,8 @@ __all__ = [
     "PasswordRecoveryInfo",
     "PasswordRecoveryApproveRequest",
     "TOTPInitiateResponse",
+    "TOTPVerifyRequest",
+    "TOTPVerifyResponse",
 ]
 
 
@@ -209,3 +211,21 @@ class TOTPInitiateResponse(PublicModel):
 
     provisioning_uri: str = Field(description="URI for generating QR code in authenticator app")
     message: str = Field(description="Setup instructions for the user")
+
+class TOTPVerifyRequest(PublicModel):
+    """Request model for TOTP verification."""
+
+    code: str = Field(
+        description="6-digit TOTP code from authenticator app",
+        min_length=6,
+        max_length=6,
+        regex=r"^\d{6}$"
+    )
+
+
+class TOTPVerifyResponse(PublicModel):
+    """Response model for TOTP verification."""
+
+    message: str = Field(description="Success message")
+    mfa_enabled: bool = Field(description="Whether MFA is now enabled for the user")
+
