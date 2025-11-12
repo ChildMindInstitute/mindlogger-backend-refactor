@@ -179,3 +179,31 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             schema=UserSchema(pending_mfa_secret=None, pending_mfa_created_at=None),
         )
         return User.from_orm(instance)
+    
+    async def activate_mfa(self, user_id: uuid.UUID, encrypted_secret: str) -> User:
+        """
+        Activate MFA for a user after successful TOTP verification.
+        
+        This method atomically:
+        1. Moves pending_mfa_secret to mfa_secret (permanent storage)
+        2. Enables MFA (sets mfa_enabled = True)
+        3. Clears pending fields (pending_mfa_secret and pending_mfa_created_at)
+
+        Args:
+            user_id: The user's ID
+            encrypted_secret: The encrypted TOTP secret from pending_mfa_secret
+
+        Returns:
+            User: The updated user object with MFA now active
+        """
+        instance = await self._update_one(
+            lookup="id",
+            value=user_id,
+            schema=UserSchema(
+                mfa_enabled=True,
+                mfa_secret=encrypted_secret,
+                pending_mfa_secret=None,
+                pending_mfa_created_at=None
+            ),
+        )
+        return User.from_orm(instance)
