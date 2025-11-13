@@ -84,7 +84,7 @@ class TOTPService:
         totp = pyotp.TOTP(secret)
         return totp.provisioning_uri(name=user_email, issuer_name=self.issuer_name)
 
-    def verify_code(self, secret: str, code: str) -> bool:
+    def verify_code(self, secret: str, code: str, valid_window: int | None = None) -> bool:
         """
         Verify a TOTP code against a secret.
 
@@ -92,11 +92,14 @@ class TOTPService:
             secret: The TOTP secret (plain text, not encrypted)
             code: The 6-digit code to verify
 
+            valid_window: Optional override for valid_window (time steps). If None, uses configured value.
+
         Returns:
             bool: True if the code is valid, False otherwise
         """
         totp = pyotp.TOTP(secret)
-        return totp.verify(code, valid_window=self.valid_window)
+        window = self.valid_window if valid_window is None else valid_window
+        return totp.verify(code, valid_window=window)
 
     def get_current_code(self, secret: str) -> str:
         """

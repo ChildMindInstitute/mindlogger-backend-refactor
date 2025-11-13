@@ -161,8 +161,9 @@ async def user_mfa_totp_verify(
     decrypted_secret = totp_service.validate_pending_setup(fresh_user)
     
     # Step 2: Verify the TOTP code against the decrypted secret
-    # Uses pyotp's verify() with valid_window=1 (accepts codes from ±30 seconds)
-    is_valid = totp_service.verify_code(decrypted_secret, schema.code)
+    # For enrollment we require a strict, current-step-only match to avoid accidental acceptance
+    # (override the configured valid_window and use 0 here)
+    is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=0)
     
     if not is_valid:
         # Code is incorrect - allow user to retry

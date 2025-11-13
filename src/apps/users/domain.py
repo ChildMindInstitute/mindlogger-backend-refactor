@@ -101,6 +101,7 @@ class PublicUser(PublicModel):
     first_name: str
     last_name: str
     id: uuid.UUID
+    mfa_enabled: bool = False
 
     @classmethod
     def from_user(cls, user: User) -> "PublicUser":
@@ -109,6 +110,7 @@ class PublicUser(PublicModel):
             first_name=user.first_name,
             last_name=user.last_name,
             id=user.id,
+            mfa_enabled=user.mfa_enabled,
         )
 
     def get_full_name(self) -> str:
