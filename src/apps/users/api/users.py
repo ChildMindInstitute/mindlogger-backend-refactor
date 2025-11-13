@@ -17,6 +17,7 @@ from apps.users.domain import (
     TOTPVerifyRequest,
     TOTPVerifyResponse,
 )
+from apps.users.errors import InvalidTOTPCodeError
 from apps.users.services.totp import totp_service
 from apps.users.services.user import UserService
 from apps.users.services.user_device import UserDeviceService
@@ -146,15 +147,14 @@ async def user_mfa_totp_verify(
         Response containing TOTPVerifyResponse with success message and mfa_enabled=true
         
     Raises:
-        ValueError: If setup not found, expired, or code is invalid
+        MFASetupNotFoundError: If no pending setup exists
+        MFASetupExpiredError: If pending setup has expired
+        InvalidTOTPCodeError: If TOTP code is invalid
     """
     # Step 1: Validate pending setup exists and is not expired
     # This also decrypts and returns the secret for code verification
-    try:
-        decrypted_secret = totp_service.validate_pending_setup(user)
-    except ValueError as e:
-        # Re-raise with same message (setup not found or expired)
-        raise ValueError(str(e))
+    # Raises MFASetupNotFoundError or MFASetupExpiredError if validation fails
+    decrypted_secret = totp_service.validate_pending_setup(user)
     
     # Step 2: Verify the TOTP code against the decrypted secret
     # Uses pyotp's verify() with valid_window=1 (accepts codes from ±30 seconds)
@@ -163,9 +163,7 @@ async def user_mfa_totp_verify(
     if not is_valid:
         # Code is incorrect - allow user to retry
         # Don't clear pending setup, let them try again until expiration
-        raise ValueError(
-            "Invalid TOTP code. Please check your authenticator app and try again."
-        )
+        raise InvalidTOTPCodeError()
     
     # Step 3: Code is valid! Activate MFA
     # This atomically:

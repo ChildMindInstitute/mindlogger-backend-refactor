@@ -34,3 +34,15 @@ class UsersError(ValidationError):
 
 class ReencryptionInProgressError(ValidationError):
     message = _("Cannot change password. Reencryption process in progress.")
+
+
+class MFASetupNotFoundError(NotFoundError):
+    message = _("No pending MFA setup found. Please initiate MFA setup first.")
+
+
+class MFASetupExpiredError(ValidationError):
+    message = _("MFA setup has expired. Please initiate MFA setup again.")
+
+
+class InvalidTOTPCodeError(ValidationError):
+    message = _("Invalid TOTP code. Please check your authenticator app and try again.")

@@ -14,6 +14,7 @@ import pyotp
 from cryptography.fernet import Fernet, InvalidToken
 
 from apps.users.domain import User
+from apps.users.errors import MFASetupExpiredError, MFASetupNotFoundError
 from config import settings
 
 
@@ -145,23 +146,20 @@ class TOTPService:
             str: The decrypted TOTP secret
 
         Raises:
-            ValueError: If no pending setup exists
-            ValueError: If pending setup has expired
-            ValueError: If decryption fails
+            MFASetupNotFoundError: If no pending setup exists
+            MFASetupExpiredError: If pending setup has expired
+            ValueError: If decryption fails (corrupted setup)
         """
         # Check if user has pending MFA setup
         if not user.pending_mfa_secret:
-            raise ValueError("No pending MFA setup found. Please initiate setup first.")
+            raise MFASetupNotFoundError()
         
         if not user.pending_mfa_created_at:
             raise ValueError("Invalid pending MFA setup state.")
         
         # Check if setup has expired
         if self.is_pending_setup_expired(user.pending_mfa_created_at):
-            raise ValueError(
-                f"MFA setup has expired. Please restart the setup process. "
-                f"(Expiration time: {settings.mfa.pending_mfa_expiration_seconds} seconds)"
-            )
+            raise MFASetupExpiredError()
         
         # Decrypt and return the secret
         try:
