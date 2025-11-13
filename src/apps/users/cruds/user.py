@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Any, Collection, List
 
-from sqlalchemy import false, select, true, update
+from sqlalchemy import false, null, select, true, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
@@ -196,14 +196,19 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         Returns:
             User: The updated user object with MFA now active
         """
-        instance = await self._update_one(
-            lookup="id",
-            value=user_id,
-            schema=UserSchema(
+        # Perform UPDATE without RETURNING first
+        query = (
+            update(UserSchema)
+            .where(UserSchema.id == user_id)
+            .values(
                 mfa_enabled=True,
                 mfa_secret=encrypted_secret,
                 pending_mfa_secret=None,
-                pending_mfa_created_at=None
-            ),
+                pending_mfa_created_at=None,
+            )
         )
-        return User.from_orm(instance)
+        await self._execute(query)
+        await self.session.commit()  # Explicitly commit the transaction
+        
+        # Then fetch the updated record
+        return await self.get_by_id(user_id)

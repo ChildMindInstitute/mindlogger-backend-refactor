@@ -18,7 +18,7 @@ class UserSchema(Base):
     last_seen_at = Column(DateTime(), default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     is_super_admin = Column(Boolean(), default=False, server_default="false")
     mfa_enabled = Column(Boolean(), default=False, server_default="false")
-    mfa_secret = Column(String(length=100), nullable=True)
+    mfa_secret = Column(Text(), nullable=True)  # Changed from String(100) to Text() for encrypted values
     pending_mfa_secret = Column(Text(), nullable=True)
     pending_mfa_created_at = Column(DateTime(), nullable=True)
     is_anonymous_respondent = Column(Boolean(), default=False, server_default="false")
