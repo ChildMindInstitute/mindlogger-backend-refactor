@@ -28,7 +28,7 @@ __all__ = [
 
 
 class UserCreateRequest(PublicModel):
-    """This model represents user `create request` data model."""
+    """User creation request model."""
 
     email: EmailStr
 
@@ -70,13 +70,15 @@ class UserCreate(UserCreateRequest):
 
 
 class UserUpdateRequest(InternalModel):
-    """This model represents user `update request` data model."""
+    """User update request model."""
 
     first_name: str
     last_name: str
 
 
 class User(InternalModel):
+    """Internal user model."""
+
     email: str
     first_name: str
     last_name: str
@@ -95,7 +97,7 @@ class User(InternalModel):
 
 
 class PublicUser(PublicModel):
-    """Public user data model."""
+    """Public-facing user model."""
 
     email: EmailStr | None
     first_name: str
@@ -118,11 +120,12 @@ class PublicUser(PublicModel):
 
 
 class ProlificPublicUser(InternalModel):
+    """Simple flag indicating existence."""
     exists: bool
 
 
 class ChangePasswordRequest(InternalModel):
-    """This model represents change password data model."""
+    """Change password request."""
 
     password: str
     prev_password: str
@@ -135,15 +138,13 @@ class ChangePasswordRequest(InternalModel):
 
 
 class UserChangePassword(InternalModel):
-    """This model represents user `update request` data model."""
+    """Internal model for updated password."""
 
     hashed_password: str
 
 
 class PasswordRecoveryRequest(InternalModel):
-    """This model represents password recovery request
-    for password recover.
-    """
+    """Password recovery request."""
 
     email: EmailStr
 
@@ -153,9 +154,7 @@ class PasswordRecoveryRequest(InternalModel):
 
 
 class PasswordRecoveryInfo(InternalModel):
-    """This is a password recovery representation
-    for internal needs.
-    """
+    """Internal password recovery info."""
 
     email: str
     user_id: uuid.UUID
@@ -163,9 +162,7 @@ class PasswordRecoveryInfo(InternalModel):
 
 
 class PasswordRecoveryApproveRequest(InternalModel):
-    """This model represents password recovery approve request
-    for password recover.
-    """
+    """Approve password recovery request."""
 
     email: EmailStr
     key: uuid.UUID
@@ -209,13 +206,13 @@ class UserDevice(UserDeviceCreate):
 
 
 class TOTPInitiateResponse(PublicModel):
-    """Response model for TOTP setup initiation."""
+    """Response for TOTP setup initiation."""
 
     provisioning_uri: str = Field(description="URI for generating QR code in authenticator app")
     message: str = Field(description="Setup instructions for the user")
 
 class TOTPVerifyRequest(PublicModel):
-    """Request model for TOTP verification."""
+    """TOTP verification request."""
 
     code: str = Field(
         description="6-digit TOTP code from authenticator app",
@@ -226,7 +223,7 @@ class TOTPVerifyRequest(PublicModel):
 
 
 class TOTPVerifyResponse(PublicModel):
-    """Response model for TOTP verification."""
+    """TOTP verification response."""
 
     message: str = Field(description="Success message")
     mfa_enabled: bool = Field(description="Whether MFA is now enabled for the user")

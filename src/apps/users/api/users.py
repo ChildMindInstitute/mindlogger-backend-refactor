@@ -84,12 +84,7 @@ async def user_mfa_totp_initiate(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[TOTPInitiateResponse]:
-    """
-    Initiate TOTP setup for MFA.
-    
-    Generates a TOTP secret, encrypts it, stores it temporarily,
-    and returns a provisioning URI for QR code generation.
-    """
+    """Start TOTP setup: create secret, store it encrypted, return provisioning URI."""
     async with atomic(session):
         # Generate a new TOTP secret
         secret = totp_service.generate_secret()
@@ -121,67 +116,25 @@ async def user_mfa_totp_verify(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[TOTPVerifyResponse]:
-    """
-    Verify the TOTP code and complete MFA enrollment.
-    
-    This endpoint:
-    1. Validates that user has a pending MFA setup
-    2. Checks that the setup hasn't expired (10 minutes)
-    3. Decrypts the pending TOTP secret
-    4. Verifies the user-provided 6-digit code
-    5. If valid, activates MFA by moving pending_mfa_secret -> mfa_secret
-    6. Clears the pending setup data
-    
-    Security Flow:
-    - User must be authenticated (JWT token required)
-    - Pending setup expires after 10 minutes for security
-    - Code verification uses valid_window=1 (accepts ±30 seconds)
-    - Atomic database operation prevents partial activation
-    
-    Args:
-        schema: TOTPVerifyRequest with 6-digit code
-        user: Current authenticated user from JWT token
-        session: Database session for atomic transaction
-        
-    Returns:
-        Response containing TOTPVerifyResponse with success message and mfa_enabled=true
-        
-    Raises:
-        MFASetupNotFoundError: If no pending setup exists
-        MFASetupExpiredError: If pending setup has expired
-        InvalidTOTPCodeError: If TOTP code is invalid
-    """
+    """Verify TOTP code and enable MFA if valid."""
     # Refetch user from database to ensure we have latest MFA state
-    # (Important: user dependency might have cached/stale data)
     fresh_user = await UsersCRUD(session).get_by_id(user.id)
     
-    # Step 1: Validate pending setup exists and is not expired
-    # This also decrypts and returns the secret for code verification
-    # Raises MFASetupNotFoundError or MFASetupExpiredError if validation fails
+    # Validate pending setup and get decrypted secret
     decrypted_secret = totp_service.validate_pending_setup(fresh_user)
     
-    # Step 2: Verify the TOTP code against the decrypted secret
-    # For enrollment we require a strict, current-step-only match to avoid accidental acceptance
-    # (override the configured valid_window and use 0 here)
+    # Verify code (strict, no time-window tolerance for enrollment)
     is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=0)
     
     if not is_valid:
-        # Code is incorrect - allow user to retry
-        # Don't clear pending setup, let them try again until expiration
         raise InvalidTOTPCodeError()
     
-    # Step 3: Code is valid! Activate MFA
-    # This atomically:
-    # - Sets mfa_enabled = True
-    # - Moves pending_mfa_secret -> mfa_secret (already encrypted)
-    # - Clears pending_mfa_secret
-    # - Clears pending_mfa_created_at
+    # Activate MFA atomically
     await UsersCRUD(session).activate_mfa(
         user_id=fresh_user.id,
-        encrypted_secret=fresh_user.pending_mfa_secret,  # Already encrypted in DB
+        encrypted_secret=fresh_user.pending_mfa_secret,
     )
     
-    # Step 4: Return success response
     result = TOTPVerifyResponse(
         message="TOTP MFA has been successfully enabled for your account.",
         mfa_enabled=True,
