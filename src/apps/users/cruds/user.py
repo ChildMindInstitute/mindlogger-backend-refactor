@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Any, Collection, List
 
-from sqlalchemy import false, null, select, true, update
+from sqlalchemy import false, select, true, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
@@ -179,11 +179,11 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             schema=UserSchema(pending_mfa_secret=None, pending_mfa_created_at=None),
         )
         return User.from_orm(instance)
-    
+
     async def activate_mfa(self, user_id: uuid.UUID, encrypted_secret: str) -> User:
         """
         Activate MFA for a user after successful TOTP verification.
-        
+
         This method atomically:
         1. Moves pending_mfa_secret to mfa_secret (permanent storage)
         2. Enables MFA (sets mfa_enabled = True)
@@ -209,6 +209,6 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         )
         await self._execute(query)
         await self.session.commit()  # Explicitly commit the transaction
-        
+
         # Then fetch the updated record
         return await self.get_by_id(user_id)

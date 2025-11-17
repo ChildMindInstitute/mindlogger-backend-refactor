@@ -219,18 +219,14 @@ def test_user_get_full_name__no_last_name():
 async def test_update_pending_mfa(user: User, session: AsyncSession):
     """Test updating pending MFA secret and timestamp."""
     from datetime import datetime, timezone
-    
+
     crud = UsersCRUD(session)
     encrypted_secret = "test_encrypted_secret"
     created_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    
-    await crud.update_pending_mfa(
-        user_id=user.id,
-        encrypted_secret=encrypted_secret,
-        created_at=created_at
-    )
+
+    await crud.update_pending_mfa(user_id=user.id, encrypted_secret=encrypted_secret, created_at=created_at)
     await session.commit()
-    
+
     updated = await crud.get_by_id(user.id)
     assert updated.pending_mfa_secret == encrypted_secret
     assert updated.pending_mfa_created_at == created_at
@@ -241,25 +237,21 @@ async def test_update_pending_mfa(user: User, session: AsyncSession):
 async def test_activate_mfa(user: User, session: AsyncSession):
     """Test activating MFA moves pending secret to permanent."""
     from datetime import datetime, timezone
-    
+
     crud = UsersCRUD(session)
-    
+
     # First set up pending MFA
     secret = totp_service.generate_secret()
     encrypted_secret = totp_service.encrypt_secret(secret)
     created_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    
-    await crud.update_pending_mfa(
-        user_id=user.id,
-        encrypted_secret=encrypted_secret,
-        created_at=created_at
-    )
+
+    await crud.update_pending_mfa(user_id=user.id, encrypted_secret=encrypted_secret, created_at=created_at)
     await session.commit()
-    
+
     # Activate MFA
     await crud.activate_mfa(user_id=user.id, encrypted_secret=encrypted_secret)
     await session.commit()
-    
+
     # Verify activation
     updated = await crud.get_by_id(user.id)
     assert updated.mfa_enabled is True
@@ -271,24 +263,20 @@ async def test_activate_mfa(user: User, session: AsyncSession):
 async def test_activate_mfa_clears_pending_fields(user: User, session: AsyncSession):
     """Test that activating MFA properly clears pending fields."""
     from datetime import datetime, timezone
-    
+
     crud = UsersCRUD(session)
-    
+
     # Setup pending MFA
     encrypted_secret = totp_service.encrypt_secret("TESTSECRET123456")
     created_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    
-    await crud.update_pending_mfa(
-        user_id=user.id,
-        encrypted_secret=encrypted_secret,
-        created_at=created_at
-    )
+
+    await crud.update_pending_mfa(user_id=user.id, encrypted_secret=encrypted_secret, created_at=created_at)
     await session.commit()
-    
+
     # Activate
     await crud.activate_mfa(user_id=user.id, encrypted_secret=encrypted_secret)
     await session.commit()
-    
+
     # Verify all pending data cleared
     updated = await crud.get_by_id(user.id)
     assert updated.pending_mfa_secret is None

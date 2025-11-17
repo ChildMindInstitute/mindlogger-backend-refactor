@@ -121,6 +121,7 @@ class PublicUser(PublicModel):
 
 class ProlificPublicUser(InternalModel):
     """Simple flag indicating existence."""
+
     exists: bool
 
 
@@ -211,14 +212,12 @@ class TOTPInitiateResponse(PublicModel):
     provisioning_uri: str = Field(description="URI for generating QR code in authenticator app")
     message: str = Field(description="Setup instructions for the user")
 
+
 class TOTPVerifyRequest(PublicModel):
     """TOTP verification request."""
 
     code: str = Field(
-        description="6-digit TOTP code from authenticator app",
-        min_length=6,
-        max_length=6,
-        regex=r"^\d{6}$"
+        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, regex=r"^\d{6}$"
     )
 
 
@@ -227,4 +226,3 @@ class TOTPVerifyResponse(PublicModel):
 
     message: str = Field(description="Success message")
     mfa_enabled: bool = Field(description="Whether MFA is now enabled for the user")
-

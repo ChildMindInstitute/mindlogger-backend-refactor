@@ -16,13 +16,13 @@ from apps.users.api import (
     password_update,
     user_create,
     user_delete,
+    user_mfa_totp_initiate,
+    user_mfa_totp_verify,
     user_retrieve,
     user_save_device,
     user_update,
-    user_mfa_totp_initiate,
-    user_mfa_totp_verify,
 )
-from apps.users.domain import PublicUser, UserDevice, TOTPInitiateResponse, TOTPVerifyResponse
+from apps.users.domain import PublicUser, TOTPInitiateResponse, TOTPVerifyResponse, UserDevice
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

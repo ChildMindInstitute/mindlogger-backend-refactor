@@ -49,34 +49,34 @@ class TOTPService:
         """Return current TOTP code (for tests)."""
         totp = pyotp.TOTP(secret)
         return totp.now()
-    
+
     def is_pending_setup_expired(self, created_at: datetime) -> bool:
         """Return True if pending setup is older than configured expiration."""
         if not created_at:
             return True
-        
+
         # Get current time without timezone (to match created_at which is naive)
         now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         # Calculate elapsed time in seconds
         elapsed_seconds = (now - created_at).total_seconds()
-        
+
         # Check against configured expiration time
         return elapsed_seconds > settings.mfa.pending_mfa_expiration_seconds
-    
+
     def validate_pending_setup(self, user: User) -> str:
         """Validate pending MFA setup and return decrypted secret."""
         # Check if user has pending MFA setup
         if not user.pending_mfa_secret:
             raise MFASetupNotFoundError()
-        
+
         if not user.pending_mfa_created_at:
             raise ValueError("Invalid pending MFA setup state.")
-        
+
         # Check if setup has expired
         if self.is_pending_setup_expired(user.pending_mfa_created_at):
             raise MFASetupExpiredError()
-        
+
         # Decrypt and return the secret
         try:
             decrypted_secret = self.decrypt_secret(user.pending_mfa_secret)
