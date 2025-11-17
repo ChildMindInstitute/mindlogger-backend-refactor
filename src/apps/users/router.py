@@ -131,6 +131,7 @@ router.post(
 router.post(
     "/me/mfa/totp/initiate",
     response_model=Response[TOTPInitiateResponse],
+    name="user_mfa_totp_initiate",
     responses={
         status.HTTP_200_OK: {"model": Response[TOTPInitiateResponse]},
         **AUTHENTICATION_ERROR_RESPONSES,
@@ -142,6 +143,7 @@ router.post(
 router.post(
     "/me/mfa/totp/verify",
     response_model=Response[TOTPVerifyResponse],
+    name="user_mfa_totp_verify",
     responses={
         status.HTTP_200_OK: {"model": Response[TOTPVerifyResponse]},
         **AUTHENTICATION_ERROR_RESPONSES,
