@@ -19,6 +19,7 @@ from apps.authentication.domain.token import (
 )
 from apps.authentication.errors import AuthenticationError, InvalidCredentials, InvalidRefreshToken
 from apps.authentication.services.security import AuthenticationService
+from apps.authentication.services.mfa_session import MFASessionService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
@@ -58,9 +59,13 @@ async def get_token(
     # Check if user has MFA enabled
     if user.mfa_secret:
         # User has MFA enabled - return requirement response
+        mfa_service = MFASessionService()
+        mfa_session_id = await mfa_service.create_session(user_id=user.id)
+        
         return Response(
             result=MFARequiredResponse(
-                mfa_required=True
+                mfa_required=True,
+                mfa_session_id=mfa_session_id
             )
         )
 

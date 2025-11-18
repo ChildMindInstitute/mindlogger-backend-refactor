@@ -25,3 +25,4 @@ class MFARequiredResponse(PublicModel):
     """Response when user has MFA enabled and must verify."""
 
     mfa_required: bool = True
+    mfa_session_id: str # Track session ID for MFA
