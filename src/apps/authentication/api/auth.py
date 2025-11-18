@@ -7,7 +7,7 @@ from fastapi import Body, Depends, Header
 from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
-from apps.authentication.domain.login import UserLogin, UserLoginRequest
+from apps.authentication.domain.login import UserLogin, UserLoginRequest, MFARequiredResponse
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.token import (
     InternalToken,
@@ -36,7 +36,7 @@ async def get_token(
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
-) -> Response[UserLogin]:
+) -> Response[UserLogin | MFARequiredResponse]:
     """Generate the JWT access token."""
     async with atomic(session):
         try:
@@ -54,6 +54,15 @@ async def get_token(
 
         if user.email_encrypted != user_login_schema.email:
             user = await UsersCRUD(session).update_encrypted_email(user, user_login_schema.email)
+    
+    # Check if user has MFA enabled
+    if user.mfa_secret:
+        # User has MFA enabled - return requirement response
+        return Response(
+            result=MFARequiredResponse(
+                mfa_required=True
+            )
+        )
 
     rjti = str(uuid.uuid4())
     refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
