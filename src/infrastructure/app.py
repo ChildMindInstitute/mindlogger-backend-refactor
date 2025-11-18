@@ -124,8 +124,5 @@ def create_app():
     app.add_exception_handler(InvalidPasswordError, sqlalchemy_database_error_handler)
     app.add_exception_handler(Exception, python_base_error_handler)
 
-    # TODO: Remove when oasdiff starts support OpenAPI 3.1
-    # https://github.com/Tufin/oasdiff/issues/52
-    app.openapi_version = "3.0.3"
 
     return app
