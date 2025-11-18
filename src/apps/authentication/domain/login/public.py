@@ -19,3 +19,9 @@ class UserLoginRequest(PublicModel):
     @root_validator
     def email_validation(cls, values):
         return lowercase_email(values)
+
+
+class MFARequiredResponse(PublicModel):
+    """Response when user has MFA enabled and must verify."""
+
+    mfa_required: bool = True
