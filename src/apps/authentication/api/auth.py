@@ -7,7 +7,7 @@ from fastapi import Body, Depends, Header
 from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
-from apps.authentication.domain.login import UserLogin, UserLoginRequest, MFARequiredResponse
+from apps.authentication.domain.login import MFARequiredResponse, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.token import (
     InternalToken,
@@ -18,8 +18,8 @@ from apps.authentication.domain.token import (
     TokenPurpose,
 )
 from apps.authentication.errors import AuthenticationError, InvalidCredentials, InvalidRefreshToken
-from apps.authentication.services.security import AuthenticationService
 from apps.authentication.services.mfa_session import MFASessionService
+from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
@@ -55,17 +55,19 @@ async def get_token(
 
         if user.email_encrypted != user_login_schema.email:
             user = await UsersCRUD(session).update_encrypted_email(user, user_login_schema.email)
-    
+
     # Check if user has MFA enabled
     if user.mfa_secret:
         # User has MFA enabled - return requirement response
         mfa_service = MFASessionService()
         mfa_session_id = await mfa_service.create_session(user_id=user.id)
-        
+
+        mfa_token = AuthenticationService.create_mfa_token(mfa_session_id=mfa_session_id)
         return Response(
             result=MFARequiredResponse(
                 mfa_required=True,
-                mfa_session_id=mfa_session_id
+                mfa_session_id=mfa_session_id,
+                mfa_token=mfa_token,
             )
         )
 

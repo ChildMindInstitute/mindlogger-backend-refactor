@@ -11,6 +11,7 @@ class TokenPurpose(StrEnum):
 
     ACCESS = "access"
     REFRESH = "refresh"
+    MFA = "mfa"
 
 
 class JWTClaim(StrEnum):
@@ -18,6 +19,7 @@ class JWTClaim(StrEnum):
     jti = "jti"
     exp = "exp"
     rjti = "rjti"
+    mfa_session_id = "mfa_session_id"
 
 
 class TokenPayload(InternalModel):
@@ -34,6 +36,15 @@ class InternalToken(InternalModel):
 
     payload: TokenPayload
     raw_token: str | None = None
+
+
+class MFATokenPayload(InternalModel):
+    """Payload for MFA tokens."""
+
+    mfa_session_id: str  # Redis session ID
+    exp: int  # Expiration time stamp
+    jti: str  # Token ID to prevent replay
+    purpose: str = "mfa"  # Default purpose set to "mfa" for type checking
 
 
 class TokenInfo(InternalModel):

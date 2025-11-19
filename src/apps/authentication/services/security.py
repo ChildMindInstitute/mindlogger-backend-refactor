@@ -34,6 +34,53 @@ class AuthenticationService:
         return encoded_jwt
 
     @staticmethod
+    def create_mfa_token(mfa_session_id: str) -> str:
+        """
+        Create JWT token for MFA verification.
+        Args:
+            mfa_session_id (str): The Redis session ID for MFA.
+        Returns:
+            str: Encoded JWT token for MFA.
+        """
+        expires_delta = timedelta(minutes=settings.authentication.mfa_token.expiration)
+        expire = datetime.now(timezone.utc) + expires_delta
+
+        to_encode = {
+            JWTClaim.mfa_session_id: mfa_session_id,  # Redis session ID
+            JWTClaim.exp: expire,  # Expiration time stamp
+            JWTClaim.jti: str(uuid.uuid4()),  # Token ID to prevent replay
+            "purpose": TokenPurpose.MFA,  # Token type
+        }
+
+        encoded_jwt = jwt.encode(
+            to_encode,
+            settings.authentication.mfa_token.secret_key,
+            algorithm=settings.authentication.algorithm,
+        )
+
+        return encoded_jwt
+
+    @staticmethod
+    def decode_mfa_token(token: str) -> dict:
+        """
+        Decode and validate an MFA JWT token.
+        Args:
+            token (str): The encoded JWT token for MFA.
+        Returns:
+            dict: The decoded MFA token payload.
+        """
+        payload = jwt.decode(
+            token,
+            settings.authentication.mfa_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+
+        if payload.get("purpose") != TokenPurpose.MFA:
+            raise jwt.InvalidTokenError("Invalid token purpose")
+
+        return payload
+
+    @staticmethod
     def create_refresh_token(data: dict) -> str:
         to_encode = data.copy()
         expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
