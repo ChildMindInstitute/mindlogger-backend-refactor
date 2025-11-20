@@ -34,6 +34,7 @@ class MFATOTPVerifyRequest(PublicModel):
 
     mfa_token: str  # JWT for MFA verification
     totp_code: str  # 6-digit TOTP code
+    device_id: str | None = None  # Optional device identifier
 
     @validator("totp_code")
     def validate_totp_code(cls, value: str) -> str:
