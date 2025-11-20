@@ -5,7 +5,14 @@ import jwt
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken, JWTClaim, TokenPayload, TokenPurpose
-from apps.authentication.errors import BadCredentials, InvalidCredentials
+from apps.authentication.errors import (
+    BadCredentials,
+    InvalidCredentials,
+    MFATokenExpiredError,
+    MFATokenInvalidError,
+    MFATokenMalformedError,
+    MFATokenPurposeMismatchError,
+)
 from apps.authentication.services.core import TokensService
 from apps.shared.bcrypt import get_password_hash, verify
 from apps.users.cruds.user import UsersCRUD
@@ -63,22 +70,50 @@ class AuthenticationService:
     @staticmethod
     def decode_mfa_token(token: str) -> dict:
         """
-        Decode and validate an MFA JWT token.
+        Decode and validate an MFA JWT token with comprehensive error handling.
+
         Args:
             token (str): The encoded JWT token for MFA.
+
         Returns:
             dict: The decoded MFA token payload.
+
+        Raises:
+            MFATokenExpiredError: If token has expired
+            MFATokenMalformedError: If token format is invalid
+            MFATokenPurposeMismatchError: If token purpose is not MFA
+            MFATokenInvalidError: For other validation failures
         """
-        payload = jwt.decode(
-            token,
-            settings.authentication.mfa_token.secret_key,
-            algorithms=[settings.authentication.algorithm],
-        )
+        try:
+            payload = jwt.decode(
+                token,
+                settings.authentication.mfa_token.secret_key,
+                algorithms=[settings.authentication.algorithm],
+            )
 
-        if payload.get("purpose") != TokenPurpose.MFA:
-            raise jwt.InvalidTokenError("Invalid token purpose")
+            # Validate token purpose
+            token_purpose = payload.get("purpose")
+            if token_purpose != TokenPurpose.MFA:
+                raise MFATokenPurposeMismatchError()
 
-        return payload
+            # Validate required claims exist
+            mfa_session_id = payload.get(JWTClaim.mfa_session_id)
+            if not mfa_session_id:
+                raise MFATokenMalformedError()
+
+            return payload
+
+        except (MFATokenExpiredError, MFATokenMalformedError, MFATokenPurposeMismatchError, MFATokenInvalidError):
+            raise
+        except jwt.ExpiredSignatureError:
+            raise MFATokenExpiredError()
+        except jwt.InvalidSignatureError:
+            raise MFATokenInvalidError()
+        except jwt.DecodeError:
+            raise MFATokenMalformedError()
+        except Exception:
+            # Catch-all for unexpected errors
+            raise MFATokenInvalidError()
 
     @staticmethod
     def create_refresh_token(data: dict) -> str:

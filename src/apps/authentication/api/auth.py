@@ -23,7 +23,10 @@ from apps.authentication.errors import (
     InvalidRefreshToken,
     InvalidTOTPCodeError,
     MFASessionNotFoundError,
+    MFATokenExpiredError,
     MFATokenInvalidError,
+    MFATokenMalformedError,
+    MFATokenPurposeMismatchError,
 )
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.security import AuthenticationService
@@ -115,10 +118,14 @@ async def verify_mfa_totp(
 
         if not mfa_session_id:
             raise MFATokenInvalidError()
-    except jwt.InvalidTokenError as e:
-        raise MFATokenInvalidError() from e
-    except jwt.ExpiredSignatureError as e:
-        raise MFATokenInvalidError() from e
+    except (
+        MFATokenExpiredError,
+        MFATokenMalformedError,
+        MFATokenPurposeMismatchError,
+        MFATokenInvalidError,
+    ) as e:
+        # Re-raise specific MFA token errors with detailed feedback
+        raise e
 
     # Retrieve MFA session
     mfa_service = MFASessionService()
