@@ -37,11 +37,29 @@ class InvalidCredentials(AccessDeniedError):
 
 class MFATokenInvalidError(AuthenticationError):
     message = _("MFA token is invalid or expired")
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class MFATokenExpiredError(AuthenticationError):
+    message = _("MFA token has expired. Please log in again.")
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class MFATokenMalformedError(AuthenticationError):
+    message = _("MFA token is malformed or invalid.")
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class MFATokenPurposeMismatchError(AuthenticationError):
+    message = _("Token purpose mismatch. This token cannot be used for MFA verification.")
+    status_code = status.HTTP_401_UNAUTHORIZED
 
 
 class MFASessionNotFoundError(AuthenticationError):
     message = _("MFA session not found or expired")
+    status_code = status.HTTP_401_UNAUTHORIZED
 
 
 class InvalidTOTPCodeError(AuthenticationError):
     message = _("Invalid TOTP code")
+    status_code = status.HTTP_401_UNAUTHORIZED
