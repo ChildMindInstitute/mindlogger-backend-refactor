@@ -55,4 +55,4 @@ class AuthenticationSettings(BaseSettings):
     algorithm: str = "HS256"
     token_type: str = "Bearer"
     password_recover: PasswordRecoverSettings = PasswordRecoverSettings()
-    mfa_token: MFATokenSettings = MFATokenSettings()
+    mfa_token: MFATokenSettings

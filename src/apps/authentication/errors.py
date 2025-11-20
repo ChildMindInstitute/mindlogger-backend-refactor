@@ -58,3 +58,8 @@ class MFASessionNotFoundError(AuthenticationError):
 class InvalidTOTPCodeError(AuthenticationError):
     message = _("Invalid TOTP code")
     status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class TooManyTOTPAttemptsError(AuthenticationError):
+    message = _("Too many invalid TOTP attempts. Please login again.")
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS

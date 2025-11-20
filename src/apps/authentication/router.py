@@ -40,6 +40,7 @@ router.post(
     response_model=Response[UserLogin],
     responses={
         status.HTTP_200_OK: {"model": Response[UserLogin]},
+        status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Too many failed attempts"},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },

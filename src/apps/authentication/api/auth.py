@@ -26,6 +26,7 @@ from apps.authentication.errors import (
     MFATokenExpiredError,
     MFATokenInvalidError,
     MFATokenMalformedError,
+    TooManyTOTPAttemptsError,
 )
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.security import AuthenticationService
@@ -132,6 +133,12 @@ async def verify_mfa_totp(
     if not session_data:
         raise MFASessionNotFoundError()
 
+    # Check if max attempts exceeded BEFORE attempting verification
+    if session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
+        # Delete session to force re-login
+        await mfa_service.delete_session(mfa_session_id)
+        raise TooManyTOTPAttemptsError()
+
     # Get user from DB
     async with atomic(session):
         user: User = await UsersCRUD(session).get_by_id(session_data.user_id)
@@ -149,10 +156,20 @@ async def verify_mfa_totp(
             raise InvalidTOTPCodeError()
 
         is_valid = totp_service.verify_code(secret=decrypted_secret, code=verify_request.totp_code)
+        
         if not is_valid:
+            # Increment failed attempts counter
+            new_attempt_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+            
+            # If this was the last allowed attempt, delete session and raise different error
+            if new_attempt_count is not None and new_attempt_count >= settings.redis.mfa_max_attempts:
+                await mfa_service.delete_session(mfa_session_id)
+                raise TooManyTOTPAttemptsError()
+            
+            # Otherwise, raise normal invalid code error
             raise InvalidTOTPCodeError()
 
-        # Delete MFA/Redis session
+        # TOTP is valid - Delete MFA/Redis session to prevent replay
         await mfa_service.delete_session(mfa_session_id)
 
         if hasattr(verify_request, "device_id") and verify_request.device_id:
