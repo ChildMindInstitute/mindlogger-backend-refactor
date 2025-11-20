@@ -6,6 +6,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from config import settings
+from infrastructure.logger import logger
 from infrastructure.utility.redis_client import RedisCache
 
 
@@ -106,6 +107,13 @@ class MFASessionService:
             ex=self.session_ttl,
         )
 
+        logger.info(
+            "MFA session created",
+            user_id=str(user_id),
+            mfa_session_id=mfa_session_id,
+            ttl_seconds=self.session_ttl,
+        )
+
         return mfa_session_id
 
     async def get_session(self, mfa_session_id: str) -> Optional[MFASessionData]:
@@ -146,8 +154,13 @@ class MFASessionService:
             
             return session_data
             
-        except (json.JSONDecodeError, KeyError, ValueError, TypeError):
+        except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
             # Session data is corrupted, delete it to clean up
+            logger.warning(
+                "MFA session data corrupted",
+                mfa_session_id=mfa_session_id,
+                error_type=type(e).__name__,
+            )
             await self.delete_session(mfa_session_id)
             return None
 
@@ -160,7 +173,15 @@ class MFASessionService:
             True if session was deleted, False otherwise
         """
         redis_key = self._build_redis_key(mfa_session_id)
-        return await self.redis_client.delete(redis_key)
+        deleted = await self.redis_client.delete(redis_key)
+        
+        if deleted:
+            logger.info(
+                "MFA session deleted",
+                mfa_session_id=mfa_session_id,
+            )
+        
+        return deleted
     
     async def increment_failed_totp_attempts(self, mfa_session_id: str) -> Optional[int]:
         """
@@ -179,6 +200,13 @@ class MFASessionService:
         
         # Increment failed attempts
         new_count = session_data.increment_failed_attempts()
+        
+        logger.warning(
+            "Failed TOTP attempt recorded",
+            mfa_session_id=mfa_session_id,
+            failed_attempts=new_count,
+            max_attempts=settings.redis.mfa_max_attempts,
+        )
 
         # Update session in Redis with original TTL
         # Note: We use the full session_ttl since the session is still valid
