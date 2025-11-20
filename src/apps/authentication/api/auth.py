@@ -172,7 +172,8 @@ async def verify_mfa_totp(
         # TOTP is valid - Delete MFA/Redis session to prevent replay
         await mfa_service.delete_session(mfa_session_id)
 
-        if hasattr(verify_request, "device_id") and verify_request.device_id:
+        # Register device if device_id provided
+        if verify_request.device_id:
             await UserDeviceService(session, user.id).add_device(
                 UserDeviceCreate(
                     device_id=verify_request.device_id,
