@@ -1,9 +1,18 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.authentication.api.auth import delete_access_token, delete_refresh_token, get_token, refresh_access_token
+from apps.authentication.api.auth import (
+    delete_access_token,
+    delete_refresh_token,
+    get_token,
+    refresh_access_token,
+    verify_mfa_totp,
+)
 from apps.authentication.deps import openapi_auth
-from apps.authentication.domain.login import MFARequiredResponse, UserLogin
+from apps.authentication.domain.login import (
+    MFARequiredResponse,
+    UserLogin,
+)
 from apps.authentication.domain.token.public import Token
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -24,6 +33,17 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(get_token)
+
+# Verify MFA TOTP code
+router.post(
+    "/mfa/totp/verify",
+    response_model=Response[UserLogin],
+    responses={
+        status.HTTP_200_OK: {"model": Response[UserLogin]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(verify_mfa_totp)
 
 # Add token to the blacklist
 router.post(

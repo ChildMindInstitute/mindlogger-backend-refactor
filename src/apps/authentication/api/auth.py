@@ -7,7 +7,7 @@ from fastapi import Body, Depends, Header
 from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
-from apps.authentication.domain.login import MFARequiredResponse, UserLogin, UserLoginRequest
+from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.token import (
     InternalToken,
@@ -17,7 +17,14 @@ from apps.authentication.domain.token import (
     TokenPayload,
     TokenPurpose,
 )
-from apps.authentication.errors import AuthenticationError, InvalidCredentials, InvalidRefreshToken
+from apps.authentication.errors import (
+    AuthenticationError,
+    InvalidCredentials,
+    InvalidRefreshToken,
+    InvalidTOTPCodeError,
+    MFASessionNotFoundError,
+    MFATokenInvalidError,
+)
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
@@ -25,6 +32,7 @@ from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
 from apps.users.domain import AppInfoOS, PublicUser, User, UserDeviceCreate
 from apps.users.errors import UserNotFound
+from apps.users.services.totp import TOTPService
 from apps.users.services.user_device import UserDeviceService
 from config import settings
 from infrastructure.database import atomic
@@ -80,6 +88,87 @@ async def get_token(
             JWTClaim.rjti: rjti,
         }
     )
+
+    token = Token(access_token=access_token, refresh_token=refresh_token)
+    public_user = PublicUser.from_user(user)
+
+    return Response(
+        result=UserLogin(
+            token=token,
+            user=public_user,
+        )
+    )
+
+
+async def verify_mfa_totp(
+    verify_request: MFATOTPVerifyRequest = Body(...),
+    session=Depends(get_session),
+    os_name: Annotated[str | None, Header()] = None,
+    os_version: Annotated[str | None, Header()] = None,
+    app_version: Annotated[str | None, Header()] = None,
+) -> Response[UserLogin]:
+    """Verify TOTP code during MFA and return tokens."""
+    # Decode and validate MFA token
+    try:
+        mfa_payload = AuthenticationService.decode_mfa_token(verify_request.mfa_token)
+        mfa_session_id = mfa_payload.get("mfa_session_id")
+
+        if not mfa_session_id:
+            raise MFATokenInvalidError()
+    except jwt.InvalidTokenError as e:
+        raise MFATokenInvalidError() from e
+    except jwt.ExpiredSignatureError as e:
+        raise MFATokenInvalidError() from e
+
+    # Retrieve MFA session
+    mfa_service = MFASessionService()
+    session_data = await mfa_service.get_session(mfa_session_id)
+
+    if not session_data:
+        raise MFASessionNotFoundError()
+
+    # Get user from DB
+    async with atomic(session):
+        user: User = await UsersCRUD(session).get_by_id(session_data.user_id)
+
+        if not user.mfa_secret:
+            # Edge case: user disabled MFA between login and verification
+            raise MFATokenInvalidError()
+
+        totp_service = TOTPService()
+
+        # Verify TOTP code
+        try:
+            decrypted_secret = totp_service.decrypt_secret(user.mfa_secret)
+        except Exception:
+            raise InvalidTOTPCodeError()
+
+        is_valid = totp_service.verify_code(secret=decrypted_secret, code=verify_request.totp_code)
+        if not is_valid:
+            raise InvalidTOTPCodeError()
+
+        # Delete MFA/Redis session
+        await mfa_service.delete_session(mfa_session_id)
+
+        if hasattr(verify_request, "device_id") and verify_request.device_id:
+            await UserDeviceService(session, user.id).add_device(
+                UserDeviceCreate(
+                    device_id=verify_request.device_id,
+                    os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
+                    app_version=app_version,
+                )
+            )
+
+        # Issue refresh and access tokens
+        rjti = str(uuid.uuid4())
+        refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
+
+        access_token = AuthenticationService.create_access_token(
+            {
+                JWTClaim.sub: str(user.id),
+                JWTClaim.rjti: rjti,
+            }
+        )
 
     token = Token(access_token=access_token, refresh_token=refresh_token)
     public_user = PublicUser.from_user(user)
