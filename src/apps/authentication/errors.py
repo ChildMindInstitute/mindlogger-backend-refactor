@@ -50,11 +50,6 @@ class MFATokenMalformedError(AuthenticationError):
     status_code = status.HTTP_401_UNAUTHORIZED
 
 
-class MFATokenPurposeMismatchError(AuthenticationError):
-    message = _("Token purpose mismatch. This token cannot be used for MFA verification.")
-    status_code = status.HTTP_401_UNAUTHORIZED
-
-
 class MFASessionNotFoundError(AuthenticationError):
     message = _("MFA session not found or expired")
     status_code = status.HTTP_401_UNAUTHORIZED
