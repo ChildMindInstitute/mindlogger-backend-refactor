@@ -11,7 +11,6 @@ from apps.authentication.errors import (
     MFATokenExpiredError,
     MFATokenInvalidError,
     MFATokenMalformedError,
-    MFATokenPurposeMismatchError,
 )
 from apps.authentication.services.core import TokensService
 from apps.shared.bcrypt import get_password_hash, verify
@@ -91,11 +90,6 @@ class AuthenticationService:
                 algorithms=[settings.authentication.algorithm],
             )
 
-            # Validate token purpose
-            token_purpose = payload.get("purpose")
-            if token_purpose != TokenPurpose.MFA:
-                raise MFATokenPurposeMismatchError()
-
             # Validate required claims exist
             mfa_session_id = payload.get(JWTClaim.mfa_session_id)
             if not mfa_session_id:
@@ -103,7 +97,7 @@ class AuthenticationService:
 
             return payload
 
-        except (MFATokenExpiredError, MFATokenMalformedError, MFATokenPurposeMismatchError, MFATokenInvalidError):
+        except (MFATokenExpiredError, MFATokenMalformedError, MFATokenInvalidError):
             raise
         except jwt.ExpiredSignatureError:
             raise MFATokenExpiredError()

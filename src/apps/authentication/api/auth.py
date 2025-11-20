@@ -26,7 +26,6 @@ from apps.authentication.errors import (
     MFATokenExpiredError,
     MFATokenInvalidError,
     MFATokenMalformedError,
-    MFATokenPurposeMismatchError,
 )
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.security import AuthenticationService
@@ -121,7 +120,6 @@ async def verify_mfa_totp(
     except (
         MFATokenExpiredError,
         MFATokenMalformedError,
-        MFATokenPurposeMismatchError,
         MFATokenInvalidError,
     ) as e:
         # Re-raise specific MFA token errors with detailed feedback
