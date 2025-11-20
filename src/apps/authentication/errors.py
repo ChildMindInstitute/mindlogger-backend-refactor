@@ -33,3 +33,15 @@ class EmailDoesNotExist(AccessDeniedError):
 class InvalidCredentials(AccessDeniedError):
     message = _("Incorrect email or password")
     status_code = status.HTTP_401_UNAUTHORIZED
+
+
+class MFATokenInvalidError(AuthenticationError):
+    message = _("MFA token is invalid or expired")
+
+
+class MFASessionNotFoundError(AuthenticationError):
+    message = _("MFA session not found or expired")
+
+
+class InvalidTOTPCodeError(AuthenticationError):
+    message = _("Invalid TOTP code")
