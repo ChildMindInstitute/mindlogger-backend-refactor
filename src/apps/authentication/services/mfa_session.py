@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Optional
 
 from config import settings
@@ -32,25 +32,25 @@ class MFASessionData:
         return cls(
             user_id=uuid.UUID(data["user_id"]),
             created_at=datetime.fromisoformat(data["created_at"]),
-            failed_totp_attempts=data.get("failed_totp_attempts", 0),  # Default to 0 
+            failed_totp_attempts=data.get("failed_totp_attempts", 0),  # Default to 0
         )
-    
+
     def is_expired(self, ttl_seconds: int) -> bool:
         """Check if the session is expired based on TTL."""
         now = datetime.now(timezone.utc)
         session_age_in_seconds = (now - self.created_at).total_seconds()
         return session_age_in_seconds > ttl_seconds
-    
+
     def get_age_seconds(self) -> float:
         """Get the age of the session in seconds."""
         now = datetime.now(timezone.utc)
         return (now - self.created_at).total_seconds()
-    
+
     def increment_failed_attempts(self):
         """Increment the count of failed TOTP attempts."""
         self.failed_totp_attempts += 1
         return self.failed_totp_attempts
-    
+
     def has_exceeded_max_attempts(self, max_attempts: int) -> bool:
         """Check if failed attempts have exceeded max allowed."""
         return self.failed_totp_attempts >= max_attempts
@@ -70,12 +70,12 @@ class MFASessionService:
         Example: mfa_session:a7b3f2e1-4d5c-6789-0abc-def123456789
         """
         return f"mfa_session:{mfa_session_id}"
-    
+
     def _validate_session_id_format(self, mfa_session_id: str) -> bool:
         """Validate that the session ID is a valid UUID string."""
         if not mfa_session_id or not isinstance(mfa_session_id, str):
             return False
-        
+
         try:
             uuid.UUID(mfa_session_id)
             return True
@@ -107,7 +107,7 @@ class MFASessionService:
             ex=self.session_ttl,
         )
 
-        logger.info(
+        logger.info(  # type: ignore
             "MFA session created",
             user_id=str(user_id),
             mfa_session_id=mfa_session_id,
@@ -119,22 +119,22 @@ class MFASessionService:
     async def get_session(self, mfa_session_id: str) -> Optional[MFASessionData]:
         """
         Retrieve MFA session data from Redis with validation.
-        
+
         Validates:
         - Session ID format (must be valid UUID)
         - JSON parsing (handles corrupted data)
         - Session age (defense against clock skew)
-        
+
         Args:
             mfa_session_id: The session identifier
-            
+
         Returns:
             MFASessionData if session exists and is valid, None otherwise
         """
         # Validate session ID format first
         if not self._validate_session_id_format(mfa_session_id):
             return None
-        
+
         redis_key = self._build_redis_key(mfa_session_id)
         session_json = await self.redis_client.get(redis_key)
 
@@ -145,21 +145,21 @@ class MFASessionService:
         try:
             session_dict = json.loads(session_json)
             session_data = MFASessionData.from_dict(session_dict)
-            
+
             # Double-check expiration
             if session_data.is_expired(self.session_ttl):
                 # Session exceeded TTL, clean it up
                 await self.delete_session(mfa_session_id)
                 return None
-            
+
             return session_data
-            
+
         except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
             # Session data is corrupted, delete it to clean up
-            logger.warning(
+            logger.warning(  # type: ignore
                 "MFA session data corrupted",
                 mfa_session_id=mfa_session_id,
-                error_type=type(e).__name__,
+                error_type=str(type(e).__name__),
             )
             await self.delete_session(mfa_session_id)
             return None
@@ -174,19 +174,18 @@ class MFASessionService:
         """
         redis_key = self._build_redis_key(mfa_session_id)
         deleted = await self.redis_client.delete(redis_key)
-        
+
         if deleted:
-            logger.info(
+            logger.info(  # type: ignore
                 "MFA session deleted",
                 mfa_session_id=mfa_session_id,
             )
-        
         return deleted
-    
+
     async def increment_failed_totp_attempts(self, mfa_session_id: str) -> Optional[int]:
         """
         Increment the count of failed TOTP attempts for the session.
-        
+
         Args:
             mfa_session_id: The session identifier
         Returns:
@@ -197,11 +196,11 @@ class MFASessionService:
 
         if not session_data:
             return None
-        
+
         # Increment failed attempts
         new_count = session_data.increment_failed_attempts()
-        
-        logger.warning(
+
+        logger.warning(  # type: ignore
             "Failed TOTP attempt recorded",
             mfa_session_id=mfa_session_id,
             failed_attempts=new_count,

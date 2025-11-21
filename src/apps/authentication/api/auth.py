@@ -74,7 +74,7 @@ async def get_token(
         mfa_service = MFASessionService()
         mfa_session_id = await mfa_service.create_session(user_id=user.id)
 
-        logger.info(
+        logger.info(  # type: ignore
             "MFA required for login",
             user_id=str(user.id),
             email=user.email_encrypted,
@@ -138,7 +138,7 @@ async def verify_mfa_totp(
     session_data = await mfa_service.get_session(mfa_session_id)
 
     if not session_data:
-        logger.warning(
+        logger.warning(  # type: ignore
             "MFA session not found or expired",
             mfa_session_id=mfa_session_id,
         )
@@ -146,7 +146,7 @@ async def verify_mfa_totp(
 
     # Check if max attempts exceeded BEFORE attempting verification
     if session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
-        logger.warning(
+        logger.warning(  # type: ignore
             "MFA max attempts exceeded",
             user_id=str(session_data.user_id),
             failed_attempts=session_data.failed_totp_attempts,
@@ -173,34 +173,34 @@ async def verify_mfa_totp(
             raise InvalidTOTPCodeError()
 
         is_valid = totp_service.verify_code(secret=decrypted_secret, code=verify_request.totp_code)
-        
+
         if not is_valid:
             # Increment failed attempts counter
             new_attempt_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
-            
-            logger.warning(
+
+            logger.warning(  # type: ignore
                 "Invalid TOTP code provided",
                 user_id=str(user.id),
                 email=user.email_encrypted,
                 failed_attempts=new_attempt_count,
             )
-            
+
             # If this was the last allowed attempt, delete session and raise different error
             if new_attempt_count is not None and new_attempt_count >= settings.redis.mfa_max_attempts:
-                logger.warning(
-                    "MFA locked out after max attempts",
+                logger.warning(  # type: ignore
+                    "User locked out after max failed TOTP attempts",
                     user_id=str(user.id),
                     email=user.email_encrypted,
                     failed_attempts=new_attempt_count,
                 )
                 await mfa_service.delete_session(mfa_session_id)
                 raise TooManyTOTPAttemptsError()
-            
+
             # Otherwise, raise normal invalid code error
             raise InvalidTOTPCodeError()
 
         # TOTP is valid - Delete MFA/Redis session to prevent replay
-        logger.info(
+        logger.info(  # type: ignore
             "MFA verification successful",
             user_id=str(user.id),
             email=user.email_encrypted,
