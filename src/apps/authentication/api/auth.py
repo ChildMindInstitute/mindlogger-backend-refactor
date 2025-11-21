@@ -177,13 +177,19 @@ async def verify_mfa_totp(
 
         totp_service = TOTPService()
 
-        # Verify TOTP code
+        # Verify TOTP code with replay protection
         try:
             decrypted_secret = totp_service.decrypt_secret(user.mfa_secret)
         except Exception:
             raise InvalidTOTPCodeError()
 
-        is_valid = totp_service.verify_code(secret=decrypted_secret, code=verify_request.totp_code)
+        # Get user's last used time step for replay protection
+        last_step = user.last_totp_time_step
+
+        # Verify with replay protection
+        is_valid, time_step_used = totp_service.verify_with_replay_check(
+            secret=decrypted_secret, code=verify_request.totp_code, last_used_step=last_step
+        )
 
         if not is_valid:
             # Increment both per-session and global failed attempts counters
@@ -223,7 +229,11 @@ async def verify_mfa_totp(
             # Otherwise, raise normal invalid code error
             raise InvalidTOTPCodeError()
 
-        # TOTP is valid - Clear global lockout counter and delete MFA session
+        # TOTP is valid - Update last used time step for replay protection
+        assert time_step_used is not None  # Always set when is_valid is True
+        await UsersCRUD(session).update_last_totp_time_step(user.id, time_step_used)
+
+        # Clear global lockout counter and delete MFA session
         await mfa_service.clear_global_lockout(user.id)
         await mfa_service.delete_session(mfa_session_id)
 

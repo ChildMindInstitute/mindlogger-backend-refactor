@@ -197,3 +197,92 @@ class TestTOTPService:
         assert isinstance(totp_service, TOTPService)
         assert totp_service.issuer_name is not None
         assert totp_service.valid_window >= 0
+
+    def test_get_current_time_step(self, totp_svc: TOTPService):
+        """Test that get_current_time_step returns correct integer value."""
+        import time
+
+        time_step = totp_svc.get_current_time_step()
+
+        # Should be an integer
+        assert isinstance(time_step, int)
+        # Should be positive
+        assert time_step > 0
+        # Should match calculation
+        assert time_step == int(time.time() // 30)
+
+    def test_verify_with_replay_check_valid_code_no_previous(self, totp_svc: TOTPService):
+        """Test verification succeeds with valid code and no previous step."""
+        secret = "JBSWY3DPEHPK3PXP"
+        current_code = totp_svc.get_current_code(secret)
+
+        # First use, no previous time step
+        is_valid, time_step_used = totp_svc.verify_with_replay_check(
+            secret=secret, code=current_code, last_used_step=None
+        )
+
+        assert is_valid is True
+        assert isinstance(time_step_used, int)
+        assert time_step_used > 0
+
+    def test_verify_with_replay_check_invalid_code(self, totp_svc: TOTPService):
+        """Test verification fails with invalid code."""
+        secret = "JBSWY3DPEHPK3PXP"
+        invalid_code = "000000"
+
+        is_valid, time_step_used = totp_svc.verify_with_replay_check(
+            secret=secret, code=invalid_code, last_used_step=None
+        )
+
+        assert is_valid is False
+        assert time_step_used is None
+
+    def test_verify_with_replay_check_replay_attack(self, totp_svc: TOTPService):
+        """Test that replay protection prevents reuse of same time step."""
+        secret = "JBSWY3DPEHPK3PXP"
+
+        # Get current code and time step
+        current_code = totp_svc.get_current_code(secret)
+        current_step = totp_svc.get_current_time_step()
+
+        # First verification should succeed
+        is_valid, time_step_used = totp_svc.verify_with_replay_check(
+            secret=secret, code=current_code, last_used_step=None
+        )
+        assert is_valid is True
+        assert time_step_used == current_step
+
+        # Immediate replay with same code should fail (within same time step)
+        is_valid_replay, time_step_replay = totp_svc.verify_with_replay_check(
+            secret=secret, code=current_code, last_used_step=time_step_used
+        )
+        assert is_valid_replay is False
+        assert time_step_replay is None
+
+    def test_verify_with_replay_check_old_step_blocked(self, totp_svc: TOTPService, monkeypatch):
+        """Test that verification fails if code is from an old time step."""
+        import time
+        from unittest.mock import Mock
+
+        secret = "JBSWY3DPEHPK3PXP"
+
+        # Mock time to control time steps
+        original_time = time.time
+        current_time = original_time()
+
+        # Use a code from current time
+        monkeypatch.setattr(time, "time", lambda: current_time)
+        current_code = totp_svc.get_current_code(secret)
+        current_step = int(current_time // 30)
+
+        # Simulate that we've already used a future time step
+        future_step = current_step + 2
+
+        # Try to use current code when a future step was already used
+        is_valid, time_step_used = totp_svc.verify_with_replay_check(
+            secret=secret, code=current_code, last_used_step=future_step
+        )
+
+        # Should fail because current_step <= future_step
+        assert is_valid is False
+        assert time_step_used is None

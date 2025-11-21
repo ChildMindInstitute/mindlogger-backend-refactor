@@ -1,5 +1,6 @@
 """TOTP service for MFA — secret generation, encryption, provisioning URI, and verification."""
 
+import time
 from datetime import datetime, timezone
 
 import pyotp
@@ -49,6 +50,48 @@ class TOTPService:
         """Return current TOTP code (for tests)."""
         totp = pyotp.TOTP(secret)
         return totp.now()
+
+    def get_current_time_step(self) -> int:
+        """
+        Get current TOTP time step (epoch / 30 seconds).
+
+        Returns:
+            Current time step as integer
+        """
+        return int(time.time() // 30)
+
+    def verify_with_replay_check(self, secret: str, code: str, last_used_step: int | None) -> tuple[bool, int | None]:
+        """
+        Verify TOTP code with replay protection.
+
+        Args:
+            secret: Decrypted TOTP secret
+            code: User-provided 6-digit code
+            last_used_step: Last successfully used time step (None if never used)
+
+        Returns:
+            Tuple of (is_valid, time_step_used)
+            - is_valid: True if code is valid and not replayed
+            - time_step_used: The time step of the valid code, or None if invalid
+        """
+        totp = pyotp.TOTP(secret)
+        current_step = self.get_current_time_step()
+
+        # Check valid_window range (current, -1, +1)
+        for offset in [0, -1, 1]:
+            check_step = current_step + offset
+
+            # Skip if this step was already used (replay protection)
+            if last_used_step is not None and check_step <= last_used_step:
+                continue
+
+            # Generate code for this time step
+            expected_code = totp.at(check_step * 30)
+
+            if expected_code == code:
+                return True, check_step
+
+        return False, None
 
     def is_pending_setup_expired(self, created_at: datetime) -> bool:
         """Return True if pending setup is older than configured expiration."""
