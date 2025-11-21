@@ -21,6 +21,7 @@ class BaseError(Exception):
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     type = ExceptionTypes.UNDEFINED
+    error_code: str | None = None  # Error code for frontend localization
 
     def __init__(self, *args, **kwargs):
         self.kwargs = kwargs
