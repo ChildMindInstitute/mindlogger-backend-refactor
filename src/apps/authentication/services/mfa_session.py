@@ -216,3 +216,77 @@ class MFASessionService:
             ex=self.session_ttl,
         )
         return new_count
+
+    def _build_global_lockout_key(self, user_id: uuid.UUID) -> str:
+        """
+        Build Redis key for global MFA failed attempts counter.
+        Format: mfa_fail:<user_id>
+        Example: mfa_fail:a7b3f2e1-4d5c-6789-0abc-def123456789
+        """
+        return f"mfa_fail:{str(user_id)}"
+
+    async def increment_global_failed_attempts(self, user_id: uuid.UUID) -> int:
+        """
+        Increment global failed MFA attempts counter for a user across all sessions.
+        This prevents users from bypassing per-session rate limits by restarting login.
+
+        Args:
+            user_id: The user's unique identifier
+
+        Returns:
+            The updated count of failed attempts
+        """
+        redis_key = self._build_global_lockout_key(user_id)
+
+        # Increment counter and get new value
+        new_count = await self.redis_client.incr(redis_key)
+
+        # Set TTL only on first increment (when counter = 1)
+        if new_count == 1:
+            await self.redis_client.expire(redis_key, settings.redis.mfa_global_lockout_ttl)
+
+        logger.warning(  # type: ignore
+            "Global MFA failed attempt recorded",
+            user_id=str(user_id),
+            failed_attempts=new_count,
+            max_attempts=settings.redis.mfa_global_lockout_attempts,
+        )
+
+        return new_count
+
+    async def is_globally_locked_out(self, user_id: uuid.UUID) -> bool:
+        """
+        Check if user is globally locked out from MFA attempts.
+
+        Args:
+            user_id: The user's unique identifier
+
+        Returns:
+            True if user is locked out, False otherwise
+        """
+        redis_key = self._build_global_lockout_key(user_id)
+        count = await self.redis_client.get(redis_key)
+
+        if count is None:
+            return False
+
+        try:
+            attempts = int(count)
+            return attempts >= settings.redis.mfa_global_lockout_attempts
+        except (ValueError, TypeError):
+            return False
+
+    async def clear_global_lockout(self, user_id: uuid.UUID) -> None:
+        """
+        Clear global lockout counter for a user after successful MFA.
+
+        Args:
+            user_id: The user's unique identifier
+        """
+        redis_key = self._build_global_lockout_key(user_id)
+        await self.redis_client.delete(redis_key)
+
+        logger.info(  # type: ignore
+            "Global MFA lockout counter cleared",
+            user_id=str(user_id),
+        )
