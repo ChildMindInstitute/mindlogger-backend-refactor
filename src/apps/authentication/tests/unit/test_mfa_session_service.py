@@ -3,7 +3,7 @@
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -189,9 +189,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = json.dumps(sample_session_data.to_dict())
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             session = await service.get_session(session_id)
@@ -206,9 +209,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = None
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             session = await service.get_session(session_id)
@@ -219,9 +225,12 @@ class TestMFASessionService:
         """Test get_session rejects invalid session ID format."""
         mock_redis = AsyncMock()
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             session = await service.get_session("invalid-format")
@@ -242,9 +251,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = json.dumps(expired_data.to_dict())
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             session = await service.get_session(session_id)
@@ -259,9 +271,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = "invalid-json-data"
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             session = await service.get_session(session_id)
@@ -276,9 +291,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.delete.return_value = True
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             result = await service.delete_session(session_id)
@@ -292,9 +310,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = json.dumps(sample_session_data.to_dict())
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             new_count = await service.increment_failed_totp_attempts(session_id)
@@ -313,9 +334,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = None
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             result = await service.increment_failed_totp_attempts(session_id)
@@ -332,9 +356,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.incr.return_value = 1
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             count = await service.increment_global_failed_attempts(sample_user_id)
@@ -351,9 +378,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.incr.return_value = 3  # Not first increment
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             count = await service.increment_global_failed_attempts(sample_user_id)
@@ -367,9 +397,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = "5"  # Under limit of 10
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             is_locked = await service.is_globally_locked_out(sample_user_id)
@@ -381,9 +414,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = "10"  # At limit
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             is_locked = await service.is_globally_locked_out(sample_user_id)
@@ -395,9 +431,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = None
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             is_locked = await service.is_globally_locked_out(sample_user_id)
@@ -409,9 +448,12 @@ class TestMFASessionService:
         mock_redis = AsyncMock()
         mock_redis.get.return_value = "invalid"
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             is_locked = await service.is_globally_locked_out(sample_user_id)
@@ -422,9 +464,12 @@ class TestMFASessionService:
         """Test clearing global lockout counter."""
         mock_redis = AsyncMock()
 
-        with patch("apps.authentication.services.mfa_session.logger"), patch(
-            "apps.authentication.services.mfa_session.RedisCache",
-            return_value=mock_redis,
+        with (
+            patch("apps.authentication.services.mfa_session.logger"),
+            patch(
+                "apps.authentication.services.mfa_session.RedisCache",
+                return_value=mock_redis,
+            ),
         ):
             service = MFASessionService()
             await service.clear_global_lockout(sample_user_id)
