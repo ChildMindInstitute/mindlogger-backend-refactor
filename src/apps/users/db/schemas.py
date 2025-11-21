@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, Unicode, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKey, String, Text, Unicode, UniqueConstraint
 from sqlalchemy_utils import StringEncryptedType
 
 from apps.shared.encryption import get_key
@@ -21,6 +21,7 @@ class UserSchema(Base):
     mfa_secret = Column(Text(), nullable=True)  # Changed from String(100) to Text() for encrypted values
     pending_mfa_secret = Column(Text(), nullable=True)
     pending_mfa_created_at = Column(DateTime(), nullable=True)
+    last_totp_time_step = Column(BigInteger(), nullable=True)  # TOTP replay protection
     is_anonymous_respondent = Column(Boolean(), default=False, server_default="false")
     is_legacy_deleted_respondent = Column(Boolean(), default=False, server_default="false")
 
