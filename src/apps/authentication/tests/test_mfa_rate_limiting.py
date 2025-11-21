@@ -31,7 +31,7 @@ async def user_with_mfa(session: AsyncSession, user: User) -> User:
         {
             "mfa_enabled": True,
             "mfa_secret": encrypted_secret,
-        },
+        },  # type: ignore[arg-type]
     )
 
     updated_user = await crud.get_by_id(user.id)
@@ -84,9 +84,7 @@ class TestMFARateLimiting(BaseTest):
             updated_data = json.loads(last_call.kwargs["value"])
             assert updated_data["failed_totp_attempts"] >= 1
 
-    async def test_per_session_rate_limit_blocks_after_max_attempts(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_per_session_rate_limit_blocks_after_max_attempts(self, client: TestClient, user_with_mfa: User):
         """Test that per-session rate limit blocks after reaching max attempts."""
         # Login
         login_response = await client.post(
@@ -155,9 +153,7 @@ class TestMFARateLimiting(BaseTest):
             incr_call = mock_redis.incr.call_args
             assert "mfa_fail:" in incr_call.args[0]
 
-    async def test_global_rate_limit_blocks_user_across_sessions(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_global_rate_limit_blocks_user_across_sessions(self, client: TestClient, user_with_mfa: User):
         """Test that global rate limit blocks user across multiple sessions."""
         mock_redis = AsyncMock()
 
@@ -227,6 +223,7 @@ class TestMFARateLimiting(BaseTest):
             crud = UsersCRUD(session)
             fresh_user = await crud.get_by_id(user_with_mfa.id)
             assert fresh_user is not None
+            assert fresh_user.mfa_secret is not None
             decrypted_secret = totp_service.decrypt_secret(fresh_user.mfa_secret)
             valid_code = totp_service.get_current_code(decrypted_secret)
 
@@ -258,15 +255,6 @@ class TestMFAErrorHandling(BaseTest):
         mock_redis.get.return_value = None  # Session not found (expired)
 
         with patch("apps.authentication.services.mfa_session.RedisCache", return_value=mock_redis):
-            # Create fake MFA token
-            from apps.authentication.services import AuthenticationService
-            from sqlalchemy.ext.asyncio import AsyncSession
-
-            # Need to create a valid token structure
-            import uuid
-
-            fake_session_id = str(uuid.uuid4())
-
             # Login to get real token structure
             login_response = await client.post(
                 url=self.get_token_url,

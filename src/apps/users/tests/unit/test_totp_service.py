@@ -262,7 +262,6 @@ class TestTOTPService:
     def test_verify_with_replay_check_old_step_blocked(self, totp_svc: TOTPService, monkeypatch):
         """Test that verification fails if code is from an old time step."""
         import time
-        from unittest.mock import Mock
 
         secret = "JBSWY3DPEHPK3PXP"
 

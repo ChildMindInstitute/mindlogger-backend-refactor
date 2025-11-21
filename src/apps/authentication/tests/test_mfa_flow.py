@@ -8,14 +8,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.authentication.domain.login import UserLoginRequest
-from apps.authentication.errors import (
-    MFATokenInvalidError,
-    InvalidTOTPCodeError,
-    MFAGlobalLockoutError,
-    MFASessionNotFoundError,
-    TooManyTOTPAttemptsError,
-)
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.shared.test import BaseTest
@@ -41,7 +33,7 @@ async def user_with_mfa(session: AsyncSession, user: User) -> User:
         {
             "mfa_enabled": True,
             "mfa_secret": encrypted_secret,
-        },
+        },  # type: ignore[arg-type]
     )
 
     # Refresh user
@@ -62,7 +54,7 @@ async def user_without_mfa(session: AsyncSession, user: User) -> User:
         {
             "mfa_enabled": False,
             "mfa_secret": None,
-        },
+        },  # type: ignore[arg-type]
     )
 
     updated_user = await crud.get_by_id(user.id)
@@ -79,9 +71,7 @@ class TestMFALoginFlow(BaseTest):
     get_token_url = auth_router.url_path_for("get_token")
     verify_mfa_url = auth_router.url_path_for("verify_mfa_totp")
 
-    async def test_login_without_mfa_returns_tokens_directly(
-        self, client: TestClient, user_without_mfa: User
-    ):
+    async def test_login_without_mfa_returns_tokens_directly(self, client: TestClient, user_without_mfa: User):
         """Test that login without MFA enabled returns tokens immediately."""
         response = await client.post(
             url=self.get_token_url,
@@ -238,7 +228,6 @@ class TestMFATOTPVerification(BaseTest):
         fresh_user = await crud.get_by_id(user_with_mfa.id)
         assert fresh_user is not None
         assert fresh_user.mfa_secret is not None
-
         decrypted_secret = totp_service.decrypt_secret(fresh_user.mfa_secret)
         valid_code = totp_service.get_current_code(decrypted_secret)
 
@@ -290,9 +279,9 @@ class TestMFATOTPVerification(BaseTest):
         error_data = verify_response.json()
 
         # Should indicate invalid TOTP code
-        assert "Invalid TOTP" in error_data["result"][0]["message"] or "Invalid code" in error_data["result"][0][
-            "message"
-        ]
+        assert (
+            "Invalid TOTP" in error_data["result"][0]["message"] or "Invalid code" in error_data["result"][0]["message"]
+        )
 
     async def test_verify_mfa_with_invalid_token_fails(self, client: TestClient, user_with_mfa: User):
         """Test that invalid MFA token fails verification."""
@@ -327,6 +316,7 @@ class TestMFATOTPVerification(BaseTest):
         )
         mfa_token = login_response.json()["result"]["mfa_token"]
 
+        assert initial_user.mfa_secret is not None
         decrypted_secret = totp_service.decrypt_secret(initial_user.mfa_secret)
         valid_code = totp_service.get_current_code(decrypted_secret)
 
@@ -377,6 +367,7 @@ class TestMFATOTPVerification(BaseTest):
             crud = UsersCRUD(session)
             fresh_user = await crud.get_by_id(user_with_mfa.id)
             assert fresh_user is not None
+            assert fresh_user.mfa_secret is not None
             decrypted_secret = totp_service.decrypt_secret(fresh_user.mfa_secret)
             valid_code = totp_service.get_current_code(decrypted_secret)
 
@@ -419,6 +410,7 @@ class TestMFAReplayProtection(BaseTest):
         crud = UsersCRUD(session)
         fresh_user = await crud.get_by_id(user_with_mfa.id)
         assert fresh_user is not None
+        assert fresh_user.mfa_secret is not None
         decrypted_secret = totp_service.decrypt_secret(fresh_user.mfa_secret)
         valid_code = totp_service.get_current_code(decrypted_secret)
 

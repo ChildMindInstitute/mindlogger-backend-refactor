@@ -39,7 +39,7 @@ class TestMFATokenGeneration:
         payload = jwt.decode(
             mfa_token,
             settings.authentication.access_token.secret_key,
-            algorithms=[settings.authentication.access_token.algorithm],
+            algorithms=[settings.authentication.algorithm],
         )
 
         assert payload["mfa_session_id"] == sample_mfa_session_id
@@ -53,7 +53,7 @@ class TestMFATokenGeneration:
         payload = jwt.decode(
             mfa_token,
             settings.authentication.access_token.secret_key,
-            algorithms=[settings.authentication.access_token.algorithm],
+            algorithms=[settings.authentication.algorithm],
         )
 
         # Expiration should be in the future
@@ -79,12 +79,12 @@ class TestMFATokenGeneration:
         payload_1 = jwt.decode(
             token_1,
             settings.authentication.access_token.secret_key,
-            algorithms=[settings.authentication.access_token.algorithm],
+            algorithms=[settings.authentication.algorithm],
         )
         payload_2 = jwt.decode(
             token_2,
             settings.authentication.access_token.secret_key,
-            algorithms=[settings.authentication.access_token.algorithm],
+            algorithms=[settings.authentication.algorithm],
         )
 
         assert payload_1["mfa_session_id"] != payload_2["mfa_session_id"]
@@ -127,7 +127,7 @@ class TestMFATokenValidation:
         expired_token = jwt.encode(
             payload,
             settings.authentication.access_token.secret_key,
-            algorithm=settings.authentication.access_token.algorithm,
+            algorithm=settings.authentication.algorithm,
         )
 
         with pytest.raises(MFATokenInvalidError):
@@ -143,7 +143,7 @@ class TestMFATokenValidation:
         invalid_token = jwt.encode(
             payload,
             settings.authentication.access_token.secret_key,
-            algorithm=settings.authentication.access_token.algorithm,
+            algorithm=settings.authentication.algorithm,
         )
 
         with pytest.raises(MFATokenInvalidError):
@@ -256,6 +256,7 @@ class TestMFATokenSecurity:
         decoded_session_id = auth_service.decode_mfa_token(mfa_token)
 
         # Should be valid UUID
+        assert isinstance(decoded_session_id, str)
         uuid.UUID(decoded_session_id)
         assert decoded_session_id == session_id
 
@@ -270,7 +271,7 @@ class TestMFATokenSecurity:
         short_lived_token = jwt.encode(
             payload,
             settings.authentication.access_token.secret_key,
-            algorithm=settings.authentication.access_token.algorithm,
+            algorithm=settings.authentication.algorithm,
         )
 
         # Should work immediately
