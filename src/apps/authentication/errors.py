@@ -63,3 +63,8 @@ class InvalidTOTPCodeError(AuthenticationError):
 class TooManyTOTPAttemptsError(AuthenticationError):
     message = _("Too many invalid TOTP attempts. Please login again.")
     status_code = status.HTTP_429_TOO_MANY_REQUESTS
+
+
+class MFAGlobalLockoutError(AuthenticationError):
+    message = _("Account temporarily locked due to multiple failed MFA attempts. Please try again later.")
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS

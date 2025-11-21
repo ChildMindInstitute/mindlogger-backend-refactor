@@ -10,6 +10,8 @@ class RedisSettings(BaseModel):
     default_ttl: int = 3600
     mfa_session_ttl: int = 300  # 5 minutes for MFA sessions
     mfa_max_attempts: int = 5  # Max TOTP verification attempts per MFA session
+    mfa_global_lockout_attempts: int = 10  # Max failed attempts across all sessions per user
+    mfa_global_lockout_ttl: int = 900  # 15 minutes lockout period for global rate limit
 
     @property
     def url(self) -> str:

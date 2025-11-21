@@ -22,6 +22,7 @@ from apps.authentication.errors import (
     InvalidCredentials,
     InvalidRefreshToken,
     InvalidTOTPCodeError,
+    MFAGlobalLockoutError,
     MFASessionNotFoundError,
     MFATokenExpiredError,
     MFATokenInvalidError,
@@ -144,6 +145,16 @@ async def verify_mfa_totp(
         )
         raise MFASessionNotFoundError()
 
+    # Check global lockout FIRST (prevents bypassing per-session limits)
+    is_locked = await mfa_service.is_globally_locked_out(session_data.user_id)
+    if is_locked:
+        logger.warning(  # type: ignore
+            "User globally locked out from MFA attempts",
+            user_id=str(session_data.user_id),
+        )
+        await mfa_service.delete_session(mfa_session_id)
+        raise MFAGlobalLockoutError()
+
     # Check if max attempts exceeded BEFORE attempting verification
     if session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
         logger.warning(  # type: ignore
@@ -175,20 +186,33 @@ async def verify_mfa_totp(
         is_valid = totp_service.verify_code(secret=decrypted_secret, code=verify_request.totp_code)
 
         if not is_valid:
-            # Increment failed attempts counter
+            # Increment both per-session and global failed attempts counters
             new_attempt_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+            global_attempt_count = await mfa_service.increment_global_failed_attempts(user.id)
 
             logger.warning(  # type: ignore
                 "Invalid TOTP code provided",
                 user_id=str(user.id),
                 email=user.email_encrypted,
                 failed_attempts=new_attempt_count,
+                global_failed_attempts=global_attempt_count,
             )
 
-            # If this was the last allowed attempt, delete session and raise different error
+            # Check if global lockout threshold reached
+            if global_attempt_count >= settings.redis.mfa_global_lockout_attempts:
+                logger.warning(  # type: ignore
+                    "User globally locked out after max failed attempts",
+                    user_id=str(user.id),
+                    email=user.email_encrypted,
+                    global_failed_attempts=global_attempt_count,
+                )
+                await mfa_service.delete_session(mfa_session_id)
+                raise MFAGlobalLockoutError()
+
+            # If this was the last allowed attempt for this session, delete session
             if new_attempt_count is not None and new_attempt_count >= settings.redis.mfa_max_attempts:
                 logger.warning(  # type: ignore
-                    "User locked out after max failed TOTP attempts",
+                    "User locked out after max failed TOTP attempts for session",
                     user_id=str(user.id),
                     email=user.email_encrypted,
                     failed_attempts=new_attempt_count,
@@ -199,14 +223,16 @@ async def verify_mfa_totp(
             # Otherwise, raise normal invalid code error
             raise InvalidTOTPCodeError()
 
-        # TOTP is valid - Delete MFA/Redis session to prevent replay
+        # TOTP is valid - Clear global lockout counter and delete MFA session
+        await mfa_service.clear_global_lockout(user.id)
+        await mfa_service.delete_session(mfa_session_id)
+
         logger.info(  # type: ignore
             "MFA verification successful",
             user_id=str(user.id),
             email=user.email_encrypted,
             device_id=verify_request.device_id,
         )
-        await mfa_service.delete_session(mfa_session_id)
 
         # Register device if device_id provided
         if verify_request.device_id:
