@@ -67,7 +67,7 @@ class AuthenticationService:
         return encoded_jwt
 
     @staticmethod
-    def decode_mfa_token(token: str) -> dict:
+    def decode_mfa_token(token: str) -> str:
         """
         Decode and validate an MFA JWT token with comprehensive error handling.
 
@@ -75,12 +75,11 @@ class AuthenticationService:
             token (str): The encoded JWT token for MFA.
 
         Returns:
-            dict: The decoded MFA token payload.
+            str: The MFA session ID from the token payload.
 
         Raises:
             MFATokenExpiredError: If token has expired
             MFATokenMalformedError: If token format is invalid
-            MFATokenPurposeMismatchError: If token purpose is not MFA
             MFATokenInvalidError: For other validation failures
         """
         try:
@@ -89,25 +88,22 @@ class AuthenticationService:
                 settings.authentication.mfa_token.secret_key,
                 algorithms=[settings.authentication.algorithm],
             )
-
-            # Validate required claims exist
-            mfa_session_id = payload.get(JWTClaim.mfa_session_id)
-            if not mfa_session_id:
-                raise MFATokenMalformedError()
-
-            return payload
-
-        except (MFATokenExpiredError, MFATokenMalformedError, MFATokenInvalidError):
-            raise
         except jwt.ExpiredSignatureError:
             raise MFATokenExpiredError()
         except jwt.InvalidSignatureError:
             raise MFATokenInvalidError()
         except jwt.DecodeError:
             raise MFATokenMalformedError()
-        except Exception:
-            # Catch-all for unexpected errors
-            raise MFATokenInvalidError()
+        except Exception as e:
+            # Catch-all for unexpected jwt errors
+            raise MFATokenInvalidError() from e
+
+        # Validate required claims exist
+        mfa_session_id = payload.get(JWTClaim.mfa_session_id)
+        if not mfa_session_id:
+            raise MFATokenMalformedError()
+
+        return mfa_session_id
 
     @staticmethod
     def create_refresh_token(data: dict) -> str:

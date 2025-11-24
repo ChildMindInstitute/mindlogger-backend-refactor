@@ -56,6 +56,10 @@ class TestMFARateLimiting(BaseTest):
             "failed_totp_attempts": 0,
         }
         mock_redis.get.return_value = json.dumps(session_data)
+        # Ensure async redis operations return concrete values to avoid hanging on awaited mocks
+        mock_redis.incr.return_value = 1
+        mock_redis.set.return_value = True
+        mock_redis.expire.return_value = True
 
         with patch("apps.authentication.services.mfa_session.RedisCache", return_value=mock_redis):
             # Login
@@ -67,14 +71,14 @@ class TestMFARateLimiting(BaseTest):
                     deviceId="test-device",
                 ),
             )
-            mfa_token = login_response.json()["result"]["mfa_token"]
+            mfa_token = login_response.json()["result"]["mfaToken"]
 
             # First failed attempt
             await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code="000000",  # Invalid
+                    mfaToken=mfa_token,
+                    totpCode="000000",  # Invalid
                 ),
             )
 
@@ -95,7 +99,7 @@ class TestMFARateLimiting(BaseTest):
                 deviceId="test-device",
             ),
         )
-        mfa_token = login_response.json()["result"]["mfa_token"]
+        mfa_token = login_response.json()["result"]["mfaToken"]
 
         # Make max_attempts failed attempts
         max_attempts = settings.redis.mfa_max_attempts
@@ -103,18 +107,17 @@ class TestMFARateLimiting(BaseTest):
             response = await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code="000000",  # Invalid
+                    mfaToken=mfa_token,
+                    totpCode="000000",  # Invalid
                 ),
             )
 
             if i < max_attempts - 1:
-                # Should fail with invalid code
-                assert response.status_code == http.HTTPStatus.BAD_REQUEST
+                # Invalid TOTP attempts return 401 Unauthorized
+                assert response.status_code == http.HTTPStatus.UNAUTHORIZED
             else:
-                # Last attempt should trigger rate limit
-                assert response.status_code == http.HTTPStatus.BAD_REQUEST
-                # May indicate exceeded attempts or session expired
+                # Final attempt exceeds per-session limit -> 429 Too Many Requests
+                assert response.status_code == http.HTTPStatus.TOO_MANY_REQUESTS
 
     async def test_global_rate_limit_increments_on_failure(self, client: TestClient, user_with_mfa: User):
         """Test that global rate limit counter increments across sessions."""
@@ -137,14 +140,14 @@ class TestMFARateLimiting(BaseTest):
                     deviceId="test-device",
                 ),
             )
-            mfa_token = login_response.json()["result"]["mfa_token"]
+            mfa_token = login_response.json()["result"]["mfaToken"]
 
             # Failed verification
             await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code="000000",
+                    mfaToken=mfa_token,
+                    totpCode="000000",
                 ),
             )
 
@@ -156,6 +159,11 @@ class TestMFARateLimiting(BaseTest):
     async def test_global_rate_limit_blocks_user_across_sessions(self, client: TestClient, user_with_mfa: User):
         """Test that global rate limit blocks user across multiple sessions."""
         mock_redis = AsyncMock()
+        # Provide primitive return values for awaited Redis operations
+        mock_redis.incr.return_value = settings.redis.mfa_global_lockout_attempts
+        mock_redis.set.return_value = True
+        mock_redis.expire.return_value = True
+        mock_redis.delete.return_value = True
 
         # Simulate user already at global lockout threshold
         session_data = {
@@ -180,19 +188,19 @@ class TestMFARateLimiting(BaseTest):
                     deviceId="test-device",
                 ),
             )
-            mfa_token = login_response.json()["result"]["mfa_token"]
+            mfa_token = login_response.json()["result"]["mfaToken"]
 
             # Try to verify
             response = await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code="123456",
+                    mfaToken=mfa_token,
+                    totpCode="123456",
                 ),
             )
 
-            # Should be blocked by global lockout
-            assert response.status_code == http.HTTPStatus.BAD_REQUEST
+            # Should be blocked by global lockout -> 429
+            assert response.status_code == http.HTTPStatus.TOO_MANY_REQUESTS
 
     async def test_global_lockout_cleared_after_successful_verification(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
@@ -206,6 +214,9 @@ class TestMFARateLimiting(BaseTest):
         }
         mock_redis.get.return_value = json.dumps(session_data)
         mock_redis.incr.return_value = 5
+        mock_redis.set.return_value = True
+        mock_redis.expire.return_value = True
+        mock_redis.delete.return_value = True
 
         with patch("apps.authentication.services.mfa_session.RedisCache", return_value=mock_redis):
             # Login
@@ -217,7 +228,7 @@ class TestMFARateLimiting(BaseTest):
                     deviceId="test-device",
                 ),
             )
-            mfa_token = login_response.json()["result"]["mfa_token"]
+            mfa_token = login_response.json()["result"]["mfaToken"]
 
             # Get valid code
             crud = UsersCRUD(session)
@@ -231,8 +242,8 @@ class TestMFARateLimiting(BaseTest):
             response = await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code=valid_code,
+                    mfaToken=mfa_token,
+                    totpCode=valid_code,
                 ),
             )
 
@@ -253,6 +264,10 @@ class TestMFAErrorHandling(BaseTest):
         """Test that expired MFA session returns appropriate error."""
         mock_redis = AsyncMock()
         mock_redis.get.return_value = None  # Session not found (expired)
+        mock_redis.incr.return_value = 1
+        mock_redis.set.return_value = True
+        mock_redis.expire.return_value = True
+        mock_redis.delete.return_value = True
 
         with patch("apps.authentication.services.mfa_session.RedisCache", return_value=mock_redis):
             # Login to get real token structure
@@ -264,7 +279,7 @@ class TestMFAErrorHandling(BaseTest):
                     deviceId="test-device",
                 ),
             )
-            mfa_token = login_response.json()["result"]["mfa_token"]
+            mfa_token = login_response.json()["result"]["mfaToken"]
 
             # Now mock Redis to return None (expired session)
             mock_redis.get.return_value = None
@@ -273,12 +288,13 @@ class TestMFAErrorHandling(BaseTest):
             response = await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code="123456",
+                    mfaToken=mfa_token,
+                    totpCode="123456",
                 ),
             )
 
-            assert response.status_code == http.HTTPStatus.BAD_REQUEST
+            # Session not found/expired -> 401 Unauthorized
+            assert response.status_code == http.HTTPStatus.UNAUTHORIZED
 
     async def test_malformed_mfa_token_returns_error(self, client: TestClient, user_with_mfa: User):
         """Test that malformed MFA token returns appropriate error."""
@@ -293,12 +309,13 @@ class TestMFAErrorHandling(BaseTest):
             response = await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=token,
-                    code="123456",
+                    mfaToken=token,
+                    totpCode="123456",
                 ),
             )
 
-            assert response.status_code == http.HTTPStatus.BAD_REQUEST
+            # Malformed/invalid token -> 401 Unauthorized
+            assert response.status_code == http.HTTPStatus.UNAUTHORIZED
 
     async def test_invalid_totp_code_format_returns_error(self, client: TestClient, user_with_mfa: User):
         """Test that invalid TOTP code formats return appropriate error."""
@@ -311,7 +328,7 @@ class TestMFAErrorHandling(BaseTest):
                 deviceId="test-device",
             ),
         )
-        mfa_token = login_response.json()["result"]["mfa_token"]
+        mfa_token = login_response.json()["result"]["mfaToken"]
 
         invalid_codes = [
             "12345",  # Too short
@@ -324,21 +341,22 @@ class TestMFAErrorHandling(BaseTest):
             response = await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code=code,
+                    mfaToken=mfa_token,
+                    totpCode=code,
                 ),
             )
 
             # Should return error (400 or 422 for validation)
-            assert response.status_code in [http.HTTPStatus.BAD_REQUEST, http.HTTPStatus.UNPROCESSABLE_ENTITY]
+            # Invalid format should raise field validation (422) or Unauthorized if decoded but invalid (401)
+            assert response.status_code in [http.HTTPStatus.UNAUTHORIZED, http.HTTPStatus.UNPROCESSABLE_ENTITY]
 
     async def test_missing_mfa_token_returns_error(self, client: TestClient, user_with_mfa: User):
         """Test that missing MFA token returns validation error."""
         response = await client.post(
             url=self.verify_mfa_url,
             data=dict(
-                code="123456",
-                # mfa_token missing
+                totpCode="123456",
+                # mfaToken missing
             ),
         )
 
@@ -355,13 +373,13 @@ class TestMFAErrorHandling(BaseTest):
                 deviceId="test-device",
             ),
         )
-        mfa_token = login_response.json()["result"]["mfa_token"]
+        mfa_token = login_response.json()["result"]["mfaToken"]
 
         response = await client.post(
             url=self.verify_mfa_url,
             data=dict(
-                mfa_token=mfa_token,
-                # code missing
+                mfaToken=mfa_token,
+                # totpCode missing
             ),
         )
 
@@ -376,6 +394,10 @@ class TestMFAErrorHandling(BaseTest):
             "failed_totp_attempts": settings.redis.mfa_max_attempts - 1,  # One away from limit
         }
         mock_redis.get.return_value = json.dumps(session_data)
+        mock_redis.incr.return_value = 1
+        mock_redis.set.return_value = True
+        mock_redis.expire.return_value = True
+        mock_redis.delete.return_value = True
 
         with patch("apps.authentication.services.mfa_session.RedisCache", return_value=mock_redis):
             # Login
@@ -387,14 +409,14 @@ class TestMFAErrorHandling(BaseTest):
                     deviceId="test-device",
                 ),
             )
-            mfa_token = login_response.json()["result"]["mfa_token"]
+            mfa_token = login_response.json()["result"]["mfaToken"]
 
             # One more failed attempt to exceed limit
             await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code="000000",
+                    mfaToken=mfa_token,
+                    totpCode="000000",
                 ),
             )
 
@@ -405,6 +427,10 @@ class TestMFAErrorHandling(BaseTest):
         """Test that corrupted Redis session data is handled gracefully."""
         mock_redis = AsyncMock()
         mock_redis.get.return_value = "corrupted-invalid-json-data"
+        mock_redis.incr.return_value = 1
+        mock_redis.set.return_value = True
+        mock_redis.expire.return_value = True
+        mock_redis.delete.return_value = True
 
         with patch("apps.authentication.services.mfa_session.RedisCache", return_value=mock_redis):
             # Login
@@ -416,19 +442,19 @@ class TestMFAErrorHandling(BaseTest):
                     deviceId="test-device",
                 ),
             )
-            mfa_token = login_response.json()["result"]["mfa_token"]
+            mfa_token = login_response.json()["result"]["mfaToken"]
 
             # Try to verify with corrupted session
             response = await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code="123456",
+                    mfaToken=mfa_token,
+                    totpCode="123456",
                 ),
             )
 
-            # Should handle gracefully with error
-            assert response.status_code == http.HTTPStatus.BAD_REQUEST
+            # Corrupted session data treated as missing -> 401 Unauthorized
+            assert response.status_code == http.HTTPStatus.UNAUTHORIZED
 
             # Corrupted session should be deleted
             mock_redis.delete.assert_called()
