@@ -1,7 +1,7 @@
 """Change mfa_secret column type from varchar(100) to text
 
-Revision ID: g1h2i3j4k5l6
-Revises: b2c3d4e5f6g7
+Revision ID: 81ebadb63f41
+Revises: 54261c99e57b
 Create Date: 2025-11-13 00:38:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "g1h2i3j4k5l6"
-down_revision = "b2c3d4e5f6g7"
+revision = "81ebadb63f41"
+down_revision = "54261c99e57b"
 branch_labels = None
 depends_on = None
 

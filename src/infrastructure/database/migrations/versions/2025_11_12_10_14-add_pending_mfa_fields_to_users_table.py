@@ -1,7 +1,7 @@
 """Add pending MFA fields to users table
 
-Revision ID: b2c3d4e5f6g7
-Revises: a1b2c3d4e5f6
+Revision ID: 54261c99e57b
+Revises: be23f01c7413
 Create Date: 2025-11-12 10:14:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "b2c3d4e5f6g7"
-down_revision = "a1b2c3d4e5f6"
+revision = "54261c99e57b"
+down_revision = "be23f01c7413"
 branch_labels = None
 depends_on = None
 
