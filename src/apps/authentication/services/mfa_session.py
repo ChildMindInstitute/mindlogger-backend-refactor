@@ -107,11 +107,8 @@ class MFASessionService:
             ex=self.session_ttl,
         )
 
-        logger.info(  # type: ignore
-            "MFA session created",
-            user_id=str(user_id),
-            mfa_session_id=mfa_session_id,
-            ttl_seconds=self.session_ttl,
+        logger.info(
+            f"MFA session created user_id={user_id} mfa_session_id={mfa_session_id} ttl_seconds={self.session_ttl}"
         )
 
         return mfa_session_id
@@ -156,11 +153,7 @@ class MFASessionService:
 
         except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
             # Session data is corrupted, delete it to clean up
-            logger.warning(  # type: ignore
-                "MFA session data corrupted",
-                mfa_session_id=mfa_session_id,
-                error_type=str(type(e).__name__),
-            )
+            logger.warning(f"MFA session data corrupted mfa_session_id={mfa_session_id} error_type={type(e).__name__}")
             await self.delete_session(mfa_session_id)
             return None
 
@@ -176,10 +169,7 @@ class MFASessionService:
         deleted = await self.redis_client.delete(redis_key)
 
         if deleted:
-            logger.info(  # type: ignore
-                "MFA session deleted",
-                mfa_session_id=mfa_session_id,
-            )
+            logger.info(f"MFA session deleted mfa_session_id={mfa_session_id}")
         return deleted
 
     async def increment_failed_totp_attempts(self, mfa_session_id: str) -> Optional[int]:
@@ -200,11 +190,9 @@ class MFASessionService:
         # Increment failed attempts
         new_count = session_data.increment_failed_attempts()
 
-        logger.warning(  # type: ignore
-            "Failed TOTP attempt recorded",
-            mfa_session_id=mfa_session_id,
-            failed_attempts=new_count,
-            max_attempts=settings.redis.mfa_max_attempts,
+        logger.warning(
+            f"Failed TOTP attempt recorded mfa_session_id={mfa_session_id} "
+            f"failed_attempts={new_count} max_attempts={settings.redis.mfa_max_attempts}"
         )
 
         # Update session in Redis with original TTL
@@ -245,11 +233,9 @@ class MFASessionService:
         if new_count == 1:
             await self.redis_client.expire(redis_key, settings.redis.mfa_global_lockout_ttl)
 
-        logger.warning(  # type: ignore
-            "Global MFA failed attempt recorded",
-            user_id=str(user_id),
-            failed_attempts=new_count,
-            max_attempts=settings.redis.mfa_global_lockout_attempts,
+        logger.warning(
+            f"Global MFA failed attempt recorded user_id={user_id} "
+            f"failed_attempts={new_count} max_attempts={settings.redis.mfa_global_lockout_attempts}"
         )
 
         return new_count
@@ -286,7 +272,4 @@ class MFASessionService:
         redis_key = self._build_global_lockout_key(user_id)
         await self.redis_client.delete(redis_key)
 
-        logger.info(  # type: ignore
-            "Global MFA lockout counter cleared",
-            user_id=str(user_id),
-        )
+        logger.info(f"Global MFA lockout counter cleared user_id={user_id}")

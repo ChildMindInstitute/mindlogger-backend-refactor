@@ -6,17 +6,16 @@ from datetime import datetime, timedelta
 
 import jwt
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from apps.authentication.errors import MFATokenInvalidError
+from apps.authentication.errors import MFATokenExpiredError, MFATokenInvalidError, MFATokenMalformedError
 from apps.authentication.services import AuthenticationService
 from config import settings
 
 
 @pytest.fixture
-def auth_service(session: AsyncSession) -> AuthenticationService:
-    """Create authentication service instance."""
-    return AuthenticationService(session)
+def auth_service() -> AuthenticationService:
+    """Create authentication service instance without DB session (static methods only)."""
+    return AuthenticationService(None)
 
 
 @pytest.fixture
@@ -38,13 +37,13 @@ class TestMFATokenGeneration:
         # Decode and verify payload
         payload = jwt.decode(
             mfa_token,
-            settings.authentication.access_token.secret_key,
+            settings.authentication.mfa_token.secret_key,
             algorithms=[settings.authentication.algorithm],
         )
 
         assert payload["mfa_session_id"] == sample_mfa_session_id
         assert "exp" in payload  # Should have expiration
-        assert "iat" in payload  # Should have issued at
+        assert "jti" in payload  # Should have token ID
 
     def test_create_mfa_token_has_expiration(self, auth_service: AuthenticationService, sample_mfa_session_id):
         """Test MFA token has proper expiration time."""
@@ -52,7 +51,7 @@ class TestMFATokenGeneration:
 
         payload = jwt.decode(
             mfa_token,
-            settings.authentication.access_token.secret_key,
+            settings.authentication.mfa_token.secret_key,
             algorithms=[settings.authentication.algorithm],
         )
 
@@ -78,12 +77,12 @@ class TestMFATokenGeneration:
         # Verify payloads are different
         payload_1 = jwt.decode(
             token_1,
-            settings.authentication.access_token.secret_key,
+            settings.authentication.mfa_token.secret_key,
             algorithms=[settings.authentication.algorithm],
         )
         payload_2 = jwt.decode(
             token_2,
-            settings.authentication.access_token.secret_key,
+            settings.authentication.mfa_token.secret_key,
             algorithms=[settings.authentication.algorithm],
         )
 
@@ -159,12 +158,12 @@ class TestMFATokenValidation:
         ]
 
         for token in malformed_tokens:
-            with pytest.raises(MFATokenInvalidError):
+            with pytest.raises(MFATokenMalformedError):
                 auth_service.decode_mfa_token(token)
 
     def test_decode_mfa_token_none(self, auth_service: AuthenticationService):
         """Test decoding None token raises error."""
-        with pytest.raises(MFATokenInvalidError):
+        with pytest.raises(MFATokenMalformedError):
             auth_service.decode_mfa_token(None)  # type: ignore
 
     def test_decode_mfa_token_wrong_algorithm(self, auth_service: AuthenticationService, sample_mfa_session_id):
@@ -270,7 +269,7 @@ class TestMFATokenSecurity:
         }
         short_lived_token = jwt.encode(
             payload,
-            settings.authentication.access_token.secret_key,
+            settings.authentication.mfa_token.secret_key,
             algorithm=settings.authentication.algorithm,
         )
 
@@ -282,5 +281,5 @@ class TestMFATokenSecurity:
         time.sleep(2)
 
         # Should now be expired
-        with pytest.raises(MFATokenInvalidError):
+        with pytest.raises(MFATokenExpiredError):
             auth_service.decode_mfa_token(short_lived_token)

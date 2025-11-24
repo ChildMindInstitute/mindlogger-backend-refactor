@@ -1,4 +1,4 @@
-"""Integration tests for MFA authentication flow."""
+"""Integration tests for MFA authentication flow (simplified)."""
 
 import http
 import json
@@ -90,10 +90,10 @@ class TestMFALoginFlow(BaseTest):
         assert "token" in data
         assert data["user"]["id"] == str(user_without_mfa.id)
 
-        # Should NOT have MFA fields
-        assert "mfa_required" not in data
-        assert "mfa_session_id" not in data
-        assert "mfa_token" not in data
+        # Should NOT have MFA fields (camelCase)
+        assert "mfaRequired" not in data
+        assert "mfaSessionId" not in data
+        assert "mfaToken" not in data
 
     async def test_login_with_mfa_returns_mfa_required(self, client: TestClient, user_with_mfa: User):
         """Test that login with MFA enabled returns MFA required response."""
@@ -107,12 +107,13 @@ class TestMFALoginFlow(BaseTest):
         )
 
         assert response.status_code == http.HTTPStatus.OK
-        data = response.json()["result"]
+        raw_json = response.json()
+        data = raw_json["result"]
 
-        # Should indicate MFA is required
-        assert data["mfa_required"] is True
-        assert "mfa_session_id" in data
-        assert "mfa_token" in data
+        # Should indicate MFA is required (camelCase)
+        assert data["mfaRequired"] is True
+        assert "mfaSessionId" in data
+        assert "mfaToken" in data
 
         # Should NOT have user or regular tokens yet
         assert "user" not in data
@@ -121,7 +122,7 @@ class TestMFALoginFlow(BaseTest):
         # MFA session ID should be valid UUID format
         import uuid
 
-        uuid.UUID(data["mfa_session_id"])
+        uuid.UUID(data["mfaSessionId"])  # validates format
 
     async def test_login_with_mfa_creates_redis_session(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
@@ -171,8 +172,8 @@ class TestMFALoginFlow(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()["result"]
 
-        mfa_token = data["mfa_token"]
-        mfa_session_id = data["mfa_session_id"]
+        mfa_token = data["mfaToken"]
+        mfa_session_id = data["mfaSessionId"]
 
         # Decode token and verify it contains session ID
         auth_service = AuthenticationService(session)
@@ -194,8 +195,8 @@ class TestMFALoginFlow(BaseTest):
                 ),
             )
 
-            # Should fail authentication
-            assert response.status_code == http.HTTPStatus.BAD_REQUEST
+            # Should fail authentication (Unauthorized)
+            assert response.status_code == http.HTTPStatus.UNAUTHORIZED
 
             # Should NOT create MFA session
             mock_redis.set.assert_not_called()
@@ -221,7 +222,7 @@ class TestMFATOTPVerification(BaseTest):
             ),
         )
         login_data = login_response.json()["result"]
-        mfa_token = login_data["mfa_token"]
+        mfa_token = login_data["mfaToken"]
 
         # Step 2: Get valid TOTP code
         crud = UsersCRUD(session)
@@ -235,8 +236,8 @@ class TestMFATOTPVerification(BaseTest):
         verify_response = await client.post(
             url=self.verify_mfa_url,
             data=dict(
-                mfa_token=mfa_token,
-                code=valid_code,
+                mfaToken=mfa_token,
+                totpCode=valid_code,
             ),
         )
 
@@ -264,18 +265,19 @@ class TestMFATOTPVerification(BaseTest):
             ),
         )
         login_data = login_response.json()["result"]
-        mfa_token = login_data["mfa_token"]
+        mfa_token = login_data["mfaToken"]
 
         # Step 2: Try with invalid code
         verify_response = await client.post(
             url=self.verify_mfa_url,
             data=dict(
-                mfa_token=mfa_token,
-                code="000000",  # Invalid code
+                mfaToken=mfa_token,
+                totpCode="000000",  # Invalid code
             ),
         )
 
-        assert verify_response.status_code == http.HTTPStatus.BAD_REQUEST
+        # Invalid TOTP code keeps user unauthenticated, expect 401 Unauthorized
+        assert verify_response.status_code == http.HTTPStatus.UNAUTHORIZED
         error_data = verify_response.json()
 
         # Should indicate invalid TOTP code
@@ -288,12 +290,13 @@ class TestMFATOTPVerification(BaseTest):
         verify_response = await client.post(
             url=self.verify_mfa_url,
             data=dict(
-                mfa_token="invalid.token.here",
-                code="123456",
+                mfaToken="invalid.token.here",
+                totpCode="123456",
             ),
         )
 
-        assert verify_response.status_code == http.HTTPStatus.BAD_REQUEST
+        # Invalid token should yield Unauthorized (401)
+        assert verify_response.status_code == http.HTTPStatus.UNAUTHORIZED
 
     async def test_verify_mfa_updates_last_totp_time_step(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
@@ -314,7 +317,7 @@ class TestMFATOTPVerification(BaseTest):
                 deviceId="test-device",
             ),
         )
-        mfa_token = login_response.json()["result"]["mfa_token"]
+        mfa_token = login_response.json()["result"]["mfaToken"]
 
         assert initial_user.mfa_secret is not None
         decrypted_secret = totp_service.decrypt_secret(initial_user.mfa_secret)
@@ -323,8 +326,8 @@ class TestMFATOTPVerification(BaseTest):
         verify_response = await client.post(
             url=self.verify_mfa_url,
             data=dict(
-                mfa_token=mfa_token,
-                code=valid_code,
+                mfaToken=mfa_token,
+                totpCode=valid_code,
             ),
         )
 
@@ -361,7 +364,7 @@ class TestMFATOTPVerification(BaseTest):
                     deviceId="test-device",
                 ),
             )
-            mfa_token = login_response.json()["result"]["mfa_token"]
+            mfa_token = login_response.json()["result"]["mfaToken"]
 
             # Get valid code
             crud = UsersCRUD(session)
@@ -375,8 +378,8 @@ class TestMFATOTPVerification(BaseTest):
             verify_response = await client.post(
                 url=self.verify_mfa_url,
                 data=dict(
-                    mfa_token=mfa_token,
-                    code=valid_code,
+                    mfaToken=mfa_token,
+                    totpCode=valid_code,
                 ),
             )
 
@@ -405,7 +408,7 @@ class TestMFAReplayProtection(BaseTest):
                 deviceId="test-device",
             ),
         )
-        mfa_token = login_response.json()["result"]["mfa_token"]
+        mfa_token = login_response.json()["result"]["mfaToken"]
 
         crud = UsersCRUD(session)
         fresh_user = await crud.get_by_id(user_with_mfa.id)
@@ -417,8 +420,8 @@ class TestMFAReplayProtection(BaseTest):
         first_verify = await client.post(
             url=self.verify_mfa_url,
             data=dict(
-                mfa_token=mfa_token,
-                code=valid_code,
+                mfaToken=mfa_token,
+                totpCode=valid_code,
             ),
         )
         assert first_verify.status_code == http.HTTPStatus.OK
@@ -432,16 +435,16 @@ class TestMFAReplayProtection(BaseTest):
                 deviceId="test-device-2",
             ),
         )
-        mfa_token_2 = login_response_2.json()["result"]["mfa_token"]
+        mfa_token_2 = login_response_2.json()["result"]["mfaToken"]
 
         # Try same code again
         second_verify = await client.post(
             url=self.verify_mfa_url,
             data=dict(
-                mfa_token=mfa_token_2,
-                code=valid_code,  # Same code
+                mfaToken=mfa_token_2,
+                totpCode=valid_code,  # Same code
             ),
         )
 
-        # Should fail due to replay protection
-        assert second_verify.status_code == http.HTTPStatus.BAD_REQUEST
+        # Should fail due to replay protection (401 Unauthorized - invalid/reused code)
+        assert second_verify.status_code == http.HTTPStatus.UNAUTHORIZED
