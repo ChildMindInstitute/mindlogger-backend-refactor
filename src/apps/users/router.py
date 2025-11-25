@@ -144,6 +144,8 @@ router.post(
     "/me/mfa/totp/verify",
     response_model=Response[TOTPVerifyResponse],
     name="user_mfa_totp_verify",
+    summary="Verify TOTP and enable MFA",
+    description="Verifies TOTP code and enables MFA. Returns 10 recovery codes on first-time setup (displayed once only).",
     responses={
         status.HTTP_200_OK: {"model": Response[TOTPVerifyResponse]},
         **AUTHENTICATION_ERROR_RESPONSES,
