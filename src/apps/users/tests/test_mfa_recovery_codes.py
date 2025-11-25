@@ -52,9 +52,7 @@ class TestMFARecoveryCodes:
         assert isinstance(result["recoveryCodes"], list)
         assert len(result["recoveryCodes"]) == 10
 
-    async def test_recovery_codes_stored_in_database(
-        self, client: TestClient, user: User, session: AsyncSession
-    ):
+    async def test_recovery_codes_stored_in_database(self, client: TestClient, user: User, session: AsyncSession):
         """Test that recovery codes are stored in database after generation."""
         client.login(user)
 
@@ -69,9 +67,6 @@ class TestMFARecoveryCodes:
         verify_resp = await client.post(self.totp_verify_url, data={"code": code})
         assert verify_resp.status_code == status.HTTP_200_OK
 
-        # Get returned codes
-        codes = verify_resp.json()["result"]["recoveryCodes"]
-
         # Query database
         crud = RecoveryCodeCRUD(session)
         db_codes = await crud.get_by_user_id(user.id)
@@ -83,9 +78,7 @@ class TestMFARecoveryCodes:
         assert all(code.code_hash is not None for code in db_codes)
         assert all(code.code_encrypted is not None for code in db_codes)
 
-    async def test_user_timestamp_set_after_generation(
-        self, client: TestClient, user: User, session: AsyncSession
-    ):
+    async def test_user_timestamp_set_after_generation(self, client: TestClient, user: User, session: AsyncSession):
         """Test that user.recovery_codes_generated_at is set after generation."""
         client.login(user)
 
@@ -111,9 +104,7 @@ class TestMFARecoveryCodes:
         assert updated_user.recovery_codes_generated_at is not None
         assert updated_user.mfa_enabled is True
 
-    async def test_reenrollment_no_codes_returned(
-        self, client: TestClient, user: User, session: AsyncSession
-    ):
+    async def test_reenrollment_no_codes_returned(self, client: TestClient, user: User, session: AsyncSession):
         """Test that re-enrollment does not regenerate recovery codes."""
         client.login(user)
 
@@ -126,7 +117,7 @@ class TestMFARecoveryCodes:
         code = totp.now()
 
         first_resp = await client.post(self.totp_verify_url, data={"code": code})
-        first_codes = first_resp.json()["result"]["recoveryCodes"]
+        assert first_resp.status_code == status.HTTP_200_OK
 
         # Get timestamp and DB codes
         crud_user = UsersCRUD(session)
@@ -137,9 +128,7 @@ class TestMFARecoveryCodes:
         first_db_codes = await crud_codes.get_by_user_id(user.id)
 
         # Simulate re-enrollment (disable and re-enable MFA)
-        await crud_user.update_by_id(
-            user.id, UserSchema(mfa_enabled=False, mfa_secret=None)
-        )
+        await crud_user.update_by_id(user.id, UserSchema(mfa_enabled=False, mfa_secret=None))
         await session.commit()
 
         # Re-enroll
@@ -166,9 +155,7 @@ class TestMFARecoveryCodes:
         assert len(second_db_codes) == 10  # Still 10 codes
         assert len(first_db_codes) == len(second_db_codes)
 
-    async def test_invalid_code_no_recovery_codes(
-        self, client: TestClient, user: User, session: AsyncSession
-    ):
+    async def test_invalid_code_no_recovery_codes(self, client: TestClient, user: User, session: AsyncSession):
         """Test that invalid TOTP code prevents recovery code generation."""
         client.login(user)
 

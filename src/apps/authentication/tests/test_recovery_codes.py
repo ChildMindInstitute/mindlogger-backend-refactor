@@ -1,6 +1,5 @@
 """Integration tests for MFA recovery codes."""
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
