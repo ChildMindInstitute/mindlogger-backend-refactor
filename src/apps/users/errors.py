@@ -54,3 +54,15 @@ class MFANotEnabledError(AccessDeniedError):
 
 class RecoveryCodesNotFoundError(NotFoundError):
     message = _("No recovery codes found. Please enable MFA to generate recovery codes.")
+
+
+class RecoveryCodeInvalidError(ValidationError):
+    message = _("Invalid recovery code. Please check the code and try again.")
+
+
+class RecoveryCodeAlreadyUsedError(ValidationError):
+    message = _("This recovery code has already been used. Each code can only be used once.")
+
+
+class RecoveryCodeNotFoundError(NotFoundError):
+    message = _("No matching recovery code found. Please verify the code is correct.")

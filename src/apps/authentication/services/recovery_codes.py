@@ -9,11 +9,21 @@ from cryptography.fernet import Fernet
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
-from apps.authentication.domain.recovery_code import RecoveryCodeCreate, RecoveryCodeView
+from apps.authentication.domain.recovery_code import (
+    RecoveryCode,
+    RecoveryCodeCreate,
+    RecoveryCodeView,
+)
 from apps.shared.bcrypt import get_password_hash, verify
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
+from apps.users.errors import (
+    RecoveryCodeAlreadyUsedError,
+    RecoveryCodeInvalidError,
+    RecoveryCodeNotFoundError,
+)
 from config import settings
+from infrastructure.logger import logger
 
 __all__ = [
     "generate_random_code",
@@ -24,6 +34,7 @@ __all__ = [
     "decrypt_recovery_code",
     "generate_recovery_codes",
     "get_recovery_codes",
+    "verify_recovery_code_service",
     "format_recovery_codes_text",
 ]
 
@@ -249,6 +260,72 @@ async def get_recovery_codes(
 
     # Step 4: Return list (already in creation order from database)
     return views
+
+
+async def verify_recovery_code_service(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    plain_code: str,
+) -> RecoveryCode:
+    """
+    Verify a recovery code and mark it as used.
+
+    This function orchestrates the recovery code verification flow:
+    1. Query all unused recovery codes for the user
+    2. Verify the plaintext code against stored hashes
+    3. Mark the matched code as used with timestamp
+    4. Return the updated domain object
+
+    Args:
+        session: Database session for queries and updates
+        user_id: UUID of the user attempting verification
+        plain_code: Plaintext recovery code entered by user
+
+    Returns:
+        RecoveryCode: The matched and now-used recovery code domain object
+
+    Raises:
+        RecoveryCodeNotFoundError: No codes exist for user
+        RecoveryCodeInvalidError: Code doesn't match any code hashes
+        RecoveryCodeAlreadyUsedError: Code matches but was already used (replay attack)
+
+    Example:
+        code = await verify_recovery_code_service(session, user_id, "A3F7K-9B2Q5")
+        print(f"Code used at: {code.used_at}")
+    """
+    # Step 1: Fetch all recovery codes for this user
+    crud = RecoveryCodeCRUD(session)
+    db_codes = await crud.get_by_user_id(user_id)
+
+    # Early exit if no codes exist at all
+    if not db_codes:
+        raise RecoveryCodeNotFoundError()
+
+    # Step 2: Check if code matches any hash (including used codes)
+    matched_code = None
+    for db_code in db_codes:
+        # Use existing utility function to verify hash
+        if verify_recovery_code(plain_code, db_code.code_hash):
+            matched_code = db_code
+            break
+
+    # If no match found, raise invalid error
+    if matched_code is None:
+        raise RecoveryCodeInvalidError()
+
+    # Step 3: Replay protection - check if code was already used
+    if matched_code.used:
+        logger.warning(
+            f"Replay attack detected - used recovery code attempted user_id={user_id} "
+            f"code_id={matched_code.id} previously_used_at={matched_code.used_at}"
+        )
+        raise RecoveryCodeAlreadyUsedError()
+
+    # Step 4: Mark the matched code as used
+    updated_code = await crud.mark_as_used(matched_code.id)
+
+    # Step 4: Return the updated domain object
+    return updated_code
 
 
 def format_recovery_codes_text(codes: list[RecoveryCodeView], user_email: str) -> str:
