@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import Body, Depends
 
 from apps.authentication.deps import get_current_user
+from apps.authentication.services.recovery_codes import generate_recovery_codes
 from apps.shared.domain.response import Response
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
@@ -116,29 +117,39 @@ async def user_mfa_totp_verify(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[TOTPVerifyResponse]:
-    """Verify TOTP code and enable MFA if valid."""
-    # Refetch user from database to ensure we have latest MFA state
-    fresh_user = await UsersCRUD(session).get_by_id(user.id)
+    """Verify TOTP code and enable MFA.
+    
+    Returns 10 recovery codes on first-time setup only (displayed once).
+    """
+    async with atomic(session):
+        # Refetch user from database to ensure we have latest MFA state
+        fresh_user = await UsersCRUD(session).get_by_id(user.id)
 
-    # Validate pending setup and get decrypted secret
-    decrypted_secret = totp_service.validate_pending_setup(fresh_user)
+        # Validate pending setup and get decrypted secret
+        decrypted_secret = totp_service.validate_pending_setup(fresh_user)
 
-    # Verify code (strict, no time-window tolerance for enrollment)
-    is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=0)
+        # Verify code (strict, no time-window tolerance for enrollment)
+        is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=0)
 
-    if not is_valid:
-        raise InvalidTOTPCodeError()
+        if not is_valid:
+            raise InvalidTOTPCodeError()
 
-    # Activate MFA atomically
-    assert fresh_user.pending_mfa_secret is not None  # Already validated above
-    await UsersCRUD(session).activate_mfa(
-        user_id=fresh_user.id,
-        encrypted_secret=fresh_user.pending_mfa_secret,
-    )
+        # Activate MFA atomically
+        assert fresh_user.pending_mfa_secret is not None  # Already validated above
+        await UsersCRUD(session).activate_mfa(
+            user_id=fresh_user.id,
+            encrypted_secret=fresh_user.pending_mfa_secret,
+        )
+
+        # Generate recovery codes on first-time MFA setup only
+        codes = None
+        if fresh_user.recovery_codes_generated_at is None:
+            codes = await generate_recovery_codes(session, fresh_user.id)
 
     result = TOTPVerifyResponse(
         message="TOTP MFA has been successfully enabled for your account.",
         mfa_enabled=True,
+        recovery_codes=codes,
     )
 
     return Response(result=result)
