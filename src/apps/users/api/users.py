@@ -1,9 +1,15 @@
 from datetime import datetime, timezone
 
 from fastapi import Body, Depends
+from fastapi.responses import Response as FastAPIResponse
 
 from apps.authentication.deps import get_current_user
-from apps.authentication.services.recovery_codes import generate_recovery_codes
+from apps.authentication.domain.recovery_code.public import RecoveryCodesListResponse
+from apps.authentication.services.recovery_codes import (
+    format_recovery_codes_text,
+    generate_recovery_codes,
+    get_recovery_codes,
+)
 from apps.shared.domain.response import Response
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
@@ -18,7 +24,7 @@ from apps.users.domain import (
     UserDeviceCreate,
     UserUpdateRequest,
 )
-from apps.users.errors import InvalidTOTPCodeError
+from apps.users.errors import InvalidTOTPCodeError, MFANotEnabledError, RecoveryCodesNotFoundError
 from apps.users.services.totp import totp_service
 from apps.users.services.user import UserService
 from apps.users.services.user_device import UserDeviceService
@@ -118,7 +124,7 @@ async def user_mfa_totp_verify(
     session=Depends(get_session),
 ) -> Response[TOTPVerifyResponse]:
     """Verify TOTP code and enable MFA.
-    
+
     Returns 10 recovery codes on first-time setup only (displayed once).
     """
     async with atomic(session):
@@ -153,3 +159,90 @@ async def user_mfa_totp_verify(
     )
 
     return Response(result=result)
+
+
+async def user_get_recovery_codes(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[RecoveryCodesListResponse]:
+    """Get list of recovery codes with their usage status.
+
+    Returns all recovery codes for the authenticated user with:
+    - Decrypted code values
+    - Used/unused status for each code
+    - When each code was used (if applicable)
+    - Summary statistics (total and unused count)
+
+    Requires MFA to be enabled.
+    """
+    # Refetch user to ensure latest MFA state
+    fresh_user = await UsersCRUD(session).get_by_id(user.id)
+
+    # Check MFA is enabled
+    if not fresh_user.mfa_secret:
+        raise MFANotEnabledError()
+
+    # Get all recovery codes with decrypted values
+    codes = await get_recovery_codes(session, fresh_user.id)
+
+    # Check if recovery codes exist
+    if not codes:
+        raise RecoveryCodesNotFoundError()
+
+    # Calculate statistics
+    total = len(codes)
+    unused = sum(1 for c in codes if not c.used)
+
+    result = RecoveryCodesListResponse(
+        codes=codes,
+        total=total,
+        unused_count=unused,
+    )
+
+    return Response(result=result)
+
+
+async def user_download_recovery_codes(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> FastAPIResponse:
+    """Download recovery codes as a text file.
+
+    Returns a plain text file with all recovery codes and their usage status.
+    The file includes:
+    - User email and generation timestamp
+    - Each code with usage status
+    - Security warnings
+
+    Requires MFA to be enabled.
+    """
+    # Refetch user to ensure latest MFA state
+    fresh_user = await UsersCRUD(session).get_by_id(user.id)
+
+    # Check MFA is enabled
+    if not fresh_user.mfa_secret:
+        raise MFANotEnabledError()
+
+    # Get all recovery codes with decrypted values
+    codes = await get_recovery_codes(session, fresh_user.id)
+
+    # Check if recovery codes exist
+    if not codes:
+        raise RecoveryCodesNotFoundError()
+
+    # Get user email for text file header
+    email = fresh_user.email_encrypted or fresh_user.email
+
+    # Format as downloadable text
+    text_content = format_recovery_codes_text(codes, email)
+
+    # Generate filename with timestamp
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    filename = f"recovery_codes_{timestamp}.txt"
+
+    # Return as downloadable text file
+    return FastAPIResponse(
+        content=text_content,
+        media_type="text/plain; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

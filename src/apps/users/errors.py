@@ -1,6 +1,6 @@
 from gettext import gettext as _
 
-from apps.shared.exception import NotFoundError, ValidationError
+from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 
 
 class UserNotFound(NotFoundError):
@@ -46,3 +46,11 @@ class MFASetupExpiredError(ValidationError):
 
 class InvalidTOTPCodeError(ValidationError):
     message = _("Invalid TOTP code. Please check your authenticator app and try again.")
+
+
+class MFANotEnabledError(AccessDeniedError):
+    message = _("MFA is not enabled. Please set up MFA before viewing recovery codes.")
+
+
+class RecoveryCodesNotFoundError(NotFoundError):
+    message = _("No recovery codes found. Please enable MFA to generate recovery codes.")

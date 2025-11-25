@@ -5,15 +5,15 @@ import secrets
 import string
 import uuid
 
+from cryptography.fernet import Fernet
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
-from apps.authentication.domain.recovery_code import RecoveryCodeCreate
+from apps.authentication.domain.recovery_code import RecoveryCodeCreate, RecoveryCodeView
 from apps.shared.bcrypt import get_password_hash, verify
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
 from config import settings
-from cryptography.fernet import Fernet
 
 __all__ = [
     "generate_random_code",
@@ -23,6 +23,8 @@ __all__ = [
     "encrypt_recovery_code",
     "decrypt_recovery_code",
     "generate_recovery_codes",
+    "get_recovery_codes",
+    "format_recovery_codes_text",
 ]
 
 
@@ -202,3 +204,114 @@ async def generate_recovery_codes(
 
     # Step 5: Return plaintext codes for one-time display
     return plaintext_codes
+
+
+async def get_recovery_codes(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+) -> list[RecoveryCodeView]:
+    """
+    Retrieve and decrypt all recovery codes for a user.
+
+    This function fetches recovery codes from the database and decrypts them
+    for display. Used by the view/download endpoints.
+
+    Args:
+        session: Database session for queries
+        user_id: UUID of the user whose codes to retrieve
+
+    Returns:
+        list[RecoveryCodeView]: List of recovery codes with decrypted values
+                                Sorted by created_at (oldest first)
+                                Empty list if no codes exist
+    """
+    # Step 1: Fetch all recovery codes from database
+    crud = RecoveryCodeCRUD(session)
+    db_codes = await crud.get_by_user_id(user_id)
+
+    # Step 2: Handle empty case
+    if not db_codes:
+        return []
+
+    # Step 3: Map each database record to RecoveryCodeView
+    views = []
+    for db_code in db_codes:
+        # Decrypt the code for display
+        plaintext = decrypt_recovery_code(db_code.code_encrypted)
+
+        # Create view model
+        view = RecoveryCodeView(
+            code=plaintext,
+            used=db_code.used,
+            used_at=db_code.used_at,
+        )
+        views.append(view)
+
+    # Step 4: Return list (already in creation order from database)
+    return views
+
+
+def format_recovery_codes_text(codes: list[RecoveryCodeView], user_email: str) -> str:
+    """
+    Format recovery codes as a downloadable text file.
+
+    Creates a formatted text document with:
+    - Header with user email and timestamp
+    - Each code with usage status
+    - Footer with security warning
+
+    Args:
+        codes: List of recovery codes with their usage status
+        user_email: User's email address for the header
+
+    Returns:
+        str: Formatted text content ready for download
+
+    Example output:
+        ============================================
+        MFA Recovery Codes
+        Generated for: user@example.com
+        Generated at: 2025-11-25 10:30:45 UTC
+        ============================================
+
+        ABC12-DEF34
+        XYZ78-QWE90 (USED on 2025-11-24 15:20 UTC)
+
+        ============================================
+        IMPORTANT: Keep these codes safe and secure.
+        Each code can only be used once.
+        ============================================
+    """
+    # Step 1: Build header section
+    now = datetime.datetime.now(datetime.timezone.utc)
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    lines = []
+    lines.append("=" * 50)
+    lines.append("MFA Recovery Codes")
+    lines.append(f"Generated for: {user_email}")
+    lines.append(f"Generated at: {timestamp}")
+    lines.append("=" * 50)
+    lines.append("")  # Blank line
+
+    # Step 2: Format each code with usage status
+    for code_view in codes:
+        if code_view.used and code_view.used_at:
+            # Format used_at datetime
+            used_str = code_view.used_at.strftime("%Y-%m-%d %H:%M UTC")
+            line = f"{code_view.code} (USED on {used_str})"
+        else:
+            # Unused code - just the code itself
+            line = code_view.code
+        lines.append(line)
+
+    # Step 3: Add footer warning
+    lines.append("")  # Blank line
+    lines.append("=" * 50)
+    lines.append("IMPORTANT: Keep these codes safe and secure.")
+    lines.append("Each code can only be used once.")
+    lines.append("Store them in a secure password manager.")
+    lines.append("=" * 50)
+
+    # Step 4: Join all lines with newlines
+    return "\n".join(lines)
