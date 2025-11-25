@@ -218,3 +218,136 @@ class TestRecoveryCodesIntegration:
         # Note: With 51.7 bits entropy, collision probability is negligible
         overlap = set(codes_batch1) & set(codes_batch2)
         assert len(overlap) == 0, f"Found {len(overlap)} duplicate codes across batches"
+
+
+class TestRecoveryCodesEdgeCases:
+    """Unit tests for edge cases and error scenarios."""
+
+    async def test_encryption_with_tampered_ciphertext(
+        self,
+        session: AsyncSession,
+        user: User,
+    ):
+        """Test decrypt_recovery_code with tampered ciphertext."""
+        import pytest
+        from cryptography.fernet import InvalidToken
+
+        # Generate a code and get its encrypted version
+        await generate_recovery_codes(session, user.id, count=1)
+        await session.commit()
+
+        recovery_crud = RecoveryCodeCRUD(session)
+        stored_codes = await recovery_crud.get_by_user_id(user.id)
+        encrypted = stored_codes[0].code_encrypted
+
+        # Tamper with the ciphertext
+        tampered = encrypted[:-5] + "XXXXX"
+
+        # Assert: Decryption fails with InvalidToken
+        with pytest.raises(InvalidToken):
+            decrypt_recovery_code(tampered)
+
+    async def test_code_generation_with_extreme_counts(
+        self,
+        session: AsyncSession,
+        user: User,
+    ):
+        """Test code generation with extreme counts (1, 100)."""
+        # Test count=1
+        codes_single = await generate_recovery_codes(session, user.id, count=1)
+        await session.commit()
+        assert len(codes_single) == 1
+        assert len(codes_single[0]) == 11
+
+        # Clean up
+        recovery_crud = RecoveryCodeCRUD(session)
+        await recovery_crud.delete_by_user_id(user.id)
+        await session.commit()
+
+        # Test count=100
+        codes_large = await generate_recovery_codes(session, user.id, count=100)
+        await session.commit()
+        assert len(codes_large) == 100
+        assert len(set(codes_large)) == 100  # All unique
+
+        # Verify in database
+        stored_codes = await recovery_crud.get_by_user_id(user.id)
+        assert len(stored_codes) == 100
+
+    async def test_format_recovery_code_with_malformed_input(self):
+        """Test format_recovery_code with malformed input."""
+        import pytest
+
+        from apps.authentication.services.recovery_codes import format_recovery_code
+
+        # Test with short input (should raise ValueError)
+        short = "ABC"
+        with pytest.raises(ValueError, match="Code must be 10 characters"):
+            format_recovery_code(short)
+
+        # Test with exact 10 characters
+        exact = "ABCDE12345"
+        formatted_exact = format_recovery_code(exact)
+        assert formatted_exact == "ABCDE-12345"
+        assert len(formatted_exact) == 11
+
+        # Test with more than 10 characters (should raise ValueError)
+        long_input = "ABCDE12345EXTRA"
+        with pytest.raises(ValueError, match="Code must be 10 characters"):
+            format_recovery_code(long_input)
+
+    async def test_hash_verification_with_null_empty_values(self):
+        """Test hash verification with null/empty values."""
+        import pytest
+
+        from apps.authentication.services.recovery_codes import hash_recovery_code
+
+        # Generate a valid code and hash
+        valid_code = "ABCDE-12345"
+        valid_hash = hash_recovery_code(valid_code)
+
+        # Test with valid code and hash - should work
+        result_valid = verify_recovery_code(valid_code, valid_hash)
+        assert result_valid is True
+
+        # Test with wrong code - should return False
+        wrong_code = "ZZZZZ-99999"
+        result_wrong = verify_recovery_code(wrong_code, valid_hash)
+        assert result_wrong is False
+
+        # Test with empty hash raises ValueError (invalid salt)
+        with pytest.raises(ValueError):
+            verify_recovery_code(valid_code, "")
+
+        # Test with malformed hash raises ValueError
+        with pytest.raises(ValueError):
+            verify_recovery_code(valid_code, "not_a_valid_hash")
+
+    async def test_encryption_key_consistency(
+        self,
+        session: AsyncSession,
+        user: User,
+    ):
+        """Test that encryption uses consistent key from config."""
+        from apps.authentication.services.recovery_codes import encrypt_recovery_code
+
+        plaintext = "ABCDE-12345"
+
+        # Encrypt same plaintext multiple times
+        encrypted1 = encrypt_recovery_code(plaintext)
+        encrypted2 = encrypt_recovery_code(plaintext)
+        encrypted3 = encrypt_recovery_code(plaintext)
+
+        # Assert: Different ciphertexts (Fernet uses random IV)
+        assert encrypted1 != encrypted2
+        assert encrypted2 != encrypted3
+        assert encrypted1 != encrypted3
+
+        # Assert: All decrypt to same plaintext
+        decrypted1 = decrypt_recovery_code(encrypted1)
+        decrypted2 = decrypt_recovery_code(encrypted2)
+        decrypted3 = decrypt_recovery_code(encrypted3)
+
+        assert decrypted1 == plaintext
+        assert decrypted2 == plaintext
+        assert decrypted3 == plaintext
