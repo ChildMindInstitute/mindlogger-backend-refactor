@@ -5,6 +5,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
+from apps.authentication.errors import MFASessionNotFoundError
+from apps.authentication.services.security import AuthenticationService
 from config import settings
 from infrastructure.logger import logger
 from infrastructure.utility.redis_client import RedisCache
@@ -273,3 +275,39 @@ class MFASessionService:
         await self.redis_client.delete(redis_key)
 
         logger.info(f"Global MFA lockout counter cleared user_id={user_id}")
+
+    async def validate_and_get_session(self, mfa_token: str) -> tuple[str, uuid.UUID]:
+        """
+        Validate MFA token and extract session ID and user ID.
+
+        This orchestrates the complete MFA token validation flow:
+        1. Decode JWT token to get mfa_session_id
+        2. Retrieve session data from Redis
+        3. Validate session exists and is not expired
+        4. Return both mfa_session_id and user_id
+
+        Args:
+            mfa_token: JWT token from client request
+
+        Returns:
+            tuple[str, uuid.UUID]: (mfa_session_id, user_id) from the MFA session
+
+        Raises:
+            MFATokenExpiredError: Token JWT has expired
+            MFATokenMalformedError: Token format is invalid
+            MFATokenInvalidError: Token signature/validation failed
+            MFASessionNotFoundError: Session doesn't exist or expired in Redis
+        """
+        # Step 1: Decode and validate JWT token
+        mfa_session_id = AuthenticationService.decode_mfa_token(mfa_token)
+
+        # Step 2: Retrieve session data from Redis
+        session_data = await self.get_session(mfa_session_id)
+
+        # Step 3: Validate session exists
+        if not session_data:
+            logger.warning(f"MFA session not found or expired mfa_session_id={mfa_session_id}")
+            raise MFASessionNotFoundError()
+
+        # Step 4: Return both mfa_session_id and user_id
+        return mfa_session_id, session_data.user_id
