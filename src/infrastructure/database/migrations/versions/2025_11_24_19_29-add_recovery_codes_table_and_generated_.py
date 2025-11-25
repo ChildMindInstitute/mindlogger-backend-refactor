@@ -24,6 +24,8 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column("migrated_date", sa.DateTime(), nullable=True),
+        sa.Column("migrated_updated", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=True),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("code_hash", sa.Text(), nullable=False),
