@@ -20,13 +20,21 @@ from apps.users.api import (
     user_download_recovery_codes,
     user_get_recovery_codes,
     user_mfa_totp_disable_initiate,
+    user_mfa_totp_disable_verify,
     user_mfa_totp_initiate,
     user_mfa_totp_verify,
     user_retrieve,
     user_save_device,
     user_update,
 )
-from apps.users.domain import MFADisableInitiateResponse, PublicUser, TOTPInitiateResponse, TOTPVerifyResponse, UserDevice
+from apps.users.domain import (
+    MFADisableInitiateResponse,
+    MFADisableVerifyResponse,
+    PublicUser,
+    TOTPInitiateResponse,
+    TOTPVerifyResponse,
+    UserDevice,
+)
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -175,6 +183,24 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(user_mfa_totp_disable_initiate)
+
+# TOTP disable verify
+router.post(
+    "/me/mfa/totp/disable/verify",
+    response_model=Response[MFADisableVerifyResponse],
+    name="user_mfa_totp_disable_verify",
+    summary="Verify TOTP and disable MFA",
+    description=(
+        "Verifies TOTP code and disables MFA. "
+        "Requires mfa_token from the initiate endpoint. "
+        "This permanently disables MFA and invalidates all recovery codes."
+    ),
+    responses={
+        status.HTTP_200_OK: {"model": Response[MFADisableVerifyResponse]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_mfa_totp_disable_verify)
 
 # Get recovery codes
 router.get(

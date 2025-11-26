@@ -223,3 +223,32 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         """
         query = update(UserSchema).where(UserSchema.id == user_id).values(last_totp_time_step=time_step)
         await self._execute(query)
+
+    async def disable_mfa(self, user_id: uuid.UUID, disabled_at: datetime.datetime) -> None:
+        """
+        Disable MFA for a user and clear all MFA-related fields.
+
+        This method atomically:
+        1. Disables MFA (sets mfa_enabled = False)
+        2. Clears mfa_secret (permanent TOTP secret)
+        3. Clears pending_mfa_secret and pending_mfa_created_at
+        4. Clears last_totp_time_step (replay protection counter)
+        5. Sets mfa_disabled_at timestamp for audit trail
+
+        Args:
+            user_id: The user's UUID
+            disabled_at: Timestamp when MFA was disabled
+        """
+        query = (
+            update(UserSchema)
+            .where(UserSchema.id == user_id)
+            .values(
+                mfa_enabled=False,
+                mfa_secret=None,
+                pending_mfa_secret=None,
+                pending_mfa_created_at=None,
+                last_totp_time_step=None,
+                mfa_disabled_at=disabled_at,
+            )
+        )
+        await self._execute(query)
