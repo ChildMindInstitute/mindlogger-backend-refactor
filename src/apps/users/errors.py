@@ -49,7 +49,7 @@ class InvalidTOTPCodeError(ValidationError):
 
 
 class MFANotEnabledError(AccessDeniedError):
-    message = _("MFA is not enabled. Please set up MFA before viewing recovery codes.")
+    message = _("MFA is not enabled for this account.")
 
 
 class RecoveryCodesNotFoundError(NotFoundError):

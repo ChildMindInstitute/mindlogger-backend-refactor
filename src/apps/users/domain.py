@@ -233,3 +233,11 @@ class TOTPVerifyResponse(PublicModel):
         default=None,
         description="Recovery codes generated during first-time MFA setup (displayed once only)",
     )
+
+
+class MFADisableInitiateResponse(PublicModel):
+    """Response when initiating MFA disable flow."""
+
+    mfa_required: bool = True
+    mfa_token: str = Field(description="JWT token for MFA disable verification")
+    message: str = Field(description="Instructions for completing MFA disable")

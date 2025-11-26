@@ -13,6 +13,7 @@ from apps.authentication.services.recovery_codes import (
 from apps.shared.domain.response import Response
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
+    MFADisableInitiateResponse,
     PublicUser,
     TOTPInitiateResponse,
     TOTPVerifyRequest,
@@ -24,6 +25,8 @@ from apps.users.domain import (
     UserDeviceCreate,
     UserUpdateRequest,
 )
+from apps.authentication.services.mfa_session import MFASessionService
+from apps.authentication.services.security import AuthenticationService
 from apps.users.errors import InvalidTOTPCodeError, MFANotEnabledError, RecoveryCodesNotFoundError
 from apps.users.services.totp import totp_service
 from apps.users.services.user import UserService
@@ -31,6 +34,7 @@ from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database.core import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.logger import logger
 
 
 async def user_create(
@@ -159,6 +163,33 @@ async def user_mfa_totp_verify(
     )
 
     return Response(result=result)
+
+
+async def user_mfa_totp_disable_initiate(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[MFADisableInitiateResponse]:
+    """Initiate MFA disable: verify user has MFA enabled and create disable session."""
+    # Check if user has MFA enabled
+    if not user.mfa_secret:
+        raise MFANotEnabledError()
+
+    # Create MFA session for disable purpose
+    mfa_service = MFASessionService()
+    mfa_session_id = await mfa_service.create_session(user_id=user.id, purpose="disable")
+
+    # Generate mfa_token
+    mfa_token = AuthenticationService.create_mfa_token(mfa_session_id=mfa_session_id)
+
+    logger.info(f"MFA disable initiated user_id={user.id} mfa_session_id={mfa_session_id}")
+
+    return Response(
+        result=MFADisableInitiateResponse(
+            mfa_required=True,
+            mfa_token=mfa_token,
+            message="Please verify your identity by entering your TOTP code or recovery code to disable MFA",
+        )
+    )
 
 
 async def user_get_recovery_codes(
