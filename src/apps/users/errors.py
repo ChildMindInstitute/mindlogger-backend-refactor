@@ -66,3 +66,7 @@ class RecoveryCodeAlreadyUsedError(ValidationError):
 
 class RecoveryCodeNotFoundError(NotFoundError):
     message = _("No matching recovery code found. Please verify the code is correct.")
+
+
+class MFASessionPurposeMismatchError(ValidationError):
+    message = _("Invalid MFA session for this operation.")

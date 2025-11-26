@@ -241,3 +241,19 @@ class MFADisableInitiateResponse(PublicModel):
     mfa_required: bool = True
     mfa_token: str = Field(description="JWT token for MFA disable verification")
     message: str = Field(description="Instructions for completing MFA disable")
+
+
+class MFADisableVerifyRequest(PublicModel):
+    """Request to verify TOTP code and disable MFA."""
+
+    mfa_token: str = Field(description="JWT token from MFA disable initiation")
+    code: str = Field(
+        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, regex=r"^\d{6}$"
+    )
+
+
+class MFADisableVerifyResponse(PublicModel):
+    """Response after successfully disabling MFA."""
+
+    mfa_disabled: bool = True
+    message: str = Field(description="Success message confirming MFA has been disabled")
