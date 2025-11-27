@@ -121,7 +121,8 @@ class MFASessionService:
         )
 
         logger.info(
-            f"MFA session created user_id={user_id} purpose={purpose} mfa_session_id={mfa_session_id} ttl_seconds={self.session_ttl}"
+            f"MFA session created user_id={user_id} purpose={purpose} "
+            f"mfa_session_id={mfa_session_id} ttl_seconds={self.session_ttl}"
         )
 
         return mfa_session_id

@@ -1,6 +1,7 @@
 """Tests for MFA disable initiation endpoint."""
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from apps.authentication.services.mfa_session import MFASessionService
@@ -8,7 +9,6 @@ from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.totp import totp_service
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ async def user_with_mfa(session: AsyncSession, user: User) -> User:
     crud = UsersCRUD(session)
     await crud.update_by_id(
         user.id,
-        {
+        {  # type: ignore[arg-type]
             "mfa_enabled": True,
             "mfa_secret": encrypted,
         },
@@ -42,7 +42,7 @@ async def user_no_mfa(session: AsyncSession, user: User) -> User:
     crud = UsersCRUD(session)
     await crud.update_by_id(
         user.id,
-        {
+        {  # type: ignore[arg-type]
             "mfa_enabled": False,
             "mfa_secret": None,
         },
@@ -93,9 +93,7 @@ class TestMFADisableInitiate:
         assert "message" in result
         assert "verify your identity" in result["message"].lower()
 
-    async def test_disable_creates_session_with_correct_purpose(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_disable_creates_session_with_correct_purpose(self, client: TestClient, user_with_mfa: User):
         """Verify session is created with purpose='disable'."""
         client.login(user_with_mfa)
 

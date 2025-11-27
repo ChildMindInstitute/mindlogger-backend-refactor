@@ -22,7 +22,7 @@ async def user_with_mfa(session: AsyncSession, user: User) -> User:
     crud = UsersCRUD(session)
     await crud.update_by_id(
         user.id,
-        {
+        {  # type: ignore[arg-type]
             "mfa_enabled": True,
             "mfa_secret": encrypted,
         },
@@ -59,6 +59,8 @@ class TestMFADisableIntegration:
         assert mfa_token != ""
 
         # Step 2: Generate valid TOTP
+        assert user_with_mfa.mfa_secret is not None
+
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
 
@@ -80,9 +82,7 @@ class TestMFADisableIntegration:
         assert final_user.last_totp_time_step is None
         assert final_user.mfa_disabled_at is not None
 
-    async def test_mfa_disable_clears_all_sessions(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_mfa_disable_clears_all_sessions(self, client: TestClient, user_with_mfa: User):
         """Disabling MFA clears the MFA session after completion."""
         client.login(user_with_mfa)
 
@@ -99,6 +99,8 @@ class TestMFADisableIntegration:
         assert session_data is not None
 
         # Complete disable flow
+        assert user_with_mfa.mfa_secret is not None
+
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
@@ -108,15 +110,15 @@ class TestMFADisableIntegration:
         session_data_after = await mfa_service.get_session(session_id)
         assert session_data_after is None
 
-    async def test_cannot_reuse_mfa_token_after_successful_disable(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_cannot_reuse_mfa_token_after_successful_disable(self, client: TestClient, user_with_mfa: User):
         """MFA token cannot be reused after successful disable."""
         client.login(user_with_mfa)
 
         # Complete disable flow
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
+
+        assert user_with_mfa.mfa_secret is not None
 
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
@@ -140,6 +142,8 @@ class TestMFADisableIntegration:
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
 
+        assert user_with_mfa.mfa_secret is not None
+
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
@@ -154,9 +158,7 @@ class TestMFADisableIntegration:
         response = await client.post(self.disable_initiate_url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    async def test_concurrent_disable_attempts_only_one_succeeds(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_concurrent_disable_attempts_only_one_succeeds(self, client: TestClient, user_with_mfa: User):
         """Only one concurrent disable attempt can succeed."""
         client.login(user_with_mfa)
 
@@ -171,6 +173,8 @@ class TestMFADisableIntegration:
         assert mfa_token1 != mfa_token2
 
         # Complete first disable
+        assert user_with_mfa.mfa_secret is not None
+
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data1 = {"mfaToken": mfa_token1, "code": valid_totp}

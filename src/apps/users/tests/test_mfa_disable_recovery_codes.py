@@ -22,7 +22,7 @@ async def user_with_mfa(session: AsyncSession, user: User) -> User:
     crud = UsersCRUD(session)
     await crud.update_by_id(
         user.id,
-        {
+        {  # type: ignore[arg-type]
             "mfa_enabled": True,
             "mfa_secret": encrypted,
         },
@@ -59,12 +59,14 @@ class TestMFADisableRecoveryCodes:
         crud = UsersCRUD(session)
         await crud.update_by_id(
             user_with_mfa.id,
-            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},
+            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},  # type: ignore[arg-type]
         )
 
         # Complete disable flow
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
+
+        assert user_with_mfa.mfa_secret is not None
 
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
@@ -73,7 +75,7 @@ class TestMFADisableRecoveryCodes:
         assert response.status_code == status.HTTP_200_OK
 
         # Verify timestamp cleared
-        updated_user = await crud.get_by_id(user_with_mfa.id)
+        _ = await crud.get_by_id(user_with_mfa.id)
         # Note: Current implementation may not clear timestamp - this is a known issue
         # assert updated_user.recovery_codes_generated_at is None
 
@@ -82,9 +84,11 @@ class TestMFADisableRecoveryCodes:
     ):
         """Disabling MFA deletes all recovery code database records."""
         from datetime import datetime
+
+        import bcrypt
+
         from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
         from apps.authentication.domain import RecoveryCodeCreate
-        import bcrypt
 
         client.login(user_with_mfa)
 
@@ -98,7 +102,7 @@ class TestMFADisableRecoveryCodes:
 
         await crud.update_by_id(
             user_with_mfa.id,
-            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},
+            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},  # type: ignore[arg-type]
         )
 
         # Create 5 recovery codes
@@ -114,7 +118,7 @@ class TestMFADisableRecoveryCodes:
                     used=False,
                 )
             )
-        
+
         await recovery_crud.create_many(recovery_code_creates)
         await session.commit()
 
@@ -125,6 +129,8 @@ class TestMFADisableRecoveryCodes:
         # Complete disable flow
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
+
+        assert user_with_mfa.mfa_secret is not None
 
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
@@ -141,9 +147,11 @@ class TestMFADisableRecoveryCodes:
     ):
         """Disabling MFA removes both used and unused recovery codes."""
         from datetime import datetime
+
+        import bcrypt
+
         from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
         from apps.authentication.domain import RecoveryCodeCreate
-        import bcrypt
 
         client.login(user_with_mfa)
 
@@ -157,7 +165,7 @@ class TestMFADisableRecoveryCodes:
 
         await crud.update_by_id(
             user_with_mfa.id,
-            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},
+            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},  # type: ignore[arg-type]
         )
 
         recovery_code_creates = []
@@ -172,7 +180,7 @@ class TestMFADisableRecoveryCodes:
                     used=(i < 2),  # First 2 are used, last 2 are unused
                 )
             )
-        
+
         await recovery_crud.create_many(recovery_code_creates)
         await session.commit()
 
@@ -185,6 +193,8 @@ class TestMFADisableRecoveryCodes:
         # Complete disable flow
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
+
+        assert user_with_mfa.mfa_secret is not None
 
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
@@ -217,6 +227,8 @@ class TestMFADisableRecoveryCodes:
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
 
+        assert user_with_mfa.mfa_secret is not None
+
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
@@ -232,9 +244,10 @@ class TestMFADisableRecoveryCodes:
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
     ):
         """After disabling and re-enabling MFA, new recovery codes can be generated."""
+        import bcrypt
+
         from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
         from apps.authentication.domain import RecoveryCodeCreate
-        import bcrypt
 
         client.login(user_with_mfa)
 
@@ -256,13 +269,15 @@ class TestMFADisableRecoveryCodes:
                     used=False,
                 )
             )
-        
+
         await recovery_crud.create_many(recovery_code_creates)
         await session.commit()
 
         # Disable MFA
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
+
+        assert user_with_mfa.mfa_secret is not None
 
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
@@ -279,7 +294,7 @@ class TestMFADisableRecoveryCodes:
         encrypted = totp_service.encrypt_secret(new_secret)
         await crud.update_by_id(
             user_with_mfa.id,
-            {"mfa_enabled": True, "mfa_secret": encrypted},
+            {"mfa_enabled": True, "mfa_secret": encrypted},  # type: ignore[arg-type]
         )
 
         # Generate new recovery codes
@@ -295,7 +310,7 @@ class TestMFADisableRecoveryCodes:
                     used=False,
                 )
             )
-        
+
         await recovery_crud.create_many(new_recovery_code_creates)
         await session.commit()
 
@@ -308,9 +323,11 @@ class TestMFADisableRecoveryCodes:
     ):
         """Recovery codes from disabled MFA cannot be used for login."""
         from datetime import datetime
+
+        import bcrypt
+
         from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
         from apps.authentication.domain import RecoveryCodeCreate
-        import bcrypt
 
         client.login(user_with_mfa)
 
@@ -324,7 +341,7 @@ class TestMFADisableRecoveryCodes:
 
         await crud.update_by_id(
             user_with_mfa.id,
-            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},
+            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},  # type: ignore[arg-type]
         )
 
         plain_code = "RECOVERY-CODE-TEST"
@@ -341,6 +358,8 @@ class TestMFADisableRecoveryCodes:
         # Disable MFA
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
+
+        assert user_with_mfa.mfa_secret is not None
 
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
@@ -359,9 +378,11 @@ class TestMFADisableRecoveryCodes:
     ):
         """Failed disable attempt does not delete recovery codes."""
         from datetime import datetime
+
+        import bcrypt
+
         from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
         from apps.authentication.domain import RecoveryCodeCreate
-        import bcrypt
 
         client.login(user_with_mfa)
 
@@ -375,7 +396,7 @@ class TestMFADisableRecoveryCodes:
 
         await crud.update_by_id(
             user_with_mfa.id,
-            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},
+            {"recovery_codes_generated_at": datetime(2024, 1, 1, 0, 0, 0)},  # type: ignore[arg-type]
         )
 
         recovery_code_creates = []
@@ -390,7 +411,7 @@ class TestMFADisableRecoveryCodes:
                     used=False,
                 )
             )
-        
+
         await recovery_crud.create_many(recovery_code_creates)
         await session.commit()
 

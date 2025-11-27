@@ -3,16 +3,19 @@ from datetime import datetime, timezone
 from fastapi import Body, Depends
 from fastapi.responses import Response as FastAPIResponse
 
+from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.deps import get_current_user
 from apps.authentication.domain.recovery_code.public import RecoveryCodesListResponse
+from apps.authentication.errors import MFAGlobalLockoutError, MFASessionNotFoundError, TooManyTOTPAttemptsError
+from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import (
     format_recovery_codes_text,
     generate_recovery_codes,
     get_recovery_codes,
 )
+from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.users.cruds.user import UsersCRUD
-from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.users.domain import (
     MFADisableInitiateResponse,
     MFADisableVerifyRequest,
@@ -28,9 +31,6 @@ from apps.users.domain import (
     UserDeviceCreate,
     UserUpdateRequest,
 )
-from apps.authentication.services.mfa_session import MFASessionService
-from apps.authentication.services.security import AuthenticationService
-from apps.authentication.errors import MFAGlobalLockoutError, MFASessionNotFoundError, TooManyTOTPAttemptsError
 from apps.users.errors import (
     InvalidTOTPCodeError,
     MFANotEnabledError,
@@ -161,8 +161,11 @@ async def user_mfa_totp_verify(
         )
 
         # Generate recovery codes on first-time MFA setup only
+        # Check if codes actually exist in DB, not just if timestamp is set
+        # (handles case where previous attempt set timestamp but failed to create codes)
         codes = None
-        if fresh_user.recovery_codes_generated_at is None:
+        existing_codes = await RecoveryCodeCRUD(session).get_by_user_id(fresh_user.id)
+        if len(existing_codes) == 0:
             codes = await generate_recovery_codes(session, fresh_user.id)
 
     result = TOTPVerifyResponse(
@@ -214,28 +217,22 @@ async def user_mfa_totp_disable_verify(
 
     # Step 2: SECURITY - Validate current user matches token's user
     if user.id != token_user_id:
-        logger.warning(
-            f"MFA disable attempted with mismatched user "
-            f"current_user={user.id} token_user={token_user_id}"
-        )
-        from fastapi import HTTPException, status as http_status
+        logger.warning(f"MFA disable attempted with mismatched user current_user={user.id} token_user={token_user_id}")
+        from fastapi import HTTPException
+        from fastapi import status as http_status
+
         raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN,
-            detail="This MFA token belongs to a different user"
+            status_code=http_status.HTTP_403_FORBIDDEN, detail="This MFA token belongs to a different user"
         )
 
     # Step 3: Validate session purpose is "disable"
     if purpose != "disable":
-        logger.warning(
-            f"MFA session purpose mismatch user_id={token_user_id} expected=disable actual={purpose}"
-        )
+        logger.warning(f"MFA session purpose mismatch user_id={token_user_id} expected=disable actual={purpose}")
         raise MFASessionPurposeMismatchError()
 
     # Step 3: Validate session purpose is "disable"
     if purpose != "disable":
-        logger.warning(
-            f"MFA session purpose mismatch user_id={token_user_id} expected=disable actual={purpose}"
-        )
+        logger.warning(f"MFA session purpose mismatch user_id={token_user_id} expected=disable actual={purpose}")
         raise MFASessionPurposeMismatchError()
 
     # Step 4: Check global lockout
@@ -254,7 +251,8 @@ async def user_mfa_totp_disable_verify(
     max_attempts = 3  # Same as login flow
     if session_data.has_exceeded_max_attempts(max_attempts):
         logger.warning(
-            f"MFA disable blocked - max attempts exceeded user_id={token_user_id} attempts={session_data.failed_totp_attempts}"
+            f"MFA disable blocked - max attempts exceeded user_id={token_user_id} "
+            f"attempts={session_data.failed_totp_attempts}"
         )
         raise TooManyTOTPAttemptsError()
 
@@ -299,9 +297,7 @@ async def user_mfa_totp_disable_verify(
             # Check if per-session threshold reached (5 attempts)
             if new_count is not None and new_count >= 5:  # settings.redis.mfa_max_attempts
                 await mfa_service.delete_session(mfa_session_id)
-                logger.warning(
-                    f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}"
-                )
+                logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
 
             raise InvalidTOTPCodeError()
 
@@ -309,9 +305,7 @@ async def user_mfa_totp_disable_verify(
         assert time_step_used is not None  # Guaranteed by is_valid=True
         await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
 
-        logger.info(
-            f"TOTP verified for MFA disable user_id={token_user_id} time_step={time_step_used}"
-        )
+        logger.info(f"TOTP verified for MFA disable user_id={token_user_id} time_step={time_step_used}")
 
         # Step 12: Disable MFA and clear all related fields
         disabled_at = datetime.now(timezone.utc).replace(tzinfo=None)
