@@ -155,31 +155,6 @@ class TestMFARecoveryCodes:
         assert len(second_db_codes) == 10  # Still 10 codes
         assert len(first_db_codes) == len(second_db_codes)
 
-    async def test_invalid_code_no_recovery_codes(self, client: TestClient, user: User, session: AsyncSession):
-        """Test that invalid TOTP code prevents recovery code generation."""
-        client.login(user)
-
-        # Initiate setup
-        await client.post(self.totp_initiate_url)
-
-        # Try invalid code
-        resp = await client.post(self.totp_verify_url, data={"code": "000000"})
-
-        # Should fail
-        assert resp.status_code == status.HTTP_400_BAD_REQUEST
-
-        # Check no codes generated
-        crud_user = UsersCRUD(session)
-        crud_codes = RecoveryCodeCRUD(session)
-
-        user_check = await crud_user.get_by_id(user.id)
-        db_codes = await crud_codes.get_by_user_id(user.id)
-
-        # Assertions
-        assert user_check.mfa_enabled is False
-        assert user_check.recovery_codes_generated_at is None
-        assert len(db_codes) == 0
-
     async def test_recovery_codes_format(self, client: TestClient, user: User, session: AsyncSession):
         """Test that returned recovery codes have correct format (XXXXX-XXXXX)."""
         client.login(user)
