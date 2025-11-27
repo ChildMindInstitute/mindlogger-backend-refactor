@@ -4,9 +4,9 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from apps.authentication.services.mfa_session import MFASessionService
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
+from apps.users.db.schemas import UserSchema
 from apps.users.domain import User
 from apps.users.services.totp import totp_service
 
@@ -22,10 +22,10 @@ async def user_with_mfa(session: AsyncSession, user: User) -> User:
     crud = UsersCRUD(session)
     await crud.update_by_id(
         user.id,
-        {
-            "mfa_enabled": True,
-            "mfa_secret": encrypted,
-        },
+        UserSchema(
+            mfa_enabled=True,
+            mfa_secret=encrypted,
+        ),
     )
 
     # Refresh and verify
@@ -55,6 +55,9 @@ class TestMFADisableVerify:
         mfa_token = response.json()["result"]["mfaToken"]
 
         # Decrypt the secret to generate valid TOTP
+        assert user_with_mfa.mfa_secret is not None
+        assert user_with_mfa.mfa_secret is not None
+
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
 
@@ -74,9 +77,7 @@ class TestMFADisableVerify:
         assert updated_user.mfa_secret is None
         assert updated_user.pending_mfa_secret is None
 
-    async def test_disable_verify_with_invalid_totp_returns_error(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_disable_verify_with_invalid_totp_returns_error(self, client: TestClient, user_with_mfa: User):
         """Invalid TOTP code returns error."""
         client.login(user_with_mfa)
 
@@ -93,9 +94,7 @@ class TestMFADisableVerify:
         error = response.json()["result"][0]
         assert "invalid" in error["message"].lower() or "incorrect" in error["message"].lower()
 
-    async def test_disable_verify_without_mfa_token_fails(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_disable_verify_without_mfa_token_fails(self, client: TestClient, user_with_mfa: User):
         """Verification without mfaToken returns error."""
         client.login(user_with_mfa)
 

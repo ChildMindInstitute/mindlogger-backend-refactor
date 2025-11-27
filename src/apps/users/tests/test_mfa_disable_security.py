@@ -23,7 +23,7 @@ async def user_with_mfa(session: AsyncSession, user: User) -> User:
     crud = UsersCRUD(session)
     await crud.update_by_id(
         user.id,
-        {
+        {  # type: ignore[arg-type]
             "mfa_enabled": True,
             "mfa_secret": encrypted,
         },
@@ -61,7 +61,7 @@ class TestMFADisableSecurity:
         """User cannot disable another user's MFA."""
         # Create a second user (different from user_with_mfa)
         from pydantic import EmailStr
-        
+
         user_service = UserService(session)
         user2_create = UserCreate(
             email=EmailStr("attacker@example.com"),
@@ -70,7 +70,7 @@ class TestMFADisableSecurity:
             last_name="User",
         )
         user2 = await user_service.create_user(user2_create)
-        
+
         # User 1 initiates their own disable
         client.login(user_with_mfa)
         response = await client.post(self.disable_initiate_url)
@@ -79,6 +79,8 @@ class TestMFADisableSecurity:
 
         # User 2 tries to use User 1's token
         client.login(user2)
+        assert user_with_mfa.mfa_secret is not None
+
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
@@ -95,36 +97,35 @@ class TestMFADisableSecurity:
         user1_after = await crud.get_by_id(user_with_mfa.id)
         assert user1_after.mfa_enabled is True
 
-    async def test_mfa_token_has_limited_lifetime(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_mfa_token_has_limited_lifetime(self, client: TestClient, user_with_mfa: User):
         """MFA tokens expire after configured time."""
-        import jwt
         from datetime import datetime, timedelta, timezone
+
+        import jwt
+
         from config import settings
 
         client.login(user_with_mfa)
 
         # Create session data with old timestamp (expired)
-        expired_time = datetime.now(timezone.utc) - timedelta(
-            seconds=settings.redis.mfa_session_ttl + 1
-        )
-        
+        expired_time = datetime.now(timezone.utc) - timedelta(seconds=settings.redis.mfa_session_ttl + 1)
+
         # Create session data and manually save to Redis
-        from apps.authentication.services.mfa_session import MFASessionData
         import json
-        
+
+        from apps.authentication.services.mfa_session import MFASessionData
+
         mfa_service = MFASessionService()
         session_id = "test-session-id-expired"
         redis_key = f"mfa_session:{session_id}"
-        
+
         session_data = MFASessionData(
             user_id=user_with_mfa.id,
             created_at=expired_time,
             purpose="disable",
             failed_totp_attempts=0,
         )
-        
+
         # Manually save to Redis (bypass create_session to use old timestamp)
         await mfa_service.redis_client.set(
             key=redis_key,
@@ -140,9 +141,7 @@ class TestMFADisableSecurity:
             "exp": datetime.now(timezone.utc) - timedelta(seconds=1),
             "iat": datetime.now(timezone.utc) - timedelta(minutes=10),
         }
-        expired_token = jwt.encode(
-            expired_payload, settings.authentication.mfa_token.secret_key, algorithm="HS256"
-        )
+        expired_token = jwt.encode(expired_payload, settings.authentication.mfa_token.secret_key, algorithm="HS256")
 
         # Try to verify with expired token
         verify_data = {"mfaToken": expired_token, "code": "123456"}
@@ -152,9 +151,7 @@ class TestMFADisableSecurity:
         error = response.json()["result"][0]
         assert "expired" in error["message"].lower() or "invalid" in error["message"].lower()
 
-    async def test_tampered_mfa_token_is_rejected(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_tampered_mfa_token_is_rejected(self, client: TestClient, user_with_mfa: User):
         """Tampered MFA tokens are rejected."""
         client.login(user_with_mfa)
 
@@ -178,6 +175,8 @@ class TestMFADisableSecurity:
         client.login(user_with_mfa)
 
         # Generate valid TOTP
+        assert user_with_mfa.mfa_secret is not None
+
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
 
@@ -194,7 +193,7 @@ class TestMFADisableSecurity:
         encrypted_secret = totp_service.encrypt_secret(new_secret)
         await crud.update_by_id(
             user_with_mfa.id,
-            {
+            {  # type: ignore[arg-type]
                 "mfa_enabled": True,
                 "mfa_secret": encrypted_secret,
                 "last_totp_time_step": None,
@@ -234,7 +233,7 @@ class TestMFADisableSecurity:
         encrypted2 = totp_service.encrypt_secret(secret2)
         await crud.update_by_id(
             user2.id,
-            {
+            {  # type: ignore[arg-type]
                 "mfa_enabled": True,
                 "mfa_secret": encrypted2,
             },
@@ -256,7 +255,7 @@ class TestMFADisableSecurity:
 
         # User 1 completes their disable
         client.login(user_with_mfa)
-        decrypted1 = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
+        decrypted1 = totp_service.decrypt_secret(user_with_mfa.mfa_secret)  # type: ignore[arg-type]
         totp1 = totp_service.get_current_code(decrypted1)
         verify_data = {"mfaToken": mfa_token1, "code": totp1}
         response = await client.post(self.disable_verify_url, data=verify_data)
@@ -264,37 +263,38 @@ class TestMFADisableSecurity:
 
         # User 2's session should still be valid
         client.login(user2_with_mfa)
-        decrypted2 = totp_service.decrypt_secret(user2_with_mfa.mfa_secret)
+        decrypted2 = totp_service.decrypt_secret(user2_with_mfa.mfa_secret)  # type: ignore[arg-type]
         totp2 = totp_service.get_current_code(decrypted2)
         verify_data = {"mfaToken": mfa_token2, "code": totp2}
         response = await client.post(self.disable_verify_url, data=verify_data)
         assert response.status_code == status.HTTP_200_OK
 
-    async def test_invalid_purpose_token_is_rejected(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_invalid_purpose_token_is_rejected(self, client: TestClient, user_with_mfa: User):
         """Token with wrong purpose cannot be used for disable."""
-        import jwt
         from datetime import datetime, timedelta, timezone
+
+        import jwt
+
         from config import settings
 
         client.login(user_with_mfa)
 
         # Create a token with purpose="enable" instead of "disable"
-        from apps.authentication.services.mfa_session import MFASessionData
         import json
-        
+
+        from apps.authentication.services.mfa_session import MFASessionData
+
         mfa_service = MFASessionService()
         session_id = "test-session-id-wrong-purpose"
         redis_key = f"mfa_session:{session_id}"
-        
+
         session_data = MFASessionData(
             user_id=user_with_mfa.id,
             created_at=datetime.now(timezone.utc),
             purpose="enable",  # Wrong purpose
             failed_totp_attempts=0,
         )
-        
+
         # Manually save to Redis
         await mfa_service.redis_client.set(
             key=redis_key,
@@ -324,9 +324,7 @@ class TestMFADisableSecurity:
             status.HTTP_403_FORBIDDEN,
         )
 
-    async def test_sql_injection_in_totp_code(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_sql_injection_in_totp_code(self, client: TestClient, user_with_mfa: User):
         """SQL injection attempts in TOTP code are safely handled."""
         client.login(user_with_mfa)
 
@@ -349,9 +347,7 @@ class TestMFADisableSecurity:
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
 
-    async def test_xss_in_response_messages(
-        self, client: TestClient, user_with_mfa: User
-    ):
+    async def test_xss_in_response_messages(self, client: TestClient, user_with_mfa: User):
         """Response messages don't include unsanitized user input (XSS prevention)."""
         client.login(user_with_mfa)
 
