@@ -1,0 +1,1050 @@
+{
+	"info": {
+		"_postman_id": "mfa-testing-collection",
+		"name": "MindLogger MFA Testing Collection",
+		"description": "Comprehensive test collection for Multi-Factor Authentication implementation in MindLogger backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [{
+			"key": "token",
+			"value": "{{access_token}}",
+			"type": "string"
+		}]
+	},
+	"item": [
+		{
+			"name": "1. User Registration & Authentication",
+			"item": [
+				{
+					"name": "Register New User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has user data\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result).to.have.property('id');",
+									"    pm.expect(jsonData.result.mfaEnabled).to.equal(false);",
+									"    pm.collectionVariables.set(\"user_id\", jsonData.result.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generate unique test user",
+									"const timestamp = new Date().getTime();",
+									"pm.collectionVariables.set(\"test_email\", `mfa.test.${timestamp}@example.com`);",
+									"pm.collectionVariables.set(\"test_password\", \"TestPassword123!\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"firstName\": \"MFA\",\n    \"lastName\": \"Test\",\n    \"password\": \"{{test_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Without MFA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has tokens\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result.token).to.have.property('accessToken');",
+									"    pm.expect(jsonData.result.token).to.have.property('refreshToken');",
+									"    pm.collectionVariables.set(\"access_token\", jsonData.result.token.accessToken);",
+									"    pm.collectionVariables.set(\"refresh_token\", jsonData.result.token.refreshToken);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\",\n    \"deviceId\": \"test-device-001\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. MFA Enrollment",
+			"item": [
+				{
+					"name": "Initiate MFA Setup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has provisioning URI\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result).to.have.property('provisioningUri');",
+									"    pm.expect(jsonData.result).to.have.property('message');",
+									"    pm.collectionVariables.set(\"provisioning_uri\", jsonData.result.provisioningUri);",
+									"    ",
+									"    // Extract secret from URI for testing",
+									"    const uri = jsonData.result.provisioningUri;",
+									"    const secretMatch = uri.match(/secret=([A-Z0-9]+)/);",
+									"    if (secretMatch) {",
+									"        pm.collectionVariables.set(\"totp_secret\", secretMatch[1]);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/users/me/mfa/totp/initiate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"mfa",
+								"totp",
+								"initiate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify TOTP Setup (Invalid Code)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Error message for invalid TOTP\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result[0].message).to.include(\"Invalid TOTP code\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/me/mfa/totp/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"mfa",
+								"totp",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify TOTP Setup (Valid Code)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Note: In actual testing, you need to generate a valid TOTP code",
+									"// Using a tool like oathtool or Google Authenticator with the secret",
+									"// For automated testing, you would need to integrate a TOTP library",
+									"",
+									"// Example: oathtool --base32 --totp \"{{totp_secret}}\"",
+									"// Then manually set the generated code:",
+									"// pm.collectionVariables.set(\"current_totp_code\", \"generated_code\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"MFA enabled successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result.mfaEnabled).to.equal(true);",
+									"    pm.expect(jsonData.result.message).to.include(\"successfully enabled\");",
+									"});",
+									"",
+									"pm.test(\"Recovery codes returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result).to.have.property('recoveryCodes');",
+									"    pm.expect(jsonData.result.recoveryCodes).to.be.an('array');",
+									"    pm.expect(jsonData.result.recoveryCodes.length).to.equal(10);",
+									"    ",
+									"    // Store recovery codes for later tests",
+									"    if (jsonData.result.recoveryCodes && jsonData.result.recoveryCodes.length > 0) {",
+									"        pm.collectionVariables.set(\"recovery_code_1\", jsonData.result.recoveryCodes[0]);",
+									"        pm.collectionVariables.set(\"recovery_code_2\", jsonData.result.recoveryCodes[1]);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"{{current_totp_code}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/me/mfa/totp/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"mfa",
+								"totp",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. MFA Login Flow",
+			"item": [
+				{
+					"name": "Login With MFA Enabled",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"MFA required response\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result.mfaRequired).to.equal(true);",
+									"    pm.expect(jsonData.result).to.have.property('mfaSessionId');",
+									"    pm.expect(jsonData.result).to.have.property('mfaToken');",
+									"    ",
+									"    pm.collectionVariables.set(\"mfa_session_id\", jsonData.result.mfaSessionId);",
+									"    pm.collectionVariables.set(\"mfa_token\", jsonData.result.mfaToken);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"{{test_password}}\",\n    \"deviceId\": \"test-device-002\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify MFA TOTP (Invalid)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Invalid TOTP error\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result[0].message).to.include(\"Invalid TOTP code\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfaToken\": \"{{mfa_token}}\",\n    \"totpCode\": \"000000\",\n    \"deviceId\": \"test-device-002\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/totp/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"mfa",
+								"totp",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify MFA TOTP (Valid)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Login successful with tokens\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result.token).to.have.property('accessToken');",
+									"    pm.expect(jsonData.result.token).to.have.property('refreshToken');",
+									"    pm.expect(jsonData.result).to.have.property('user');",
+									"    ",
+									"    pm.collectionVariables.set(\"access_token_mfa\", jsonData.result.token.accessToken);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfaToken\": \"{{mfa_token}}\",\n    \"totpCode\": \"{{current_totp_code}}\",\n    \"deviceId\": \"test-device-002\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/totp/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"mfa",
+								"totp",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify MFA Recovery Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Login successful with recovery code\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result.token).to.have.property('accessToken');",
+									"    pm.expect(jsonData.result.token).to.have.property('refreshToken');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfaToken\": \"{{mfa_token}}\",\n    \"code\": \"{{recovery_code_1}}\",\n    \"deviceId\": \"test-device-003\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/recovery-codes/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"mfa",
+								"recovery-codes",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Recovery Code Management",
+			"item": [
+				{
+					"name": "Get Recovery Codes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Recovery codes list returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result).to.have.property('codes');",
+									"    pm.expect(jsonData.result).to.have.property('total');",
+									"    pm.expect(jsonData.result).to.have.property('unusedCount');",
+									"    pm.expect(jsonData.result.codes).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Used recovery code marked\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    const usedCode = jsonData.result.codes.find(c => c.used === true);",
+									"    pm.expect(usedCode).to.not.be.undefined;",
+									"    pm.expect(usedCode.usedAt).to.not.be.null;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/me/mfa/recovery-codes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"mfa",
+								"recovery-codes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Download Recovery Codes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Content-Type is text/plain\", function () {",
+									"    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/plain');",
+									"});",
+									"",
+									"pm.test(\"Content-Disposition header for download\", function () {",
+									"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+									"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('recovery_codes_');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/me/mfa/recovery-codes/download",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"mfa",
+								"recovery-codes",
+								"download"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. MFA Disable Flow",
+			"item": [
+				{
+					"name": "Initiate MFA Disable",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"MFA disable session created\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result.mfaRequired).to.equal(true);",
+									"    pm.expect(jsonData.result).to.have.property('mfaToken');",
+									"    pm.expect(jsonData.result.message).to.include(\"verify your identity\");",
+									"    ",
+									"    pm.collectionVariables.set(\"mfa_disable_token\", jsonData.result.mfaToken);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/me/mfa/totp/disable/initiate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"mfa",
+								"totp",
+								"disable",
+								"initiate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify MFA Disable (Invalid Code)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Invalid TOTP error\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result[0].message).to.include(\"Invalid TOTP code\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfaToken\": \"{{mfa_disable_token}}\",\n    \"code\": \"111111\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/me/mfa/totp/disable/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"mfa",
+								"totp",
+								"disable",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify MFA Disable (Valid Code)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"MFA disabled successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result.mfaDisabled).to.equal(true);",
+									"    pm.expect(jsonData.result.message).to.include(\"successfully disabled\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfaToken\": \"{{mfa_disable_token}}\",\n    \"code\": \"{{current_totp_code}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/me/mfa/totp/disable/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								"mfa",
+								"totp",
+								"disable",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Rate Limiting Tests",
+			"item": [
+				{
+					"name": "Multiple Failed TOTP Attempts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// This test should be run multiple times to test rate limiting",
+									"pm.test(\"Rate limiting enforced\", function () {",
+									"    const iteration = pm.variables.get(\"iteration\") || 1;",
+									"    ",
+									"    if (iteration <= 5) {",
+									"        // First 5 attempts should return 400",
+									"        pm.response.to.have.status(400);",
+									"    } else {",
+									"        // 6th attempt should be rate limited",
+									"        pm.response.to.have.status(429);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Track iteration count",
+									"let iteration = pm.variables.get(\"iteration\") || 1;",
+									"pm.variables.set(\"iteration\", iteration + 1);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfaToken\": \"{{mfa_token}}\",\n    \"totpCode\": \"999999\",\n    \"deviceId\": \"test-device-rate-limit\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/totp/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"mfa",
+								"totp",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "7. Security Tests",
+			"item": [
+				{
+					"name": "Test Replay Protection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// This test verifies that the same TOTP code cannot be reused",
+									"pm.test(\"Replay protection prevents code reuse\", function () {",
+									"    pm.response.to.have.status(400);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result[0].message).to.include(\"Invalid TOTP code\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfaToken\": \"{{mfa_token}}\",\n    \"totpCode\": \"{{previously_used_totp_code}}\",\n    \"deviceId\": \"test-device-replay\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/totp/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"mfa",
+								"totp",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test Expired MFA Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Expired MFA token rejected\", function () {",
+									"    pm.response.to.have.status(401);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.result[0].message).to.include(\"expired\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mfaToken\": \"expired.mfa.token\",\n    \"totpCode\": \"123456\",\n    \"deviceId\": \"test-device-expired\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/mfa/totp/verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"mfa",
+								"totp",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"pm.test(\"Response time is less than 1000ms\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "test_email",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "test_password",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "mfa_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "mfa_session_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "totp_secret",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "current_totp_code",
+			"value": "MANUAL_ENTRY_REQUIRED",
+			"type": "string"
+		},
+		{
+			"key": "provisioning_uri",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "recovery_code_1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "recovery_code_2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "mfa_disable_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "access_token_mfa",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "previously_used_totp_code",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
