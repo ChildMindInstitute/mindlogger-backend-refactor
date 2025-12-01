@@ -41,6 +41,7 @@ from apps.users.services.totp import totp_service
 from apps.users.services.user import UserService
 from apps.users.services.user_device import UserDeviceService
 from apps.workspaces.service.workspace import WorkspaceService
+from config import settings
 from infrastructure.database.core import atomic
 from infrastructure.database.deps import get_session
 from infrastructure.logger import logger
@@ -230,11 +231,6 @@ async def user_mfa_totp_disable_verify(
         logger.warning(f"MFA session purpose mismatch user_id={token_user_id} expected=disable actual={purpose}")
         raise MFASessionPurposeMismatchError()
 
-    # Step 3: Validate session purpose is "disable"
-    if purpose != "disable":
-        logger.warning(f"MFA session purpose mismatch user_id={token_user_id} expected=disable actual={purpose}")
-        raise MFASessionPurposeMismatchError()
-
     # Step 4: Check global lockout
     is_locked = await mfa_service.is_globally_locked_out(token_user_id)
     if is_locked:
@@ -248,7 +244,7 @@ async def user_mfa_totp_disable_verify(
         raise MFASessionNotFoundError()
 
     # Step 6: Check per-session max attempts
-    max_attempts = 3  # Same as login flow
+    max_attempts = settings.redis.mfa_max_attempts
     if session_data.has_exceeded_max_attempts(max_attempts):
         logger.warning(
             f"MFA disable blocked - max attempts exceeded user_id={token_user_id} "
@@ -290,12 +286,12 @@ async def user_mfa_totp_disable_verify(
             )
 
             # Check if global lockout threshold reached
-            if global_count >= 10:  # settings.redis.mfa_global_lockout_attempts
+            if global_count >= settings.redis.mfa_global_lockout_attempts:
                 logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
                 # Note: Next attempt will be blocked by is_globally_locked_out check
 
-            # Check if per-session threshold reached (5 attempts)
-            if new_count is not None and new_count >= 5:  # settings.redis.mfa_max_attempts
+            # Check if per-session threshold reached
+            if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
                 await mfa_service.delete_session(mfa_session_id)
                 logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
 
@@ -413,9 +409,15 @@ async def user_download_recovery_codes(
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"recovery_codes_{timestamp}.txt"
 
-    # Return as downloadable text file
+    # Return as downloadable text file with security headers
     return FastAPIResponse(
         content=text_content,
         media_type="text/plain; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Cache-Control": "no-store, no-cache, must-revalidate, private",
+            "Pragma": "no-cache",
+        },
     )
