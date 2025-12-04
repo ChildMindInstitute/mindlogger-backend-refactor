@@ -89,6 +89,7 @@ class User(InternalModel):
     pending_mfa_secret: str | None = None
     pending_mfa_created_at: datetime.datetime | None = None
     last_totp_time_step: int | None = None
+    recovery_codes_generated_at: datetime.datetime | None = None
     hashed_password: str
     email_encrypted: str | None
     last_seen_at: datetime.datetime | None
@@ -227,3 +228,7 @@ class TOTPVerifyResponse(PublicModel):
 
     message: str = Field(description="Success message")
     mfa_enabled: bool = Field(description="Whether MFA is now enabled for the user")
+    recovery_codes: list[str] | None = Field(
+        default=None,
+        description="Recovery codes generated during first-time MFA setup (displayed once only)",
+    )

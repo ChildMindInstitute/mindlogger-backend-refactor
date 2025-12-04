@@ -1,6 +1,7 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
+from apps.authentication.domain.recovery_code.public import RecoveryCodesListResponse
 from apps.shared.domain import Response
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -16,6 +17,8 @@ from apps.users.api import (
     password_update,
     user_create,
     user_delete,
+    user_download_recovery_codes,
+    user_get_recovery_codes,
     user_mfa_totp_initiate,
     user_mfa_totp_verify,
     user_retrieve,
@@ -144,9 +147,49 @@ router.post(
     "/me/mfa/totp/verify",
     response_model=Response[TOTPVerifyResponse],
     name="user_mfa_totp_verify",
+    summary="Verify TOTP and enable MFA",
+    description=(
+        "Verifies TOTP code and enables MFA. Returns 10 recovery codes on first-time setup (displayed once only)."
+    ),
     responses={
         status.HTTP_200_OK: {"model": Response[TOTPVerifyResponse]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(user_mfa_totp_verify)
+
+# Get recovery codes
+router.get(
+    "/me/mfa/recovery-codes",
+    response_model=Response[RecoveryCodesListResponse],
+    name="user_get_recovery_codes",
+    summary="Get recovery codes list",
+    description=(
+        "Returns all recovery codes with their usage status. "
+        "Each code shows whether it has been used and when. Requires MFA to be enabled."
+    ),
+    responses={
+        status.HTTP_200_OK: {"model": Response[RecoveryCodesListResponse]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_get_recovery_codes)
+
+# Download recovery codes
+router.get(
+    "/me/mfa/recovery-codes/download",
+    response_model=None,
+    name="user_download_recovery_codes",
+    summary="Download recovery codes as text file",
+    description=(
+        "Downloads all recovery codes with their usage status as a plain text file. Requires MFA to be enabled."
+    ),
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Text file download",
+            "content": {"text/plain": {"schema": {"type": "string"}}},
+        },
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_download_recovery_codes)
