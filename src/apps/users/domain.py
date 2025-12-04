@@ -21,11 +21,14 @@ __all__ = [
     "PasswordRecoveryRequest",
     "PasswordRecoveryInfo",
     "PasswordRecoveryApproveRequest",
+    "TOTPInitiateResponse",
+    "TOTPVerifyRequest",
+    "TOTPVerifyResponse",
 ]
 
 
 class UserCreateRequest(PublicModel):
-    """This model represents user `create request` data model."""
+    """User creation request model."""
 
     email: EmailStr
 
@@ -67,18 +70,24 @@ class UserCreate(UserCreateRequest):
 
 
 class UserUpdateRequest(InternalModel):
-    """This model represents user `update request` data model."""
+    """User update request model."""
 
     first_name: str
     last_name: str
 
 
 class User(InternalModel):
+    """Internal user model."""
+
     email: str
     first_name: str
     last_name: str
     id: uuid.UUID
     is_super_admin: bool
+    mfa_enabled: bool = False
+    mfa_secret: str | None = None
+    pending_mfa_secret: str | None = None
+    pending_mfa_created_at: datetime.datetime | None = None
     hashed_password: str
     email_encrypted: str | None
     last_seen_at: datetime.datetime | None
@@ -88,12 +97,13 @@ class User(InternalModel):
 
 
 class PublicUser(PublicModel):
-    """Public user data model."""
+    """Public-facing user model."""
 
     email: EmailStr | None
     first_name: str
     last_name: str
     id: uuid.UUID
+    mfa_enabled: bool = False
 
     @classmethod
     def from_user(cls, user: User) -> "PublicUser":
@@ -102,6 +112,7 @@ class PublicUser(PublicModel):
             first_name=user.first_name,
             last_name=user.last_name,
             id=user.id,
+            mfa_enabled=user.mfa_enabled,
         )
 
     def get_full_name(self) -> str:
@@ -109,11 +120,13 @@ class PublicUser(PublicModel):
 
 
 class ProlificPublicUser(InternalModel):
+    """Simple flag indicating existence."""
+
     exists: bool
 
 
 class ChangePasswordRequest(InternalModel):
-    """This model represents change password data model."""
+    """Change password request."""
 
     password: str
     prev_password: str
@@ -126,15 +139,13 @@ class ChangePasswordRequest(InternalModel):
 
 
 class UserChangePassword(InternalModel):
-    """This model represents user `update request` data model."""
+    """Internal model for updated password."""
 
     hashed_password: str
 
 
 class PasswordRecoveryRequest(InternalModel):
-    """This model represents password recovery request
-    for password recover.
-    """
+    """Password recovery request."""
 
     email: EmailStr
 
@@ -144,9 +155,7 @@ class PasswordRecoveryRequest(InternalModel):
 
 
 class PasswordRecoveryInfo(InternalModel):
-    """This is a password recovery representation
-    for internal needs.
-    """
+    """Internal password recovery info."""
 
     email: str
     user_id: uuid.UUID
@@ -154,9 +163,7 @@ class PasswordRecoveryInfo(InternalModel):
 
 
 class PasswordRecoveryApproveRequest(InternalModel):
-    """This model represents password recovery approve request
-    for password recover.
-    """
+    """Approve password recovery request."""
 
     email: EmailStr
     key: uuid.UUID
@@ -197,3 +204,25 @@ class UserDevice(UserDeviceCreate):
             user_device.os = AppInfoOS(name=schema.os_name, version=schema.os_version)
 
         return user_device
+
+
+class TOTPInitiateResponse(PublicModel):
+    """Response for TOTP setup initiation."""
+
+    provisioning_uri: str = Field(description="URI for generating QR code in authenticator app")
+    message: str = Field(description="Setup instructions for the user")
+
+
+class TOTPVerifyRequest(PublicModel):
+    """TOTP verification request."""
+
+    code: str = Field(
+        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, regex=r"^\d{6}$"
+    )
+
+
+class TOTPVerifyResponse(PublicModel):
+    """TOTP verification response."""
+
+    message: str = Field(description="Success message")
+    mfa_enabled: bool = Field(description="Whether MFA is now enabled for the user")

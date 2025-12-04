@@ -4,6 +4,9 @@ from apps.users.domain import (
     ChangePasswordRequest,
     PasswordRecoveryApproveRequest,
     PasswordRecoveryInfo,
+    TOTPInitiateResponse,
+    TOTPVerifyRequest,
+    TOTPVerifyResponse,
     UserCreateRequest,
     UserUpdateRequest,
 )
@@ -16,6 +19,9 @@ __all__ = [
     "PasswordRecoveryApproveRequestFactory",
     "CacheEntryFactory",
     "PasswordRecoveryInfoFactory",
+    "TOTPInitiateResponseFactory",
+    "TOTPVerifyRequestFactory",
+    "TOTPVerifyResponseFactory",
 ]
 
 
@@ -41,3 +47,15 @@ class PasswordRecoveryInfoFactory(ModelFactory):
 
 class CacheEntryFactory(ModelFactory):
     __model__ = CacheEntry
+
+
+class TOTPInitiateResponseFactory(ModelFactory):
+    __model__ = TOTPInitiateResponse
+
+
+class TOTPVerifyRequestFactory(ModelFactory):
+    __model__ = TOTPVerifyRequest
+
+
+class TOTPVerifyResponseFactory(ModelFactory):
+    __model__ = TOTPVerifyResponse

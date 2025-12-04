@@ -16,11 +16,13 @@ from apps.users.api import (
     password_update,
     user_create,
     user_delete,
+    user_mfa_totp_initiate,
+    user_mfa_totp_verify,
     user_retrieve,
     user_save_device,
     user_update,
 )
-from apps.users.domain import PublicUser, UserDevice
+from apps.users.domain import PublicUser, TOTPInitiateResponse, TOTPVerifyResponse, UserDevice
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -124,3 +126,27 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(user_save_device)
+
+# TOTP initiate
+router.post(
+    "/me/mfa/totp/initiate",
+    response_model=Response[TOTPInitiateResponse],
+    name="user_mfa_totp_initiate",
+    responses={
+        status.HTTP_200_OK: {"model": Response[TOTPInitiateResponse]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_mfa_totp_initiate)
+
+# TOTP verify
+router.post(
+    "/me/mfa/totp/verify",
+    response_model=Response[TOTPVerifyResponse],
+    name="user_mfa_totp_verify",
+    responses={
+        status.HTTP_200_OK: {"model": Response[TOTPVerifyResponse]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_mfa_totp_verify)
