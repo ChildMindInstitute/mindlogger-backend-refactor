@@ -31,8 +31,14 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
         ]
     )
 
+    response_dict = response.dict(by_alias=True)
+
+    # Add error_code to response if present
+    if hasattr(error, "error_code") and error.error_code:
+        response_dict["error_code"] = error.error_code
+
     return JSONResponse(
-        response.dict(by_alias=True),
+        response_dict,
         status_code=error.status_code,
     )
 

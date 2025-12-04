@@ -7,7 +7,7 @@ from fastapi import Body, Depends, Header
 from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
-from apps.authentication.domain.login import UserLogin, UserLoginRequest
+from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.token import (
     InternalToken,
@@ -17,17 +17,31 @@ from apps.authentication.domain.token import (
     TokenPayload,
     TokenPurpose,
 )
-from apps.authentication.errors import AuthenticationError, InvalidCredentials, InvalidRefreshToken
+from apps.authentication.errors import (
+    AuthenticationError,
+    InvalidCredentials,
+    InvalidRefreshToken,
+    InvalidTOTPCodeError,
+    MFAGlobalLockoutError,
+    MFASessionNotFoundError,
+    MFATokenExpiredError,
+    MFATokenInvalidError,
+    MFATokenMalformedError,
+    TooManyTOTPAttemptsError,
+)
+from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
 from apps.users.domain import AppInfoOS, PublicUser, User, UserDeviceCreate
 from apps.users.errors import UserNotFound
+from apps.users.services.totp import TOTPService
 from apps.users.services.user_device import UserDeviceService
 from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.logger import logger
 
 
 async def get_token(
@@ -36,7 +50,7 @@ async def get_token(
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
-) -> Response[UserLogin]:
+) -> Response[UserLogin | MFARequiredResponse]:
     """Generate the JWT access token."""
     async with atomic(session):
         try:
@@ -55,6 +69,21 @@ async def get_token(
         if user.email_encrypted != user_login_schema.email:
             user = await UsersCRUD(session).update_encrypted_email(user, user_login_schema.email)
 
+    # Check if user has MFA enabled
+    if user.mfa_secret:
+        # User has MFA enabled - return requirement response
+        mfa_service = MFASessionService()
+        mfa_session_id = await mfa_service.create_session(user_id=user.id)
+        logger.info(f"MFA required for login user_id={user.id} email={user.email_encrypted}")
+        mfa_token = AuthenticationService.create_mfa_token(mfa_session_id=mfa_session_id)
+        return Response(
+            result=MFARequiredResponse(
+                mfa_required=True,
+                mfa_session_id=mfa_session_id,
+                mfa_token=mfa_token,
+            )
+        )
+
     rjti = str(uuid.uuid4())
     refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
 
@@ -64,6 +93,150 @@ async def get_token(
             JWTClaim.rjti: rjti,
         }
     )
+
+    token = Token(access_token=access_token, refresh_token=refresh_token)
+    public_user = PublicUser.from_user(user)
+
+    return Response(
+        result=UserLogin(
+            token=token,
+            user=public_user,
+        )
+    )
+
+
+async def verify_mfa_totp(
+    verify_request: MFATOTPVerifyRequest = Body(...),
+    session=Depends(get_session),
+    os_name: Annotated[str | None, Header()] = None,
+    os_version: Annotated[str | None, Header()] = None,
+    app_version: Annotated[str | None, Header()] = None,
+) -> Response[UserLogin]:
+    """Verify TOTP code during MFA and return tokens."""
+    # Decode and validate MFA token
+    try:
+        mfa_session_id = AuthenticationService.decode_mfa_token(verify_request.mfa_token)
+    except (
+        MFATokenExpiredError,
+        MFATokenMalformedError,
+        MFATokenInvalidError,
+    ) as e:
+        # Re-raise specific MFA token errors with detailed feedback
+        raise e
+
+    # Retrieve MFA session
+    mfa_service = MFASessionService()
+    session_data = await mfa_service.get_session(mfa_session_id)
+
+    if not session_data:
+        logger.warning(f"MFA session not found or expired mfa_session_id={mfa_session_id}")
+        raise MFASessionNotFoundError()
+
+    # Check global lockout FIRST (prevents bypassing per-session limits)
+    is_locked = await mfa_service.is_globally_locked_out(session_data.user_id)
+    if is_locked:
+        logger.warning(f"User globally locked out from MFA attempts user_id={session_data.user_id}")
+        await mfa_service.delete_session(mfa_session_id)
+        raise MFAGlobalLockoutError()
+
+    # Check if max attempts exceeded BEFORE attempting verification
+    if session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
+        logger.warning(
+            f"MFA max attempts exceeded user_id={session_data.user_id} "
+            f"failed_attempts={session_data.failed_totp_attempts} max_attempts={settings.redis.mfa_max_attempts}"
+        )
+        # Delete session to force re-login
+        await mfa_service.delete_session(mfa_session_id)
+        raise TooManyTOTPAttemptsError()
+
+    # Get user from DB
+    async with atomic(session):
+        user: User = await UsersCRUD(session).get_by_id(session_data.user_id)
+
+        if not user.mfa_secret:
+            # Edge case: user disabled MFA between login and verification
+            raise MFATokenInvalidError()
+
+        totp_service = TOTPService()
+
+        # Verify TOTP code with replay protection
+        try:
+            decrypted_secret = totp_service.decrypt_secret(user.mfa_secret)
+        except Exception:
+            raise InvalidTOTPCodeError()
+
+        # Get user's last used time step for replay protection
+        last_step = user.last_totp_time_step
+
+        # Verify with replay protection
+        is_valid, time_step_used = totp_service.verify_with_replay_check(
+            secret=decrypted_secret, code=verify_request.totp_code, last_used_step=last_step
+        )
+
+        if not is_valid:
+            # Increment both per-session and global failed attempts counters
+            new_attempt_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+            global_attempt_count = await mfa_service.increment_global_failed_attempts(user.id)
+
+            logger.warning(
+                f"Invalid TOTP code provided user_id={user.id} email={user.email_encrypted} "
+                f"failed_attempts={new_attempt_count} global_failed_attempts={global_attempt_count}"
+            )
+
+            # Check if global lockout threshold reached
+            if global_attempt_count >= settings.redis.mfa_global_lockout_attempts:
+                logger.warning(
+                    f"User globally locked out after max failed attempts user_id={user.id} "
+                    f"email={user.email_encrypted} global_failed_attempts={global_attempt_count}"
+                )
+                await mfa_service.delete_session(mfa_session_id)
+                raise MFAGlobalLockoutError()
+
+            # If this was the last allowed attempt for this session, delete session
+            if new_attempt_count is not None and new_attempt_count >= settings.redis.mfa_max_attempts:
+                logger.warning(
+                    f"User locked out after max failed TOTP attempts for session user_id={user.id} "
+                    f"email={user.email_encrypted} failed_attempts={new_attempt_count}"
+                )
+                await mfa_service.delete_session(mfa_session_id)
+                raise TooManyTOTPAttemptsError()
+
+            # Otherwise, raise normal invalid code error
+            raise InvalidTOTPCodeError()
+
+        # TOTP is valid - Update last used time step for replay protection
+        assert time_step_used is not None  # Always set when is_valid is True
+        await UsersCRUD(session).update_last_totp_time_step(user.id, time_step_used)
+
+        # Clear global lockout counter and delete MFA session
+        await mfa_service.clear_global_lockout(user.id)
+        await mfa_service.delete_session(mfa_session_id)
+
+        logger.info(
+            f"MFA verification successful user_id={user.id} email={user.email_encrypted} "
+            f"device_id={verify_request.device_id}"
+        )
+
+        # Register device if device_id provided
+        if verify_request.device_id:
+            await UserDeviceService(session, user.id).add_device(
+                UserDeviceCreate(
+                    device_id=verify_request.device_id,
+                    os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
+                    app_version=app_version,
+                )
+            )
+
+        # Issue refresh and access tokens
+        rjti = str(uuid.uuid4())
+        refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
+
+        access_token = AuthenticationService.create_access_token(
+            {
+                JWTClaim.sub: str(user.id),
+                JWTClaim.rjti: rjti,
+            }
+        )
 
     token = Token(access_token=access_token, refresh_token=refresh_token)
     public_user = PublicUser.from_user(user)

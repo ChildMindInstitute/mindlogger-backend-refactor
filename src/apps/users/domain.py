@@ -88,6 +88,7 @@ class User(InternalModel):
     mfa_secret: str | None = None
     pending_mfa_secret: str | None = None
     pending_mfa_created_at: datetime.datetime | None = None
+    last_totp_time_step: int | None = None
     hashed_password: str
     email_encrypted: str | None
     last_seen_at: datetime.datetime | None

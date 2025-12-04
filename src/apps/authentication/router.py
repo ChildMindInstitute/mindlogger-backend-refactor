@@ -1,9 +1,18 @@
 from fastapi.routing import APIRouter
 from starlette import status
 
-from apps.authentication.api.auth import delete_access_token, delete_refresh_token, get_token, refresh_access_token
+from apps.authentication.api.auth import (
+    delete_access_token,
+    delete_refresh_token,
+    get_token,
+    refresh_access_token,
+    verify_mfa_totp,
+)
 from apps.authentication.deps import openapi_auth
-from apps.authentication.domain.login import UserLogin
+from apps.authentication.domain.login import (
+    MFARequiredResponse,
+    UserLogin,
+)
 from apps.authentication.domain.token.public import Token
 from apps.shared.domain.response import (
     AUTHENTICATION_ERROR_RESPONSES,
@@ -17,13 +26,25 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # Get token
 router.post(
     "/login",
-    response_model=Response[UserLogin],
+    response_model=Response[UserLogin | MFARequiredResponse],
     responses={
-        status.HTTP_200_OK: {"model": Response[UserLogin]},
+        status.HTTP_200_OK: {"model": Response[UserLogin | MFARequiredResponse]},
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(get_token)
+
+# Verify MFA TOTP code
+router.post(
+    "/mfa/totp/verify",
+    response_model=Response[UserLogin],
+    responses={
+        status.HTTP_200_OK: {"model": Response[UserLogin]},
+        status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Too many failed attempts"},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(verify_mfa_totp)
 
 # Add token to the blacklist
 router.post(

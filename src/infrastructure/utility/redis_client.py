@@ -24,14 +24,39 @@ class RedisCacheTest:
 
     async def set(self, name, value, ex=None, **kwargs):
         now = datetime.datetime.now(datetime.UTC)
-        self._storage[name] = [
-            value,
-            (now + datetime.timedelta(seconds=ex)) if ex else None,
-        ]
+        self._storage[name] = [value, (now + datetime.timedelta(seconds=ex)) if ex else None]
         return True
 
     async def delete(self, key: str) -> bool:
-        self._storage.pop(key)
+        # Gracefully handle missing keys (Redis DEL returns 0 when key absent)
+        self._storage.pop(key, None)
+        return True
+
+    async def incr(self, key: str) -> int:
+        """Increment an integer value stored at key, emulating Redis INCR.
+        Initializes to 0 if missing. Stores value as string for parity with Redis.
+        """
+        entry = self._storage.get(key)
+        if entry:
+            raw_value, expiry = entry
+            try:
+                current = int(raw_value)
+            except (TypeError, ValueError):
+                current = 0
+        else:
+            current = 0
+            expiry = None
+        current += 1
+        # Keep existing expiry (Redis INCR does not modify TTL)
+        self._storage[key] = [str(current), expiry]
+        return current
+
+    async def expire(self, key: str, seconds: int) -> bool:
+        entry = self._storage.get(key)
+        if not entry:
+            return False
+        value, _old_expiry = entry
+        entry[1] = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=seconds)
         return True
 
     async def keys(self, pattern: str = "*") -> list[str]:
@@ -163,3 +188,20 @@ class RedisCache:
         await pubsub.subscribe(channel_name)
         async for message in pubsub.listen():
             yield message
+
+    async def incr(self, key: str) -> int:
+        if not self._cache:
+            return 0
+        try:
+            # Redis returns the new integer value
+            return await self._cache.incr(key)
+        except Exception:
+            return 0
+
+    async def expire(self, key: str, seconds: int) -> bool:
+        if not self._cache:
+            return False
+        try:
+            return await self._cache.expire(key, seconds)
+        except Exception:
+            return False

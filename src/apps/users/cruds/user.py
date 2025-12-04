@@ -212,3 +212,14 @@ class UsersCRUD(BaseCRUD[UserSchema]):
 
         # Then fetch the updated record
         return await self.get_by_id(user_id)
+
+    async def update_last_totp_time_step(self, user_id: uuid.UUID, time_step: int) -> None:
+        """
+        Update the last used TOTP time step for replay protection.
+
+        Args:
+            user_id: The user's UUID
+            time_step: Time step value to store (epoch / 30)
+        """
+        query = update(UserSchema).where(UserSchema.id == user_id).values(last_totp_time_step=time_step)
+        await self._execute(query)
