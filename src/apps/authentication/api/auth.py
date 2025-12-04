@@ -118,7 +118,7 @@ async def verify_mfa_totp(
     # Validate MFA token and get session info
     mfa_service = MFASessionService()
     try:
-        mfa_session_id, user_id = await mfa_service.validate_and_get_session(verify_request.mfa_token)
+        mfa_session_id, user_id, purpose = await mfa_service.validate_and_get_session(verify_request.mfa_token)
     except (
         MFATokenExpiredError,
         MFATokenMalformedError,
@@ -257,7 +257,7 @@ async def verify_mfa_recovery_code(
     # Validate MFA token and get session info
     mfa_service = MFASessionService()
     try:
-        mfa_session_id, user_id = await mfa_service.validate_and_get_session(verify_request.mfa_token)
+        mfa_session_id, user_id, purpose = await mfa_service.validate_and_get_session(verify_request.mfa_token)
     except (
         MFATokenExpiredError,
         MFATokenMalformedError,

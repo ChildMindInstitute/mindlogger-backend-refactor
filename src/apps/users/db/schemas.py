@@ -24,6 +24,7 @@ class UserSchema(Base):
     pending_mfa_created_at = Column(DateTime(), nullable=True)
     last_totp_time_step = Column(BigInteger(), nullable=True)  # TOTP replay protection
     recovery_codes_generated_at = Column(DateTime(), nullable=True)
+    mfa_disabled_at = Column(DateTime(), nullable=True)
     is_anonymous_respondent = Column(Boolean(), default=False, server_default="false")
     is_legacy_deleted_respondent = Column(Boolean(), default=False, server_default="false")
 

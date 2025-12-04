@@ -49,7 +49,7 @@ class InvalidTOTPCodeError(ValidationError):
 
 
 class MFANotEnabledError(AccessDeniedError):
-    message = _("MFA is not enabled. Please set up MFA before viewing recovery codes.")
+    message = _("MFA is not enabled for this account.")
 
 
 class RecoveryCodesNotFoundError(NotFoundError):
@@ -66,3 +66,7 @@ class RecoveryCodeAlreadyUsedError(ValidationError):
 
 class RecoveryCodeNotFoundError(NotFoundError):
     message = _("No matching recovery code found. Please verify the code is correct.")
+
+
+class MFASessionPurposeMismatchError(ValidationError):
+    message = _("Invalid MFA session for this operation.")

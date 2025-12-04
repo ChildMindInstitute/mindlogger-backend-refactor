@@ -90,6 +90,7 @@ class User(InternalModel):
     pending_mfa_created_at: datetime.datetime | None = None
     last_totp_time_step: int | None = None
     recovery_codes_generated_at: datetime.datetime | None = None
+    mfa_disabled_at: datetime.datetime | None = None  # Audit field - not exposed in PublicUser
     hashed_password: str
     email_encrypted: str | None
     last_seen_at: datetime.datetime | None
@@ -232,3 +233,27 @@ class TOTPVerifyResponse(PublicModel):
         default=None,
         description="Recovery codes generated during first-time MFA setup (displayed once only)",
     )
+
+
+class MFADisableInitiateResponse(PublicModel):
+    """Response when initiating MFA disable flow."""
+
+    mfa_required: bool = True
+    mfa_token: str = Field(description="JWT token for MFA disable verification")
+    message: str = Field(description="Instructions for completing MFA disable")
+
+
+class MFADisableVerifyRequest(PublicModel):
+    """Request to verify TOTP code and disable MFA."""
+
+    mfa_token: str = Field(description="JWT token from MFA disable initiation")
+    code: str = Field(
+        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, regex=r"^\d{6}$"
+    )
+
+
+class MFADisableVerifyResponse(PublicModel):
+    """Response after successfully disabling MFA."""
+
+    mfa_disabled: bool = True
+    message: str = Field(description="Success message confirming MFA has been disabled")

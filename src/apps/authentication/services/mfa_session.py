@@ -15,10 +15,17 @@ from infrastructure.utility.redis_client import RedisCache
 class MFASessionData:
     """Data stored in MFA session."""
 
-    def __init__(self, user_id: uuid.UUID, created_at: datetime, failed_totp_attempts: int = 0):
+    def __init__(
+        self,
+        user_id: uuid.UUID,
+        created_at: datetime,
+        failed_totp_attempts: int = 0,
+        purpose: str = "login",
+    ):
         self.user_id = user_id
         self.created_at = created_at
         self.failed_totp_attempts = failed_totp_attempts
+        self.purpose = purpose
 
     def to_dict(self) -> dict:
         """Convert to dictionary for REDIS storage."""
@@ -26,6 +33,7 @@ class MFASessionData:
             "user_id": str(self.user_id),
             "created_at": self.created_at.isoformat(),
             "failed_totp_attempts": self.failed_totp_attempts,
+            "purpose": self.purpose,
         }
 
     @classmethod
@@ -35,6 +43,7 @@ class MFASessionData:
             user_id=uuid.UUID(data["user_id"]),
             created_at=datetime.fromisoformat(data["created_at"]),
             failed_totp_attempts=data.get("failed_totp_attempts", 0),  # Default to 0
+            purpose=data.get("purpose", "login"),  # Default to "login" for backward compatibility
         )
 
     def is_expired(self, ttl_seconds: int) -> bool:
@@ -84,11 +93,12 @@ class MFASessionService:
         except (ValueError, AttributeError, TypeError):
             return False
 
-    async def create_session(self, user_id: uuid.UUID) -> str:
+    async def create_session(self, user_id: uuid.UUID, purpose: str = "login") -> str:
         """
         Create a new MFA session in Redis.
         Args:
             user_id (uuid.UUID): ID of the user starting MFA.
+            purpose (str): Session purpose - "login", "recovery_code", or "disable". Defaults to "login".
         Returns:
             mfa_session_id: A unique session identifier to be sent to the client.
         """
@@ -99,6 +109,7 @@ class MFASessionService:
         session_data = MFASessionData(
             user_id=user_id,
             created_at=datetime.now(timezone.utc),
+            purpose=purpose,
         )
 
         # Store in Redis with TTL
@@ -110,7 +121,8 @@ class MFASessionService:
         )
 
         logger.info(
-            f"MFA session created user_id={user_id} mfa_session_id={mfa_session_id} ttl_seconds={self.session_ttl}"
+            f"MFA session created user_id={user_id} purpose={purpose} "
+            f"mfa_session_id={mfa_session_id} ttl_seconds={self.session_ttl}"
         )
 
         return mfa_session_id
@@ -276,21 +288,21 @@ class MFASessionService:
 
         logger.info(f"Global MFA lockout counter cleared user_id={user_id}")
 
-    async def validate_and_get_session(self, mfa_token: str) -> tuple[str, uuid.UUID]:
+    async def validate_and_get_session(self, mfa_token: str) -> tuple[str, uuid.UUID, str]:
         """
-        Validate MFA token and extract session ID and user ID.
+        Validate MFA token and extract session ID, user ID, and purpose.
 
         This orchestrates the complete MFA token validation flow:
         1. Decode JWT token to get mfa_session_id
         2. Retrieve session data from Redis
         3. Validate session exists and is not expired
-        4. Return both mfa_session_id and user_id
+        4. Return mfa_session_id, user_id, and purpose
 
         Args:
             mfa_token: JWT token from client request
 
         Returns:
-            tuple[str, uuid.UUID]: (mfa_session_id, user_id) from the MFA session
+            tuple[str, uuid.UUID, str]: (mfa_session_id, user_id, purpose) from the MFA session
 
         Raises:
             MFATokenExpiredError: Token JWT has expired
@@ -309,5 +321,5 @@ class MFASessionService:
             logger.warning(f"MFA session not found or expired mfa_session_id={mfa_session_id}")
             raise MFASessionNotFoundError()
 
-        # Step 4: Return both mfa_session_id and user_id
-        return mfa_session_id, session_data.user_id
+        # Step 4: Return mfa_session_id, user_id, and purpose
+        return mfa_session_id, session_data.user_id, session_data.purpose
