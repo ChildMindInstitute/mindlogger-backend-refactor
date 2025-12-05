@@ -122,14 +122,14 @@ class RespondentMeta(InternalModel):
     for representation respondent meta information.
     """
 
-    subject_id: str | None
+    subject_id: str | None = None
     # This attribute has been moved to the 'subject' table and left here for backwards compatibility.
     # There is no need to use it for its intended purpose.
-    secret_user_id: str | None
+    secret_user_id: str | None = None
 
 
 class RespondentInfo(InternalModel):
-    nickname: str | None
+    nickname: str | None = None
     meta: RespondentMeta
 
 
@@ -152,10 +152,10 @@ class _Invitation(InternalModel):
     status: str
     invitor_id: uuid.UUID
     created_at: datetime
-    user_id: uuid.UUID | None
+    user_id: uuid.UUID | None = None
     is_deleted: bool
-    tag: str | None
-    title: str | None
+    tag: str | None = None
+    title: str | None = None
 
 
 class Invitation(_Invitation):
@@ -169,7 +169,7 @@ class InvitationRespondent(_Invitation):
     """This is an invitation representation for internal needs."""
 
     meta: RespondentMeta
-    nickname: str | None
+    nickname: str | None = None
 
 
 class InvitationReviewer(Invitation):
@@ -198,10 +198,10 @@ class InvitationDetailBase(InternalModel):
     first_name: str
     last_name: str
     created_at: datetime
-    accepted_at: datetime | None
-    user_id: uuid.UUID | None
-    tag: str | None
-    title: str | None
+    accepted_at: datetime | None = None
+    user_id: uuid.UUID | None = None
+    tag: str | None = None
+    title: str | None = None
 
 
 class InvitationDetail(InvitationDetailBase):
@@ -210,8 +210,8 @@ class InvitationDetail(InvitationDetailBase):
     """
 
     meta: dict
-    nickname: str | None
-    secret_user_id: str | None
+    nickname: str | None = None
+    secret_user_id: str | None = None
 
 
 class InvitationDetailRespondent(InvitationDetailBase):
@@ -220,7 +220,7 @@ class InvitationDetailRespondent(InvitationDetailBase):
     """
 
     meta: RespondentMeta
-    nickname: str | None
+    nickname: str | None = None
     secret_user_id: str
 
 
@@ -244,8 +244,8 @@ class _InvitationDetail(InternalModel):
     key: uuid.UUID
     first_name: str
     last_name: str
-    user_id: uuid.UUID | None
-    tag: str | None
+    user_id: uuid.UUID | None = None
+    tag: str | None = None
 
 
 class InvitationDetailForRespondent(_InvitationDetail):
@@ -254,7 +254,7 @@ class InvitationDetailForRespondent(_InvitationDetail):
     """
 
     secret_user_id: str
-    nickname: str | None
+    nickname: str | None = None
     role: Role = Role.RESPONDENT
 
 
@@ -266,7 +266,7 @@ class InvitationDetailForReviewer(_InvitationDetail):
     email: EmailStr
     role: Role = Role.REVIEWER
     subjects: list[uuid.UUID]
-    title: str | None
+    title: str | None = None
 
 
 class InvitationDetailForManagers(_InvitationDetail):
@@ -276,7 +276,7 @@ class InvitationDetailForManagers(_InvitationDetail):
 
     email: EmailStr
     role: ManagersRole
-    title: str | None
+    title: str | None = None
 
 
 class PrivateInvitationDetail(InternalModel):
@@ -300,12 +300,12 @@ class InvitationResponse(PublicModel):
     first_name: str
     last_name: str
     created_at: datetime
-    accepted_at: datetime | None
+    accepted_at: datetime | None = None
     meta: dict
-    nickname: str | None
-    secret_user_id: str | None
-    tag: str | None
-    title: str | None
+    nickname: str | None = None
+    secret_user_id: str | None = None
+    tag: str | None = None
+    title: str | None = None
 
 
 class _InvitationResponse(PublicModel):
@@ -403,9 +403,9 @@ class ShellAccountCreateRequest(PublicModel):
     first_name: str
     last_name: str
     secret_user_id: str
-    nickname: str | None
-    email: str | None
-    tag: str | None
+    nickname: str | None = None
+    email: str | None = None
+    tag: str | None = None
 
     _email_lower = field_validator("email", mode="before")(lowercase)
 

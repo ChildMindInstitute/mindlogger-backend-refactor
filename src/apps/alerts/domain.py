@@ -25,16 +25,16 @@ class Alert(InternalModel):
     applet_name: str
     version: str
     secret_id: str
-    activity_id: uuid.UUID | None
-    activity_item_id: uuid.UUID | None
+    activity_id: uuid.UUID | None = None
+    activity_item_id: uuid.UUID | None = None
     message: str
     created_at: datetime.datetime
-    answer_id: uuid.UUID | None
+    answer_id: uuid.UUID | None = None
     encryption: dict
     image: str
     workspace: str
     respondent_id: uuid.UUID
-    subject_id: uuid.UUID | None
+    subject_id: uuid.UUID | None = None
     type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
 
@@ -45,16 +45,16 @@ class AlertPublic(PublicModel):
     applet_name: str
     version: str
     secret_id: str
-    activity_id: uuid.UUID | None
-    activity_item_id: uuid.UUID | None
+    activity_id: uuid.UUID | None = None
+    activity_item_id: uuid.UUID | None = None
     message: str
     created_at: datetime.datetime
-    answer_id: uuid.UUID | None
+    answer_id: uuid.UUID | None = None
     encryption: dict
     image: str
     workspace: str
     respondent_id: uuid.UUID
-    subject_id: uuid.UUID | None
+    subject_id: uuid.UUID | None = None
     type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
     @field_validator("encryption", mode="before")
@@ -68,14 +68,14 @@ class AlertPublic(PublicModel):
 class AlertMessage(InternalModel):
     id: uuid.UUID
     respondent_id: uuid.UUID
-    subject_id: uuid.UUID | None
+    subject_id: uuid.UUID | None = None
     applet_id: uuid.UUID
     version: str
     message: str
     created_at: datetime.datetime
-    activity_id: uuid.UUID | None
-    activity_item_id: uuid.UUID | None
-    answer_id: uuid.UUID | None
+    activity_id: uuid.UUID | None = None
+    activity_item_id: uuid.UUID | None = None
+    answer_id: uuid.UUID | None = None
     type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
 
@@ -94,7 +94,7 @@ class AlertHandlerResult(InternalModel):
     image: str
     workspace: str
     respondent_id: str
-    subject_id: str | None
+    subject_id: str | None = None
     type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
 
 

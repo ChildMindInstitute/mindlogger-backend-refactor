@@ -34,8 +34,8 @@ __all__ = [
 class EventCreate(BaseEvent, InternalModel):
     applet_id: uuid.UUID
     periodicity: PeriodicityType
-    start_date: date | None
-    end_date: date | None
+    start_date: date | None = None
+    end_date: date | None = None
     selected_date: date | None = Field(
         None,
         description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
@@ -88,8 +88,8 @@ class ReminderSetting(ReminderSettingCreate, InternalModel):
 class EventFull(InternalModel, BaseEvent):
     id: uuid.UUID
     periodicity: PeriodicityType
-    start_date: date | None
-    end_date: date | None
+    start_date: date | None = None
+    end_date: date | None = None
     selected_date: date | None = Field(
         None,
         description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",

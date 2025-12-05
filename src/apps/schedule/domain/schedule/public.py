@@ -43,9 +43,9 @@ class PublicNotification(PublicModel):
 class PublicEvent(PublicModel, BaseEvent):
     id: uuid.UUID
     periodicity: PublicPeriodicity
-    respondent_id: uuid.UUID | None
-    activity_id: uuid.UUID | None
-    flow_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
+    activity_id: uuid.UUID | None = None
+    flow_id: uuid.UUID | None = None
     notification: PublicNotification | None = None
     version: str | None = None
 
@@ -63,8 +63,8 @@ class FlowEventCount(PublicModel):
 
 
 class PublicEventCount(PublicModel):
-    activity_events: list[ActivityEventCount] | None
-    flow_events: list[FlowEventCount] | None
+    activity_events: list[ActivityEventCount] | None = None
+    flow_events: list[FlowEventCount] | None = None
 
 
 class HourMinute(PublicModel):

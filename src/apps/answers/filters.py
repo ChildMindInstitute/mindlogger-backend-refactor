@@ -11,8 +11,8 @@ from apps.shared.query_params import BaseQueryParams
 
 
 class SummaryActivityFilter(BaseQueryParams):
-    respondent_id: uuid.UUID | None
-    target_subject_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
+    target_subject_id: uuid.UUID | None = None
 
 
 class ReviewAppletItemFilter(BaseQueryParams):
@@ -21,20 +21,20 @@ class ReviewAppletItemFilter(BaseQueryParams):
 
 
 class AppletSubmissionsFilter(BaseQueryParams):
-    respondent_id: uuid.UUID | None
-    from_datetime: datetime.datetime | None
-    to_datetime: datetime.datetime | None
-    identifiers: str | None
-    versions: str | None
+    respondent_id: uuid.UUID | None = None
+    from_datetime: datetime.datetime | None = None
+    to_datetime: datetime.datetime | None = None
+    identifiers: str | None = None
+    versions: str | None = None
     empty_identifiers: bool = True
-    target_subject_id: uuid.UUID | None
+    target_subject_id: uuid.UUID | None = None
 
     _parse_array = field_validator("versions", "identifiers")(array_from_string(True))
 
 
 class AppletSubmitDateFilter(BaseQueryParams):
-    respondent_id: uuid.UUID | None
-    target_subject_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
+    target_subject_id: uuid.UUID | None = None
     from_date: datetime.date
     to_date: datetime.date
     activity_or_flow_id: uuid.UUID | None = None
@@ -58,8 +58,8 @@ class AnswerExportFilters(BaseQueryParams):
 
 
 class AnswerIdentifierVersionFilter(BaseQueryParams):
-    from_datetime: datetime.datetime | None
-    to_datetime: datetime.datetime | None
+    from_datetime: datetime.datetime | None = None
+    to_datetime: datetime.datetime | None = None
 
 
 class AppletMultiinformantAssessmentParams(InternalModel):

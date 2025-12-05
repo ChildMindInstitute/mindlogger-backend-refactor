@@ -11,7 +11,7 @@ class ActivityItem(InternalModel):
     activity_id: str
     question: dict[str, str]
     response_type: str
-    response_values: list | dict | None
+    response_values: list | dict | None = None
     config: dict
     order: int
     name: str
@@ -45,7 +45,7 @@ class ActivityFlowItem(InternalModel):
     activity_flow_id: str
     activity_id: str
     order: int
-    activity: Activity | None
+    activity: Activity | None = None
 
 
 class ActivityFlow(InternalModel):

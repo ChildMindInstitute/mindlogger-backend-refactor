@@ -9,7 +9,7 @@ class ActivityItem(PublicModel):
     id: uuid.UUID
     question: dict[str, str]
     response_type: str
-    response_values: list | dict | None
+    response_values: list | dict | None = None
     config: dict = dict()
     order: int
     name: str
@@ -38,7 +38,7 @@ class Activity(PublicModel):
 class ActivityFlowItem(PublicModel):
     id: uuid.UUID
     order: int
-    activity: Activity | None
+    activity: Activity | None = None
 
 
 class ActivityFlow(PublicModel):

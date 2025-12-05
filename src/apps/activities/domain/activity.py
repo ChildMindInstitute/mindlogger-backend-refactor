@@ -42,7 +42,7 @@ class ActivityOrFlowBasicInfoInternal(InternalModel):
     description: str
     images: list[str] = Field(default_factory=list)
     is_flow: bool = False
-    status: ActivityOrFlowStatusEnum | None
+    status: ActivityOrFlowStatusEnum | None = None
     auto_assign: bool = True
     is_hidden: bool = False
     activity_ids: list[uuid.UUID] | None = None
@@ -162,10 +162,10 @@ class ActivitySubjectMetadata(PublicModel):
     activity_or_flow_id: uuid.UUID
     respondents_count: int
     respondent_submissions_count: int
-    respondent_last_submission_date: datetime | None
+    respondent_last_submission_date: datetime | None = None
     subjects_count: int
     subject_submissions_count: int
-    subject_last_submission_date: datetime | None
+    subject_last_submission_date: datetime | None = None
 
 
 class ActivitiesMetadata(PublicModel):

@@ -11,11 +11,11 @@ class AnswerItem(InternalModel):
     id: uuid.UUID
     answer_id: uuid.UUID
     respondent_id: uuid.UUID
-    answer: str | None
-    events: str | None
+    answer: str | None = None
+    events: str | None = None
     item_ids: list
-    identifier: str | None
-    user_public_key: str | None
+    identifier: str | None = None
+    user_public_key: str | None = None
     scheduled_datetime: datetime.datetime | None = None
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
@@ -42,20 +42,20 @@ class AnswerItemSchemaAnsweredActivityItem(InternalModel):
 class AnswerItemDataEncrypted(InternalModel):
     id: uuid.UUID
     answer: str
-    events: str | None
-    identifier: str | None
+    events: str | None = None
+    identifier: str | None = None
 
 
 class UserAnswerItemData(AnswerItemDataEncrypted):
     user_public_key: str
-    migrated_data: dict | None
+    migrated_data: dict | None = None
 
 
 class AssessmentItem(InternalModel):
     answer_id: uuid.UUID
     respondent_id: uuid.UUID
     is_assessment: bool
-    assessment_activity_id: str | None
+    assessment_activity_id: str | None = None
 
 
 class ItemAnswerCreate(InternalModel):
@@ -66,7 +66,7 @@ class ItemAnswerCreate(InternalModel):
     scheduled_time: datetime.datetime | None = None
     start_time: datetime.datetime
     end_time: datetime.datetime
-    user_public_key: str | None
+    user_public_key: str | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date | None = None
     local_end_time: datetime.time | None = None

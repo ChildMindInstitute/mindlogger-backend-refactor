@@ -96,8 +96,8 @@ class RawRow(PublicModel):
     schedule_end_time: datetime.time
     event_id: uuid.UUID
     event_type: PeriodicityType
-    start_date: datetime.date | None
-    end_date: datetime.date | None
+    start_date: datetime.date | None = None
+    end_date: datetime.date | None = None
     selected_date: datetime.date
 
     @property

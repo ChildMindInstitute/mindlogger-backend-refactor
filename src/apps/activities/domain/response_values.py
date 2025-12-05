@@ -157,7 +157,7 @@ class _SingleSelectionValue(PublicModel):
 
 class SingleSelectionValues(PublicModel):
     type: Literal[ResponseType.SINGLESELECT]
-    palette_name: str | None
+    palette_name: str | None = None
     options: list[_SingleSelectionValue]
 
     @field_validator("options")
@@ -172,7 +172,7 @@ class _MultiSelectionValue(_SingleSelectionValue):
 
 class MultiSelectionValues(PublicModel):
     type: Literal[ResponseType.MULTISELECT]
-    palette_name: str | None
+    palette_name: str | None = None
     options: list[_MultiSelectionValue]
 
     @field_validator("options")
@@ -191,8 +191,8 @@ class SliderValueAlert(PublicModel):
         default=0,
         description="Either value or min_value and max_value must be provided. For SliderRows, only value is allowed.",  # noqa: E501
     )
-    min_value: int | None
-    max_value: int | None
+    min_value: int | None = None
+    max_value: int | None = None
     alert: str
 
     @model_validator(mode="after")
@@ -266,8 +266,8 @@ class DrawingProportion(PublicModel):
 
 class DrawingValues(PublicModel):
     type: Literal[ResponseType.DRAWING]
-    drawing_example: str | None
-    drawing_background: str | None
+    drawing_example: str | None = None
+    drawing_background: str | None = None
     proportion: DrawingProportion | None = None
 
     @field_validator("drawing_example", "drawing_background")

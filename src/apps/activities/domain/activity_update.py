@@ -18,16 +18,16 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class ActivityItemUpdate(BaseActivityItem, PublicModel):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
 
 
 class PreparedActivityItemUpdate(BaseActivityItem, InternalModel):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
     activity_id: uuid.UUID
 
 
 class ActivityUpdate(ActivityBase, PublicModel):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
     key: uuid.UUID
     items: list[ActivityItemUpdate] = Field(default_factory=list)
 
@@ -73,4 +73,4 @@ class ActivityUpdate(ActivityBase, PublicModel):
 
 
 class ActivityReportConfiguration(PublicModel):
-    report_included_item_name: str | None
+    report_included_item_name: str | None = None

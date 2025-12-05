@@ -115,7 +115,7 @@ class EventUpdateRequest(BaseEvent, InternalModel):
 
 
 class EventRequest(EventUpdateRequest):
-    respondent_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None = Field(
         None,
         description="If flow_id is not set, activity_id must be set.",

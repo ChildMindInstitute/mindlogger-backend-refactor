@@ -152,12 +152,12 @@ class ParagraphTextConfig(_ScreenConfig):
 
 class _SelectionConfig(_ScreenConfig):
     randomize_options: bool
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
     add_scores: bool
     set_alerts: bool
     add_tooltip: bool
     set_palette: bool
-    add_tokens: bool | None
+    add_tokens: bool | None = None
     additional_response_option: AdditionalResponseOption
     portrait_layout: bool | None = None
 
@@ -175,7 +175,7 @@ class MultiSelectionConfig(_SelectionConfig, PublicModel):
 class MessageConfig(PublicModel):
     type: Literal[ResponseType.MESSAGE]
     remove_back_button: bool
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
 
 
 class SliderConfig(_ScreenConfig):
@@ -186,7 +186,7 @@ class SliderConfig(_ScreenConfig):
     show_tick_marks: bool
     show_tick_labels: bool
     continuous_slider: bool
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
 
 
 class NumberSelectionConfig(_ScreenConfig):
@@ -196,7 +196,7 @@ class NumberSelectionConfig(_ScreenConfig):
 
 class DefaultConfig(_ScreenConfig):
     additional_response_option: AdditionalResponseOption
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
 
 
 class TimeRangeConfig(DefaultConfig, PublicModel):
@@ -214,7 +214,7 @@ class GeolocationConfig(DefaultConfig, PublicModel):
 class DrawingConfig(_ScreenConfig):
     type: Literal[ResponseType.DRAWING]
     additional_response_option: AdditionalResponseOption
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
     remove_undo_button: bool = False
     navigation_to_top: bool = False
 
@@ -235,16 +235,16 @@ class SliderRowsConfig(_ScreenConfig):
     type: Literal[ResponseType.SLIDERROWS]
     add_scores: bool
     set_alerts: bool
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
 
 
 class SingleSelectionRowsConfig(_ScreenConfig):
     type: Literal[ResponseType.SINGLESELECTROWS]
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
     add_scores: bool
     set_alerts: bool
     add_tooltip: bool
-    add_tokens: bool | None
+    add_tokens: bool | None = None
 
 
 class MultiSelectionRowsConfig(SingleSelectionRowsConfig, PublicModel):
@@ -273,8 +273,8 @@ class RequestHealthRecordDataConfig(_ScreenConfig):
 
 class UnityConfig(PublicModel):
     type: Literal[ResponseType.UNITY]
-    device_type: str | None
-    file: str | None
+    device_type: str | None = None
+    file: str | None = None
 
 
 class InputType(StrEnum):
@@ -289,7 +289,7 @@ class Phase(StrEnum):
 
 class StabilityTrackerConfig(PublicModel):
     type: Literal[ResponseType.STABILITYTRACKER]
-    user_input_type: InputType | None
+    user_input_type: InputType | None = None
     phase: Phase
     trials_number: int = 0
     duration_minutes: float
@@ -318,7 +318,7 @@ class StimulusConfigId(str):
 
 class StimulusConfiguration(PublicModel):
     id: StimulusConfigId
-    image: str | None
+    image: str | None = None
     text: str | None = None  # name
     value: int | None = None
     weight: int | None = None
@@ -385,7 +385,7 @@ class ABTrailsDeviceType(StrEnum):
 
 class ABTrailsConfig(PublicModel):
     type: Literal[ResponseType.ABTRAILS]
-    device_type: ABTrailsDeviceType | None
+    device_type: ABTrailsDeviceType | None = None
     order_name: ABTrailsOrder
     tutorials: ABTrailsTutorial | None = None
     nodes: ABTrailsNodes | None = None

@@ -71,17 +71,17 @@ class AppletSingleLanguageDetailMobilePublic(AppletMinimumInfo, PublicModel):
     theme: PublicThemeMobile | None = None
     activities: list[ActivitySingleLanguageMobileDetailPublic] = Field(default_factory=list)
     activity_flows: list[FlowSingleLanguageMobileDetailPublic] = Field(default_factory=list)
-    encryption: Encryption | None
-    stream_enabled: bool | None
-    stream_ip_address: IPvAnyAddress | None
-    stream_port: PositiveInt | None
+    encryption: Encryption | None = None
+    stream_enabled: bool | None = None
+    stream_ip_address: IPvAnyAddress | None = None
+    stream_port: PositiveInt | None = None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
     id: uuid.UUID
     version: str
-    created_at: datetime.datetime | None
-    updated_at: datetime.datetime | None
+    created_at: datetime.datetime | None = None
+    updated_at: datetime.datetime | None = None
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
     retention_period: PositiveInt | None = None
@@ -90,26 +90,26 @@ class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
     activities: list[ActivitySingleLanguageDetailPublic] = Field(default_factory=list)
     activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
     theme: PublicTheme
-    encryption: Encryption | None
-    owner_id: uuid.UUID | None
+    encryption: Encryption | None = None
+    owner_id: uuid.UUID | None = None
 
 
 class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
-    theme: Theme | None
+    theme: Theme | None = None
     is_pinned: bool = False
 
 
 class AppletSingleLanguageInfoPublic(AppletFetchBase, PublicModel):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
-    theme: PublicTheme | None
+    theme: PublicTheme | None = None
 
 
 class AppletName(InternalModel):
     name: str
-    exclude_applet_id: uuid.UUID | None
+    exclude_applet_id: uuid.UUID | None = None
 
 
 class AppletUniqueName(PublicModel):
@@ -181,8 +181,8 @@ class ActivitiesAndFlowsWithAssignmentDetailsPublic(PublicModel):
 
 class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
     id: uuid.UUID
-    created_at: datetime.datetime | None
-    updated_at: datetime.datetime | None
+    created_at: datetime.datetime | None = None
+    updated_at: datetime.datetime | None = None
     activities: list[ActivityBaseInfo]
     activity_flows: list[FlowBaseInfo]
     respondent_meta: dict | None = None

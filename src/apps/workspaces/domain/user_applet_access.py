@@ -29,7 +29,7 @@ class UserAppletAccessCreate(InternalModel):
     owner_id: uuid.UUID
     invitor_id: uuid.UUID
     meta: dict
-    is_pinned: bool | None
+    is_pinned: bool | None = None
 
 
 class UserAppletAccess(UserAppletAccessCreate):
@@ -97,9 +97,9 @@ class RespondentAppletAccess(InternalModel):
     applet_name: str
     applet_image: str
     secret_user_id: str
-    nickname: str | None
+    nickname: str | None = None
     has_individual_schedule: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
 
 
 class PublicRespondentAppletAccess(PublicModel):
@@ -107,15 +107,15 @@ class PublicRespondentAppletAccess(PublicModel):
     applet_name: str
     applet_image: str
     secret_user_id: str
-    nickname: str | None
+    nickname: str | None = None
     has_individual_schedule: bool
-    encryption: public_detail.Encryption | None
+    encryption: public_detail.Encryption | None = None
 
 
 class ManagerAccess(InternalModel):
     applet_id: uuid.UUID
     roles: list[Role]
-    subjects: list[uuid.UUID] | None
+    subjects: list[uuid.UUID] | None = None
 
 
 class ManagerAccesses(InternalModel):
@@ -129,20 +129,20 @@ class RespondentInfo(InternalModel):
 
 class RespondentExportData(InternalModel):
     id: uuid.UUID
-    email: str | None
-    secret_id: str | None
-    legacy_profile_id: str | None
+    email: str | None = None
+    secret_id: str | None = None
+    legacy_profile_id: str | None = None
     is_manager: bool
 
 
 class SubjectExportData(RespondentExportData):
-    user_id: uuid.UUID | None
-    nickname: str | None
-    tag: str | None
+    user_id: uuid.UUID | None = None
+    nickname: str | None = None
+    tag: str | None = None
 
 
 class RespondentInfoPublic(PublicModel):
-    nickname: str | None
+    nickname: str | None = None
     secret_user_id: str
-    last_seen: datetime.datetime | None
+    last_seen: datetime.datetime | None = None
     subject_id: uuid.UUID

@@ -14,10 +14,10 @@ class ActivityItem(PublicModel):
     activity_id: uuid.UUID
     question: dict[str, str]
     response_type: str
-    response_values: ResponseValueConfig | None
+    response_values: ResponseValueConfig | None = None
     config: ResponseTypeConfig
     order: int
-    is_hidden: bool | None
+    is_hidden: bool | None = None
     conditional_logic: ConditionalLogic | None = None
     allow_edit: bool | None = None
     name: str
@@ -48,7 +48,7 @@ class ActivityFlowItem(PublicModel):
     activity_flow_id: uuid.UUID
     activity_id: uuid.UUID
     order: int
-    activity: Activity | None
+    activity: Activity | None = None
 
 
 class ActivityFlow(PublicModel):
@@ -88,4 +88,4 @@ class Applet(PublicModel):
     report_email_body: str = ""
     activities: list[Activity] = Field(default_factory=list)
     activity_flows: list[ActivityFlow] = Field(default_factory=list)
-    encryption: Encryption | None
+    encryption: Encryption | None = None

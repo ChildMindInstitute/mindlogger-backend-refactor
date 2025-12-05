@@ -100,8 +100,8 @@ class User(InternalModel):
     recovery_codes_generated_at: datetime.datetime | None = None
     mfa_disabled_at: datetime.datetime | None = None  # Audit field - not exposed in PublicUser
     hashed_password: str
-    email_encrypted: str | None
-    last_seen_at: datetime.datetime | None
+    email_encrypted: str | None = None
+    last_seen_at: datetime.datetime | None = None
 
     def get_full_name(self) -> str:
         return f"{self.first_name} {self.last_name}" if self.last_name else self.first_name
@@ -110,7 +110,7 @@ class User(InternalModel):
 class PublicUser(PublicModel):
     """Public-facing user model."""
 
-    email: EmailStr | None
+    email: EmailStr | None = None
     first_name: str
     last_name: str
     id: uuid.UUID

@@ -80,14 +80,14 @@ class WorkspaceAppletEncryption(InternalModel):
 class WorkspaceRespondentDetails(InternalModel):
     applet_id: uuid.UUID
     applet_display_name: str
-    applet_image: str | None
+    applet_image: str | None = None
     access_id: str | None = None
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
-    subject_tag: str | None
+    subject_tag: str | None = None
     subject_first_name: str
     subject_last_name: str
     subject_created_at: datetime.datetime
@@ -107,21 +107,21 @@ class WorkspaceRespondentDetails(InternalModel):
 
 
 class WorkspaceRespondent(InternalModel):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
     nicknames: list[str] | None = None
     secret_ids: list[str] | None = None
     is_anonymous_respondent: bool
-    last_seen: datetime.datetime | None
+    last_seen: datetime.datetime | None = None
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
-    user_id: uuid.UUID | None
+    user_id: uuid.UUID | None = None
     status: str
-    email: str | None
+    email: str | None = None
     subjects: list[uuid.UUID]
 
 
 class AppletRole(InternalModel):
-    access_id: uuid.UUID | None
+    access_id: uuid.UUID | None = None
     role: Role
     reviewer_subjects: list[str] | None = None
 
@@ -129,7 +129,7 @@ class AppletRole(InternalModel):
 class WorkspaceManagerApplet(InternalModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     roles: list[AppletRole]
     encryption: WorkspaceAppletEncryption
 
@@ -138,16 +138,16 @@ class WorkspaceManager(InternalModel):
     id: uuid.UUID
     first_name: str
     last_name: str
-    email_encrypted: str | None
+    email_encrypted: str | None = None
     roles: list[Role]
     created_at: datetime.datetime
     last_seen: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
-    titles: list[str] | None
+    titles: list[str] | None = None
     title: str | None = Field(default=None, validate_default=True)
     status: InvitationStatus
-    invitation_key: uuid.UUID | None
+    invitation_key: uuid.UUID | None = None
 
     @field_validator("titles", mode="before")
     @classmethod
@@ -200,14 +200,14 @@ class WorkspaceManager(InternalModel):
 class PublicWorkspaceRespondentDetails(PublicModel):
     applet_id: uuid.UUID
     applet_display_name: str
-    applet_image: str | None
-    access_id: uuid.UUID | None
+    applet_image: str | None = None
+    access_id: uuid.UUID | None = None
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
-    subject_tag: str | None
+    subject_tag: str | None = None
     subject_first_name: str
     subject_last_name: str
     subject_created_at: datetime.datetime
@@ -219,15 +219,15 @@ class PublicWorkspaceRespondentDetails(PublicModel):
 
 
 class PublicWorkspaceRespondent(PublicModel):
-    id: uuid.UUID | None
-    nicknames: list[str] | None
-    secret_ids: list[str] | None
+    id: uuid.UUID | None = None
+    nicknames: list[str] | None = None
+    secret_ids: list[str] | None = None
     is_anonymous_respondent: bool
-    last_seen: datetime.datetime | None
+    last_seen: datetime.datetime | None = None
     is_pinned: bool = False
     details: list[PublicWorkspaceRespondentDetails] | None = None
     status: str
-    email: str | None
+    email: str | None = None
     subjects: list[uuid.UUID]
 
 
@@ -235,16 +235,16 @@ class PublicWorkspaceManager(PublicModel):
     id: uuid.UUID
     first_name: str
     last_name: str
-    email: str | None
+    email: str | None = None
     roles: list[Role]
     last_seen: datetime.datetime
     created_at: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
-    title: str | None
-    titles: list[str] | None
+    title: str | None = None
+    titles: list[str] | None = None
     status: InvitationStatus
-    invitation_key: uuid.UUID | None
+    invitation_key: uuid.UUID | None = None
 
 
 class WorkspaceInfo(InternalModel):
@@ -260,67 +260,67 @@ class PublicWorkspaceInfo(PublicModel):
 class WorkspaceApplet(InternalModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     is_pinned: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    version: str | None
+    version: str | None = None
     role: Role | None = Role.RESPONDENT
     type: str
     folders_applet_count: int
-    description: dict | None
-    activity_count: int | None
+    description: dict | None = None
+    activity_count: int | None = None
 
 
 class WorkspaceSearchApplet(InternalModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     is_pinned: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    version: str | None
+    version: str | None = None
     role: Role | None = Role.RESPONDENT
     type: str
-    folder_id: uuid.UUID | None
-    folder_name: str | None
+    folder_id: uuid.UUID | None = None
+    folder_name: str | None = None
 
 
 class WorkspaceAppletPublic(PublicModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     is_pinned: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    version: str | None
-    role: Role | None
+    version: str | None = None
+    role: Role | None = None
     type: str
     folders_applet_count: int
-    description: dict | None
-    activity_count: int | None
+    description: dict | None = None
+    activity_count: int | None = None
 
 
 class WorkspaceSearchAppletPublic(PublicModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     is_pinned: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    version: str | None
+    version: str | None = None
     role: Role | None = Role.RESPONDENT
     type: str
-    folder_id: uuid.UUID | None
-    folder_name: str | None
+    folder_id: uuid.UUID | None = None
+    folder_name: str | None = None
 
 
 class WorkspacePrioritizedRole(PublicModel):
-    role: Role | None
+    role: Role | None = None
 
 
 class AppletRoles(InternalModel):
@@ -364,7 +364,7 @@ class WorkspaceArbitraryFields(InternalModel):
 class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
     user_id: uuid.UUID
     email: str
-    alembic_version: str | None
+    alembic_version: str | None = None
 
     @field_validator("use_arbitrary")
     @classmethod
@@ -416,12 +416,12 @@ class AnswerDbApplet(InternalModel):
 
 
 class UserAnswersDBInfo(AnswerDbApplet):
-    use_arbitrary: bool | None
-    database_uri: str | None
+    use_arbitrary: bool | None = None
+    database_uri: str | None = None
 
 
 class AnswerDbApplets(InternalModel):
-    database_uri: str | None
+    database_uri: str | None = None
     applets: list[AnswerDbApplet] = Field(default_factory=list)
 
 

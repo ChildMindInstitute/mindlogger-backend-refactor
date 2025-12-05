@@ -13,10 +13,10 @@ class BaseQueryParams(InternalModel):
     Class to declare query parameters
     """
 
-    search: str | None
+    search: str | None = None
     page: int = Field(gt=0, default=1)
     limit: int = Field(gt=0, default=10, le=settings.service.result_limit)
-    ordering: str | None
+    ordering: str | None = None
 
 
 class QueryParams(InternalModel):

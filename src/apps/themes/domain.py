@@ -129,6 +129,6 @@ class ThemeRequest(ThemeBase, PublicModel):
 
 
 class ThemeQueryParams(BaseQueryParams):
-    public: bool | None
-    allow_rename: bool | None
-    creator_id: uuid.UUID | None
+    public: bool | None = None
+    allow_rename: bool | None = None
+    creator_id: uuid.UUID | None = None

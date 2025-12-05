@@ -39,11 +39,11 @@ class Answer(InternalModel):
     applet_id: uuid.UUID
     version: str
     submit_id: uuid.UUID
-    client: ClientMeta | None
+    client: ClientMeta | None = None
     applet_history_id: str
-    flow_history_id: str | None
+    flow_history_id: str | None = None
     activity_history_id: str
-    respondent_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
     is_flow_completed: bool | None = False
     target_subject_id: uuid.UUID | None = None
     source_subject_id: uuid.UUID | None = None
@@ -72,17 +72,17 @@ class Text(InternalModel):
 
 class SingleSelection(InternalModel):
     value: uuid.UUID
-    additional_text: str | None
+    additional_text: str | None = None
 
 
 class MultipleSelection(InternalModel):
     value: list[uuid.UUID]
-    additional_text: str | None
+    additional_text: str | None = None
 
 
 class Slider(InternalModel):
     value: float
-    additional_text: str | None
+    additional_text: str | None = None
 
 
 AnswerTypes = SingleSelection | Slider | MultipleSelection | Text | ParagraphText
@@ -147,7 +147,7 @@ class SummaryActivityFlow(InternalModel):
     id: uuid.UUID
     name: str
     has_answer: bool
-    last_answer_date: datetime.datetime | None
+    last_answer_date: datetime.datetime | None = None
 
 
 class SummaryActivity(SummaryActivityFlow):
@@ -221,7 +221,7 @@ class PublicSummaryActivityFlow(InternalModel):
     id: uuid.UUID
     name: str
     has_answer: bool
-    last_answer_date: datetime.datetime | None
+    last_answer_date: datetime.datetime | None = None
 
 
 class PublicSummaryActivity(PublicSummaryActivityFlow):
@@ -251,16 +251,16 @@ class ActivityAnswer(PublicModel):
     version: str
     activity_history_id: str
     activity_id: uuid.UUID | None = Field(default=None, validate_default=True)
-    flow_history_id: str | None
-    user_public_key: str | None
-    answer: str | None
-    events: str | None
+    flow_history_id: str | None = None
+    user_public_key: str | None = None
+    answer: str | None = None
+    events: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     identifier: str | None = None
     migrated_data: dict | None = None
     end_datetime: datetime.datetime
     created_at: datetime.datetime
-    source_subject: SubjectReadResponse | None
+    source_subject: SubjectReadResponse | None = None
 
     @field_validator("activity_id")
     @classmethod
@@ -315,17 +315,17 @@ class ReviewsCount(PublicModel):
 class AppletSubmission(PublicModel):
     applet_id: uuid.UUID
     respondent_subject_id: uuid.UUID
-    respondent_subject_tag: str | None
-    respondent_secret_user_id: str | None
-    respondent_nickname: str | None
+    respondent_subject_tag: str | None = None
+    respondent_secret_user_id: str | None = None
+    respondent_nickname: str | None = None
     target_subject_id: uuid.UUID
-    target_subject_tag: str | None
-    target_secret_user_id: str | None
-    target_nickname: str | None
-    source_subject_id: uuid.UUID | None
-    source_subject_tag: str | None
-    source_secret_user_id: str | None
-    source_nickname: str | None
+    target_subject_tag: str | None = None
+    target_secret_user_id: str | None = None
+    target_nickname: str | None = None
+    source_subject_id: uuid.UUID | None = None
+    source_subject_tag: str | None = None
+    source_secret_user_id: str | None = None
+    source_nickname: str | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
     activity_name: str
@@ -433,20 +433,20 @@ class FlowSubmissionResponse(PublicModel):
 
 class AppletActivityAnswer(InternalModel):
     answer_id: uuid.UUID
-    version: str | None
-    user_public_key: str | None
-    answer: str | None
-    events: str | None
+    version: str | None = None
+    user_public_key: str | None = None
+    answer: str | None = None
+    events: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
-    start_datetime: datetime.datetime | None
-    end_datetime: datetime.datetime | None
-    subscale_setting: SubscaleSetting | None
+    start_datetime: datetime.datetime | None = None
+    end_datetime: datetime.datetime | None = None
+    subscale_setting: SubscaleSetting | None = None
 
 
 class AssessmentAnswer(InternalModel):
-    reviewer_public_key: str | None
-    answer: str | None
+    reviewer_public_key: str | None = None
+    answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     items_last: list[PublicActivityItemFull] | None = Field(default_factory=list)
@@ -462,8 +462,8 @@ class Reviewer(InternalModel):
 
 class AnswerReview(InternalModel):
     id: uuid.UUID
-    reviewer_public_key: str | None
-    answer: str | None
+    reviewer_public_key: str | None = None
+    answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: Reviewer
@@ -474,14 +474,14 @@ class AnswerReview(InternalModel):
 class AppletActivityAnswerPublic(PublicModel):
     answer_id: uuid.UUID
     version: str
-    user_public_key: str | None
-    answer: str | None
-    events: str | None
+    user_public_key: str | None = None
+    answer: str | None = None
+    events: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
-    subscale_setting: SubscaleSetting | None
+    subscale_setting: SubscaleSetting | None = None
     review_count: ReviewsCount
 
 
@@ -493,8 +493,8 @@ class ReviewerPublic(PublicModel):
 
 class AnswerReviewPublic(PublicModel):
     id: uuid.UUID
-    reviewer_public_key: str | None
-    answer: str | None
+    reviewer_public_key: str | None = None
+    answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     reviewer: ReviewerPublic
@@ -503,8 +503,8 @@ class AnswerReviewPublic(PublicModel):
 
 
 class AssessmentAnswerPublic(PublicModel):
-    reviewer_public_key: str | None
-    answer: str | None
+    reviewer_public_key: str | None = None
+    answer: str | None = None
     item_ids: list[str] = Field(default_factory=list)
     items: list[PublicActivityItemFull] = Field(default_factory=list)
     items_last: list[PublicActivityItemFull] | None = Field(default_factory=list)
@@ -647,8 +647,8 @@ class PublicAnswerExportResponse(Response[PublicAnswerExportTranslated]):
 class SafeApplet(AppletBaseInfo, InternalModel):
     id: uuid.UUID
     version: str
-    created_at: datetime.datetime | None
-    updated_at: datetime.datetime | None
+    created_at: datetime.datetime | None = None
+    updated_at: datetime.datetime | None = None
 
     activities: list[ActivityFull] = Field(default_factory=list)
     activity_flows: list[FlowFull] = Field(default_factory=list)
@@ -670,7 +670,7 @@ class CompletedEntity(PublicModel):
     id: uuid.UUID
     answer_id: uuid.UUID
     submit_id: uuid.UUID
-    target_subject_id: uuid.UUID | None
+    target_subject_id: uuid.UUID | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
@@ -761,8 +761,8 @@ class AnswerEHR(InternalModel):
     submit_id: uuid.UUID
     ehr_ingestion_status: EHRIngestionStatus
     activity_id: uuid.UUID
-    ehr_storage_uri: str | None
-    meta: EHRMetadata | None
+    ehr_storage_uri: str | None = None
+    meta: EHRMetadata | None = None
 
 
 class AnswerEHRFull(AnswerEHR):

@@ -12,7 +12,7 @@ from config import settings
 
 
 class EventQueryParams(InternalModel):
-    respondent_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
 
 
 class ScheduleEventsExportParams(BaseQueryParams):

@@ -36,8 +36,8 @@ class ActivitiesAssignmentsCreate(InternalModel):
 
 class ActivityAssignment(PublicModel):
     id: UUID
-    activity_flow_id: UUID | None
-    activity_id: UUID | None
+    activity_flow_id: UUID | None = None
+    activity_id: UUID | None = None
     respondent_subject_id: UUID
     target_subject_id: UUID
 
@@ -48,14 +48,14 @@ class ActivitiesAssignments(PublicModel):
 
 
 class ActivityAssignmentsListQueryParams(InternalModel):
-    activities: str | None
-    flows: str | None
+    activities: str | None = None
+    flows: str | None = None
 
 
 class ActivityAssignmentWithSubject(PublicModel):
     id: UUID
-    activity_flow_id: UUID | None
-    activity_id: UUID | None
+    activity_flow_id: UUID | None = None
+    activity_id: UUID | None = None
     respondent_subject: SubjectReadResponse
     target_subject: SubjectReadResponse
 
