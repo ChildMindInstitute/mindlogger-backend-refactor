@@ -153,7 +153,7 @@ class DateRangePayload(PublicModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_dates(cls, values):
+    def validate_dates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         min_date = values.get("minDate")
         max_date = values.get("maxDate")
         if min_date and max_date and min_date > max_date:
