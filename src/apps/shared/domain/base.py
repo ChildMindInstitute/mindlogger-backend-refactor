@@ -81,7 +81,7 @@ def list_items_to_camel_case(items):
 class BaseModel(PBaseModel):
     @classmethod
     def field_alias(cls, field_name: str):
-        return cls.__fields__[field_name].alias
+        return cls.model_fields[field_name].alias
 
     @field_validator("*", mode="after")
     @classmethod

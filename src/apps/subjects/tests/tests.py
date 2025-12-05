@@ -477,7 +477,7 @@ class TestSubjects(BaseTest):
         assert result_subject.id
         actual_subject = await service.get(result_subject.id)
         assert actual_subject
-        for field_name in SubjectCreate.__fields__.keys():
+        for field_name in SubjectCreate.model_fields.keys():
             actual = getattr(actual_subject, field_name)
             expected = getattr(result_subject, field_name)
             assert actual == expected
@@ -495,7 +495,7 @@ class TestSubjects(BaseTest):
         assert original_subject.id
         actual_subject = await service.get(original_subject.id)
         assert actual_subject
-        for field_name in SubjectCreate.__fields__.keys():
+        for field_name in SubjectCreate.model_fields.keys():
             actual = getattr(actual_subject, field_name)
             expected = getattr(original_subject, field_name)
             assert actual == expected
