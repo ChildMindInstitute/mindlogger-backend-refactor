@@ -36,8 +36,8 @@ class BaseActivityItem(BaseModel):
     conditional_logic: ConditionalLogic | None = None
     allow_edit: bool | None = None
 
-    # class Config:
-    #     schema_extra = {
+    # model_config = ConfigDict(
+    #     json_schema_extra={
     #         "example": {
     #             "question": {"en": "foo"},
     #             "response_type": "text",
@@ -55,7 +55,8 @@ class BaseActivityItem(BaseModel):
     #             "name": "foo_text",
     #             "is_hidden": False,
     #         },
-    #     }
+    #     },
+    # )
 
     @field_validator("name")
     @classmethod
