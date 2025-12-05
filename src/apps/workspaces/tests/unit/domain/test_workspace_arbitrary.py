@@ -60,7 +60,10 @@ def test_arbitrary_workspace_aws_required_fields(
         WorkspaceArbitraryCreate(**data)
     errors = exc.value.errors()
     assert len(errors) == 1
-    assert errors[0]["msg"] == "Value error, storage_access_key, storage_region, storage_bucket are required for aws storage"
+    assert (
+        errors[0]["msg"]
+        == "Value error, storage_access_key, storage_region, storage_bucket are required for aws storage"
+    )
 
 
 @pytest.mark.parametrize(
@@ -76,4 +79,6 @@ def test_arbitrary_workspace_gcp_required_fields(
         WorkspaceArbitraryCreate(**data)
     errors = exc.value.errors()
     assert len(errors) == 1
-    assert errors[0]["msg"] == "Value error, storage_url, storage_bucket, storage_access_key are required for gcp storage"
+    assert (
+        errors[0]["msg"] == "Value error, storage_url, storage_bucket, storage_access_key are required for gcp storage"
+    )

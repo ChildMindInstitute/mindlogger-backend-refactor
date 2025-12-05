@@ -228,21 +228,30 @@ class TestActivityItems:
 
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        assert resp.json()["result"][0]["message"] == "Value error, Request Health Record Data item must have opt-out option"
+        assert (
+            resp.json()["result"][0]["message"]
+            == "Value error, Request Health Record Data item must have opt-out option"
+        )
 
         data_dict = data.dict(by_alias=True)
         data_dict["activities"][0]["items"][0]["responseValues"]["optInOutOptions"][0]["id"] = "opt_out"
 
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        assert resp.json()["result"][0]["message"] == "Value error, Request Health Record Data item must have opt-in option"
+        assert (
+            resp.json()["result"][0]["message"]
+            == "Value error, Request Health Record Data item must have opt-in option"
+        )
 
         data_dict = data.dict(by_alias=True)
         data_dict["activities"][0]["items"][0]["responseValues"]["optInOutOptions"] = []
 
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        assert resp.json()["result"][0]["message"] == "Value error, Request Health Record Data item must have 2 opt-in/out options"
+        assert (
+            resp.json()["result"][0]["message"]
+            == "Value error, Request Health Record Data item must have 2 opt-in/out options"
+        )
 
     async def test_creating_applet_with_activity_items_condition(
         self,
