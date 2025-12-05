@@ -274,7 +274,7 @@ class FlowService:
             return ""
 
     async def update_report_config(self, flow_id: uuid.UUID, schema: ActivityFlowReportConfiguration):
-        await FlowsCRUD(self.session).update_by_id(flow_id, **schema.dict(by_alias=False))
+        await FlowsCRUD(self.session).update_by_id(flow_id, **schema.model_dump(by_alias=False))
 
     async def get_by_id(self, flow_id: uuid.UUID) -> Flow | None:
         return await FlowsCRUD(self.session).get_by_id(flow_id)

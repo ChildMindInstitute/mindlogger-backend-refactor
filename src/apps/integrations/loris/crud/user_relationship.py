@@ -57,7 +57,7 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
     #     instance = await self._update_one(
     #         lookup="ml_user_uuid",
     #         value=ml_user_uuid,
-    #         schema=MlLorisUserRelationshipSchema(**schema.dict()),
+    #         schema=MlLorisUserRelationshipSchema(**schema.model_dump()),
     #     )
     #     relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
     #     return relationship

@@ -38,8 +38,8 @@ class ActivityHistoryService:
                     response_is_editable=activity.response_is_editable,
                     order=activity.order,
                     is_hidden=activity.is_hidden,
-                    scores_and_reports=activity.scores_and_reports.dict() if activity.scores_and_reports else None,
-                    subscale_setting=activity.subscale_setting.dict() if activity.subscale_setting else None,
+                    scores_and_reports=activity.scores_and_reports.model_dump() if activity.scores_and_reports else None,
+                    subscale_setting=activity.subscale_setting.model_dump() if activity.subscale_setting else None,
                     report_included_item_name=activity.report_included_item_name,  # noqa: E501
                     performance_task_type=activity.performance_task_type,
                 )

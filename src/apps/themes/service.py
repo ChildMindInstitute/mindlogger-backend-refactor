@@ -39,7 +39,7 @@ class ThemeService:
 
         theme: Theme = await ThemesCRUD(self.session).save(
             ThemeSchema(
-                **theme_request.dict(),
+                **theme_request.model_dump(),
                 creator_id=self.user_id,
                 public=False,
                 allow_rename=False,
@@ -59,11 +59,11 @@ class ThemeService:
     async def update(self, theme_id: uuid.UUID, theme_request: ThemeRequest) -> PublicTheme:
         theme: Theme = await ThemesCRUD(self.session).update(
             pk=theme_id,
-            update_schema=ThemeSchema(**theme_request.dict(), public=False, allow_rename=False),
+            update_schema=ThemeSchema(**theme_request.model_dump(), public=False, allow_rename=False),
             creator_id=self.user_id,
         )
 
-        return PublicTheme(**theme.dict())
+        return PublicTheme(**theme.model_dump())
 
     async def get_default(self) -> Theme:
         return await ThemesCRUD(self.session).get_default()

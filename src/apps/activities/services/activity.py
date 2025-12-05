@@ -60,10 +60,10 @@ class ActivityService:
                 is_reviewable=activity_data.is_reviewable,
                 response_is_editable=activity_data.response_is_editable,
                 is_hidden=activity_data.is_hidden,
-                scores_and_reports=activity_data.scores_and_reports.dict()
+                scores_and_reports=activity_data.scores_and_reports.model_dump()
                 if activity_data.scores_and_reports
                 else None,
-                subscale_setting=activity_data.subscale_setting.dict() if activity_data.subscale_setting else None,
+                subscale_setting=activity_data.subscale_setting.model_dump() if activity_data.subscale_setting else None,
                 order=index + 1,
                 report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
                 extra_fields=activity_data.extra_fields,
@@ -81,11 +81,11 @@ class ActivityService:
                     activity_id=activity_id,
                     question=item.question,
                     response_type=item.response_type,
-                    response_values=item.response_values.dict() if item.response_values else None,
-                    config=item.config.dict(),
+                    response_values=item.response_values.model_dump() if item.response_values else None,
+                    config=item.config.model_dump(),
                     name=item.name,
                     is_hidden=item.is_hidden,
-                    conditional_logic=item.conditional_logic.dict() if item.conditional_logic else None,
+                    conditional_logic=item.conditional_logic.model_dump() if item.conditional_logic else None,
                     allow_edit=item.allow_edit,
                     extra_fields=item.extra_fields,
                 )
@@ -155,10 +155,10 @@ class ActivityService:
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
                     is_hidden=activity_data.is_hidden,
-                    scores_and_reports=activity_data.scores_and_reports.dict()
+                    scores_and_reports=activity_data.scores_and_reports.model_dump()
                     if activity_data.scores_and_reports
                     else None,
-                    subscale_setting=activity_data.subscale_setting.dict() if activity_data.subscale_setting else None,
+                    subscale_setting=activity_data.subscale_setting.model_dump() if activity_data.subscale_setting else None,
                     order=index + 1,
                     report_included_item_name=(activity_data.report_included_item_name),
                     performance_task_type=activity_data.performance_task_type,
@@ -184,9 +184,9 @@ class ActivityService:
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        response_values=item.response_values.dict() if item.response_values else None,
-                        config=item.config.dict(),
-                        conditional_logic=item.conditional_logic.dict() if item.conditional_logic else None,
+                        response_values=item.response_values.model_dump() if item.response_values else None,
+                        config=item.config.model_dump(),
+                        conditional_logic=item.conditional_logic.model_dump() if item.conditional_logic else None,
                         allow_edit=item.allow_edit,
                         is_hidden=item.is_hidden,
                     )
@@ -448,7 +448,7 @@ class ActivityService:
             ActivityHistoriesCRUD,
         ]
         for crud in crud_list:
-            await crud(self.session).update_by_id(activity_id, **schema.dict(by_alias=False, exclude_unset=True))
+            await crud(self.session).update_by_id(activity_id, **schema.model_dump(by_alias=False, exclude_unset=True))
 
     async def get_info_by_applet_id(self, applet_id: uuid.UUID, language: str) -> list[ActivityBaseInfo]:
         schemas = await ActivitiesCRUD(self.session).get_by_applet_id(applet_id, is_reviewable=False)

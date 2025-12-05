@@ -66,7 +66,7 @@ async def applet_one_pending_invitation(client, tom: User, invitation_respondent
     client.login(tom)
     response = await client.post(
         "/invitations/{applet_id}/respondent".format(applet_id=str(applet_one.id)),
-        invitation_respondent_data.dict(),
+        invitation_respondent_data.model_dump(),
     )
     assert response.status_code == http.HTTPStatus.OK
     data = response.json()["result"]
@@ -90,7 +90,7 @@ async def applet_one_pending_subject(
 async def applet_one_with_flow(
     session: AsyncSession, applet_one: AppletFull, applet_minimal_data: AppletFull, tom: User
 ):
-    data = AppletUpdate(**applet_minimal_data.dict())
+    data = AppletUpdate(**applet_minimal_data.model_dump())
     flow = FlowUpdate(
         name="flow",
         items=[ActivityFlowItemUpdate(id=None, activity_key=data.activities[0].key)],
@@ -1048,7 +1048,7 @@ class TestActivityAssignments(BaseTest):
 
         unassign_response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one.id),
-            data=assignments_create.dict(),
+            data=assignments_create.model_dump(),
         )
 
         assert unassign_response.status_code == http.HTTPStatus.NO_CONTENT
@@ -1111,7 +1111,7 @@ class TestActivityAssignments(BaseTest):
 
         response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one.id),
-            data=assignment_delete.dict(),
+            data=assignment_delete.model_dump(),
         )
 
         # Expect a 204 No Content because no assignments match the given applet_id
@@ -1281,7 +1281,7 @@ class TestActivityAssignments(BaseTest):
 
         unassign_response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one_with_flow.id),
-            data=assignment_delete.dict(),
+            data=assignment_delete.model_dump(),
         )
 
         assert unassign_response.status_code == http.HTTPStatus.NO_CONTENT, unassign_response.json()
@@ -1345,7 +1345,7 @@ class TestActivityAssignments(BaseTest):
 
         response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one_with_flow.id),
-            data=assignment_delete.dict(),
+            data=assignment_delete.model_dump(),
         )
 
         # Expect a 204 No Content because no assignments match the given flow_id
@@ -1386,7 +1386,7 @@ class TestActivityAssignments(BaseTest):
         # Create the assignment
         response = await client.post(
             self.activities_assign_unassign_applet.format(applet_id=applet_one.id),
-            data=assignments_create.dict(),
+            data=assignments_create.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
@@ -1432,7 +1432,7 @@ class TestActivityAssignments(BaseTest):
         # Create the assignment
         response = await client.post(
             self.activities_assign_unassign_applet.format(applet_id=applet_one.id),
-            data=assignments_create.dict(),
+            data=assignments_create.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 

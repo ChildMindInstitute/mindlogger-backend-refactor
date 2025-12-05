@@ -38,7 +38,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         """Return event instance and the created information."""
 
         try:
-            instance: EventSchema = await self._create(EventSchema(**schema.dict()))
+            instance: EventSchema = await self._create(EventSchema(**schema.model_dump()))
         # Raise exception if applet doesn't exist
         except IntegrityError as e:
             raise EventError(message=str(e))
@@ -97,7 +97,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
 
     async def update(self, pk: uuid.UUID, schema: EventUpdate) -> Event:
         """Update event by event id."""
-        event_schema = EventSchema(**schema.dict())
+        event_schema = EventSchema(**schema.model_dump())
 
         dict_values = dict(event_schema)
 

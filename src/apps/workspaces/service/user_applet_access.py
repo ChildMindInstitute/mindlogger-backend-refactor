@@ -126,7 +126,7 @@ class UserAppletAccessService:
         meta: dict = dict()
 
         if invitation.role in [Role.RESPONDENT, Role.REVIEWER]:
-            meta = invitation.meta.dict(by_alias=True)  # type: ignore
+            meta = invitation.meta.model_dump(by_alias=True)  # type: ignore
 
         if invitation.role == Role.MANAGER:
             await UserAppletAccessCRUD(self.session).delete_user_roles(

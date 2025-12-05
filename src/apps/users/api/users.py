@@ -53,7 +53,7 @@ async def user_create(
 ) -> Response[PublicUser]:
     async with atomic(session):
         service = UserService(session)
-        prepared_data = UserCreate(**user_create_schema.dict())
+        prepared_data = UserCreate(**user_create_schema.model_dump())
         user = await service.create_user(prepared_data)
         # Create default workspace for new user
         await WorkspaceService(session, user.id).create_workspace_from_user(user)

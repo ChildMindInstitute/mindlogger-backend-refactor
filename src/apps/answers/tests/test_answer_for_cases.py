@@ -34,7 +34,7 @@ async def applet_data_with_flow(applet_minimal_data: AppletCreate) -> AppletCrea
             ],
         )
     ]
-    return AppletCreate(**data.dict())
+    return AppletCreate(**data.model_dump())
 
 
 @pytest.fixture

@@ -134,7 +134,7 @@ class SingleDatePayload(PublicModel):
     date: datetime.date
 
     def dict(self, *args, **kwargs):
-        d = super().dict(*args, **kwargs)
+        d = super().model_dump(*args, **kwargs)
         d["date"] = self.date.isoformat()
         return d
 
@@ -161,7 +161,7 @@ class DateRangePayload(PublicModel):
         return values
 
     def dict(self, *args, **kwargs):
-        d = super().dict(*args, **kwargs)
+        d = super().model_dump(*args, **kwargs)
         d["minDate"] = self.minDate.isoformat()
         d["maxDate"] = self.maxDate.isoformat()
         return d
@@ -172,7 +172,7 @@ class TimePayload(PublicModel):
     value: datetime.time
 
     def dict(self, *args, **kwargs):
-        d = super().dict(*args, **kwargs)
+        d = super().model_dump(*args, **kwargs)
         d["value"] = self.value.strftime("%H:%M")
         return d
 
@@ -225,7 +225,7 @@ class SingleTimePayload(PublicModel):
         return values
 
     def dict(self, *args, **kwargs) -> Dict[str, Any]:
-        d = super().dict(*args, **kwargs)
+        d = super().model_dump(*args, **kwargs)
         if self.time:
             d["time"] = self.time.strftime("%H:%M")
         return d
@@ -274,7 +274,7 @@ class MinMaxTimePayload(PublicModel):
         return values
 
     def dict(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
-        d = super().dict(*args, **kwargs)
+        d = super().model_dump(*args, **kwargs)
         if self.minTime:
             d["minTime"] = self._time_to_dict(self.minTime)
         if self.maxTime:
@@ -292,7 +292,7 @@ class MinMaxTimePayload(PublicModel):
         return {"hours": time.hour, "minutes": time.minute}
 
     def json_serialize(self) -> Dict[str, Any]:
-        data = self.dict()
+        data = self.model_dump()
         if self.minTime:
             data["minTime"] = self._time_to_dict(self.minTime)
         if self.maxTime:
@@ -311,7 +311,7 @@ class MinMaxSliderRowPayload(PublicModelNoExtra):
         return round(value, 2)
 
     def dict(self, *args, **kwargs):
-        d = super().dict(*args, **kwargs)
+        d = super().model_dump(*args, **kwargs)
         d["minValue"] = round(self.minValue, 2)
         d["maxValue"] = round(self.maxValue, 2)
         return d

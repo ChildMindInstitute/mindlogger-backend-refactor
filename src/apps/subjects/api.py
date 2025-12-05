@@ -52,7 +52,7 @@ async def create_subject(
         service = SubjectsService(session, user.id)
 
         try:
-            subject = await service.create(SubjectCreate(creator_id=user.id, **schema.dict(by_alias=False)))
+            subject = await service.create(SubjectCreate(creator_id=user.id, **schema.model_dump(by_alias=False)))
         except SecretIDUniqueViolationError:
             raise NonUniqueValue(loc=("body", SubjectCreateRequest.field_alias("secret_user_id")))
 
@@ -167,7 +167,7 @@ async def update_subject(
     async with atomic(session):
         subject.secret_user_id = schema.secret_user_id
         subject.nickname = schema.nickname
-        subject = await subject_srv.update(subject.id, **schema.dict(by_alias=False))
+        subject = await subject_srv.update(subject.id, **schema.model_dump(by_alias=False))
         return Response(
             result=SubjectReadResponse(
                 secret_user_id=subject.secret_user_id,

@@ -21,7 +21,7 @@ class ConsentCRUD(BaseCRUD[ConsentSchema]):
         """Return consent instance and the created information."""
 
         try:
-            instance: ConsentSchema = await self._create(ConsentSchema(**schema.dict()))
+            instance: ConsentSchema = await self._create(ConsentSchema(**schema.model_dump()))
         # Raise exception if applet doesn't exist
         except IntegrityError as e:
             raise ConsentError(message=str(e))
@@ -65,7 +65,7 @@ class ConsentCRUD(BaseCRUD[ConsentSchema]):
         instance = await self._update_one(
             lookup="id",
             value=pk,
-            schema=ConsentSchema(**schema.dict()),
+            schema=ConsentSchema(**schema.model_dump()),
         )
         event: Consent = Consent.from_orm(instance)
         return event

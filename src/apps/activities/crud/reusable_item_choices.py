@@ -40,7 +40,7 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
 
         # Save item template into the database
         try:
-            instance: ReusableItemChoiceSchema = await self._create(ReusableItemChoiceSchema(**schema.dict()))
+            instance: ReusableItemChoiceSchema = await self._create(ReusableItemChoiceSchema(**schema.model_dump()))
         except IntegrityError:
             raise ReusableItemChoiceAlreadyExist()
 

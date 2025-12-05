@@ -171,7 +171,7 @@ class AppletService:
             report_include_user_id=create_data.report_include_user_id,
             report_include_case_id=create_data.report_include_case_id,
             report_email_body=create_data.report_email_body,
-            encryption=create_data.encryption.dict() if create_data.encryption else None,
+            encryption=create_data.encryption.model_dump() if create_data.encryption else None,
             extra_fields=create_data.extra_fields,
             creator_id=creator_id,
             stream_enabled=create_data.stream_enabled,
@@ -241,7 +241,7 @@ class AppletService:
         if applet.encryption is not None:
             raise AppletEncryptionUpdateDenied()
 
-        applet.encryption = encryption.dict()
+        applet.encryption = encryption.model_dump()
         await AppletsCRUD(self.session).save(applet)
         applt = await AppletsCRUD(self.session).get_by_id(applet_id)
         return applt
@@ -339,7 +339,7 @@ class AppletService:
                 report_include_user_id=applet_exist.report_include_user_id,
                 report_include_case_id=applet_exist.report_include_case_id,
                 report_email_body=applet_exist.report_email_body,
-            ).dict()
+            ).model_dump()
             if include_report_server
             else {}
         )
@@ -392,7 +392,7 @@ class AppletService:
             AppletSchema(
                 display_name=update_data.display_name,
                 description=update_data.description,
-                encryption=update_data.encryption.dict() if update_data.encryption else None,
+                encryption=update_data.encryption.model_dump() if update_data.encryption else None,
                 about=update_data.about,
                 image=update_data.image,
                 watermark=update_data.watermark,
@@ -510,7 +510,7 @@ class AppletService:
                     display_name=schema.display_name,
                     version=schema.version,
                     description=self._get_by_language(schema.description, language),
-                    theme=theme.dict() if theme else None,
+                    theme=theme.model_dump() if theme else None,
                     about=self._get_by_language(schema.about, language),
                     image=schema.image,
                     watermark=schema.watermark,
@@ -555,7 +555,7 @@ class AppletService:
             description=self._get_by_language(schema.description, language),
             about=self._get_by_language(schema.about, language),
             image=schema.image,
-            theme=theme.dict() if theme else None,
+            theme=theme.model_dump() if theme else None,
             watermark=schema.watermark,
             theme_id=schema.theme_id,
             report_server_ip=schema.report_server_ip,
@@ -598,7 +598,7 @@ class AppletService:
             description=self._get_by_language(schema.description, language),
             about=self._get_by_language(schema.about, language),
             image=schema.image,
-            theme=theme.dict() if theme else None,
+            theme=theme.model_dump() if theme else None,
             watermark=schema.watermark,
             theme_id=schema.theme_id,
             report_server_ip=schema.report_server_ip,
@@ -635,7 +635,7 @@ class AppletService:
             description=schema.description,
             about=schema.about,
             image=schema.image,
-            theme=theme.dict() if theme else None,
+            theme=theme.model_dump() if theme else None,
             watermark=schema.watermark,
             theme_id=schema.theme_id,
             report_server_ip=schema.report_server_ip,

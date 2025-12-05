@@ -31,7 +31,7 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
         ]
     )
 
-    response_dict = response.dict(by_alias=True)
+    response_dict = response.model_dump(by_alias=True)
 
     # Add error_code to response if present
     if hasattr(error, "error_code") and error.error_code:
@@ -56,7 +56,7 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     logger.warning(error, exc_info=error)
 
     return JSONResponse(
-        content=jsonable_encoder(response.dict(by_alias=True)),
+        content=jsonable_encoder(response.model_dump(by_alias=True)),
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 
@@ -80,7 +80,7 @@ def pydantic_validation_errors_handler(request: Request, error: RequestValidatio
 
     response = ErrorResponseMulti(result=errors)
     return JSONResponse(
-        content=jsonable_encoder(response.dict(by_alias=True)),
+        content=jsonable_encoder(response.model_dump(by_alias=True)),
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
     )
 
@@ -93,7 +93,7 @@ def sqlalchemy_database_error_handler(
     response = ErrorResponseMulti(result=[ErrorResponse(message="Internal server error")])
 
     return JSONResponse(
-        content=jsonable_encoder(response.dict(by_alias=True)),
+        content=jsonable_encoder(response.model_dump(by_alias=True)),
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 

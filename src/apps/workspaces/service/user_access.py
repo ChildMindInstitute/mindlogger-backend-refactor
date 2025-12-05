@@ -286,7 +286,7 @@ class UserAccessService:
                             if len(existing_subject_ids) != len(subject_ids):
                                 raise ValidationError(_("Subject does not exist in applet"))
 
-                            meta = ReviewerMeta(subjects=list(map(str, subject_ids))).dict()
+                            meta = ReviewerMeta(subjects=list(map(str, subject_ids))).model_dump()
                         else:
                             raise RespondentsNotSet()
                     schemas.append(

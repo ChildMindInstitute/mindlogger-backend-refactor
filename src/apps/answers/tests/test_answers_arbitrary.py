@@ -599,7 +599,7 @@ class TestAnswerActivityItems(BaseTest):
             f"{general_activity.id}_{applet_with_reviewable_activity.version}",
             f"{review_activity.id}_{applet_with_reviewable_activity.version}",
         ]
-        assert not assessment["itemsLast"] == general_activity.dict()["items"][0]
+        assert not assessment["itemsLast"] == general_activity.model_dump()["items"][0]
         assert not assessment["items"]
 
     @pytest.mark.usefixtures("assessment_arbitrary")

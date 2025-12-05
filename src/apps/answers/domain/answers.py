@@ -363,7 +363,7 @@ class FlowSubmissionsResponse(PublicModel):
             elif isinstance(value[0], FlowHistoryWithActivityFull):
                 _values = []
                 for _value in value:
-                    data = _value.dict(exclude={"items"})
+                    data = _value.model_dump(exclude={"items"})
                     data["activities"] = [item.activity for item in _value.items]
                     _values.append(data)
                 value = _values
@@ -394,7 +394,7 @@ class FlowSubmissionResponse(PublicModel):
             data["activities"] = [item["activity"] for item in value["items"]]
             value = data
         elif isinstance(value, FlowHistoryWithActivityFull):
-            data = value.dict(exclude={"items"})
+            data = value.model_dump(exclude={"items"})
             data["activities"] = [item.activity for item in value.items]
             value = data
 

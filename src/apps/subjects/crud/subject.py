@@ -162,7 +162,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         return bool(res.scalar_one_or_none())
 
     async def upsert(self, schema: SubjectCreate) -> SubjectSchema | None:
-        values = {**schema.dict()}
+        values = {**schema.model_dump()}
         stmt = insert(SubjectSchema).values(values)
         stmt = stmt.on_conflict_do_update(
             index_elements=[SubjectSchema.user_id, SubjectSchema.applet_id],

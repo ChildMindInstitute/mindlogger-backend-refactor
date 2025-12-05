@@ -79,7 +79,7 @@ async def applet_data(applet_minimal_data: AppletCreate) -> AppletCreate:
             items=[FlowItemCreate(activity_key=data.activities[0].key)],
         )
     ]
-    return AppletCreate(**data.dict())
+    return AppletCreate(**data.model_dump())
 
 
 @pytest.fixture
@@ -151,7 +151,7 @@ def event_daily_data(applet: AppletFull) -> EventRequest:
 
 @pytest.fixture
 def event_daily_flow_data(applet: AppletFull, event_daily_data: EventRequest) -> EventRequest:
-    data = event_daily_data.dict()
+    data = event_daily_data.model_dump()
     data["activity_id"] = None
     data["flow_id"] = str(applet.activity_flows[0].id)
     model = EventRequest(**data)
@@ -160,7 +160,7 @@ def event_daily_flow_data(applet: AppletFull, event_daily_data: EventRequest) ->
 
 @pytest.fixture
 def event_daily_data_update(event_daily_data: EventRequest) -> EventUpdateRequest:
-    data = event_daily_data.dict()
+    data = event_daily_data.model_dump()
     del data["respondent_id"]
     del data["activity_id"]
     del data["flow_id"]
@@ -245,7 +245,7 @@ class TestSchedule:
         self, client: TestClient, applet: AppletFull, event_daily_data: EventRequest, user: User
     ):
         client.login(user)
-        data = event_daily_data.dict()
+        data = event_daily_data.model_dump()
         data["start_time"] = data["end_time"]
         response = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
@@ -304,7 +304,7 @@ class TestSchedule:
     ):
         client.login(user)
         client.login(user)
-        data = event_daily_data.dict()
+        data = event_daily_data.model_dump()
         data["flow_id"] = str(applet.activity_flows[0].id)
         data["activity_id"] = None
 
@@ -348,7 +348,7 @@ class TestSchedule:
         field_name_to_replace: str,
     ):
         client.login(user)
-        data = event_daily_data.dict()
+        data = event_daily_data.model_dump()
         data[field_name] = getattr(applet, event_for)[0].id
         data[field_name_to_replace] = None
         number_of_events = _get_number_default_events(applet)
@@ -456,7 +456,7 @@ class TestSchedule:
         user: User,
     ):
         client.login(user)
-        data = event_daily_data_update.dict()
+        data = event_daily_data_update.model_dump()
         data["start_time"] = data["end_time"]
         response = await client.put(
             self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id), data=data
@@ -507,7 +507,7 @@ class TestSchedule:
         response = await client.post(self.schedule_url.format(applet_id=applet.id), data=event_for_activity)
         assert response.status_code == http.HTTPStatus.CREATED
 
-        event_for_flow = event_daily_data.dict()
+        event_for_flow = event_daily_data.model_dump()
         event_for_flow["flow_id"] = str(applet.activity_flows[0].id)
         event_for_flow["activity_id"] = None
         response = await client.post(self.schedule_url.format(applet_id=applet.id), data=event_for_flow)
@@ -874,7 +874,7 @@ class TestSchedule:
         time_pairs_list = [("08:00:00", "09:00:00"), ("12:00:00", "13:00:00"), ("18:00:00", "19:00:00")]
         import_data = []
         for start_time, end_time in time_pairs_list:
-            data = event_daily_data.dict()
+            data = event_daily_data.model_dump()
             data["respondent_id"] = str(lucy.id)
             data["start_time"] = start_time
             data["end_time"] = end_time
@@ -1285,7 +1285,7 @@ class TestSchedule:
         user: User,
     ):
         client.login(user)
-        data = event_daily_data.dict()
+        data = event_daily_data.model_dump()
         data["activity_id"] = None
         data["flow_id"] = str(uuid_zero)
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
@@ -1313,7 +1313,7 @@ class TestSchedule:
         user: User,
     ):
         client.login(user)
-        data = event_daily_data.dict()
+        data = event_daily_data.model_dump()
         data["one_time_completion"] = False
         data["periodicity"]["type"] = constants.PeriodicityType.ALWAYS
         data["start_time"] = str(datetime.time(0, 0))
@@ -1354,7 +1354,7 @@ class TestSchedule:
         self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest
     ):
         client.login(user)
-        data = event_daily_data.dict()
+        data = event_daily_data.model_dump()
         data["one_time_completion"] = False
         data["periodicity"]["type"] = constants.PeriodicityType.ALWAYS
         data["start_time"] = str(datetime.time(0, 0))
@@ -1369,7 +1369,7 @@ class TestSchedule:
         self, client: TestClient, applet: AppletFull, user: User, event_daily_data: EventRequest
     ):
         client.login(user)
-        data = event_daily_data.dict()
+        data = event_daily_data.model_dump()
         data["flow_id"] = str(applet.activity_flows[0].id)
         data["activity_id"] = None
         data["one_time_completion"] = False

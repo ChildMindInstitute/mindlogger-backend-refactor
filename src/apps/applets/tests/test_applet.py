@@ -162,7 +162,7 @@ class TestApplet:
         self, client: TestClient, tom: User, device_tom: str, applet_one: AppletFull, fcm_client: FCMNotificationTest
     ):
         client.login(tom)
-        update_data = AppletUpdate(**applet_one.dict())
+        update_data = AppletUpdate(**applet_one.model_dump())
 
         response = await client.put(
             self.applet_detail_url.format(pk=applet_one.id),
@@ -251,7 +251,7 @@ class TestApplet:
         client.login(lucy)
 
         # Prepare update data
-        update_data = AppletUpdate(**data_tom.dict())
+        update_data = AppletUpdate(**data_tom.model_dump())
         update_data.description = {Language.ENGLISH: "Updated description by Lucy"}
 
         # Perform the update
@@ -272,7 +272,7 @@ class TestApplet:
     ):
         client.login(tom)
         assert applet_one.activities[0].auto_assign is True
-        update_data = AppletUpdate(**applet_one.dict())
+        update_data = AppletUpdate(**applet_one.model_dump())
         update_data.activities[0].auto_assign = False
 
         response = await client.put(
@@ -288,7 +288,7 @@ class TestApplet:
     ):
         client.login(tom)
         assert applet_one.activities[0].auto_assign is True
-        update_data = AppletUpdate(**applet_one.dict())
+        update_data = AppletUpdate(**applet_one.model_dump())
         update_data.activities[0].auto_assign = None
 
         response = await client.put(
@@ -301,7 +301,7 @@ class TestApplet:
 
     async def test_update_applet__add_stream_settings(self, client: TestClient, applet_one: AppletFull, tom: User):
         client.login(tom)
-        update_data = AppletUpdate(**applet_one.dict())
+        update_data = AppletUpdate(**applet_one.model_dump())
         update_data.stream_enabled = True
         update_data.stream_ip_address = "127.0.0.1"  # type: ignore[assignment]
         update_data.stream_port = 8001
@@ -317,7 +317,7 @@ class TestApplet:
         self, client: TestClient, tom: User, device_tom: str, applet_one: AppletFull
     ):
         client.login(tom)
-        update_data = AppletUpdate(**applet_one.dict())
+        update_data = AppletUpdate(**applet_one.model_dump())
         update_data.activities.append(update_data.activities[0])
 
         response = await client.put(
@@ -336,7 +336,7 @@ class TestApplet:
         new_name = "New Name"
         response = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
-            data=dict(display_name=new_name, encryption=encryption.dict()),
+            data=dict(display_name=new_name, encryption=encryption.model_dump()),
         )
         assert response.status_code == http.HTTPStatus.CREATED
         assert response.json()["result"]["displayName"] == new_name
@@ -360,7 +360,7 @@ class TestApplet:
         new_name = "New Name"
         response = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
-            data=dict(display_name=new_name, encryption=encryption.dict()),
+            data=dict(display_name=new_name, encryption=encryption.model_dump()),
         )
         assert response.status_code == http.HTTPStatus.CREATED
 
@@ -392,7 +392,7 @@ class TestApplet:
         new_name = "New Name"
         response = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
-            data=dict(display_name=new_name, encryption=encryption.dict(), include_report_server=True),
+            data=dict(display_name=new_name, encryption=encryption.model_dump(), include_report_server=True),
         )
         assert response.status_code == http.HTTPStatus.CREATED
 
@@ -413,7 +413,7 @@ class TestApplet:
         client.login(tom)
         response = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
-            data=dict(display_name=applet_one.display_name, encryption=encryption.dict()),
+            data=dict(display_name=applet_one.display_name, encryption=encryption.model_dump()),
         )
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         result = response.json()["result"]
@@ -623,7 +623,7 @@ class TestApplet:
     ):
         client.login(tom)
         # first change patch version
-        update_data_patch = applet_one.dict()
+        update_data_patch = applet_one.model_dump()
         update_data_patch["description"] = {"en": "description"}
         response = await client.put(
             self.applet_detail_url.format(pk=applet_one.id),
@@ -636,7 +636,7 @@ class TestApplet:
         update_data_minor = copy.deepcopy(update_data_patch)
         item = applet_minimal_data.activities[0].items[0].copy(deep=True)
         item.name = item.name + "second"
-        update_data_minor["activities"][0]["items"].append(item.dict())
+        update_data_minor["activities"][0]["items"].append(item.model_dump())
         response = await client.put(
             self.applet_detail_url.format(pk=applet_one.id),
             data=update_data_minor,
@@ -648,7 +648,7 @@ class TestApplet:
         update_data_major = copy.deepcopy(update_data_minor)
         activity = applet_minimal_data.activities[0].copy(deep=True)
         activity.name = activity.name + "second"
-        update_data_major["activities"].append(activity.dict())
+        update_data_major["activities"].append(activity.model_dump())
         response = await client.put(
             self.applet_detail_url.format(pk=applet_one.id),
             data=update_data_major,
@@ -684,7 +684,7 @@ class TestApplet:
     ):
         # NOTE: Only simple test is tested here. All other history changes are tested in unit tests
         client.login(tom)
-        update_data = AppletUpdate(**applet_one.dict())
+        update_data = AppletUpdate(**applet_one.model_dump())
         new_display_name = "new display name"
         update_data.display_name = new_display_name
         response = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=update_data)
@@ -757,9 +757,9 @@ class TestApplet:
         multi_select_item_create: ActivityItemCreate,
     ):
         client.login(tom)
-        update_data = AppletUpdate(**applet_one_with_public_link.dict())
+        update_data = AppletUpdate(**applet_one_with_public_link.model_dump())
         multi_select_item_create.is_hidden = True
-        update_data.activities[0].items.append(ActivityItemUpdate(**multi_select_item_create.dict()))
+        update_data.activities[0].items.append(ActivityItemUpdate(**multi_select_item_create.model_dump()))
         resp = await client.put(self.applet_detail_url.format(pk=applet_one_with_public_link.id), data=update_data)
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["result"]["activities"][0]["items"][1]["isHidden"]
@@ -945,8 +945,8 @@ class TestApplet:
         data = applet_one_update_data.copy(deep=True)
         second_activity = data.activities[0].copy(deep=True)
         second_activity.name += "second"
-        request_data = data.dict()
-        request_data["activities"].append(second_activity.dict())
+        request_data = data.model_dump()
+        request_data["activities"].append(second_activity.model_dump())
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         result = resp.json()["result"]
@@ -958,8 +958,8 @@ class TestApplet:
     ):
         client.login(tom)
         data = applet_one_with_flow_update_data.copy(deep=True)
-        request_data = data.dict()
-        request_data["activity_flows"].append(data.activity_flows[0].dict())
+        request_data = data.model_dump()
+        request_data["activity_flows"].append(data.activity_flows[0].model_dump())
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         result = resp.json()["result"]
@@ -973,8 +973,8 @@ class TestApplet:
         data = applet_one_with_flow_update_data.copy(deep=True)
         flow = data.activity_flows[0].copy(deep=True)
         flow.name += "second"
-        request_data = data.dict()
-        request_data["activity_flows"].append(flow.dict())
+        request_data = data.model_dump()
+        request_data["activity_flows"].append(flow.model_dump())
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         result = resp.json()["result"]
@@ -991,7 +991,7 @@ class TestApplet:
     ):
         client.login(tom)
         data = applet_one_with_flow_update_data.copy(deep=True)
-        request_data = data.dict()
+        request_data = data.model_dump()
         request_data["activity_flows"][0]["items"][0]["activity_key"] = uuid_zero
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
         assert resp.status_code == http.HTTPStatus.BAD_REQUEST
@@ -1178,7 +1178,7 @@ class TestApplet:
         # TODO: investigate why need the same values
         assert result["activityFlows"][0]["items"][0]["activity"] == result["activities"][0]
         flow_data = result["activityFlows"][0]
-        exp_flow_data = applet_one_with_flow.activity_flows[0].dict(by_alias=True)
+        exp_flow_data = applet_one_with_flow.activity_flows[0].model_dump(by_alias=True)
         assert flow_data["id"] == str(exp_flow_data["id"])
         assert flow_data["name"] == exp_flow_data["name"]
         assert flow_data["description"] == exp_flow_data["description"]
@@ -1210,7 +1210,7 @@ class TestApplet:
         new_name = applet_one_lucy_editor.display_name + "new"
         resp = await client.post(
             self.applet_duplicate_url.format(pk=applet_one_lucy_editor.id),
-            data=dict(display_name=new_name, encryption=encryption.dict()),
+            data=dict(display_name=new_name, encryption=encryption.model_dump()),
         )
         assert resp.status_code == http.HTTPStatus.CREATED
         mock.assert_awaited_once_with(ANY, tom.id, lucy.id, Role.EDITOR)
@@ -1245,7 +1245,7 @@ class TestApplet:
         new_name = applet_one_with_flow.display_name + "new"
         resp = await client.post(
             self.applet_duplicate_url.format(pk=applet_one_with_flow.id),
-            data=dict(display_name=new_name, encryption=encryption.dict()),
+            data=dict(display_name=new_name, encryption=encryption.model_dump()),
         )
         assert resp.status_code == http.HTTPStatus.CREATED
         activity_flows = resp.json()["result"]["activityFlows"]
@@ -1266,7 +1266,7 @@ class TestApplet:
         new_name = AppletService.APPLET_NAME_FORMAT_FOR_DUPLICATES.format(applet_one.display_name, 1)
         resp = await client.post(
             self.applet_duplicate_url.format(pk=applet_one.id),
-            data=dict(display_name=new_name, encryption=encryption.dict()),
+            data=dict(display_name=new_name, encryption=encryption.model_dump()),
         )
         assert resp.status_code == http.HTTPStatus.CREATED
         assert resp.json()["result"]["displayName"] == new_name
@@ -1307,7 +1307,7 @@ class TestApplet:
         edit_data = dict(
             {
                 "display_name": "Updated Name",
-                "encryption": encryption.dict(),
+                "encryption": encryption.model_dump(),
                 "activities": [],
                 "activityFlows": [],
             }
@@ -1330,7 +1330,7 @@ class TestApplet:
         edit_data = dict(
             {
                 "display_name": "Updated Name",
-                "encryption": encryption.dict(),
+                "encryption": encryption.model_dump(),
                 "activities": [],
                 "activityFlows": [],
             }
@@ -1351,7 +1351,7 @@ class TestApplet:
         edit_data = dict(
             {
                 "display_name": "Updated Name",
-                "encryption": encryption.dict(),
+                "encryption": encryption.model_dump(),
                 "activities": [],
                 "activityFlows": [],
             }

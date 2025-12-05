@@ -22,7 +22,7 @@ def job_create(tom) -> JobCreate:
 @pytest.fixture()
 async def job(session: AsyncSession, job_create: JobCreate) -> AsyncGenerator[JobSchema, Any]:
     job = await JobCRUD(session).create(job_create)
-    yield JobSchema(**job.dict())
+    yield JobSchema(**job.model_dump())
 
 
 @pytest.mark.parametrize("status,", list(JobStatus))

@@ -60,7 +60,7 @@ async def user_workspaces(
     return ResponseMulti[PublicWorkspace](
         count=len(workspaces),
         result=[
-            PublicWorkspace(owner_id=workspace.user_id, **workspace.dict(exclude={"user_id"}))
+            PublicWorkspace(owner_id=workspace.user_id, **workspace.model_dump(exclude={"user_id"}))
             for workspace in workspaces
         ],
     )
@@ -208,7 +208,7 @@ async def workspace_applet_respondent_update(
         exist = await subject_service.check_secret_id(subject.id, schema.secret_user_id, applet_id)
         if exist:
             raise NonUniqueValue()
-        await subject_service.update(subject.id, **schema.dict(by_alias=False))
+        await subject_service.update(subject.id, **schema.model_dump(by_alias=False))
 
 
 async def workspace_remove_manager_access(
@@ -256,7 +256,7 @@ async def workspace_respondents_list(
     public_respondents: list[PublicWorkspaceRespondent] = []
     for respondent in respondents:
         public_respondent = PublicWorkspaceRespondent(
-            **respondent.dict(),
+            **respondent.model_dump(),
         )
 
         if public_respondent.details:
@@ -296,7 +296,7 @@ async def workspace_applet_respondents_list(
     public_respondents: list[PublicWorkspaceRespondent] = []
     for respondent in respondents:
         public_respondent = PublicWorkspaceRespondent(
-            **respondent.dict(),
+            **respondent.model_dump(),
         )
 
         if public_respondent.details:

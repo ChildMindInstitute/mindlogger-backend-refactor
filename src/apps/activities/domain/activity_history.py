@@ -68,12 +68,12 @@ class ActivityHistoryExport(PublicActivityFull):
     _version = field_validator("version")(extract_history_version)
 
     def translate(self, i18n: I18N) -> "ActivityHistoryTranslatedExport":
-        as_dict = self.dict(by_alias=False)
+        as_dict = self.model_dump(by_alias=False)
         as_dict["description"] = i18n.translate(self.description)
 
         items = []
         for item in self.items:
-            itms_dict = item.dict(by_alias=False)
+            itms_dict = item.model_dump(by_alias=False)
             itms_dict["question"] = i18n.translate(item.question)
             items.append(ActivityItemSingleLanguageDetailPublic(**itms_dict))
         as_dict["items"] = items

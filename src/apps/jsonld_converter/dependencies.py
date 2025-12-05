@@ -24,7 +24,7 @@ def get_jsonld_model_converter(
     document_loader: Callable = Depends(get_document_loader),
     context_resolver: ContextResolver = Depends(get_context_resolver),
 ) -> JsonLDModelConverter:
-    return JsonLDModelConverter(context_resolver, document_loader, settings.jsonld_converter.dict())
+    return JsonLDModelConverter(context_resolver, document_loader, settings.jsonld_converter.model_dump())
 
 
 def get_model_jsonld_converter(

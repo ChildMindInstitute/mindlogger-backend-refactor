@@ -21,7 +21,7 @@ async def consent_create(
         service = ConsentService(session)
         consent = await service.create_consent(schema)
 
-    return Response(result=PublicConsent(**consent.dict()))
+    return Response(result=PublicConsent(**consent.model_dump()))
 
 
 async def consent_get_by_id(
@@ -32,7 +32,7 @@ async def consent_get_by_id(
     """Get a consent by id."""
     async with atomic(session):
         consent = await ConsentService(session).get_consent_by_id(consent_id=consent_id)
-    return Response(result=PublicConsent(**consent.dict()))
+    return Response(result=PublicConsent(**consent.model_dump()))
 
 
 async def consent_get_by_user_id(
@@ -43,7 +43,7 @@ async def consent_get_by_user_id(
     """Get a consent by user id."""
     async with atomic(session):
         consent = await ConsentService(session).get_consent_by_user_id(user_id=user_id)
-    return Response(result=PublicConsent(**consent.dict()))
+    return Response(result=PublicConsent(**consent.model_dump()))
 
 
 async def consent_update(
@@ -57,4 +57,4 @@ async def consent_update(
         service = ConsentService(session)
         consent = await service.update_consent(consent_id, schema)
 
-    return Response(result=PublicConsent(**consent.dict()))
+    return Response(result=PublicConsent(**consent.model_dump()))

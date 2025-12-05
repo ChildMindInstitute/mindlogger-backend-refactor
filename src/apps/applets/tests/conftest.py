@@ -60,7 +60,7 @@ async def applet_one_with_link(session: AsyncSession, applet_one: AppletFull, to
 async def applet_one_with_flow(
     session: AsyncSession, applet_one: AppletFull, applet_minimal_data: AppletFull, tom: User
 ):
-    data = AppletUpdate(**applet_minimal_data.dict())
+    data = AppletUpdate(**applet_minimal_data.model_dump())
     flow = FlowUpdate(
         name="flow",
         items=[ActivityFlowItemUpdate(id=None, activity_key=data.activities[0].key)],
@@ -98,14 +98,14 @@ async def applet_one_with_flow_and_assignments(
 
 @pytest.fixture
 def applet_one_update_data(applet_one: AppletFull) -> AppletUpdate:
-    return AppletUpdate(**applet_one.dict())
+    return AppletUpdate(**applet_one.model_dump())
 
 
 @pytest.fixture
 def applet_one_change_activities_ids(applet_one: AppletFull) -> AppletUpdate:
-    data = applet_one.dict()
+    data = applet_one.model_dump()
     data["activities"] = [
-        ActivityUpdate(**activity.dict(exclude={"name", "id"}), name="New Activity")
+        ActivityUpdate(**activity.model_dump(exclude={"name", "id"}), name="New Activity")
         for activity in applet_one.activities[1:]
     ]
     return AppletUpdate(**data)
@@ -125,7 +125,7 @@ def applet_create_with_flow(applet_minimal_data: AppletCreate) -> AppletCreate:
 
 @pytest.fixture
 def applet_one_with_flow_update_data(applet_one_with_flow: AppletFull) -> AppletUpdate:
-    dct = applet_one_with_flow.dict()
+    dct = applet_one_with_flow.model_dump()
     dct["activity_flows"][0]["items"][0]["activity_key"] = applet_one_with_flow.activities[0].key
     return AppletUpdate(**dct)
 
@@ -140,7 +140,7 @@ async def applet_with_reviewable_activity(
     reviewable_activity.name = data.activities[0].name + " review"
     reviewable_activity.is_reviewable = True
     data.activities.append(reviewable_activity)
-    applet_create = AppletCreate(**data.dict())
+    applet_create = AppletCreate(**data.model_dump())
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_create)
     return applet

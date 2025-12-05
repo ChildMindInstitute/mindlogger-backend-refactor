@@ -41,7 +41,7 @@ def arbitrary_gcp_create_data(
 def test_arbitrary_workspace_common_required_fields(
     arbitrary_aws_create_data: WorkspaceArbitraryCreate, field_name: str
 ) -> None:
-    data = arbitrary_aws_create_data.dict()
+    data = arbitrary_aws_create_data.model_dump()
     del data[field_name]
     with pytest.raises(ValidationError):
         WorkspaceArbitraryCreate(**data)
@@ -54,7 +54,7 @@ def test_arbitrary_workspace_common_required_fields(
 def test_arbitrary_workspace_aws_required_fields(
     arbitrary_aws_create_data: WorkspaceArbitraryCreate, field_name: str
 ) -> None:
-    data = arbitrary_aws_create_data.dict()
+    data = arbitrary_aws_create_data.model_dump()
     del data[field_name]
     with pytest.raises(ValidationError) as exc:
         WorkspaceArbitraryCreate(**data)
@@ -73,7 +73,7 @@ def test_arbitrary_workspace_aws_required_fields(
 def test_arbitrary_workspace_gcp_required_fields(
     arbitrary_gcp_create_data: WorkspaceArbitraryCreate, field_name: str
 ) -> None:
-    data = arbitrary_gcp_create_data.dict()
+    data = arbitrary_gcp_create_data.model_dump()
     del data[field_name]
     with pytest.raises(ValidationError) as exc:
         WorkspaceArbitraryCreate(**data)

@@ -53,7 +53,7 @@ def print_data_table(data: WorkspaceArbitraryFields) -> None:
         title="Arbitrary server settings",
         title_style=Style(bold=True),
     )
-    for k, v in data.dict(by_alias=False).items():
+    for k, v in data.model_dump(by_alias=False).items():
         table.add_row(f"[bold]{k}[/bold]", str(v))
 
     print(table)
@@ -162,7 +162,7 @@ async def add(
                 error(f"User with email {owner_email} not found")
     alembic_version = await get_version(data.database_uri)
     output = WorkSpaceArbitraryConsoleOutput(
-        email=owner_email, user_id=owner.id, **data.dict(), alembic_version=alembic_version
+        email=owner_email, user_id=owner.id, **data.model_dump(), alembic_version=alembic_version
     )
     print(
         "[green]Success: Run [bold]ping[/bold] command to check access. "
@@ -199,7 +199,7 @@ async def show(
                     alembic_version = f"[bold red]ERROR: {e}[/bold red]"
 
                 output = WorkSpaceArbitraryConsoleOutput(
-                    **arbitrary_fields.dict(), email=owner_email, user_id=owner.id, alembic_version=alembic_version
+                    **arbitrary_fields.model_dump(), email=owner_email, user_id=owner.id, alembic_version=alembic_version
                 )
                 print_data_table(output)
         else:
@@ -215,7 +215,7 @@ async def show(
                 except Exception as e:
                     alembic_version = f"[bold red]ERROR: {e}[/bold red]"
                 output = WorkSpaceArbitraryConsoleOutput(
-                    **arbitrary_fields.dict(),
+                    **arbitrary_fields.model_dump(),
                     email=user.email_encrypted,
                     user_id=user.id,
                     alembic_version=alembic_version,

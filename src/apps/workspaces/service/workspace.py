@@ -303,7 +303,7 @@ class WorkspaceService:
         arbitrary_data = WorkspaceArbitraryFields.from_orm(schema)
         if not arbitrary_data.is_arbitrary_empty() and not rewrite:
             raise ArbitraryServerSettingsError(arbitrary_data, "Arbitrary settings are already set")
-        for k, v in data.dict(by_alias=False).items():
+        for k, v in data.model_dump(by_alias=False).items():
             setattr(schema, k, v)
         await repository.update_by_user_id(schema.user_id, schema)
 

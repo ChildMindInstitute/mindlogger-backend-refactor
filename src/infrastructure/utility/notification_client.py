@@ -46,7 +46,7 @@ class FCMNotificationTest:
         if not devices:
             return
         for device in devices:
-            self.notifications[device].append(json.dumps(message.dict(by_alias=True), default=str))
+            self.notifications[device].append(json.dumps(message.model_dump(by_alias=True), default=str))
 
 
 class FCMNotification:
@@ -95,7 +95,7 @@ class FCMNotification:
                 messaging.MulticastMessage(
                     devices,
                     android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
-                    data=dict(message=json.dumps(message.dict(by_alias=True), default=str)),
+                    data=dict(message=json.dumps(message.model_dump(by_alias=True), default=str)),
                     apns=messaging.APNSConfig(
                         headers={"apns-priority": "5"},
                         payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True)),
@@ -108,7 +108,7 @@ class FCMNotification:
                 messaging.send,
                 messaging.Message(
                     android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
-                    data=dict(message=json.dumps(message.dict(by_alias=True), default=str)),
+                    data=dict(message=json.dumps(message.model_dump(by_alias=True), default=str)),
                     token=devices[0],
                     apns=messaging.APNSConfig(
                         headers={"apns-priority": "5"},

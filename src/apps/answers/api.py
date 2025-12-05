@@ -182,7 +182,7 @@ async def review_activity_list(
 ) -> ResponseMulti[PublicReviewActivity]:
     filters = ReviewAppletItemFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
     activities = await AnswerService(session, user.id, answer_session).get_review_activities(applet_id, filters)
 
     return ResponseMulti(
@@ -271,7 +271,7 @@ async def applet_activity_answers_list(
     result = []
     for answer in answers:
         review_count = answer_reviews.get(answer.answer_id, ReviewsCount())
-        result.append(parse_obj_as(AppletActivityAnswerPublic, {**answer.dict(), "review_count": review_count}))
+        result.append(parse_obj_as(AppletActivityAnswerPublic, {**answer.model_dump(), "review_count": review_count}))
     return ResponseMulti(result=result, count=len(answers))
 
 
@@ -361,7 +361,7 @@ async def applet_submit_date_list(
 ) -> Response[PublicAnswerDates]:
     filters = AppletSubmitDateFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
     dates = await AnswerService(session, user.id, answer_session).get_applet_submit_dates(
         applet_id, AppletSubmitDateFilter(**query_params.filters)
     )
@@ -505,7 +505,7 @@ async def applet_activity_identifiers_retrieve(
 ) -> ResponseMulti[Identifier]:
     filters = IdentifiersQueryParams(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
     identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(activity_id, filters)
     return ResponseMulti(result=identifiers, count=len(identifiers))
 

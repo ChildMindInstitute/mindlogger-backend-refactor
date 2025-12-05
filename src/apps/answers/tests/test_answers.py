@@ -778,7 +778,7 @@ async def tom_answer_activity_flow_not_completed(
 async def applet__with_deleted_activities_and_answers(
     session: AsyncSession, tom: User, applet__with_ordered_activities: AppletFull
 ):
-    data = AppletUpdate(**applet__with_ordered_activities.dict())
+    data = AppletUpdate(**applet__with_ordered_activities.model_dump())
     applet_service = AppletService(session, tom.id)
     answer_service = AnswerService(session, tom.id)
     applet_id = applet__with_ordered_activities.id
@@ -800,7 +800,7 @@ async def applet__with_deleted_activities_and_answers(
         )
         await answer_service.create_answer(create_data)
     # delete first two activities
-    data.activities = [ActivityUpdate(**a.dict()) for a in applet__with_ordered_activities.activities[2:]]
+    data.activities = [ActivityUpdate(**a.model_dump()) for a in applet__with_ordered_activities.activities[2:]]
     return await applet_service.update(applet_id, data)
 
 
@@ -833,7 +833,7 @@ async def applet__with_deleted_and_order(
         )
         await answer_service.create_answer(create_data)
     applet_with_flow.activity_flows = [applet_with_flow.activity_flows[1]]
-    data = applet_with_flow.dict()
+    data = applet_with_flow.model_dump()
     for i in range(len(data["activity_flows"])):
         activity_flow = data["activity_flows"][i]
         for j in range(len(activity_flow["items"])):
@@ -2108,7 +2108,7 @@ class TestAnswerActivityItems(BaseTest):
             f"{general_activity.id}_{applet_with_reviewable_activity.version}",
             f"{review_activity.id}_{applet_with_reviewable_activity.version}",
         ]
-        assert not assessment["itemsLast"] == general_activity.dict()["items"][0]
+        assert not assessment["itemsLast"] == general_activity.model_dump()["items"][0]
         assert not assessment["items"]
 
     @pytest.mark.usefixtures("assessment")
@@ -2541,7 +2541,7 @@ class TestAnswerActivityItems(BaseTest):
     async def test_public_answer_with_zero_start_time_end_time_timestamps(
         self, client: TestClient, public_answer_create: AppletAnswerCreate
     ):
-        create_data = public_answer_create.dict()
+        create_data = public_answer_create.model_dump()
         create_data["answer"]["start_time"] = 0
         create_data["answer"]["end_time"] = 0
 

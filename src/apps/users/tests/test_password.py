@@ -51,18 +51,18 @@ class TestPassword:
 
         # Password update
         password_update_request = PasswordUpdateRequestFactory.build(prev_password=user_create.password)
-        response: HttpResponse = await client.put(self.password_update_url, data=password_update_request.dict())
+        response: HttpResponse = await client.put(self.password_update_url, data=password_update_request.model_dump())
         assert response.status_code == status.HTTP_200_OK
 
         # User get token with new password
         login_request_user = UserLoginRequest(
             email=user_create.email,
-            password=password_update_request.dict()["password"],
+            password=password_update_request.model_dump()["password"],
         )
 
         internal_response: HttpResponse = await client.post(
             url=self.get_token_url,
-            data=login_request_user.dict(),
+            data=login_request_user.model_dump(),
         )
 
         assert internal_response.status_code == status.HTTP_200_OK
@@ -70,11 +70,11 @@ class TestPassword:
 
     async def test_password_recovery(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
         )
 
         cache = RedisCache()
@@ -89,7 +89,7 @@ class TestPassword:
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -102,11 +102,11 @@ class TestPassword:
 
     async def test_password_recovery_admin(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
             headers={"MindLogger-Content-Source": "admin"},
         )
 
@@ -122,7 +122,7 @@ class TestPassword:
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -135,11 +135,11 @@ class TestPassword:
 
     async def test_password_recovery_mobile(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
             headers={"MindLogger-Content-Source": "mobile"},
         )
 
@@ -155,7 +155,7 @@ class TestPassword:
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -168,11 +168,11 @@ class TestPassword:
 
     async def test_password_recovery_invalid(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
             headers={"MindLogger-Content-Source": "invalid-content-source"},
         )
 
@@ -188,7 +188,7 @@ class TestPassword:
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -203,18 +203,18 @@ class TestPassword:
         cache = RedisCache()
 
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
         )
 
         assert response.status_code == status.HTTP_201_CREATED
         key = (await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*"))[0].split(":")[-1]
 
         data = {
-            "email": user_create.dict()["email"],
+            "email": user_create.model_dump()["email"],
             "key": key,
             "password": "new_password",
         }
@@ -232,11 +232,11 @@ class TestPassword:
         settings.authentication.password_recover.expiration = 1
 
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.dict()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
 
         response = await client.post(
             url=self.password_recovery_url,
-            data=password_recovery_request.dict(),
+            data=password_recovery_request.model_dump(),
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -244,7 +244,7 @@ class TestPassword:
         await asyncio.sleep(2)
 
         data = {
-            "email": user_create.dict()["email"],
+            "email": user_create.model_dump()["email"],
             "key": key,
             "password": "new_password",
         }

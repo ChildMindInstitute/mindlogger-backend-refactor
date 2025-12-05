@@ -150,7 +150,7 @@ def applet_base_data(encryption: Encryption) -> AppletBase:
 @pytest.fixture(scope="session")
 def applet_minimal_data(applet_base_data: AppletBase, activity_create_session: ActivityCreate) -> AppletCreate:
     # TODO: possible need to add activity_flows
-    return AppletCreate(**applet_base_data.dict(), activities=[activity_create_session], activity_flows=[])
+    return AppletCreate(**applet_base_data.model_dump(), activities=[activity_create_session], activity_flows=[])
 
 
 @pytest.fixture(scope="session")

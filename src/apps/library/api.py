@@ -62,7 +62,7 @@ async def library_get_by_id(
     session=Depends(get_session),
 ) -> Response[PublicLibraryItem]:
     applet = await LibraryService(session).get_applet_by_id(library_id)
-    return Response(result=model_as_camel_case(PublicLibraryItem(**applet.dict())))
+    return Response(result=model_as_camel_case(PublicLibraryItem(**applet.model_dump())))
 
 
 async def library_get_url(

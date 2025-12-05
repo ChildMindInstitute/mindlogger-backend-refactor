@@ -57,7 +57,7 @@ def single_select_item_create(
         response_type=ResponseType.SINGLESELECT,
         response_values=single_select_response_values,
         config=single_select_config,
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
     )
 
 
@@ -71,7 +71,7 @@ def multi_select_item_create(
         response_type=ResponseType.MULTISELECT,
         response_values=multi_select_response_values,
         config=multi_select_config,
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
     )
 
 
@@ -85,14 +85,14 @@ def slider_item_create(
         response_type=ResponseType.SLIDER,
         response_values=slider_response_values,
         config=slider_config,
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
     )
 
 
 @pytest.fixture
 def date_item_create(date_config: DateConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.DATE,
         config=date_config,
     )
@@ -105,7 +105,7 @@ def number_selection_item_create(
     base_item_data: BaseItemData,
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.NUMBERSELECT,
         config=number_selection_config,
         response_values=number_selection_response_values,
@@ -115,7 +115,7 @@ def number_selection_item_create(
 @pytest.fixture
 def time_item_create(time_config: TimeConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.TIME,
         config=time_config,
     )
@@ -124,7 +124,7 @@ def time_item_create(time_config: TimeConfig, base_item_data: BaseItemData) -> A
 @pytest.fixture
 def time_range_item_create(time_range_config: TimeRangeConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.TIMERANGE,
         config=time_range_config,
     )
@@ -137,7 +137,7 @@ def single_select_row_item_create(
     single_select_row_response_values: SingleSelectionRowsValues,
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=single_select_row_config,
         response_values=single_select_row_response_values,
         response_type=ResponseType.SINGLESELECTROWS,
@@ -151,7 +151,7 @@ def multi_select_row_item_create(
     multi_select_row_response_values: MultiSelectionRowsValues,
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=multi_select_row_config,
         response_values=multi_select_row_response_values,
         response_type=ResponseType.MULTISELECTROWS,
@@ -165,7 +165,7 @@ def slider_rows_item_create(
     slider_rows_response_values: SliderRowsValues,
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.SLIDERROWS,
         response_values=slider_rows_response_values,
         config=slider_rows_config,
@@ -175,7 +175,7 @@ def slider_rows_item_create(
 @pytest.fixture
 def text_item_create(text_config: TextConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.TEXT,
         config=text_config,
     )
@@ -186,7 +186,7 @@ def paragraph_text_item_create(
     paragraph_text_config: ParagraphTextConfig, base_item_data: BaseItemData
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.PARAGRAPHTEXT,
         config=paragraph_text_config,
     )
@@ -197,7 +197,7 @@ def drawing_item_create(
     drawing_config: DrawingConfig, drawing_response_values: DrawingValues, base_item_data: BaseItemData
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.DRAWING,
         config=drawing_config,
         response_values=drawing_response_values,
@@ -207,7 +207,7 @@ def drawing_item_create(
 @pytest.fixture
 def photo_item_create(photo_config: PhotoConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.PHOTO,
         config=photo_config,
     )
@@ -216,7 +216,7 @@ def photo_item_create(photo_config: PhotoConfig, base_item_data: BaseItemData) -
 @pytest.fixture
 def video_item_create(video_config: VideoConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.VIDEO,
         config=video_config,
     )
@@ -225,7 +225,7 @@ def video_item_create(video_config: VideoConfig, base_item_data: BaseItemData) -
 @pytest.fixture
 def geolocation_item_create(geolocation_config: GeolocationConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.GEOLOCATION,
         config=geolocation_config,
     )
@@ -236,7 +236,7 @@ def audio_item_create(
     audio_config: AudioConfig, audio_response_values: AudioValues, base_item_data: BaseItemData
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.AUDIO,
         config=audio_config,
         response_values=audio_response_values,
@@ -246,7 +246,7 @@ def audio_item_create(
 @pytest.fixture
 def message_item_create(message_config: MessageConfig, base_item_data: BaseItemData) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.MESSAGE,
         config=message_config,
     )
@@ -259,7 +259,7 @@ def audio_player_item_create(
     base_item_data: BaseItemData,
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.AUDIOPLAYER,
         config=audio_player_config,
         response_values=audio_player_response_values,
@@ -274,7 +274,7 @@ def phrasal_template_with_text_create(
     text_item_create,
 ):
     phrasal_item = ActivityItemCreate(
-        **base_item_data.dict(exclude={"name"}),
+        **base_item_data.model_dump(exclude={"name"}),
         name="phrasal_template_text_test",
         response_type=ResponseType.PHRASAL_TEMPLATE,
         config=phrasal_template_config,
@@ -292,7 +292,7 @@ def phrasal_template_with_slider_rows_create(
     slider_rows_item_create,
 ):
     phrasal_item = ActivityItemCreate(
-        **base_item_data.dict(exclude={"name"}),
+        **base_item_data.model_dump(exclude={"name"}),
         name="phrasal_template_slider_test",
         response_type=ResponseType.PHRASAL_TEMPLATE,
         config=phrasal_template_config,
@@ -310,7 +310,7 @@ def phrasal_template_with_time_create(
     time_item_create,
 ):
     phrasal_item = ActivityItemCreate(
-        **base_item_data.dict(exclude={"name"}),
+        **base_item_data.model_dump(exclude={"name"}),
         name="phrasal_template_time_test",
         response_type=ResponseType.PHRASAL_TEMPLATE,
         config=phrasal_template_config,
@@ -328,7 +328,7 @@ def phrasal_template_with_paragraph_create(
     paragraph_text_item_create,
 ):
     phrasal_item = ActivityItemCreate(
-        **base_item_data.dict(exclude={"name"}),
+        **base_item_data.model_dump(exclude={"name"}),
         name="phrasal_template_paragraph_test",
         response_type=ResponseType.PHRASAL_TEMPLATE,
         config=phrasal_template_config,
@@ -345,7 +345,7 @@ def request_health_record_data_create(
     base_item_data: BaseItemData,
 ) -> ActivityItemCreate:
     return ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         response_type=ResponseType.REQUEST_HEALTH_RECORD_DATA,
         config=request_health_record_data_config,
         response_values=request_health_record_data_response_values,

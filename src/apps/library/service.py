@@ -118,7 +118,7 @@ class LibraryService:
         return [
             PublicLibraryItem(
                 version=library_item.applet_id_version.split("_")[1],
-                **library_item.dict(exclude={"applet_id_version"}),
+                **library_item.model_dump(exclude={"applet_id_version"}),
             )
             for library_item in library_items
         ]
@@ -131,7 +131,7 @@ class LibraryService:
         library_item = await self._get_full_library_item(library_item)
         return PublicLibraryItem(
             version=library_item.applet_id_version.split("_")[1],
-            **library_item.dict(exclude={"applet_id_version"}),
+            **library_item.model_dump(exclude={"applet_id_version"}),
         )
 
     async def _get_full_library_item(self, library_item: LibraryItem) -> LibraryItem:

@@ -63,7 +63,7 @@ class ReminderCRUD(BaseCRUD[ReminderSchema]):
     async def create(self, reminder: ReminderSettingCreate) -> ReminderSetting:
         """Create a reminder."""
 
-        db_reminder = await self._create(ReminderSchema(**reminder.dict()))
+        db_reminder = await self._create(ReminderSchema(**reminder.model_dump()))
         return ReminderSetting.from_orm(db_reminder)
 
     async def get_by_event_id(self, event_id: uuid.UUID) -> ReminderSchema:
@@ -102,7 +102,7 @@ class ReminderCRUD(BaseCRUD[ReminderSchema]):
         """Update reminder instance."""
         query: Query = update(ReminderSchema)
         query = query.where(ReminderSchema.event_id == schema.event_id)
-        query = query.values(**schema.dict(exclude={"event_id"}))
+        query = query.values(**schema.model_dump(exclude={"event_id"}))
         query = query.returning(self.schema_class)
         db_result = await self._execute(query)
         result = db_result.scalars().first()

@@ -127,7 +127,7 @@ class TestActivityItems:
         if item_create.response_type in ResponseType.get_non_response_types():
             assert item["responseValues"] is None
         else:
-            assert item["responseValues"] == item_create.response_values.dict(by_alias=True)
+            assert item["responseValues"] == item_create.response_values.model_dump(by_alias=True)
 
     @pytest.mark.parametrize(
         "item_fixture",
@@ -169,7 +169,7 @@ class TestActivityItems:
         assert item["question"] == phrasal_item.question
         assert item["isHidden"] == phrasal_item.is_hidden
         assert not item["allowEdit"]
-        assert item["responseValues"] == phrasal_item.response_values.dict(by_alias=True)  # type: ignore
+        assert item["responseValues"] == phrasal_item.response_values.model_dump(by_alias=True)  # type: ignore
 
     @pytest.mark.parametrize(
         "fixture_name, performance_task_type",
@@ -223,7 +223,7 @@ class TestActivityItems:
         data = applet_minimal_data.copy(deep=True)
         data.activities[0].items = [request_health_record_data_create]
 
-        data_dict = data.dict(by_alias=True)
+        data_dict = data.model_dump(by_alias=True)
         data_dict["activities"][0]["items"][0]["responseValues"]["optInOutOptions"][1]["id"] = "opt_in"
 
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
@@ -233,7 +233,7 @@ class TestActivityItems:
             == "Value error, Request Health Record Data item must have opt-out option"
         )
 
-        data_dict = data.dict(by_alias=True)
+        data_dict = data.model_dump(by_alias=True)
         data_dict["activities"][0]["items"][0]["responseValues"]["optInOutOptions"][0]["id"] = "opt_out"
 
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
@@ -243,7 +243,7 @@ class TestActivityItems:
             == "Value error, Request Health Record Data item must have opt-in option"
         )
 
-        data_dict = data.dict(by_alias=True)
+        data_dict = data.model_dump(by_alias=True)
         data_dict["activities"][0]["items"][0]["responseValues"]["optInOutOptions"] = []
 
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_dict)
@@ -284,8 +284,8 @@ class TestActivityItems:
         item_for_condition = activity_create_with_conditional_logic.items[0]
         item_with_condition = activity_create_with_conditional_logic.items[1]
         # Make wrong order. Item with condition must be after item which value is included in conditional logic
-        request_data = data.dict()
-        request_data["activities"][0]["items"] = [item_with_condition.dict(), item_for_condition.dict()]
+        request_data = data.model_dump()
+        request_data["activities"][0]["items"] = [item_with_condition.model_dump(), item_for_condition.model_dump()]
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=request_data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
         result = response.json()["result"]
@@ -307,7 +307,7 @@ class TestActivityItems:
         result = response.json()["result"]
         item_create_with_logic = activity_create_with_conditional_logic.items[1]
         assert item_create_with_logic.conditional_logic is not None
-        assert result["activities"][0]["items"][1]["conditionalLogic"] == item_create_with_logic.conditional_logic.dict(
+        assert result["activities"][0]["items"][1]["conditionalLogic"] == item_create_with_logic.conditional_logic.model_dump(
             by_alias=True
         )
 
@@ -350,7 +350,7 @@ class TestActivityItems:
         self, client, applet_minimal_data, tom, response_type
     ) -> None:
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True).dict()
+        data = applet_minimal_data.copy(deep=True).model_dump()
         item = data["activities"][0]["items"][0]
         option = item["response_values"]["options"][0]
         del option["value"]
@@ -373,7 +373,7 @@ class TestActivityItems:
         self, client: TestClient, applet_minimal_data: AppletCreate, tom: User
     ) -> None:
         client.login(tom)
-        data = applet_minimal_data.dict()
+        data = applet_minimal_data.model_dump()
         activity_key = data["activities"][0]["key"]
         activity_wrong_key = uuid.uuid4()
         data["activity_flows"].append(
@@ -404,7 +404,7 @@ class TestActivityItems:
         self, client: TestClient, applet_minimal_data: AppletCreate, tom: User, applet_one: AppletFull
     ):
         client.login(tom)
-        data = AppletUpdate(**applet_minimal_data.dict(exclude_unset=True)).dict()
+        data = AppletUpdate(**applet_minimal_data.model_dump(exclude_unset=True)).model_dump()
         item = copy.deepcopy(data["activities"][0]["items"][0])
         data["activities"][0]["items"].append(item)
         resp = await client.put(
@@ -502,7 +502,7 @@ class TestActivityItems:
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
-        assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+        assert result["activities"][0]["subscaleSetting"] == sub_setting.model_dump(by_alias=True)
 
     async def test_create_applet__activity_with_subscale_settings__subscale_type_subscale(
         self,
@@ -525,7 +525,7 @@ class TestActivityItems:
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
-        assert result["activities"][0]["subscaleSetting"] == sub_settin.dict(by_alias=True)
+        assert result["activities"][0]["subscaleSetting"] == sub_settin.model_dump(by_alias=True)
 
     async def test_create_applet__activity_with_subscale_settings_with_total_score_table(
         self,
@@ -547,7 +547,7 @@ class TestActivityItems:
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
-        assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+        assert result["activities"][0]["subscaleSetting"] == sub_setting.model_dump(by_alias=True)
 
     async def test_create_applet__activity_with_subscale_settings_with_subscale_lookup_table(
         self,
@@ -569,7 +569,7 @@ class TestActivityItems:
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
-        assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+        assert result["activities"][0]["subscaleSetting"] == sub_setting.model_dump(by_alias=True)
 
     async def test_create_applet__activity_with_subscale_settings_and_lookup_table_and_score_report_lookup_scoring(
         self,
@@ -599,7 +599,7 @@ class TestActivityItems:
         # Assertions
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
-        assert result["activities"][0]["subscaleSetting"] == sub_setting.dict(by_alias=True)
+        assert result["activities"][0]["subscaleSetting"] == sub_setting.model_dump(by_alias=True)
         assert result["activities"][0]["scoresAndReports"]["reports"][0]["scoringType"] == ScoringType.SCORE
         assert result["activities"][0]["scoresAndReports"]["reports"][0]["subscaleName"] == "subscale type score"
 
@@ -612,8 +612,8 @@ class TestActivityItems:
         subscale_setting: SubscaleSetting,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True).dict()
-        sub_setting = subscale_setting.copy(deep=True).dict()
+        data = applet_minimal_data.copy(deep=True).model_dump()
+        sub_setting = subscale_setting.copy(deep=True).model_dump()
         sub_setting["subscales"][0]["items"][0]["name"] = single_select_item_create_with_score.name
         data["activities"][0]["items"] = [single_select_item_create_with_score]
         data["activities"][0]["subscale_setting"] = sub_setting
@@ -645,7 +645,7 @@ class TestActivityItems:
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
-        assert result["activities"][0]["scoresAndReports"] == reports_data.dict(by_alias=True)
+        assert result["activities"][0]["scoresAndReports"] == reports_data.model_dump(by_alias=True)
 
     async def test_create_applet__activity_with_score_and_reports__score_and_section_with_conditional_logic(
         self,
@@ -670,7 +670,7 @@ class TestActivityItems:
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
         result = resp.json()["result"]
-        assert result["activities"][0]["scoresAndReports"] == reports_data.dict(by_alias=True)
+        assert result["activities"][0]["scoresAndReports"] == reports_data.model_dump(by_alias=True)
 
     @pytest.mark.parametrize(
         "item_fixture",
@@ -725,7 +725,7 @@ class TestActivityItems:
         client.login(tom)
         text_with_script_inside = "One <script>alert('test')</script> Two"
         sanitized_text = "One  Two"
-        data = applet_minimal_data.dict()
+        data = applet_minimal_data.model_dump()
         activity_key = data["activities"][0]["key"]
         data["activity_flows"].append(
             dict(

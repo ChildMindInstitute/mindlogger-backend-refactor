@@ -53,7 +53,7 @@ def job_model(user: User) -> Job:
 def applet_data(applet_minimal_data: AppletCreate):
     data = applet_minimal_data.copy(deep=True)
     data.display_name = "reencrypt answers"
-    return AppletCreate(**data.dict())
+    return AppletCreate(**data.model_dump())
 
 
 @pytest.fixture
@@ -229,7 +229,7 @@ async def test_reencrypt_answers_not_valid_public_key_answer_not_reencrypted(
     answer_id = answer.id
     act_id_version = f"{applet.activities[0].id}_{applet.version}"
     answer_before = (await AnswerItemsCRUD(session).get_by_answer_and_activity(answer_id, [act_id_version]))[0].answer
-    applet_update_data = AppletUpdate(**applet_data.dict(exclude_unset=True))
+    applet_update_data = AppletUpdate(**applet_data.model_dump(exclude_unset=True))
     await AppletService(session, user.id).update(applet.id, applet_update_data)
     job_model.status = JobStatus.in_progress
     mocker.patch("apps.job.service.JobService.get_or_create_owned", return_value=job_model)

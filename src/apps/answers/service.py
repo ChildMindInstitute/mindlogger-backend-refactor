@@ -422,7 +422,7 @@ class AnswerService:
                 flow_history_id=flow_history_id,
                 activity_history_id=activity_history_id,
                 respondent_id=self.user_id,
-                client=applet_answer.client.dict(),
+                client=applet_answer.client.model_dump(),
                 is_flow_completed=is_flow_completed_backend,
                 target_subject_id=target_subject.id,
                 source_subject_id=source_subject.id,
@@ -714,8 +714,8 @@ class AnswerService:
             )
 
         answer_result = ActivityAnswer(
-            **answer.dict(exclude={"migrated_data"}),
-            **answer.answer_item.dict(
+            **answer.model_dump(exclude={"migrated_data"}),
+            **answer.answer_item.model_dump(
                 include={
                     "user_public_key",
                     "answer",
@@ -841,8 +841,8 @@ class AnswerService:
                 is_completed = True
             answer_result.append(
                 ActivityAnswer(
-                    **answer.dict(exclude={"migrated_data"}),
-                    **answer.answer_item.dict(
+                    **answer.model_dump(exclude={"migrated_data"}),
+                    **answer.answer_item.model_dump(
                         include={
                             "user_public_key",
                             "answer",
@@ -1696,7 +1696,7 @@ class AnswerService:
                         activity_item_id=alert.activity_item_id,
                         answer_id=answer_id,
                         type=alert.type,
-                    ).dict(),
+                    ).model_dump(),
                 )
             except Exception as e:
                 sentry_sdk.capture_exception(e)
@@ -2308,7 +2308,7 @@ class ReportServerService:
     ):
         applet_full = await AppletHistoryService(self.session, applet_id, version).get_full(non_performance)
         applet_full.encryption = Encryption(**encryption)
-        return applet_full.dict(by_alias=True)
+        return applet_full.model_dump(by_alias=True)
 
     async def _get_user_info(self, subject_id: uuid.UUID):
         subject = await SubjectsCrud(self.session).get_by_id(subject_id)

@@ -23,8 +23,8 @@ from apps.activities.domain.scores_reports import (
 def test_duplicated_name_is_not_allowed(scores_and_reports: ScoresAndReports, request, fixture_name: str, error):
     model = request.getfixturevalue(fixture_name)
     copy = model.copy(deep=True)
-    data = scores_and_reports.dict()
-    data["reports"].append(copy.dict())
+    data = scores_and_reports.model_dump()
+    data["reports"].append(copy.model_dump())
     with pytest.raises(error):
         ScoresAndReports(**data)
 
@@ -33,8 +33,8 @@ def test_duplicated_id_for_score_is_not_allowed(scores_and_reports: ScoresAndRep
     copy = score.copy(deep=True)
     # make name unique for test because we want to test the same ids not names
     copy.name = score.name + "1"
-    data = scores_and_reports.dict()
-    data["reports"].append(copy.dict())
+    data = scores_and_reports.model_dump()
+    data["reports"].append(copy.model_dump())
     with pytest.raises(errors.DuplicateScoreIdError):
         ScoresAndReports(**data)
 
@@ -46,12 +46,12 @@ def test_score_and_reports_duplicated_name_in_conditional_logic_is_not_allowed_f
 ):
     copy = score_conditional_logic.copy(deep=True)
     copy.id = score_conditional_logic.id + "1"
-    score_data = score.dict()
+    score_data = score.model_dump()
     score_data["conditional_logic"] = [
-        score_conditional_logic.dict(),
-        copy.dict(),
+        score_conditional_logic.model_dump(),
+        copy.model_dump(),
     ]
-    data = scores_and_reports.dict()
+    data = scores_and_reports.model_dump()
     data["reports"] = [score_data]
     with pytest.raises(errors.DuplicateScoreConditionNameError):
         ScoresAndReports(**data)
@@ -64,12 +64,12 @@ def test_score_and_reports_duplicated_id_in_conditional_logic_is_not_allowed_for
 ):
     copy = score_conditional_logic.copy(deep=True)
     copy.name = score_conditional_logic.name + "1"
-    score_data = score.dict()
+    score_data = score.model_dump()
     score_data["conditional_logic"] = [
-        score_conditional_logic.dict(),
-        copy.dict(),
+        score_conditional_logic.model_dump(),
+        copy.model_dump(),
     ]
-    data = scores_and_reports.dict()
+    data = scores_and_reports.model_dump()
     data["reports"] = [score_data]
     with pytest.raises(errors.DuplicateScoreConditionIdError):
         ScoresAndReports(**data)
@@ -79,13 +79,13 @@ def test_duplicated_name_for_subscale_settings_is_not_allowed(subscale_setting: 
     copy = subscale.copy(deep=True)
     subscale_setting.subscales = cast(list, subscale_setting.subscales)
     subscale_setting.subscales.append(copy)
-    data = subscale_setting.dict()
+    data = subscale_setting.model_dump()
     with pytest.raises(errors.DuplicateSubscaleNameError):
         SubscaleSetting(**data)
 
 
 def test_score_duplicated_item_score_are_not_allowed(score: Score):
-    data = score.dict()
+    data = score.model_dump()
     data["items_score"] = ["duplicate", "duplicate"]
     with pytest.raises(errors.DuplicateScoreItemNameError):
         Score(**data)
@@ -95,8 +95,8 @@ def test_score_conditional_logic_condition_item_name_is_not_the_same_with_score_
     score: Score,
     score_conditional_logic: ScoreConditionalLogic,
 ):
-    data = score.dict()
-    conditional_logic_data = score_conditional_logic.dict()
+    data = score.model_dump()
+    conditional_logic_data = score_conditional_logic.model_dump()
     conditional_logic_data["conditions"][0]["item_name"] = score.id + "1"
     data["conditional_logic"] = [conditional_logic_data]
     with pytest.raises(errors.ScoreConditionItemNameError):

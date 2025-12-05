@@ -565,7 +565,7 @@ class TestInvite(BaseTest):
         # Send an invite
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
-            invitation_manager_data.dict(),
+            invitation_manager_data.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.OK
         assert not response.json()["result"]["userId"]
@@ -573,7 +573,7 @@ class TestInvite(BaseTest):
         invitation_key = response.json()["result"]["key"]
         user_create_data.email = new_email
         # An invited user creates an account
-        resp = await client.post("/users", data=user_create_data.dict())
+        resp = await client.post("/users", data=user_create_data.model_dump())
         assert resp.status_code == http.HTTPStatus.CREATED
         client.login(uuid.UUID(resp.json()["result"]["id"]))
         exp_user_id = resp.json()["result"]["id"]
@@ -608,7 +608,7 @@ class TestInvite(BaseTest):
 
         user_create_data.email = new_email
         # An invited user creates an account
-        resp = await client.post("/users", data=user_create_data.dict())
+        resp = await client.post("/users", data=user_create_data.model_dump())
         assert resp.status_code == http.HTTPStatus.CREATED
         client.login(uuid.UUID(resp.json()["result"]["id"]))
         exp_user_id = resp.json()["result"]["id"]
@@ -810,7 +810,7 @@ class TestInvite(BaseTest):
         self, client: TestClient, invitation_manager_data: InvitationManagersRequest, tom: User, applet_one: AppletFull
     ):
         client.login(tom)
-        data = invitation_manager_data.dict()
+        data = invitation_manager_data.model_dump()
         data["role"] = "notvalid"
         resp = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
@@ -965,7 +965,7 @@ class TestInvite(BaseTest):
         subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=applet_id),
-            invitation_respondent_data.dict(),
+            invitation_respondent_data.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.OK
         subjects_on_applet1 = await subject_crud.count(applet_id=applet_id)
@@ -998,7 +998,7 @@ class TestInvite(BaseTest):
         subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
         response = await client.post(
             self.invite_manager_url.format(applet_id=applet_id),
-            invitation_manager_data.dict(),
+            invitation_manager_data.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.OK
         subjects_on_applet1 = await subject_crud.count(applet_id=applet_id)
@@ -1075,7 +1075,7 @@ class TestInvite(BaseTest):
         invitation_respondent_data.secret_user_id = applet_one_shell_account.secret_user_id
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
-            invitation_respondent_data.dict(),
+            invitation_respondent_data.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         payload = response.json()

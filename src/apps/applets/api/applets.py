@@ -282,7 +282,7 @@ async def applet_versions_retrieve(
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         histories = await retrieve_versions(session, applet_id)
     return ResponseMulti(
-        result=[PublicHistory(**h.dict()) for h in histories],
+        result=[PublicHistory(**h.model_dump()) for h in histories],
         count=len(histories),
     )
 
@@ -313,7 +313,7 @@ async def applet_version_retrieve(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         applet = await retrieve_applet_by_version(session, applet_id, version)
-    return Response(result=public_history_detail.AppletDetailHistory(**applet.dict()))
+    return Response(result=public_history_detail.AppletDetailHistory(**applet.model_dump()))
 
 
 async def applet_version_changes_retrieve(
@@ -326,7 +326,7 @@ async def applet_version_changes_retrieve(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         changes = await AppletHistoryService(session, applet_id, version).get_changes()
-    return Response(result=PublicAppletHistoryChange(**changes.dict()))
+    return Response(result=PublicAppletHistoryChange(**changes.model_dump()))
 
 
 async def applet_delete(

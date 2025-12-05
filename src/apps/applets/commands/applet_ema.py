@@ -435,7 +435,7 @@ async def export_flow_schedule(
                 schedule_start_time=row.schedule_start_time.strftime(OUTPUT_TIME_FORMAT),
                 schedule_end_time=row.schedule_end_time.strftime(OUTPUT_TIME_FORMAT),
                 event_id=row.event_id,
-            ).dict()
+            ).model_dump()
             result.append(outrow)
 
         cdn_client = await get_operations_bucket()
@@ -619,7 +619,7 @@ async def export_activity_schedule(
                 schedule_start_time=row.schedule_start_time.strftime(OUTPUT_TIME_FORMAT),
                 schedule_end_time=row.schedule_end_time.strftime(OUTPUT_TIME_FORMAT),
                 event_id=row.event_id,
-            ).dict()
+            ).model_dump()
             result.append(outrow)
 
         cdn_client = await get_operations_bucket()

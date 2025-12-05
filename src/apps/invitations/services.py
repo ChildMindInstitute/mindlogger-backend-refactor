@@ -121,7 +121,7 @@ class InvitationsService:
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
             "user_id": invited_user_id,
-            "meta": meta.dict(),
+            "meta": meta.model_dump(),
             "tag": schema.tag,
         }
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -198,7 +198,7 @@ class InvitationsService:
             "last_name": schema.last_name,
             "user_id": invited_user_id,
             "nickname": None,
-            "meta": meta.dict(),
+            "meta": meta.model_dump(),
             "tag": SubjectTag.TEAM,
             "title": schema.title,
         }

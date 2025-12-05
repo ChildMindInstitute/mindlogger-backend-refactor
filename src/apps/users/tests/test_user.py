@@ -41,7 +41,7 @@ class TestUser:
     user_update_request = UserUpdateRequestFactory.build()
 
     async def test_user_create(self, client: TestClient, request_data: UserCreateRequest):
-        response = await client.post(self.user_create_url, data=request_data.dict())
+        response = await client.post(self.user_create_url, data=request_data.model_dump())
         assert response.status_code == status.HTTP_201_CREATED
         result = response.json()["result"]
         for k, v in request_data:
@@ -52,7 +52,7 @@ class TestUser:
         self, client: TestClient, request_data: UserCreateRequest, user_create: UserCreate
     ):
         request_data.email = user_create.email
-        response = await client.post(self.user_create_url, data=request_data.dict())
+        response = await client.post(self.user_create_url, data=request_data.model_dump())
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_user_retrieve(self, client: TestClient, user: User):
@@ -62,7 +62,7 @@ class TestUser:
 
     async def test_user_update(self, client: TestClient, user: User):
         client.login(user)
-        response = await client.put(self.user_update_url, data=self.user_update_request.dict())
+        response = await client.put(self.user_update_url, data=self.user_update_request.model_dump())
         assert response.status_code == status.HTTP_200_OK
 
     async def test_user_delete(self, session: AsyncSession, client: TestClient, user: User):
@@ -76,7 +76,7 @@ class TestUser:
             await UsersCRUD(session).get_by_email(user.email_encrypted)
 
     async def test_create_user_password_contains_whitespaces(self, client: TestClient, request_data: UserCreateRequest):
-        data = request_data.dict()
+        data = request_data.model_dump()
         data["password"] = "Test1234 !"
         response = await client.post(self.user_create_url, data=data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -85,7 +85,7 @@ class TestUser:
         assert result[0]["message"] == PasswordHasSpacesError.message
 
     async def test_create_user_not_valid_email(self, client: TestClient, request_data: UserCreateRequest):
-        data = request_data.dict()
+        data = request_data.model_dump()
         data["email"] = "tom2@mindlogger@com"
         response = await client.post(self.user_create_url, data=data)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -97,7 +97,7 @@ class TestUser:
         client.login(user)
         payload = device_create_data.copy(deep=True)
 
-        response = await client.post(self.user_devices_url, data=payload.dict(include={"device_id"}))
+        response = await client.post(self.user_devices_url, data=payload.model_dump(include={"device_id"}))
         assert response.status_code == status.HTTP_200_OK
 
         result = response.json()["result"]
@@ -113,13 +113,13 @@ class TestUser:
         assert result_same_device["createdAt"] == result["createdAt"]
         assert result_same_device["createdAt"] != result_same_device["updatedAt"]
 
-        for k, v in payload.dict(by_alias=True).items():
+        for k, v in payload.model_dump(by_alias=True).items():
             assert result_same_device[k] == v
 
         # empty data don't clear stored one
-        response = await client.post(self.user_devices_url, data=payload.dict(include={"device_id"}))
+        response = await client.post(self.user_devices_url, data=payload.model_dump(include={"device_id"}))
         assert response.status_code == status.HTTP_200_OK
 
         result = response.json()["result"]
-        for k, v in payload.dict(by_alias=True).items():
+        for k, v in payload.model_dump(by_alias=True).items():
             assert result[k] == v

@@ -21,8 +21,8 @@ DictStrAny = dict[str, Any]
 
 @pytest.fixture
 def applet_data(applet_two: AppletFull) -> DictStrAny:
-    data = AppletUpdate(**applet_two.dict(exclude_none=True))
-    return data.dict()
+    data = AppletUpdate(**applet_two.model_dump(exclude_none=True))
+    return data.model_dump()
 
 
 class TestLibrary(BaseTest):

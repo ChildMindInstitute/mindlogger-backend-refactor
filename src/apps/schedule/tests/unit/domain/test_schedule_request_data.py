@@ -189,7 +189,7 @@ def notification_reminder() -> Notification:
 
 
 def test_event_request_activity_or_flow_required(event_daily_data: EventRequest):
-    data = event_daily_data.dict()
+    data = event_daily_data.model_dump()
     data["activity_id"] = None
     data["flow_id"] = None
     with pytest.raises(errors.ActivityOrFlowRequiredError):
@@ -197,7 +197,7 @@ def test_event_request_activity_or_flow_required(event_daily_data: EventRequest)
 
 
 def test_event_request__both_activity_and_flow_are_provided(event_daily_data: EventRequest):
-    data = event_daily_data.dict()
+    data = event_daily_data.model_dump()
     data["activity_id"] = uuid.uuid4()
     data["flow_id"] = uuid.uuid4()
     with pytest.raises(errors.ActivityOrFlowRequiredError):
@@ -205,7 +205,7 @@ def test_event_request__both_activity_and_flow_are_provided(event_daily_data: Ev
 
 
 def test_event_request_periodicity_always_one_time_completion_required(event_always_data: EventRequest):
-    data = event_always_data.dict()
+    data = event_always_data.model_dump()
     data["one_time_completion"] = None
     with pytest.raises(errors.OneTimeCompletionCaseError):
         EventRequest(**data)
@@ -235,7 +235,7 @@ def test_event_request_periodicity_not_always_no_required_fields(
     fixture_name: str, field_name: str, request: FixtureRequest
 ):
     event_request = request.getfixturevalue(fixture_name)
-    data = event_request.dict()
+    data = event_request.model_dump()
     data[field_name] = None
     with pytest.raises(errors.StartEndTimeAccessBeforeScheduleCaseError):
         EventRequest(**data)
@@ -265,7 +265,7 @@ def test_event_request_with_fixed_notification__at_time_not_in_between_start_tim
 ):
     event_request = request.getfixturevalue(fixture_name)
     event_request.notification = notification_notifications_fixed
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["notifications"][0]["at_time"] = str(out_of_range_time)
     with pytest.raises(errors.UnavailableActivityOrFlowError):
         EventRequest(**data)
@@ -295,7 +295,7 @@ def test_event_request_with_random_notification__from_time_not_in_between_start_
 ):
     event_request = request.getfixturevalue(fixture_name)
     event_request.notification = notification_notifications_random
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["notifications"][0]["from_time"] = str(not_valid_from)
     with pytest.raises(errors.UnavailableActivityOrFlowError):
         EventRequest(**data)
@@ -325,7 +325,7 @@ def test_event_request_with_random_notification__to_time_not_in_between_start_ti
 ):
     event_request = request.getfixturevalue(fixture_name)
     event_request.notification = notification_notifications_random
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["notifications"][0]["to_time"] = str(not_valid_to)
     with pytest.raises(errors.UnavailableActivityOrFlowError):
         EventRequest(**data)
@@ -355,7 +355,7 @@ def test_event_request_with_reminder_notification__at_time_not_in_between_start_
 ):
     event_request = request.getfixturevalue(fixture_name)
     event_request.notification = notification_reminder
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["reminder"]["reminder_time"] = str(out_of_range_time)
     with pytest.raises(errors.UnavailableActivityOrFlowError):
         EventRequest(**data)
@@ -366,7 +366,7 @@ def test_event_request__notification_reminder__reminder_time_can_not_be_none(
 ):
     event_request = event_once_data.copy(deep=True)
     event_request.notification = notification_reminder
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["reminder"]["reminder_time"] = None
     with pytest.raises(ValueError):
         EventRequest(**data)
@@ -377,14 +377,14 @@ def test_event_request__notification_reminder__reminder_time_absent(
 ):
     event_request = event_once_data.copy(deep=True)
     event_request.notification = notification_reminder
-    data = event_request.dict()
+    data = event_request.model_dump()
     del data["notification"]["reminder"]["reminder_time"]
     with pytest.raises(ValueError):
         EventRequest(**data)
 
 
 def test_event_request_start_time_is_equal_end_time(event_once_data: EventRequest):
-    data = event_once_data.dict()
+    data = event_once_data.model_dump()
     data["start_time"] = data["end_time"]
     with pytest.raises(errors.StartEndTimeEqualError):
         EventRequest(**data)
@@ -464,7 +464,7 @@ def test_validate_not_valid_hour_minute(field_name: str, not_valid_value: int, e
 
 
 def test_timer_is_required_if_timer_type_is_not_no_set(event_daily_data: EventRequest):
-    data = event_daily_data.dict()
+    data = event_daily_data.model_dump()
     data["timer_type"] = TimerType.IDLE
     data["timer"] = None
     with pytest.raises(errors.TimerRequiredError):
@@ -492,7 +492,7 @@ def test_event_cross_day_with_random_notification__from_time_not_in_between_star
     event_request = request.getfixturevalue(fixture_name)
     event_request.end_time = datetime.time(3, 00)
     event_request.notification = notification_notifications_random
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["notifications"][0]["from_time"] = str(not_valid_from)
     with pytest.raises(errors.UnavailableActivityOrFlowError):
         EventRequest(**data)
@@ -519,7 +519,7 @@ def test_event_cross_day_with_random_notification__to_time_not_in_between_start_
     event_request = request.getfixturevalue(fixture_name)
     event_request.end_time = datetime.time(3, 00)
     event_request.notification = notification_notifications_random
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["notifications"][0]["to_time"] = str(not_valid_to)
     with pytest.raises(errors.UnavailableActivityOrFlowError):
         EventRequest(**data)
@@ -546,7 +546,7 @@ def test_event_cross_day_with_fixed_notification__at_time_not_in_between_start_t
     event_request = request.getfixturevalue(fixture_name)
     event_request.end_time = datetime.time(3, 00)
     event_request.notification = notification_notifications_fixed
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["notifications"][0]["at_time"] = str(out_of_range_time)
     with pytest.raises(errors.UnavailableActivityOrFlowError):
         EventRequest(**data)
@@ -573,7 +573,7 @@ def test_event_cross_day_with_reminder_notification__at_time_not_in_between_star
     event_request = request.getfixturevalue(fixture_name)
     event_request.end_time = datetime.time(3, 00)
     event_request.notification = notification_reminder
-    data = event_request.dict()
+    data = event_request.model_dump()
     data["notification"]["reminder"]["reminder_time"] = str(out_of_range_time)
     with pytest.raises(errors.UnavailableActivityOrFlowError):
         EventRequest(**data)

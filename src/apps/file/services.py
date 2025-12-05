@@ -127,7 +127,7 @@ class LogFileService:
     ):
         row = {
             "userId": str(self.user_id),
-            "response": [file.dict() for file in files],
+            "response": [file.model_dump() for file in files],
             "success": "true" if success else "false",
             "details": details,
         }

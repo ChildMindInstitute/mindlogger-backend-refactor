@@ -15,7 +15,7 @@ class TransferCRUD(BaseCRUD[TransferSchema]):
     schema_class = TransferSchema
 
     async def create(self, transfer: Transfer) -> TransferSchema:
-        return await self._create(TransferSchema(**transfer.dict()))
+        return await self._create(TransferSchema(**transfer.model_dump()))
 
     async def get_by_key(self, key: uuid.UUID) -> TransferSchema:
         query = select(self.schema_class)

@@ -24,7 +24,7 @@ class ActivityItemService:
 
         for activity_item in activity_items:
             schema = ActivityItemSchema(
-                **activity_item.dict(),
+                **activity_item.model_dump(),
                 order=activity_id_ordering_map[activity_item.activity_id] + 1,
             )
 
@@ -44,7 +44,7 @@ class ActivityItemService:
         for activity_item in activity_items:
             schemas.append(
                 ActivityItemSchema(
-                    **activity_item.dict(),
+                    **activity_item.model_dump(),
                     order=activity_id_ordering_map[activity_item.activity_id] + 1,
                 )
             )
