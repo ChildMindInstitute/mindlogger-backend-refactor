@@ -24,16 +24,16 @@ case "${1:-}" in
         ;;
     arbitrary)
         echo 'Applying migrations for arbitrary servers'
-        alembic -c alembic_arbitrary.ini upgrade head
+        timeout 300 alembic -c alembic_arbitrary.ini upgrade head
         ;;
     all)
         echo 'Applying migrations for Mindlogger backend'
-        alembic upgrade head
+        timeout 300 alembic upgrade head
         echo 'Applying migrations for arbitrary servers'
-        alembic -c alembic_arbitrary.ini upgrade head
+        timeout 300 alembic -c alembic_arbitrary.ini upgrade head
         ;;
     *)
         echo 'Applying migrations for Mindlogger backend'
-        alembic upgrade head
+        timeout 300 alembic upgrade head
         ;;
 esac
