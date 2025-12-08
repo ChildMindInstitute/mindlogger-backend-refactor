@@ -64,13 +64,13 @@ class InvitationRespondentRequest(_InvitationRequest):
         "within the applet",
     )
     nickname: str | None = Field(
+        default_factory=str,
         description="This field represents the nickname of respondent, "
         "this is the identifier that is assigned by the applet manager "
         "when the respondent is invited, it is intended to increase "
         "representativeness but preserve confidentiality",
-        default_factory=str,
     )
-    tag: str | None = Field(description="This field represents the tag/label of invited user")
+    tag: str | None = Field(default=None, description="This field represents the tag/label of invited user")
 
 
 class InvitationReviewerRequest(_InvitationRequest):
@@ -82,13 +82,13 @@ class InvitationReviewerRequest(_InvitationRequest):
         description="This field represents the list of subject id's",
     )
     workspace_prefix: str | None = Field(
+        default=None,
         description="This field represents the user workspace prefix. "
         "You can only set this field the first time you invite any "
         "manager role to your applet. Once created, "
         "this name can not be changed anymore.",
-        default=None,
     )
-    title: str | None = Field(description="This field represents the team member title")
+    title: str | None = Field(default=None, description="This field represents the team member title")
 
 
 class InvitationManagersRequest(_InvitationRequest):
@@ -100,14 +100,14 @@ class InvitationManagersRequest(_InvitationRequest):
         description="This field represents the managers role",
     )
     workspace_prefix: str | None = Field(
+        default=None,
         description="This field represents the user workspace prefix. "
         "You can only set this field the first time you invite any "
         "manager role to your applet. Once created, "
         "this name can not be changed anymore.",
-        default=None,
     )
 
-    title: str | None = Field(description="This field represents the team member title")
+    title: str | None = Field(default=None, description="This field represents the team member title")
 
 
 class RespondentMeta(InternalModel):
@@ -326,10 +326,10 @@ class _InvitationResponse(PublicModel):
         description="This field represents the last name of invited user",
     )
     user_id: uuid.UUID | None = Field(
-        None,
+        default=None,
         description="This field respresents registered user or not. Used for tests",
     )
-    tag: str | None = Field(None, description="This field represents subject tag")
+    tag: str | None = Field(default=None, description="This field represents subject tag")
 
 
 class InvitationRespondentResponse(_InvitationResponse):
@@ -363,7 +363,7 @@ class InvitationReviewerResponse(_InvitationResponse):
     )
     subjects: list[uuid.UUID] = Field(description="This field represents the list of subject id's")
     role: Role = Role.REVIEWER
-    title: str | None = Field(description="This field represents the team member title")
+    title: str | None = Field(default=None, description="This field represents the team member title")
 
 
 class InvitationManagersResponse(_InvitationResponse):
@@ -377,7 +377,7 @@ class InvitationManagersResponse(_InvitationResponse):
     role: ManagersRole = Field(
         description="This field represents the managers role",
     )
-    title: str | None = Field(description="This field represents the team member title")
+    title: str | None = Field(default=None, description="This field represents the team member title")
 
 
 class PrivateInvitationResponse(PublicModel):
@@ -409,7 +409,9 @@ class ShellAccountCreateRequest(PublicModel):
 class ShellAccountInvitation(PublicModel):
     email: EmailStr = Field(description="This field represents the email of invited subject")
     subject_id: uuid.UUID = Field(description="This field represents the subject id")
-    language: InvitationLanguage | None = Field(description="This field represents the language of invitation")
+    language: InvitationLanguage | None = Field(
+        default=None, description="This field represents the language of invitation"
+    )
 
     @field_validator("email")
     @classmethod
