@@ -30,7 +30,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         submit_id = uuid.uuid4()
 
         # Simulate network issue: Activity C (last) arrives first with is_flow_completed=True
-        data_c = answer_create.copy(deep=True)
+        data_c = answer_create.model_copy(deep=True)
         data_c.submit_id = submit_id
         data_c.applet_id = applet_with_flow.id
         data_c.flow_id = flow.id
@@ -41,7 +41,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED, f"Failed to create activity C: {response.json()}"
 
         # Activity A arrives late (should be accepted)
-        data_a = answer_create.copy(deep=True)
+        data_a = answer_create.model_copy(deep=True)
         data_a.submit_id = submit_id
         data_a.applet_id = applet_with_flow.id
         data_a.flow_id = flow.id
@@ -52,7 +52,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED, f"Failed to create activity A: {response.json()}"
 
         # Activity B arrives last (should be accepted)
-        data_b = answer_create.copy(deep=True)
+        data_b = answer_create.model_copy(deep=True)
         data_b.submit_id = submit_id
         data_b.applet_id = applet_with_flow.id
         data_b.flow_id = flow.id
@@ -76,7 +76,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         submit_id = uuid.uuid4()
 
         for item in flow.items:
-            data = answer_create.copy(deep=True)
+            data = answer_create.model_copy(deep=True)
             data.submit_id = submit_id
             data.applet_id = applet_with_flow.id
             data.flow_id = flow.id
@@ -107,7 +107,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
 
         # Submit all activities in order
         for i, item in enumerate(flow.items):
-            data = answer_create.copy(deep=True)
+            data = answer_create.model_copy(deep=True)
             data.submit_id = submit_id
             data.applet_id = applet_with_flow.id
             data.flow_id = flow.id
@@ -118,7 +118,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
             assert response.status_code == http.HTTPStatus.CREATED
 
         # Try to submit a duplicate of activity A (should be rejected)
-        duplicate_data = answer_create.copy(deep=True)
+        duplicate_data = answer_create.model_copy(deep=True)
         duplicate_data.submit_id = submit_id
         duplicate_data.applet_id = applet_with_flow.id
         duplicate_data.flow_id = flow.id
@@ -143,7 +143,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
 
         # Assume flow has activity A twice (at positions 0 and 2)
         # Submit first occurrence
-        data1 = answer_create.copy(deep=True)
+        data1 = answer_create.model_copy(deep=True)
         data1.submit_id = submit_id
         data1.applet_id = applet_with_flow_duplicated_activities.id
         data1.flow_id = flow.id
@@ -154,7 +154,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
 
         # Submit second occurrence should still be accepted
-        data2 = answer_create.copy(deep=True)
+        data2 = answer_create.model_copy(deep=True)
         data2.submit_id = submit_id
         data2.applet_id = applet_with_flow_duplicated_activities.id
         data2.flow_id = flow.id
@@ -165,7 +165,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
 
         # Third occurrence should be rejected as it exceeds expected count
-        data3 = answer_create.copy(deep=True)
+        data3 = answer_create.model_copy(deep=True)
         data3.submit_id = submit_id
         data3.applet_id = applet_with_flow_duplicated_activities.id
         data3.flow_id = flow.id
@@ -248,7 +248,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
 
         # Submit activities in correct order
         for i, item in enumerate(flow.items):
-            data = answer_create.copy(deep=True)
+            data = answer_create.model_copy(deep=True)
             data.submit_id = submit_id
             data.applet_id = applet_with_flow.id
             data.flow_id = flow.id
@@ -259,7 +259,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
             assert response.status_code == http.HTTPStatus.CREATED
 
         # Verify flow is complete - try to submit first activity again
-        duplicate_data = answer_create.copy(deep=True)
+        duplicate_data = answer_create.model_copy(deep=True)
         duplicate_data.submit_id = submit_id
         duplicate_data.applet_id = applet_with_flow.id
         duplicate_data.flow_id = flow.id
@@ -282,7 +282,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         submit_id = uuid.uuid4()
 
         # First, submit activity A (first activity) to establish the flow
-        data_a = answer_create.copy(deep=True)
+        data_a = answer_create.model_copy(deep=True)
         data_a.submit_id = submit_id
         data_a.applet_id = applet_with_flow.id
         data_a.flow_id = flow.id
@@ -293,7 +293,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
 
         # Submit activity C with is_flow_completed=True (skipping B)
-        data_c = answer_create.copy(deep=True)
+        data_c = answer_create.model_copy(deep=True)
         data_c.submit_id = submit_id
         data_c.applet_id = applet_with_flow.id
         data_c.flow_id = flow.id
@@ -304,7 +304,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
 
         # Activity B should still be accepted (flow not truly complete yet)
-        data_b = answer_create.copy(deep=True)
+        data_b = answer_create.model_copy(deep=True)
         data_b.submit_id = submit_id
         data_b.applet_id = applet_with_flow.id
         data_b.flow_id = flow.id
@@ -315,7 +315,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
 
         # Now all activities are submitted, flow should be closed
-        duplicate_data = answer_create.copy(deep=True)
+        duplicate_data = answer_create.model_copy(deep=True)
         duplicate_data.submit_id = submit_id
         duplicate_data.applet_id = applet_with_flow.id
         duplicate_data.flow_id = flow.id
@@ -338,7 +338,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         submit_id = uuid.uuid4()
 
         # Submit same activity with first timestamp
-        data1 = answer_create.copy(deep=True)
+        data1 = answer_create.model_copy(deep=True)
         data1.submit_id = submit_id
         data1.applet_id = applet_with_flow.id
         data1.flow_id = flow.id
@@ -350,7 +350,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED, f"First submission failed: {response.json()}"
 
         # Submit same activity with different timestamp (should be accepted)
-        data2 = answer_create.copy(deep=True)
+        data2 = answer_create.model_copy(deep=True)
         data2.submit_id = submit_id
         data2.applet_id = applet_with_flow.id
         data2.flow_id = flow.id
@@ -377,7 +377,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         timestamp = datetime.datetime(2024, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
 
         # Submit activity with timestamp
-        data1 = answer_create.copy(deep=True)
+        data1 = answer_create.model_copy(deep=True)
         data1.submit_id = submit_id
         data1.applet_id = applet_with_flow.id
         data1.flow_id = flow.id
@@ -389,7 +389,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         assert response.status_code == http.HTTPStatus.CREATED
 
         # Try to submit same activity with same timestamp (should be rejected)
-        data2 = answer_create.copy(deep=True)
+        data2 = answer_create.model_copy(deep=True)
         data2.submit_id = submit_id
         data2.applet_id = applet_with_flow.id
         data2.flow_id = flow.id
@@ -416,7 +416,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         # Submit same activity multiple times with different timestamps
         # This would normally be rejected by occurrence counting
         for i in range(5):
-            data = answer_create.copy(deep=True)
+            data = answer_create.model_copy(deep=True)
             data.submit_id = submit_id
             data.applet_id = applet_with_flow.id
             data.flow_id = flow.id
@@ -441,7 +441,7 @@ class TestFlowOutOfOrderSubmission(BaseTest):
         timestamp = datetime.datetime(2024, 1, 1, 12, 0, 0, tzinfo=datetime.UTC)
 
         # Submit activity with timestamp
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.submit_id = submit_id
         data.applet_id = applet_with_flow.id
         data.flow_id = flow.id

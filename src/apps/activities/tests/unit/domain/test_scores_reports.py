@@ -22,7 +22,7 @@ from apps.activities.domain.scores_reports import (
 )
 def test_duplicated_name_is_not_allowed(scores_and_reports: ScoresAndReports, request, fixture_name: str, error):
     model = request.getfixturevalue(fixture_name)
-    copy = model.copy(deep=True)
+    copy = model.model_copy(deep=True)
     data = scores_and_reports.model_dump()
     data["reports"].append(copy.model_dump())
     with pytest.raises(error):
@@ -30,7 +30,7 @@ def test_duplicated_name_is_not_allowed(scores_and_reports: ScoresAndReports, re
 
 
 def test_duplicated_id_for_score_is_not_allowed(scores_and_reports: ScoresAndReports, score: Score):
-    copy = score.copy(deep=True)
+    copy = score.model_copy(deep=True)
     # make name unique for test because we want to test the same ids not names
     copy.name = score.name + "1"
     data = scores_and_reports.model_dump()
@@ -44,7 +44,7 @@ def test_score_and_reports_duplicated_name_in_conditional_logic_is_not_allowed_f
     score: Score,
     score_conditional_logic: ScoreConditionalLogic,
 ):
-    copy = score_conditional_logic.copy(deep=True)
+    copy = score_conditional_logic.model_copy(deep=True)
     copy.id = score_conditional_logic.id + "1"
     score_data = score.model_dump()
     score_data["conditional_logic"] = [
@@ -62,7 +62,7 @@ def test_score_and_reports_duplicated_id_in_conditional_logic_is_not_allowed_for
     score: Score,
     score_conditional_logic: ScoreConditionalLogic,
 ):
-    copy = score_conditional_logic.copy(deep=True)
+    copy = score_conditional_logic.model_copy(deep=True)
     copy.name = score_conditional_logic.name + "1"
     score_data = score.model_dump()
     score_data["conditional_logic"] = [
@@ -76,7 +76,7 @@ def test_score_and_reports_duplicated_id_in_conditional_logic_is_not_allowed_for
 
 
 def test_duplicated_name_for_subscale_settings_is_not_allowed(subscale_setting: SubscaleSetting, subscale: Subscale):
-    copy = subscale.copy(deep=True)
+    copy = subscale.model_copy(deep=True)
     subscale_setting.subscales = cast(list, subscale_setting.subscales)
     subscale_setting.subscales.append(copy)
     data = subscale_setting.model_dump()

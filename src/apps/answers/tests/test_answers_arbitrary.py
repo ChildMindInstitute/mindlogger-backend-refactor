@@ -196,7 +196,7 @@ class TestAnswerActivityItems(BaseTest):
         answer_create: AppletAnswerCreate,
     ):
         arbitrary_client.login(tom)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.version = "0.0.0"
         response = await arbitrary_client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
@@ -348,7 +348,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         arbitrary_client.login(tom)
 
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.applet_id = applet_with_flow.id
         data.flow_id = applet_with_flow.activity_flows[0].id
         data.activity_id = applet_with_flow.activities[0].id
@@ -391,7 +391,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         arbitrary_client.login(tom)
 
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.applet_id = applet_with_flow.id
         data.flow_id = applet_with_flow.activity_flows[0].id
         data.activity_id = applet_with_flow.activities[0].id
@@ -790,7 +790,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 0
 
         created_at = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.created_at = created_at
 
         response = await arbitrary_client.post(self.answer_url, data=data)

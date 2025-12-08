@@ -426,7 +426,7 @@ class TestValidateScoreAndSections:
         scores_and_reports: ScoresAndReports,
         section: Section,
     ):
-        copy = section.copy(deep=True)
+        copy = section.model_copy(deep=True)
         copy.items_print = [items[0].name]
         scores_and_reports.reports = cast(list, scores_and_reports.reports)
         scores_and_reports.reports.append(copy)

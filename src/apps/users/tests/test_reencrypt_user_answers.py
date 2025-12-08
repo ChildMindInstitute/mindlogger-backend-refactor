@@ -51,7 +51,7 @@ def job_model(user: User) -> Job:
 
 @pytest.fixture
 def applet_data(applet_minimal_data: AppletCreate):
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "reencrypt answers"
     return AppletCreate(**data.model_dump())
 

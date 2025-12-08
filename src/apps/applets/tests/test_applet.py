@@ -123,7 +123,7 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities.append(data.activities[0])
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
@@ -135,7 +135,7 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities[0].items.append(data.activities[0].items[0])
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
@@ -148,7 +148,7 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate, applet_name: str
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.display_name = applet_name
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.CREATED
@@ -180,13 +180,13 @@ class TestApplet:
     ):
         # Tom creates an applet
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.display_name = "Unique Applet Name"
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.CREATED
 
         # Tom tries to create another applet with the same name
-        data_duplicate = applet_minimal_data.copy(deep=True)
+        data_duplicate = applet_minimal_data.model_copy(deep=True)
         data_duplicate.display_name = "Unique Applet Name"
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_duplicate)
 
@@ -201,7 +201,7 @@ class TestApplet:
     ):
         # First user (Tom) creates an applet
         client.login(tom)
-        data_tom = applet_minimal_data.copy(deep=True)
+        data_tom = applet_minimal_data.model_copy(deep=True)
         data_tom.display_name = "Same Applet Name"
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_tom)
         assert response.status_code == http.HTTPStatus.CREATED
@@ -214,7 +214,7 @@ class TestApplet:
 
         # Second user (Lucy) creates an applet with the same name
         client.login(lucy)
-        data_lucy = applet_minimal_data.copy(deep=True)
+        data_lucy = applet_minimal_data.model_copy(deep=True)
         data_lucy.display_name = "Same Applet Name"
         response = await client.post(self.applet_create_url.format(owner_id=lucy.id), data=data_lucy)
 
@@ -228,7 +228,7 @@ class TestApplet:
     ):
         # First user (Tom) creates an applet
         client.login(tom)
-        data_tom = applet_minimal_data.copy(deep=True)
+        data_tom = applet_minimal_data.model_copy(deep=True)
         data_tom.display_name = "Same Applet Name For Update Test"
         data_tom.description = {Language.ENGLISH: "Original description"}
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data_tom)
@@ -239,7 +239,7 @@ class TestApplet:
 
         # Second user (Lucy) creates an applet with the same name
         client.login(lucy)
-        data_lucy = applet_minimal_data.copy(deep=True)
+        data_lucy = applet_minimal_data.model_copy(deep=True)
         data_lucy.display_name = "Same Applet Name For Update Test"
         response = await client.post(self.applet_create_url.format(owner_id=lucy.id), data=data_lucy)
         assert response.status_code == http.HTTPStatus.CREATED
@@ -634,7 +634,7 @@ class TestApplet:
 
         # second change minor version
         update_data_minor = copy.deepcopy(update_data_patch)
-        item = applet_minimal_data.activities[0].items[0].copy(deep=True)
+        item = applet_minimal_data.activities[0].items[0].model_copy(deep=True)
         item.name = item.name + "second"
         update_data_minor["activities"][0]["items"].append(item.model_dump())
         response = await client.put(
@@ -646,7 +646,7 @@ class TestApplet:
 
         # third change major version
         update_data_major = copy.deepcopy(update_data_minor)
-        activity = applet_minimal_data.activities[0].copy(deep=True)
+        activity = applet_minimal_data.activities[0].model_copy(deep=True)
         activity.name = activity.name + "second"
         update_data_major["activities"].append(activity.model_dump())
         response = await client.put(
@@ -728,7 +728,7 @@ class TestApplet:
     ):
         client.login(tom)
         # create applet with minimal data
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         multi_select_item_create.is_hidden = True
         data.activities[0].items.append(multi_select_item_create)
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -898,7 +898,7 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_create_with_flow: AppletCreate
     ):
         client.login(tom)
-        data = applet_create_with_flow.copy(deep=True)
+        data = applet_create_with_flow.model_copy(deep=True)
         data.activity_flows.append(data.activity_flows[0])
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
@@ -910,9 +910,9 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_minimal_data: AppletCreate
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities[0].is_reviewable = True
-        second_activity = data.activities[0].copy(deep=True)
+        second_activity = data.activities[0].model_copy(deep=True)
         second_activity.name = data.activities[0].name + "second"
         data.activities.append(second_activity)
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -925,9 +925,9 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_one: AppletFull, applet_one_update_data: AppletUpdate
     ):
         client.login(tom)
-        data = applet_one_update_data.copy(deep=True)
+        data = applet_one_update_data.model_copy(deep=True)
         data.activities[0].is_reviewable = True
-        second_activity = data.activities[0].copy(deep=True)
+        second_activity = data.activities[0].model_copy(deep=True)
         second_activity.name += "second"
         second_activity.id = None
         second_activity.items[0].id = None
@@ -942,8 +942,8 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_one_update_data: AppletUpdate, applet_one: AppletFull
     ):
         client.login(tom)
-        data = applet_one_update_data.copy(deep=True)
-        second_activity = data.activities[0].copy(deep=True)
+        data = applet_one_update_data.model_copy(deep=True)
+        second_activity = data.activities[0].model_copy(deep=True)
         second_activity.name += "second"
         request_data = data.model_dump()
         request_data["activities"].append(second_activity.model_dump())
@@ -957,7 +957,7 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_one_with_flow_update_data: AppletUpdate, applet_one: AppletFull
     ):
         client.login(tom)
-        data = applet_one_with_flow_update_data.copy(deep=True)
+        data = applet_one_with_flow_update_data.model_copy(deep=True)
         request_data = data.model_dump()
         request_data["activity_flows"].append(data.activity_flows[0].model_dump())
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
@@ -970,8 +970,8 @@ class TestApplet:
         self, client: TestClient, tom: User, applet_one_with_flow_update_data: AppletUpdate, applet_one: AppletFull
     ):
         client.login(tom)
-        data = applet_one_with_flow_update_data.copy(deep=True)
-        flow = data.activity_flows[0].copy(deep=True)
+        data = applet_one_with_flow_update_data.model_copy(deep=True)
+        flow = data.activity_flows[0].model_copy(deep=True)
         flow.name += "second"
         request_data = data.model_dump()
         request_data["activity_flows"].append(flow.model_dump())
@@ -990,7 +990,7 @@ class TestApplet:
         uuid_zero: uuid.UUID,
     ):
         client.login(tom)
-        data = applet_one_with_flow_update_data.copy(deep=True)
+        data = applet_one_with_flow_update_data.model_copy(deep=True)
         request_data = data.model_dump()
         request_data["activity_flows"][0]["items"][0]["activity_key"] = uuid_zero
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=request_data)
@@ -1231,7 +1231,7 @@ class TestApplet:
         mocker: MockerFixture,
     ):
         client.login(tom)
-        data = applet_one_update_data.copy(deep=True)
+        data = applet_one_update_data.model_copy(deep=True)
         data.activities[0].is_reviewable = True
         mock = mocker.patch("apps.schedule.service.ScheduleService.delete_by_activity_ids")
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=data)

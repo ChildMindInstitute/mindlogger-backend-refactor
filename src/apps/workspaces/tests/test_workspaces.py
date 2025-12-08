@@ -49,7 +49,7 @@ async def applet_one_with_link(session: AsyncSession, applet_one: AppletFull, to
 
 @pytest.fixture
 async def applet_not_in_folder(session: AsyncSession, tom, applet_minimal_data: AppletCreate):
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "applet not in folder"
     data.description = {Language.ENGLISH: data.display_name}
     applet = await AppletService(session, tom.id).create(data)

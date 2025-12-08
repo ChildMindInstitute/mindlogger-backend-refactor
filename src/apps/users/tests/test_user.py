@@ -95,7 +95,7 @@ class TestUser:
 
     async def test_user_create_device(self, client: TestClient, device_create_data: UserDeviceCreate, user: User):
         client.login(user)
-        payload = device_create_data.copy(deep=True)
+        payload = device_create_data.model_copy(deep=True)
 
         response = await client.post(self.user_devices_url, data=payload.model_dump(include={"device_id"}))
         assert response.status_code == status.HTTP_200_OK

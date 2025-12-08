@@ -41,7 +41,7 @@ async def _get_or_create_applet(
     if applet_db:
         applet = await srv.get_full_applet(applet_id)
     else:
-        applet_data = applet_minimal_data.copy(deep=True)
+        applet_data = applet_minimal_data.model_copy(deep=True)
         applet_data.display_name = applet_name
         applet = await srv.create(applet_data, applet_id=applet_id)
         await global_session.commit()
@@ -355,7 +355,7 @@ async def applet_with_all_performance_tasks(
     actvitiy_cst_touch_create: ActivityCreate,
     activity_unity_create: ActivityCreate,
 ) -> AppletFull:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.activities = [
         activity_ab_trails_ipad_create,
         activity_ab_trails_mobile_create,

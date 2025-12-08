@@ -17,10 +17,10 @@ from apps.users.domain import User
 
 @pytest.fixture
 async def applet_data_with_flow(applet_minimal_data: AppletCreate) -> AppletCreate:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "schedule"
     # By some reasons for test need ActivityFlow
-    second_activity = data.activities[0].copy(deep=True)
+    second_activity = data.activities[0].model_copy(deep=True)
     second_activity.name = data.activities[0].name + " second"
     second_activity.key = uuid.uuid4()
     data.activities.append(second_activity)

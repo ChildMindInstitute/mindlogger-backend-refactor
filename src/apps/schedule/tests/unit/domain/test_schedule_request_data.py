@@ -364,7 +364,7 @@ def test_event_request_with_reminder_notification__at_time_not_in_between_start_
 def test_event_request__notification_reminder__reminder_time_can_not_be_none(
     notification_reminder: Notification, event_once_data: EventRequest
 ):
-    event_request = event_once_data.copy(deep=True)
+    event_request = event_once_data.model_copy(deep=True)
     event_request.notification = notification_reminder
     data = event_request.model_dump()
     data["notification"]["reminder"]["reminder_time"] = None
@@ -375,7 +375,7 @@ def test_event_request__notification_reminder__reminder_time_can_not_be_none(
 def test_event_request__notification_reminder__reminder_time_absent(
     notification_reminder: Notification, event_once_data: EventRequest
 ):
-    event_request = event_once_data.copy(deep=True)
+    event_request = event_once_data.model_copy(deep=True)
     event_request.notification = notification_reminder
     data = event_request.model_dump()
     del data["notification"]["reminder"]["reminder_time"]

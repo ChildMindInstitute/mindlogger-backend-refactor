@@ -23,7 +23,7 @@ def arbitrary_aws_create_data() -> WorkspaceArbitraryCreate:
 def arbitrary_gcp_create_data(
     arbitrary_aws_create_data: WorkspaceArbitraryCreate,
 ) -> WorkspaceArbitraryCreate:
-    workspace = arbitrary_aws_create_data.copy(deep=True)
+    workspace = arbitrary_aws_create_data.model_copy(deep=True)
     workspace.storage_type = StorageType.GCP
     return workspace
 

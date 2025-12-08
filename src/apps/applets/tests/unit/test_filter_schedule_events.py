@@ -29,7 +29,7 @@ def base_row() -> RawRow:
 
 @pytest.fixture
 def raw_row_daily(base_row: RawRow) -> RawRow:
-    raw_row = base_row.copy(deep=True)
+    raw_row = base_row.model_copy(deep=True)
     raw_row.event_type = PeriodicityType.DAILY
     raw_row.start_date = datetime.date(2024, 3, 4)
     raw_row.end_date = datetime.date(2024, 3, 6)
@@ -38,14 +38,14 @@ def raw_row_daily(base_row: RawRow) -> RawRow:
 
 @pytest.fixture
 def raw_row_once(base_row: RawRow) -> RawRow:
-    raw_row = base_row.copy(deep=True)
+    raw_row = base_row.model_copy(deep=True)
     raw_row.event_type = PeriodicityType.ONCE
     return raw_row
 
 
 @pytest.fixture
 def raw_row_weekdays(base_row: RawRow) -> RawRow:
-    raw_row = base_row.copy(deep=True)
+    raw_row = base_row.model_copy(deep=True)
     raw_row.event_type = PeriodicityType.WEEKDAYS
     raw_row.start_date = datetime.date(2024, 3, 4)
     raw_row.end_date = datetime.date(2024, 3, 10)
@@ -54,7 +54,7 @@ def raw_row_weekdays(base_row: RawRow) -> RawRow:
 
 @pytest.fixture
 def raw_row_weekly(base_row: RawRow) -> RawRow:
-    raw_row = base_row.copy(deep=True)
+    raw_row = base_row.model_copy(deep=True)
     raw_row.event_type = PeriodicityType.WEEKLY
     raw_row.start_date = datetime.date(2024, 3, 4)
     raw_row.end_date = datetime.date(2024, 3, 17)
@@ -63,7 +63,7 @@ def raw_row_weekly(base_row: RawRow) -> RawRow:
 
 @pytest.fixture
 def raw_row_monthly(base_row: RawRow) -> RawRow:
-    raw_row = base_row.copy(deep=True)
+    raw_row = base_row.model_copy(deep=True)
     raw_row.event_type = PeriodicityType.MONTHLY
     raw_row.start_date = datetime.date(2024, 3, 4)
     raw_row.end_date = datetime.date(2024, 4, 4)

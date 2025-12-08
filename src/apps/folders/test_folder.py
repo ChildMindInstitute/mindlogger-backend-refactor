@@ -22,7 +22,7 @@ async def applet_two_lucy_manager(session: AsyncSession, applet_two: AppletFull,
 
 @pytest.fixture
 async def applet_not_in_folder(session: AsyncSession, tom: User, applet_minimal_data: AppletCreate):
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "applet not in folder"
     applet = await AppletService(session, tom.id).create(data)
     return applet

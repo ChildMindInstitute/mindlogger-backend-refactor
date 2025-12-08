@@ -36,9 +36,9 @@ def activity_create_with_conditional_logic(
     activity_create_session: ActivityCreate,
     single_select_item_create: ActivityItemCreate,
 ) -> ActivityCreate:
-    activity = activity_create_session.copy(deep=True)
+    activity = activity_create_session.model_copy(deep=True)
     single_select_item_create.response_values = cast(SingleSelectionValues, single_select_item_create.response_values)
-    single_select_with_cond = single_select_item_create.copy(deep=True)
+    single_select_with_cond = single_select_item_create.model_copy(deep=True)
     single_select_with_cond.name = single_select_item_create.name + "_with_conditional_logic"
     single_select_with_cond.conditional_logic = ConditionalLogic(
         match=Match.ALL,
@@ -56,7 +56,7 @@ def activity_create_with_conditional_logic(
 
 @pytest.fixture
 def single_select_item_create_with_score(single_select_item_create: ActivityItemCreate) -> ActivityItemCreate:
-    item_create = single_select_item_create.copy(deep=True)
+    item_create = single_select_item_create.model_copy(deep=True)
     item_create.config = cast(SingleSelectionConfig, item_create.config)
     item_create.response_values = cast(SingleSelectionValues, item_create.response_values)
     item_create.response_values.options[0].score = 1
@@ -107,7 +107,7 @@ class TestActivityItems:
     ):
         client.login(tom)
         item_create = request.getfixturevalue(item_fixture)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities[0].items = [item_create]
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
@@ -148,7 +148,7 @@ class TestActivityItems:
     ):
         client.login(tom)
         items_create = request.getfixturevalue(item_fixture)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities[0].items = items_create
         phrasal_item = next(
             item for item in data.activities[0].items if item.response_type == ResponseType.PHRASAL_TEMPLATE
@@ -192,7 +192,7 @@ class TestActivityItems:
         performance_task_type: PerformanceTaskType,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         activity = request.getfixturevalue(fixture_name)
         data.activities = [activity]
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -220,7 +220,7 @@ class TestActivityItems:
         request_health_record_data_create: ActivityItemCreate,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities[0].items = [request_health_record_data_create]
 
         data_dict = data.model_dump(by_alias=True)
@@ -261,7 +261,7 @@ class TestActivityItems:
         activity_create_with_conditional_logic: ActivityCreate,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities = [activity_create_with_conditional_logic]
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.CREATED
@@ -279,7 +279,7 @@ class TestActivityItems:
         activity_create_with_conditional_logic: ActivityCreate,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities = [activity_create_with_conditional_logic]
         item_for_condition = activity_create_with_conditional_logic.items[0]
         item_with_condition = activity_create_with_conditional_logic.items[1]
@@ -300,7 +300,7 @@ class TestActivityItems:
         activity_create_with_conditional_logic: ActivityCreate,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities = [activity_create_with_conditional_logic]
         response = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
         assert response.status_code == http.HTTPStatus.CREATED
@@ -330,7 +330,7 @@ class TestActivityItems:
     ):
         client.login(tom)
         item = request.getfixturevalue(item_fixture_name)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         # row
         if hasattr(item.response_values, "data_matrix"):
             item.response_values.data_matrix[0].options[0].value = None
@@ -350,7 +350,7 @@ class TestActivityItems:
         self, client, applet_minimal_data, tom, response_type
     ) -> None:
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True).model_dump()
+        data = applet_minimal_data.model_copy(deep=True).model_dump()
         item = data["activities"][0]["items"][0]
         option = item["response_values"]["options"][0]
         del option["value"]
@@ -430,7 +430,7 @@ class TestActivityItems:
         request: FixtureRequest,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         item_create = request.getfixturevalue(fixture_name)
         item_create.response_values.options[0].image = remote_image
         data.activities[0].items = [item_create]
@@ -453,7 +453,7 @@ class TestActivityItems:
         request: FixtureRequest,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         item_create = request.getfixturevalue(fixture_name)
         color = Color("#ffffff")
         item_create.response_values.options[0].color = color
@@ -474,7 +474,7 @@ class TestActivityItems:
         slider_item_create: ActivityItemCreate,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         slider_item_create.response_values = cast(SliderValues, slider_item_create.response_values)
         slider_item_create.response_values.min_image = remote_image
         slider_item_create.response_values.max_image = remote_image
@@ -493,8 +493,8 @@ class TestActivityItems:
         single_select_item_create_with_score: ActivityItemCreate,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
-        sub_setting = subscale_setting.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
+        sub_setting = subscale_setting.model_copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
         sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
         data.activities[0].items = [single_select_item_create_with_score]
@@ -514,8 +514,8 @@ class TestActivityItems:
         subscale_with_item_type_subscale: Subscale,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
-        sub_settin = subscale_setting.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
+        sub_settin = subscale_setting.model_copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
         sub_settin.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
         # Add subscale type subscale which has subscale item pointing to the subscale above
@@ -537,8 +537,8 @@ class TestActivityItems:
         subscale_total_score_table: list[TotalScoreTable],
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
-        sub_setting = subscale_setting.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
+        sub_setting = subscale_setting.model_copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
         sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
         sub_setting.total_scores_table_data = subscale_total_score_table
@@ -559,8 +559,8 @@ class TestActivityItems:
         subscale_lookup_table: list[SubScaleLookupTable],
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
-        sub_setting = subscale_setting.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
+        sub_setting = subscale_setting.model_copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
         sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
         sub_setting.subscales[0].subscale_table_data = subscale_lookup_table  # type: ignore[index]
@@ -582,8 +582,8 @@ class TestActivityItems:
         scores_and_reports_lookup_scores: ScoresAndReports,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
-        sub_setting = subscale_setting_score_type.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
+        sub_setting = subscale_setting_score_type.model_copy(deep=True)
 
         # Update subscale setting with item name and lookup table
         sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
@@ -612,8 +612,8 @@ class TestActivityItems:
         subscale_setting: SubscaleSetting,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True).model_dump()
-        sub_setting = subscale_setting.copy(deep=True).model_dump()
+        data = applet_minimal_data.model_copy(deep=True).model_dump()
+        sub_setting = subscale_setting.model_copy(deep=True).model_dump()
         sub_setting["subscales"][0]["items"][0]["name"] = single_select_item_create_with_score.name
         data["activities"][0]["items"] = [single_select_item_create_with_score]
         data["activities"][0]["subscale_setting"] = sub_setting
@@ -637,8 +637,8 @@ class TestActivityItems:
         single_select_item_create_with_score: ActivityItemCreate,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
-        reports_data = scores_and_reports.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
+        reports_data = scores_and_reports.model_copy(deep=True)
         reports_data.reports[0].items_print = [single_select_item_create_with_score.name]  # type: ignore[index]
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].scores_and_reports = reports_data
@@ -658,8 +658,8 @@ class TestActivityItems:
         single_select_item_create_with_score: ActivityItemCreate,
     ):
         client.login(tom)
-        data = applet_minimal_data.copy(deep=True)
-        reports_data = scores_and_reports.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
+        reports_data = scores_and_reports.model_copy(deep=True)
         reports_data.reports[0].items_print = [single_select_item_create_with_score.name]  # type: ignore[index]
         reports_data.reports[1].items_print = [single_select_item_create_with_score.name]  # type: ignore[index]
         score_conditional_logic.items_print = [single_select_item_create_with_score.name]
@@ -689,7 +689,7 @@ class TestActivityItems:
         client.login(tom)
         item_create = request.getfixturevalue(item_fixture)
         item_create.question = {"en": text_with_script_inside}
-        data = applet_minimal_data.copy(deep=True)
+        data = applet_minimal_data.model_copy(deep=True)
         data.activities[0].items = [item_create]
 
         data.display_name = text_with_script_inside

@@ -70,7 +70,7 @@ async def device_user(user: User, session: AsyncSession) -> str:
 
 @pytest.fixture
 async def applet_data(applet_minimal_data: AppletCreate) -> AppletCreate:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "schedule"
     data.activity_flows = [
         FlowCreate(
@@ -178,7 +178,7 @@ async def daily_event(session: AsyncSession, applet: AppletFull, event_daily_dat
 async def daily_event_individual_lucy(
     session: AsyncSession, applet_lucy_respondent: AppletFull, event_daily_data: EventRequest, lucy: User
 ) -> PublicEvent:
-    data = event_daily_data.copy(deep=True)
+    data = event_daily_data.model_copy(deep=True)
     data.respondent_id = lucy.id
     service = ScheduleService(session)
     schedule = await service.create_schedule(data, applet_lucy_respondent.id)
@@ -210,7 +210,7 @@ async def daily_event_lucy_with_notification_and_reminder(
     reminder: ReminderSettingRequest,
     lucy: User,
 ):
-    data = event_daily_data.copy(deep=True)
+    data = event_daily_data.model_copy(deep=True)
     data.respondent_id = lucy.id
     data.notification = Notification(notifications=[notification], reminder=reminder)
     service = ScheduleService(session)
@@ -287,7 +287,7 @@ class TestSchedule:
         user: User,
     ):
         client.login(user)
-        data = event_daily_data.copy(deep=True)
+        data = event_daily_data.model_copy(deep=True)
         data.respondent_id = lucy.id
 
         response = await client.post(
@@ -478,7 +478,7 @@ class TestSchedule:
         user: User,
     ):
         client.login(user)
-        data = event_daily_data_update.copy(deep=True)
+        data = event_daily_data_update.model_copy(deep=True)
         data.start_time = datetime.time(0, 0)
         data.end_time = datetime.time(23, 0)
 
@@ -503,7 +503,7 @@ class TestSchedule:
         # Default events which with type "ALWAYS" are not included
         assert not result["activityEvents"]
         assert not result["flowEvents"]
-        event_for_activity = event_daily_data.copy(deep=True)
+        event_for_activity = event_daily_data.model_copy(deep=True)
         response = await client.post(self.schedule_url.format(applet_id=applet.id), data=event_for_activity)
         assert response.status_code == http.HTTPStatus.CREATED
 
@@ -1055,7 +1055,7 @@ class TestSchedule:
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
             side_effect=FireBaseNotFoundError(message=error_message),
         )
-        data = event_daily_data.copy(deep=True)
+        data = event_daily_data.model_copy(deep=True)
         data.respondent_id = lucy.id
         resp = await client.post(
             self.schedule_create_individual.format(applet_id=applet.id, respondent_id=lucy.id), data=data
@@ -1075,7 +1075,7 @@ class TestSchedule:
         device_lucy: str,
     ):
         client.login(user)
-        data = event_daily_data_update.copy(deep=True)
+        data = event_daily_data_update.model_copy(deep=True)
         data.start_time = datetime.time(0, 0)
         data.end_time = datetime.time(20, 0)
         resp = await client.put(
@@ -1115,7 +1115,7 @@ class TestSchedule:
         applet: AppletFull,
     ):
         client.login(user)
-        data = event_daily_data.copy(deep=True)
+        data = event_daily_data.model_copy(deep=True)
         data.notification = Notification(notifications=[notification])
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
@@ -1136,7 +1136,7 @@ class TestSchedule:
         applet: AppletFull,
     ):
         client.login(user)
-        data = event_daily_data.copy(deep=True)
+        data = event_daily_data.model_copy(deep=True)
         data.notification = Notification(reminder=reminder)
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
         assert resp.status_code == http.HTTPStatus.CREATED
@@ -1167,7 +1167,7 @@ class TestSchedule:
     ):
         # TODO
         client.login(user)
-        data = event_daily_data_update.copy(deep=True)
+        data = event_daily_data_update.model_copy(deep=True)
         data.periodicity.type = constants.PeriodicityType.ALWAYS
         data.one_time_completion = False
         resp = await client.put(
@@ -1191,7 +1191,7 @@ class TestSchedule:
     ):
         # TODO
         client.login(user)
-        data = event_daily_data_update.copy(deep=True)
+        data = event_daily_data_update.model_copy(deep=True)
         data.notification = Notification(notifications=[notification])
         resp = await client.put(
             self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id), data=data
@@ -1226,7 +1226,7 @@ class TestSchedule:
     ):
         # TODO
         client.login(user)
-        data = event_daily_data_update.copy(deep=True)
+        data = event_daily_data_update.model_copy(deep=True)
         data.notification = Notification(reminder=reminder)
         resp = await client.put(
             self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id), data=data
@@ -1251,7 +1251,7 @@ class TestSchedule:
         user: User,
     ):
         client.login(user)
-        data = event_daily_data.copy(deep=True)
+        data = event_daily_data.model_copy(deep=True)
         data.respondent_id = tom.id
         resp = await client.post(
             self.schedule_url.format(applet_id=applet_lucy_respondent.id),
@@ -1268,7 +1268,7 @@ class TestSchedule:
         user: User,
     ):
         client.login(user)
-        data = event_daily_data.copy(deep=True)
+        data = event_daily_data.model_copy(deep=True)
         data.activity_id = uuid_zero
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=data)
         assert resp.status_code == http.HTTPStatus.NOT_FOUND

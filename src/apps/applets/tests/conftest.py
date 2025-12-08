@@ -113,7 +113,7 @@ def applet_one_change_activities_ids(applet_one: AppletFull) -> AppletUpdate:
 
 @pytest.fixture
 def applet_create_with_flow(applet_minimal_data: AppletCreate) -> AppletCreate:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     flow = FlowCreate(
         name="flow",
         items=[FlowItemCreate(activity_key=data.activities[0].key)],
@@ -134,9 +134,9 @@ def applet_one_with_flow_update_data(applet_one_with_flow: AppletFull) -> Applet
 async def applet_with_reviewable_activity(
     session: AsyncSession, applet_minimal_data: AppletCreate, tom: User
 ) -> AppletFull:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "applet with reviewable activity"
-    reviewable_activity = data.activities[0].copy(deep=True)
+    reviewable_activity = data.activities[0].model_copy(deep=True)
     reviewable_activity.name = data.activities[0].name + " review"
     reviewable_activity.is_reviewable = True
     data.activities.append(reviewable_activity)
