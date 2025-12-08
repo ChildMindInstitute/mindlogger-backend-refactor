@@ -120,7 +120,7 @@ def generate_seed_file_schema(
     """
     Generate YAML schema for seed config
     """
-    schema = AppletConfigFileV1.schema()
+    schema = AppletConfigFileV1.model_json_schema()
     with open(output_path, "w") as f:
         yaml.dump(schema, f)
     typer.echo(f"Schema saved to {output_path}")
