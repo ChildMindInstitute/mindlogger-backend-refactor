@@ -4,7 +4,7 @@ import re
 from typing import TypeVar
 
 from pydantic import BaseModel as PBaseModel
-from pydantic import ConfigDict, Extra, field_validator
+from pydantic import ConfigDict, field_validator
 
 __all__ = [
     "InternalModel",
@@ -116,4 +116,4 @@ class PublicModel(BaseModel):
 
 
 class PublicModelNoExtra(PublicModel):
-    model_config = ConfigDict(PublicModel.model_config, extra=Extra.forbid)
+    model_config = ConfigDict(PublicModel.model_config, extra="forbid")
