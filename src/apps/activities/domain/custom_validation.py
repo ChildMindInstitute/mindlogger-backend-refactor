@@ -96,7 +96,7 @@ def validate_subscale_setting_match_reports(report: Score, subscale_setting: Sub
 
 
 def validate_score_and_sections(  # noqa: C901
-    items: list, scores_and_reports: ScoresAndReports | None, subscale_setting: SubscaleSetting | None
+    items: list, scores_and_reports: ScoresAndReports | None, subscale_setting: SubscaleSetting | None = None
 ) -> None:
     item_names = [item.name for item in items]
     if scores_and_reports:
