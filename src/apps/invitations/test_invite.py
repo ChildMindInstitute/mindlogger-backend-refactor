@@ -5,7 +5,7 @@ import uuid
 from typing import Any, Literal
 
 import pytest
-from pydantic import EmailStr, NameEmail
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.applets.crud import UserAppletAccessCRUD
@@ -292,7 +292,7 @@ class TestInvite(BaseTest):
             assert len(mailbox.mails) == 1
             assert message_language(mailbox.mails[0].body) == invite_language
             assert len(mailbox.mails[0].recipients) == 1
-            assert mailbox.mails[0].recipients[0] == NameEmail(email=payload.email)
+            assert mailbox.mails[0].recipients[0].email == payload.email
 
             if invitee_type == "respondent":
                 assert response.json()["result"]["userId"] == str(user.id)

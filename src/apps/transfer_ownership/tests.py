@@ -89,7 +89,8 @@ class TestTransfer(BaseTest):
 
         assert response.status_code == http.HTTPStatus.OK
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients == [data["email"]]
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == data["email"]
         assert mailbox.mails[0].subject == "Transfer ownership of an applet"
 
     async def test_initiate_transfer_fail(self, client: TestClient, tom: User):
@@ -329,7 +330,8 @@ class TestTransfer(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients == [request_data["email"]]
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == request_data["email"]
 
         # accept manager invite
         client.login(user)
@@ -350,7 +352,8 @@ class TestTransfer(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
 
         assert len(mailbox.mails) == 2
-        assert mailbox.mails[0].recipients == [data["email"]]
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == data["email"]
         assert mailbox.mails[0].subject == "Transfer ownership of an applet"
         body = mailbox.mails[0].body
         regex = (

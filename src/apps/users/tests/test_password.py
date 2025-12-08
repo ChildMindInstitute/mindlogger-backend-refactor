@@ -5,7 +5,6 @@ from unittest.mock import ANY, AsyncMock
 
 import pytest
 from httpx import Response as HttpResponse
-from pydantic import NameEmail
 from pytest_mock import MockFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
@@ -86,7 +85,8 @@ class TestPassword:
         assert len(keys) == 1
         assert password_recovery_request.email in keys[0]
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients[0] == NameEmail(email=password_recovery_request.email)
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
         assert mailbox.mails[0].subject == "Password reset"
 
         response = await client.post(
@@ -100,7 +100,8 @@ class TestPassword:
         assert len(keys) == 1
         assert keys[0] != new_keys[0]
         assert len(mailbox.mails) == 2
-        assert mailbox.mails[0].recipients[0] == NameEmail(email=password_recovery_request.email)
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
 
     async def test_password_recovery_admin(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
@@ -121,7 +122,8 @@ class TestPassword:
         assert len(keys) == 1
         assert password_recovery_request.email in keys[0]
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients[0] == NameEmail(email=password_recovery_request.email)
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
         assert mailbox.mails[0].subject == "Password reset"
 
         response = await client.post(
@@ -135,7 +137,8 @@ class TestPassword:
         assert len(keys) == 1
         assert keys[0] != new_keys[0]
         assert len(mailbox.mails) == 2
-        assert mailbox.mails[0].recipients[0] == NameEmail(email=password_recovery_request.email)
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
 
     async def test_password_recovery_mobile(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
@@ -156,7 +159,8 @@ class TestPassword:
         assert len(keys) == 1
         assert password_recovery_request.email in keys[0]
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients[0] == NameEmail(email=password_recovery_request.email)
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
         assert mailbox.mails[0].subject == "Password reset"
 
         response = await client.post(
@@ -170,7 +174,8 @@ class TestPassword:
         assert len(keys) == 1
         assert keys[0] != new_keys[0]
         assert len(mailbox.mails) == 2
-        assert mailbox.mails[0].recipients[0] == NameEmail(email=password_recovery_request.email)
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
 
     async def test_password_recovery_invalid(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
@@ -191,7 +196,8 @@ class TestPassword:
         assert len(keys) == 1
         assert password_recovery_request.email in keys[0]
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients[0] == NameEmail(email=password_recovery_request.email)
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
         assert mailbox.mails[0].subject == "Password reset"
 
         response = await client.post(
@@ -205,7 +211,8 @@ class TestPassword:
         assert len(keys) == 1
         assert keys[0] != new_keys[0]
         assert len(mailbox.mails) == 2
-        assert mailbox.mails[0].recipients[0] == NameEmail(email=password_recovery_request.email)
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
 
     async def test_password_recovery_approve(self, client: TestClient, user_create: UserCreate):
         cache = RedisCache()
