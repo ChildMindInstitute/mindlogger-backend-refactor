@@ -1746,7 +1746,7 @@ class AnswerService:
     async def send_alert_mail(users: List[UserSchema]):
         domain = os.environ.get("ADMIN_DOMAIN", "")
         mail_service = MailingService()
-        schemas = pydantic.parse_obj_as(List[User], users)
+        schemas = pydantic.TypeAdapter(List[User]).validate_python(users)
         email_list = [schema.email_encrypted for schema in schemas]
         return await mail_service.send(
             MessageSchema(

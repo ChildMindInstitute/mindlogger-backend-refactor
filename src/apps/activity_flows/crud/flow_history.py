@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from sqlalchemy import and_, any_, select
 from sqlalchemy.orm import Query, joinedload
 
@@ -58,7 +58,7 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         res = await self._execute(query)
         data = res.unique().scalars().all()
 
-        return parse_obj_as(list[FlowHistoryWithActivityFull], data)
+        return TypeAdapter(list[FlowHistoryWithActivityFull]).validate_python(data)
 
     async def get_by_applet_id(self, applet_id: str) -> list[ActivityFlowHistoriesSchema]:
         query: Query = select(ActivityFlowHistoriesSchema)
@@ -120,7 +120,7 @@ class FlowsHistoryCRUD(BaseCRUD[ActivityFlowHistoriesSchema]):
         result = await self._execute(query)
         data = result.all()
 
-        return parse_obj_as(list[Version], data)
+        return TypeAdapter(list[Version]).validate_python(data)
 
     async def get_list_by_id(self, id_: uuid.UUID) -> list[ActivityFlowHistoriesSchema]:
         query: Query = select(ActivityFlowHistoriesSchema)

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Tuple
 
 from asyncpg.exceptions import UniqueViolationError
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from sqlalchemy import (
     Unicode,
     and_,
@@ -617,7 +617,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = paging(query, query_params.page, query_params.limit)
 
         data = (await self._execute(query)).all()
-        data = parse_obj_as(list[WorkspaceRespondent], data)
+        data = TypeAdapter(list[WorkspaceRespondent]).validate_python(data)
         ordering_fields = ordering.get_ordering_fields(total)
 
         return data, total, ordering_fields
@@ -855,7 +855,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = paging(query, query_params.page, query_params.limit)
 
         data = (await self._execute(query)).all()
-        data = parse_obj_as(list[WorkspaceManager], data)
+        data = TypeAdapter(list[WorkspaceManager]).validate_python(data)
         ordering_fields = ordering.get_ordering_fields(total)
 
         # TODO: Fix via class Searching
@@ -1278,7 +1278,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         result = await self._execute(query)
         data = result.all()
 
-        return parse_obj_as(list[AppletRoles], data)
+        return TypeAdapter(list[AppletRoles]).validate_python(data)
 
     async def get_responsible_persons(self, applet_id: uuid.UUID, subject_id: uuid.UUID | None) -> list[UserSchema]:
         query: Query = select(UserSchema)

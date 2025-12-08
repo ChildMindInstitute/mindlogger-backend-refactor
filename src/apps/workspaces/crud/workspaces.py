@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from sqlalchemy import and_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
@@ -137,7 +137,7 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
 
         res = db_result.all()
 
-        return parse_obj_as(list[UserAnswersDBInfo], res)
+        return TypeAdapter(list[UserAnswersDBInfo]).validate_python(res)
 
     async def get_arbitrary_list(self) -> UserWorkspaceSchema:
         query: Query = select(UserWorkspaceSchema)

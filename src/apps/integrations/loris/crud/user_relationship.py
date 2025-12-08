@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import select
@@ -38,7 +38,7 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
         result = await self._execute(query)
         instances = result.scalars().all()
 
-        return parse_obj_as(list[MlLorisUserRelationship], instances)
+        return TypeAdapter(list[MlLorisUserRelationship]).validate_python(instances)
 
     async def get_by_loris_user_ids(self, loris_user_ids: list[str]) -> list[MlLorisUserRelationship]:
         """Return relationship instance by loris user id."""
@@ -49,7 +49,7 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
         result = await self._execute(query)
         instances = result.scalars().all()
 
-        return parse_obj_as(list[MlLorisUserRelationship], instances)
+        return TypeAdapter(list[MlLorisUserRelationship]).validate_python(instances)
 
     # async def update(self, ml_user_uuid: uuid.UUID, schema: MlLorisUserRelationshipUpdate) -> MlLorisUserRelationship:
     #     """Update relationship by ml user id."""

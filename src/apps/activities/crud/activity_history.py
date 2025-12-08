@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 from sqlalchemy import distinct, false, select, update
 from sqlalchemy.orm import Query, joinedload
 
@@ -148,7 +148,7 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         res = await self._execute(query)
         data = res.unique().scalars().all()
 
-        return parse_obj_as(list[ActivityHistoryFull], data)
+        return TypeAdapter(list[ActivityHistoryFull]).validate_python(data)
 
     async def get_by_history_ids(self, activity_history_ids: list[str]) -> list[ActivityHistory]:
         query: Query = (
@@ -159,4 +159,4 @@ class ActivityHistoriesCRUD(BaseCRUD[ActivityHistorySchema]):
         res = await self._execute(query)
         activities: list[ActivityHistorySchema] = res.scalars().all()
 
-        return parse_obj_as(list[ActivityHistory], activities)
+        return TypeAdapter(list[ActivityHistory]).validate_python(activities)

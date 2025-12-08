@@ -10,7 +10,7 @@ from typing import Annotated, Optional
 from fastapi import Body, Depends, Header, Query
 from fastapi import Response as FastAPIResponse
 from fastapi.responses import Response as FastApiResponse
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from apps.activities.services import ActivityHistoryService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
@@ -203,7 +203,7 @@ async def review_flow_list(
     flows = await AnswerService(session, user.id, answer_session).get_review_flows(applet_id, **query_params.filters)
 
     return ResponseMulti(
-        result=parse_obj_as(list[PublicReviewFlow], flows),
+        result=TypeAdapter(list[PublicReviewFlow]).validate_python(flows),
         count=len(flows),
     )
 
@@ -228,7 +228,7 @@ async def summary_activity_list(
     await CheckAccessService(session, user.id).check_summary_access(applet_id, target_subject_id)
     activities = await AnswerService(session, user.id, answer_session).get_summary_activities(applet_id, filters)
     return ResponseMulti(
-        result=parse_obj_as(list[PublicSummaryActivity], activities),
+        result=TypeAdapter(list[PublicSummaryActivity]).validate_python(activities),
         count=len(activities),
     )
 
@@ -247,7 +247,7 @@ async def summary_activity_flow_list(
         applet_id, target_subject_id
     )
     return ResponseMulti(
-        result=parse_obj_as(list[PublicSummaryActivityFlow], activities),
+        result=TypeAdapter(list[PublicSummaryActivityFlow]).validate_python(activities),
         count=len(activities),
     )
 
@@ -271,7 +271,7 @@ async def applet_activity_answers_list(
     result = []
     for answer in answers:
         review_count = answer_reviews.get(answer.answer_id, ReviewsCount())
-        result.append(parse_obj_as(AppletActivityAnswerPublic, {**answer.model_dump(), "review_count": review_count}))
+        result.append(TypeAdapter(AppletActivityAnswerPublic).validate_python({**answer.model_dump(), "review_count": review_count}))
     return ResponseMulti(result=result, count=len(answers))
 
 
@@ -542,7 +542,7 @@ async def applet_activity_versions_retrieve(
     versions = await AnswerService(session, user.id, arbitrary_session=answer_session).get_activity_versions(
         activity_id
     )
-    return ResponseMulti(result=parse_obj_as(list[VersionPublic], versions), count=len(versions))
+    return ResponseMulti(result=TypeAdapter(list[VersionPublic]).validate_python(versions), count=len(versions))
 
 
 async def applet_activity_assessment_create(
