@@ -91,7 +91,10 @@ class TestUser:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         result = response.json()["result"]
         assert len(result) == 1
-        assert result[0]["message"] == "foo"
+        assert (
+            result[0]["message"]
+            == "value is not a valid email address: The part after the @-sign contains invalid characters: '@'."
+        )
 
     async def test_user_create_device(self, client: TestClient, device_create_data: UserDeviceCreate, user: User):
         client.login(user)
