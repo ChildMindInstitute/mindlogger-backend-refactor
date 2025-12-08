@@ -614,7 +614,7 @@ class AnswerService:
             flow_history_ids = set()
             for submission in submissions:
                 flow_id, _ = HistoryAware.split_id_version(submission.flow_history_id)
-                _submission_date = SubmissionDate.from_orm(submission)
+                _submission_date = SubmissionDate.model_validate(submission)
                 if _flow := flow_map.get(flow_id):
                     _flow.answer_dates.append(_submission_date)  # type: ignore[arg-type]
                 else:
@@ -1352,7 +1352,7 @@ class AnswerService:
                 repo_local.get_item_history_by_activity_history(list(activity_hist_ids)),
             )
 
-            activity_map = {activity.id_version: ActivityHistoryFull.from_orm(activity) for activity in activities}
+            activity_map = {activity.id_version: ActivityHistoryFull.model_validate(activity) for activity in activities}
             for item in items:
                 activity = activity_map.get(item.activity_id)
                 if activity:
@@ -1436,7 +1436,7 @@ class AnswerService:
             if not answer_item:
                 continue
             answer_item.items = activity_item_map.get(answer.activity_history_id, [])
-            activity_answer = AppletActivityAnswer.from_orm(answer_item)
+            activity_answer = AppletActivityAnswer.model_validate(answer_item)
             if answer_item.items:
                 activity = activity_map[answer_item.items[0].activity_id]
                 activity_answer.subscale_setting = activity.subscale_setting
@@ -1871,7 +1871,7 @@ class AnswerService:
         self, assessment_id: uuid.UUID, answer_id: uuid.UUID
     ) -> AssessmentItem | None:
         schema = await AnswerItemsCRUD(self.answer_session).get_answer_assessment(assessment_id, answer_id)
-        return AssessmentItem.from_orm(schema) if schema else None
+        return AssessmentItem.model_validate(schema) if schema else None
 
     async def delete_assessment(self, assessment_id: uuid.UUID):
         return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)

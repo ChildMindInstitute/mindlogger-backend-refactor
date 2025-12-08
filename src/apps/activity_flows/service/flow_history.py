@@ -47,7 +47,7 @@ class FlowHistoryService:
         flow_ids = list()
 
         for schema in schemas:
-            flow: FlowHistoryFull = FlowHistoryFull.from_orm(schema)
+            flow: FlowHistoryFull = FlowHistoryFull.model_validate(schema)
             flows.append(flow)
             flow_ids.append(flow.id)
             flow_map[flow.id_version] = flow
@@ -82,7 +82,7 @@ class FlowHistoryService:
 
         flows = []
         for schema in flow_schemas:
-            flow = FlowHistoryFull.from_orm(schema)
+            flow = FlowHistoryFull.model_validate(schema)
             flow.items = flow_items_map.get(flow.id_version, [])
             flows.append(flow)
         flow_groups = self._group_and_sort_flows_or_items(flows)

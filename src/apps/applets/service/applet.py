@@ -185,7 +185,7 @@ class AppletService:
             data.created_at = getattr(create_data, "created_at")
 
         schema = await AppletsCRUD(self.session).save(data)
-        return AppletFull.from_orm(schema)
+        return AppletFull.model_validate(schema)
 
     async def update(self, applet_id: uuid.UUID, update_data: AppletUpdate) -> AppletFull:
         old_applet_schema = await AppletsCRUD(self.session).get_by_id(applet_id)
@@ -307,7 +307,7 @@ class AppletService:
                     is_skippable=activity.is_skippable,
                     is_reviewable=activity.is_reviewable,
                     response_is_editable=activity.response_is_editable,
-                    items=[ActivityItemCreate.from_orm(item) for item in activity.items],
+                    items=[ActivityItemCreate.model_validate(item) for item in activity.items],
                     is_hidden=activity.is_hidden,
                     report_included_item_name=activity.report_included_item_name,  # noqa: E501
                     subscale_setting=activity.subscale_setting,
@@ -403,7 +403,7 @@ class AppletService:
                 stream_port=update_data.stream_port,
             ),
         )
-        return AppletFull.from_orm(schema)
+        return AppletFull.model_validate(schema)
 
     async def get_next_version(
         self,
@@ -779,7 +779,7 @@ class AppletService:
 
     async def get_full_applet(self, applet_id: uuid.UUID) -> AppletFull:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
-        applet = AppletFull.from_orm(schema)
+        applet = AppletFull.model_validate(schema)
         applet.activities = await ActivityService(self.session, self.user_id).get_full_activities(applet_id)
         applet.activity_flows = await FlowService(self.session, self.user_id).get_full_flows(applet_id)
         applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
@@ -870,4 +870,4 @@ class PublicAppletService:
         schema = await AppletsCRUD(self.session).get_by_link(link, require_login=is_private)
         if not schema:
             return None
-        return Applet.from_orm(schema)
+        return Applet.model_validate(schema)

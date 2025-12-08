@@ -26,7 +26,7 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
         query = query.order_by(ReusableItemChoiceSchema.id)
         db_result = await self._execute(query)
 
-        return [PublicReusableItemChoice.from_orm(item_template) for item_template in db_result.scalars().all()]
+        return [PublicReusableItemChoice.model_validate(item_template) for item_template in db_result.scalars().all()]
 
     async def get_item_templates_count(self, user_id_: uuid.UUID) -> int:
         query: Query = select(count(ReusableItemChoiceSchema.id))
@@ -45,7 +45,7 @@ class ReusableItemChoiceCRUD(BaseCRUD[ReusableItemChoiceSchema]):
             raise ReusableItemChoiceAlreadyExist()
 
         # Create internal data model
-        item_template: ReusableItemChoice = ReusableItemChoice.from_orm(instance)
+        item_template: ReusableItemChoice = ReusableItemChoice.model_validate(instance)
 
         return item_template
 

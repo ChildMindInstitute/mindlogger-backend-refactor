@@ -81,7 +81,7 @@ class LibraryService:
         )
         library_item = await LibraryCRUD(self.session).save(library_item)
 
-        return AppletLibraryFull.from_orm(library_item)
+        return AppletLibraryFull.model_validate(library_item)
 
     async def _get_search_keywords(self, applet, applet_version):
         search_keywords = []
@@ -273,7 +273,7 @@ class LibraryService:
             search_keywords=search_keywords,
         )
         library_item = await LibraryCRUD(self.session).update(library_item, library_id)
-        return AppletLibraryFull.from_orm(library_item)
+        return AppletLibraryFull.model_validate(library_item)
 
     async def get_cart(self, user_id: uuid.UUID) -> Cart:
         """Get cart for user."""

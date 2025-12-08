@@ -35,10 +35,10 @@ class ActivityItemHistoryService:
 
     async def get_by_activity_id_versions(self, activity_id_versions: list[str]) -> list[ActivityItemHistoryFull]:
         schemas = await ActivityItemHistoriesCRUD(self.session).get_by_activity_id_versions(activity_id_versions)
-        return [ActivityItemHistoryFull.from_orm(schema) for schema in schemas]
+        return [ActivityItemHistoryFull.model_validate(schema) for schema in schemas]
 
     async def get_by_activity_ids(self, activity_ids: list[uuid.UUID]) -> list[ActivityItemHistoryFull]:
         schemas = await ActivityItemHistoriesCRUD(self.session).get_by_activity_id_versions(
             [f"{pk}_{self.version}" for pk in activity_ids]
         )
-        return [ActivityItemHistoryFull.from_orm(schema) for schema in schemas]
+        return [ActivityItemHistoryFull.model_validate(schema) for schema in schemas]

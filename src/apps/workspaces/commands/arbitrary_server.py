@@ -190,7 +190,7 @@ async def show(
                 if not data:
                     print(f"[bold green]Arbitrary settings are not configured for {owner_email}[/bold green]")
                     return
-                arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
+                arbitrary_fields = WorkspaceArbitraryFields.model_validate(data)
                 try:
                     alembic_version = await get_version(data.database_uri)
                 except asyncio.TimeoutError:
@@ -207,7 +207,7 @@ async def show(
             user_crud = UsersCRUD(session)
             for data in workspaces:
                 user = await user_crud.get_by_id(data.user_id)
-                arbitrary_fields = WorkspaceArbitraryFields.from_orm(data)
+                arbitrary_fields = WorkspaceArbitraryFields.model_validate(data)
                 try:
                     alembic_version = await get_version(data.database_uri)
                 except asyncio.TimeoutError:

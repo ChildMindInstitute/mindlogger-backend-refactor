@@ -24,11 +24,11 @@ class JobCRUD(BaseCRUD[JobSchema]):
         schema = results.scalars().one_or_none()
         if not schema:
             return None
-        return Job.from_orm(schema)
+        return Job.model_validate(schema)
 
     async def create(self, model: JobCreate) -> Job:
         schema = await self._create(JobSchema(**model.model_dump(by_alias=False, exclude_unset=True)))
-        return Job.from_orm(schema)
+        return Job.model_validate(schema)
 
     async def update(self, id_: uuid.UUID, **data) -> Job:
         query = update(JobSchema).where(JobSchema.id == id_).values(**data).returning(JobSchema)
@@ -36,4 +36,4 @@ class JobCRUD(BaseCRUD[JobSchema]):
         db_result = await self._execute(query)
         job_schema = db_result.first()
 
-        return Job.from_orm(job_schema)
+        return Job.model_validate(job_schema)

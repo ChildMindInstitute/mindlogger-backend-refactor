@@ -66,7 +66,7 @@ class FlowService:
         flow_id_map = dict()
 
         for flow_schema in flow_schemas:
-            flow = FlowFull.from_orm(flow_schema)
+            flow = FlowFull.model_validate(flow_schema)
             flows.append(flow)
             flow_id_map[flow.id] = flow
 
@@ -137,7 +137,7 @@ class FlowService:
         flow_id_map = dict()
 
         for flow_schema in flow_schemas:
-            flow = FlowFull.from_orm(flow_schema)
+            flow = FlowFull.model_validate(flow_schema)
             flows.append(flow)
             flow_id_map[flow.id] = flow
 
@@ -250,7 +250,7 @@ class FlowService:
         flow_map = dict()
         flows = []
         for schema in schemas:
-            flow = FlowFull.from_orm(schema)
+            flow = FlowFull.model_validate(schema)
             flow_map[flow.id] = flow
             flows.append(flow)
         items = await FlowItemService(self.session).get_by_flow_ids(list(flow_map.keys()))

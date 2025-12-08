@@ -21,7 +21,7 @@ from config import settings
 async def test_get_user_by_id(session: AsyncSession, user: User):
     srv = UserService(session)
     result = await srv.get(user.id)
-    assert result == User.from_orm(user)
+    assert result == User.model_validate(user)
 
 
 async def test_user_exists_by_id__user_does_not_exist(session: AsyncSession, uuid_zero: uuid.UUID):
@@ -37,7 +37,7 @@ async def test_get_user_by_email(
 ):
     srv = UserService(session)
     result = await srv.get_by_email(user_create.email)
-    assert result == User.from_orm(user)
+    assert result == User.model_validate(user)
 
 
 async def test_create_super_user_admin(session: AsyncSession):

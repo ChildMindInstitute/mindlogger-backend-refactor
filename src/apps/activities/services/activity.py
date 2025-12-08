@@ -102,7 +102,7 @@ class ActivityService:
 
         for activity_schema in activity_schemas:
             activity_schema.key = activity_id_key_map[activity_schema.id]
-            activity = ActivityFull.from_orm(activity_schema)
+            activity = ActivityFull.model_validate(activity_schema)
             activities.append(activity)
             activity_id_map[activity.id] = activity
 
@@ -199,7 +199,7 @@ class ActivityService:
 
         for activity_schema in activity_schemas:
             activity_schema.key = activity_id_key_map[activity_schema.id]
-            activity = ActivityFull.from_orm(activity_schema)
+            activity = ActivityFull.model_validate(activity_schema)
             activities.append(activity)
             activity_id_map[activity.id] = activity
 
@@ -326,7 +326,7 @@ class ActivityService:
         activity_map = dict()
         for schema in schemas:
             schema.key = uuid.uuid4()
-            activity = ActivityFull.from_orm(schema)
+            activity = ActivityFull.model_validate(schema)
             activities.append(activity)
             activity_map[activity.id] = activity
 

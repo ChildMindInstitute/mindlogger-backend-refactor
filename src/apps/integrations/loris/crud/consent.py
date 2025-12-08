@@ -26,7 +26,7 @@ class ConsentCRUD(BaseCRUD[ConsentSchema]):
         except IntegrityError as e:
             raise ConsentError(message=str(e))
 
-        event: Consent = Consent.from_orm(instance)
+        event: Consent = Consent.model_validate(instance)
         return event
 
     async def get_by_id(self, pk: uuid.UUID) -> Consent:
@@ -41,7 +41,7 @@ class ConsentCRUD(BaseCRUD[ConsentSchema]):
         if not instance:
             raise ConsentNotFoundError(key="id", value=str(pk))
 
-        event: Consent = Consent.from_orm(instance)
+        event: Consent = Consent.model_validate(instance)
         return event
 
     async def get_by_user_id(self, user_id: uuid.UUID) -> Consent:
@@ -56,7 +56,7 @@ class ConsentCRUD(BaseCRUD[ConsentSchema]):
         if not instance:
             raise ConsentNotFoundError(key="user_id", value=str(user_id))
 
-        event: Consent = Consent.from_orm(instance)
+        event: Consent = Consent.model_validate(instance)
         return event
 
     async def update(self, pk: uuid.UUID, schema: ConsentUpdate) -> Consent:
@@ -67,5 +67,5 @@ class ConsentCRUD(BaseCRUD[ConsentSchema]):
             value=pk,
             schema=ConsentSchema(**schema.model_dump()),
         )
-        event: Consent = Consent.from_orm(instance)
+        event: Consent = Consent.model_validate(instance)
         return event

@@ -43,7 +43,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         except IntegrityError as e:
             raise EventError(message=str(e))
 
-        event: Event = Event.from_orm(instance)
+        event: Event = Event.model_validate(instance)
         return event
 
     async def get_by_id(self, pk: uuid.UUID) -> Event:
@@ -58,7 +58,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         if not instance:
             raise EventNotFoundError(key="id", value=str(pk))
 
-        event: Event = Event.from_orm(instance)
+        event: Event = Event.model_validate(instance)
         return event
 
     async def get_all_by_applet_id_with_filter(
@@ -129,7 +129,7 @@ class EventCRUD(BaseCRUD[EventSchema]):
         elif len(rows_as_dict) > 1:
             raise MultipleResultsFound()
 
-        return Event.from_orm(EventSchema(**rows_as_dict[0]))
+        return Event.model_validate(EventSchema(**rows_as_dict[0]))
 
     async def get_all_by_applet_and_user(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> list[EventFull]:
         """Get events by applet_id and user_id"""
@@ -659,4 +659,4 @@ class EventCRUD(BaseCRUD[EventSchema]):
         result = await self._execute(query)
         flow_events = result.scalars().all()
 
-        return [Event.from_orm(flow_event) for flow_event in flow_events]
+        return [Event.model_validate(flow_event) for flow_event in flow_events]

@@ -223,7 +223,7 @@ class UserAccessService:
             owner_id, respondent_id, query_params.page, query_params.limit
         )
 
-        return [PublicRespondentAppletAccess.from_orm(access) for access in accesses]
+        return [PublicRespondentAppletAccess.model_validate(access) for access in accesses]
 
     async def get_respondent_accesses_by_workspace_count(
         self,

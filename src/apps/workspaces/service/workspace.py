@@ -223,7 +223,7 @@ class WorkspaceService:
         workspace_applets = []
         workspace_applet_map = dict()
         for applet in applets:
-            workspace_applet = WorkspaceApplet.from_orm(applet)
+            workspace_applet = WorkspaceApplet.model_validate(applet)
             workspace_applet_map[workspace_applet.id] = workspace_applet
             workspace_applets.append(workspace_applet)
 
@@ -252,7 +252,7 @@ class WorkspaceService:
         if not schema or not schema.use_arbitrary or not schema.database_uri:
             return None
         try:
-            return WorkspaceArbitrary.from_orm(schema) if schema else None
+            return WorkspaceArbitrary.model_validate(schema) if schema else None
         except ValidationError:
             return None
 
@@ -263,7 +263,7 @@ class WorkspaceService:
         if not schema or (in_use_only and not schema.use_arbitrary) or not schema.database_uri:
             return None
         try:
-            return WorkspaceArbitrary.from_orm(schema)
+            return WorkspaceArbitrary.model_validate(schema)
         except ValidationError:
             return None
 
@@ -300,7 +300,7 @@ class WorkspaceService:
         schema = await repository.get_by_user_id(self._user_id)
         if not schema:
             raise WorkspaceNotFoundError("Workspace not found")
-        arbitrary_data = WorkspaceArbitraryFields.from_orm(schema)
+        arbitrary_data = WorkspaceArbitraryFields.model_validate(schema)
         if not arbitrary_data.is_arbitrary_empty() and not rewrite:
             raise ArbitraryServerSettingsError(arbitrary_data, "Arbitrary settings are already set")
         for k, v in data.model_dump(by_alias=False).items():
@@ -311,7 +311,7 @@ class WorkspaceService:
         schemas = await UserWorkspaceCRUD(self.session).get_arbitrary_list()
         if not schemas:
             return []
-        return [WorkspaceArbitrary.from_orm(schema) for schema in schemas]
+        return [WorkspaceArbitrary.model_validate(schema) for schema in schemas]
 
     async def get_workspace_subjects(
         self,

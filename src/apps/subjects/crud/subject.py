@@ -127,7 +127,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         schema = result.scalars().one_or_none()
         if not schema:
             return None
-        return SubjectRelation.from_orm(schema)
+        return SubjectRelation.model_validate(schema)
 
     async def exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID) -> bool:
         query: Query = select(SubjectSchema.id)

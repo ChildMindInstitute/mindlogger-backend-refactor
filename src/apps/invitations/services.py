@@ -133,7 +133,7 @@ class InvitationsService:
             )
         else:
             invitation_schema = await self.invitations_crud.save(InvitationSchema(**payload))
-        invitation_internal: InvitationRespondent = InvitationRespondent.from_orm(invitation_schema)
+        invitation_internal: InvitationRespondent = InvitationRespondent.model_validate(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
 
@@ -212,7 +212,7 @@ class InvitationsService:
             )
         else:
             invitation_schema = await self.invitations_crud.save(InvitationSchema(**payload))
-        invitation_internal = InvitationReviewer.from_orm(invitation_schema)
+        invitation_internal = InvitationReviewer.model_validate(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
 
@@ -287,7 +287,7 @@ class InvitationsService:
             )
         else:
             invitation_schema = await self.invitations_crud.save(InvitationSchema(**payload))
-        invitation_internal = InvitationManagers.from_orm(invitation_schema)
+        invitation_internal = InvitationManagers.model_validate(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
 

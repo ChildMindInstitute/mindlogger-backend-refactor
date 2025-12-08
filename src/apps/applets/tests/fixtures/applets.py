@@ -205,7 +205,7 @@ async def tom_applet_one_subject(session: AsyncSession, tom: User, applet_one: A
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -230,7 +230,7 @@ async def tom_applet_two_subject(session: AsyncSession, tom: User, applet_two: A
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture(autouse=True, scope="session")

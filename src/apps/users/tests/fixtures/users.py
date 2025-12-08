@@ -18,7 +18,7 @@ async def _get_or_create_user(
         user = await UserService(global_session).create_user(create_data, test_id=id_)
         await global_session.commit()
     else:
-        user = User.from_orm(user_db)
+        user = User.model_validate(user_db)
     return user
 
 
@@ -257,7 +257,7 @@ async def anonym(global_session: AsyncSession, pytestconfig: Config):
             test_id=uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa7")
         )
         schema = await crud.get_anonymous_respondent()
-    user = User.from_orm(schema)
+    user = User.model_validate(schema)
     await global_session.commit()
     yield user
     if not pytestconfig.getoption("--keepdb"):
@@ -274,7 +274,7 @@ async def superadmin(global_session: AsyncSession, pytestconfig: Config):
         await UserService(global_session).create_superuser(test_id=id_)
         await global_session.commit()
         schema = await crud.get_super_admin()
-    user = User.from_orm(schema)
+    user = User.model_validate(schema)
     yield user
     if not pytestconfig.getoption("--keepdb"):
         await UserWorkspaceCRUD(global_session)._delete(user_id=id_)

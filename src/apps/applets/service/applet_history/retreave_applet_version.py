@@ -14,26 +14,26 @@ async def retrieve_applet_by_version(session, applet_id: uuid.UUID, version: str
     activity_item_schemas = await ActivityItemHistoriesCRUD(session).retrieve_by_applet_version(id_version)
     flow_schemas = await FlowsHistoryCRUD(session).retrieve_by_applet_version(id_version)
     flow_item_schemas = await FlowItemHistoriesCRUD(session).retrieve_by_applet_version(id_version)
-    applet = Applet.from_orm(applet_schema)
+    applet = Applet.model_validate(applet_schema)
 
     activity_map: dict[str, Activity] = dict()
     flow_map: dict[str, ActivityFlow] = dict()
 
     for activity_schema in activity_schemas:
-        activity = Activity.from_orm(activity_schema)
+        activity = Activity.model_validate(activity_schema)
         applet.activities.append(activity)
         activity_map[activity.id_version] = activity
 
     for activity_item_schema in activity_item_schemas:
-        activity_map[activity_item_schema.activity_id].items.append(ActivityItem.from_orm(activity_item_schema))
+        activity_map[activity_item_schema.activity_id].items.append(ActivityItem.model_validate(activity_item_schema))
 
     for flow_schema in flow_schemas:
-        flow = ActivityFlow.from_orm(flow_schema)
+        flow = ActivityFlow.model_validate(flow_schema)
         flow_map[flow.id_version] = flow
         applet.activity_flows.append(flow)
 
     for flow_item_schema in flow_item_schemas:
-        flow_item = ActivityFlowItem.from_orm(flow_item_schema)
+        flow_item = ActivityFlowItem.model_validate(flow_item_schema)
         flow_item.activity = activity_map[flow_item.activity_id]
         flow_map[flow_item.activity_flow_id].items.append(flow_item)
     return applet

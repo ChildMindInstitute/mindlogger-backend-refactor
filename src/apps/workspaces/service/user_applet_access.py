@@ -39,7 +39,7 @@ class UserAppletAccessService:
             self._applet_id, user_id, role
         )
         if access_schema:
-            return UserAppletAccess.from_orm(access_schema)
+            return UserAppletAccess.model_validate(access_schema)
 
         _meta = await self._get_default_role_meta(role, user_id)
         if meta:
@@ -77,7 +77,7 @@ class UserAppletAccessService:
             )
             await SubjectsCrud(self.session).create(subject)
 
-        return UserAppletAccess.from_orm(access_schema)
+        return UserAppletAccess.model_validate(access_schema)
 
     async def add_role_for_anonymous_respondent(
         self,
@@ -90,7 +90,7 @@ class UserAppletAccessService:
             if access_schema:
                 if access_schema.is_deleted:
                     await UserAppletAccessCRUD(self.session).restore("id", access_schema.id)
-                return UserAppletAccess.from_orm(access_schema)
+                return UserAppletAccess.model_validate(access_schema)
 
             meta = dict(secretUserId="Guest Account Submission")
             owner_access = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id=self._applet_id)
@@ -105,7 +105,7 @@ class UserAppletAccessService:
                     nickname=None,
                 )
             )
-            return UserAppletAccess.from_orm(access_schema)
+            return UserAppletAccess.model_validate(access_schema)
         else:
             raise UserNotFound
 
@@ -189,7 +189,7 @@ class UserAppletAccessService:
             except IntegrityError:
                 raise AppletUserViolationError()
 
-        return UserAppletAccess.from_orm(access_schema[0])
+        return UserAppletAccess.model_validate(access_schema[0])
 
     async def add_role_by_private_invitation(self, role: Role, user: User):
         owner_access = await UserAppletAccessCRUD(self.session).get_applet_owner(self._applet_id)
@@ -367,7 +367,7 @@ class UserAppletAccessService:
         if not schema:
             return None
 
-        return UserAppletAccess.from_orm(schema)
+        return UserAppletAccess.model_validate(schema)
 
     async def get_respondent_info(
         self,

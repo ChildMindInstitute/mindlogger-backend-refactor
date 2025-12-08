@@ -75,7 +75,7 @@ async def invitation_retrieve(
     who was invited.
     """
     invitation = await InvitationsService(session, user).get(key)
-    return Response(result=InvitationResponse.from_orm(invitation))
+    return Response(result=InvitationResponse.model_validate(invitation))
 
 
 async def private_invitation_retrieve(
@@ -83,7 +83,7 @@ async def private_invitation_retrieve(
     session=Depends(get_session),
 ) -> Response[PrivateInvitationResponse]:
     invitation = await PrivateInvitationService(session).get_invitation(key)
-    return Response(result=PrivateInvitationResponse.from_orm(invitation))
+    return Response(result=PrivateInvitationResponse.model_validate(invitation))
 
 
 async def invitation_respondent_send(

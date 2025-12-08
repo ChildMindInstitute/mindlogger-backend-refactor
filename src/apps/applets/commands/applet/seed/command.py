@@ -100,7 +100,7 @@ async def update_subject_details(
     mappings = db_result.mappings().all()
     updated_subject = SubjectSchema(**mappings[0])
 
-    return Subject.from_orm(updated_subject)
+    return Subject.model_validate(updated_subject)
 
 
 async def create_and_update_new_event(

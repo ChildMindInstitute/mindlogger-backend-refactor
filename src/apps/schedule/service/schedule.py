@@ -212,7 +212,7 @@ class ScheduleService:
         notification_map = await self._get_notifications_and_reminder({event.id for event in event_schemas})
 
         for event_schema in event_schemas:
-            event: Event = Event.from_orm(event_schema)
+            event: Event = Event.model_validate(event_schema)
 
             events.append(
                 PublicEvent(
@@ -239,7 +239,7 @@ class ScheduleService:
 
         full_events: list[EventFull] = []
         for event_schema in event_schemas:
-            event: Event = Event.from_orm(event_schema)
+            event: Event = Event.model_validate(event_schema)
             base_event = BaseEvent(**event.model_dump())
 
             full_events.append(
@@ -853,7 +853,7 @@ class ScheduleService:
                     ]
                     if notifications
                     else None,
-                    reminder=PublicReminderSetting.from_orm(reminder) if reminder else None,
+                    reminder=PublicReminderSetting.model_validate(reminder) if reminder else None,
                 )
 
         return public_notifications_map

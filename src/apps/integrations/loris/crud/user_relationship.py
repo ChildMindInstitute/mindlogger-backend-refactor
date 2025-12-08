@@ -26,7 +26,7 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
         except IntegrityError as e:
             raise MlLorisUserRelationshipError(message=str(e))
 
-        relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
+        relationship: MlLorisUserRelationship = MlLorisUserRelationship.model_validate(instance)
         return relationship
 
     async def get_by_ml_user_ids(self, ml_user_ids: list[uuid.UUID]) -> list[MlLorisUserRelationship]:
@@ -59,5 +59,5 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
     #         value=ml_user_uuid,
     #         schema=MlLorisUserRelationshipSchema(**schema.model_dump()),
     #     )
-    #     relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
+    #     relationship: MlLorisUserRelationship = MlLorisUserRelationship.model_validate(instance)
     #     return relationship
