@@ -1,6 +1,6 @@
 import datetime
 from enum import StrEnum
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, Self
 
 from pydantic import Field, field_validator, model_validator
 
@@ -151,14 +151,11 @@ class DateRangePayload(PublicModel):
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_dates(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        min_date = values.get("minDate")
-        max_date = values.get("maxDate")
-        if min_date and max_date and min_date > max_date:
+    @model_validator(mode="after")
+    def validate_dates(self) -> Self:
+        if self.minDate and self.maxDate and self.minDate > self.maxDate:
             raise ValueError("minDate cannot be later than maxDate")
-        return values
+        return self
 
     def dict(self, *args, **kwargs):
         d = super().model_dump(*args, **kwargs)
@@ -183,6 +180,15 @@ class SingleTimePayload(PublicModel):
     min_value: Optional[datetime.time] = None
     fieldName: FieldNamePayloadType | None = Field(default=None, validate_default=True)
 
+    @field_validator("time", "max_value", "min_value", mode="before")
+    @classmethod
+    def ensure_time(cls, v):
+        if isinstance(v, dict):
+            return cls._dict_to_time(v)
+        elif isinstance(v, str):
+            return cls._string_to_time(v)
+        return v
+
     @field_validator("fieldName", mode="before")
     @classmethod
     def validate_field_name(cls, v):
@@ -190,39 +196,18 @@ class SingleTimePayload(PublicModel):
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_time(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        time_value = values.get("time")
-        max_time_value = values.get("max_value")
-        min_time_value = values.get("min_value")
-
-        if isinstance(time_value, dict):
-            values["time"] = cls._dict_to_time(time_value)
-        elif isinstance(time_value, str):
-            values["time"] = cls._string_to_time(time_value)
-        if max_time_value and min_time_value:
-            if isinstance(max_time_value, dict):
-                max_time_value = cls._dict_to_time(max_time_value)
-            elif isinstance(max_time_value, str):
-                max_time_value = cls._string_to_time(max_time_value)
-
-            if isinstance(min_time_value, dict):
-                min_time_value = cls._dict_to_time(min_time_value)
-            elif isinstance(min_time_value, str):
-                min_time_value = cls._string_to_time(min_time_value)
-
-            if max_time_value < min_time_value:
+    @model_validator(mode="after")
+    def validate_time(self) -> Self:
+        if self.max_value and self.min_value:
+            if self.max_value < self.min_value:
                 raise IncorrectTimeRange()
-
-        if min_time_value is not None:
-            if max_time_value is None:
+        if self.min_value is not None:
+            if self.max_value is None:
                 raise IncorrectMaxTimeRange()
-        if max_time_value is not None:
-            if min_time_value is None:
+        if self.max_value is not None:
+            if self.min_value is None:
                 raise IncorrectMinTimeRange()
-
-        return values
+        return self
 
     def dict(self, *args, **kwargs) -> Dict[str, Any]:
         d = super().model_dump(*args, **kwargs)
@@ -253,25 +238,19 @@ class MinMaxTimePayload(PublicModel):
     maxTime: Optional[datetime.time] = None
     fieldName: FieldNamePayloadType | None = Field(default=None, validate_default=True)
 
+    @field_validator("minTime", "maxTime", mode="before")
+    @classmethod
+    def ensure_time(cls, v):
+        if isinstance(v, dict):
+            return cls._dict_to_time(v)
+        return v
+
     @field_validator("fieldName", mode="before")
     @classmethod
     def validate_field_name(cls, v):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
-
-    @model_validator(mode="before")
-    @classmethod
-    def validate_times(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        min_time_dict = values.get("minTime")
-        max_time_dict = values.get("maxTime")
-
-        if isinstance(min_time_dict, dict):
-            values["minTime"] = cls._dict_to_time(min_time_dict)
-        if isinstance(max_time_dict, dict):
-            values["maxTime"] = cls._dict_to_time(max_time_dict)
-
-        return values
 
     def dict(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         d = super().model_dump(*args, **kwargs)
