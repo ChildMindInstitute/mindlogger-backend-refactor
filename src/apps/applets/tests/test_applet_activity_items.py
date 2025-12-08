@@ -307,9 +307,9 @@ class TestActivityItems:
         result = response.json()["result"]
         item_create_with_logic = activity_create_with_conditional_logic.items[1]
         assert item_create_with_logic.conditional_logic is not None
-        assert result["activities"][0]["items"][1]["conditionalLogic"] == item_create_with_logic.conditional_logic.model_dump(
-            by_alias=True
-        )
+        assert result["activities"][0]["items"][1][
+            "conditionalLogic"
+        ] == item_create_with_logic.conditional_logic.model_dump(by_alias=True)
 
     @pytest.mark.parametrize(
         "item_fixture_name",

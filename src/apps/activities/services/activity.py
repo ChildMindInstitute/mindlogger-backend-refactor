@@ -63,7 +63,9 @@ class ActivityService:
                 scores_and_reports=activity_data.scores_and_reports.model_dump()
                 if activity_data.scores_and_reports
                 else None,
-                subscale_setting=activity_data.subscale_setting.model_dump() if activity_data.subscale_setting else None,
+                subscale_setting=activity_data.subscale_setting.model_dump()
+                if activity_data.subscale_setting
+                else None,
                 order=index + 1,
                 report_included_item_name=activity_data.report_included_item_name,  # noqa: E501
                 extra_fields=activity_data.extra_fields,
@@ -158,7 +160,9 @@ class ActivityService:
                     scores_and_reports=activity_data.scores_and_reports.model_dump()
                     if activity_data.scores_and_reports
                     else None,
-                    subscale_setting=activity_data.subscale_setting.model_dump() if activity_data.subscale_setting else None,
+                    subscale_setting=activity_data.subscale_setting.model_dump()
+                    if activity_data.subscale_setting
+                    else None,
                     order=index + 1,
                     report_included_item_name=(activity_data.report_included_item_name),
                     performance_task_type=activity_data.performance_task_type,

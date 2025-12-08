@@ -120,7 +120,9 @@ def multi_select_row_config(
 
 @pytest.fixture
 def slider_rows_config(default_config: DefaultConfig) -> SliderRowsConfig:
-    return SliderRowsConfig(add_scores=False, set_alerts=False, **default_config.model_dump(), type=ResponseType.SLIDERROWS)
+    return SliderRowsConfig(
+        add_scores=False, set_alerts=False, **default_config.model_dump(), type=ResponseType.SLIDERROWS
+    )
 
 
 @pytest.fixture

@@ -271,7 +271,11 @@ async def applet_activity_answers_list(
     result = []
     for answer in answers:
         review_count = answer_reviews.get(answer.answer_id, ReviewsCount())
-        result.append(TypeAdapter(AppletActivityAnswerPublic).validate_python({**answer.model_dump(), "review_count": review_count}))
+        result.append(
+            TypeAdapter(AppletActivityAnswerPublic).validate_python(
+                {**answer.model_dump(), "review_count": review_count}
+            )
+        )
     return ResponseMulti(result=result, count=len(answers))
 
 

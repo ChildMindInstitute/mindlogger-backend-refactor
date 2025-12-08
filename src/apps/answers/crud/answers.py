@@ -1195,7 +1195,10 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         Returns:
             AnswerEHRSchema: The upserted entity.
         """
-        values = {**schema.model_dump(), "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)}
+        values = {
+            **schema.model_dump(),
+            "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+        }
         stmt = insert(AnswerEHRSchema).values(values)
         stmt = stmt.on_conflict_do_update(
             index_elements=[AnswerEHRSchema.submit_id, AnswerEHRSchema.activity_id],

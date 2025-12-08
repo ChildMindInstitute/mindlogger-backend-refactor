@@ -1352,7 +1352,9 @@ class AnswerService:
                 repo_local.get_item_history_by_activity_history(list(activity_hist_ids)),
             )
 
-            activity_map = {activity.id_version: ActivityHistoryFull.model_validate(activity) for activity in activities}
+            activity_map = {
+                activity.id_version: ActivityHistoryFull.model_validate(activity) for activity in activities
+            }
             for item in items:
                 activity = activity_map.get(item.activity_id)
                 if activity:

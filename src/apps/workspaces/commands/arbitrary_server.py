@@ -199,7 +199,10 @@ async def show(
                     alembic_version = f"[bold red]ERROR: {e}[/bold red]"
 
                 output = WorkSpaceArbitraryConsoleOutput(
-                    **arbitrary_fields.model_dump(), email=owner_email, user_id=owner.id, alembic_version=alembic_version
+                    **arbitrary_fields.model_dump(),
+                    email=owner_email,
+                    user_id=owner.id,
+                    alembic_version=alembic_version,
                 )
                 print_data_table(output)
         else:

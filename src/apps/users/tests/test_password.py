@@ -70,7 +70,9 @@ class TestPassword:
 
     async def test_password_recovery(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=user_create.model_dump()["email"]
+        )
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -102,7 +104,9 @@ class TestPassword:
 
     async def test_password_recovery_admin(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=user_create.model_dump()["email"]
+        )
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -135,7 +139,9 @@ class TestPassword:
 
     async def test_password_recovery_mobile(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=user_create.model_dump()["email"]
+        )
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -168,7 +174,9 @@ class TestPassword:
 
     async def test_password_recovery_invalid(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=user_create.model_dump()["email"]
+        )
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -203,7 +211,9 @@ class TestPassword:
         cache = RedisCache()
 
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=user_create.model_dump()["email"]
+        )
 
         response = await client.post(
             url=self.password_recovery_url,
@@ -232,7 +242,9 @@ class TestPassword:
         settings.authentication.password_recover.expiration = 1
 
         # Password recovery
-        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(email=user_create.model_dump()["email"])
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=user_create.model_dump()["email"]
+        )
 
         response = await client.post(
             url=self.password_recovery_url,
