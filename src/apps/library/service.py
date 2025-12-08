@@ -300,7 +300,7 @@ class LibraryService:
     @staticmethod
     async def _search_in_cart(pattern: str, item: dict) -> bool:
         pattern = pattern.lower()
-        parsed_item = PublicLibraryItem.parse_obj(item)
+        parsed_item = PublicLibraryItem.model_validate(item)
         if pattern in parsed_item.display_name.lower():
             return True
 
