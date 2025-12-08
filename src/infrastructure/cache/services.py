@@ -91,7 +91,7 @@ class BaseCacheService(ABC, Generic[_InputObject]):
 
         await self.redis_client.set(
             key=self._build_key(key=key),
-            value=enhanced_cache_entry.json(),
+            value=enhanced_cache_entry.model_dump_json(),
             ex=(ttl or self.default_ttl),
         )
 

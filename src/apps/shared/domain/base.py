@@ -46,7 +46,7 @@ def model_as_camel_case(model: _BaseModel) -> _BaseModel:
     """Returns the model but with field names and nested
     keys converted to camel case.
     """
-    model_json = model.json()
+    model_json = model.model_dump_json()
     camel_case_dict = convert_str_to_camel_case(model_json)
     return model.__class__(**camel_case_dict)
 
