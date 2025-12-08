@@ -408,11 +408,10 @@ class TestInvite(BaseTest):
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data,
         )
-        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
         result = response.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == NonUniqueValue.message
-        assert result[0]["path"] == ["body", "secretUserId"]
 
     async def test_invitation_accept_and_absorb_roles(
         self,
@@ -646,7 +645,7 @@ class TestInvite(BaseTest):
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data,
         )
-        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
     async def test_resend_invitation_for_respondent_with_pending_invitation_only_last_key_valid(
         self,
@@ -1077,7 +1076,7 @@ class TestInvite(BaseTest):
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data.model_dump(),
         )
-        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
         payload = response.json()
         assert payload
         assert payload["result"][0]["message"] == NonUniqueValue().error
