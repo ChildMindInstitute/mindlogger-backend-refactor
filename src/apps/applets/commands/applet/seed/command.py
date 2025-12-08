@@ -687,7 +687,7 @@ def prepare_applet_data(
 
     if applet.report_server:
         report_server = applet.report_server
-        create_data.report_server_ip = report_server.ip_address
+        create_data.report_server_ip = str(report_server.ip_address)
         create_data.report_public_key = report_server.public_key
         create_data.report_recipients = report_server.recipients
         create_data.report_include_user_id = report_server.include_user_id
