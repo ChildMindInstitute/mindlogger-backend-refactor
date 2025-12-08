@@ -41,7 +41,7 @@ class PasswordRecoverSettings(BaseSettings):
 class MFATokenSettings(BaseSettings):
     """Settings for temporary MFA verification tokens."""
 
-    secret_key: str = Field("", validation_alias="AUTHENTICATION__MFA_TOKEN__SECRET_KEY")
+    secret_key: str
     # Set in minutes (matches Redis session TTL)
     expiration: int = 5
 
