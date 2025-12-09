@@ -43,7 +43,7 @@ class FlowBaseInfo(InternalModel):
     order: int
     is_hidden: bool | None = False
     activity_ids: list[uuid.UUID] = Field(default_factory=list)
-    auto_assign: bool
+    auto_assign: bool | None = True
 
 
 class FlowSingleLanguageMobileDetailPublic(FlowBaseInfo, InternalModel):

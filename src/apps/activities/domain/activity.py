@@ -155,7 +155,7 @@ class ActivityOrFlowWithAssignmentsPublic(ActivityOrFlowBasicInfoPublic):
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):
     contains_response_types: list[ResponseType]
     item_count: int
-    auto_assign: bool
+    auto_assign: bool | None = True
 
 
 class ActivitySubjectMetadata(PublicModel):
