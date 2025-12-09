@@ -105,8 +105,12 @@ async def workspace_roles_retrieve(
     applet_roles = await UserAccessService(session, user.id).get_workspace_applet_roles(
         owner_id, applet_ids, user.is_super_admin
     )
-
-    return Response(result=applet_roles)
+    # instantiate Response with type hint to avoid cryptic errors when serializing:
+    #     fastapi.exceptions.ResponseValidationError:
+    #         <exception str() failed>
+    #     AttributeError:
+    #         'BaseModel' object has no attribute '__private_attributes__'. Did you mean: '__static_attributes__'?
+    return Response[dict[uuid.UUID, list[Role]]](result=applet_roles)
 
 
 async def workspace_folder_applets(
