@@ -294,7 +294,7 @@ class InvitationResponse(PublicModel):
     last_name: str
     created_at: datetime
     accepted_at: datetime | None = None
-    meta: dict
+    meta: ReviewerMeta | RespondentMeta | dict
     nickname: str | None = None
     secret_user_id: str | None = None
     tag: str | None = None
