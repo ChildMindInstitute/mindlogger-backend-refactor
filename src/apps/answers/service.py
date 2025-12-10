@@ -176,7 +176,7 @@ class AnswerService:
         # Timestamp-based duplicate detection: when created_at provided, check for exact duplicate
         # Each unique timestamp represents a distinct submission, bypassing occurrence limits
         if applet_answer.created_at is not None:
-            created_at_ms = int(applet_answer.created_at.timestamp() * 1000)
+            created_at_ms = int(applet_answer.created_at.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
             existing_with_timestamp = await AnswersCRUD(self.answer_session).get_by_applet_activity_submit_or_user_id(
                 applet_answer.applet_id,
                 str(applet_answer.activity_id),
