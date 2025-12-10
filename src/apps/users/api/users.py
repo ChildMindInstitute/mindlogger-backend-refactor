@@ -107,6 +107,12 @@ async def user_mfa_totp_initiate(
 ) -> Response[TOTPInitiateResponse]:
     """Start TOTP setup: create secret, store it encrypted, return provisioning URI."""
     async with atomic(session):
+        # Prevent setup if MFA already enabled
+        if user.mfa_enabled:
+            from apps.users.errors import MFAAlreadyEnabledError
+
+            raise MFAAlreadyEnabledError()
+
         # Generate a new TOTP secret
         secret = totp_service.generate_secret()
 
@@ -144,6 +150,12 @@ async def user_mfa_totp_verify(
     async with atomic(session):
         # Refetch user from database to ensure we have latest MFA state
         fresh_user = await UsersCRUD(session).get_by_id(user.id)
+
+        # Prevent activation if MFA already enabled (race condition protection)
+        if fresh_user.mfa_enabled:
+            from apps.users.errors import MFAAlreadyEnabledError
+
+            raise MFAAlreadyEnabledError()
 
         # Validate pending setup and get decrypted secret
         decrypted_secret = totp_service.validate_pending_setup(fresh_user)
