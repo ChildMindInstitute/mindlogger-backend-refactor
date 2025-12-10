@@ -312,8 +312,7 @@ class StabilityTrackerConfig(PublicModel):
     max_rad: float = 0.26167
 
 
-class StimulusConfigId(str):
-    pass
+StimulusConfigId = str
 
 
 class StimulusConfiguration(PublicModel):
