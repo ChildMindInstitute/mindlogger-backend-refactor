@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 from pydantic import ConfigDict, EmailStr, Field, field_validator
 
@@ -400,10 +401,12 @@ class ShellAccountCreateRequest(PublicModel):
     email: str | None = None
     tag: str | None = None
 
-    @field_validator("email")
+    @field_validator("email", mode="before")
     @classmethod
-    def lowercase_email(cls, value: str | None) -> str | None:
-        return value and value.lower()
+    def lowercase_email(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.lower()
+        return value
 
 
 class ShellAccountInvitation(PublicModel):
@@ -413,7 +416,9 @@ class ShellAccountInvitation(PublicModel):
         default=None, description="This field represents the language of invitation"
     )
 
-    @field_validator("email")
+    @field_validator("email", mode="before")
     @classmethod
-    def lowercase_email(cls, value: EmailStr) -> EmailStr:
-        return value.lower()
+    def lowercase_email(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.lower()
+        return value
