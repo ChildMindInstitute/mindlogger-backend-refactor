@@ -127,7 +127,8 @@ class AppletDataRetention(InternalModel):
         if retention != DataRetention.INDEFINITELY and not period:
             raise PeriodIsRequiredError()
         if retention == DataRetention.INDEFINITELY:
-            self.period = None
+            # avoid recursive validation that would result from assigning self.period = None
+            self.__dict__["period"] = None
         return self
 
 
