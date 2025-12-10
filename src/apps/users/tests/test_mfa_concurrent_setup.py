@@ -208,6 +208,7 @@ class TestMFAConcurrentDisable:
         # Get the current MFA secret for TOTP codes
         crud = UsersCRUD(session)
         current_user = await crud.get_by_id(user_with_mfa.id)
+        assert current_user.mfa_secret is not None
         decrypted_secret = totp_service.decrypt_secret(current_user.mfa_secret)
 
         # Tab 1: Initiate disable
@@ -249,6 +250,7 @@ class TestMFAConcurrentDisable:
         # Get the current MFA secret
         crud = UsersCRUD(session)
         current_user = await crud.get_by_id(user_with_mfa.id)
+        assert current_user.mfa_secret is not None
         decrypted_secret = totp_service.decrypt_secret(current_user.mfa_secret)
 
         # Tab 1: Initiate disable
