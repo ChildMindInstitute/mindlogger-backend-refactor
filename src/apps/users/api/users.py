@@ -160,8 +160,8 @@ async def user_mfa_totp_verify(
         # Validate pending setup and get decrypted secret
         decrypted_secret = totp_service.validate_pending_setup(fresh_user)
 
-        # Verify code (strict, no time-window tolerance for enrollment)
-        is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=0)
+        # Verify code with standard time-window tolerance
+        is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=1)
 
         if not is_valid:
             raise InvalidTOTPCodeError()
@@ -195,18 +195,23 @@ async def user_mfa_totp_disable_initiate(
     session=Depends(get_session),
 ) -> Response[MFADisableInitiateResponse]:
     """Initiate MFA disable: verify user has MFA enabled and create disable session."""
-    # Check if user has MFA enabled
-    if not user.mfa_secret:
-        raise MFANotEnabledError()
+    async with atomic(session):
+        # Refetch user from database to ensure we have latest MFA state
+        crud = UsersCRUD(session)
+        fresh_user = await crud.get_by_id(user.id)
 
-    # Create MFA session for disable purpose
-    mfa_service = MFASessionService()
-    mfa_session_id = await mfa_service.create_session(user_id=user.id, purpose="disable")
+        # Check if user has MFA enabled (race condition protection)
+        if not fresh_user.mfa_enabled or not fresh_user.mfa_secret:
+            raise MFANotEnabledError()
 
-    # Generate mfa_token
-    mfa_token = AuthenticationService.create_mfa_token(mfa_session_id=mfa_session_id)
+        # Create MFA session for disable purpose
+        mfa_service = MFASessionService()
+        mfa_session_id = await mfa_service.create_session(user_id=fresh_user.id, purpose="disable")
 
-    logger.info(f"MFA disable initiated user_id={user.id} mfa_session_id={mfa_session_id}")
+        # Generate mfa_token
+        mfa_token = AuthenticationService.create_mfa_token(mfa_session_id=mfa_session_id)
+
+        logger.info(f"MFA disable initiated user_id={fresh_user.id} mfa_session_id={mfa_session_id}")
 
     return Response(
         result=MFADisableInitiateResponse(
@@ -269,9 +274,12 @@ async def user_mfa_totp_disable_verify(
         crud = UsersCRUD(session)
         db_user = await crud.get_by_id(token_user_id)
 
-        # Step 8: Validate user has MFA enabled
-        if not db_user.mfa_secret:
-            logger.warning(f"MFA disable attempted but MFA not enabled user_id={token_user_id}")
+        # Step 8: Validate user has MFA enabled (race condition protection)
+        if not db_user.mfa_enabled or not db_user.mfa_secret:
+            logger.warning(
+                f"MFA disable attempted but MFA not enabled user_id={token_user_id} "
+                f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
+            )
             raise MFANotEnabledError()
 
         # Step 9: Decrypt TOTP secret

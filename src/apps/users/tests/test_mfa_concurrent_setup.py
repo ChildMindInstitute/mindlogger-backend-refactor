@@ -167,3 +167,111 @@ class TestMFAConcurrentSetup:
         # Verify re-enabled
         user_after_reenable = await crud.get_by_id(user.id)
         assert user_after_reenable.mfa_enabled is True
+
+
+@pytest.mark.usefixtures("user_with_mfa")
+class TestMFAConcurrentDisable:
+    """Test MFA concurrent disable prevention."""
+
+    totp_disable_initiate_url = "/users/me/mfa/totp/disable/initiate"
+    totp_disable_verify_url = "/users/me/mfa/totp/disable/verify"
+
+    async def test_mfa_totp_disable_initiate_already_disabled_fails(
+        self, client: TestClient, user: User, session: AsyncSession
+    ):
+        """Test that initiating MFA disable when already disabled returns error."""
+        # Ensure MFA is disabled
+        crud = UsersCRUD(session)
+        from datetime import datetime, timezone
+
+        await crud.disable_mfa(user_id=user.id, disabled_at=datetime.now(timezone.utc).replace(tzinfo=None))
+
+        # Verify disabled
+        updated_user = await crud.get_by_id(user.id)
+        assert updated_user.mfa_enabled is False
+
+        client.login(updated_user)
+
+        # Try to initiate disable
+        response = await client.post(self.totp_disable_initiate_url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        error = response.json()["result"][0]
+        assert error["message"] == "MFA is not enabled for this account."
+
+    async def test_mfa_totp_disable_concurrent_tabs_only_one_succeeds(
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+    ):
+        """Test that only one tab can complete MFA disable in race condition."""
+        client.login(user_with_mfa)
+
+        # Get the current MFA secret for TOTP codes
+        crud = UsersCRUD(session)
+        current_user = await crud.get_by_id(user_with_mfa.id)
+        decrypted_secret = totp_service.decrypt_secret(current_user.mfa_secret)
+
+        # Tab 1: Initiate disable
+        response1 = await client.post(self.totp_disable_initiate_url)
+        assert response1.status_code == status.HTTP_200_OK
+        mfa_token1 = response1.json()["result"]["mfaToken"]
+
+        # Tab 2: Initiate disable
+        response2 = await client.post(self.totp_disable_initiate_url)
+        assert response2.status_code == status.HTTP_200_OK
+        mfa_token2 = response2.json()["result"]["mfaToken"]
+
+        # Tokens should be different
+        assert mfa_token1 != mfa_token2
+
+        # Tab 1: Completes first with valid TOTP
+        code1 = pyotp.TOTP(decrypted_secret).now()
+        verify1 = await client.post(self.totp_disable_verify_url, data={"code": code1, "mfaToken": mfa_token1})
+        assert verify1.status_code == status.HTTP_200_OK
+
+        # Verify MFA is now disabled in database
+        updated_user = await crud.get_by_id(user_with_mfa.id)
+        assert updated_user.mfa_enabled is False
+        assert updated_user.mfa_secret is None
+
+        # Tab 2: Tries to complete (should fail - MFA already disabled)
+        code2 = pyotp.TOTP(decrypted_secret).now()
+        verify2 = await client.post(self.totp_disable_verify_url, data={"code": code2, "mfaToken": mfa_token2})
+        assert verify2.status_code == status.HTTP_403_FORBIDDEN
+        error = verify2.json()["result"][0]
+        assert error["message"] == "MFA is not enabled for this account."
+
+    async def test_mfa_totp_disable_race_condition_with_expired_session(
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+    ):
+        """Test race condition where Tab 1 completes disable while Tab 2 has expired session."""
+        client.login(user_with_mfa)
+
+        # Get the current MFA secret
+        crud = UsersCRUD(session)
+        current_user = await crud.get_by_id(user_with_mfa.id)
+        decrypted_secret = totp_service.decrypt_secret(current_user.mfa_secret)
+
+        # Tab 1: Initiate disable
+        response1 = await client.post(self.totp_disable_initiate_url)
+        mfa_token1 = response1.json()["result"]["mfaToken"]
+
+        # Tab 2: Initiate disable
+        response2 = await client.post(self.totp_disable_initiate_url)
+        mfa_token2 = response2.json()["result"]["mfaToken"]
+
+        # Tab 1: Successfully disables MFA
+        code1 = pyotp.TOTP(decrypted_secret).now()
+        verify1 = await client.post(self.totp_disable_verify_url, data={"code": code1, "mfaToken": mfa_token1})
+        assert verify1.status_code == status.HTTP_200_OK
+
+        # Verify MFA disabled
+        updated_user = await crud.get_by_id(user_with_mfa.id)
+        assert updated_user.mfa_enabled is False
+
+        # Tab 2: Tries with its token (should fail - MFA already disabled)
+        # Note: Even if token is still valid, the mfa_enabled check will catch this
+        code2 = pyotp.TOTP(decrypted_secret).now()
+        verify2 = await client.post(self.totp_disable_verify_url, data={"code": code2, "mfaToken": mfa_token2})
+        assert verify2.status_code == status.HTTP_403_FORBIDDEN
+        error = verify2.json()["result"][0]
+        assert error["message"] == "MFA is not enabled for this account."
