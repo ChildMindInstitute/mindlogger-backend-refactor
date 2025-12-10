@@ -133,7 +133,7 @@ class ValueIndexPayload(ValuePayload):
 class SingleDatePayload(PublicModel):
     date: datetime.date
 
-    def dict(self, *args, **kwargs):
+    def model_dump(self, *args, **kwargs):
         d = super().model_dump(*args, **kwargs)
         d["date"] = self.date.isoformat()
         return d
@@ -157,7 +157,7 @@ class DateRangePayload(PublicModel):
             raise ValueError("minDate cannot be later than maxDate")
         return self
 
-    def dict(self, *args, **kwargs):
+    def model_dump(self, *args, **kwargs):
         d = super().model_dump(*args, **kwargs)
         d["minDate"] = self.minDate.isoformat()
         d["maxDate"] = self.maxDate.isoformat()
@@ -168,7 +168,7 @@ class TimePayload(PublicModel):
     type: TimePayloadType | None = None
     value: datetime.time
 
-    def dict(self, *args, **kwargs):
+    def model_dump(self, *args, **kwargs):
         d = super().model_dump(*args, **kwargs)
         d["value"] = self.value.strftime("%H:%M")
         return d
@@ -209,7 +209,7 @@ class SingleTimePayload(PublicModel):
                 raise IncorrectMinTimeRange()
         return self
 
-    def dict(self, *args, **kwargs) -> Dict[str, Any]:
+    def model_dump(self, *args, **kwargs) -> Dict[str, Any]:
         d = super().model_dump(*args, **kwargs)
         if self.time:
             d["time"] = self.time.strftime("%H:%M")
@@ -252,7 +252,7 @@ class MinMaxTimePayload(PublicModel):
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
 
-    def dict(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def model_dump(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         d = super().model_dump(*args, **kwargs)
         if self.minTime:
             d["minTime"] = self._time_to_dict(self.minTime)
@@ -289,7 +289,7 @@ class MinMaxSliderRowPayload(PublicModelNoExtra):
     def validate_score(cls, value):
         return round(value, 2)
 
-    def dict(self, *args, **kwargs):
+    def model_dump(self, *args, **kwargs):
         d = super().model_dump(*args, **kwargs)
         d["minValue"] = round(self.minValue, 2)
         d["maxValue"] = round(self.maxValue, 2)
