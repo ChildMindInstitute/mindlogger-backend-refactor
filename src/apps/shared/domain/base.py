@@ -116,4 +116,4 @@ class PublicModel(BaseModel):
 
 
 class PublicModelNoExtra(PublicModel):
-    model_config = ConfigDict(PublicModel.model_config, extra="forbid")
+    model_config = ConfigDict(PublicModel.model_config, extra="forbid")  # type: ignore[misc]
