@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Generic
+from typing import Generic, Self
 
 from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, model_validator
 
@@ -120,22 +120,15 @@ class AppletDataRetention(InternalModel):
     retention: DataRetention
     period: PositiveInt | None = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_period(cls, data: dict) -> dict:
-        """Require period unless retention is indefinite.
-
-        We ran this as an "after" validator (pre=False) before migrating
-        Pydantic 1 to Pydantic 2, but it works better as a "before"
-        validator because we are updating the value of a field.
-        """
-        retention = data.get("retention")
-        value = data.get("period")
-        if retention != DataRetention.INDEFINITELY and not value:
+    @model_validator(mode="after")
+    def validate_period(self) -> Self:
+        retention = self.retention
+        period = self.period
+        if retention != DataRetention.INDEFINITELY and not period:
             raise PeriodIsRequiredError()
         if retention == DataRetention.INDEFINITELY:
-            data["period"] = None
-        return data
+            self.period = None
+        return self
 
 
 class AppletMeta(PublicModel):
