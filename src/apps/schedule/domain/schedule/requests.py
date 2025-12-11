@@ -1,5 +1,6 @@
 import uuid
-from typing import Self
+from datetime import time
+from typing import Self, cast
 
 from pydantic import Field, field_validator, model_validator
 
@@ -74,27 +75,35 @@ class EventUpdateRequest(BaseEvent, InternalModel):
                         # keep same logic if the event is not cross-day
                         if start_time < end_time:
                             if notification.trigger_type == NotificationTriggerType.FIXED and (
-                                notification.at_time < start_time or notification.at_time > end_time
+                                cast(time, notification.at_time) < start_time
+                                or cast(time, notification.at_time) > end_time
                             ):
                                 raise UnavailableActivityOrFlowError()
 
                             if notification.trigger_type == NotificationTriggerType.RANDOM and (
-                                notification.from_time < start_time
-                                or notification.from_time > end_time
-                                or notification.to_time < start_time
-                                or notification.to_time > end_time
+                                cast(time, notification.from_time) < start_time
+                                or cast(time, notification.from_time) > end_time
+                                or cast(time, notification.to_time) < start_time
+                                or cast(time, notification.to_time) > end_time
                             ):
                                 raise UnavailableActivityOrFlowError()
                         # logic for cross-day events
                         else:
                             if notification.trigger_type == NotificationTriggerType.FIXED and (
-                                notification.at_time < start_time and notification.at_time > end_time
+                                cast(time, notification.at_time) < start_time
+                                and cast(time, notification.at_time) > end_time
                             ):
                                 raise UnavailableActivityOrFlowError()
 
                             if notification.trigger_type == NotificationTriggerType.RANDOM and (
-                                (notification.from_time < start_time and notification.from_time > end_time)
-                                or (notification.to_time < start_time and notification.to_time > end_time)
+                                (
+                                    cast(time, notification.from_time) < start_time
+                                    and cast(time, notification.from_time) > end_time
+                                )
+                                or (
+                                    cast(time, notification.to_time) < start_time
+                                    and cast(time, notification.to_time) > end_time
+                                )
                             ):
                                 raise UnavailableActivityOrFlowError()
 
