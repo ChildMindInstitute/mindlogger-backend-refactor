@@ -496,7 +496,7 @@ class TestActivityItems:
         data = applet_minimal_data.model_copy(deep=True)
         sub_setting = subscale_setting.model_copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
-        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
+        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].subscale_setting = sub_setting
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -517,9 +517,9 @@ class TestActivityItems:
         data = applet_minimal_data.model_copy(deep=True)
         sub_settin = subscale_setting.model_copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
-        sub_settin.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
+        sub_settin.subscales[0].items[0].name = single_select_item_create_with_score.name
         # Add subscale type subscale which has subscale item pointing to the subscale above
-        sub_settin.subscales.append(subscale_with_item_type_subscale)  # type: ignore[union-attr]
+        sub_settin.subscales.append(subscale_with_item_type_subscale)
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].subscale_setting = sub_settin
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -540,7 +540,7 @@ class TestActivityItems:
         data = applet_minimal_data.model_copy(deep=True)
         sub_setting = subscale_setting.model_copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
-        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
+        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name
         sub_setting.total_scores_table_data = subscale_total_score_table
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].subscale_setting = sub_setting
@@ -562,8 +562,8 @@ class TestActivityItems:
         data = applet_minimal_data.model_copy(deep=True)
         sub_setting = subscale_setting.model_copy(deep=True)
         # subscale item must have name from activity. So for test just update name in copied subscale item
-        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
-        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table  # type: ignore[index]
+        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name
+        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].subscale_setting = sub_setting
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -586,8 +586,8 @@ class TestActivityItems:
         sub_setting = subscale_setting_score_type.model_copy(deep=True)
 
         # Update subscale setting with item name and lookup table
-        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name  # type: ignore[index]
-        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table  # type: ignore[index]
+        sub_setting.subscales[0].items[0].name = single_select_item_create_with_score.name
+        sub_setting.subscales[0].subscale_table_data = subscale_lookup_table
 
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].subscale_setting = sub_setting
@@ -639,7 +639,7 @@ class TestActivityItems:
         client.login(tom)
         data = applet_minimal_data.model_copy(deep=True)
         reports_data = scores_and_reports.model_copy(deep=True)
-        reports_data.reports[0].items_print = [single_select_item_create_with_score.name]  # type: ignore[index]
+        reports_data.reports[0].items_print = [single_select_item_create_with_score.name]
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].scores_and_reports = reports_data
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)
@@ -660,11 +660,11 @@ class TestActivityItems:
         client.login(tom)
         data = applet_minimal_data.model_copy(deep=True)
         reports_data = scores_and_reports.model_copy(deep=True)
-        reports_data.reports[0].items_print = [single_select_item_create_with_score.name]  # type: ignore[index]
-        reports_data.reports[1].items_print = [single_select_item_create_with_score.name]  # type: ignore[index]
+        reports_data.reports[0].items_print = [single_select_item_create_with_score.name]
+        reports_data.reports[1].items_print = [single_select_item_create_with_score.name]
         score_conditional_logic.items_print = [single_select_item_create_with_score.name]
-        reports_data.reports[0].conditional_logic = [score_conditional_logic]  # type: ignore[index]
-        reports_data.reports[1].conditional_logic = section_conditional_logic  # type: ignore[index]
+        reports_data.reports[0].conditional_logic = [score_conditional_logic]
+        reports_data.reports[1].conditional_logic = section_conditional_logic
         data.activities[0].items = [single_select_item_create_with_score]
         data.activities[0].scores_and_reports = reports_data
         resp = await client.post(self.applet_create_url.format(owner_id=tom.id), data=data)

@@ -38,7 +38,7 @@ class ErrorResponse(PublicModel):
 class ErrorResponseMulti(PublicModel):
     """The public error respnse model that includes multiple objects."""
 
-    result: Annotated[List[ErrorResponse], Field()]  # type: ignore
+    result: Annotated[List[ErrorResponse], Field()]
 
 
 # NOTE: This constant represents the default error response for each request

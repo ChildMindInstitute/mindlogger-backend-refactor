@@ -16,7 +16,7 @@ __all__ = [
 
 class _ReusableItemChoiceBase(BaseModel):
     token_name: str
-    token_value: Annotated[int, Field(gt=-2147483648, lt=2147483647)]  # type: ignore
+    token_value: Annotated[int, Field(gt=-2147483648, lt=2147483647)]
     input_type: InputType
 
 

@@ -616,7 +616,7 @@ class AnswerService:
                 flow_id, _ = HistoryAware.split_id_version(submission.flow_history_id)
                 _submission_date = SubmissionDate.model_validate(submission)
                 if _flow := flow_map.get(flow_id):
-                    _flow.answer_dates.append(_submission_date)  # type: ignore[arg-type]
+                    _flow.answer_dates.append(_submission_date)
                 else:
                     old_flow_submission_dates[flow_id].append(_submission_date)
                     flow_history_ids.add(submission.flow_history_id)
