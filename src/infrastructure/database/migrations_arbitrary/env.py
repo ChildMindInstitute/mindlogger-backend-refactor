@@ -8,7 +8,7 @@ from logging.config import fileConfig
 
 from alembic import context
 from alembic.config import Config
-from pydantic import TypeAdapter
+from pydantic.tools import parse_obj_as
 from sqlalchemy import MetaData, Unicode, engine_from_config, pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -30,7 +30,7 @@ target_metadata = Base.metadata
 config.set_main_option("sqlalchemy.url", settings.database.url)
 arbitrary_data = []
 
-LOG_JSON_FORMAT = TypeAdapter(bool).validate_python(os.getenv("LOG_JSON_FORMAT", False))
+LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))
 setup_structured_logging(LOG_JSON_FORMAT)
 
 migration_log = getLogger("alembic.arbitrary")

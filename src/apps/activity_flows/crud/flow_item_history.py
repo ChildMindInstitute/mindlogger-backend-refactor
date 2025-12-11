@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 
-from pydantic import TypeAdapter
+from pydantic import parse_obj_as
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import func
@@ -92,7 +92,7 @@ class FlowItemHistoriesCRUD(BaseCRUD[ActivityFlowItemHistorySchema]):
         query = query.order_by(ActivityFlowItemHistorySchema.order.asc())
         db_result = await self._execute(query)
         res = db_result.all()
-        return [TypeAdapter(FlowItemHistoryFull).validate_python(row) for row in res]
+        return [parse_obj_as(FlowItemHistoryFull, row) for row in res]
 
     async def get_flow_item_history_by_applet(
         self, applet_id: uuid.UUID, query_params: QueryParams

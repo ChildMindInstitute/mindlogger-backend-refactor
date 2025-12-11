@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import Depends
-from pydantic import TypeAdapter
+from pydantic import parse_obj_as
 
 from apps.alerts.domain import AlertPublic, AlertResponseMulti
 from apps.alerts.service import AlertService
@@ -23,7 +23,7 @@ async def get_all_alerts(
         counts = await service.get_all_alerts_count()
 
     return AlertResponseMulti(
-        result=TypeAdapter(list[AlertPublic]).validate_python(alerts),
+        result=parse_obj_as(list[AlertPublic], alerts),
         count=counts["alerts_all"],
         not_watched=counts["alerts_not_watched"],
     )

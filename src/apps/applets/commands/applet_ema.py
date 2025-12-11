@@ -9,7 +9,7 @@ import uuid
 from typing import BinaryIO, Optional, TypeVar, cast
 
 import typer
-from pydantic import TypeAdapter
+from pydantic import parse_obj_as
 from rich import print
 from sqlalchemy import Date, and_, case, false, func, literal, null, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -198,7 +198,7 @@ async def _export_flows(applet_id: uuid.UUID, path_prefix: str):
 
     cdn_client = await get_operations_bucket()
     key = cdn_client.generate_key(path_prefix, str(applet_id), PATH_FLOW_FILE_NAME)
-    await save_csv(key, TypeAdapter(list[dict]).validate_python(data), cdn_client)
+    await save_csv(key, parse_obj_as(list[dict], data), cdn_client)
 
 
 @app.command(
@@ -302,7 +302,7 @@ async def get_user_flow_events(
     )
     db_result = await session.execute(query)
     result = db_result.mappings().all()
-    return TypeAdapter(list[FlowEventRawRow]).validate_python(result)
+    return parse_obj_as(list[FlowEventRawRow], result)
 
 
 def filter_events(raw_events_rows: list[TRawRow], schedule_date: datetime.date) -> list[TRawRow]:  # noqa: C901
@@ -555,7 +555,7 @@ async def get_user_activity_events(
     )
     db_result = await session.execute(query)
     result = db_result.mappings().all()
-    return TypeAdapter(list[ActivityEventRawRow]).validate_python(result)
+    return parse_obj_as(list[ActivityEventRawRow], result)
 
 
 @app.command(short_help="Export daily user activity schedule events to csv")

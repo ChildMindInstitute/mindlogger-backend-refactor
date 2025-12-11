@@ -3,7 +3,7 @@ import datetime
 import uuid
 from typing import Collection, Optional
 
-from pydantic import TypeAdapter
+from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
@@ -119,7 +119,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         res = await self._execute(query)
         data = res.unique().scalars().all()
 
-        return TypeAdapter(list[Answer]).validate_python(data)
+        return parse_obj_as(list[Answer], data)
 
     async def get_flow_submission_data(
         self, *, created_date: datetime.date | None = None, **filters
@@ -156,7 +156,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         res = await self._execute(query)
         data = res.all()
 
-        return TypeAdapter(list[FlowSubmissionInfo]).validate_python(data)
+        return parse_obj_as(list[FlowSubmissionInfo], data)
 
     async def get_flow_submissions(
         self, applet_id: uuid.UUID, flow_id: uuid.UUID, *, page=None, limit=None, **filters
@@ -234,7 +234,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         data = result_data.all()
         count = result_count.scalar()
 
-        return TypeAdapter(list[FlowSubmission]).validate_python(data), count
+        return parse_obj_as(list[FlowSubmission], data), count
 
     async def get_respondents_submit_dates(
         self, applet_id: uuid.UUID, filters: AppletSubmitDateFilter
@@ -390,7 +390,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         total = res_count.scalars().one()
 
-        return TypeAdapter(list[RespondentAnswerData]).validate_python(answers), total
+        return parse_obj_as(list[RespondentAnswerData], answers), total
 
     async def get_item_history_by_activity_history(self, activity_hist_ids: list[str]) -> list[ActivityItemHistoryFull]:
         query: Query = (
@@ -404,7 +404,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         res = await self._execute(query)
         items: list[ActivityItemHistorySchema] = res.scalars().all()
 
-        return TypeAdapter(list[ActivityItemHistoryFull]).validate_python(items)
+        return parse_obj_as(list[ActivityItemHistoryFull], items)
 
     async def get_identifiers_by_activity_id(
         self,
@@ -773,7 +773,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
         db_result = await self._execute(query)
 
-        return TypeAdapter(list[UserAnswerItemData]).validate_python(db_result.all())
+        return parse_obj_as(list[UserAnswerItemData], db_result.all())
 
     async def update_encrypted_fields(self, user_public_key: str, data: list[AnswerItemDataEncrypted]):
         if data:
@@ -868,7 +868,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         result = await self._execute(query)
         data = result.all()
 
-        return TypeAdapter(list[IdentifierData]).validate_python(data)
+        return parse_obj_as(list[IdentifierData], data)
 
     async def replace_answers_subject(self, subject_id_from: uuid.UUID, subject_id_to: uuid.UUID):
         new_target_subject_id = case(

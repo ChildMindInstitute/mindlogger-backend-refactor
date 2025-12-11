@@ -3,7 +3,7 @@ import json
 import uuid
 from typing import List
 
-from pydantic import TypeAdapter
+from pydantic import parse_obj_as
 
 from apps.activities.crud import ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
@@ -110,7 +110,7 @@ class LibraryService:
         """Get all applets for library."""
 
         library_schemas = await LibraryCRUD(self.session).get_all_library_items(query_params)
-        library_items = TypeAdapter(list[LibraryItem]).validate_python(library_schemas)
+        library_items = parse_obj_as(list[LibraryItem], library_schemas)
 
         for library_item in library_items:
             library_item = await self._get_full_library_item(library_item)
@@ -331,4 +331,4 @@ class LibraryService:
             page=query_params.page,
             limit=query_params.limit,
         )
-        return TypeAdapter(List[PublicLibraryItem]).validate_python(items)
+        return parse_obj_as(List[PublicLibraryItem], items)

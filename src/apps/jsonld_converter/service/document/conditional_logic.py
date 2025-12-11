@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from operator import and_, or_
 from typing import Tuple
 
-from pydantic import TypeAdapter
+from pydantic import parse_obj_as
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import AnyCondition, ConditionType
@@ -199,7 +199,7 @@ class ConditionValueResolver:
 
         data = dict(item_name=name, type=condition.type, payload=payload)
 
-        return TypeAdapter(AnyCondition).validate_python(data)  # type: ignore[arg-type]
+        return parse_obj_as(AnyCondition, data)  # type: ignore[arg-type]
 
 
 class ConditionBoolResolver:
@@ -215,7 +215,7 @@ class ConditionBoolResolver:
             payload=dict(value=val),
         )
 
-        return TypeAdapter(AnyCondition).validate_python(data)  # type: ignore[arg-type]
+        return parse_obj_as(AnyCondition, data)  # type: ignore[arg-type]
 
 
 class ConditionOptionResolver:
@@ -238,7 +238,7 @@ class ConditionOptionResolver:
             type=_type,
             payload=dict(option_value=condition.values[0]),
         )
-        return TypeAdapter(AnyCondition).validate_python(data)  # type: ignore[arg-type]
+        return parse_obj_as(AnyCondition, data)  # type: ignore[arg-type]
 
 
 class ResolvesConditionalLogic(ABC):
