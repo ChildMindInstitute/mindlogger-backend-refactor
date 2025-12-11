@@ -3,6 +3,7 @@ import re
 import uuid
 
 import pytest
+from pydantic import NameEmail
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -177,7 +178,7 @@ class TestActivityAssignments(BaseTest):
 
         assert str(model.id) == assignment["id"]
         assert model.activity_id == applet_one.activities[0].id
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert mailbox.mails[0].recipients == [NameEmail(email=tom_applet_one_subject.email)]
         assert message_language(mailbox.mails[0].body) == invite_language
 
     async def test_create_assignment_fail_wrong_activity(
@@ -297,7 +298,7 @@ class TestActivityAssignments(BaseTest):
         assert len(assignments) == 2
 
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert mailbox.mails[0].recipients == [NameEmail(email=tom_applet_one_subject.email)]
         assert mailbox.mails[0].subject == "Assignment Notification"
 
         assignment = assignments[0]
@@ -481,7 +482,7 @@ class TestActivityAssignments(BaseTest):
         assert assignment["id"] is not None
         assert len(mailbox.mails) == 1
 
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert mailbox.mails[0].recipients == [NameEmail(email=tom_applet_one_subject.email)]
         assert mailbox.mails[0].subject == "Assignment Notification"
 
     async def test_create_assignment_fail_wrong_target(
@@ -545,7 +546,7 @@ class TestActivityAssignments(BaseTest):
         assert assignment["targetSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["activityFlowId"] is None
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert mailbox.mails[0].recipients == [NameEmail(email=tom_applet_one_subject.email)]
         assert mailbox.mails[0].subject == "Assignment Notification"
 
         assignments_create = ActivitiesAssignmentsCreate(
@@ -577,9 +578,9 @@ class TestActivityAssignments(BaseTest):
         assert assignment["targetSubjectId"] == str(lucy_applet_one_subject.id)
         assert assignment["activityFlowId"] == str(applet_one_with_flow.activity_flows[0].id)
         assert len(mailbox.mails) == 2
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert mailbox.mails[0].recipients == [NameEmail(email=tom_applet_one_subject.email)]
         assert mailbox.mails[0].subject == "Assignment Notification"
-        assert mailbox.mails[1].recipients == [tom_applet_one_subject.email]
+        assert mailbox.mails[1].recipients == [NameEmail(email=tom_applet_one_subject.email)]
         assert mailbox.mails[1].subject == "Assignment Notification"
 
     async def test_assignment_list_by_applet_success(
