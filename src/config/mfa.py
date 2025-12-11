@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 class MFASettings(BaseModel):
@@ -40,5 +40,3 @@ class MFASettings(BaseModel):
         if not self.recovery_code_encryption_key:
             raise ValueError("MFA__RECOVERY_CODE_ENCRYPTION_KEY environment variable is not set")
         return self.recovery_code_encryption_key.encode()
-
-    model_config = ConfigDict(env_prefix="MFA__")
