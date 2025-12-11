@@ -219,30 +219,21 @@ def validate_subscales(items: list, subscale_setting: SubscaleSetting | None) ->
                             raise SubscaleInsideSubscaleError()
 
 
-def validate_performance_task_type(data: dict) -> dict:
-    """Set performance_task_type based on items type.
-
-    If items type is performance task type or contains part of the name
-    of some performance task, then performance task type must be set.
-
-    We ran this as an "after" validator (pre=False) before migrating
-    Pydantic 1 to Pydantic 2, but it works better as a "before"
-    validator because we are updating the value of a field.
-    """
-    items = data.get("items", [])
+def validate_performance_task_type(
+    items: list, performance_task_type: PerformanceTaskType | None
+) -> PerformanceTaskType | None:
     for item in items:
         if item.response_type == ResponseType.STABILITYTRACKER:
-            value = item.dict()["config"]["user_input_type"]
-            for v in PerformanceTaskType.get_values():
-                if value == v:
-                    data["performance_task_type"] = value
+            if item.config.user_input_type in PerformanceTaskType:
+                return PerformanceTaskType(item.config.user_input_type)
         elif item.response_type in (
             ResponseType.FLANKER,
             ResponseType.ABTRAILS,
             ResponseType.UNITY,
         ):
-            data["performance_task_type"] = item.response_type
-    return data
+            if item.response_type in PerformanceTaskType:
+                return PerformanceTaskType(item.response_type)
+    return performance_task_type
 
 
 def validate_phrasal_templates(items: list) -> None:

@@ -56,10 +56,11 @@ class ActivityUpdate(ActivityBase, PublicModel):
         validate_subscales(self.items, self.subscale_setting)
         return self
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_performance_task_type(cls, data: dict) -> dict:
-        return validate_performance_task_type(data)
+    @model_validator(mode="after")
+    def validate_performance_task_type(self) -> Self:
+        # avoid recursive validation that would result from assigning self.performance_task_type = ...
+        self.__dict__["performance_task_type"] = validate_performance_task_type(self.items, self.performance_task_type)
+        return self
 
     @model_validator(mode="after")
     def validate_phrasal_templates(self) -> Self:

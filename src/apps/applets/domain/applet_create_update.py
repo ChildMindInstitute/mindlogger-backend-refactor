@@ -4,7 +4,6 @@ from pydantic import Field, model_validator
 
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
-from apps.activities.domain.custom_validation import validate_performance_task_type
 from apps.activities.errors import (
     AssessmentLimitExceed,
     DuplicateActivityFlowNameError,
@@ -51,10 +50,6 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
                 if flow_item.activity_key not in activity_keys:
                     raise FlowItemActivityKeyNotFoundError()
         return self
-
-    @model_validator(mode="before")
-    def validate_performance_task_type(cls, data: dict) -> dict:
-        return validate_performance_task_type(data)
 
 
 class AppletUpdate(AppletBase, PublicModel):
