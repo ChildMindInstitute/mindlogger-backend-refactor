@@ -1,4 +1,4 @@
-from pydantic import EmailStr, field_validator, validator
+from pydantic import EmailStr, field_validator
 
 from apps.authentication.domain.token import Token
 from apps.shared.domain import PublicModel
@@ -36,7 +36,8 @@ class MFATOTPVerifyRequest(PublicModel):
     totp_code: str  # 6-digit TOTP code
     device_id: str | None = None  # Optional device identifier
 
-    @validator("totp_code")
+    @field_validator("totp_code")
+    @classmethod
     def validate_totp_code(cls, value: str) -> str:
         if not value.isdigit() or len(value) != 6:
             raise ValueError("TOTP code must be a 6-digit number")

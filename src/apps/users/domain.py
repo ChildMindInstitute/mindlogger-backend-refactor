@@ -223,7 +223,7 @@ class TOTPVerifyRequest(PublicModel):
     """TOTP verification request."""
 
     code: str = Field(
-        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, regex=r"^\d{6}$"
+        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"
     )
 
 
@@ -251,7 +251,7 @@ class MFADisableVerifyRequest(PublicModel):
 
     mfa_token: str = Field(description="JWT token from MFA disable initiation")
     code: str = Field(
-        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, regex=r"^\d{6}$"
+        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"
     )
 
 
