@@ -124,5 +124,4 @@ def create_app():
     app.add_exception_handler(InvalidPasswordError, sqlalchemy_database_error_handler)
     app.add_exception_handler(Exception, python_base_error_handler)
 
-
     return app
