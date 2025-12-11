@@ -2,7 +2,7 @@ import http
 import json
 import re
 import uuid
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import pytest
 from pydantic import EmailStr
@@ -507,7 +507,7 @@ class TestInvite(BaseTest):
         mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_respondent_data.email = lucy.email_encrypted
+        invitation_respondent_data.email = cast(str, lucy.email_encrypted)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one_lucy_respondent.id)),
             invitation_respondent_data,
@@ -528,7 +528,7 @@ class TestInvite(BaseTest):
         mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_editor_data.email = lucy.email_encrypted
+        invitation_editor_data.email = cast(str, lucy.email_encrypted)
         response = await client.post(
             self.invite_manager_url.format(applet_id=applet_one_lucy_manager.id),
             invitation_editor_data,
@@ -960,7 +960,7 @@ class TestInvite(BaseTest):
         user_id = tom.id
         # Create invitation to Mike
         client.login(tom)
-        invitation_respondent_data.email = user_email
+        invitation_respondent_data.email = cast(str, user_email)
         subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=applet_id),
