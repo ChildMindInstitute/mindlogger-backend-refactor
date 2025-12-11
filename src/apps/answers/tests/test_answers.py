@@ -3371,7 +3371,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == 422
         data = response.json()
-        assert data["result"][0]["message"] == "field required"
+        assert data["result"][0]["message"] == "Field required"
         assert data["result"][0]["path"] == ["query", "targetSubjectId"]
 
     async def test_flow_submission_not_completed(
@@ -4072,7 +4072,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.get(url)
 
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["result"][0]["message"] == "field required"
+        assert response.json()["result"][0]["message"] == "Field required"
 
     async def test_validate_multiinformant_assessment_fail_source_subject_not_found(
         self, client, tom: User, applet_one: AppletFull, applet_two: AppletFull, session: AsyncSession
