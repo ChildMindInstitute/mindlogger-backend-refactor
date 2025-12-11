@@ -1,11 +1,29 @@
-from typing import Self
+from typing import Self, cast
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
-from apps.activities.domain.response_type_config import ResponseType, ResponseTypeConfig
-from apps.activities.domain.response_values import ResponseTypeValueConfig, ResponseValueConfig
+from apps.activities.domain.response_type_config import (
+    MultiSelectionConfig,
+    MultiSelectionRowsConfig,
+    ResponseType,
+    ResponseTypeConfig,
+    SingleSelectionConfig,
+    SingleSelectionRowsConfig,
+    SliderConfig,
+    SliderRowsConfig,
+)
+from apps.activities.domain.response_values import (
+    MultiSelectionRowsValues,
+    MultiSelectionValues,
+    ResponseTypeValueConfig,
+    ResponseValueConfig,
+    SingleSelectionRowsValues,
+    SingleSelectionValues,
+    SliderRowsValues,
+    SliderValues,
+)
 from apps.activities.errors import (
     AlertFlagMissingSingleMultiRowItemError,
     AlertFlagMissingSliderItemError,
@@ -134,6 +152,8 @@ class BaseActivityItem(BaseModel):
         ]:
             # if add_scores is True in config,
             # then score must be provided in each option of response_values
+            response_values = cast(SingleSelectionValues | MultiSelectionValues, response_values)
+            config = cast(SingleSelectionConfig | MultiSelectionConfig, config)
             if config.add_scores:
                 scores = [option.score for option in response_values.options]
                 if None in scores:
@@ -141,11 +161,15 @@ class BaseActivityItem(BaseModel):
 
         if response_type == ResponseType.SLIDER:
             # if add_scores is True in config, then scores should not be None
+            response_values = cast(SliderValues, response_values)
+            config = cast(SliderConfig, config)
             if config.add_scores and response_values.scores is None:
                 raise NullScoreError()
 
         if response_type == ResponseType.SLIDERROWS:
             # if add_scores is True in config, then scores should not be None
+            response_values = cast(SliderRowsValues, response_values)
+            config = cast(SliderRowsConfig, config)
             if config.add_scores:
                 for row in response_values.rows:
                     if row.scores is None:
@@ -156,6 +180,8 @@ class BaseActivityItem(BaseModel):
             ResponseType.MULTISELECTROWS,
         ]:
             # data_matrix must be not null if add_scores or set_alerts are set
+            response_values = cast(SingleSelectionRowsValues | MultiSelectionRowsValues, response_values)
+            config = cast(SingleSelectionRowsConfig | MultiSelectionRowsConfig, config)
             if config.add_scores or config.set_alerts:
                 if response_values.data_matrix is None:
                     raise DataMatrixRequiredError()
@@ -177,6 +203,8 @@ class BaseActivityItem(BaseModel):
         config = self.config
         response_values = self.response_values
         if response_type == ResponseType.SLIDER:
+            response_values = cast(SliderValues, response_values)
+            config = cast(SliderConfig, config)
             if response_values.alerts is not None:
                 if not config.set_alerts:
                     raise AlertFlagMissingSliderItemError()
@@ -190,6 +218,8 @@ class BaseActivityItem(BaseModel):
                             raise SliderMinMaxValueError()
 
         elif response_type == ResponseType.SLIDERROWS:
+            response_values = cast(SliderRowsValues, response_values)
+            config = cast(SliderRowsConfig, config)
             for row in response_values.rows:
                 if row.alerts is not None:
                     for alert in row.alerts:
@@ -210,6 +240,8 @@ class BaseActivityItem(BaseModel):
             ResponseType.SINGLESELECT,
             ResponseType.MULTISELECT,
         ]:
+            response_values = cast(SingleSelectionValues | MultiSelectionValues, response_values)
+            config = cast(SingleSelectionConfig | MultiSelectionConfig, config)
             for option in response_values.options:
                 if option.alert is not None and not config.set_alerts:
                     raise AlertFlagMissingSingleMultiRowItemError()
@@ -218,6 +250,8 @@ class BaseActivityItem(BaseModel):
             ResponseType.SINGLESELECTROWS,
             ResponseType.MULTISELECTROWS,
         ]:
+            response_values = cast(SingleSelectionRowsValues | MultiSelectionRowsValues, response_values)
+            config = cast(SingleSelectionRowsConfig | MultiSelectionRowsConfig, config)
             if response_values.data_matrix is not None:
                 for data in response_values.data_matrix:
                     for option in data.options:
