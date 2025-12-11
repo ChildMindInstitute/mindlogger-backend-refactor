@@ -254,7 +254,7 @@ class BaseActivityItem(BaseModel):
             config = cast(SingleSelectionRowsConfig | MultiSelectionRowsConfig, config)
             if response_values.data_matrix is not None:
                 for data in response_values.data_matrix:
-                    for option in data.options:
-                        if option.alert is not None and not config.set_alerts:
+                    for data_option in data.options:
+                        if data_option.alert is not None and not config.set_alerts:
                             raise AlertFlagMissingSingleMultiRowItemError()
         return self
