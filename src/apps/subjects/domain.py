@@ -1,10 +1,9 @@
 import datetime
 import uuid
 
-from pydantic import EmailStr, validator
+from pydantic import EmailStr, field_validator
 
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.domain.custom_validations import lowercase
 from apps.workspaces.domain.constants import Role
 
 
@@ -59,7 +58,10 @@ class SubjectCreateRequest(PublicModel):
     email: EmailStr | None = None
     tag: str | None = None
 
-    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
+    @field_validator("email")
+    @classmethod
+    def lowercase_email(cls, value: EmailStr | None) -> EmailStr | None:
+        return value and value.lower()
 
 
 class SubjectCreateResponse(SubjectCreateRequest):

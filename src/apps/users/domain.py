@@ -1,11 +1,10 @@
 import datetime
 import uuid
 
-from pydantic import EmailStr, Field, field_validator, model_validator
+from pydantic import EmailStr, Field, field_validator
 
 from apps.shared.bcrypt import get_password_hash
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.domain.custom_validations import lowercase_email
 from apps.shared.hashing import hash_sha224
 from apps.users.db.schemas import UserDeviceSchema
 from apps.users.errors import PasswordHasSpacesError
@@ -52,16 +51,10 @@ class UserCreateRequest(PublicModel):
             raise PasswordHasSpacesError()
         return value
 
-    @model_validator(mode="before")
+    @field_validator("email")
     @classmethod
-    def email_validation(cls, data: dict) -> dict:
-        """Normalize email to lowercase.
-
-        We ran this as an "after" validator (pre=False) before migrating
-        Pydantic 1 to Pydantic 2, but it works better as a "before"
-        validator because we are updating the value of a field.
-        """
-        return lowercase_email(data)
+    def lowercase_email(cls, value: EmailStr) -> EmailStr:
+        return value.lower()
 
 
 class UserCreate(UserCreateRequest):
@@ -161,16 +154,10 @@ class PasswordRecoveryRequest(InternalModel):
 
     email: EmailStr
 
-    @model_validator(mode="before")
+    @field_validator("email")
     @classmethod
-    def email_validation(cls, data: dict) -> dict:
-        """Normalize email to lowercase.
-
-        We ran this as an "after" validator (pre=False) before migrating
-        Pydantic 1 to Pydantic 2, but it works better as a "before"
-        validator because we are updating the value of a field.
-        """
-        return lowercase_email(data)
+    def lowercase_email(cls, value: EmailStr) -> EmailStr:
+        return value.lower()
 
 
 class PasswordRecoveryInfo(InternalModel):

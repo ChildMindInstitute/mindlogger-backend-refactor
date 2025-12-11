@@ -1,8 +1,7 @@
-from pydantic import EmailStr, model_validator, validator
+from pydantic import EmailStr, field_validator, validator
 
 from apps.authentication.domain.token import Token
 from apps.shared.domain import PublicModel
-from apps.shared.domain.custom_validations import lowercase_email
 from apps.users.domain import PublicUser
 
 
@@ -16,16 +15,10 @@ class UserLoginRequest(PublicModel):
     password: str
     device_id: str | None = None
 
-    @model_validator(mode="before")
+    @field_validator("email")
     @classmethod
-    def email_validation(cls, data: dict) -> dict:
-        """Normalize email to lowercase.
-
-        We ran this as an "after" validator (pre=False) before migrating
-        Pydantic 1 to Pydantic 2, but it works better as a "before"
-        validator because we are updating the value of a field.
-        """
-        return lowercase_email(data)
+    def lowercase_email(cls, value: EmailStr) -> EmailStr:
+        return value.lower()
 
 
 class MFARequiredResponse(PublicModel):

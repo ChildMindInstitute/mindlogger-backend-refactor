@@ -18,8 +18,6 @@ __all__ = [
     "validate_audio",
     "extract_history_version",
     "validate_uuid",
-    "lowercase",
-    "lowercase_email",
 ]
 
 from apps.shared.exception import ValidationError
@@ -127,23 +125,10 @@ def datetime_from_ms(value):
     return value
 
 
-def lowercase_email(data: dict) -> dict:
-    email = data.get("email")
-    if email:
-        data["email"] = email.lower()
-    return data
-
-
 def translate(val):
     lang = "en"
     if isinstance(val, dict):
         return val.get(lang, None)
-
-
-def lowercase(value: str | None):
-    if value is not None:
-        value = value.lower()
-    return value
 
 
 def array_from_string(comma_separated: bool = False):

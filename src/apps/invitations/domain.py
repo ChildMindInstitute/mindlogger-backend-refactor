@@ -2,12 +2,11 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import ConfigDict, EmailStr, Field, field_validator, model_validator
+from pydantic import ConfigDict, EmailStr, Field, field_validator
 
 from apps.applets.domain import ManagersRole, Role
 from apps.invitations.constants import InvitationStatus
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.domain.custom_validations import lowercase, lowercase_email
 
 
 class Applet(PublicModel):
@@ -47,16 +46,10 @@ class _InvitationRequest(PublicModel):
     )
     language: InvitationLanguage = Field(description="This field represents the language of invitation")
 
-    @model_validator(mode="before")
+    @field_validator("email")
     @classmethod
-    def email_validation(cls, data: dict) -> dict:
-        """Normalize email to lowercase.
-
-        We ran this as an "after" validator (pre=False) before migrating
-        Pydantic 1 to Pydantic 2, but it works better as a "before"
-        validator because we are updating the value of a field.
-        """
-        return lowercase_email(data)
+    def lowercase_email(cls, value: EmailStr) -> EmailStr:
+        return value.lower()
 
 
 class InvitationRespondentRequest(_InvitationRequest):
@@ -407,7 +400,10 @@ class ShellAccountCreateRequest(PublicModel):
     email: str | None = None
     tag: str | None = None
 
-    _email_lower = field_validator("email", mode="before")(lowercase)
+    @field_validator("email")
+    @classmethod
+    def lowercase_email(cls, value: str | None) -> str | None:
+        return value and value.lower()
 
 
 class ShellAccountInvitation(PublicModel):
@@ -415,4 +411,7 @@ class ShellAccountInvitation(PublicModel):
     subject_id: uuid.UUID = Field(description="This field represents the subject id")
     language: InvitationLanguage | None = Field(description="This field represents the language of invitation")
 
-    _email_lower = field_validator("email", mode="before")(lowercase)
+    @field_validator("email")
+    @classmethod
+    def lowercase_email(cls, value: EmailStr) -> EmailStr:
+        return value.lower()
