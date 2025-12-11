@@ -10,7 +10,6 @@ from typing import Annotated, Optional
 from fastapi import Body, Depends, Header, Query
 from fastapi import Response as FastAPIResponse
 from fastapi.responses import Response as FastApiResponse
-from pydantic import parse_obj_as
 
 from apps.activities.services import ActivityHistoryService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
@@ -67,7 +66,7 @@ from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.deps import get_client_ip, get_i18n
-from apps.shared.domain import Response, ResponseMulti
+from apps.shared.domain import Response, ResponseMulti, parse_obj_as
 from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 from apps.shared.locale import I18N
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params

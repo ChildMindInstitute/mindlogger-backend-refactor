@@ -1,11 +1,11 @@
 import uuid
 
-from pydantic import parse_obj_as
 from sqlalchemy import and_, select
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Query
 
 from apps.applets.db.schemas import AppletSchema
+from apps.shared.domain import parse_obj_as
 from apps.workspaces.db.schemas import UserAppletAccessSchema, UserWorkspaceSchema
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import UserAnswersDBInfo

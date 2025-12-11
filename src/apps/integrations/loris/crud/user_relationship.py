@@ -1,6 +1,5 @@
 import uuid
 
-from pydantic import parse_obj_as
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import select
@@ -8,6 +7,7 @@ from sqlalchemy.sql import select
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
 from apps.integrations.loris.domain.domain import MlLorisUserRelationship
 from apps.integrations.loris.errors import MlLorisUserRelationshipError
+from apps.shared.domain import parse_obj_as
 from infrastructure.database import BaseCRUD
 
 __all__ = [

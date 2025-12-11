@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from typing import Tuple
 
 from asyncpg.exceptions import UniqueViolationError
-from pydantic import parse_obj_as
 from sqlalchemy import (
     Unicode,
     and_,
@@ -30,6 +29,7 @@ from apps.applets.db.schemas import AppletSchema
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
 from apps.schedule.db.schemas import EventSchema
+from apps.shared.domain import parse_obj_as
 from apps.shared.encryption import get_key
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering

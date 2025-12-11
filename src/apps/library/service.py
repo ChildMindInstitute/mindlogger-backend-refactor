@@ -3,8 +3,6 @@ import json
 import uuid
 from typing import List
 
-from pydantic import parse_obj_as
-
 from apps.activities.crud import ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
@@ -31,6 +29,7 @@ from apps.library.errors import (
     AppletVersionExistsError,
     LibraryItemDoesNotExistError,
 )
+from apps.shared.domain import parse_obj_as
 from apps.shared.paging import paging_list
 from apps.shared.query_params import QueryParams
 from apps.workspaces.service.check_access import CheckAccessService

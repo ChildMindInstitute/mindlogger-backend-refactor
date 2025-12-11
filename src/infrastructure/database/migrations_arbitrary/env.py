@@ -8,12 +8,12 @@ from logging.config import fileConfig
 
 from alembic import context
 from alembic.config import Config
-from pydantic.tools import parse_obj_as
 from sqlalchemy import MetaData, Unicode, engine_from_config, pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy_utils import StringEncryptedType
 
+from apps.shared.domain import parse_obj_as
 from apps.shared.encryption import get_key
 from config import settings
 from infrastructure.database.migrations.base import Base

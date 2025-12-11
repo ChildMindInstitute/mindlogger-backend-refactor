@@ -1,8 +1,8 @@
 import os
 
 import structlog
-from pydantic.tools import parse_obj_as
 
+from apps.shared.domain import parse_obj_as
 from infrastructure.dependency.structured_logs import setup_structured_logging
 
 LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))

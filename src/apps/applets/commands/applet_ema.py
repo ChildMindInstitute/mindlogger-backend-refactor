@@ -9,7 +9,6 @@ import uuid
 from typing import BinaryIO, Optional, TypeVar, cast
 
 import typer
-from pydantic import parse_obj_as
 from rich import print
 from sqlalchemy import Date, and_, case, false, func, literal, null, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +24,7 @@ from apps.job.errors import JobStatusError
 from apps.job.service import JobService
 from apps.schedule.db.schemas import EventSchema
 from apps.schedule.domain.constants import PeriodicityType
+from apps.shared.domain import parse_obj_as
 from apps.shared.domain.base import PublicModel
 from apps.subjects.db.schemas import SubjectSchema
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD

@@ -1,19 +1,21 @@
 import datetime
 import json
 import re
+from functools import lru_cache
 from typing import TypeVar
 
 from pydantic import BaseModel as PBaseModel
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, TypeAdapter, field_validator
 
 __all__ = [
     "InternalModel",
     "PublicModel",
     "PublicModelNoExtra",
     "to_camelcase",
+    "model_as_camel_case",
     "list_items_to_camel_case",
     "dict_keys_to_camel_case",
-    "model_as_camel_case",
+    "parse_obj_as",
 ]
 
 _BaseModel = TypeVar("_BaseModel", bound=PBaseModel)
@@ -76,6 +78,16 @@ def list_items_to_camel_case(items):
         else:
             res.append(item)
     return res
+
+
+@lru_cache
+def _type_adapter(T):
+    """Cache TypeAdapter as recommended in Pydantic docs for performance."""
+    return TypeAdapter(T)
+
+
+def parse_obj_as(T, data):
+    return _type_adapter(T).validate_python(data)
 
 
 class BaseModel(PBaseModel):

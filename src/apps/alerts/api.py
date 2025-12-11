@@ -1,11 +1,11 @@
 import uuid
 
 from fastapi import Depends
-from pydantic import parse_obj_as
 
 from apps.alerts.domain import AlertPublic, AlertResponseMulti
 from apps.alerts.service import AlertService
 from apps.authentication.deps import get_current_user
+from apps.shared.domain import parse_obj_as
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.users.domain import User
 from infrastructure.database import atomic

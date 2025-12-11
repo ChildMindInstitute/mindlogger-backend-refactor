@@ -3,7 +3,6 @@ import datetime
 import uuid
 from typing import Collection, Optional
 
-from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
@@ -31,6 +30,7 @@ from apps.answers.errors import AnswerNotFoundError
 from apps.answers.filters import AppletSubmitDateFilter
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import Version
+from apps.shared.domain import parse_obj_as
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
