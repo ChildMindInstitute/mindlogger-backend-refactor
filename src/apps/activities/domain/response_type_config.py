@@ -452,10 +452,6 @@ class PerformanceTaskType(StrEnum):
     ABTRAILS = "ABTrails"
     UNITY = "unity"
 
-    @classmethod
-    def get_values(cls) -> list[str]:
-        return [i.value for i in cls]
-
 
 ResponseTypeConfig = (
     TextConfig
