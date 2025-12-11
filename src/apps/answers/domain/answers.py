@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 from typing import Any, Generic, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
@@ -167,24 +167,17 @@ class ReviewItem(PublicModel, BaseModel, Generic[_BaseModel]):
 
 
 class PublicReviewActivity(ReviewItem[PublicAnswerDate]):
-    last_answer_date: datetime.datetime | None = None
+    last_answer_date: datetime.datetime | None = Field(default=None, validate_default=True)
 
-    @model_validator(mode="before")
+    @field_validator("last_answer_date")
     @classmethod
-    def calculate_last_answer_date(cls, data: dict) -> dict:
-        """Calculate last_answer_date from answer_dates.
-
-        We ran this as an "after" validator (pre=False) before migrating
-        Pydantic 1 to Pydantic 2, but it works better as a "before"
-        validator because we are updating the value of a field.
-        """
-        answer_dates = data.get("answer_dates", [])
+    def calculate_last_answer_date(
+        cls, value: datetime.datetime | None, info: ValidationInfo
+    ) -> datetime.datetime | None:
+        answer_dates = info.data.get("answer_dates", [])
         if answer_dates:
-            last_date = max(ad.created_at for ad in answer_dates)
-            data["last_answer_date"] = last_date
-        else:
-            data["last_answer_date"] = None
-        return data
+            value = max(v.created_at for v in answer_dates)
+        return value
 
 
 class SubmissionDate(PublicModel):
@@ -201,7 +194,9 @@ class PublicReviewFlow(ReviewFlow):
 
     @field_validator("last_answer_date")
     @classmethod
-    def calculate_last_answer_date(cls, value, info: ValidationInfo):
+    def calculate_last_answer_date(
+        cls, value: datetime.datetime | None, info: ValidationInfo
+    ) -> datetime.datetime | None:
         answer_dates = info.data.get("answer_dates", [])
         if answer_dates:
             value = max(v.created_at for v in answer_dates)
