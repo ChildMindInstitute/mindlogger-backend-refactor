@@ -48,6 +48,10 @@ class InvalidTOTPCodeError(ValidationError):
     message = _("Invalid TOTP code. Please check your authenticator app and try again.")
 
 
+class MFAAlreadyEnabledError(ValidationError):
+    message = _("Two-factor authentication is already enabled for your account.")
+
+
 class MFANotEnabledError(AccessDeniedError):
     message = _("MFA is not enabled for this account.")
 

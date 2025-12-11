@@ -8,7 +8,7 @@ from apps.users.errors import MFASetupExpiredError, MFASetupNotFoundError
 from apps.users.services.totp import TOTPService, totp_service
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def totp_svc():
     """Create a fresh TOTP service instance for testing."""
     return TOTPService()
@@ -127,8 +127,8 @@ class TestTOTPService:
 
     def test_is_pending_setup_expired_recent(self, totp_svc: TOTPService):
         """Test that recent timestamps are not expired."""
-        # 1 minute ago (well within 10 min expiration)
-        recent_time = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
+        # 5 seconds ago (well within 10 min expiration)
+        recent_time = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(seconds=5)
         assert totp_svc.is_pending_setup_expired(recent_time) is False
 
     def test_is_pending_setup_expired_boundary(self, totp_svc: TOTPService, monkeypatch):
