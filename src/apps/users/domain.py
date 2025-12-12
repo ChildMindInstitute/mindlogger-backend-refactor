@@ -24,6 +24,8 @@ __all__ = [
     "TOTPInitiateResponse",
     "TOTPVerifyRequest",
     "TOTPVerifyResponse",
+    "RecoveryCodesViewInitiateResponse",
+    "RecoveryCodesViewVerifyRequest",
 ]
 
 
@@ -274,3 +276,21 @@ class MFADisableVerifyResponse(PublicModel):
 
     mfa_disabled: bool = True
     message: Annotated[str, Field(description="Success message confirming MFA has been disabled")]
+
+
+class RecoveryCodesViewInitiateResponse(PublicModel):
+    """Response when initiating recovery codes viewing flow."""
+
+    mfa_required: bool = True
+    mfa_token: Annotated[str, Field(description="JWT token for recovery codes view verification")]
+    message: Annotated[str, Field(description="Instructions for viewing recovery codes")]
+
+
+class RecoveryCodesViewVerifyRequest(PublicModel):
+    """Request to verify TOTP code and view recovery codes."""
+
+    mfa_token: Annotated[str, Field(description="JWT token from recovery codes view initiation")]
+    code: Annotated[
+        str,
+        Field(description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"),
+    ]
