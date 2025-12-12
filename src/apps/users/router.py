@@ -247,7 +247,9 @@ router.get(
     name="user_download_recovery_codes",
     summary="Download recovery codes as text file",
     description=(
-        "Downloads all recovery codes with their usage status as a plain text file. Requires MFA to be enabled."
+        "Downloads all recovery codes with their usage status as a plain text file. "
+        "Requires a valid download_token (5 min expiry) obtained from the view/verify endpoint. "
+        "The token must match the authenticated user and MFA must be enabled."
     ),
     responses={
         status.HTTP_200_OK: {
