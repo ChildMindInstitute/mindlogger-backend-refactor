@@ -154,6 +154,94 @@ class AuthenticationService:
         return refresh_token
 
     @staticmethod
+    def create_download_recovery_codes_token(user_id: uuid.UUID) -> str:
+        """
+        Create a short-lived JWT token for downloading recovery codes.
+        
+        This token is issued after successful TOTP verification and allows
+        the user to download their recovery codes within a limited time window.
+        
+        Args:
+            user_id (uuid.UUID): The user's UUID
+            
+        Returns:
+            str: Encoded JWT token for download authorization
+            
+        Token Payload:
+            - sub: user_id (string)
+            - purpose: "download_recovery_codes"
+            - exp: current time + 5 minutes
+            - jti: unique token ID
+        """
+        expires_delta = timedelta(seconds=settings.mfa.download_token_expiration_seconds)
+        expire = datetime.now(timezone.utc) + expires_delta
+
+        to_encode = {
+            JWTClaim.sub: str(user_id),
+            "purpose": TokenPurpose.DOWNLOAD_RECOVERY_CODES,
+            JWTClaim.exp: expire,
+            JWTClaim.jti: str(uuid.uuid4()),
+        }
+
+        encoded_jwt = jwt.encode(
+            to_encode,
+            settings.authentication.mfa_token.secret_key,  # Reuse MFA token secret
+            algorithm=settings.authentication.algorithm,
+        )
+
+        return encoded_jwt
+
+    @staticmethod
+    def validate_download_recovery_codes_token(token: str) -> uuid.UUID:
+        """
+        Validate and decode a download recovery codes JWT token.
+        
+        Args:
+            token (str): The encoded JWT token
+            
+        Returns:
+            uuid.UUID: The user_id from the token
+            
+        Raises:
+            MFATokenExpiredError: If token has expired
+            MFATokenMalformedError: If token format is invalid or missing required claims
+            MFATokenInvalidError: For signature validation failures or wrong purpose
+        """
+        try:
+            payload = jwt.decode(
+                token,
+                settings.authentication.mfa_token.secret_key,
+                algorithms=[settings.authentication.algorithm],
+            )
+        except jwt.ExpiredSignatureError:
+            raise MFATokenExpiredError()
+        except jwt.InvalidSignatureError:
+            raise MFATokenInvalidError()
+        except jwt.DecodeError:
+            raise MFATokenMalformedError()
+        except Exception as e:
+            raise MFATokenInvalidError() from e
+
+        # Validate required claims
+        user_id_str = payload.get(JWTClaim.sub)
+        purpose = payload.get("purpose")
+
+        if not user_id_str or not purpose:
+            raise MFATokenMalformedError()
+
+        # Validate purpose matches
+        if purpose != TokenPurpose.DOWNLOAD_RECOVERY_CODES:
+            raise MFATokenInvalidError()
+
+        # Convert user_id string to UUID
+        try:
+            user_id = uuid.UUID(user_id_str)
+        except (ValueError, AttributeError):
+            raise MFATokenMalformedError()
+
+        return user_id
+
+    @staticmethod
     def extract_token_payload(token: str, key: str) -> TokenPayload:
         payload = jwt.decode(token, key, algorithms=[settings.authentication.algorithm])
         return TokenPayload(**payload)
