@@ -305,7 +305,7 @@ class RecoveryCodesViewInitiateResponse(PublicModel):
 
 
 class RecoveryCodesViewVerifyRequest(PublicModel):
-    """Request to verify TOTP code and view recovery codes."""
+    """Request to verify TOTP code or recovery code and view recovery codes."""
 
     mfa_token: Annotated[str, Field(description="JWT token from recovery codes view initiation")]
     code: Annotated[

@@ -157,16 +157,16 @@ class AuthenticationService:
     def create_download_recovery_codes_token(user_id: uuid.UUID) -> str:
         """
         Create a short-lived JWT token for downloading recovery codes.
-        
+
         This token is issued after successful TOTP verification and allows
         the user to download their recovery codes within a limited time window.
-        
+
         Args:
             user_id (uuid.UUID): The user's UUID
-            
+
         Returns:
             str: Encoded JWT token for download authorization
-            
+
         Token Payload:
             - sub: user_id (string)
             - purpose: "download_recovery_codes"
@@ -195,13 +195,13 @@ class AuthenticationService:
     def validate_download_recovery_codes_token(token: str) -> uuid.UUID:
         """
         Validate and decode a download recovery codes JWT token.
-        
+
         Args:
             token (str): The encoded JWT token
-            
+
         Returns:
             uuid.UUID: The user_id from the token
-            
+
         Raises:
             MFATokenExpiredError: If token has expired
             MFATokenMalformedError: If token format is invalid or missing required claims

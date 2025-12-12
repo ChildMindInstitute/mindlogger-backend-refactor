@@ -55,8 +55,7 @@ class TestRecoveryCodesView:
         # Step 3: Verify with TOTP code
         totp_code = totp.now()
         verify_resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token, "code": totp_code}
+            self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token, "code": totp_code}
         )
 
         # Assertions - Verify response status
@@ -127,8 +126,15 @@ class TestRecoveryCodesView:
 
         # Assertions
         assert resp.status_code == status.HTTP_404_NOT_FOUND
-        errors = resp.json()["result"]
-        assert any("No recovery codes found" in err["message"] for err in errors)
+        response_data = resp.json()
+        # The error response format should have the error message in "result"
+        result = response_data.get("result", [])
+        # Result is typically a list of error dicts with "message" key
+        assert isinstance(result, list), f"Expected list but got: {result}"
+        assert len(result) > 0, "Expected at least one error in result"
+        assert any("No recovery codes found" in str(err.get("message", "")) for err in result), (
+            f"Expected 'No recovery codes found' in error messages, got: {result}"
+        )
 
     async def test_view_verify_invalid_totp(self, client: TestClient, user: User, session: AsyncSession):
         """Test that invalid TOTP code is rejected."""
@@ -151,7 +157,7 @@ class TestRecoveryCodesView:
         # Try to verify with invalid TOTP code
         verify_resp = await client.post(
             self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token, "code": "000000"}  # Invalid code
+            data={"mfaToken": mfa_token, "code": "000000"},  # Invalid code
         )
 
         # Assertions - Could be 400 or 403 depending on validation order
@@ -177,12 +183,15 @@ class TestRecoveryCodesView:
         # Try to verify with invalid mfa_token (without initiating)
         totp_code = totp.now()
         verify_resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": "invalid_token", "code": totp_code}
+            self.recovery_codes_view_verify_url, data={"mfaToken": "invalid_token", "code": totp_code}
         )
 
         # Assertions - Could be 401, 403, or 404 depending on JWT validation
-        assert verify_resp.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND]
+        assert verify_resp.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+            status.HTTP_404_NOT_FOUND,
+        ]
 
     async def test_download_recovery_codes_success(self, client: TestClient, user: User, session: AsyncSession):
         """Test successful download of recovery codes using download_token."""
@@ -204,8 +213,7 @@ class TestRecoveryCodesView:
 
         totp_code = totp.now()
         verify_resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token, "code": totp_code}
+            self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token, "code": totp_code}
         )
 
         download_token = verify_resp.json()["result"]["downloadToken"]
@@ -336,8 +344,7 @@ class TestRecoveryCodesView:
 
         totp_code = totp.now()
         verify_resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token, "code": totp_code}
+            self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token, "code": totp_code}
         )
 
         assert verify_resp.status_code == status.HTTP_200_OK
@@ -388,8 +395,7 @@ class TestRecoveryCodesView:
 
         # Test view verify endpoint
         verify_resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": "fake_token", "code": "123456"}
+            self.recovery_codes_view_verify_url, data={"mfaToken": "fake_token", "code": "123456"}
         )
         assert verify_resp.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -417,8 +423,7 @@ class TestRecoveryCodesView:
 
         totp_code = totp.now()
         verify_resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token, "code": totp_code}
+            self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token, "code": totp_code}
         )
 
         download_token = verify_resp.json()["result"]["downloadToken"]
@@ -464,8 +469,7 @@ class TestRecoveryCodesView:
 
         totp_code = totp.now()
         verify_resp1 = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token1, "code": totp_code}
+            self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token1, "code": totp_code}
         )
         assert verify_resp1.status_code == status.HTTP_200_OK
 
@@ -475,9 +479,9 @@ class TestRecoveryCodesView:
 
         verify_resp2 = await client.post(
             self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token2, "code": totp_code}  # Same TOTP code
+            data={"mfaToken": mfa_token2, "code": totp_code},  # Same TOTP code
         )
-        
+
         # Should fail because TOTP code was already used - could be 400 or 403
         assert verify_resp2.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN]
         errors = verify_resp2.json()["result"]
@@ -498,22 +502,24 @@ class TestRecoveryCodesView:
         await client.post(self.totp_verify_url, data={"code": code})
 
         # Initiate view
-        initiate_resp = await client.post(self.recovery_codes_view_initiate_url)
-        mfa_token = initiate_resp.json()["result"]["mfaToken"]
+        await client.post(self.recovery_codes_view_initiate_url)
 
         # Simulate session expiration by using very old token
         # In real scenario, this would happen after 5 minutes
         # For testing, we can try with a token from a deleted session
-        
+
         # Note: Full expiration testing would require time manipulation or Redis mocking
         # This test verifies the error handling path exists
-        
+
         # For now, just verify that invalid token format is rejected
         totp_code = totp.now()
         verify_resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": "expired_or_invalid_token", "code": totp_code}
+            self.recovery_codes_view_verify_url, data={"mfaToken": "expired_or_invalid_token", "code": totp_code}
         )
-        
+
         # Could be 401, 403, or 404 depending on JWT validation
-        assert verify_resp.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND]
+        assert verify_resp.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+            status.HTTP_404_NOT_FOUND,
+        ]

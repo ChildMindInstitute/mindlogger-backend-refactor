@@ -42,7 +42,7 @@ from apps.users.errors import (
     MFASessionPurposeMismatchError,
     RecoveryCodeAlreadyUsedError,
     RecoveryCodeInvalidError,
-    RecoveryCodeNotFoundError as RecoveryCodesNotFoundError,
+    RecoveryCodesNotFoundError,
 )
 from apps.users.services.totp import totp_service
 from apps.users.services.user import UserService
@@ -363,15 +363,15 @@ async def user_recovery_codes_view_initiate(
     session=Depends(get_session),
 ) -> Response[RecoveryCodesViewInitiateResponse]:
     """Initiate recovery codes viewing: verify user has MFA enabled and create verification session.
-    
+
     This is the first step of the two-step TOTP-protected recovery codes view flow.
     Returns an mfa_token that must be used with a TOTP code to view recovery codes.
-    
+
     Requires:
     - User is authenticated
     - MFA is enabled
     - Recovery codes exist
-    
+
     Returns:
     - mfa_token: JWT token for the verification session
     - message: Instructions for next step
@@ -415,17 +415,17 @@ async def user_recovery_codes_view_verify(
     session=Depends(get_session),
 ) -> Response[RecoveryCodesListResponse]:
     """Verify TOTP code or recovery code and return recovery codes with download token.
-    
+
     This is the second step of the two-step MFA-protected recovery codes view flow.
     After successful verification (TOTP or recovery code), returns recovery codes and a short-lived download token.
-    
+
     Security features:
     - TOTP replay protection
     - Recovery code single-use enforcement
     - Rate limiting (per-session and global)
     - Lockout protection
     - User validation
-    
+
     Returns:
     - codes: List of recovery codes with usage status
     - download_token: Short-lived JWT (5 min) for downloading codes
@@ -440,8 +440,7 @@ async def user_recovery_codes_view_verify(
             f"Recovery codes view attempted with mismatched user current_user={user.id} token_user={token_user_id}"
         )
         raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN,
-            detail="This MFA token belongs to a different user"
+            status_code=http_status.HTTP_403_FORBIDDEN, detail="This MFA token belongs to a different user"
         )
 
     # Step 3: Validate session purpose is "view_recovery_codes"
@@ -486,9 +485,8 @@ async def user_recovery_codes_view_verify(
             raise MFANotEnabledError()
 
         # Step 9: Try TOTP verification first
-        totp_valid = False
-        recovery_code_used = False
-        
+        verification_method = None
+
         # Decrypt TOTP secret
         decrypted_secret = totp_service.decrypt_secret(db_user.mfa_secret)
 
@@ -500,7 +498,7 @@ async def user_recovery_codes_view_verify(
         )
 
         if is_valid:
-            totp_valid = True
+            verification_method = "totp"
             # Update last TOTP time step (replay protection)
             assert time_step_used is not None
             await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
@@ -509,7 +507,7 @@ async def user_recovery_codes_view_verify(
             # Step 10: TOTP failed, try recovery code verification
             try:
                 await verify_recovery_code_service(session, token_user_id, schema.code)
-                recovery_code_used = True
+                verification_method = "recovery_code"
                 logger.info(f"Recovery code verified for recovery codes view user_id={token_user_id}")
             except (RecoveryCodeInvalidError, RecoveryCodeAlreadyUsedError, RecoveryCodesNotFoundError):
                 # Both TOTP and recovery code failed - increment counters and raise error
@@ -544,7 +542,7 @@ async def user_recovery_codes_view_verify(
 
         logger.info(
             f"Download token generated for recovery codes user_id={token_user_id} "
-            f"verification_method={'totp' if totp_valid else 'recovery_code'} "
+            f"verification_method={verification_method} "
             f"expires_in={settings.mfa.download_token_expiration_seconds}s"
         )
 
@@ -596,17 +594,14 @@ async def user_download_recovery_codes(
         logger.warning(f"Invalid download token user_id={user.id} error={str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_403_FORBIDDEN,
-            detail="Invalid or expired download token. Please verify your TOTP code again to get a new token."
+            detail="Invalid or expired download token. Please verify your TOTP code again to get a new token.",
         )
 
     # Step 2: SECURITY - Validate current user matches token's user
     if user.id != token_user_id:
-        logger.warning(
-            f"Download token user mismatch current_user={user.id} token_user={token_user_id}"
-        )
+        logger.warning(f"Download token user mismatch current_user={user.id} token_user={token_user_id}")
         raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN,
-            detail="This download token belongs to a different user"
+            status_code=http_status.HTTP_403_FORBIDDEN, detail="This download token belongs to a different user"
         )
 
     # Step 3: Refetch user to ensure latest MFA state

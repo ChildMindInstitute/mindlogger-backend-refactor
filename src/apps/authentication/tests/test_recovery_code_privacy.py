@@ -55,10 +55,7 @@ class TestRecoveryCodePrivacy(BaseTest):
         mfa_token = initiate_resp.json()["result"]["mfaToken"]
 
         totp_code = totp.now()
-        resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token, "code": totp_code}
-        )
+        resp = await client.post(self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token, "code": totp_code})
         assert resp.status_code == status.HTTP_200_OK
 
         # Convert response to string to search for hash patterns
@@ -122,8 +119,7 @@ class TestRecoveryCodePrivacy(BaseTest):
 
         totp_code = totp.now()
         json_resp = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token, "code": totp_code}
+            self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token, "code": totp_code}
         )
         assert json_resp.status_code == status.HTTP_200_OK
         json_text = json.dumps(json_resp.json())
@@ -178,34 +174,36 @@ class TestRecoveryCodePrivacy(BaseTest):
 
         # Login as user 1 and get codes via TOTP-protected flow
         client.login(user)
-        
+
         # Get user1's TOTP secret to generate codes
-        user1_secret = totp_service.decrypt_secret((await user_crud.get_by_id(user.id)).mfa_secret)
+        user1_db = await user_crud.get_by_id(user.id)
+        assert user1_db.mfa_secret is not None
+        user1_secret = totp_service.decrypt_secret(user1_db.mfa_secret)
         user1_totp = pyotp.TOTP(user1_secret)
-        
+
         initiate_resp1 = await client.post(self.recovery_codes_view_initiate_url)
         mfa_token1 = initiate_resp1.json()["result"]["mfaToken"]
-        
+
         resp1 = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token1, "code": user1_totp.now()}
+            self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token1, "code": user1_totp.now()}
         )
         assert resp1.status_code == status.HTTP_200_OK
         codes1 = {c["code"] for c in resp1.json()["result"]["codes"]}
 
         # Login as user 2 and get codes via TOTP-protected flow
         client.login(user2)
-        
+
         # Get user2's TOTP secret to generate codes
-        user2_secret = totp_service.decrypt_secret((await user_crud.get_by_id(user2.id)).mfa_secret)
+        user2_db = await user_crud.get_by_id(user2.id)
+        assert user2_db.mfa_secret is not None
+        user2_secret = totp_service.decrypt_secret(user2_db.mfa_secret)
         user2_totp = pyotp.TOTP(user2_secret)
-        
+
         initiate_resp2 = await client.post(self.recovery_codes_view_initiate_url)
         mfa_token2 = initiate_resp2.json()["result"]["mfaToken"]
-        
+
         resp2 = await client.post(
-            self.recovery_codes_view_verify_url,
-            data={"mfaToken": mfa_token2, "code": user2_totp.now()}
+            self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token2, "code": user2_totp.now()}
         )
         assert resp2.status_code == status.HTTP_200_OK
         codes2 = {c["code"] for c in resp2.json()["result"]["codes"]}
