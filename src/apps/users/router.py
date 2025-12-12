@@ -211,8 +211,8 @@ router.post(
     name="user_recovery_codes_view_initiate",
     summary="Initiate recovery codes viewing",
     description=(
-        "Initiates the recovery codes viewing process by creating a TOTP verification session. "
-        "Returns an mfa_token that must be used with a TOTP code to view recovery codes. "
+        "Initiates the recovery codes viewing process by creating an MFA verification session. "
+        "Returns an mfa_token that must be used with a TOTP code or recovery code to view recovery codes. "
         "Requires MFA to be enabled and recovery codes to exist."
     ),
     responses={
@@ -227,10 +227,11 @@ router.post(
     "/me/mfa/recovery-codes/view/verify",
     response_model=Response[RecoveryCodesListResponse],
     name="user_recovery_codes_view_verify",
-    summary="Verify TOTP and view recovery codes",
+    summary="Verify TOTP/recovery code and view recovery codes",
     description=(
-        "Verifies TOTP code and returns recovery codes with a short-lived download token (5 minutes). "
+        "Verifies TOTP code or recovery code and returns recovery codes with a short-lived download token (5 minutes). "
         "Requires mfa_token from the initiate endpoint. "
+        "Accepts either a 6-digit TOTP code or an 11-character recovery code (XXXXX-XXXXX). "
         "Returns all recovery codes with their usage status and a download_token for downloading the codes as a file."
     ),
     responses={

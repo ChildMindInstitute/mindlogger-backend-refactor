@@ -251,6 +251,12 @@ class TOTPVerifyResponse(PublicModel):
             description="Recovery codes generated during first-time MFA setup (displayed once only)",
         ),
     ] = None
+    download_token: Annotated[
+        str | None,
+        Field(
+            description="Short-lived download token (5 min) for downloading recovery codes as a file",
+        ),
+    ] = None
 
 
 class MFADisableInitiateResponse(PublicModel):
@@ -267,8 +273,20 @@ class MFADisableVerifyRequest(PublicModel):
     mfa_token: Annotated[str, Field(description="JWT token from MFA disable initiation")]
     code: Annotated[
         str,
-        Field(description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"),
+        Field(
+            description="6-digit TOTP code from authenticator app or 11-character recovery code (XXXXX-XXXXX)",
+            min_length=6,
+            max_length=11,
+        ),
     ]
+
+    @field_validator("code")
+    @classmethod
+    def validate_code_length(cls, v: str) -> str:
+        """Validate code is either 6 digits (TOTP) or 11 characters (recovery code)."""
+        if len(v) not in (6, 11):
+            raise ValueError("Code must be either 6 characters (TOTP) or 11 characters (recovery code)")
+        return v
 
 
 class MFADisableVerifyResponse(PublicModel):
@@ -292,5 +310,16 @@ class RecoveryCodesViewVerifyRequest(PublicModel):
     mfa_token: Annotated[str, Field(description="JWT token from recovery codes view initiation")]
     code: Annotated[
         str,
-        Field(description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"),
+        Field(
+            description="6-digit TOTP code from authenticator app or 11-character recovery code (XXXXX-XXXXX)",
+            min_length=6,
+            max_length=11,
+        ),
     ]
+
+    @field_validator("code")
+    @classmethod
+    def validate_code_length(cls, value: str) -> str:
+        if len(value) not in (6, 11):
+            raise ValueError("Code must be either 6 characters (TOTP) or 11 characters (recovery code)")
+        return value

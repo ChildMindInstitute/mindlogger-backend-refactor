@@ -13,6 +13,7 @@ from apps.authentication.services.recovery_codes import (
     format_recovery_codes_text,
     generate_recovery_codes,
     get_recovery_codes,
+    verify_recovery_code_service,
 )
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
@@ -39,7 +40,9 @@ from apps.users.errors import (
     MFAAlreadyEnabledError,
     MFANotEnabledError,
     MFASessionPurposeMismatchError,
-    RecoveryCodesNotFoundError,
+    RecoveryCodeAlreadyUsedError,
+    RecoveryCodeInvalidError,
+    RecoveryCodeNotFoundError as RecoveryCodesNotFoundError,
 )
 from apps.users.services.totp import totp_service
 from apps.users.services.user import UserService
@@ -177,14 +180,22 @@ async def user_mfa_totp_verify(
         # Check if codes actually exist in DB, not just if timestamp is set
         # (handles case where previous attempt set timestamp but failed to create codes)
         codes = None
+        download_token = None
         existing_codes = await RecoveryCodeCRUD(session).get_by_user_id(fresh_user.id)
         if len(existing_codes) == 0:
             codes = await generate_recovery_codes(session, fresh_user.id)
+            # Generate download token so user can download their codes immediately
+            download_token = AuthenticationService.create_download_recovery_codes_token(fresh_user.id)
+            logger.info(
+                f"Recovery codes generated during MFA setup user_id={fresh_user.id} "
+                f"download_token_expires_in={settings.mfa.download_token_expiration_seconds}s"
+            )
 
     result = TOTPVerifyResponse(
         message="TOTP MFA has been successfully enabled for your account.",
         mfa_enabled=True,
         recovery_codes=codes,
+        download_token=download_token,
     )
 
     return Response(result=result)
@@ -393,7 +404,7 @@ async def user_recovery_codes_view_initiate(
         result=RecoveryCodesViewInitiateResponse(
             mfa_required=True,
             mfa_token=mfa_token,
-            message="Please enter your TOTP code to view your recovery codes",
+            message="Please enter your TOTP code or a recovery code to view your recovery codes",
         )
     )
 
@@ -403,13 +414,14 @@ async def user_recovery_codes_view_verify(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[RecoveryCodesListResponse]:
-    """Verify TOTP code and return recovery codes with download token.
+    """Verify TOTP code or recovery code and return recovery codes with download token.
     
-    This is the second step of the two-step TOTP-protected recovery codes view flow.
-    After successful TOTP verification, returns recovery codes and a short-lived download token.
+    This is the second step of the two-step MFA-protected recovery codes view flow.
+    After successful verification (TOTP or recovery code), returns recovery codes and a short-lived download token.
     
     Security features:
     - TOTP replay protection
+    - Recovery code single-use enforcement
     - Rate limiting (per-session and global)
     - Lockout protection
     - User validation
@@ -460,7 +472,7 @@ async def user_recovery_codes_view_verify(
         )
         raise TooManyTOTPAttemptsError()
 
-    # Step 7: Fetch user from database and verify TOTP
+    # Step 7: Fetch user from database
     async with atomic(session):
         crud = UsersCRUD(session)
         db_user = await crud.get_by_id(token_user_id)
@@ -473,58 +485,66 @@ async def user_recovery_codes_view_verify(
             )
             raise MFANotEnabledError()
 
-        # Step 9: Decrypt TOTP secret
+        # Step 9: Try TOTP verification first
+        totp_valid = False
+        recovery_code_used = False
+        
+        # Decrypt TOTP secret
         decrypted_secret = totp_service.decrypt_secret(db_user.mfa_secret)
 
-        # Step 10: Verify TOTP code with replay protection
+        # Verify TOTP code with replay protection
         is_valid, time_step_used = totp_service.verify_with_replay_check(
             secret=decrypted_secret,
             code=schema.code,
             last_used_step=db_user.last_totp_time_step,
         )
 
-        # Step 11: Handle verification failure
-        if not is_valid:
-            # Increment per-session attempts
-            new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+        if is_valid:
+            totp_valid = True
+            # Update last TOTP time step (replay protection)
+            assert time_step_used is not None
+            await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
+            logger.info(f"TOTP verified for recovery codes view user_id={token_user_id} time_step={time_step_used}")
+        else:
+            # Step 10: TOTP failed, try recovery code verification
+            try:
+                await verify_recovery_code_service(session, token_user_id, schema.code)
+                recovery_code_used = True
+                logger.info(f"Recovery code verified for recovery codes view user_id={token_user_id}")
+            except (RecoveryCodeInvalidError, RecoveryCodeAlreadyUsedError, RecoveryCodesNotFoundError):
+                # Both TOTP and recovery code failed - increment counters and raise error
+                new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+                global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
 
-            # Increment global attempts
-            global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
+                logger.warning(
+                    f"Invalid TOTP/recovery code for recovery codes view user_id={token_user_id} "
+                    f"session_attempts={new_count} global_attempts={global_count}"
+                )
 
-            logger.warning(
-                f"Invalid TOTP code for recovery codes view user_id={token_user_id} "
-                f"session_attempts={new_count} global_attempts={global_count}"
-            )
+                # Check if global lockout threshold reached
+                if global_count >= settings.redis.mfa_global_lockout_attempts:
+                    logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
 
-            # Check if global lockout threshold reached
-            if global_count >= settings.redis.mfa_global_lockout_attempts:
-                logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
+                # Check if per-session threshold reached
+                if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
+                    await mfa_service.delete_session(mfa_session_id)
+                    logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
 
-            # Check if per-session threshold reached
-            if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
-                await mfa_service.delete_session(mfa_session_id)
-                logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
+                raise InvalidTOTPCodeError()
 
-            raise InvalidTOTPCodeError()
-
-        # Step 12: Update last TOTP time step (replay protection)
-        assert time_step_used is not None  # Guaranteed by is_valid=True
-        await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
-
-        logger.info(f"TOTP verified for recovery codes view user_id={token_user_id} time_step={time_step_used}")
-
-        # Step 13: Get recovery codes with decrypted values
+        # Step 11: Get recovery codes with decrypted values
         codes = await get_recovery_codes(session, db_user.id)
 
         # Check if recovery codes exist
         if not codes:
             raise RecoveryCodesNotFoundError()
 
-        # Step 14: Generate download token (short-lived, 5 minutes)
+        # Step 12: Generate download token (short-lived, 5 minutes)
         download_token = AuthenticationService.create_download_recovery_codes_token(token_user_id)
 
         logger.info(
             f"Download token generated for recovery codes user_id={token_user_id} "
+            f"verification_method={'totp' if totp_valid else 'recovery_code'} "
             f"expires_in={settings.mfa.download_token_expiration_seconds}s"
         )
 
@@ -532,15 +552,15 @@ async def user_recovery_codes_view_verify(
         total = len(codes)
         unused = sum(1 for c in codes if not c.used)
 
-    # Step 15: Clear global lockout (outside atomic block, Redis operation)
+    # Step 13: Clear global lockout (outside atomic block, Redis operation)
     await mfa_service.clear_global_lockout(token_user_id)
 
-    # Step 16: Delete MFA session (cleanup)
+    # Step 14: Delete MFA session (cleanup)
     await mfa_service.delete_session(mfa_session_id)
 
     logger.info(f"Recovery codes view completed user_id={token_user_id}")
 
-    # Step 17: Return recovery codes with download token
+    # Step 15: Return recovery codes with download token
     result = RecoveryCodesListResponse(
         codes=codes,
         total=total,
