@@ -31,7 +31,8 @@ class TestRecoveryCodePrivacy(BaseTest):
 
     totp_initiate_url = "/users/me/mfa/totp/initiate"
     totp_verify_url = "/users/me/mfa/totp/verify"
-    recovery_codes_url = "/users/me/mfa/recovery-codes"
+    recovery_codes_view_initiate_url = "/users/me/mfa/recovery-codes/view/initiate"
+    recovery_codes_view_verify_url = "/users/me/mfa/recovery-codes/view/verify"
     recovery_codes_download_url = "/users/me/mfa/recovery-codes/download"
     get_token_url = "/auth/token"
     verify_recovery_url = "/auth/mfa/recovery-codes/verify"
@@ -49,8 +50,15 @@ class TestRecoveryCodePrivacy(BaseTest):
         code = totp.now()
         await client.post(self.totp_verify_url, data={"code": code})
 
-        # Get recovery codes via API
-        resp = await client.get(self.recovery_codes_url)
+        # Get recovery codes via TOTP-protected view flow
+        initiate_resp = await client.post(self.recovery_codes_view_initiate_url)
+        mfa_token = initiate_resp.json()["result"]["mfaToken"]
+
+        totp_code = totp.now()
+        resp = await client.post(
+            self.recovery_codes_view_verify_url,
+            data={"mfaToken": mfa_token, "code": totp_code}
+        )
         assert resp.status_code == status.HTTP_200_OK
 
         # Convert response to string to search for hash patterns
@@ -108,8 +116,15 @@ class TestRecoveryCodePrivacy(BaseTest):
         code = totp.now()
         await client.post(self.totp_verify_url, data={"code": code})
 
-        # Test JSON endpoint
-        json_resp = await client.get(self.recovery_codes_url)
+        # Get recovery codes via TOTP-protected view flow
+        initiate_resp = await client.post(self.recovery_codes_view_initiate_url)
+        mfa_token = initiate_resp.json()["result"]["mfaToken"]
+
+        totp_code = totp.now()
+        json_resp = await client.post(
+            self.recovery_codes_view_verify_url,
+            data={"mfaToken": mfa_token, "code": totp_code}
+        )
         assert json_resp.status_code == status.HTTP_200_OK
         json_text = json.dumps(json_resp.json())
 
@@ -118,7 +133,8 @@ class TestRecoveryCodePrivacy(BaseTest):
         assert "gAAAA" not in json_text, "Encrypted code found in JSON response"
 
         # Test download endpoint
-        download_resp = await client.get(self.recovery_codes_download_url)
+        download_token = json_resp.json()["result"]["downloadToken"]
+        download_resp = await client.get(f"{self.recovery_codes_download_url}?download_token={download_token}")
         assert download_resp.status_code == status.HTTP_200_OK
         download_text = download_resp.text
 
@@ -160,15 +176,37 @@ class TestRecoveryCodePrivacy(BaseTest):
             await generate_recovery_codes(session, test_user.id, count=10)
         await session.commit()
 
-        # Login as user 1 and get codes
+        # Login as user 1 and get codes via TOTP-protected flow
         client.login(user)
-        resp1 = await client.get(self.recovery_codes_url)
+        
+        # Get user1's TOTP secret to generate codes
+        user1_secret = totp_service.decrypt_secret((await user_crud.get_by_id(user.id)).mfa_secret)
+        user1_totp = pyotp.TOTP(user1_secret)
+        
+        initiate_resp1 = await client.post(self.recovery_codes_view_initiate_url)
+        mfa_token1 = initiate_resp1.json()["result"]["mfaToken"]
+        
+        resp1 = await client.post(
+            self.recovery_codes_view_verify_url,
+            data={"mfaToken": mfa_token1, "code": user1_totp.now()}
+        )
         assert resp1.status_code == status.HTTP_200_OK
         codes1 = {c["code"] for c in resp1.json()["result"]["codes"]}
 
-        # Login as user 2 and get codes
+        # Login as user 2 and get codes via TOTP-protected flow
         client.login(user2)
-        resp2 = await client.get(self.recovery_codes_url)
+        
+        # Get user2's TOTP secret to generate codes
+        user2_secret = totp_service.decrypt_secret((await user_crud.get_by_id(user2.id)).mfa_secret)
+        user2_totp = pyotp.TOTP(user2_secret)
+        
+        initiate_resp2 = await client.post(self.recovery_codes_view_initiate_url)
+        mfa_token2 = initiate_resp2.json()["result"]["mfaToken"]
+        
+        resp2 = await client.post(
+            self.recovery_codes_view_verify_url,
+            data={"mfaToken": mfa_token2, "code": user2_totp.now()}
+        )
         assert resp2.status_code == status.HTTP_200_OK
         codes2 = {c["code"] for c in resp2.json()["result"]["codes"]}
 
@@ -183,8 +221,8 @@ class TestRecoveryCodePrivacy(BaseTest):
         """Verify error responses don't leak internal data structures."""
         client.login(user)
 
-        # Test 1: Access codes without MFA enabled
-        resp1 = await client.get(self.recovery_codes_url)
+        # Test 1: Access codes without MFA enabled (should fail at initiate step)
+        resp1 = await client.post(self.recovery_codes_view_initiate_url)
         assert resp1.status_code == status.HTTP_403_FORBIDDEN
 
         error_text = json.dumps(resp1.json())
