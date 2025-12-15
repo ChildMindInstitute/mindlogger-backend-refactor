@@ -336,6 +336,7 @@ class AppletService:
             AppletReportConfigurationBase(
                 report_server_ip=applet_exist.report_server_ip,
                 report_public_key=applet_exist.report_public_key,
+                report_recipients=[],
                 report_include_user_id=applet_exist.report_include_user_id,
                 report_include_case_id=applet_exist.report_include_case_id,
                 report_email_body=applet_exist.report_email_body,
@@ -648,6 +649,8 @@ class AppletService:
             updated_at=schema.updated_at,
             retention_period=schema.retention_period,
             retention_type=schema.retention_type,
+            activities=[],
+            activity_flows=[],
         )
         applet.activities = await ActivityService(self.session, self.user_id).get_by_applet_id_for_duplicate(applet_id)
         applet.activity_flows = await FlowService(self.session, self.user_id).get_by_applet_id_duplicate(applet_id)

@@ -135,6 +135,8 @@ def activity_create_session(item_create: ActivityItemCreate) -> ActivityCreate:
 def applet_base_data(encryption: Encryption) -> AppletBase:
     return AppletBase(
         display_name="Base Data",
+        description={},
+        about={},
         link=None,
         require_login=False,
         pinned_at=None,
