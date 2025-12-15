@@ -1,6 +1,6 @@
 import uuid
 from datetime import time
-from typing import Self, cast
+from typing import Annotated, Self, cast
 
 from pydantic import Field, field_validator, model_validator
 
@@ -125,14 +125,20 @@ class EventUpdateRequest(BaseEvent, InternalModel):
 
 class EventRequest(EventUpdateRequest):
     respondent_id: uuid.UUID | None = None
-    activity_id: uuid.UUID | None = Field(
-        None,
-        description="If flow_id is not set, activity_id must be set.",
-    )
-    flow_id: uuid.UUID | None = Field(
-        None,
-        description="If activity_id is not set, flow_id must be set.",
-    )
+    activity_id: Annotated[
+        uuid.UUID | None,
+        Field(
+            None,
+            description="If flow_id is not set, activity_id must be set.",
+        ),
+    ]
+    flow_id: Annotated[
+        uuid.UUID | None,
+        Field(
+            None,
+            description="If activity_id is not set, flow_id must be set.",
+        ),
+    ]
 
     @model_validator(mode="after")
     def validate_optional_fields_activity_or_flow(self) -> Self:

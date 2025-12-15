@@ -2,7 +2,7 @@ import datetime
 import enum
 import uuid
 from copy import deepcopy
-from typing import Any, Generic, Optional
+from typing import Annotated, Any, Generic, Optional
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -110,7 +110,7 @@ class AppletAnswerCreate(InternalModel):
     activity_id: uuid.UUID
     answer: ItemAnswerCreate
     created_at: datetime.datetime | None = None
-    alerts: list[AnswerAlert] = Field(default_factory=list)
+    alerts: Annotated[list[AnswerAlert], Field(default_factory=list)]
     client: ClientMeta
     target_subject_id: uuid.UUID | None = None
     source_subject_id: uuid.UUID | None = None
@@ -140,7 +140,7 @@ class AnswerDate(InternalModel):
 class ReviewActivity(InternalModel):
     id: uuid.UUID
     name: str
-    answer_dates: list[AnswerDate] = Field(default_factory=list)
+    answer_dates: Annotated[list[AnswerDate], Field(default_factory=list)]
 
 
 class SummaryActivityFlow(InternalModel):
@@ -163,11 +163,11 @@ class PublicAnswerDate(PublicModel):
 class ReviewItem(PublicModel, BaseModel, Generic[_BaseModel]):
     id: uuid.UUID
     name: str
-    answer_dates: list[_BaseModel] = Field(default_factory=list)
+    answer_dates: Annotated[list[_BaseModel], Field(default_factory=list)]
 
 
 class PublicReviewActivity(ReviewItem[PublicAnswerDate]):
-    last_answer_date: datetime.datetime | None = Field(default=None, validate_default=True)
+    last_answer_date: Annotated[datetime.datetime | None, Field(validate_default=True)] = None
 
     @field_validator("last_answer_date")
     @classmethod
@@ -190,7 +190,7 @@ class ReviewFlow(ReviewItem[SubmissionDate]): ...
 
 
 class PublicReviewFlow(ReviewFlow):
-    last_answer_date: datetime.datetime | None = Field(default=None, validate_default=True)
+    last_answer_date: Annotated[datetime.datetime | None, Field(validate_default=True)] = None
 
     @field_validator("last_answer_date")
     @classmethod
@@ -245,12 +245,12 @@ class ActivityAnswer(PublicModel):
     submit_id: uuid.UUID
     version: str
     activity_history_id: str
-    activity_id: uuid.UUID | None = Field(default=None, validate_default=True)
+    activity_id: Annotated[uuid.UUID | None, Field(validate_default=True)] = None
     flow_history_id: str | None = None
     user_public_key: str | None = None
     answer: str | None = None
     events: str | None = None
-    item_ids: list[str] = Field(default_factory=list)
+    item_ids: Annotated[list[str], Field(default_factory=list)]
     identifier: str | None = None
     migrated_data: dict | None = None
     end_datetime: datetime.datetime
@@ -277,7 +277,7 @@ class ActivitySubmission(PublicModel):
 
 
 class ActivitySubmissionResponse(ActivitySubmission):
-    summary: SubmissionSummary | None = Field(default=None, validate_default=True)
+    summary: Annotated[SubmissionSummary | None, Field(validate_default=True)] = None
 
     @field_validator("summary")
     @classmethod
@@ -383,7 +383,7 @@ class FlowSubmissionDetails(PublicModel):
 class FlowSubmissionResponse(PublicModel):
     submission: FlowSubmission
     flow: FlowHistoryWithActivityFlat
-    summary: SubmissionSummary | None = Field(default=None, validate_default=True)
+    summary: Annotated[SubmissionSummary | None, Field(validate_default=True)] = None
 
     @field_validator("flow", mode="before")
     @classmethod
@@ -432,8 +432,8 @@ class AppletActivityAnswer(InternalModel):
     user_public_key: str | None = None
     answer: str | None = None
     events: str | None = None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    item_ids: Annotated[list[str], Field(default_factory=list)]
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
     start_datetime: datetime.datetime | None = None
     end_datetime: datetime.datetime | None = None
     subscale_setting: SubscaleSetting | None = None
@@ -442,9 +442,9 @@ class AppletActivityAnswer(InternalModel):
 class AssessmentAnswer(InternalModel):
     reviewer_public_key: str | None = None
     answer: str | None = None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
-    items_last: list[PublicActivityItemFull] | None = Field(default_factory=list)
+    item_ids: Annotated[list[str], Field(default_factory=list)]
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
+    items_last: Annotated[list[PublicActivityItemFull] | None, Field(default_factory=list)]
     is_edited: bool = False
     versions: list[str] = []
 
@@ -459,8 +459,8 @@ class AnswerReview(InternalModel):
     id: uuid.UUID
     reviewer_public_key: str | None = None
     answer: str | None = None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    item_ids: Annotated[list[str], Field(default_factory=list)]
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
     reviewer: Reviewer
     created_at: datetime.datetime
     updated_at: datetime.datetime
@@ -472,8 +472,8 @@ class AppletActivityAnswerPublic(PublicModel):
     user_public_key: str | None = None
     answer: str | None = None
     events: str | None = None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    item_ids: Annotated[list[str], Field(default_factory=list)]
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
     subscale_setting: SubscaleSetting | None = None
@@ -490,8 +490,8 @@ class AnswerReviewPublic(PublicModel):
     id: uuid.UUID
     reviewer_public_key: str | None = None
     answer: str | None = None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    item_ids: Annotated[list[str], Field(default_factory=list)]
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
     reviewer: ReviewerPublic
     created_at: datetime.datetime
     updated_at: datetime.datetime
@@ -500,9 +500,9 @@ class AnswerReviewPublic(PublicModel):
 class AssessmentAnswerPublic(PublicModel):
     reviewer_public_key: str | None = None
     answer: str | None = None
-    item_ids: list[str] = Field(default_factory=list)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
-    items_last: list[PublicActivityItemFull] | None = Field(default_factory=list)
+    item_ids: Annotated[list[str], Field(default_factory=list)]
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
+    items_last: Annotated[list[PublicActivityItemFull] | None, Field(default_factory=list)]
     versions: list[str]
 
 
@@ -557,7 +557,7 @@ class UserAnswerDataBase(BaseModel):
     legacy_profile_id: str | None = None
     user_public_key: str | None = None
     answer: str | None = None
-    item_ids: list[str] = Field(default_factory=list)
+    item_ids: Annotated[list[str], Field(default_factory=list)]
     events: str | None = None
     scheduled_datetime: datetime.datetime | None = None
     start_datetime: datetime.datetime | None = None
@@ -584,9 +584,9 @@ class RespondentAnswerData(UserAnswerDataBase, InternalModel):
 
 
 class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
-    applet_id: str | None = Field(default=None, validate_default=True)
-    activity_id: str | None = Field(default=None, validate_default=True)
-    flow_id: str | None = Field(default=None, validate_default=True)
+    applet_id: Annotated[str | None, Field(validate_default=True)] = None
+    activity_id: Annotated[str | None, Field(validate_default=True)] = None
+    flow_id: Annotated[str | None, Field(validate_default=True)] = None
 
     @field_validator("applet_id")
     @classmethod
@@ -614,19 +614,19 @@ class RespondentAnswerDataPublic(UserAnswerDataBase, PublicModel):
 
 
 class AnswerExport(InternalModel):
-    answers: list[RespondentAnswerData] = Field(default_factory=list)
-    activities: list[ActivityHistoryFull] = Field(default_factory=list)
+    answers: Annotated[list[RespondentAnswerData], Field(default_factory=list)]
+    activities: Annotated[list[ActivityHistoryFull], Field(default_factory=list)]
     total_answers: int = 0
 
 
 class PublicAnswerExportTranslated(PublicModel):
-    answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
-    activities: list[ActivityHistoryTranslatedExport] = Field(default_factory=list)
+    answers: Annotated[list[RespondentAnswerDataPublic], Field(default_factory=list)]
+    activities: Annotated[list[ActivityHistoryTranslatedExport], Field(default_factory=list)]
 
 
 class PublicAnswerExport(PublicModel):
-    answers: list[RespondentAnswerDataPublic] = Field(default_factory=list)
-    activities: list[ActivityHistoryExport] = Field(default_factory=list)
+    answers: Annotated[list[RespondentAnswerDataPublic], Field(default_factory=list)]
+    activities: Annotated[list[ActivityHistoryExport], Field(default_factory=list)]
 
     def translate(self, i18n: I18N) -> PublicAnswerExportTranslated:
         return PublicAnswerExportTranslated(
@@ -645,8 +645,8 @@ class SafeApplet(AppletBaseInfo, InternalModel):
     created_at: datetime.datetime | None = None
     updated_at: datetime.datetime | None = None
 
-    activities: list[ActivityFull] = Field(default_factory=list)
-    activity_flows: list[FlowFull] = Field(default_factory=list)
+    activities: Annotated[list[ActivityFull], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowFull], Field(default_factory=list)]
 
 
 class ReportServerEmail(InternalModel):
@@ -713,7 +713,7 @@ class MultiinformantAssessmentValidationResponse(PublicModel):
 
 
 class PublicSubmissionsResponse(PublicModel):
-    submissions: list[AppletSubmission] = Field(default_factory=list)
+    submissions: Annotated[list[AppletSubmission], Field(default_factory=list)]
     submissions_count: int = 0
     participants_count: int = 0
 
@@ -733,8 +733,8 @@ class FilesCopyCheckResult(InternalModel):
 
 
 class SubmissionsSubjectCounters(InternalModel):
-    respondents: set[uuid.UUID] = Field(default_factory=set)
-    subjects: set[uuid.UUID] = Field(default_factory=set)
+    respondents: Annotated[set[uuid.UUID], Field(default_factory=set)]
+    subjects: Annotated[set[uuid.UUID], Field(default_factory=set)]
     subject_submissions_count: int = 0
     subject_last_submission_date: datetime.datetime | None = None
     respondent_submissions_count: int = 0
@@ -743,7 +743,7 @@ class SubmissionsSubjectCounters(InternalModel):
 
 class SubmissionsActivityMetadataBySubject(InternalModel):
     subject_id: uuid.UUID
-    activities: dict[uuid.UUID, SubmissionsSubjectCounters] = Field(default_factory=dict)
+    activities: Annotated[dict[uuid.UUID, SubmissionsSubjectCounters], Field(default_factory=dict)]
 
 
 class EHRIngestionStatus(enum.StrEnum):

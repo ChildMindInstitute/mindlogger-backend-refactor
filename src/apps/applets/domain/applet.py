@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Generic, Self
+from typing import Annotated, Generic, Self
 
 from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, model_validator
 
@@ -41,8 +41,8 @@ class AppletSingleLanguageDetail(AppletFetchBase, InternalModel):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetail] = Field(default_factory=list)
-    activity_flows: list[FlowSingleLanguageDetail] = Field(default_factory=list)
+    activities: Annotated[list[ActivitySingleLanguageDetail], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowSingleLanguageDetail], Field(default_factory=list)]
     theme: Theme | None = None
 
 
@@ -52,8 +52,8 @@ class AppletSingleLanguageDetailPublic(AppletFetchBase, PublicModel):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetailPublic] = Field(default_factory=list)
-    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
+    activities: Annotated[list[ActivitySingleLanguageDetailPublic], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowSingleLanguageDetailPublic], Field(default_factory=list)]
     theme: PublicTheme | None = None
 
 
@@ -69,8 +69,8 @@ class AppletMinimumInfo(PublicModel):
 class AppletSingleLanguageDetailMobilePublic(AppletMinimumInfo, PublicModel):
     id: uuid.UUID
     theme: PublicThemeMobile | None = None
-    activities: list[ActivitySingleLanguageMobileDetailPublic] = Field(default_factory=list)
-    activity_flows: list[FlowSingleLanguageMobileDetailPublic] = Field(default_factory=list)
+    activities: Annotated[list[ActivitySingleLanguageMobileDetailPublic], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowSingleLanguageMobileDetailPublic], Field(default_factory=list)]
     encryption: Encryption | None = None
     stream_enabled: bool | None = None
     stream_ip_address: IPvAnyAddress | None = None
@@ -87,8 +87,8 @@ class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetailPublic] = Field(default_factory=list)
-    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
+    activities: Annotated[list[ActivitySingleLanguageDetailPublic], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowSingleLanguageDetailPublic], Field(default_factory=list)]
     theme: PublicTheme
     encryption: Encryption | None = None
     owner_id: uuid.UUID | None = None
@@ -143,7 +143,7 @@ class AppletRetrieveResponse(PublicModel, BaseModel, Generic[_BaseModel]):
 
 
 class AppletActivitiesDetailsPublic(PublicModel):
-    activities_details: list[ActivityLanguageWithItemsMobileDetailPublic] = Field(default_factory=list)
+    activities_details: Annotated[list[ActivityLanguageWithItemsMobileDetailPublic], Field(default_factory=list)]
     applet_detail: AppletSingleLanguageDetailMobilePublic
     respondent_meta: dict | None = None
 
@@ -161,7 +161,9 @@ class AppletActivitiesAndFlowsDetailsPublic(PublicModel):
     Returns a combination of activity and activity flows
     """
 
-    details: list[ActivityLanguageWithItemsMobileDetailPublicType | PublicFlowFullType] = Field(default_factory=list)
+    details: Annotated[
+        list[ActivityLanguageWithItemsMobileDetailPublicType | PublicFlowFullType], Field(default_factory=list)
+    ]
 
 
 class ActivitiesAndFlowsWithAssignmentDetailsPublic(PublicModel):
@@ -169,8 +171,8 @@ class ActivitiesAndFlowsWithAssignmentDetailsPublic(PublicModel):
     Returns a combination of activity and activity flows
     """
 
-    activities: list[ActivityWithAssignmentDetailsPublic] = Field(default_factory=list)
-    activity_flows: list[FlowWithAssignmentDetailsPublic] = Field(default_factory=list)
+    activities: Annotated[list[ActivityWithAssignmentDetailsPublic], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowWithAssignmentDetailsPublic], Field(default_factory=list)]
 
 
 class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):

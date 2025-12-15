@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Annotated
 
 from pydantic import Field, field_validator
 
@@ -46,24 +47,24 @@ class ActivityHistory(InternalModel):
 
 class ActivityHistoryChange(InternalModel):
     name: str | None = None
-    changes: list[str] | None = Field(default_factory=list)
-    items: list[ActivityItemHistoryChange] | None = Field(default_factory=list)
+    changes: Annotated[list[str] | None, Field(default_factory=list)]
+    items: Annotated[list[ActivityItemHistoryChange] | None, Field(default_factory=list)]
 
 
 class PublicActivityHistoryChange(PublicModel):
     name: str | None = None
-    changes: list[str] | None = Field(default_factory=list)
-    items: list[ActivityItemHistoryChange] | None = Field(default_factory=list)
+    changes: Annotated[list[str] | None, Field(default_factory=list)]
+    items: Annotated[list[ActivityItemHistoryChange] | None, Field(default_factory=list)]
 
 
 class ActivityHistoryFull(ActivityHistory):
-    items: list[ActivityItemHistoryFull] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemHistoryFull], Field(default_factory=list)]
 
 
 class ActivityHistoryExport(PublicActivityFull):
     id_version: str
-    version: str | None = Field(default=None, validate_default=True)
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    version: Annotated[str | None, Field(validate_default=True)] = None
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
 
     _version = field_validator("version")(extract_history_version)
 
@@ -87,4 +88,4 @@ class ActivityHistoryTranslatedExport(ActivityBase, PublicModel):
     version: str | None = None
     description: str  # type: ignore[assignment]
     created_at: datetime.datetime
-    items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemSingleLanguageDetailPublic], Field(default_factory=list)]

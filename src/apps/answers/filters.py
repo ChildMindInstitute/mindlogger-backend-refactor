@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Self
+from typing import Annotated, Self
 
 from fastapi import Query
 from pydantic import Field, field_validator, model_validator
@@ -49,8 +49,8 @@ class AppletSubmitDateFilter(BaseQueryParams):
 
 
 class AnswerExportFilters(BaseQueryParams):
-    respondent_ids: list[uuid.UUID] | None = Field(Query(None))
-    target_subject_ids: list[uuid.UUID] | None = Field(Query(None))
+    respondent_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
+    target_subject_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None
     limit: int = 10000
@@ -69,9 +69,9 @@ class AppletMultiinformantAssessmentParams(InternalModel):
 
 
 class AnswerEHRExportFilters(BaseQueryParams):
-    respondent_ids: list[uuid.UUID] | None = Field(Query(None))
-    target_subject_ids: list[uuid.UUID] | None = Field(Query(None))
-    activity_ids: list[uuid.UUID] | None = Field(Query(None))
-    flow_ids: list[uuid.UUID] | None = Field(Query(None))
+    respondent_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
+    target_subject_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
+    activity_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
+    flow_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None

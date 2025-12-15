@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import Field
 
@@ -24,7 +25,7 @@ class ActivityItemHistoryFull(BaseActivityItem, InternalModel):
 class ActivityFull(ActivityBase, InternalModel):
     id: uuid.UUID
     key: uuid.UUID
-    items: list[ActivityItemFull] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemFull], Field(default_factory=list)]
     order: int
     created_at: datetime
 
@@ -36,5 +37,5 @@ class PublicActivityItemFull(BaseActivityItem, PublicModel):
 
 class PublicActivityFull(ActivityBase, PublicModel):
     id: uuid.UUID
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
     created_at: datetime

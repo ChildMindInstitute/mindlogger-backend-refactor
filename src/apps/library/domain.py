@@ -1,4 +1,5 @@
 import uuid
+from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -22,7 +23,7 @@ class AppletLibraryInfo(PublicModel):
 
 class AppletLibraryCreate(InternalModel):
     applet_id: uuid.UUID
-    keywords: list[str] = Field(default_factory=list)
+    keywords: Annotated[list[str], Field(default_factory=list)]
     name: str
 
     @field_validator("keywords", mode="before")
@@ -32,7 +33,7 @@ class AppletLibraryCreate(InternalModel):
 
 
 class AppletLibraryUpdate(InternalModel):
-    keywords: list[str] = Field(default_factory=list)
+    keywords: Annotated[list[str], Field(default_factory=list)]
     name: str
 
 
@@ -89,7 +90,7 @@ class _LibraryItem(BaseModel):
     about: dict[str, str] | None = None
     image: str = ""
     theme_id: uuid.UUID | None = None
-    keywords: list[str] = Field(default_factory=list)
+    keywords: Annotated[list[str], Field(default_factory=list)]
     activities: list[LibraryItemActivity] | None = None
     activity_flows: list[LibraryItemFlow] | None = None
 
@@ -104,8 +105,8 @@ class PublicLibraryItem(PublicModel, _LibraryItem):
 
 class LibraryQueryParams(InternalModel):
     search: str | None = None
-    page: int = Field(gt=0, default=1)
-    limit: int = Field(gt=0, default=10)
+    page: Annotated[int, Field(gt=0)] = 1
+    limit: Annotated[int, Field(gt=0)] = 10
 
 
 class Cart(PublicModel):

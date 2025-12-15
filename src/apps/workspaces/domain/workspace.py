@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -35,14 +35,20 @@ __all__ = [
 class PublicWorkspace(PublicModel):
     """This model is returned to the user their current workspace."""
 
-    owner_id: uuid.UUID = Field(
-        description="This field represents the applet owner id",
-    )
-    workspace_name: str = Field(
-        description="This field represents the name of workspace "
-        "which is consists of 'first name', 'last name' of user "
-        "which is applet owner and prefix",
-    )
+    owner_id: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the applet owner id",
+        ),
+    ]
+    workspace_name: Annotated[
+        str,
+        Field(
+            description="This field represents the name of workspace "
+            "which is consists of 'first name', 'last name' of user "
+            "which is applet owner and prefix",
+        ),
+    ]
     use_arbitrary: bool | None = None
 
     @field_validator("use_arbitrary")
@@ -59,14 +65,20 @@ class UserWorkspace(InternalModel):
     their current workspace.
     """
 
-    user_id: uuid.UUID = Field(
-        description="This field represents the applet owner id",
-    )
-    workspace_name: str = Field(
-        description="This field represents the name of workspace "
-        "which is consists of 'first name', 'last name' of user "
-        "which is applet owner and prefix",
-    )
+    user_id: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the applet owner id",
+        ),
+    ]
+    workspace_name: Annotated[
+        str,
+        Field(
+            description="This field represents the name of workspace "
+            "which is consists of 'first name', 'last name' of user "
+            "which is applet owner and prefix",
+        ),
+    ]
     use_arbitrary: bool | None = None
 
 
@@ -145,7 +157,7 @@ class WorkspaceManager(InternalModel):
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
     titles: list[str] | None = None
-    title: str | None = Field(default=None, validate_default=True)
+    title: Annotated[str | None, Field(validate_default=True)] = None
     status: InvitationStatus
     invitation_key: uuid.UUID | None = None
 
@@ -336,7 +348,7 @@ class WorkspaceArbitraryFields(InternalModel):
     storage_secret_key: str | None = None
     storage_region: str | None = None
     storage_bucket: str | None = None
-    use_arbitrary: bool | None = Field(default=None, validate_default=True)
+    use_arbitrary: Annotated[bool | None, Field(validate_default=True)] = None
 
     def is_arbitrary_empty(self):
         return not any(
@@ -422,11 +434,11 @@ class UserAnswersDBInfo(AnswerDbApplet):
 
 class AnswerDbApplets(InternalModel):
     database_uri: str | None = None
-    applets: list[AnswerDbApplet] = Field(default_factory=list)
+    applets: Annotated[list[AnswerDbApplet], Field(default_factory=list)]
 
 
 class AppletIdsQuery(InternalModel):
-    applet_ids: str | None = Field(None, alias="appletIDs")
+    applet_ids: Annotated[str | None, Field(None, alias="appletIDs")]
 
     @field_validator("applet_ids")
     @classmethod

@@ -1,6 +1,6 @@
 import datetime
 from enum import StrEnum
-from typing import Any, Dict, Literal, Optional, Self
+from typing import Annotated, Any, Dict, Literal, Optional, Self
 
 from pydantic import Field, field_validator, model_validator
 
@@ -142,7 +142,7 @@ class SingleDatePayload(PublicModel):
 class DateRangePayload(PublicModel):
     minDate: datetime.date
     maxDate: datetime.date
-    fieldName: FieldNamePayloadType | None = Field(default=None, validate_default=True)
+    fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
 
     @field_validator("fieldName", mode="before")
     @classmethod
@@ -178,7 +178,7 @@ class SingleTimePayload(PublicModel):
     time: Optional[datetime.time] = None
     max_value: Optional[datetime.time] = None
     min_value: Optional[datetime.time] = None
-    fieldName: FieldNamePayloadType | None = Field(default=None, validate_default=True)
+    fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
 
     @field_validator("time", "max_value", "min_value", mode="before")
     @classmethod
@@ -236,7 +236,7 @@ class SingleTimePayload(PublicModel):
 class MinMaxTimePayload(PublicModel):
     minTime: Optional[datetime.time] = None
     maxTime: Optional[datetime.time] = None
-    fieldName: FieldNamePayloadType | None = Field(default=None, validate_default=True)
+    fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
 
     @field_validator("minTime", "maxTime", mode="before")
     @classmethod

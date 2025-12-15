@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -82,12 +82,12 @@ class ActivitiesAssignmentsDelete(InternalModel):
 
 
 class AssignmentsSubjectCounters(PublicModel):
-    respondents: set[UUID] = Field(default_factory=set)
-    subjects: set[UUID] = Field(default_factory=set)
+    respondents: Annotated[set[UUID], Field(default_factory=set)]
+    subjects: Annotated[set[UUID], Field(default_factory=set)]
     subject_assignments_count: int = 0
     respondent_assignments_count: int = 0
 
 
 class AssignmentsActivityCountBySubject(PublicModel):
     subject_id: UUID
-    activities: dict[UUID, AssignmentsSubjectCounters] = Field(default_factory=dict)
+    activities: Annotated[dict[UUID, AssignmentsSubjectCounters], Field(default_factory=dict)]

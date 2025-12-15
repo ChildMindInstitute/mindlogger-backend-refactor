@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import Depends
 from pydantic import Field
@@ -14,8 +14,8 @@ class BaseQueryParams(InternalModel):
     """
 
     search: str | None = None
-    page: int = Field(gt=0, default=1)
-    limit: int = Field(gt=0, default=10, le=settings.service.result_limit)
+    page: Annotated[int, Field(gt=0)] = 1
+    limit: Annotated[int, Field(gt=0, le=settings.service.result_limit)] = 10
     ordering: str | None = None
 
 
@@ -24,11 +24,11 @@ class QueryParams(InternalModel):
     Class to group query parameters into single format
     """
 
-    filters: dict[str, Any] = Field(default_factory=dict)
+    filters: Annotated[dict[str, Any], Field(default_factory=dict)]
     search: str | None = None
-    page: int = Field(gt=0, default=1)
-    limit: int = Field(gt=0, default=10, le=settings.service.result_limit)
-    ordering: list[str] = Field(default_factory=list)
+    page: Annotated[int, Field(gt=0)] = 1
+    limit: Annotated[int, Field(gt=0, le=settings.service.result_limit)] = 10
+    ordering: Annotated[list[str], Field(default_factory=list)]
 
 
 def parse_query_params(query_param_class):

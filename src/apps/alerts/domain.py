@@ -2,7 +2,7 @@ import datetime
 import uuid
 from enum import Enum
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 
 from apps.shared.domain import InternalModel, PublicModel, ResponseMulti, dict_keys_to_camel_case
 
@@ -35,7 +35,7 @@ class Alert(InternalModel):
     workspace: str
     respondent_id: uuid.UUID
     subject_id: uuid.UUID | None = None
-    type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
+    type: AlertTypes = AlertTypes.ANSWER_ALERT
 
 
 class AlertPublic(PublicModel):
@@ -55,7 +55,7 @@ class AlertPublic(PublicModel):
     workspace: str
     respondent_id: uuid.UUID
     subject_id: uuid.UUID | None = None
-    type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
+    type: AlertTypes = AlertTypes.ANSWER_ALERT
 
     @field_validator("encryption", mode="before")
     @classmethod
@@ -76,7 +76,7 @@ class AlertMessage(InternalModel):
     activity_id: uuid.UUID | None = None
     activity_item_id: uuid.UUID | None = None
     answer_id: uuid.UUID | None = None
-    type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
+    type: AlertTypes = AlertTypes.ANSWER_ALERT
 
 
 class AlertHandlerResult(InternalModel):
@@ -95,7 +95,7 @@ class AlertHandlerResult(InternalModel):
     workspace: str
     respondent_id: str
     subject_id: str | None = None
-    type: AlertTypes = Field(default=AlertTypes.ANSWER_ALERT)
+    type: AlertTypes = AlertTypes.ANSWER_ALERT
 
 
 class AlertResponseMulti(ResponseMulti[AlertPublic]):

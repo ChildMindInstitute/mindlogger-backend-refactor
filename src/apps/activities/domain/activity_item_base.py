@@ -1,4 +1,4 @@
-from typing import Self, cast
+from typing import Annotated, Self, cast
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -44,11 +44,11 @@ from apps.shared.exception import BaseError
 class BaseActivityItem(BaseModel):
     """Please check contracts for exact types of config and response_values fields: <a href="https://mindlogger.atlassian.net/wiki/spaces/MINDLOGGER1/pages/182583316/Activity+item+contracts"> here</a>"""  # noqa: E501
 
-    question: dict[str, str] = Field(default_factory=dict)
+    question: Annotated[dict[str, str], Field(default_factory=dict)]
     response_type: ResponseType
     # smart_union ?
-    response_values: ResponseValueConfig | None = Field(None, discriminator="type")
-    config: ResponseTypeConfig = Field(..., discriminator="type")
+    response_values: Annotated[ResponseValueConfig | None, Field(None, discriminator="type")]
+    config: Annotated[ResponseTypeConfig, Field(..., discriminator="type")]
     name: str
     is_hidden: bool | None = False
     conditional_logic: ConditionalLogic | None = None

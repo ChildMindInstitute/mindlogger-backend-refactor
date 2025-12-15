@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from pydantic import BaseModel, Field, field_validator
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
@@ -8,7 +10,7 @@ from apps.shared.enums import Language
 
 class ActivityBase(BaseModel):
     name: str
-    description: dict[Language, str] = Field(default_factory=dict)
+    description: Annotated[dict[Language, str], Field(default_factory=dict)]
     splash_screen: str = ""
     image: str = ""
     show_all_at_once: bool = False

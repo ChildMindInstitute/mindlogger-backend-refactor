@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from pydantic import Field
 
 from apps.shared.domain import InternalModel
@@ -9,5 +11,5 @@ class BaseItemData(InternalModel):
     """We use this model just for annotations"""
 
     name: str = DEFAULT_ITEM_NAME
-    question: dict[str, str] = Field(default_factory=dict)
+    question: Annotated[dict[str, str], Field(default_factory=dict)]
     is_hidden: bool = False

@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, model_validator
 
@@ -19,9 +19,9 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
-    activities: list[ActivityCreate] = Field(default_factory=list)
-    activity_flows: list[FlowCreate] = Field(default_factory=list)
-    extra_fields: dict = Field(default_factory=dict)
+    activities: Annotated[list[ActivityCreate], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowCreate], Field(default_factory=list)]
+    extra_fields: Annotated[dict, Field(default_factory=dict)]
 
     @model_validator(mode="after")
     def validate_existing_ids_for_duplicate(self) -> Self:

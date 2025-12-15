@@ -1,5 +1,5 @@
 import uuid
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, model_validator
 
@@ -18,18 +18,18 @@ from apps.shared.domain import InternalModel
 
 
 class ActivityItemCreate(BaseActivityItem, InternalModel):
-    extra_fields: dict = Field(default_factory=dict)
+    extra_fields: Annotated[dict, Field(default_factory=dict)]
 
 
 class PreparedActivityItemCreate(BaseActivityItem, InternalModel):
     activity_id: uuid.UUID
-    extra_fields: dict = Field(default_factory=dict)
+    extra_fields: Annotated[dict, Field(default_factory=dict)]
 
 
 class ActivityCreate(ActivityBase, InternalModel):
     key: uuid.UUID
-    items: list[ActivityItemCreate] = Field(default_factory=list)
-    extra_fields: dict = Field(default_factory=dict)
+    items: Annotated[list[ActivityItemCreate], Field(default_factory=list)]
+    extra_fields: Annotated[dict, Field(default_factory=dict)]
 
     @model_validator(mode="after")
     def validate_existing_ids_for_duplicate(self) -> Self:

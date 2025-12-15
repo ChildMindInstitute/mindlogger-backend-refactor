@@ -1,5 +1,5 @@
 import uuid
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, model_validator
 
@@ -29,7 +29,7 @@ class PreparedActivityItemUpdate(BaseActivityItem, InternalModel):
 class ActivityUpdate(ActivityBase, PublicModel):
     id: uuid.UUID | None = None
     key: uuid.UUID
-    items: list[ActivityItemUpdate] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemUpdate], Field(default_factory=list)]
 
     @model_validator(mode="after")
     def validate_existing_ids_for_duplicate(self) -> Self:

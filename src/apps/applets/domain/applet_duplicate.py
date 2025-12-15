@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from pydantic import Field, PositiveInt
 
 from apps.activities.domain.activity import ActivityDuplicate
@@ -11,7 +13,7 @@ class AppletDuplicate(AppletFetchBase):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivityDuplicate] = Field(default_factory=list)
-    activity_flows: list[FlowDuplicate] = Field(default_factory=list)
+    activities: Annotated[list[ActivityDuplicate], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowDuplicate], Field(default_factory=list)]
     theme: Theme | None = None
     encryption: None

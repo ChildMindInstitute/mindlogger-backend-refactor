@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import Field, NonNegativeInt, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -121,7 +121,7 @@ class _SingleSelectionValue(PublicModel):
     image: str | None = None
     score: float | None = None
     tooltip: str | None = None
-    is_hidden: bool = Field(default=False)
+    is_hidden: bool = False
     color: Color | None = None
     alert: str | None = None
     value: int | None = None
@@ -167,7 +167,7 @@ class SingleSelectionValues(PublicModel):
 
 
 class _MultiSelectionValue(_SingleSelectionValue):
-    is_none_above: bool = Field(default=False)
+    is_none_above: bool = False
 
 
 class MultiSelectionValues(PublicModel):
@@ -187,10 +187,13 @@ class MultiSelectionValues(PublicModel):
 
 
 class SliderValueAlert(PublicModel):
-    value: int | None = Field(
-        default=0,
-        description="Either value or min_value and max_value must be provided. For SliderRows, only value is allowed.",  # noqa: E501
-    )
+    value: Annotated[
+        int | None,
+        Field(
+            description="Either value or min_value and max_value must "
+            "be provided. For SliderRows, only value is allowed."
+        ),
+    ] = 0
     min_value: int | None = None
     max_value: int | None = None
     alert: str
@@ -204,10 +207,10 @@ class SliderValueAlert(PublicModel):
 
 
 class SliderValuesBase(PublicModel):
-    min_label: str | None = Field(..., max_length=100)
-    max_label: str | None = Field(..., max_length=100)
-    min_value: NonNegativeInt = Field(default=0, le=11)
-    max_value: NonNegativeInt = Field(default=12, le=12)
+    min_label: Annotated[str | None, Field(..., max_length=100)]
+    max_label: Annotated[str | None, Field(..., max_length=100)]
+    min_value: Annotated[NonNegativeInt, Field(le=11)] = 0
+    max_value: Annotated[NonNegativeInt, Field(le=12)] = 12
     min_image: str | None = None
     max_image: str | None = None
     scores: list[float] | None = None
@@ -250,8 +253,8 @@ class SliderValues(SliderValuesBase):
 
 class NumberSelectionValues(PublicModel):
     type: Literal[ResponseType.NUMBERSELECT]
-    min_value: NonNegativeInt = Field(default=0)
-    max_value: NonNegativeInt = Field(default=100)
+    min_value: NonNegativeInt = 0
+    max_value: NonNegativeInt = 100
 
     @model_validator(mode="after")
     def validate_min_max(self) -> Self:
@@ -280,7 +283,7 @@ class DrawingValues(PublicModel):
 
 class SliderRowsValue(SliderValuesBase, PublicModel):
     id: str | None = None
-    label: str = Field(..., max_length=100)
+    label: Annotated[str, Field(..., max_length=100)]
 
     @field_validator("id")
     @classmethod
@@ -295,7 +298,7 @@ class SliderRowsValues(PublicModel):
 
 class _SingleSelectionOption(PublicModel):
     id: str | None = None
-    text: str = Field(..., max_length=100)
+    text: Annotated[str, Field(..., max_length=100)]
     image: str | None = None
     tooltip: str | None = None
 
@@ -314,7 +317,7 @@ class _SingleSelectionOption(PublicModel):
 
 class _SingleSelectionRow(PublicModel):
     id: str | None = None
-    row_name: str = Field(..., max_length=100)
+    row_name: Annotated[str, Field(..., max_length=100)]
     row_image: str | None = None
     tooltip: str | None = None
 
@@ -377,7 +380,7 @@ class AudioValues(PublicModel):
 
 class AudioPlayerValues(PublicModel):
     type: Literal[ResponseType.AUDIOPLAYER]
-    file: str | None = Field(default=None)
+    file: str | None = None
 
 
 class _PhrasalTemplateSentenceField(PublicModel):
@@ -402,7 +405,7 @@ PhrasalTemplateField = (
 
 
 class PhrasalTemplatePhrase(PublicModel):
-    image: str | None = Field(default=None)
+    image: str | None = None
     fields: list[PhrasalTemplateField]
 
 
@@ -413,8 +416,8 @@ class PhrasalTemplateValues(PublicModel):
 
 
 class RequestHealthRecordDataOption(PublicModel):
-    id: RequestHealthRecordDataOptType = Field(default=...)  # ellipsis indicates that the field is required
-    label: str = Field(default=...)
+    id: RequestHealthRecordDataOptType
+    label: str
 
 
 class RequestHealthRecordDataValues(PublicModel):

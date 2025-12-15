@@ -1,6 +1,7 @@
 import datetime
 import uuid
 from enum import Enum
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -182,7 +183,7 @@ class LorisIntegrationAlertMessages(str, Enum):
 
 class UserVisits(InternalModel):
     user_id: uuid.UUID
-    visits: set[str] = Field(default_factory=set)
+    visits: Annotated[set[str], Field(default_factory=set)]
 
 
 class AnswerData(InternalModel):
@@ -196,8 +197,8 @@ class AnswerData(InternalModel):
 
 
 class UploadableAnswersData(InternalModel):
-    activity_visits: dict[str, list[UserVisits]] = Field(default_factory=dict)
-    answers: list[AnswerData] = Field(default_factory=list)
+    activity_visits: Annotated[dict[str, list[UserVisits]], Field(default_factory=dict)]
+    answers: Annotated[list[AnswerData], Field(default_factory=list)]
 
 
 class UploadableAnswersResponse(Response[UploadableAnswersData]):

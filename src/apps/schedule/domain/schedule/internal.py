@@ -1,6 +1,6 @@
 import uuid
 from datetime import date
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, NonNegativeInt, model_validator
 
@@ -36,10 +36,13 @@ class EventCreate(BaseEvent, InternalModel):
     periodicity: PeriodicityType
     start_date: date | None = None
     end_date: date | None = None
-    selected_date: date | None = Field(
-        None,
-        description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
-    )
+    selected_date: Annotated[
+        date | None,
+        Field(
+            None,
+            description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
+        ),
+    ]
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None = None
     activity_flow_id: uuid.UUID | None = None
@@ -90,10 +93,13 @@ class EventFull(InternalModel, BaseEvent):
     periodicity: PeriodicityType
     start_date: date | None = None
     end_date: date | None = None
-    selected_date: date | None = Field(
-        None,
-        description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
-    )
+    selected_date: Annotated[
+        date | None,
+        Field(
+            None,
+            description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
+        ),
+    ]
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None = None
     flow_id: uuid.UUID | None = None

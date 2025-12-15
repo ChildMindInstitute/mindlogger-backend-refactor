@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Annotated
 
 from pydantic import Field
 
@@ -56,26 +57,41 @@ class UserAppletAccessItem(InternalModel):
 class RemoveManagerAccess(InternalModel):
     """Manager access removal model."""
 
-    user_id: uuid.UUID = Field(
-        description="This field represents the user id",
-    )
-    applet_ids: list[uuid.UUID] = Field(
-        description="This field represents the applet ids",
-    )
+    user_id: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the user id",
+        ),
+    ]
+    applet_ids: Annotated[
+        list[uuid.UUID],
+        Field(
+            description="This field represents the applet ids",
+        ),
+    ]
 
 
 class RemoveRespondentAccess(InternalModel):
     """Respondent access removal model."""
 
-    user_id: uuid.UUID = Field(
-        description="This field represents the user id",
-    )
-    applet_ids: list[uuid.UUID] = Field(
-        description="This field represents the applet ids",
-    )
-    delete_responses: bool = Field(
-        description="This field represents the flag for deleting responses",
-    )
+    user_id: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the user id",
+        ),
+    ]
+    applet_ids: Annotated[
+        list[uuid.UUID],
+        Field(
+            description="This field represents the applet ids",
+        ),
+    ]
+    delete_responses: Annotated[
+        bool,
+        Field(
+            description="This field represents the flag for deleting responses",
+        ),
+    ]
 
 
 class AppletUser(InternalModel):

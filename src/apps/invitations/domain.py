@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import ConfigDict, EmailStr, Field, field_validator
 
@@ -36,16 +36,25 @@ class InvitationRequest(InternalModel):
 class _InvitationRequest(PublicModel):
     """This model is used as base class for invitation requests."""
 
-    email: EmailStr = Field(
-        description="This field represents the email of invited user",
-    )
-    first_name: str = Field(
-        description="This field represents the first name of invited user",
-    )
-    last_name: str = Field(
-        description="This field represents the last name of invited user",
-    )
-    language: InvitationLanguage = Field(description="This field represents the language of invitation")
+    email: Annotated[
+        EmailStr,
+        Field(
+            description="This field represents the email of invited user",
+        ),
+    ]
+    first_name: Annotated[
+        str,
+        Field(
+            description="This field represents the first name of invited user",
+        ),
+    ]
+    last_name: Annotated[
+        str,
+        Field(
+            description="This field represents the last name of invited user",
+        ),
+    ]
+    language: Annotated[InvitationLanguage, Field(description="This field represents the language of invitation")]
 
     @field_validator("email")
     @classmethod
@@ -58,20 +67,26 @@ class InvitationRespondentRequest(_InvitationRequest):
     to the user for the respondent roles.
     """
 
-    secret_user_id: str = Field(
-        description="This field represents the secret user id "
-        "which is intended to preserve the confidentiality "
-        "of the respondent, this user identifier is unique "
-        "within the applet",
-    )
-    nickname: str | None = Field(
-        default_factory=str,
-        description="This field represents the nickname of respondent, "
-        "this is the identifier that is assigned by the applet manager "
-        "when the respondent is invited, it is intended to increase "
-        "representativeness but preserve confidentiality",
-    )
-    tag: str | None = Field(default=None, description="This field represents the tag/label of invited user")
+    secret_user_id: Annotated[
+        str,
+        Field(
+            description="This field represents the secret user id "
+            "which is intended to preserve the confidentiality "
+            "of the respondent, this user identifier is unique "
+            "within the applet",
+        ),
+    ]
+    nickname: Annotated[
+        str | None,
+        Field(
+            default_factory=str,
+            description="This field represents the nickname of respondent, "
+            "this is the identifier that is assigned by the applet manager "
+            "when the respondent is invited, it is intended to increase "
+            "representativeness but preserve confidentiality",
+        ),
+    ]
+    tag: Annotated[str | None, Field(description="This field represents the tag/label of invited user")] = None
 
 
 class InvitationReviewerRequest(_InvitationRequest):
@@ -79,17 +94,22 @@ class InvitationReviewerRequest(_InvitationRequest):
     to the user for "reviewer" role.
     """
 
-    subjects: list[uuid.UUID] = Field(
-        description="This field represents the list of subject id's",
-    )
-    workspace_prefix: str | None = Field(
-        default=None,
-        description="This field represents the user workspace prefix. "
-        "You can only set this field the first time you invite any "
-        "manager role to your applet. Once created, "
-        "this name can not be changed anymore.",
-    )
-    title: str | None = Field(default=None, description="This field represents the team member title")
+    subjects: Annotated[
+        list[uuid.UUID],
+        Field(
+            description="This field represents the list of subject id's",
+        ),
+    ]
+    workspace_prefix: Annotated[
+        str | None,
+        Field(
+            description="This field represents the user workspace prefix. "
+            "You can only set this field the first time you invite any "
+            "manager role to your applet. Once created, "
+            "this name can not be changed anymore.",
+        ),
+    ] = None
+    title: Annotated[str | None, Field(description="This field represents the team member title")] = None
 
 
 class InvitationManagersRequest(_InvitationRequest):
@@ -97,18 +117,23 @@ class InvitationManagersRequest(_InvitationRequest):
     to the user for managers roles - "manager", "coordinator", "editor".
     """
 
-    role: ManagersRole = Field(
-        description="This field represents the managers role",
-    )
-    workspace_prefix: str | None = Field(
-        default=None,
-        description="This field represents the user workspace prefix. "
-        "You can only set this field the first time you invite any "
-        "manager role to your applet. Once created, "
-        "this name can not be changed anymore.",
-    )
+    role: Annotated[
+        ManagersRole,
+        Field(
+            description="This field represents the managers role",
+        ),
+    ]
+    workspace_prefix: Annotated[
+        str | None,
+        Field(
+            description="This field represents the user workspace prefix. "
+            "You can only set this field the first time you invite any "
+            "manager role to your applet. Once created, "
+            "this name can not be changed anymore.",
+        ),
+    ] = None
 
-    title: str | None = Field(default=None, description="This field represents the team member title")
+    title: Annotated[str | None, Field(description="This field represents the team member title")] = None
 
 
 class RespondentMeta(InternalModel):
@@ -305,32 +330,55 @@ class InvitationResponse(PublicModel):
 class _InvitationResponse(PublicModel):
     """This model is used as base class for invitation response."""
 
-    id: uuid.UUID = Field(
-        description="This field represents the specific invitation id",
-    )
-    applet_id: uuid.UUID = Field(
-        description="This field represents the specific applet id for invitation",
-    )
-    applet_name: str = Field(
-        description="This field represents the specific applet name for invitation",
-    )
-    key: uuid.UUID = Field(
-        description="This field represents the universally unique identifiers for invitation",
-    )
-    status: InvitationStatus = Field(
-        description="This field represents the status for invitation",
-    )
-    first_name: str = Field(
-        description="This field represents the first name of invited user",
-    )
-    last_name: str = Field(
-        description="This field represents the last name of invited user",
-    )
-    user_id: uuid.UUID | None = Field(
-        default=None,
-        description="This field respresents registered user or not. Used for tests",
-    )
-    tag: str | None = Field(default=None, description="This field represents subject tag")
+    id: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the specific invitation id",
+        ),
+    ]
+    applet_id: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the specific applet id for invitation",
+        ),
+    ]
+    applet_name: Annotated[
+        str,
+        Field(
+            description="This field represents the specific applet name for invitation",
+        ),
+    ]
+    key: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the universally unique identifiers for invitation",
+        ),
+    ]
+    status: Annotated[
+        InvitationStatus,
+        Field(
+            description="This field represents the status for invitation",
+        ),
+    ]
+    first_name: Annotated[
+        str,
+        Field(
+            description="This field represents the first name of invited user",
+        ),
+    ]
+    last_name: Annotated[
+        str,
+        Field(
+            description="This field represents the last name of invited user",
+        ),
+    ]
+    user_id: Annotated[
+        uuid.UUID | None,
+        Field(
+            description="This field respresents registered user or not. Used for tests",
+        ),
+    ] = None
+    tag: Annotated[str | None, Field(description="This field represents subject tag")] = None
 
 
 class InvitationRespondentResponse(_InvitationResponse):
@@ -338,19 +386,24 @@ class InvitationRespondentResponse(_InvitationResponse):
     for respondent role.
     """
 
-    secret_user_id: str = Field(
-        description="This field represents the secret user id "
-        "which is intended to preserve the confidentiality "
-        "of the respondent, this user identifier is unique "
-        "within the applet",
-    )
-    nickname: str | None = Field(
-        default=None,
-        description="This field represents the nickname of respondent, "
-        "this is the identifier that is assigned by the applet manager "
-        "when the respondent is invited, it is intended to increase "
-        "representativeness but preserve confidentiality",
-    )
+    secret_user_id: Annotated[
+        str,
+        Field(
+            description="This field represents the secret user id "
+            "which is intended to preserve the confidentiality "
+            "of the respondent, this user identifier is unique "
+            "within the applet",
+        ),
+    ]
+    nickname: Annotated[
+        str | None,
+        Field(
+            description="This field represents the nickname of respondent, "
+            "this is the identifier that is assigned by the applet manager "
+            "when the respondent is invited, it is intended to increase "
+            "representativeness but preserve confidentiality",
+        ),
+    ] = None
     role: Role = Role.RESPONDENT
 
 
@@ -359,12 +412,15 @@ class InvitationReviewerResponse(_InvitationResponse):
     for reviewer role.
     """
 
-    email: EmailStr = Field(
-        description="This field represents the email of invited reviewer",
-    )
-    subjects: list[uuid.UUID] = Field(description="This field represents the list of subject id's")
+    email: Annotated[
+        EmailStr,
+        Field(
+            description="This field represents the email of invited reviewer",
+        ),
+    ]
+    subjects: Annotated[list[uuid.UUID], Field(description="This field represents the list of subject id's")]
     role: Role = Role.REVIEWER
-    title: str | None = Field(default=None, description="This field represents the team member title")
+    title: Annotated[str | None, Field(description="This field represents the team member title")] = None
 
 
 class InvitationManagersResponse(_InvitationResponse):
@@ -372,13 +428,19 @@ class InvitationManagersResponse(_InvitationResponse):
     for managers roles - "manager", "coordinator", "editor".
     """
 
-    email: EmailStr = Field(
-        description="This field represents the email of invited manager",
-    )
-    role: ManagersRole = Field(
-        description="This field represents the managers role",
-    )
-    title: str | None = Field(default=None, description="This field represents the team member title")
+    email: Annotated[
+        EmailStr,
+        Field(
+            description="This field represents the email of invited manager",
+        ),
+    ]
+    role: Annotated[
+        ManagersRole,
+        Field(
+            description="This field represents the managers role",
+        ),
+    ]
+    title: Annotated[str | None, Field(description="This field represents the team member title")] = None
 
 
 class PrivateInvitationResponse(PublicModel):
@@ -410,11 +472,11 @@ class ShellAccountCreateRequest(PublicModel):
 
 
 class ShellAccountInvitation(PublicModel):
-    email: EmailStr = Field(description="This field represents the email of invited subject")
-    subject_id: uuid.UUID = Field(description="This field represents the subject id")
-    language: InvitationLanguage | None = Field(
-        default=None, description="This field represents the language of invitation"
-    )
+    email: Annotated[EmailStr, Field(description="This field represents the email of invited subject")]
+    subject_id: Annotated[uuid.UUID, Field(description="This field represents the subject id")]
+    language: Annotated[
+        InvitationLanguage | None, Field(description="This field represents the language of invitation")
+    ] = None
 
     @field_validator("email", mode="before")
     @classmethod

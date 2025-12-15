@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -125,11 +125,13 @@ class TextConfig(_ScreenConfig):
     type: Literal[ResponseType.TEXT]
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
-    correct_answer: str | None = Field(
-        default=None,
-        max_length=300,
-        description="Required if correct_answer_required is True",
-    )
+    correct_answer: Annotated[
+        str | None,
+        Field(
+            max_length=300,
+            description="Required if correct_answer_required is True",
+        ),
+    ] = None
     numerical_response_required: bool
     response_data_identifier: bool
     response_required: bool

@@ -1,5 +1,5 @@
 import enum
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, PositiveInt, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -41,8 +41,8 @@ class ScoreConditionalLogic(PublicModel):
     id: str
     flag_score: bool = False
     message: str | None = None
-    items_print: list[str] = Field(default_factory=list)
-    match: Match = Field(default=Match.ALL)
+    items_print: Annotated[list[str], Field(default_factory=list)]
+    match: Match = Match.ALL
     conditions: list[ScoreCondition]
 
     @field_validator("message")
@@ -63,9 +63,9 @@ class Score(PublicModel):
     name: str
     id: str
     calculation_type: CalculationType
-    items_score: list[str] = Field(default_factory=list)
+    items_score: Annotated[list[str], Field(default_factory=list)]
     message: str | None = None
-    items_print: list[str] = Field(default_factory=list)
+    items_print: Annotated[list[str], Field(default_factory=list)]
     conditional_logic: list[ScoreConditionalLogic] | None = None
     scoring_type: ScoringType | None = None
     subscale_name: str | None = None
@@ -102,7 +102,7 @@ class Score(PublicModel):
 
 
 class SectionConditionalLogic(PublicModel):
-    match: Match = Field(default=Match.ALL)
+    match: Match = Match.ALL
     conditions: list[SectionCondition]  # can be SingleSelection, MultiSelection, Slider, Score, ScoreCondition
 
 
@@ -110,7 +110,7 @@ class Section(PublicModel):
     type: Literal[ReportType.section] = ReportType.section
     name: str
     message: str | None = None
-    items_print: list[str] = Field(default_factory=list)
+    items_print: Annotated[list[str], Field(default_factory=list)]
     conditional_logic: SectionConditionalLogic | None = None
 
     @field_validator("message")
@@ -124,7 +124,7 @@ class Section(PublicModel):
 class ScoresAndReports(PublicModel):
     generate_report: bool = False
     show_score_summary: bool = False
-    reports: list[Score | Section] = Field(default_factory=list)
+    reports: Annotated[list[Score | Section], Field(default_factory=list)]
 
     @field_validator("reports")
     @classmethod
@@ -174,7 +174,7 @@ class ScoreConditionalLogicMobile(PublicModel):
     id: str
     name: str
     flag_score: bool = False
-    match: Match = Field(default=Match.ALL)
+    match: Match = Match.ALL
     conditions: list[ScoreCondition]
 
 
@@ -188,9 +188,9 @@ class SubScaleLookupTable(PublicModel):
     score: str
     raw_score: str
     age: PositiveInt | str | None = None
-    sex: str | None = Field(default=None, pattern="^(M|F)$", description="M or F")
+    sex: Annotated[str | None, Field(pattern="^(M|F)$", description="M or F")] = None
     optional_text: str | None = None
-    severity: str | None = Field(default=None, pattern="^(Minimal|Mild|Moderate|Severe)$")
+    severity: Annotated[str | None, Field(pattern="^(Minimal|Mild|Moderate|Severe)$")] = None
 
     @field_validator("raw_score")
     @classmethod
@@ -221,7 +221,7 @@ class SubscaleItem(PublicModel):
 class Subscale(PublicModel):
     name: str
     scoring: SubscaleCalculationType
-    items: list[SubscaleItem] = Field(default_factory=list)
+    items: Annotated[list[SubscaleItem], Field(default_factory=list)]
     subscale_table_data: list[SubScaleLookupTable] | None = None
 
 
@@ -237,8 +237,8 @@ class TotalScoreTable(PublicModel):
 
 class SubscaleSetting(PublicModel):
     calculate_total_score: SubscaleCalculationType | None = None
-    subscales: list[Subscale] = Field(default_factory=list)
-    total_scores_table_data: list[TotalScoreTable] | None = Field(default_factory=list)
+    subscales: Annotated[list[Subscale], Field(default_factory=list)]
+    total_scores_table_data: Annotated[list[TotalScoreTable] | None, Field(default_factory=list)]
 
     @field_validator("subscales")
     @classmethod

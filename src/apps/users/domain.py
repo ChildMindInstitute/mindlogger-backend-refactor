@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Annotated
 
 from pydantic import EmailStr, Field, field_validator
 
@@ -31,18 +32,27 @@ class UserCreateRequest(PublicModel):
 
     email: EmailStr
 
-    first_name: str = Field(
-        description="This field represents the user first name",
-        min_length=1,
-    )
-    last_name: str = Field(
-        description="This field represents the user last name",
-        min_length=1,
-    )
-    password: str = Field(
-        description="This field represents the user password",
-        min_length=1,
-    )
+    first_name: Annotated[
+        str,
+        Field(
+            description="This field represents the user first name",
+            min_length=1,
+        ),
+    ]
+    last_name: Annotated[
+        str,
+        Field(
+            description="This field represents the user last name",
+            min_length=1,
+        ),
+    ]
+    password: Annotated[
+        str,
+        Field(
+            description="This field represents the user password",
+            min_length=1,
+        ),
+    ]
 
     @field_validator("password")
     @classmethod
@@ -215,48 +225,52 @@ class UserDevice(UserDeviceCreate):
 class TOTPInitiateResponse(PublicModel):
     """Response for TOTP setup initiation."""
 
-    provisioning_uri: str = Field(description="URI for generating QR code in authenticator app")
-    message: str = Field(description="Setup instructions for the user")
+    provisioning_uri: Annotated[str, Field(description="URI for generating QR code in authenticator app")]
+    message: Annotated[str, Field(description="Setup instructions for the user")]
 
 
 class TOTPVerifyRequest(PublicModel):
     """TOTP verification request."""
 
-    code: str = Field(
-        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"
-    )
+    code: Annotated[
+        str,
+        Field(description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"),
+    ]
 
 
 class TOTPVerifyResponse(PublicModel):
     """TOTP verification response."""
 
-    message: str = Field(description="Success message")
-    mfa_enabled: bool = Field(description="Whether MFA is now enabled for the user")
-    recovery_codes: list[str] | None = Field(
-        default=None,
-        description="Recovery codes generated during first-time MFA setup (displayed once only)",
-    )
+    message: Annotated[str, Field(description="Success message")]
+    mfa_enabled: Annotated[bool, Field(description="Whether MFA is now enabled for the user")]
+    recovery_codes: Annotated[
+        list[str] | None,
+        Field(
+            description="Recovery codes generated during first-time MFA setup (displayed once only)",
+        ),
+    ] = None
 
 
 class MFADisableInitiateResponse(PublicModel):
     """Response when initiating MFA disable flow."""
 
     mfa_required: bool = True
-    mfa_token: str = Field(description="JWT token for MFA disable verification")
-    message: str = Field(description="Instructions for completing MFA disable")
+    mfa_token: Annotated[str, Field(description="JWT token for MFA disable verification")]
+    message: Annotated[str, Field(description="Instructions for completing MFA disable")]
 
 
 class MFADisableVerifyRequest(PublicModel):
     """Request to verify TOTP code and disable MFA."""
 
-    mfa_token: str = Field(description="JWT token from MFA disable initiation")
-    code: str = Field(
-        description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"
-    )
+    mfa_token: Annotated[str, Field(description="JWT token from MFA disable initiation")]
+    code: Annotated[
+        str,
+        Field(description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"),
+    ]
 
 
 class MFADisableVerifyResponse(PublicModel):
     """Response after successfully disabling MFA."""
 
     mfa_disabled: bool = True
-    message: str = Field(description="Success message confirming MFA has been disabled")
+    message: Annotated[str, Field(description="Success message confirming MFA has been disabled")]

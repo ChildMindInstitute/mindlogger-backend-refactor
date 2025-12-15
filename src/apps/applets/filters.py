@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Annotated
 
 from fastapi import Query
 from pydantic import Field
@@ -22,7 +23,7 @@ class AppletUsersQueryParams(BaseQueryParams):
 
 
 class FlowItemHistoryExportQueryParams(BaseQueryParams):
-    flow_ids: list[uuid.UUID] | None = Field(Query(None))
+    flow_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None
-    limit: int = Field(gt=0, default=settings.service.result_limit, le=settings.service.result_limit)
+    limit: Annotated[int, Field(gt=0, le=settings.service.result_limit)] = settings.service.result_limit
