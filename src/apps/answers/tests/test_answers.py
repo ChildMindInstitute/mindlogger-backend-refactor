@@ -10,7 +10,6 @@ from typing import Any, AsyncGenerator, Tuple, cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from pydantic import EmailStr
 from pytest import Config, FixtureRequest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -103,7 +102,7 @@ async def olive(olive_create: UserCreate, global_session: AsyncSession, pytestco
 @pytest.fixture(scope="session", autouse=True)
 def sam_create() -> UserCreate:
     return UserCreate(
-        email=EmailStr("sam@mindlogger.com"),
+        email="sam@mindlogger.com",
         password="Test1234!",
         first_name="Sam",
         last_name="Smith",
@@ -113,7 +112,7 @@ def sam_create() -> UserCreate:
 @pytest.fixture(scope="session", autouse=True)
 def olive_create() -> UserCreate:
     return UserCreate(
-        email=EmailStr("olive@mindlogger.com"),
+        email="olive@mindlogger.com",
         password="Test1234!",
         first_name="Olive",
         last_name="Johnson",
@@ -141,7 +140,7 @@ async def applet_one_sam_subject(session: AsyncSession, applet_one: AppletFull, 
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -151,7 +150,7 @@ async def applet_one_olive_subject(session: AsyncSession, applet_one: AppletFull
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -779,7 +778,7 @@ async def tom_answer_activity_flow_not_completed(
 async def applet__with_deleted_activities_and_answers(
     session: AsyncSession, tom: User, applet__with_ordered_activities: AppletFull
 ):
-    data = AppletUpdate(**applet__with_ordered_activities.dict())
+    data = AppletUpdate(**applet__with_ordered_activities.model_dump())
     applet_service = AppletService(session, tom.id)
     answer_service = AnswerService(session, tom.id)
     applet_id = applet__with_ordered_activities.id
@@ -801,7 +800,7 @@ async def applet__with_deleted_activities_and_answers(
         )
         await answer_service.create_answer(create_data)
     # delete first two activities
-    data.activities = [ActivityUpdate(**a.dict()) for a in applet__with_ordered_activities.activities[2:]]
+    data.activities = [ActivityUpdate(**a.model_dump()) for a in applet__with_ordered_activities.activities[2:]]
     return await applet_service.update(applet_id, data)
 
 
@@ -834,7 +833,7 @@ async def applet__with_deleted_and_order(
         )
         await answer_service.create_answer(create_data)
     applet_with_flow.activity_flows = [applet_with_flow.activity_flows[1]]
-    data = applet_with_flow.dict()
+    data = applet_with_flow.model_dump()
     for i in range(len(data["activity_flows"])):
         activity_flow = data["activity_flows"][i]
         for j in range(len(activity_flow["items"])):
@@ -1010,7 +1009,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_one_user_subject: Subject,
     ):
         client.login(tom)
-        data = answer_create_applet_one.copy(deep=True)
+        data = answer_create_applet_one.model_copy(deep=True)
         data.input_subject_id = applet_one_lucy_subject.id
         data.target_subject_id = applet_one_user_subject.id
         data.source_subject_id = applet_one_user_subject.id
@@ -1027,7 +1026,7 @@ class TestAnswerActivityItems(BaseTest):
         answer_create: AppletAnswerCreate,
     ):
         client.login(tom)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.version = "0.0.0"
         response = await client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
@@ -1055,7 +1054,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.OK
 
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         event = next((event for event in applet_default_events if event.activity_id == answer_create.activity_id), None)
         assert event
         data.event_history_id = f"{event.id}_{event.version}"
@@ -1085,7 +1084,7 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.OK
 
-        data = answer_with_flow_create.copy(deep=True)
+        data = answer_with_flow_create.model_copy(deep=True)
         event = next(
             (event for event in applet_with_flow_default_events if event.flow_id == answer_with_flow_create.flow_id),
             None,
@@ -1100,7 +1099,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, tom: User, answer_create: AppletAnswerCreate
     ):
         client.login(tom)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.event_history_id = str(uuid.uuid4())
         response = await client.post(self.answer_url, data=data)
 
@@ -1111,7 +1110,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, tom: User, answer_create: AppletAnswerCreate, applet_default_events
     ):
         client.login(tom)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         event = next((event for event in applet_default_events if event.activity_id == answer_create.activity_id), None)
         assert event
         data.event_history_id = f"{event.id}_{event.version}"
@@ -1127,7 +1126,7 @@ class TestAnswerActivityItems(BaseTest):
         answer_create: AppletAnswerCreate,
     ):
         client.login(tom)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         response = await client.post(self.answer_url, data=data)
         assert response.status_code == http.HTTPStatus.CREATED
 
@@ -1146,7 +1145,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_flow: AppletFull,
     ):
         client.login(tom)
-        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data: AppletAnswerCreate = answer_create.model_copy(deep=True)
         data.submit_id = uuid.uuid4()
         data.applet_id = applet_with_flow.id
         data.activity_id = applet_with_flow.activities[0].id
@@ -1171,7 +1170,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_flow: AppletFull,
     ):
         client.login(tom)
-        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data: AppletAnswerCreate = answer_create.model_copy(deep=True)
         data.submit_id = uuid.uuid4()
         data.applet_id = applet_with_flow.id
         data.flow_id = applet_with_flow.activity_flows[0].id
@@ -1191,7 +1190,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_flow: AppletFull,
     ):
         client.login(tom)
-        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data: AppletAnswerCreate = answer_create.model_copy(deep=True)
         data.submit_id = uuid.uuid4()
         data.applet_id = applet_with_flow.id
         data.flow_id = applet_with_flow.activity_flows[1].id
@@ -1216,7 +1215,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_flow_duplicated_activities: AppletFull,
     ):
         client.login(tom)
-        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data: AppletAnswerCreate = answer_create.model_copy(deep=True)
         data.submit_id = uuid.uuid4()
         data.applet_id = applet_with_flow_duplicated_activities.id
         data.flow_id = applet_with_flow_duplicated_activities.activity_flows[0].id
@@ -1237,7 +1236,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_flow: AppletFull,
     ):
         client.login(tom)
-        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data: AppletAnswerCreate = answer_create.model_copy(deep=True)
         data.submit_id = uuid.uuid4()
         data.applet_id = applet_with_flow.id
         data.flow_id = applet_with_flow.activity_flows[1].id
@@ -1259,7 +1258,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_flow: AppletFull,
     ):
         client.login(tom)
-        data: AppletAnswerCreate = answer_create.copy(deep=True)
+        data: AppletAnswerCreate = answer_create.model_copy(deep=True)
         data.submit_id = uuid.uuid4()
         data.applet_id = applet_with_flow.id
         data.flow_id = applet_with_flow.activity_flows[1].id
@@ -1297,7 +1296,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_one_user_subject: Subject,
     ):
         client.login(tom)
-        data = answer_create_applet_one.copy(deep=True)
+        data = answer_create_applet_one.model_copy(deep=True)
         data.allowed_ehr_ingest = True
 
         with patch("apps.answers.service.AnswerService.trigger_ehr_ingestion") as trigger_ehr_ingestion_mock:
@@ -1392,7 +1391,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
 
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.applet_id = applet_with_flow.id
         data.flow_id = applet_with_flow.activity_flows[0].id
         data.activity_id = applet_with_flow.activities[0].id
@@ -1417,7 +1416,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
 
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.applet_id = applet_with_flow.id
         data.flow_id = applet_with_flow.activity_flows[0].id
         data.activity_id = applet_with_flow.activities[0].id
@@ -1456,7 +1455,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_one_lucy_respondent: AppletFull,
     ):
         client.login(lucy)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.applet_id = applet_one_lucy_manager.id
         data.version = applet_one_lucy_manager.version
         data.activity_id = applet_one_lucy_manager.activities[0].id
@@ -1489,7 +1488,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         subject_service = SubjectsService(session, tom.id)
 
-        data = answer_create_applet_one.copy(deep=True)
+        data = answer_create_applet_one.model_copy(deep=True)
 
         client.login(sam)
         subject_service = SubjectsService(session, sam.id)
@@ -1560,7 +1559,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         subject_service = SubjectsService(session, tom.id)
 
-        data = answer_create_applet_one.copy(deep=True)
+        data = answer_create_applet_one.model_copy(deep=True)
 
         client.login(sam)
         subject_service = SubjectsService(session, sam.id)
@@ -1608,7 +1607,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         subject_service = SubjectsService(session, tom.id)
 
-        data = answer_create_applet_one.copy(deep=True)
+        data = answer_create_applet_one.model_copy(deep=True)
 
         client.login(sam)
         subject_service = SubjectsService(session, sam.id)
@@ -1653,7 +1652,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         subject_service = SubjectsService(session, tom.id)
 
-        data = answer_create_applet_one.copy(deep=True)
+        data = answer_create_applet_one.model_copy(deep=True)
 
         client.login(sam)
         subject_service = SubjectsService(session, sam.id)
@@ -1714,7 +1713,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         subject_service = SubjectsService(session, tom.id)
 
-        data = answer_create_applet_one.copy(deep=True)
+        data = answer_create_applet_one.model_copy(deep=True)
 
         client.login(sam)
         subject_service = SubjectsService(session, sam.id)
@@ -1780,7 +1779,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         subject_service = SubjectsService(session, tom.id)
 
-        data = answer_create_applet_one.copy(deep=True)
+        data = answer_create_applet_one.model_copy(deep=True)
 
         client.login(sam)
         subject_service = SubjectsService(session, sam.id)
@@ -1790,7 +1789,7 @@ class TestAnswerActivityItems(BaseTest):
                 creator_id=tom.id,
                 first_name="source",
                 last_name="subject",
-                email=EmailStr("source_subject@mindlogger.com"),
+                email="source_subject@mindlogger.com",
                 secret_user_id=f"{uuid.uuid4()}",
             )
         )
@@ -1856,7 +1855,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_one_lucy_respondent: AppletFull,
     ):
         client.login(lucy)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.applet_id = applet_one_lucy_respondent.id
         data.version = applet_one_lucy_respondent.version
         data.activity_id = applet_one_lucy_respondent.activities[0].id
@@ -2109,7 +2108,7 @@ class TestAnswerActivityItems(BaseTest):
             f"{general_activity.id}_{applet_with_reviewable_activity.version}",
             f"{review_activity.id}_{applet_with_reviewable_activity.version}",
         ]
-        assert not assessment["itemsLast"] == general_activity.dict()["items"][0]
+        assert not assessment["itemsLast"] == general_activity.model_dump()["items"][0]
         assert not assessment["items"]
 
     @pytest.mark.usefixtures("assessment")
@@ -2333,7 +2332,7 @@ class TestAnswerActivityItems(BaseTest):
         assert response.json()["count"] == 0
 
         created_at = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
-        data = answer_create.copy(deep=True)
+        data = answer_create.model_copy(deep=True)
         data.created_at = created_at
 
         response = await client.post(self.answer_url, data=data)
@@ -2542,7 +2541,7 @@ class TestAnswerActivityItems(BaseTest):
     async def test_public_answer_with_zero_start_time_end_time_timestamps(
         self, client: TestClient, public_answer_create: AppletAnswerCreate
     ):
-        create_data = public_answer_create.dict()
+        create_data = public_answer_create.model_dump()
         create_data["answer"]["start_time"] = 0
         create_data["answer"]["end_time"] = 0
 
@@ -3372,7 +3371,7 @@ class TestAnswerActivityItems(BaseTest):
         )
         assert response.status_code == 422
         data = response.json()
-        assert data["result"][0]["message"] == "field required"
+        assert data["result"][0]["message"] == "Field required"
         assert data["result"][0]["path"] == ["query", "targetSubjectId"]
 
     async def test_flow_submission_not_completed(
@@ -4073,7 +4072,7 @@ class TestAnswerActivityItems(BaseTest):
         response = await client.get(url)
 
         assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["result"][0]["message"] == "field required"
+        assert response.json()["result"][0]["message"] == "Field required"
 
     async def test_validate_multiinformant_assessment_fail_source_subject_not_found(
         self, client, tom: User, applet_one: AppletFull, applet_two: AppletFull, session: AsyncSession

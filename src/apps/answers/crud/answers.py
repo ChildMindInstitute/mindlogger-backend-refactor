@@ -3,7 +3,6 @@ import datetime
 import uuid
 from typing import Collection, Optional
 
-from pydantic import parse_obj_as
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import InstrumentedAttribute, Query, aliased, contains_eager
@@ -31,6 +30,7 @@ from apps.answers.errors import AnswerNotFoundError
 from apps.answers.filters import AppletSubmitDateFilter
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import Version
+from apps.shared.domain import parse_obj_as
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
@@ -1195,7 +1195,10 @@ class AnswersEHRCRUD(BaseCRUD[AnswerEHRSchema]):
         Returns:
             AnswerEHRSchema: The upserted entity.
         """
-        values = {**schema.dict(), "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)}
+        values = {
+            **schema.model_dump(),
+            "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+        }
         stmt = insert(AnswerEHRSchema).values(values)
         stmt = stmt.on_conflict_do_update(
             index_elements=[AnswerEHRSchema.submit_id, AnswerEHRSchema.activity_id],

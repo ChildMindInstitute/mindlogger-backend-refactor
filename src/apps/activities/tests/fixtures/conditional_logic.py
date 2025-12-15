@@ -24,7 +24,7 @@ def condition_between() -> cnd.BetweenCondition:
 @pytest.fixture
 def condition_rows_outside_of() -> cnd.OutsideOfCondition:
     return cnd.OutsideOfCondition(
-        item_name=DEFAULT_ITEM_NAME, payload=cnd.MinMaxPayloadRow(min_value=0, max_value=10, row_index=0)
+        item_name=DEFAULT_ITEM_NAME, payload=cnd.MinMaxPayloadRow(min_value=0, max_value=10, row_index="0")
     )
 
 
@@ -35,9 +35,9 @@ def conditional_logic_equal(condition_equal: cnd.EqualCondition) -> ConditionalL
 
 @pytest.fixture
 def conditional_logic_between(condition_between: cnd.BetweenCondition) -> ConditionalLogic:
-    return ConditionalLogic(math=Match.ALL, conditions=[condition_between])
+    return ConditionalLogic(match=Match.ALL, conditions=[condition_between])
 
 
 @pytest.fixture
 def conditional_logic_rows_outside_of(condition_rows_outside_of: cnd.OutsideOfCondition) -> ConditionalLogic:
-    return ConditionalLogic(math=Match.ALL, conditions=[condition_rows_outside_of])
+    return ConditionalLogic(match=Match.ALL, conditions=[condition_rows_outside_of])

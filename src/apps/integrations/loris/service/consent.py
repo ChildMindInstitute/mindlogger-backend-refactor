@@ -27,17 +27,17 @@ class ConsentService:
             )
         )
 
-        return PublicConsent(**consent.dict())
+        return PublicConsent(**consent.model_dump())
 
     async def get_consent_by_id(self, consent_id: uuid.UUID) -> PublicConsent:
         consent: Consent = await ConsentCRUD(self.session).get_by_id(pk=consent_id)
 
-        return PublicConsent(**consent.dict())
+        return PublicConsent(**consent.model_dump())
 
     async def get_consent_by_user_id(self, user_id: uuid.UUID) -> PublicConsent:
         consent: Consent = await ConsentCRUD(self.session).get_by_user_id(user_id=user_id)
 
-        return PublicConsent(**consent.dict())
+        return PublicConsent(**consent.model_dump())
 
     async def update_consent(
         self,
@@ -54,4 +54,4 @@ class ConsentService:
             ),
         )
 
-        return PublicConsent(**consent.dict())
+        return PublicConsent(**consent.model_dump())

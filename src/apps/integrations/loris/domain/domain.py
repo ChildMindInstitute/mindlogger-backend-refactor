@@ -1,8 +1,9 @@
 import datetime
 import uuid
 from enum import Enum
+from typing import Annotated
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from apps.activities.domain.conditional_logic import ConditionalLogic
 
@@ -38,12 +39,12 @@ class Item(BaseModel):
     id: uuid.UUID
     question: str
     responseType: str
-    responseValues: dict | None
-    config: dict | None
+    responseValues: dict | None = None
+    config: dict | None = None
     name: str
-    isHidden: bool | None
-    conditionalLogic: ConditionalLogic | None
-    allowEdit: bool | None
+    isHidden: bool | None = None
+    conditionalLogic: ConditionalLogic | None = None
+    allowEdit: bool | None = None
 
 
 class Activitie(BaseModel):
@@ -81,14 +82,15 @@ def to_camelcase(payload: str) -> str:
 
 
 class InternalModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.forbid
-        orm_mode = True
-        use_enum_values = True
-        allow_population_by_field_name = True
-        validate_assignment = True
-        alias_generator = to_camelcase
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid",
+        from_attributes=True,
+        use_enum_values=True,
+        populate_by_name=True,
+        validate_assignment=True,
+        alias_generator=to_camelcase,
+    )
 
 
 class ConsentCreate(InternalModel):
@@ -181,7 +183,7 @@ class LorisIntegrationAlertMessages(str, Enum):
 
 class UserVisits(InternalModel):
     user_id: uuid.UUID
-    visits: set[str] = Field(default_factory=set)
+    visits: Annotated[set[str], Field(default_factory=set)]
 
 
 class AnswerData(InternalModel):
@@ -195,8 +197,8 @@ class AnswerData(InternalModel):
 
 
 class UploadableAnswersData(InternalModel):
-    activity_visits: dict[str, list[UserVisits]] = Field(default_factory=dict)
-    answers: list[AnswerData] = Field(default_factory=list)
+    activity_visits: Annotated[dict[str, list[UserVisits]], Field(default_factory=dict)]
+    answers: Annotated[list[AnswerData], Field(default_factory=list)]
 
 
 class UploadableAnswersResponse(Response[UploadableAnswersData]):

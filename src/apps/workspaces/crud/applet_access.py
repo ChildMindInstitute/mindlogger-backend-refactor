@@ -245,7 +245,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
         data = db_result.all()
 
-        return {row.id: RespondentExportData.from_orm(row) for row in data}
+        return {row.id: RespondentExportData.model_validate(row) for row in data}
 
     async def get_user_roles_for_applet(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> list[Role]:
         query: Query = select(UserAppletAccessSchema.role)
@@ -298,7 +298,7 @@ class AppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         db_result = await self._execute(query)
         data = db_result.all()
 
-        return {row.id: SubjectExportData.from_orm(row) for row in data}
+        return {row.id: SubjectExportData.model_validate(row) for row in data}
 
     async def get_priority_access(self, applet_id: uuid.UUID, user_id: uuid.UUID) -> UserAppletAccessSchema:
         query: Query = select(UserAppletAccessSchema)

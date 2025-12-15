@@ -10,7 +10,6 @@ from typing import Annotated, Optional
 from fastapi import Body, Depends, Header, Query
 from fastapi import Response as FastAPIResponse
 from fastapi.responses import Response as FastApiResponse
-from pydantic import parse_obj_as
 
 from apps.activities.services import ActivityHistoryService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
@@ -67,7 +66,7 @@ from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.deps import get_client_ip, get_i18n
-from apps.shared.domain import Response, ResponseMulti
+from apps.shared.domain import Response, ResponseMulti, parse_obj_as
 from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 from apps.shared.locale import I18N
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
@@ -182,11 +181,11 @@ async def review_activity_list(
 ) -> ResponseMulti[PublicReviewActivity]:
     filters = ReviewAppletItemFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
     activities = await AnswerService(session, user.id, answer_session).get_review_activities(applet_id, filters)
 
     return ResponseMulti(
-        result=[PublicReviewActivity.from_orm(activity) for activity in activities],
+        result=[PublicReviewActivity.model_validate(activity) for activity in activities],
         count=len(activities),
     )
 
@@ -271,7 +270,7 @@ async def applet_activity_answers_list(
     result = []
     for answer in answers:
         review_count = answer_reviews.get(answer.answer_id, ReviewsCount())
-        result.append(parse_obj_as(AppletActivityAnswerPublic, {**answer.dict(), "review_count": review_count}))
+        result.append(parse_obj_as(AppletActivityAnswerPublic, {**answer.model_dump(), "review_count": review_count}))
     return ResponseMulti(result=result, count=len(answers))
 
 
@@ -361,7 +360,7 @@ async def applet_submit_date_list(
 ) -> Response[PublicAnswerDates]:
     filters = AppletSubmitDateFilter(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
     dates = await AnswerService(session, user.id, answer_session).get_applet_submit_dates(
         applet_id, AppletSubmitDateFilter(**query_params.filters)
     )
@@ -381,7 +380,7 @@ async def applet_activity_answer_retrieve(
     submission = await AnswerService(session, user.id, answer_session).get_activity_answer(
         applet_id, activity_id, answer_id
     )
-    result = ActivitySubmissionResponse.from_orm(submission)
+    result = ActivitySubmissionResponse.model_validate(submission)
     return Response(result=result)
 
 
@@ -398,7 +397,7 @@ async def applet_flow_answer_retrieve(
     submission = await AnswerService(session, user.id, answer_session).get_flow_submission(
         applet_id, flow_id, submit_id
     )
-    result = FlowSubmissionResponse.from_orm(submission)
+    result = FlowSubmissionResponse.model_validate(submission)
     return Response(result=result)
 
 
@@ -413,7 +412,7 @@ async def applet_answer_reviews_retrieve(
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     reviews = await AnswerService(session, user.id, answer_session).get_reviews_by_answer_id(applet_id, answer_id)
     return ResponseMulti(
-        result=[AnswerReviewPublic.from_orm(review) for review in reviews],
+        result=[AnswerReviewPublic.model_validate(review) for review in reviews],
         count=len(reviews),
     )
 
@@ -474,7 +473,7 @@ async def applet_activity_assessment_retrieve(
     await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
     answer = await AnswerService(session, user.id, answer_session).get_assessment_by_answer_id(applet_id, answer_id)
     return Response(
-        result=AssessmentAnswerPublic.from_orm(answer),
+        result=AssessmentAnswerPublic.model_validate(answer),
     )
 
 
@@ -491,7 +490,7 @@ async def applet_submission_assessment_retrieve(
     if not answer:
         raise NotFoundError()
     return Response(
-        result=AssessmentAnswerPublic.from_orm(answer),
+        result=AssessmentAnswerPublic.model_validate(answer),
     )
 
 
@@ -505,7 +504,7 @@ async def applet_activity_identifiers_retrieve(
 ) -> ResponseMulti[Identifier]:
     filters = IdentifiersQueryParams(**query_params.filters)
     await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.dict())
+    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
     identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(activity_id, filters)
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
@@ -617,7 +616,7 @@ async def submission_note_list(
         submission_id, flow_id, query_params.page, query_params.limit
     )
     return ResponseMulti(
-        result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
+        result=[AnswerNoteDetailPublic.model_validate(note) for note in notes],
         count=count,
     )
 
@@ -696,7 +695,7 @@ async def answer_note_list(
     )
     count = await AnswerService(session, user.id, answer_session).get_notes_count(answer_id, activity_id)
     return ResponseMulti(
-        result=[AnswerNoteDetailPublic.from_orm(note) for note in notes],
+        result=[AnswerNoteDetailPublic.model_validate(note) for note in notes],
         count=count,
     )
 
@@ -764,7 +763,7 @@ async def applet_answers_export(
         activities = await ActivityHistoryService(session, applet.id, applet.version).get_full()
         data.activities = activities
     return PublicAnswerExportResponse(
-        result=PublicAnswerExport.from_orm(data).translate(i18n),
+        result=PublicAnswerExport.model_validate(data).translate(i18n),
         count=total_answers,
     )
 
@@ -897,7 +896,7 @@ async def applet_submission_reviews_retrieve(
         applet_id, submission_id
     )
     return ResponseMulti(
-        result=[AnswerReviewPublic.from_orm(review) for review in reviews],
+        result=[AnswerReviewPublic.model_validate(review) for review in reviews],
         count=len(reviews),
     )
 

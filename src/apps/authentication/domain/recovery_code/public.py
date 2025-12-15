@@ -17,7 +17,7 @@ __all__ = [
 class PublicRecoveryCode(PublicModel):
     id: UUID
     used: bool
-    used_at: datetime | None
+    used_at: datetime | None = None
     created_at: datetime
 
 

@@ -54,7 +54,7 @@ async def lucy_applet_one_subject(session: AsyncSession, lucy: User, applet_one_
     query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ async def user_applet_one_subject(session: AsyncSession, user: User, applet_one_
     query = select(SubjectSchema).where(SubjectSchema.user_id == user.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -100,7 +100,7 @@ async def empty_applet(
 ) -> AsyncGenerator[AppletFull, None]:
     applet_id = uuid.UUID("92917a56-d586-4613-b7aa-991f2c4b15b0")
     applet_name = "Empty Applet"
-    applet_minimal_data = AppletCreate(**applet_base_data.dict(), activities=[], activity_flows=[])
+    applet_minimal_data = AppletCreate(**applet_base_data.model_dump(), activities=[], activity_flows=[])
     applet = await _get_or_create_applet(session, applet_name, applet_id, applet_minimal_data, tom.id)
     yield applet
     if not pytestconfig.getoption("--keepdb"):
@@ -157,7 +157,7 @@ async def lucy_empty_applet_subject(
     query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -168,7 +168,7 @@ async def lucy_applet_with_all_performance_tasks_subject(
     query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -197,7 +197,7 @@ async def user_empty_applet_subject(
     query = select(SubjectSchema).where(SubjectSchema.user_id == user.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -208,7 +208,7 @@ async def user_applet_with_all_performance_tasks_subject(
     query = select(SubjectSchema).where(SubjectSchema.user_id == user.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -227,7 +227,7 @@ async def lucy_applet_activity_flow_subject(
     query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -838,7 +838,7 @@ class TestActivities:
             empty_applet_lucy_manager.id,
             [
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign"}),
                     name="Manual Activity",
                     auto_assign=False,
                 )
@@ -986,7 +986,7 @@ class TestActivities:
             empty_applet_lucy_manager.id,
             [
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign"}),
                     name="Hybrid Activity",
                     auto_assign=True,
                 )
@@ -1237,7 +1237,7 @@ class TestActivities:
             applet_one.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 ),
             ],
@@ -1403,22 +1403,22 @@ class TestActivities:
             empty_applet_lucy_manager.id,
             [
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign"}),
                     name="Manual Activity 1",
                     auto_assign=False,
                 ),
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign"}),
                     name="Manual Activity 2",
                     auto_assign=False,
                 ),
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign"}),
                     name="Manual Activity 3",
                     auto_assign=False,
                 ),
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign"}),
                     name="Manual Activity 4",
                     auto_assign=False,
                 ),
@@ -1704,7 +1704,7 @@ class TestActivities:
             applet_one_lucy_respondent.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 ),
             ],
@@ -1797,13 +1797,13 @@ class TestActivities:
             empty_applet_lucy_manager.id,
             [
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign", "is_hidden"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign", "is_hidden"}),
                     name="Auto Activity",
                     auto_assign=True,
                     is_hidden=True,
                 ),
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign", "is_hidden"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign", "is_hidden"}),
                     name="Manual Activity",
                     auto_assign=False,
                     is_hidden=True,
@@ -2004,12 +2004,12 @@ class TestActivities:
             empty_applet_lucy_manager.id,
             [
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign"}),
                     name="Manual Activity 1",
                     auto_assign=False,
                 ),
                 ActivityUpdate(
-                    **activity_create_session.dict(exclude={"name", "auto_assign"}),
+                    **activity_create_session.model_dump(exclude={"name", "auto_assign"}),
                     name="Manual Activity 2",
                     auto_assign=False,
                 ),

@@ -4,11 +4,10 @@ from abc import ABC, abstractmethod
 from operator import and_, or_
 from typing import Tuple
 
-from pydantic import parse_obj_as
-
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import AnyCondition, ConditionType
 from apps.jsonld_converter.errors import ConditionalLogicError, ConditionalLogicParsingError
+from apps.shared.domain import parse_obj_as
 
 
 @dataclasses.dataclass

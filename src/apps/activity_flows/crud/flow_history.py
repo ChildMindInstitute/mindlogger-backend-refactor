@@ -1,6 +1,5 @@
 import uuid
 
-from pydantic import parse_obj_as
 from sqlalchemy import and_, any_, select
 from sqlalchemy.orm import Query, joinedload
 
@@ -9,6 +8,7 @@ from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, Activity
 from apps.activity_flows.domain.flow_full import FlowHistoryWithActivityFull
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import Version
+from apps.shared.domain import parse_obj_as
 from infrastructure.database import BaseCRUD
 
 __all__ = ["FlowsHistoryCRUD"]

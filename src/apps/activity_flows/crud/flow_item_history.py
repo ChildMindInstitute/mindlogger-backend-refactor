@@ -1,7 +1,6 @@
 import asyncio
 import uuid
 
-from pydantic import parse_obj_as
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import func
@@ -11,6 +10,7 @@ from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, Activity
 from apps.activity_flows.domain.flow_full import FlowItemHistoryFull
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import FlowItemHistoryDto
+from apps.shared.domain import parse_obj_as
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from apps.shared.query_params import QueryParams

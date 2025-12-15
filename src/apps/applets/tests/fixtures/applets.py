@@ -41,7 +41,7 @@ async def _get_or_create_applet(
     if applet_db:
         applet = await srv.get_full_applet(applet_id)
     else:
-        applet_data = applet_minimal_data.copy(deep=True)
+        applet_data = applet_minimal_data.model_copy(deep=True)
         applet_data.display_name = applet_name
         applet = await srv.create(applet_data, applet_id=applet_id)
         await global_session.commit()
@@ -135,6 +135,8 @@ def activity_create_session(item_create: ActivityItemCreate) -> ActivityCreate:
 def applet_base_data(encryption: Encryption) -> AppletBase:
     return AppletBase(
         display_name="Base Data",
+        description={},
+        about={},
         link=None,
         require_login=False,
         pinned_at=None,
@@ -150,7 +152,7 @@ def applet_base_data(encryption: Encryption) -> AppletBase:
 @pytest.fixture(scope="session")
 def applet_minimal_data(applet_base_data: AppletBase, activity_create_session: ActivityCreate) -> AppletCreate:
     # TODO: possible need to add activity_flows
-    return AppletCreate(**applet_base_data.dict(), activities=[activity_create_session], activity_flows=[])
+    return AppletCreate(**applet_base_data.model_dump(), activities=[activity_create_session], activity_flows=[])
 
 
 @pytest.fixture(scope="session")
@@ -205,7 +207,7 @@ async def tom_applet_one_subject(session: AsyncSession, tom: User, applet_one: A
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -230,7 +232,7 @@ async def tom_applet_two_subject(session: AsyncSession, tom: User, applet_two: A
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -355,7 +357,7 @@ async def applet_with_all_performance_tasks(
     actvitiy_cst_touch_create: ActivityCreate,
     activity_unity_create: ActivityCreate,
 ) -> AppletFull:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.activities = [
         activity_ab_trails_ipad_create,
         activity_ab_trails_mobile_create,

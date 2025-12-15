@@ -52,14 +52,14 @@ def single_select_config(default_config: DefaultConfig) -> SingleSelectionConfig
         add_tooltip=False,
         set_palette=False,
         response_data_identifier=False,
-        **default_config.dict(),
+        **default_config.model_dump(),
         type=ResponseType.SINGLESELECT,
     )
 
 
 @pytest.fixture
 def multi_select_config(single_select_config: SingleSelectionConfig) -> MultiSelectionConfig:
-    data = single_select_config.dict()
+    data = single_select_config.model_dump()
     data["type"] = ResponseType.MULTISELECT
     return MultiSelectionConfig(**data)
 
@@ -72,29 +72,29 @@ def slider_config(default_config: DefaultConfig) -> SliderConfig:
         show_tick_marks=False,
         show_tick_labels=False,
         continuous_slider=False,
-        **default_config.dict(),
+        **default_config.model_dump(),
         type=ResponseType.SLIDER,
     )
 
 
 @pytest.fixture
 def date_config(default_config: DefaultConfig) -> DateConfig:
-    return DateConfig(**default_config.dict(), type=ResponseType.DATE)
+    return DateConfig(**default_config.model_dump(), type=ResponseType.DATE)
 
 
 @pytest.fixture
 def number_selection_config(default_config: DefaultConfig) -> NumberSelectionConfig:
-    return NumberSelectionConfig(**default_config.dict(), type=ResponseType.NUMBERSELECT)
+    return NumberSelectionConfig(**default_config.model_dump(), type=ResponseType.NUMBERSELECT)
 
 
 @pytest.fixture
 def time_config(default_config: DefaultConfig) -> TimeConfig:
-    return TimeConfig(**default_config.dict(), type=ResponseType.TIME)
+    return TimeConfig(**default_config.model_dump(), type=ResponseType.TIME)
 
 
 @pytest.fixture
 def time_range_config(default_config: DefaultConfig) -> TimeRangeConfig:
-    return TimeRangeConfig(**default_config.dict(), type=ResponseType.TIMERANGE)
+    return TimeRangeConfig(**default_config.model_dump(), type=ResponseType.TIMERANGE)
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ def single_select_row_config(default_config: DefaultConfig) -> SingleSelectionRo
         set_alerts=False,
         add_tooltip=False,
         add_tokens=None,
-        **default_config.dict(),
+        **default_config.model_dump(),
         type=ResponseType.SINGLESELECTROWS,
     )
 
@@ -113,20 +113,22 @@ def single_select_row_config(default_config: DefaultConfig) -> SingleSelectionRo
 def multi_select_row_config(
     single_select_row_config: SingleSelectionRowsConfig,
 ) -> MultiSelectionRowsConfig:
-    data = single_select_row_config.dict()
+    data = single_select_row_config.model_dump()
     data["type"] = ResponseType.MULTISELECTROWS
     return MultiSelectionRowsConfig(**data)
 
 
 @pytest.fixture
 def slider_rows_config(default_config: DefaultConfig) -> SliderRowsConfig:
-    return SliderRowsConfig(add_scores=False, set_alerts=False, **default_config.dict(), type=ResponseType.SLIDERROWS)
+    return SliderRowsConfig(
+        add_scores=False, set_alerts=False, **default_config.model_dump(), type=ResponseType.SLIDERROWS
+    )
 
 
 @pytest.fixture
 def text_config(default_config: DefaultConfig) -> TextConfig:
     return TextConfig(
-        **default_config.dict(),
+        **default_config.model_dump(),
         correct_answer_required=False,
         numerical_response_required=False,
         response_data_identifier=False,
@@ -138,7 +140,7 @@ def text_config(default_config: DefaultConfig) -> TextConfig:
 @pytest.fixture
 def paragraph_text_config(default_config: DefaultConfig) -> ParagraphTextConfig:
     return ParagraphTextConfig(
-        **default_config.dict(),
+        **default_config.model_dump(),
         response_required=False,
         type=ResponseType.PARAGRAPHTEXT,
     )
@@ -146,49 +148,49 @@ def paragraph_text_config(default_config: DefaultConfig) -> ParagraphTextConfig:
 
 @pytest.fixture
 def drawing_config(default_config: DefaultConfig) -> DrawingConfig:
-    return DrawingConfig(remove_undo_button=False, **default_config.dict(), type=ResponseType.DRAWING)
+    return DrawingConfig(remove_undo_button=False, **default_config.model_dump(), type=ResponseType.DRAWING)
 
 
 @pytest.fixture
 def photo_config(default_config: DefaultConfig) -> PhotoConfig:
-    return PhotoConfig(**default_config.dict(), type=ResponseType.PHOTO)
+    return PhotoConfig(**default_config.model_dump(), type=ResponseType.PHOTO)
 
 
 @pytest.fixture
 def video_config(default_config: DefaultConfig) -> VideoConfig:
-    return VideoConfig(**default_config.dict(), type=ResponseType.VIDEO)
+    return VideoConfig(**default_config.model_dump(), type=ResponseType.VIDEO)
 
 
 @pytest.fixture
 def geolocation_config(default_config: DefaultConfig) -> GeolocationConfig:
-    return GeolocationConfig(**default_config.dict(), type=ResponseType.GEOLOCATION)
+    return GeolocationConfig(**default_config.model_dump(), type=ResponseType.GEOLOCATION)
 
 
 @pytest.fixture
 def audio_config(default_config: DefaultConfig) -> AudioConfig:
-    return AudioConfig(**default_config.dict(), type=ResponseType.AUDIO)
+    return AudioConfig(**default_config.model_dump(), type=ResponseType.AUDIO)
 
 
 @pytest.fixture
 def message_config(default_config: DefaultConfig) -> MessageConfig:
-    return MessageConfig(**default_config.dict(), type=ResponseType.MESSAGE)
+    return MessageConfig(**default_config.model_dump(), type=ResponseType.MESSAGE)
 
 
 @pytest.fixture
 def audio_player_config(default_config: DefaultConfig) -> AudioPlayerConfig:
-    return AudioPlayerConfig(**default_config.dict(), play_once=False, type=ResponseType.AUDIOPLAYER)
+    return AudioPlayerConfig(**default_config.model_dump(), play_once=False, type=ResponseType.AUDIOPLAYER)
 
 
 @pytest.fixture
 def phrasal_template_config(default_config: DefaultConfig) -> PhrasalTemplateConfig:
-    return PhrasalTemplateConfig(**default_config.dict(), type=ResponseType.PHRASAL_TEMPLATE)
+    return PhrasalTemplateConfig(**default_config.model_dump(), type=ResponseType.PHRASAL_TEMPLATE)
 
 
 @pytest.fixture
 def unity_config(default_config: DefaultConfig) -> UnityConfig:
-    return UnityConfig(**default_config.dict(), type=ResponseType.UNITY)
+    return UnityConfig(**default_config.model_dump(), type=ResponseType.UNITY)
 
 
 @pytest.fixture
 def request_health_record_data_config(default_config: DefaultConfig) -> RequestHealthRecordDataConfig:
-    return RequestHealthRecordDataConfig(**default_config.dict(), type=ResponseType.REQUEST_HEALTH_RECORD_DATA)
+    return RequestHealthRecordDataConfig(**default_config.model_dump(), type=ResponseType.REQUEST_HEALTH_RECORD_DATA)

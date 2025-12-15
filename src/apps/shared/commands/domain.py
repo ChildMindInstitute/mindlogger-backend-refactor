@@ -1,6 +1,6 @@
 import os
 
-from pydantic import validator
+from pydantic import field_validator
 
 from apps.shared.domain import InternalModel
 
@@ -11,7 +11,8 @@ class Patch(InternalModel):
     description: str
     manage_session: bool
 
-    @validator("file_path")
+    @field_validator("file_path")
+    @classmethod
     def validate_file_existance(cls, v):
         path = os.path.join(os.path.dirname(__file__), "patches", v)
         if not os.path.exists(path):

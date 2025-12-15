@@ -61,8 +61,8 @@ class AppletHistoryService:
         new_schema = await AppletHistoriesCRUD(self.session).retrieve_by_applet_version(self._id_version)
         old_schema = await AppletHistoriesCRUD(self.session).retrieve_by_applet_version(old_id_version)
 
-        new_history: AppletHistory = AppletHistory.from_orm(new_schema)
-        old_history: AppletHistory = AppletHistory.from_orm(old_schema)
+        new_history: AppletHistory = AppletHistory.model_validate(new_schema)
+        old_history: AppletHistory = AppletHistory.model_validate(old_schema)
         change_service = AppletChangeService()
         return change_service.compare(old_history, new_history)
 
@@ -70,7 +70,7 @@ class AppletHistoryService:
         schema = await AppletHistoriesCRUD(self.session).get_by_id_version(self._id_version)
         if not schema:
             raise NotValidAppletHistory()
-        return AppletHistory.from_orm(schema)
+        return AppletHistory.model_validate(schema)
 
     async def get_prev_version(self):
         versions = await AppletHistoriesCRUD(self.session).get_versions_by_applet_id(self._applet_id)
@@ -82,7 +82,7 @@ class AppletHistoryService:
 
     async def get_full(self, non_performance=False) -> AppletHistoryFull:
         schema = await AppletHistoriesCRUD(self.session).get_by_id_version(self._id_version)
-        applet = AppletHistoryFull.from_orm(schema)
+        applet = AppletHistoryFull.model_validate(schema)
         applet.activities = await ActivityHistoryService(self.session, self._applet_id, self._version).get_full(
             non_performance
         )

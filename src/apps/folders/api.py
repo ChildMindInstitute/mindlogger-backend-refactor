@@ -30,7 +30,7 @@ async def folder_list(
     if not user.is_super_admin:
         await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
     folders = await FolderService(session, workspace_id, user.id).list()
-    return ResponseMulti(result=[FolderPublic.from_orm(f) for f in folders], count=len(folders))
+    return ResponseMulti(result=[FolderPublic.model_validate(f) for f in folders], count=len(folders))
 
 
 async def folder_create(
@@ -43,7 +43,7 @@ async def folder_create(
         if not user.is_super_admin:
             await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
         folder = await FolderService(session, workspace_id, user.id).create(data)
-    return Response(result=FolderPublic.from_orm(folder))
+    return Response(result=FolderPublic.model_validate(folder))
 
 
 async def folder_update_name(
@@ -57,7 +57,7 @@ async def folder_update_name(
         if not user.is_super_admin:
             await CheckAccessService(session, user.id).check_workspace_folder_access(workspace_id)
         folder = await FolderService(session, workspace_id, user.id).update(folder_id, data)
-    return Response(result=FolderPublic.from_orm(folder))
+    return Response(result=FolderPublic.model_validate(folder))
 
 
 async def folder_delete(

@@ -1,8 +1,8 @@
 import datetime
 from enum import StrEnum
-from typing import Any, Dict, Optional
+from typing import Annotated, Any, Dict, Literal, Optional, Self
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from apps.activities.errors import IncorrectMaxTimeRange, IncorrectMinTimeRange, IncorrectTimeRange
 from apps.shared.domain import PublicModel, PublicModelNoExtra
@@ -120,7 +120,8 @@ class OptionIndexPayload(OptionPayload):
 class ValuePayload(PublicModelNoExtra):
     value: float
 
-    @validator("value")
+    @field_validator("value")
+    @classmethod
     def validate_score(cls, value):
         return round(value, 2)
 
@@ -132,8 +133,8 @@ class ValueIndexPayload(ValuePayload):
 class SingleDatePayload(PublicModel):
     date: datetime.date
 
-    def dict(self, *args, **kwargs):
-        d = super().dict(*args, **kwargs)
+    def model_dump(self, *args, **kwargs):
+        d = super().model_dump(*args, **kwargs)
         d["date"] = self.date.isoformat()
         return d
 
@@ -141,24 +142,23 @@ class SingleDatePayload(PublicModel):
 class DateRangePayload(PublicModel):
     minDate: datetime.date
     maxDate: datetime.date
-    fieldName: FieldNamePayloadType | None = None
+    fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
 
-    @validator("fieldName", pre=True, always=True)
+    @field_validator("fieldName", mode="before")
+    @classmethod
     def validate_field_name(cls, v):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
 
-    @root_validator(pre=True)
-    def validate_dates(cls, values):
-        min_date = values.get("minDate")
-        max_date = values.get("maxDate")
-        if min_date and max_date and min_date > max_date:
+    @model_validator(mode="after")
+    def validate_dates(self) -> Self:
+        if self.minDate and self.maxDate and self.minDate > self.maxDate:
             raise ValueError("minDate cannot be later than maxDate")
-        return values
+        return self
 
-    def dict(self, *args, **kwargs):
-        d = super().dict(*args, **kwargs)
+    def model_dump(self, *args, **kwargs):
+        d = super().model_dump(*args, **kwargs)
         d["minDate"] = self.minDate.isoformat()
         d["maxDate"] = self.maxDate.isoformat()
         return d
@@ -168,8 +168,8 @@ class TimePayload(PublicModel):
     type: TimePayloadType | None = None
     value: datetime.time
 
-    def dict(self, *args, **kwargs):
-        d = super().dict(*args, **kwargs)
+    def model_dump(self, *args, **kwargs):
+        d = super().model_dump(*args, **kwargs)
         d["value"] = self.value.strftime("%H:%M")
         return d
 
@@ -178,49 +178,39 @@ class SingleTimePayload(PublicModel):
     time: Optional[datetime.time] = None
     max_value: Optional[datetime.time] = None
     min_value: Optional[datetime.time] = None
-    fieldName: FieldNamePayloadType | None = None
+    fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
 
-    @validator("fieldName", pre=True, always=True)
+    @field_validator("time", "max_value", "min_value", mode="before")
+    @classmethod
+    def ensure_time(cls, v):
+        if isinstance(v, dict):
+            return cls._dict_to_time(v)
+        elif isinstance(v, str):
+            return cls._string_to_time(v)
+        return v
+
+    @field_validator("fieldName", mode="before")
+    @classmethod
     def validate_field_name(cls, v):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
 
-    @root_validator(pre=True)
-    def validate_time(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        time_value = values.get("time")
-        max_time_value = values.get("max_value")
-        min_time_value = values.get("min_value")
-
-        if isinstance(time_value, dict):
-            values["time"] = cls._dict_to_time(time_value)
-        elif isinstance(time_value, str):
-            values["time"] = cls._string_to_time(time_value)
-        if max_time_value and min_time_value:
-            if isinstance(max_time_value, dict):
-                max_time_value = cls._dict_to_time(max_time_value)
-            elif isinstance(max_time_value, str):
-                max_time_value = cls._string_to_time(max_time_value)
-
-            if isinstance(min_time_value, dict):
-                min_time_value = cls._dict_to_time(min_time_value)
-            elif isinstance(min_time_value, str):
-                min_time_value = cls._string_to_time(min_time_value)
-
-            if max_time_value < min_time_value:
+    @model_validator(mode="after")
+    def validate_time(self) -> Self:
+        if self.max_value and self.min_value:
+            if self.max_value < self.min_value:
                 raise IncorrectTimeRange()
-
-        if min_time_value is not None:
-            if max_time_value is None:
+        if self.min_value is not None:
+            if self.max_value is None:
                 raise IncorrectMaxTimeRange()
-        if max_time_value is not None:
-            if min_time_value is None:
+        if self.max_value is not None:
+            if self.min_value is None:
                 raise IncorrectMinTimeRange()
+        return self
 
-        return values
-
-    def dict(self, *args, **kwargs) -> Dict[str, Any]:
-        d = super().dict(*args, **kwargs)
+    def model_dump(self, *args, **kwargs) -> Dict[str, Any]:
+        d = super().model_dump(*args, **kwargs)
         if self.time:
             d["time"] = self.time.strftime("%H:%M")
         return d
@@ -246,28 +236,24 @@ class SingleTimePayload(PublicModel):
 class MinMaxTimePayload(PublicModel):
     minTime: Optional[datetime.time] = None
     maxTime: Optional[datetime.time] = None
-    fieldName: FieldNamePayloadType | None = None
+    fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
 
-    @validator("fieldName", pre=True, always=True)
+    @field_validator("minTime", "maxTime", mode="before")
+    @classmethod
+    def ensure_time(cls, v):
+        if isinstance(v, dict):
+            return cls._dict_to_time(v)
+        return v
+
+    @field_validator("fieldName", mode="before")
+    @classmethod
     def validate_field_name(cls, v):
         if v is not None and v not in FieldNamePayloadType.__members__.values():
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
 
-    @root_validator(pre=True)
-    def validate_times(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        min_time_dict = values.get("minTime")
-        max_time_dict = values.get("maxTime")
-
-        if isinstance(min_time_dict, dict):
-            values["minTime"] = cls._dict_to_time(min_time_dict)
-        if isinstance(max_time_dict, dict):
-            values["maxTime"] = cls._dict_to_time(max_time_dict)
-
-        return values
-
-    def dict(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
-        d = super().dict(*args, **kwargs)
+    def model_dump(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        d = super().model_dump(*args, **kwargs)
         if self.minTime:
             d["minTime"] = self._time_to_dict(self.minTime)
         if self.maxTime:
@@ -285,7 +271,7 @@ class MinMaxTimePayload(PublicModel):
         return {"hours": time.hour, "minutes": time.minute}
 
     def json_serialize(self) -> Dict[str, Any]:
-        data = self.dict()
+        data = self.model_dump()
         if self.minTime:
             data["minTime"] = self._time_to_dict(self.minTime)
         if self.maxTime:
@@ -298,12 +284,13 @@ class MinMaxSliderRowPayload(PublicModelNoExtra):
     maxValue: float
     rowIndex: str
 
-    @validator("minValue", "maxValue")
+    @field_validator("minValue", "maxValue")
+    @classmethod
     def validate_score(cls, value):
         return round(value, 2)
 
-    def dict(self, *args, **kwargs):
-        d = super().dict(*args, **kwargs)
+    def model_dump(self, *args, **kwargs):
+        d = super().model_dump(*args, **kwargs)
         d["minValue"] = round(self.minValue, 2)
         d["maxValue"] = round(self.maxValue, 2)
         return d
@@ -313,7 +300,8 @@ class MinMaxPayload(PublicModelNoExtra):
     min_value: float
     max_value: float
 
-    @validator("min_value", "max_value")
+    @field_validator("min_value", "max_value")
+    @classmethod
     def validate_score(cls, value):
         return round(value, 2)
 
@@ -331,155 +319,163 @@ class BaseCondition(PublicModel):
 
 
 class _IncludesOptionCondition(BaseCondition):
-    type: str = Field(ConditionType.INCLUDES_OPTION, const=True)
+    type: Literal[ConditionType.INCLUDES_OPTION] = ConditionType.INCLUDES_OPTION
 
 
 class _IncludesOptionPerRowCondition(BaseCondition):
-    type: str = Field(MultiSelectionsPerRowConditionType.INCLUDES_ROW_OPTION, const=True)
+    type: Literal[MultiSelectionsPerRowConditionType.INCLUDES_ROW_OPTION] = (
+        MultiSelectionsPerRowConditionType.INCLUDES_ROW_OPTION
+    )
 
 
 class _NotIncludesOptionPerRowCondition(BaseCondition):
-    type: str = Field(MultiSelectionsPerRowConditionType.NOT_INCLUDES_ROW_OPTION, const=True)
+    type: Literal[MultiSelectionsPerRowConditionType.NOT_INCLUDES_ROW_OPTION] = (
+        MultiSelectionsPerRowConditionType.NOT_INCLUDES_ROW_OPTION
+    )
 
 
 class _NotIncludesOptionCondition(BaseCondition):
-    type: str = Field(ConditionType.NOT_INCLUDES_OPTION, const=True)
+    type: Literal[ConditionType.NOT_INCLUDES_OPTION] = ConditionType.NOT_INCLUDES_OPTION
 
 
 class _EqualToOptionCondition(BaseCondition):
-    type: str = Field(ConditionType.EQUAL_TO_OPTION, const=True)
+    type: Literal[ConditionType.EQUAL_TO_OPTION] = ConditionType.EQUAL_TO_OPTION
 
 
 class _EqualToRowOptionCondition(BaseCondition):
-    type: str = Field(SingleSelectionPerRowConditionType.EQUAL_TO_ROW_OPTION, const=True)
+    type: Literal[SingleSelectionPerRowConditionType.EQUAL_TO_ROW_OPTION] = (
+        SingleSelectionPerRowConditionType.EQUAL_TO_ROW_OPTION
+    )
 
 
 class _NotEqualToRowOptionCondition(BaseCondition):
-    type: str = Field(SingleSelectionPerRowConditionType.NOT_EQUAL_TO_ROW_OPTION, const=True)
+    type: Literal[SingleSelectionPerRowConditionType.NOT_EQUAL_TO_ROW_OPTION] = (
+        SingleSelectionPerRowConditionType.NOT_EQUAL_TO_ROW_OPTION
+    )
 
 
 class _NotEqualToOptionCondition(BaseCondition):
-    type: str = Field(ConditionType.NOT_EQUAL_TO_OPTION, const=True)
+    type: Literal[ConditionType.NOT_EQUAL_TO_OPTION] = ConditionType.NOT_EQUAL_TO_OPTION
 
 
 class _GraterThanDateCondition(BaseCondition):
-    type: str = Field(DateConditionType.GREATER_THAN_DATE, const=True)
+    type: Literal[DateConditionType.GREATER_THAN_DATE] = DateConditionType.GREATER_THAN_DATE
 
 
 class _LessThanDateCondition(BaseCondition):
-    type: str = Field(DateConditionType.LESS_THAN_DATE, const=True)
+    type: Literal[DateConditionType.LESS_THAN_DATE] = DateConditionType.LESS_THAN_DATE
 
 
 class _GreaterThanSliderRowCondition(BaseCondition):
-    type: str = Field(SliderRowConditionType.GREATER_THAN_SLIDER_ROWS, const=True)
+    type: Literal[SliderRowConditionType.GREATER_THAN_SLIDER_ROWS] = SliderRowConditionType.GREATER_THAN_SLIDER_ROWS
 
 
 class _LessThanSliderRowCondition(BaseCondition):
-    type: str = Field(SliderRowConditionType.LESS_THAN_SLIDER_ROWS, const=True)
+    type: Literal[SliderRowConditionType.LESS_THAN_SLIDER_ROWS] = SliderRowConditionType.LESS_THAN_SLIDER_ROWS
 
 
 class _EqualToSliderRowCondition(BaseCondition):
-    type: str = Field(SliderRowConditionType.EQUAL_TO_SLIDER_ROWS, const=True)
+    type: Literal[SliderRowConditionType.EQUAL_TO_SLIDER_ROWS] = SliderRowConditionType.EQUAL_TO_SLIDER_ROWS
 
 
 class _NotEqualToSliderRowCondition(BaseCondition):
-    type: str = Field(SliderRowConditionType.NOT_EQUAL_TO_SLIDER_ROWS, const=True)
+    type: Literal[SliderRowConditionType.NOT_EQUAL_TO_SLIDER_ROWS] = SliderRowConditionType.NOT_EQUAL_TO_SLIDER_ROWS
 
 
 class _BetweenSliderRowCondition(BaseCondition):
-    type: str = Field(SliderRowConditionType.BETWEEN_SLIDER_ROWS, const=True)
+    type: Literal[SliderRowConditionType.BETWEEN_SLIDER_ROWS] = SliderRowConditionType.BETWEEN_SLIDER_ROWS
 
 
 class _OutsideOfSliderRowCondition(BaseCondition):
-    type: str = Field(SliderRowConditionType.OUTSIDE_OF_SLIDER_ROWS, const=True)
+    type: Literal[SliderRowConditionType.OUTSIDE_OF_SLIDER_ROWS] = SliderRowConditionType.OUTSIDE_OF_SLIDER_ROWS
 
 
 class _BetweenTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.BETWEEN_TIMES_RANGE, const=True)
+    type: Literal[TimeRangeConditionType.BETWEEN_TIMES_RANGE] = TimeRangeConditionType.BETWEEN_TIMES_RANGE
 
 
 class _GreaterThanTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.GREATER_THAN_TIME_RANGE, const=True)
+    type: Literal[TimeRangeConditionType.GREATER_THAN_TIME_RANGE] = TimeRangeConditionType.GREATER_THAN_TIME_RANGE
 
 
 class _EqualToTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.EQUAL_TO_TIMES_RANGE, const=True)
+    type: Literal[TimeRangeConditionType.EQUAL_TO_TIMES_RANGE] = TimeRangeConditionType.EQUAL_TO_TIMES_RANGE
 
 
 class _EqualToTimeCondition(BaseCondition):
-    type: str = Field(TimeConditionType.EQUAL_TO_TIME, const=True)
+    type: Literal[TimeConditionType.EQUAL_TO_TIME] = TimeConditionType.EQUAL_TO_TIME
 
 
 class _NotEqualToTimeCondition(BaseCondition):
-    type: str = Field(TimeConditionType.NOT_EQUAL_TO_TIMES, const=True)
+    type: Literal[TimeConditionType.NOT_EQUAL_TO_TIMES] = TimeConditionType.NOT_EQUAL_TO_TIMES
 
 
 class _LessThanTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.LESS_THAN_TIMES_RANGE, const=True)
+    type: Literal[TimeRangeConditionType.LESS_THAN_TIMES_RANGE] = TimeRangeConditionType.LESS_THAN_TIMES_RANGE
 
 
 class _LessThanTimeCondition(BaseCondition):
-    type: str = Field(TimeConditionType.LESS_THAN_TIME, const=True)
+    type: Literal[TimeConditionType.LESS_THAN_TIME] = TimeConditionType.LESS_THAN_TIME
 
 
 class _BetweenTimeCondition(BaseCondition):
-    type: str = Field(TimeConditionType.BETWEEN_TIMES, const=True)
+    type: Literal[TimeConditionType.BETWEEN_TIMES] = TimeConditionType.BETWEEN_TIMES
 
 
 class _NotEqualToTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.NOT_EQUAL_TO_TIMES_RANGE, const=True)
+    type: Literal[TimeRangeConditionType.NOT_EQUAL_TO_TIMES_RANGE] = TimeRangeConditionType.NOT_EQUAL_TO_TIMES_RANGE
 
 
 class _OutsideOfTimeRangeCondition(BaseCondition):
-    type: str = Field(TimeRangeConditionType.OUTSIDE_OF_TIMES_RANGE, const=True)
+    type: Literal[TimeRangeConditionType.OUTSIDE_OF_TIMES_RANGE] = TimeRangeConditionType.OUTSIDE_OF_TIMES_RANGE
 
 
 class _GreaterThanTimeCondition(BaseCondition):
-    type: str = Field(TimeConditionType.GREATER_THAN_TIME, const=True)
+    type: Literal[TimeConditionType.GREATER_THAN_TIME] = TimeConditionType.GREATER_THAN_TIME
 
 
 class _OutsideOfTimeCondition(BaseCondition):
-    type: str = Field(TimeConditionType.OUTSIDE_OF_TIMES, const=True)
+    type: Literal[TimeConditionType.OUTSIDE_OF_TIMES] = TimeConditionType.OUTSIDE_OF_TIMES
 
 
 class _GreaterThanCondition(BaseCondition):
-    type: str = Field(ConditionType.GREATER_THAN, const=True)
+    type: Literal[ConditionType.GREATER_THAN] = ConditionType.GREATER_THAN
 
 
 class _LessThanCondition(BaseCondition):
-    type: str = Field(ConditionType.LESS_THAN, const=True)
+    type: Literal[ConditionType.LESS_THAN] = ConditionType.LESS_THAN
 
 
 class _EqualCondition(BaseCondition):
-    type: str = Field(ConditionType.EQUAL, const=True)
+    type: Literal[ConditionType.EQUAL] = ConditionType.EQUAL
 
 
 class _EqualToDateCondition(BaseCondition):
-    type: str = Field(DateConditionType.EQUAL_TO_DATE, const=True)
+    type: Literal[DateConditionType.EQUAL_TO_DATE] = DateConditionType.EQUAL_TO_DATE
 
 
 class _NotEqualToDateCondition(BaseCondition):
-    type: str = Field(DateConditionType.NOT_EQUAL_TO_DATE, const=True)
+    type: Literal[DateConditionType.NOT_EQUAL_TO_DATE] = DateConditionType.NOT_EQUAL_TO_DATE
 
 
 class _NotEqualCondition(BaseCondition):
-    type: str = Field(ConditionType.NOT_EQUAL, const=True)
+    type: Literal[ConditionType.NOT_EQUAL] = ConditionType.NOT_EQUAL
 
 
 class _BetweenCondition(BaseCondition):
-    type: str = Field(ConditionType.BETWEEN, const=True)
+    type: Literal[ConditionType.BETWEEN] = ConditionType.BETWEEN
 
 
 class _BetweenDatesCondition(BaseCondition):
-    type: str = Field(DateConditionType.BETWEEN_DATES, const=True)
+    type: Literal[DateConditionType.BETWEEN_DATES] = DateConditionType.BETWEEN_DATES
 
 
 class _OutsideOfDatesCondition(BaseCondition):
-    type: str = Field(DateConditionType.OUTSIDE_OF_DATES, const=True)
+    type: Literal[DateConditionType.OUTSIDE_OF_DATES] = DateConditionType.OUTSIDE_OF_DATES
 
 
 class _OutsideOfCondition(BaseCondition):
-    type: str = Field(ConditionType.OUTSIDE_OF, const=True)
+    type: Literal[ConditionType.OUTSIDE_OF] = ConditionType.OUTSIDE_OF
 
 
 class IncludesOptionCondition(_IncludesOptionCondition):
@@ -635,7 +631,7 @@ class OutsideOfDatesCondition(_OutsideOfDatesCondition):
 
 
 class ScoreBoolCondition(BaseCondition):
-    type: str = Field(ConditionType.EQUAL_TO_SCORE, const=True)
+    type: Literal[ConditionType.EQUAL_TO_SCORE] = ConditionType.EQUAL_TO_SCORE
     payload: ScoreConditionPayload
 
 

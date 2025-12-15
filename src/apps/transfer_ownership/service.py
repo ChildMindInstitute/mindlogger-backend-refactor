@@ -1,8 +1,6 @@
 import datetime
 import uuid
 
-from pydantic import EmailStr
-
 from apps.applets.crud import AppletsCRUD, UserAppletAccessCRUD
 from apps.applets.domain import Role
 from apps.authentication.errors import PermissionsError
@@ -139,7 +137,7 @@ class TransferService:
                 subject.id,
                 last_name=self._user.last_name,
                 first_name=self._user.first_name,
-                email=EmailStr(self._user.email_encrypted),
+                email=self._user.email_encrypted,
                 is_deleted=False,
                 tag=SubjectTag.TEAM,
             )

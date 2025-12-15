@@ -146,7 +146,7 @@ async def create_shell_account(
     return await create_subject(
         user=user,
         session=session,
-        schema=SubjectCreateRequest(applet_id=applet_id, **subject_schema.dict(by_alias=False)),
+        schema=SubjectCreateRequest(applet_id=applet_id, **subject_schema.model_dump(by_alias=False)),
     )
 
 

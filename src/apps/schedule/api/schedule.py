@@ -64,7 +64,7 @@ async def schedule_create(
         # mute error
         logger.exception(e)
 
-    return Response(result=PublicEvent(**schedule.dict()))
+    return Response(result=PublicEvent(**schedule.model_dump()))
 
 
 async def schedule_get_by_id(

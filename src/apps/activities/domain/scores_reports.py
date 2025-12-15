@@ -1,6 +1,8 @@
 import enum
+from typing import Annotated, Literal
 
-from pydantic import Field, PositiveInt, validator
+from pydantic import Field, PositiveInt, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.conditional_logic import Match
 from apps.activities.domain.conditions import ScoreCondition, SectionCondition
@@ -39,11 +41,12 @@ class ScoreConditionalLogic(PublicModel):
     id: str
     flag_score: bool = False
     message: str | None = None
-    items_print: list[str] | None = Field(default_factory=list)
-    match: Match = Field(default=Match.ALL)
+    items_print: Annotated[list[str], Field(default_factory=list)]
+    match: Match = Match.ALL
     conditions: list[ScoreCondition]
 
-    @validator("message")
+    @field_validator("message")
+    @classmethod
     def validate_string(cls, value):
         if value is not None:
             return sanitize_string(value)
@@ -56,30 +59,32 @@ class ReportType(enum.StrEnum):
 
 
 class Score(PublicModel):
-    type: str = Field(ReportType.score, const=True)
+    type: Literal[ReportType.score] = ReportType.score
     name: str
     id: str
     calculation_type: CalculationType
-    items_score: list[str] | None = Field(default_factory=list)
+    items_score: Annotated[list[str], Field(default_factory=list)]
     message: str | None = None
-    items_print: list[str] | None = Field(default_factory=list)
+    items_print: Annotated[list[str], Field(default_factory=list)]
     conditional_logic: list[ScoreConditionalLogic] | None = None
     scoring_type: ScoringType | None = None
     subscale_name: str | None = None
 
-    @validator("conditional_logic")
-    def validate_conditional_logic(cls, value, values):
+    @field_validator("conditional_logic")
+    @classmethod
+    def validate_conditional_logic(cls, value, info: ValidationInfo):
         if value:
-            # check if all item names are same as values.id
+            # check if all item names are same as info.data.id
             item_names = []
             for v in value:
                 item_names += [condition.item_name for condition in v.conditions]
-            if set(item_names) != {values.get("id")}:
+            if set(item_names) != {info.data.get("id")}:
                 raise ScoreConditionItemNameError()
 
         return value
 
-    @validator("items_score")
+    @field_validator("items_score")
+    @classmethod
     def validate_items_score(cls, value):
         if value:
             # check if there are duplicate item names
@@ -88,7 +93,8 @@ class Score(PublicModel):
 
         return value
 
-    @validator("message")
+    @field_validator("message")
+    @classmethod
     def validate_string(cls, value):
         if value is not None:
             return sanitize_string(value)
@@ -96,18 +102,19 @@ class Score(PublicModel):
 
 
 class SectionConditionalLogic(PublicModel):
-    match: Match = Field(default=Match.ALL)
+    match: Match = Match.ALL
     conditions: list[SectionCondition]  # can be SingleSelection, MultiSelection, Slider, Score, ScoreCondition
 
 
 class Section(PublicModel):
-    type: str = Field(ReportType.section, const=True)
+    type: Literal[ReportType.section] = ReportType.section
     name: str
     message: str | None = None
-    items_print: list[str] | None = Field(default_factory=list)
+    items_print: Annotated[list[str], Field(default_factory=list)]
     conditional_logic: SectionConditionalLogic | None = None
 
-    @validator("message")
+    @field_validator("message")
+    @classmethod
     def validate_string(cls, value):
         if value is not None:
             return sanitize_string(value)
@@ -117,9 +124,10 @@ class Section(PublicModel):
 class ScoresAndReports(PublicModel):
     generate_report: bool = False
     show_score_summary: bool = False
-    reports: list[Score | Section] | None = Field(default_factory=list)
+    reports: Annotated[list[Score | Section], Field(default_factory=list)]
 
-    @validator("reports")
+    @field_validator("reports")
+    @classmethod
     def validate_reports(cls, value):
         scores_flt = filter(lambda v: v.type == ReportType.score, value)
         sections_flt = filter(lambda v: v.type == ReportType.section, value)
@@ -166,7 +174,7 @@ class ScoreConditionalLogicMobile(PublicModel):
     id: str
     name: str
     flag_score: bool = False
-    match: Match = Field(default=Match.ALL)
+    match: Match = Match.ALL
     conditions: list[ScoreCondition]
 
 
@@ -180,19 +188,22 @@ class SubScaleLookupTable(PublicModel):
     score: str
     raw_score: str
     age: PositiveInt | str | None = None
-    sex: str | None = Field(default=None, regex="^(M|F)$", description="M or F")
+    sex: Annotated[str | None, Field(pattern="^(M|F)$", description="M or F")] = None
     optional_text: str | None = None
-    severity: str | None = Field(default=None, regex="^(Minimal|Mild|Moderate|Severe)$")
+    severity: Annotated[str | None, Field(pattern="^(Minimal|Mild|Moderate|Severe)$")] = None
 
-    @validator("raw_score")
+    @field_validator("raw_score")
+    @classmethod
     def validate_raw_score_lookup(cls, value):
         return validate_raw_score_subscale(value)
 
-    @validator("score")
+    @field_validator("score")
+    @classmethod
     def validate_score_lookup(cls, value):
         return validate_score_subscale_table(value)
 
-    @validator("age")
+    @field_validator("age")
+    @classmethod
     def validate_age_lookup(cls, value):
         return validate_age_subscale(value)
 
@@ -210,7 +221,7 @@ class SubscaleItem(PublicModel):
 class Subscale(PublicModel):
     name: str
     scoring: SubscaleCalculationType
-    items: list[SubscaleItem] | None = Field(default_factory=list)
+    items: Annotated[list[SubscaleItem], Field(default_factory=list)]
     subscale_table_data: list[SubScaleLookupTable] | None = None
 
 
@@ -218,17 +229,19 @@ class TotalScoreTable(PublicModel):
     raw_score: str
     optional_text: str | None = None
 
-    @validator("raw_score")
+    @field_validator("raw_score")
+    @classmethod
     def validate_raw_score(cls, value):
         return validate_raw_score_subscale(value)
 
 
 class SubscaleSetting(PublicModel):
     calculate_total_score: SubscaleCalculationType | None = None
-    subscales: list[Subscale] | None = Field(default_factory=list)
-    total_scores_table_data: list[TotalScoreTable] | None = Field(default_factory=list)
+    subscales: Annotated[list[Subscale], Field(default_factory=list)]
+    total_scores_table_data: Annotated[list[TotalScoreTable] | None, Field(default_factory=list)]
 
-    @validator("subscales")
+    @field_validator("subscales")
+    @classmethod
     def validate_unique_subscale_names(cls, value):
         if value:
             # check if there are duplicate subscale names

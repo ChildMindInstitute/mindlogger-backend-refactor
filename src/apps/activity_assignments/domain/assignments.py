@@ -1,7 +1,7 @@
-import uuid
+from typing import Annotated, Self
 from uuid import UUID
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 
 from apps.activity_assignments.errors import (
     ActivityAssignmentActivityOrFlowError,
@@ -11,25 +11,23 @@ from apps.shared.domain import InternalModel, PublicModel
 from apps.subjects.domain import SubjectReadResponse
 
 
-def _validate_assignments(values):
-    if not values.get("activity_id") and not values.get("activity_flow_id"):
+def _validate_assignments(activity_id: UUID | None, activity_flow_id: UUID | None) -> None:
+    if not activity_id and not activity_flow_id:
         raise ActivityAssignmentNotActivityAndFlowError()
-
-    if values.get("activity_id") and values.get("activity_flow_id"):
+    if activity_id and activity_flow_id:
         raise ActivityAssignmentActivityOrFlowError("Only one of activity_id or activity_flow_id must be provided")
-
-    return values
 
 
 class ActivityAssignmentCreate(BaseModel):
-    activity_id: UUID | None
-    activity_flow_id: UUID | None
+    activity_id: UUID | None = None
+    activity_flow_id: UUID | None = None
     respondent_subject_id: UUID
     target_subject_id: UUID
 
-    @root_validator
-    def validate_assignments(cls, values):
-        return _validate_assignments(values)
+    @model_validator(mode="after")
+    def validate_assignments(self) -> Self:
+        _validate_assignments(self.activity_id, self.activity_flow_id)
+        return self
 
 
 class ActivitiesAssignmentsCreate(InternalModel):
@@ -38,8 +36,8 @@ class ActivitiesAssignmentsCreate(InternalModel):
 
 class ActivityAssignment(PublicModel):
     id: UUID
-    activity_flow_id: UUID | None
-    activity_id: UUID | None
+    activity_flow_id: UUID | None = None
+    activity_id: UUID | None = None
     respondent_subject_id: UUID
     target_subject_id: UUID
 
@@ -50,14 +48,14 @@ class ActivitiesAssignments(PublicModel):
 
 
 class ActivityAssignmentsListQueryParams(InternalModel):
-    activities: str | None
-    flows: str | None
+    activities: str | None = None
+    flows: str | None = None
 
 
 class ActivityAssignmentWithSubject(PublicModel):
     id: UUID
-    activity_flow_id: UUID | None
-    activity_id: UUID | None
+    activity_flow_id: UUID | None = None
+    activity_id: UUID | None = None
     respondent_subject: SubjectReadResponse
     target_subject: SubjectReadResponse
 
@@ -68,14 +66,15 @@ class ActivitiesAssignmentsWithSubjects(PublicModel):
 
 
 class ActivityAssignmentDelete(BaseModel):
-    activity_id: UUID | None
-    activity_flow_id: UUID | None
+    activity_id: UUID | None = None
+    activity_flow_id: UUID | None = None
     respondent_subject_id: UUID
     target_subject_id: UUID
 
-    @root_validator
-    def validate_assignments(cls, values):
-        return _validate_assignments(values)
+    @model_validator(mode="after")
+    def validate_assignments(self) -> Self:
+        _validate_assignments(self.activity_id, self.activity_flow_id)
+        return self
 
 
 class ActivitiesAssignmentsDelete(InternalModel):
@@ -83,12 +82,12 @@ class ActivitiesAssignmentsDelete(InternalModel):
 
 
 class AssignmentsSubjectCounters(PublicModel):
-    respondents: set[uuid.UUID] = Field(default_factory=set)
-    subjects: set[uuid.UUID] = Field(default_factory=set)
+    respondents: Annotated[set[UUID], Field(default_factory=set)]
+    subjects: Annotated[set[UUID], Field(default_factory=set)]
     subject_assignments_count: int = 0
     respondent_assignments_count: int = 0
 
 
 class AssignmentsActivityCountBySubject(PublicModel):
-    subject_id: uuid.UUID
-    activities: dict[uuid.UUID, AssignmentsSubjectCounters] = Field(default_factory=dict)
+    subject_id: UUID
+    activities: Annotated[dict[UUID, AssignmentsSubjectCounters], Field(default_factory=dict)]

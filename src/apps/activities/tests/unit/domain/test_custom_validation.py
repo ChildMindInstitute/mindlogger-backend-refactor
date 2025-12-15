@@ -93,7 +93,7 @@ def items() -> list[ActivityItemCreate]:
                         EqualToOptionCondition(
                             item_name=item_name,
                             type=ConditionType.EQUAL_TO_OPTION,
-                            payload=OptionPayload(option_value=1),
+                            payload=OptionPayload(option_value="1"),
                         )
                     ]
                 ),
@@ -105,11 +105,9 @@ def items() -> list[ActivityItemCreate]:
 
 class TestValidateItemFlow:
     def test_successful_validation(self, items: list[ActivityItemCreate]):
-        values = {"items": items}
-        assert values == validate_item_flow(values)
+        validate_item_flow(items)
 
     def test_non_existent_conditional_name(self, items: list[ActivityItemCreate]):
-        values = {"items": items}
         items[0].conditional_logic = ConditionalLogic(
             conditions=[
                 EqualCondition(
@@ -120,28 +118,22 @@ class TestValidateItemFlow:
             ]
         )
         with pytest.raises(IncorrectConditionItemError):
-            validate_item_flow(values)
+            validate_item_flow(items)
 
     def test_incorrect_conditional_index(self, items: list[ActivityItemCreate]):
-        values = {"items": items}
-
         items[0].conditional_logic, items[1].conditional_logic = (
             items[1].conditional_logic,
             items[0].conditional_logic,
         )
         with pytest.raises(IncorrectConditionItemIndexError):
-            validate_item_flow(values)
+            validate_item_flow(items)
 
     def test_incorrect_conditional_item_type(self, items: list[ActivityItemCreate]):
-        values = {"items": items}
-
         items[0].response_type = ResponseType.TEXT
         with pytest.raises(IncorrectConditionLogicItemTypeError):
-            validate_item_flow(values)
+            validate_item_flow(items)
 
     def test_incorrect_conditional_option(self, items: list[ActivityItemCreate]):
-        values = {"items": items}
-
         conditions: list[Condition] = [
             EqualToOptionCondition(
                 item_name=items[0].name,
@@ -152,7 +144,7 @@ class TestValidateItemFlow:
         if items[0].conditional_logic:
             items[0].conditional_logic.conditions = conditions
         with pytest.raises(IncorrectConditionOptionError):
-            validate_item_flow(values)
+            validate_item_flow(items)
 
     @pytest.mark.parametrize(
         "payload",
@@ -243,8 +235,7 @@ class TestValidateScoreAndSections:
         items: list[ActivityItemCreate],
         scores_and_reports: ScoresAndReports,
     ):
-        values = {"items": items, "scores_and_reports": scores_and_reports}
-        assert values == validate_score_and_sections(values)
+        validate_score_and_sections(items, scores_and_reports)
 
     def test_without_report(
         self,
@@ -252,8 +243,7 @@ class TestValidateScoreAndSections:
         scores_and_reports: ScoresAndReports,
     ):
         del scores_and_reports.reports
-        values = {"items": items, "scores_and_reports": scores_and_reports}
-        assert validate_score_and_sections(values) is None
+        validate_score_and_sections(items, scores_and_reports)
 
     def test_items_score_not_in_item_names(
         self,
@@ -263,9 +253,8 @@ class TestValidateScoreAndSections:
     ):
         score.items_score = ["incorrect_item_name"]
         scores_and_reports.reports = [score]
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectScoreItemError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_incorrect_score_item_type(
         self,
@@ -276,9 +265,8 @@ class TestValidateScoreAndSections:
         score.items_score = [items[0].name]
         scores_and_reports.reports = [score]
         items[0].response_type = ResponseType.TEXT
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectScoreItemTypeError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_incorrect_score_item_config(
         self,
@@ -288,9 +276,8 @@ class TestValidateScoreAndSections:
     ):
         score.items_score = [items[0].name]
         scores_and_reports.reports = [score]
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectScoreItemConfigError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_items_score_items_print_not_in_item_names(
         self,
@@ -300,9 +287,8 @@ class TestValidateScoreAndSections:
     ):
         score.items_print = ["incorrect_item_name"]
         scores_and_reports.reports = [score]
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectScorePrintItemError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_incorrect_score_items_print_item_type(
         self,
@@ -313,9 +299,8 @@ class TestValidateScoreAndSections:
         score.items_print = [items[0].name]
         scores_and_reports.reports = [score]
         items[0].response_type = ResponseType.TIMERANGE
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectScorePrintItemTypeError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_items_score_conditional_logic_not_in_item_names(
         self,
@@ -339,9 +324,8 @@ class TestValidateScoreAndSections:
             ),
         ]
         scores_and_reports.reports = [score]
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectScorePrintItemError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_items_score_conditional_logic_print_item_type(
         self,
@@ -366,9 +350,8 @@ class TestValidateScoreAndSections:
         ]
         scores_and_reports.reports = [score]
         items[0].response_type = ResponseType.TIMERANGE
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectScorePrintItemTypeError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_items_sections_not_in_item_names(
         self,
@@ -378,9 +361,8 @@ class TestValidateScoreAndSections:
     ):
         section.items_print = ["incorrect_item_name"]
         scores_and_reports.reports = [section]
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectSectionPrintItemError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_incorrect_sections_item_type(
         self,
@@ -391,9 +373,8 @@ class TestValidateScoreAndSections:
         section.items_print = [items[0].name]
         scores_and_reports.reports = [section]
         items[0].response_type = ResponseType.TIMERANGE
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectSectionPrintItemTypeError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_items_sections_conditional_logic_item(
         self,
@@ -416,9 +397,8 @@ class TestValidateScoreAndSections:
             ),
         )
         scores_and_reports.reports = [section]
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectSectionConditionItemError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_duplicated_section_name_in_reports(
         self,
@@ -426,14 +406,13 @@ class TestValidateScoreAndSections:
         scores_and_reports: ScoresAndReports,
         section: Section,
     ):
-        copy = section.copy(deep=True)
+        copy = section.model_copy(deep=True)
         copy.items_print = [items[0].name]
         scores_and_reports.reports = cast(list, scores_and_reports.reports)
         scores_and_reports.reports.append(copy)
         items[0].response_type = ResponseType.TIMERANGE
-        values = {"items": items, "scores_and_reports": scores_and_reports}
         with pytest.raises(IncorrectSectionPrintItemTypeError):
-            validate_score_and_sections(values)
+            validate_score_and_sections(items, scores_and_reports)
 
     def test_items_score_conditional_logic_value_float(
         self,
@@ -458,8 +437,7 @@ class TestValidateScoreAndSections:
             ),
         ]
         scores_and_reports.reports = [score]
-        values = {"items": items, "scores_and_reports": scores_and_reports}
-        assert values == validate_score_and_sections(values)
+        validate_score_and_sections(items, scores_and_reports)
 
 
 class TestValidateSubscales:
@@ -470,8 +448,7 @@ class TestValidateSubscales:
     ):
         items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
-        values = {"items": items, "subscale_setting": subscale_setting}
-        assert values == validate_subscales(values)
+        validate_subscales(items, subscale_setting)
 
     def test_incorrect_subscale_item(
         self,
@@ -485,9 +462,8 @@ class TestValidateSubscales:
         subscale_item.name = "incorrect_item_name"
         subscale.items = [subscale_item]
         subscale_setting.subscales = [subscale]
-        values = {"items": items, "subscale_setting": subscale_setting}
         with pytest.raises(IncorrectSubscaleItemError):
-            validate_subscales(values)
+            validate_subscales(items, subscale_setting)
 
     def test_subscale_item_type_error(
         self,
@@ -497,18 +473,16 @@ class TestValidateSubscales:
         items0_config: SingleSelectionConfig = items[0].config  # type: ignore[assignment]
         items0_config.add_scores = True
         items[0].response_type = ResponseType.TIMERANGE
-        values = {"items": items, "subscale_setting": subscale_setting}
         with pytest.raises(SubscaleItemTypeError):
-            validate_subscales(values)
+            validate_subscales(items, subscale_setting)
 
     def test_subscale_item_score_error(
         self,
         items: list[ActivityItemCreate],
         subscale_setting: SubscaleSetting,
     ):
-        values = {"items": items, "subscale_setting": subscale_setting}
         with pytest.raises(SubscaleItemScoreError):
-            validate_subscales(values)
+            validate_subscales(items, subscale_setting)
 
     def test_incorrect_subscale_inside_subscale(
         self,
@@ -522,9 +496,8 @@ class TestValidateSubscales:
         subscale_item.type = SubscaleItemType.SUBSCALE
         subscale.items = [subscale_item]
         subscale_setting.subscales = [subscale]
-        values = {"items": items, "subscale_setting": subscale_setting}
         with pytest.raises(IncorrectSubscaleInsideSubscaleError):
-            validate_subscales(values)
+            validate_subscales(items, subscale_setting)
 
     def test_subscale_inside_subscale_error(
         self,
@@ -539,6 +512,5 @@ class TestValidateSubscales:
         subscale_item.type = SubscaleItemType.SUBSCALE
         subscale.items = [subscale_item]
         subscale_setting.subscales = [subscale]
-        values = {"items": items, "subscale_setting": subscale_setting}
         with pytest.raises(SubscaleInsideSubscaleError):
-            validate_subscales(values)
+            validate_subscales(items, subscale_setting)

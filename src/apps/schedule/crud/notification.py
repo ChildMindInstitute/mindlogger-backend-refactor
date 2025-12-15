@@ -21,7 +21,7 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
         notifications: list[NotificationSchema],
     ) -> list[NotificationSetting]:
         result = await self._create_many(notifications)
-        return [NotificationSetting.from_orm(notification) for notification in result]
+        return [NotificationSetting.model_validate(notification) for notification in result]
 
     async def get_all_by_event_id(self, event_id: uuid.UUID) -> list[NotificationSetting]:
         """Return all notifications by event id."""
@@ -32,7 +32,7 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
         db_result = await self._execute(query)
         result = db_result.scalars().all()
 
-        return [NotificationSetting.from_orm(notification) for notification in result]
+        return [NotificationSetting.model_validate(notification) for notification in result]
 
     async def get_all_by_event_ids(self, event_ids: set[uuid.UUID]) -> dict[uuid.UUID, list[NotificationSetting]]:
         """Return all notifications in map by event ids."""
@@ -46,7 +46,7 @@ class NotificationCRUD(BaseCRUD[NotificationSchema]):
         notifications_map: dict[uuid.UUID, list[NotificationSetting]] = dict()
         for notification in result:
             notifications_map.setdefault(notification.event_id, list())
-            notifications_map[notification.event_id].append(NotificationSetting.from_orm(notification))
+            notifications_map[notification.event_id].append(NotificationSetting.model_validate(notification))
 
         return notifications_map
 
@@ -63,8 +63,8 @@ class ReminderCRUD(BaseCRUD[ReminderSchema]):
     async def create(self, reminder: ReminderSettingCreate) -> ReminderSetting:
         """Create a reminder."""
 
-        db_reminder = await self._create(ReminderSchema(**reminder.dict()))
-        return ReminderSetting.from_orm(db_reminder)
+        db_reminder = await self._create(ReminderSchema(**reminder.model_dump()))
+        return ReminderSetting.model_validate(db_reminder)
 
     async def get_by_event_id(self, event_id: uuid.UUID) -> ReminderSchema:
         """Return all reminders by event id."""
@@ -102,8 +102,8 @@ class ReminderCRUD(BaseCRUD[ReminderSchema]):
         """Update reminder instance."""
         query: Query = update(ReminderSchema)
         query = query.where(ReminderSchema.event_id == schema.event_id)
-        query = query.values(**schema.dict(exclude={"event_id"}))
+        query = query.values(**schema.model_dump(exclude={"event_id"}))
         query = query.returning(self.schema_class)
         db_result = await self._execute(query)
         result = db_result.scalars().first()
-        return ReminderSetting.from_orm(result)
+        return ReminderSetting.model_validate(result)

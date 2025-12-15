@@ -30,7 +30,7 @@ class AppletAccessService:
         if not schema:
             return None
 
-        return UserAppletAccess.from_orm(schema)
+        return UserAppletAccess.model_validate(schema)
 
     async def get_applet_accesses(self, user_id: uuid.UUID, applet_ids: list[uuid.UUID]) -> list[UserAppletAccess]:
         """
@@ -39,4 +39,4 @@ class AppletAccessService:
         """
         crud = UserAppletAccessCRUD(self.session)
         schemas = await crud.get_user_applet_accesses_by_roles(user_id, applet_ids, Role.as_list())
-        return [UserAppletAccess.from_orm(schema) for schema in schemas]
+        return [UserAppletAccess.model_validate(schema) for schema in schemas]

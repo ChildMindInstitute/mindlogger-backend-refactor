@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from pydantic import Field
 
 from apps.activities.domain import ActivityHistoryFull
@@ -8,15 +10,15 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class AppletFull(AppletFetchBase, InternalModel):
-    activities: list[ActivityFull] = Field(default_factory=list)
-    activity_flows: list[FlowFull] = Field(default_factory=list)
+    activities: Annotated[list[ActivityFull], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowFull], Field(default_factory=list)]
 
 
 class PublicAppletFull(AppletFetchBase, PublicModel):
-    activities: list[PublicActivityFull] = Field(default_factory=list)
-    activity_flows: list[PublicFlowFull] = Field(default_factory=list)
+    activities: Annotated[list[PublicActivityFull], Field(default_factory=list)]
+    activity_flows: Annotated[list[PublicFlowFull], Field(default_factory=list)]
 
 
 class AppletHistoryFull(AppletFetchBase, InternalModel):
-    activities: list[ActivityHistoryFull] = Field(default_factory=list)
-    activity_flows: list[FlowHistoryFull] = Field(default_factory=list)
+    activities: Annotated[list[ActivityHistoryFull], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowHistoryFull], Field(default_factory=list)]

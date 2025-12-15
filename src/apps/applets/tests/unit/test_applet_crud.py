@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from pydantic import BaseModel
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +25,7 @@ def applet_link() -> uuid.UUID:
 @pytest.fixture
 async def applet(applet_base_data: AppletBase, session: AsyncSession) -> AppletSchema:
     crud = AppletsCRUD(session)
-    applet = await crud.save(AppletSchema(**applet_base_data.dict()))
+    applet = await crud.save(AppletSchema(**applet_base_data.model_dump()))
     return applet
 
 
@@ -56,10 +57,13 @@ async def applet_deleted(applet: AppletSchema, session: AsyncSession):
 
 async def test_create_applet_with_base_data(applet_base_data: AppletBase, session: AsyncSession) -> None:
     crud = AppletsCRUD(session)
-    applet = await crud.save(AppletSchema(**applet_base_data.dict()))
+    applet = await crud.save(AppletSchema(**applet_base_data.model_dump()))
     assert isinstance(applet.id, uuid.UUID)
     for attr, value in applet_base_data:
-        assert value == getattr(applet, attr)
+        if isinstance(value, BaseModel):
+            assert value.model_dump() == getattr(applet, attr)
+        else:
+            assert value == getattr(applet, attr)
 
 
 async def test_update_encryption_by_applet_by_id(applet: AppletSchema, session: AsyncSession) -> None:

@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from pydantic import validator
+from pydantic import field_validator
 
 from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import datetime_from_ms
@@ -11,11 +11,11 @@ class AnswerItem(InternalModel):
     id: uuid.UUID
     answer_id: uuid.UUID
     respondent_id: uuid.UUID
-    answer: str | None
-    events: str | None
+    answer: str | None = None
+    events: str | None = None
     item_ids: list
-    identifier: str | None
-    user_public_key: str | None
+    identifier: str | None = None
+    user_public_key: str | None = None
     scheduled_datetime: datetime.datetime | None = None
     start_datetime: datetime.datetime
     end_datetime: datetime.datetime
@@ -42,20 +42,20 @@ class AnswerItemSchemaAnsweredActivityItem(InternalModel):
 class AnswerItemDataEncrypted(InternalModel):
     id: uuid.UUID
     answer: str
-    events: str | None
-    identifier: str | None
+    events: str | None = None
+    identifier: str | None = None
 
 
 class UserAnswerItemData(AnswerItemDataEncrypted):
     user_public_key: str
-    migrated_data: dict | None
+    migrated_data: dict | None = None
 
 
 class AssessmentItem(InternalModel):
     answer_id: uuid.UUID
     respondent_id: uuid.UUID
     is_assessment: bool
-    assessment_activity_id: str | None
+    assessment_activity_id: str | None = None
 
 
 class ItemAnswerCreate(InternalModel):
@@ -66,14 +66,15 @@ class ItemAnswerCreate(InternalModel):
     scheduled_time: datetime.datetime | None = None
     start_time: datetime.datetime
     end_time: datetime.datetime
-    user_public_key: str | None
+    user_public_key: str | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date | None = None
     local_end_time: datetime.time | None = None
     tz_offset: int | None = None
 
-    @validator("item_ids")
+    @field_validator("item_ids")
+    @classmethod
     def convert_item_ids(cls, value: list[uuid.UUID]):
         return list(map(str, value))
 
-    _dates_from_ms = validator("start_time", "end_time", "scheduled_time", pre=True, allow_reuse=True)(datetime_from_ms)
+    _dates_from_ms = field_validator("start_time", "end_time", "scheduled_time", mode="before")(datetime_from_ms)

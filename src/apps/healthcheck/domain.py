@@ -1,4 +1,5 @@
 import enum
+from typing import Annotated
 
 from pydantic import Field
 
@@ -13,5 +14,5 @@ class EmergencyMessageType(enum.StrEnum):
 
 class EmergencyMessage(PublicModel):
     message: str | None = None
-    message_type: EmergencyMessageType | None = Field(None, alias="type")
+    message_type: Annotated[EmergencyMessageType | None, Field(None, alias="type")]
     dismissible: bool = True

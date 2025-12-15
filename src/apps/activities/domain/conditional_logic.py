@@ -1,7 +1,5 @@
 from enum import StrEnum
 
-from pydantic import Field
-
 from apps.activities.domain.conditions import Condition
 from apps.shared.domain import PublicModel
 
@@ -12,5 +10,5 @@ class Match(StrEnum):
 
 
 class ConditionalLogic(PublicModel):
-    match: Match = Field(default=Match.ALL)
+    match: Match = Match.ALL
     conditions: list[Condition]

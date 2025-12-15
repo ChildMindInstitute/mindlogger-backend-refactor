@@ -1,6 +1,5 @@
 import uuid
 
-from pydantic import parse_obj_as
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.sql import select
@@ -8,6 +7,7 @@ from sqlalchemy.sql import select
 from apps.integrations.loris.db.schemas import MlLorisUserRelationshipSchema
 from apps.integrations.loris.domain.domain import MlLorisUserRelationship
 from apps.integrations.loris.errors import MlLorisUserRelationshipError
+from apps.shared.domain import parse_obj_as
 from infrastructure.database import BaseCRUD
 
 __all__ = [
@@ -26,7 +26,7 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
         except IntegrityError as e:
             raise MlLorisUserRelationshipError(message=str(e))
 
-        relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
+        relationship: MlLorisUserRelationship = MlLorisUserRelationship.model_validate(instance)
         return relationship
 
     async def get_by_ml_user_ids(self, ml_user_ids: list[uuid.UUID]) -> list[MlLorisUserRelationship]:
@@ -57,7 +57,7 @@ class MlLorisUserRelationshipCRUD(BaseCRUD[MlLorisUserRelationshipSchema]):
     #     instance = await self._update_one(
     #         lookup="ml_user_uuid",
     #         value=ml_user_uuid,
-    #         schema=MlLorisUserRelationshipSchema(**schema.dict()),
+    #         schema=MlLorisUserRelationshipSchema(**schema.model_dump()),
     #     )
-    #     relationship: MlLorisUserRelationship = MlLorisUserRelationship.from_orm(instance)
+    #     relationship: MlLorisUserRelationship = MlLorisUserRelationship.model_validate(instance)
     #     return relationship

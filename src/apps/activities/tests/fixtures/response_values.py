@@ -68,7 +68,7 @@ def paragraph_response_values() -> ParagraphTextValues:
 def multi_select_response_values(
     single_select_response_values: SingleSelectionValues,
 ) -> MultiSelectionValues:
-    data = single_select_response_values.dict()
+    data = single_select_response_values.model_dump()
     data["type"] = ResponseType.MULTISELECT
     return MultiSelectionValues(**data)
 
@@ -164,7 +164,7 @@ def single_select_row_response_values(
 def multi_select_row_response_values(
     single_select_row_response_values: SingleSelectionRowsValues,
 ) -> MultiSelectionRowsValues:
-    data = single_select_row_response_values.dict()
+    data = single_select_row_response_values.model_dump()
     data["type"] = ResponseType.MULTISELECTROWS
     return MultiSelectionRowsValues(**data)
 

@@ -1,3 +1,5 @@
+from typing import cast
+
 from fastapi_mail import ConnectionConfig, FastMail
 from jinja2 import Environment, PackageLoader, TemplateNotFound, select_autoescape
 
@@ -63,7 +65,7 @@ class MailingService:
     async def send(self, message: MessageSchema) -> None:
         mailing_class = FastMail
         if settings.env == "testing":
-            mailing_class = TestMail
+            mailing_class = cast(type[FastMail], TestMail)
         fm = mailing_class(self._connection)
         await fm.send_message(message)
 

@@ -1,4 +1,5 @@
 import uuid
+from typing import Annotated
 
 from pydantic import Field
 
@@ -18,4 +19,4 @@ class PreparedFlowItemCreate(InternalModel):
 class FlowCreate(FlowBase, InternalModel):
     items: list[FlowItemCreate]
     is_hidden: bool = False
-    extra_fields: dict = Field(default_factory=dict)
+    extra_fields: Annotated[dict, Field(default_factory=dict)]

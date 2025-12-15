@@ -1,10 +1,9 @@
-from typing import Any
+from typing import Annotated, Self
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from apps.activities.domain.activity_create import ActivityCreate
 from apps.activities.domain.activity_update import ActivityUpdate
-from apps.activities.domain.custom_validation import validate_performance_task_type
 from apps.activities.errors import (
     AssessmentLimitExceed,
     DuplicateActivityFlowNameError,
@@ -20,14 +19,14 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
-    activities: list[ActivityCreate]
-    activity_flows: list[FlowCreate]
-    extra_fields: dict = Field(default_factory=dict)
+    activities: Annotated[list[ActivityCreate], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowCreate], Field(default_factory=list)]
+    extra_fields: Annotated[dict, Field(default_factory=dict)]
 
-    @root_validator()
-    def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
-        activities: list[ActivityCreate] = values.get("activities", [])
-        flows: list[FlowCreate] = values.get("activity_flows", [])
+    @model_validator(mode="after")
+    def validate_existing_ids_for_duplicate(self) -> Self:
+        activities: list[ActivityCreate] = self.activities
+        flows: list[FlowCreate] = self.activity_flows
 
         activity_names = set()
         activity_keys = set()
@@ -50,21 +49,17 @@ class AppletCreate(AppletReportConfigurationBase, AppletBase, InternalModel):
             for flow_item in flow.items:
                 if flow_item.activity_key not in activity_keys:
                     raise FlowItemActivityKeyNotFoundError()
-        return values
-
-    @root_validator
-    def validate_performance_task_type(cls, values):
-        return validate_performance_task_type(values)
+        return self
 
 
 class AppletUpdate(AppletBase, PublicModel):
     activities: list[ActivityUpdate]
     activity_flows: list[FlowUpdate]
 
-    @root_validator()
-    def validate_existing_ids_for_duplicate(cls, values) -> list[Any]:
-        activities: list[ActivityUpdate] = values.get("activities", [])
-        flows: list[FlowUpdate] = values.get("activity_flows", [])
+    @model_validator(mode="after")
+    def validate_existing_ids_for_duplicate(self) -> Self:
+        activities: list[ActivityUpdate] = self.activities
+        flows: list[FlowUpdate] = self.activity_flows
 
         activity_names = set()
         activity_keys = set()
@@ -98,7 +93,7 @@ class AppletUpdate(AppletBase, PublicModel):
 
             flow_ids.add(flow.id)
             flow_names.add(flow.name)
-        return values
+        return self
 
 
 class AppletReportConfiguration(AppletReportConfigurationBase, InternalModel):

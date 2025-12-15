@@ -22,7 +22,7 @@ class RecoveryCodeCRUD(BaseCRUD[RecoveryCodeSchema]):
                 used_at=recovery_code.used_at,
             )
         )
-        return RecoveryCode.from_orm(instance)
+        return RecoveryCode.model_validate(instance)
 
     async def create_many(self, recovery_codes: list[RecoveryCodeCreate]) -> list[RecoveryCode]:
         """Create multiple recovery codes in batch."""
@@ -37,7 +37,7 @@ class RecoveryCodeCRUD(BaseCRUD[RecoveryCodeSchema]):
             for code in recovery_codes
         ]
         instances = await self._create_many(schemas)
-        return [RecoveryCode.from_orm(instance) for instance in instances]
+        return [RecoveryCode.model_validate(instance) for instance in instances]
 
     async def get_by_user_id(self, user_id: uuid.UUID) -> list[RecoveryCode]:
         """Get all recovery codes for a user."""
@@ -46,7 +46,7 @@ class RecoveryCodeCRUD(BaseCRUD[RecoveryCodeSchema]):
         query = query.where(RecoveryCodeSchema.is_deleted.isnot(True))
         db_result = await self._execute(query)
         instances = db_result.scalars().all()
-        return [RecoveryCode.from_orm(instance) for instance in instances]
+        return [RecoveryCode.model_validate(instance) for instance in instances]
 
     async def get_unused_by_user_id(self, user_id: uuid.UUID) -> list[RecoveryCode]:
         """Get all unused recovery codes for a user."""
@@ -56,7 +56,7 @@ class RecoveryCodeCRUD(BaseCRUD[RecoveryCodeSchema]):
         query = query.where(RecoveryCodeSchema.is_deleted.isnot(True))
         db_result = await self._execute(query)
         instances = db_result.scalars().all()
-        return [RecoveryCode.from_orm(instance) for instance in instances]
+        return [RecoveryCode.model_validate(instance) for instance in instances]
 
     async def mark_as_used(self, code_id: uuid.UUID) -> RecoveryCode:
         """Mark a recovery code as used."""
@@ -68,7 +68,7 @@ class RecoveryCodeCRUD(BaseCRUD[RecoveryCodeSchema]):
                 used_at=datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
             ),
         )
-        return RecoveryCode.from_orm(instance)
+        return RecoveryCode.model_validate(instance)
 
     async def delete_by_user_id(self, user_id: uuid.UUID) -> None:
         """Soft delete all recovery codes for a user."""
@@ -81,5 +81,5 @@ class RecoveryCodeCRUD(BaseCRUD[RecoveryCodeSchema]):
         """Get a recovery code by ID."""
         instance = await self._get("id", code_id)
         if instance and not instance.is_deleted:
-            return RecoveryCode.from_orm(instance)
+            return RecoveryCode.model_validate(instance)
         return None

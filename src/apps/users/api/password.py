@@ -2,7 +2,6 @@ import uuid
 from typing import Annotated
 
 from fastapi import Body, Depends, Query, Request
-from pydantic import Required
 from starlette import status
 
 from apps.authentication.deps import get_current_user
@@ -96,8 +95,8 @@ async def password_recovery_approve(
 
 
 async def password_recovery_healthcheck(
-    email: Annotated[str, Query(max_length=100)] = Required,
-    key: Annotated[uuid.UUID | str, Query(max_length=36)] = Required,
+    email: Annotated[str, Query(max_length=100)],
+    key: Annotated[uuid.UUID | str, Query(max_length=36)],
 ) -> None:
     """General endpoint to get the password recovery healthcheck."""
 

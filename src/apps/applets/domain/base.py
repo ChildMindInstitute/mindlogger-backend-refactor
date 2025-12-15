@@ -1,7 +1,8 @@
 import datetime
 import uuid
+from typing import Annotated
 
-from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, validator
+from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, field_validator
 
 from apps.shared.domain import InternalModel
 from apps.shared.domain.custom_validations import sanitize_string
@@ -11,12 +12,13 @@ from apps.shared.enums import Language
 class AppletReportConfigurationBase(BaseModel):
     report_server_ip: str = ""
     report_public_key: str = ""
-    report_recipients: list[str] = Field(default_factory=list)
+    report_recipients: Annotated[list[str], Field(default_factory=list)]
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
 
-    @validator("report_email_body")
+    @field_validator("report_email_body")
+    @classmethod
     def validate_string(cls, value):
         return sanitize_string(value)
 
@@ -30,21 +32,22 @@ class Encryption(InternalModel):
 
 class AppletBaseInfo(BaseModel):
     display_name: str
-    description: dict[Language, str] = Field(default_factory=dict)
-    about: dict[Language, str] = Field(default_factory=dict)
+    description: Annotated[dict[Language, str], Field(default_factory=dict)]
+    about: Annotated[dict[Language, str], Field(default_factory=dict)]
     image: str = ""
     watermark: str = ""
     theme_id: uuid.UUID | None = None
-    link: uuid.UUID | None
-    require_login: bool | None
-    pinned_at: datetime.datetime | None
-    retention_period: int | None
-    retention_type: str | None
-    stream_enabled: bool | None
-    stream_ip_address: IPvAnyAddress | None
-    stream_port: PositiveInt | None
+    link: uuid.UUID | None = None
+    require_login: bool | None = None
+    pinned_at: datetime.datetime | None = None
+    retention_period: int | None = None
+    retention_type: str | None = None
+    stream_enabled: bool | None = None
+    stream_ip_address: IPvAnyAddress | None = None
+    stream_port: PositiveInt | None = None
 
-    @validator("description", "about")
+    @field_validator("description", "about")
+    @classmethod
     def validate_dict(cls, value):
         if isinstance(value, dict):
             for key in value:
@@ -53,7 +56,8 @@ class AppletBaseInfo(BaseModel):
             value = sanitize_string(value)
         return value
 
-    @validator("display_name")
+    @field_validator("display_name")
+    @classmethod
     def validate_string(cls, value):
         return sanitize_string(value)
 
@@ -63,11 +67,11 @@ class AppletBase(AppletBaseInfo):
 
 
 class AppletFetchBase(AppletReportConfigurationBase, AppletBaseInfo):
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     id: uuid.UUID
     version: str
-    created_at: datetime.datetime | None
-    updated_at: datetime.datetime | None
+    created_at: datetime.datetime | None = None
+    updated_at: datetime.datetime | None = None
     is_published: bool = False
-    owner_id: uuid.UUID | None
-    integrations: list[str] | None
+    owner_id: uuid.UUID | None = None
+    integrations: list[str] | None = None

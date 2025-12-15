@@ -206,9 +206,9 @@ class ReproProtocol(LdDocumentBase, ContainsNestedMixin, CommonFieldsMixin):
             extra_fields=self.extra,
             # encryption: Encryption  # TODO
             # theme_id: uuid.UUID | None = None
-            # link: uuid.UUID | None
-            # require_login: bool | None
-            # pinned_at: datetime.datetime | None
+            # link: uuid.UUID | None = None
+            # require_login: bool | None = None
+            # pinned_at: datetime.datetime | None = None
             retention_period=self.ld_retention_period,
             retention_type=self.ld_retention_type,
             report_server_ip=report_cfg.get("serverIp") or "",

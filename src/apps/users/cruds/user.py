@@ -24,7 +24,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             raise UserIsDeletedError()
 
         # Get internal model
-        user = User.from_orm(instance)
+        user = User.model_validate(instance)
 
         return user
 
@@ -47,11 +47,11 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         instance = await self._update_one(
             lookup="id",
             value=user.id,
-            schema=UserSchema(**update_schema.dict()),
+            schema=UserSchema(**update_schema.model_dump()),
         )
 
         # Create internal data model
-        user = User.from_orm(instance)
+        user = User.model_validate(instance)
 
         return user
 
@@ -71,7 +71,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             schema=UserSchema(email_encrypted=encrypted_email),
         )
         # Create internal data model
-        user = User.from_orm(instance)
+        user = User.model_validate(instance)
 
         return user
 
@@ -85,7 +85,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             value=user.id,
             schema=UserSchema(hashed_password=update_schema.hashed_password),
         )
-        return User.from_orm(instance)
+        return User.model_validate(instance)
 
     async def update_last_seen_by_id(self, id_: uuid.UUID) -> None:
         query = update(UserSchema)
@@ -138,7 +138,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             value=user_id,
             schema=UserSchema(mfa_enabled=enabled, mfa_secret=secret),
         )
-        return User.from_orm(instance)
+        return User.model_validate(instance)
 
     async def update_pending_mfa(
         self, user_id: uuid.UUID, encrypted_secret: str, created_at: datetime.datetime
@@ -159,7 +159,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             value=user_id,
             schema=UserSchema(pending_mfa_secret=encrypted_secret, pending_mfa_created_at=created_at),
         )
-        return User.from_orm(instance)
+        return User.model_validate(instance)
 
     async def clear_pending_mfa(self, user_id: uuid.UUID) -> User:
         """
@@ -178,7 +178,7 @@ class UsersCRUD(BaseCRUD[UserSchema]):
             value=user_id,
             schema=UserSchema(pending_mfa_secret=None, pending_mfa_created_at=None),
         )
-        return User.from_orm(instance)
+        return User.model_validate(instance)
 
     async def activate_mfa(self, user_id: uuid.UUID, encrypted_secret: str) -> User:
         """

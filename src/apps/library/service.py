@@ -3,8 +3,6 @@ import json
 import uuid
 from typing import List
 
-from pydantic import parse_obj_as
-
 from apps.activities.crud import ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
 from apps.activities.db.schemas import ActivityItemHistorySchema
 from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsHistoryCRUD
@@ -31,6 +29,7 @@ from apps.library.errors import (
     AppletVersionExistsError,
     LibraryItemDoesNotExistError,
 )
+from apps.shared.domain import parse_obj_as
 from apps.shared.paging import paging_list
 from apps.shared.query_params import QueryParams
 from apps.workspaces.service.check_access import CheckAccessService
@@ -81,7 +80,7 @@ class LibraryService:
         )
         library_item = await LibraryCRUD(self.session).save(library_item)
 
-        return AppletLibraryFull.from_orm(library_item)
+        return AppletLibraryFull.model_validate(library_item)
 
     async def _get_search_keywords(self, applet, applet_version):
         search_keywords = []
@@ -118,7 +117,7 @@ class LibraryService:
         return [
             PublicLibraryItem(
                 version=library_item.applet_id_version.split("_")[1],
-                **library_item.dict(exclude={"applet_id_version"}),
+                **library_item.model_dump(exclude={"applet_id_version"}),
             )
             for library_item in library_items
         ]
@@ -131,7 +130,7 @@ class LibraryService:
         library_item = await self._get_full_library_item(library_item)
         return PublicLibraryItem(
             version=library_item.applet_id_version.split("_")[1],
-            **library_item.dict(exclude={"applet_id_version"}),
+            **library_item.model_dump(exclude={"applet_id_version"}),
         )
 
     async def _get_full_library_item(self, library_item: LibraryItem) -> LibraryItem:
@@ -273,7 +272,7 @@ class LibraryService:
             search_keywords=search_keywords,
         )
         library_item = await LibraryCRUD(self.session).update(library_item, library_id)
-        return AppletLibraryFull.from_orm(library_item)
+        return AppletLibraryFull.model_validate(library_item)
 
     async def get_cart(self, user_id: uuid.UUID) -> Cart:
         """Get cart for user."""
@@ -300,7 +299,7 @@ class LibraryService:
     @staticmethod
     async def _search_in_cart(pattern: str, item: dict) -> bool:
         pattern = pattern.lower()
-        parsed_item = PublicLibraryItem.parse_obj(item)
+        parsed_item = PublicLibraryItem.model_validate(item)
         if pattern in parsed_item.display_name.lower():
             return True
 

@@ -1,4 +1,4 @@
-from pydantic.color import Color
+from pydantic_extra_types.color import Color
 
 from apps.shared.test import BaseTest
 

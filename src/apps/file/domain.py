@@ -12,11 +12,11 @@ class WebmTargetExtenstion(enum.StrEnum):
 
 class ContentUploadedFile(PublicModel):
     key: str
-    url: str | None
+    url: str | None = None
 
 
 class AnswerUploadedFile(ContentUploadedFile):
-    file_id: str | None
+    file_id: str | None = None
 
 
 class FileDownloadRequest(PublicModel):
@@ -38,7 +38,7 @@ class FilePresignRequest(PublicModel):
 
 
 class LogFileExistenceResponse(FileExistenceResponse):
-    file_size: int | None  # file size in bytes
+    file_size: int | None = None  # file size in bytes
     key: str
 
 

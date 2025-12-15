@@ -1,19 +1,21 @@
 import datetime
 import json
 import re
+from functools import lru_cache
 from typing import TypeVar
 
 from pydantic import BaseModel as PBaseModel
-from pydantic import Extra, validator
+from pydantic import ConfigDict, TypeAdapter, field_validator
 
 __all__ = [
     "InternalModel",
     "PublicModel",
     "PublicModelNoExtra",
     "to_camelcase",
+    "model_as_camel_case",
     "list_items_to_camel_case",
     "dict_keys_to_camel_case",
-    "model_as_camel_case",
+    "parse_obj_as",
 ]
 
 _BaseModel = TypeVar("_BaseModel", bound=PBaseModel)
@@ -46,7 +48,7 @@ def model_as_camel_case(model: _BaseModel) -> _BaseModel:
     """Returns the model but with field names and nested
     keys converted to camel case.
     """
-    model_json = model.json()
+    model_json = model.model_dump_json()
     camel_case_dict = convert_str_to_camel_case(model_json)
     return model.__class__(**camel_case_dict)
 
@@ -78,12 +80,23 @@ def list_items_to_camel_case(items):
     return res
 
 
+@lru_cache
+def _type_adapter(T):
+    """Cache TypeAdapter as recommended in Pydantic docs for performance."""
+    return TypeAdapter(T)
+
+
+def parse_obj_as(T, data):
+    return _type_adapter(T).validate_python(data)
+
+
 class BaseModel(PBaseModel):
     @classmethod
     def field_alias(cls, field_name: str):
-        return cls.__fields__[field_name].alias
+        return cls.model_fields[field_name].alias
 
-    @validator("*", pre=True)
+    @field_validator("*", mode="after")
+    @classmethod
     def remove_timezone(cls, v):
         if isinstance(v, datetime.datetime):
             return v.replace(tzinfo=None)
@@ -91,27 +104,28 @@ class BaseModel(PBaseModel):
 
 
 class InternalModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.forbid
-        orm_mode = True
-        use_enum_values = True
-        allow_population_by_field_name = True
-        validate_assignment = True
-        alias_generator = to_camelcase
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid",
+        from_attributes=True,
+        use_enum_values=True,
+        populate_by_name=True,
+        validate_assignment=True,
+        alias_generator=to_camelcase,
+    )
 
 
 class PublicModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-        extra = Extra.ignore
-        orm_mode = True
-        use_enum_values = True
-        allow_population_by_field_name = True
-        validate_assignment = True
-        alias_generator = to_camelcase
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="ignore",
+        from_attributes=True,
+        use_enum_values=True,
+        populate_by_name=True,
+        validate_assignment=True,
+        alias_generator=to_camelcase,
+    )
 
 
 class PublicModelNoExtra(PublicModel):
-    class Config(PublicModel.Config):
-        extra = Extra.forbid
+    model_config = ConfigDict(PublicModel.model_config, extra="forbid")  # type: ignore[misc]

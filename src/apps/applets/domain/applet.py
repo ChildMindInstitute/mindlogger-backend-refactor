@@ -1,9 +1,8 @@
 import datetime
 import uuid
-from typing import Generic
+from typing import Annotated, Generic, Self
 
-from pydantic import Field, IPvAnyAddress, PositiveInt, root_validator
-from pydantic.generics import GenericModel
+from pydantic import BaseModel, Field, IPvAnyAddress, PositiveInt, model_validator
 
 from apps.activities.domain.activity import (
     ActivityBaseInfo,
@@ -42,8 +41,8 @@ class AppletSingleLanguageDetail(AppletFetchBase, InternalModel):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetail] = Field(default_factory=list)
-    activity_flows: list[FlowSingleLanguageDetail] = Field(default_factory=list)
+    activities: Annotated[list[ActivitySingleLanguageDetail], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowSingleLanguageDetail], Field(default_factory=list)]
     theme: Theme | None = None
 
 
@@ -53,8 +52,8 @@ class AppletSingleLanguageDetailPublic(AppletFetchBase, PublicModel):
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetailPublic] = Field(default_factory=list)
-    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
+    activities: Annotated[list[ActivitySingleLanguageDetailPublic], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowSingleLanguageDetailPublic], Field(default_factory=list)]
     theme: PublicTheme | None = None
 
 
@@ -70,47 +69,47 @@ class AppletMinimumInfo(PublicModel):
 class AppletSingleLanguageDetailMobilePublic(AppletMinimumInfo, PublicModel):
     id: uuid.UUID
     theme: PublicThemeMobile | None = None
-    activities: list[ActivitySingleLanguageMobileDetailPublic] = Field(default_factory=list)
-    activity_flows: list[FlowSingleLanguageMobileDetailPublic] = Field(default_factory=list)
-    encryption: Encryption | None
-    stream_enabled: bool | None
-    stream_ip_address: IPvAnyAddress | None
-    stream_port: PositiveInt | None
+    activities: Annotated[list[ActivitySingleLanguageMobileDetailPublic], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowSingleLanguageMobileDetailPublic], Field(default_factory=list)]
+    encryption: Encryption | None = None
+    stream_enabled: bool | None = None
+    stream_ip_address: IPvAnyAddress | None = None
+    stream_port: PositiveInt | None = None
 
 
 class AppletSingleLanguageDetailForPublic(AppletBaseInfo, PublicModel):
     id: uuid.UUID
     version: str
-    created_at: datetime.datetime | None
-    updated_at: datetime.datetime | None
+    created_at: datetime.datetime | None = None
+    updated_at: datetime.datetime | None = None
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
     retention_period: PositiveInt | None = None
     retention_type: DataRetention | None = None
 
-    activities: list[ActivitySingleLanguageDetailPublic] = Field(default_factory=list)
-    activity_flows: list[FlowSingleLanguageDetailPublic] = Field(default_factory=list)
+    activities: Annotated[list[ActivitySingleLanguageDetailPublic], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowSingleLanguageDetailPublic], Field(default_factory=list)]
     theme: PublicTheme
-    encryption: Encryption | None
-    owner_id: uuid.UUID | None
+    encryption: Encryption | None = None
+    owner_id: uuid.UUID | None = None
 
 
 class AppletSingleLanguageInfo(AppletFetchBase, InternalModel):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
-    theme: Theme | None
+    theme: Theme | None = None
     is_pinned: bool = False
 
 
 class AppletSingleLanguageInfoPublic(AppletFetchBase, PublicModel):
     description: str  # type: ignore[assignment]
     about: str  # type: ignore[assignment]
-    theme: PublicTheme | None
+    theme: PublicTheme | None = None
 
 
 class AppletName(InternalModel):
     name: str
-    exclude_applet_id: uuid.UUID | None
+    exclude_applet_id: uuid.UUID | None = None
 
 
 class AppletUniqueName(PublicModel):
@@ -121,39 +120,40 @@ class AppletDataRetention(InternalModel):
     retention: DataRetention
     period: PositiveInt | None = None
 
-    @root_validator()
-    def validate_period(cls, values):
-        retention = values.get("retention")
-        value = values.get("period")
-        if retention != DataRetention.INDEFINITELY and not value:
+    @model_validator(mode="after")
+    def validate_period(self) -> Self:
+        retention = self.retention
+        period = self.period
+        if retention != DataRetention.INDEFINITELY and not period:
             raise PeriodIsRequiredError()
         if retention == DataRetention.INDEFINITELY:
-            values["period"] = None
-        return values
+            # avoid recursive validation that would result from assigning self.period = None
+            self.__dict__["period"] = None
+        return self
 
 
 class AppletMeta(PublicModel):
     has_assessment: bool = False
 
 
-class AppletRetrieveResponse(PublicModel, GenericModel, Generic[_BaseModel]):
+class AppletRetrieveResponse(PublicModel, BaseModel, Generic[_BaseModel]):
     result: _BaseModel
     respondent_meta: dict | None = None
     applet_meta: AppletMeta | None = None
 
 
 class AppletActivitiesDetailsPublic(PublicModel):
-    activities_details: list[ActivityLanguageWithItemsMobileDetailPublic] = Field(default_factory=list)
+    activities_details: Annotated[list[ActivityLanguageWithItemsMobileDetailPublic], Field(default_factory=list)]
     applet_detail: AppletSingleLanguageDetailMobilePublic
     respondent_meta: dict | None = None
 
 
 class ActivityLanguageWithItemsMobileDetailPublicType(ActivityLanguageWithItemsMobileDetailPublic):
-    type = "activity"
+    type: str = "activity"
 
 
 class PublicFlowFullType(PublicFlowFull):
-    type = "activityFlow"
+    type: str = "activityFlow"
 
 
 class AppletActivitiesAndFlowsDetailsPublic(PublicModel):
@@ -161,7 +161,9 @@ class AppletActivitiesAndFlowsDetailsPublic(PublicModel):
     Returns a combination of activity and activity flows
     """
 
-    details: list[ActivityLanguageWithItemsMobileDetailPublicType | PublicFlowFullType] = Field(default_factory=list)
+    details: Annotated[
+        list[ActivityLanguageWithItemsMobileDetailPublicType | PublicFlowFullType], Field(default_factory=list)
+    ]
 
 
 class ActivitiesAndFlowsWithAssignmentDetailsPublic(PublicModel):
@@ -169,14 +171,14 @@ class ActivitiesAndFlowsWithAssignmentDetailsPublic(PublicModel):
     Returns a combination of activity and activity flows
     """
 
-    activities: list[ActivityWithAssignmentDetailsPublic] = Field(default_factory=list)
-    activity_flows: list[FlowWithAssignmentDetailsPublic] = Field(default_factory=list)
+    activities: Annotated[list[ActivityWithAssignmentDetailsPublic], Field(default_factory=list)]
+    activity_flows: Annotated[list[FlowWithAssignmentDetailsPublic], Field(default_factory=list)]
 
 
 class AppletActivitiesBaseInfo(AppletMinimumInfo, PublicModel):
     id: uuid.UUID
-    created_at: datetime.datetime | None
-    updated_at: datetime.datetime | None
+    created_at: datetime.datetime | None = None
+    updated_at: datetime.datetime | None = None
     activities: list[ActivityBaseInfo]
     activity_flows: list[FlowBaseInfo]
     respondent_meta: dict | None = None

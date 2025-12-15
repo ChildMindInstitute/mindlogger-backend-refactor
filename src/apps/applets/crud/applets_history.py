@@ -74,6 +74,6 @@ class AppletHistoriesCRUD(BaseCRUD[AppletHistorySchema]):
         query = query.where(
             AppletHistorySchema.id_version == AppletHistorySchema.generate_id_version(applet_id, version)
         )
-        query = query.values(**schema.dict(by_alias=False))
+        query = query.values(**schema.model_dump(by_alias=False))
 
         await self._execute(query)

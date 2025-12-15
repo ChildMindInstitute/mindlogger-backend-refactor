@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import Field
 
@@ -29,7 +30,7 @@ class FlowItemHistoryWithActivityFull(FlowItemHistoryFull):
 
 class FlowFull(FlowBase, InternalModel):
     id: uuid.UUID
-    items: list[ActivityFlowItemFull] = Field(default_factory=list)
+    items: Annotated[list[ActivityFlowItemFull], Field(default_factory=list)]
     order: int
     created_at: datetime
 
@@ -42,15 +43,15 @@ class FlowHistoryBase(FlowBase):
 
 
 class FlowHistoryFull(FlowHistoryBase, InternalModel):
-    items: list[FlowItemHistoryFull] = Field(default_factory=list)
+    items: Annotated[list[FlowItemHistoryFull], Field(default_factory=list)]
 
 
 class FlowHistoryWithActivityFull(FlowHistoryBase, InternalModel):
-    items: list[FlowItemHistoryWithActivityFull] = Field(default_factory=list)
+    items: Annotated[list[FlowItemHistoryWithActivityFull], Field(default_factory=list)]
 
 
 class FlowHistoryWithActivityFlat(FlowHistoryBase, InternalModel):
-    activities: list[ActivityHistoryFull] = Field(default_factory=list)
+    activities: Annotated[list[ActivityHistoryFull], Field(default_factory=list)]
 
 
 class PublicActivityFlowItemFull(FlowItemBase, PublicModel):
@@ -60,6 +61,6 @@ class PublicActivityFlowItemFull(FlowItemBase, PublicModel):
 
 class PublicFlowFull(FlowBase, PublicModel):
     id: uuid.UUID
-    items: list[PublicActivityFlowItemFull] = Field(default_factory=list)
+    items: Annotated[list[PublicActivityFlowItemFull], Field(default_factory=list)]
     order: int
     created_at: datetime

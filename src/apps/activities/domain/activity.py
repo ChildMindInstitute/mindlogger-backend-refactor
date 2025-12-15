@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
+from typing import Annotated
 
 from pydantic import Field
 
@@ -27,7 +28,7 @@ class ActivityOrFlowBasicInfoPublic(PublicModel):
     id: uuid.UUID
     name: str
     description: str
-    images: list[str] = Field(default_factory=list)
+    images: Annotated[list[str], Field(default_factory=list)]
     is_flow: bool = False
     status: ActivityOrFlowStatusEnum
     auto_assign: bool = True
@@ -40,9 +41,9 @@ class ActivityOrFlowBasicInfoInternal(InternalModel):
     id: uuid.UUID
     name: str
     description: str
-    images: list[str] = Field(default_factory=list)
+    images: Annotated[list[str], Field(default_factory=list)]
     is_flow: bool = False
-    status: ActivityOrFlowStatusEnum | None
+    status: ActivityOrFlowStatusEnum | None = None
     auto_assign: bool = True
     is_hidden: bool = False
     activity_ids: list[uuid.UUID] | None = None
@@ -70,7 +71,7 @@ class ActivityDuplicate(ActivityBase, InternalModel):
     id: uuid.UUID
     key: uuid.UUID
     order: int
-    items: list[ActivityItemDuplicate] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemDuplicate], Field(default_factory=list)]
 
 
 class ActivityPublic(ActivityBase, InternalModel):
@@ -113,7 +114,7 @@ class ActivitySingleLanguageWithItemsDetail(ActivityBase, InternalModel):
     id: uuid.UUID
     order: int
     description: str  # type: ignore[assignment]
-    items: list[ActivityItemSingleLanguageDetail] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemSingleLanguageDetail], Field(default_factory=list)]
     created_at: datetime
 
 
@@ -121,7 +122,7 @@ class ActivitySingleLanguageWithItemsDetailPublic(ActivityBase, PublicModel):
     id: uuid.UUID
     order: int
     description: str  # type: ignore[assignment]
-    items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemSingleLanguageDetailPublic], Field(default_factory=list)]
     created_at: datetime
 
 
@@ -137,7 +138,7 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
     is_hidden: bool | None = False
     response_is_editable: bool = False
     order: int
-    items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemSingleLanguageDetailPublic], Field(default_factory=list)]
     scores_and_reports: ScoresAndReports | None = None
     performance_task_type: PerformanceTaskType | None = None
     is_performance_task: bool = False
@@ -145,11 +146,11 @@ class ActivityLanguageWithItemsMobileDetailPublic(PublicModel):
 
 
 class ActivityWithAssignmentDetailsPublic(ActivityLanguageWithItemsMobileDetailPublic):
-    assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
+    assignments: Annotated[list[ActivityAssignmentWithSubject], Field(default_factory=list)]
 
 
 class ActivityOrFlowWithAssignmentsPublic(ActivityOrFlowBasicInfoPublic):
-    assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
+    assignments: Annotated[list[ActivityAssignmentWithSubject], Field(default_factory=list)]
 
 
 class ActivityBaseInfo(ActivityMinimumInfo, InternalModel):
@@ -162,10 +163,10 @@ class ActivitySubjectMetadata(PublicModel):
     activity_or_flow_id: uuid.UUID
     respondents_count: int
     respondent_submissions_count: int
-    respondent_last_submission_date: datetime | None
+    respondent_last_submission_date: datetime | None = None
     subjects_count: int
     subject_submissions_count: int
-    subject_last_submission_date: datetime | None
+    subject_last_submission_date: datetime | None = None
 
 
 class ActivitiesMetadata(PublicModel):
@@ -174,4 +175,4 @@ class ActivitiesMetadata(PublicModel):
     respondent_activities_count_deleted: int = 0
     target_activities_count_existing: int = 0
     target_activities_count_deleted: int = 0
-    activities_or_flows: list[ActivitySubjectMetadata] = Field(default_factory=list)
+    activities_or_flows: Annotated[list[ActivitySubjectMetadata], Field(default_factory=list)]

@@ -11,7 +11,7 @@ class ActivityItemHistory(InternalModel):
     name: str
     question: dict[str, str]
     response_type: ResponseType
-    response_values: dict | list | None
+    response_values: dict | list | None = None
     config: dict
     order: int
     is_hidden: bool | None = False

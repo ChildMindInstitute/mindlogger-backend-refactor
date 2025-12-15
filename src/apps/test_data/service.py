@@ -77,7 +77,7 @@ class TestDataService:
                 en=f"Applet about {self.random_string(50)}",
                 fr=f"Applet about {self.random_string(50)}",
             ),
-            encryption=encryption.dict(),
+            encryption=encryption.model_dump(),
             image=image_url,
             watermark=image_url,
             theme_id=None,

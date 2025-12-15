@@ -39,7 +39,7 @@ def create_shell_body(applet_one):
         last_name="ln",
         secret_user_id="1234",
         tag="tag1234",
-    ).dict()
+    ).model_dump()
 
 
 @pytest.fixture
@@ -228,7 +228,7 @@ async def lucy_applet_one_subject(session: AsyncSession, lucy: User, applet_one_
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -238,7 +238,7 @@ async def pit_applet_one_subject(session: AsyncSession, pit: User, applet_one_pi
     query = select(SubjectSchema).where(SubjectSchema.user_id == user_id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -434,7 +434,7 @@ class TestSubjects(BaseTest):
             relation="father",
         )
         url = self.subject_relation_url.format(subject_id=_target_subject_id, source_subject_id=_source_subject_id)
-        await client.post(url, body.dict())
+        await client.post(url, body.model_dump())
 
         url_delete = self.subject_relation_url.format(
             subject_id=subject_id if subject_id else _target_subject_id,
@@ -477,7 +477,7 @@ class TestSubjects(BaseTest):
         assert result_subject.id
         actual_subject = await service.get(result_subject.id)
         assert actual_subject
-        for field_name in SubjectCreate.__fields__.keys():
+        for field_name in SubjectCreate.model_fields.keys():
             actual = getattr(actual_subject, field_name)
             expected = getattr(result_subject, field_name)
             assert actual == expected
@@ -495,7 +495,7 @@ class TestSubjects(BaseTest):
         assert original_subject.id
         actual_subject = await service.get(original_subject.id)
         assert actual_subject
-        for field_name in SubjectCreate.__fields__.keys():
+        for field_name in SubjectCreate.model_fields.keys():
             actual = getattr(actual_subject, field_name)
             expected = getattr(original_subject, field_name)
             assert actual == expected
@@ -982,7 +982,7 @@ class TestSubjects(BaseTest):
             applet_one_lucy_respondent.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 )
             ],
@@ -1037,7 +1037,7 @@ class TestSubjects(BaseTest):
             applet_one_lucy_respondent.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 )
             ],
@@ -1096,7 +1096,7 @@ class TestSubjects(BaseTest):
             applet_one_lucy_respondent.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 )
             ],
@@ -1173,7 +1173,7 @@ class TestSubjects(BaseTest):
             applet_one_lucy_respondent.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 )
             ],
@@ -1228,7 +1228,7 @@ class TestSubjects(BaseTest):
             applet_one_pit_reviewer.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 )
             ],
@@ -1309,7 +1309,7 @@ class TestSubjects(BaseTest):
             applet_one_bob_coordinator.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 )
             ],
@@ -1385,7 +1385,7 @@ class TestSubjects(BaseTest):
             applet_one_bob_coordinator_reviewer.id,
             [
                 ActivityUpdate(
-                    **activity.dict(exclude={"auto_assign"}),
+                    **activity.model_dump(exclude={"auto_assign"}),
                     auto_assign=False,
                 )
             ],

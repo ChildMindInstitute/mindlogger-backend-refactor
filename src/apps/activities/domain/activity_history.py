@@ -1,7 +1,8 @@
 import datetime
 import uuid
+from typing import Annotated
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_full import ActivityItemHistoryFull, PublicActivityFull, PublicActivityItemFull
@@ -46,34 +47,34 @@ class ActivityHistory(InternalModel):
 
 class ActivityHistoryChange(InternalModel):
     name: str | None = None
-    changes: list[str] | None = Field(default_factory=list)
-    items: list[ActivityItemHistoryChange] | None = Field(default_factory=list)
+    changes: Annotated[list[str] | None, Field(default_factory=list)]
+    items: Annotated[list[ActivityItemHistoryChange] | None, Field(default_factory=list)]
 
 
 class PublicActivityHistoryChange(PublicModel):
     name: str | None = None
-    changes: list[str] | None = Field(default_factory=list)
-    items: list[ActivityItemHistoryChange] | None = Field(default_factory=list)
+    changes: Annotated[list[str] | None, Field(default_factory=list)]
+    items: Annotated[list[ActivityItemHistoryChange] | None, Field(default_factory=list)]
 
 
 class ActivityHistoryFull(ActivityHistory):
-    items: list[ActivityItemHistoryFull] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemHistoryFull], Field(default_factory=list)]
 
 
 class ActivityHistoryExport(PublicActivityFull):
     id_version: str
-    version: str | None = None
-    items: list[PublicActivityItemFull] = Field(default_factory=list)
+    version: Annotated[str | None, Field(validate_default=True)] = None
+    items: Annotated[list[PublicActivityItemFull], Field(default_factory=list)]
 
-    _version = validator("version", always=True, allow_reuse=True)(extract_history_version)
+    _version = field_validator("version")(extract_history_version)
 
     def translate(self, i18n: I18N) -> "ActivityHistoryTranslatedExport":
-        as_dict = self.dict(by_alias=False)
+        as_dict = self.model_dump(by_alias=False)
         as_dict["description"] = i18n.translate(self.description)
 
         items = []
         for item in self.items:
-            itms_dict = item.dict(by_alias=False)
+            itms_dict = item.model_dump(by_alias=False)
             itms_dict["question"] = i18n.translate(item.question)
             items.append(ActivityItemSingleLanguageDetailPublic(**itms_dict))
         as_dict["items"] = items
@@ -87,4 +88,4 @@ class ActivityHistoryTranslatedExport(ActivityBase, PublicModel):
     version: str | None = None
     description: str  # type: ignore[assignment]
     created_at: datetime.datetime
-    items: list[ActivityItemSingleLanguageDetailPublic] = Field(default_factory=list)
+    items: Annotated[list[ActivityItemSingleLanguageDetailPublic], Field(default_factory=list)]

@@ -29,11 +29,11 @@ class _BaseActivitySchema:
 
     @hybrid_property
     def is_performance_task(self) -> bool:
-        return self.performance_task_type in PerformanceTaskType.get_values()
+        return self.performance_task_type in PerformanceTaskType
 
     @is_performance_task.expression  # type: ignore[no-redef]
     def is_performance_task(cls) -> bool:
-        return func.coalesce(cls.performance_task_type, "").in_(PerformanceTaskType.get_values())
+        return func.coalesce(cls.performance_task_type, "").in_([e.value for e in PerformanceTaskType])
 
 
 class ActivitySchema(Base, _BaseActivitySchema):

@@ -1,7 +1,9 @@
 import datetime
 import uuid
+from typing import Annotated, Self
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, field_validator, model_validator
+from pydantic_core.core_schema import ValidationInfo
 from sqlalchemy import Unicode
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy_utils import StringEncryptedType
@@ -33,17 +35,24 @@ __all__ = [
 class PublicWorkspace(PublicModel):
     """This model is returned to the user their current workspace."""
 
-    owner_id: uuid.UUID = Field(
-        description="This field represents the applet owner id",
-    )
-    workspace_name: str = Field(
-        description="This field represents the name of workspace "
-        "which is consists of 'first name', 'last name' of user "
-        "which is applet owner and prefix",
-    )
+    owner_id: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the applet owner id",
+        ),
+    ]
+    workspace_name: Annotated[
+        str,
+        Field(
+            description="This field represents the name of workspace "
+            "which is consists of 'first name', 'last name' of user "
+            "which is applet owner and prefix",
+        ),
+    ]
     use_arbitrary: bool | None = None
 
-    @validator("use_arbitrary")
+    @field_validator("use_arbitrary")
+    @classmethod
     def null_to_false(cls, value):
         if value is None:
             value = False
@@ -56,14 +65,20 @@ class UserWorkspace(InternalModel):
     their current workspace.
     """
 
-    user_id: uuid.UUID = Field(
-        description="This field represents the applet owner id",
-    )
-    workspace_name: str = Field(
-        description="This field represents the name of workspace "
-        "which is consists of 'first name', 'last name' of user "
-        "which is applet owner and prefix",
-    )
+    user_id: Annotated[
+        uuid.UUID,
+        Field(
+            description="This field represents the applet owner id",
+        ),
+    ]
+    workspace_name: Annotated[
+        str,
+        Field(
+            description="This field represents the name of workspace "
+            "which is consists of 'first name', 'last name' of user "
+            "which is applet owner and prefix",
+        ),
+    ]
     use_arbitrary: bool | None = None
 
 
@@ -77,14 +92,14 @@ class WorkspaceAppletEncryption(InternalModel):
 class WorkspaceRespondentDetails(InternalModel):
     applet_id: uuid.UUID
     applet_display_name: str
-    applet_image: str | None
+    applet_image: str | None = None
     access_id: str | None = None
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
-    subject_tag: str | None
+    subject_tag: str | None = None
     subject_first_name: str
     subject_last_name: str
     subject_created_at: datetime.datetime
@@ -93,7 +108,8 @@ class WorkspaceRespondentDetails(InternalModel):
     invitation: InvitationDetail | None = None
     roles: list[Role]
 
-    @validator("respondent_nickname", "subject_first_name", "subject_last_name", pre=True)
+    @field_validator("respondent_nickname", "subject_first_name", "subject_last_name", mode="before")
+    @classmethod
     def decrypt_fields(cls, value):
         if value:
             value = StringEncryptedType(Unicode, get_key).process_result_value(value, dialect=PGDialect_asyncpg.name)
@@ -103,21 +119,21 @@ class WorkspaceRespondentDetails(InternalModel):
 
 
 class WorkspaceRespondent(InternalModel):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
     nicknames: list[str] | None = None
     secret_ids: list[str] | None = None
     is_anonymous_respondent: bool
-    last_seen: datetime.datetime | None
+    last_seen: datetime.datetime | None = None
     is_pinned: bool = False
     details: list[WorkspaceRespondentDetails] | None = None
-    user_id: uuid.UUID | None
+    user_id: uuid.UUID | None = None
     status: str
-    email: str | None
+    email: str | None = None
     subjects: list[uuid.UUID]
 
 
 class AppletRole(InternalModel):
-    access_id: uuid.UUID | None
+    access_id: uuid.UUID | None = None
     role: Role
     reviewer_subjects: list[str] | None = None
 
@@ -125,7 +141,7 @@ class AppletRole(InternalModel):
 class WorkspaceManagerApplet(InternalModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     roles: list[AppletRole]
     encryption: WorkspaceAppletEncryption
 
@@ -134,32 +150,35 @@ class WorkspaceManager(InternalModel):
     id: uuid.UUID
     first_name: str
     last_name: str
-    email_encrypted: str | None
+    email_encrypted: str | None = None
     roles: list[Role]
     created_at: datetime.datetime
     last_seen: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
-    titles: list[str] | None
-    title: str | None
+    titles: list[str] | None = None
+    title: Annotated[str | None, Field(validate_default=True)] = None
     status: InvitationStatus
-    invitation_key: uuid.UUID | None
+    invitation_key: uuid.UUID | None = None
 
-    @validator("titles", pre=True)
+    @field_validator("titles", mode="before")
+    @classmethod
     def get_titles(cls, value):
         if len(value) > 0:
             value = [v for v in value if v is not None]
 
         return value
 
-    @validator("title", always=True)
-    def get_title(cls, value, values):
-        if len(values.get("titles")) > 0:
-            value = next(iter([v for v in values.get("titles") if v is not None]))
+    @field_validator("title")
+    @classmethod
+    def get_title(cls, value, info: ValidationInfo):
+        if titles := info.data.get("titles"):
+            value = next(iter([v for v in titles if v]))
 
         return value
 
-    @validator("applets", pre=True)
+    @field_validator("applets", mode="before")
+    @classmethod
     def group_applets(cls, value):
         applets = {}
         for applet_role in value:
@@ -193,14 +212,14 @@ class WorkspaceManager(InternalModel):
 class PublicWorkspaceRespondentDetails(PublicModel):
     applet_id: uuid.UUID
     applet_display_name: str
-    applet_image: str | None
-    access_id: uuid.UUID | None
+    applet_image: str | None = None
+    access_id: uuid.UUID | None = None
     respondent_nickname: str | None = None
     respondent_secret_id: str | None = None
     has_individual_schedule: bool = False
     encryption: WorkspaceAppletEncryption | None = None
     subject_id: uuid.UUID
-    subject_tag: str | None
+    subject_tag: str | None = None
     subject_first_name: str
     subject_last_name: str
     subject_created_at: datetime.datetime
@@ -212,15 +231,15 @@ class PublicWorkspaceRespondentDetails(PublicModel):
 
 
 class PublicWorkspaceRespondent(PublicModel):
-    id: uuid.UUID | None
-    nicknames: list[str] | None
-    secret_ids: list[str] | None
+    id: uuid.UUID | None = None
+    nicknames: list[str] | None = None
+    secret_ids: list[str] | None = None
     is_anonymous_respondent: bool
-    last_seen: datetime.datetime | None
+    last_seen: datetime.datetime | None = None
     is_pinned: bool = False
     details: list[PublicWorkspaceRespondentDetails] | None = None
     status: str
-    email: str | None
+    email: str | None = None
     subjects: list[uuid.UUID]
 
 
@@ -228,16 +247,16 @@ class PublicWorkspaceManager(PublicModel):
     id: uuid.UUID
     first_name: str
     last_name: str
-    email: str | None
+    email: str | None = None
     roles: list[Role]
     last_seen: datetime.datetime
     created_at: datetime.datetime
     is_pinned: bool = False
     applets: list[WorkspaceManagerApplet] | None = None
-    title: str | None
-    titles: list[str] | None
+    title: str | None = None
+    titles: list[str] | None = None
     status: InvitationStatus
-    invitation_key: uuid.UUID | None
+    invitation_key: uuid.UUID | None = None
 
 
 class WorkspaceInfo(InternalModel):
@@ -253,67 +272,67 @@ class PublicWorkspaceInfo(PublicModel):
 class WorkspaceApplet(InternalModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     is_pinned: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    version: str | None
+    version: str | None = None
     role: Role | None = Role.RESPONDENT
     type: str
     folders_applet_count: int
-    description: dict | None
-    activity_count: int | None
+    description: dict | None = None
+    activity_count: int | None = None
 
 
 class WorkspaceSearchApplet(InternalModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     is_pinned: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    version: str | None
+    version: str | None = None
     role: Role | None = Role.RESPONDENT
     type: str
-    folder_id: uuid.UUID | None
-    folder_name: str | None
+    folder_id: uuid.UUID | None = None
+    folder_name: str | None = None
 
 
 class WorkspaceAppletPublic(PublicModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     is_pinned: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    version: str | None
-    role: Role | None
+    version: str | None = None
+    role: Role | None = None
     type: str
     folders_applet_count: int
-    description: dict | None
-    activity_count: int | None
+    description: dict | None = None
+    activity_count: int | None = None
 
 
 class WorkspaceSearchAppletPublic(PublicModel):
     id: uuid.UUID
     display_name: str
-    image: str | None
+    image: str | None = None
     is_pinned: bool
-    encryption: Encryption | None
+    encryption: Encryption | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    version: str | None
+    version: str | None = None
     role: Role | None = Role.RESPONDENT
     type: str
-    folder_id: uuid.UUID | None
-    folder_name: str | None
+    folder_id: uuid.UUID | None = None
+    folder_name: str | None = None
 
 
 class WorkspacePrioritizedRole(PublicModel):
-    role: Role | None
+    role: Role | None = None
 
 
 class AppletRoles(InternalModel):
@@ -329,7 +348,7 @@ class WorkspaceArbitraryFields(InternalModel):
     storage_secret_key: str | None = None
     storage_region: str | None = None
     storage_bucket: str | None = None
-    use_arbitrary: bool
+    use_arbitrary: Annotated[bool | None, Field(validate_default=True)] = None
 
     def is_arbitrary_empty(self):
         return not any(
@@ -345,7 +364,8 @@ class WorkspaceArbitraryFields(InternalModel):
             ]
         )
 
-    @validator("use_arbitrary", always=True, pre=True)
+    @field_validator("use_arbitrary", mode="before")
+    @classmethod
     def to_bool(cls, value):
         if value is None:
             return False
@@ -356,9 +376,10 @@ class WorkspaceArbitraryFields(InternalModel):
 class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
     user_id: uuid.UUID
     email: str
-    alembic_version: str | None
+    alembic_version: str | None = None
 
-    @validator("use_arbitrary")
+    @field_validator("use_arbitrary")
+    @classmethod
     def format_arbitrary_usage(cls, value):
         if value:
             return "[green]True[/green]"
@@ -370,21 +391,22 @@ class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
     storage_secret_key: str
     storage_type: StorageType
 
-    @root_validator()
-    def validate_storage_settings(cls, values):
-        storage_type = values["storage_type"]
+    @model_validator(mode="after")
+    def validate_storage_settings(self) -> Self:
+        storage_type = self.storage_type
         required = []
         if storage_type == StorageType.AWS:
             required = ["storage_access_key", "storage_region", "storage_bucket"]
         elif storage_type == StorageType.GCP:
             required = ["storage_url", "storage_bucket", "storage_access_key"]
 
-        if required and not all((values[itm] is not None) for itm in required):
+        if required and not all(getattr(self, field) is not None for field in required):
             raise ValueError(f"{', '.join(required)} are required for {storage_type} storage")
 
-        return values
+        return self
 
-    @validator("database_uri")
+    @field_validator("database_uri")
+    @classmethod
     def validate_database_uri(cls, value: str) -> str:
         driver_path = "postgresql+asyncpg://"
         if not value.startswith(driver_path):
@@ -406,19 +428,20 @@ class AnswerDbApplet(InternalModel):
 
 
 class UserAnswersDBInfo(AnswerDbApplet):
-    use_arbitrary: bool | None
-    database_uri: str | None
+    use_arbitrary: bool | None = None
+    database_uri: str | None = None
 
 
 class AnswerDbApplets(InternalModel):
-    database_uri: str | None
-    applets: list[AnswerDbApplet] = Field(default_factory=list)
+    database_uri: str | None = None
+    applets: Annotated[list[AnswerDbApplet], Field(default_factory=list)]
 
 
 class AppletIdsQuery(InternalModel):
-    applet_ids: str | None = Field(None, alias="appletIDs")
+    applet_ids: Annotated[str | None, Field(None, alias="appletIDs")]
 
-    @validator("applet_ids")
+    @field_validator("applet_ids")
+    @classmethod
     def convert_str_to_uuid(cls, value) -> list[uuid.UUID]:
         if not value:
             return []

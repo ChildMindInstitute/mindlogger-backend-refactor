@@ -1,8 +1,9 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import Field, NonNegativeInt, root_validator, validator
-from pydantic.color import Color
+from pydantic import Field, NonNegativeInt, field_validator, model_validator
+from pydantic_core.core_schema import ValidationInfo
+from pydantic_extra_types.color import Color
 
 from apps.activities.domain.response_type_config import (
     ABTrailsConfig,
@@ -63,55 +64,55 @@ class PhrasalTemplateDisplayMode(StrEnum):
 
 
 class TextValues(PublicModel):
-    type: Literal[ResponseType.TEXT] | None
+    type: Literal[ResponseType.TEXT]
 
 
 class ParagraphTextValues(PublicModel):
-    type: Literal[ResponseType.PARAGRAPHTEXT] | None
+    type: Literal[ResponseType.PARAGRAPHTEXT]
 
 
 class MessageValues(PublicModel):
-    type: Literal[ResponseType.MESSAGE] | None
+    type: Literal[ResponseType.MESSAGE]
 
 
 class TimeRangeValues(PublicModel):
-    type: Literal[ResponseType.TIMERANGE] | None
+    type: Literal[ResponseType.TIMERANGE]
 
 
 class TimeValues(PublicModel):
-    type: Literal[ResponseType.TIME] | None
+    type: Literal[ResponseType.TIME]
 
 
 class GeolocationValues(PublicModel):
-    type: Literal[ResponseType.GEOLOCATION] | None
+    type: Literal[ResponseType.GEOLOCATION]
 
 
 class PhotoValues(PublicModel):
-    type: Literal[ResponseType.PHOTO] | None
+    type: Literal[ResponseType.PHOTO]
 
 
 class VideoValues(PublicModel):
-    type: Literal[ResponseType.VIDEO] | None
+    type: Literal[ResponseType.VIDEO]
 
 
 class DateValues(PublicModel):
-    type: Literal[ResponseType.DATE] | None
+    type: Literal[ResponseType.DATE]
 
 
 class FlankerValues(PublicModel):
-    type: Literal[ResponseType.FLANKER] | None
+    type: Literal[ResponseType.FLANKER]
 
 
 class StabilityTrackerValues(PublicModel):
-    type: Literal[ResponseType.STABILITYTRACKER] | None
+    type: Literal[ResponseType.STABILITYTRACKER]
 
 
 class ABTrailsValues(PublicModel):
-    type: Literal[ResponseType.ABTRAILS] | None
+    type: Literal[ResponseType.ABTRAILS]
 
 
 class UnityValues(PublicModel):
-    type: Literal[ResponseType.UNITY] | None
+    type: Literal[ResponseType.UNITY]
 
 
 class _SingleSelectionValue(PublicModel):
@@ -120,134 +121,146 @@ class _SingleSelectionValue(PublicModel):
     image: str | None = None
     score: float | None = None
     tooltip: str | None = None
-    is_hidden: bool = Field(default=False)
+    is_hidden: bool = False
     color: Color | None = None
     alert: str | None = None
     value: int | None = None
 
-    @validator("score")
+    @field_validator("score")
+    @classmethod
     def validate_score(cls, value):
         # validate score value to be 2 decimals max
         if value:
             return round(value, 2)
         return value
 
-    @validator("image")
+    @field_validator("image")
+    @classmethod
     def validate_image(cls, value):
         # validate image if not None
         if value is not None:
             return validate_image(value)
         return value
 
-    @validator("color")
+    @field_validator("color")
+    @classmethod
     def validate_color(cls, value):
         if value is not None:
             return validate_color(value)
         return value
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
 
 
 class SingleSelectionValues(PublicModel):
-    type: Literal[ResponseType.SINGLESELECT] | None
-    palette_name: str | None
+    type: Literal[ResponseType.SINGLESELECT]
+    palette_name: str | None = None
     options: list[_SingleSelectionValue]
 
-    @validator("options")
+    @field_validator("options")
+    @classmethod
     def validate_options(cls, value):
         return validate_options_value(value)
 
 
 class _MultiSelectionValue(_SingleSelectionValue):
-    is_none_above: bool = Field(default=False)
+    is_none_above: bool = False
 
 
 class MultiSelectionValues(PublicModel):
-    type: Literal[ResponseType.MULTISELECT] | None
-    palette_name: str | None
+    type: Literal[ResponseType.MULTISELECT]
+    palette_name: str | None = None
     options: list[_MultiSelectionValue]
 
-    @validator("options")
+    @field_validator("options")
+    @classmethod
     def validate_options(cls, value):
         return validate_options_value(value)
 
-    @validator("options")
+    @field_validator("options")
+    @classmethod
     def validate_none_option_flag(cls, value):
         return validate_none_option_flag(value)
 
 
 class SliderValueAlert(PublicModel):
-    value: int | None = Field(
-        default=0,
-        description="Either value or min_value and max_value must be provided. For SliderRows, only value is allowed.",  # noqa: E501
-    )
-    min_value: int | None
-    max_value: int | None
+    value: Annotated[
+        int | None,
+        Field(
+            description="Either value or min_value and max_value must "
+            "be provided. For SliderRows, only value is allowed."
+        ),
+    ] = 0
+    min_value: int | None = None
+    max_value: int | None = None
     alert: str
 
-    @root_validator()
-    def validate_min_max_values(cls, values):
-        if values.get("min_value") is not None and values.get("max_value") is not None:
-            if values.get("min_value") >= values.get("max_value"):
+    @model_validator(mode="after")
+    def validate_min_max_values(self) -> Self:
+        if self.min_value is not None and self.max_value is not None:
+            if self.min_value >= self.max_value:
                 raise MinValueError()
-        return values
+        return self
 
 
 class SliderValuesBase(PublicModel):
-    min_label: str | None = Field(..., max_length=100)
-    max_label: str | None = Field(..., max_length=100)
-    min_value: NonNegativeInt = Field(default=0, max_value=11)
-    max_value: NonNegativeInt = Field(default=12, max_value=12)
+    min_label: Annotated[str | None, Field(max_length=100)]
+    max_label: Annotated[str | None, Field(max_length=100)]
+    min_value: Annotated[NonNegativeInt, Field(le=11)] = 0
+    max_value: Annotated[NonNegativeInt, Field(le=12)] = 12
     min_image: str | None = None
     max_image: str | None = None
     scores: list[float] | None = None
     alerts: list[SliderValueAlert] | None = None
 
-    @validator("scores")
+    @field_validator("scores")
+    @classmethod
     def validate_score(cls, value):
         # validate each score values to be 2 decimals max
         if value:
             value = [round(score, 2) for score in value]
         return value
 
-    @validator("min_image", "max_image")
+    @field_validator("min_image", "max_image")
+    @classmethod
     def validate_image(cls, value):
         if value is not None:
             return validate_image(value)
         return value
 
-    @root_validator
-    def validate_min_max(cls, values):
-        if values.get("min_value") >= values.get("max_value"):
+    @model_validator(mode="after")
+    def validate_min_max(self) -> Self:
+        if self.min_value >= self.max_value:
             raise MinValueError()
-        return values
+        return self
 
-    @root_validator
-    def validate_scores(cls, values):
+    @model_validator(mode="after")
+    def validate_scores(self) -> Self:
         # length of scores must be equal to max_value - min_value + 1
-        scores = values.get("scores", [])
+        scores = self.scores
         if scores:
-            if len(scores) != values.get("max_value") - values.get("min_value") + 1:
+            if len(scores) != self.max_value - self.min_value + 1:
                 raise InvalidScoreLengthError()
-        return values
+        return self
 
 
 class SliderValues(SliderValuesBase):
-    type: Literal[ResponseType.SLIDER] | None
+    type: Literal[ResponseType.SLIDER]
 
 
 class NumberSelectionValues(PublicModel):
-    type: Literal[ResponseType.NUMBERSELECT] | None
-    min_value: NonNegativeInt = Field(default=0)
-    max_value: NonNegativeInt = Field(default=100)
+    type: Literal[ResponseType.NUMBERSELECT]
+    min_value: NonNegativeInt = 0
+    max_value: NonNegativeInt = 100
 
-    @root_validator
-    def validate_min_max(cls, values):
-        if values.get("min_value") >= values.get("max_value"):
+    @model_validator(mode="after")
+    def validate_min_max(self) -> Self:
+        if self.min_value >= self.max_value:
             raise MinValueError()
-        return values
+        return self
 
 
 class DrawingProportion(PublicModel):
@@ -255,12 +268,13 @@ class DrawingProportion(PublicModel):
 
 
 class DrawingValues(PublicModel):
-    type: Literal[ResponseType.DRAWING] | None
-    drawing_example: str | None
-    drawing_background: str | None
+    type: Literal[ResponseType.DRAWING]
+    drawing_example: str | None = None
+    drawing_background: str | None = None
     proportion: DrawingProportion | None = None
 
-    @validator("drawing_example", "drawing_background")
+    @field_validator("drawing_example", "drawing_background")
+    @classmethod
     def validate_image(cls, value):
         if value is not None:
             return validate_image(value)
@@ -269,48 +283,53 @@ class DrawingValues(PublicModel):
 
 class SliderRowsValue(SliderValuesBase, PublicModel):
     id: str | None = None
-    label: str = Field(..., max_length=100)
+    label: Annotated[str, Field(max_length=100)]
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
 
 
 class SliderRowsValues(PublicModel):
-    type: Literal[ResponseType.SLIDERROWS] | None
+    type: Literal[ResponseType.SLIDERROWS]
     rows: list[SliderRowsValue]
 
 
 class _SingleSelectionOption(PublicModel):
     id: str | None = None
-    text: str = Field(..., max_length=100)
+    text: Annotated[str, Field(max_length=100)]
     image: str | None = None
     tooltip: str | None = None
 
-    @validator("image")
+    @field_validator("image")
+    @classmethod
     def validate_image(cls, value):
         if value is not None:
             return validate_image(value)
         return value
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
 
 
 class _SingleSelectionRow(PublicModel):
     id: str | None = None
-    row_name: str = Field(..., max_length=100)
+    row_name: Annotated[str, Field(max_length=100)]
     row_image: str | None = None
     tooltip: str | None = None
 
-    @validator("row_image")
+    @field_validator("row_image")
+    @classmethod
     def validate_image(cls, value):
         if value is not None:
             return validate_image(value)
         return value
 
-    @validator("id")
+    @field_validator("id")
+    @classmethod
     def validate_id(cls, value):
         return validate_uuid(value)
 
@@ -326,40 +345,42 @@ class _SingleSelectionDataRow(PublicModel):
     row_id: str
     options: list[_SingleSelectionDataOption]
 
-    @validator("options")
+    @field_validator("options")
+    @classmethod
     def validate_options(cls, value):
         return validate_options_value(value)
 
 
 class SingleSelectionRowsValues(PublicModel):
-    type: Literal[ResponseType.SINGLESELECTROWS] | None
+    type: Literal[ResponseType.SINGLESELECTROWS]
     rows: list[_SingleSelectionRow]
     options: list[_SingleSelectionOption]
     data_matrix: list[_SingleSelectionDataRow] | None = None
 
-    @validator("data_matrix")
-    def validate_data_matrix(cls, value, values):
+    @field_validator("data_matrix")
+    @classmethod
+    def validate_data_matrix(cls, value, info: ValidationInfo):
         if value is not None:
-            if len(value) != len(values["rows"]):
+            if len(value) != len(info.data["rows"]):
                 raise InvalidDataMatrixError()
             for row in value:
-                if len(row.options) != len(values["options"]):
+                if len(row.options) != len(info.data["options"]):
                     raise InvalidDataMatrixByOptionError()
         return value
 
 
 class MultiSelectionRowsValues(SingleSelectionRowsValues, PublicModel):
-    type: Literal[ResponseType.MULTISELECTROWS] | None  # type: ignore[assignment]
+    type: Literal[ResponseType.MULTISELECTROWS]  # type: ignore[assignment]
 
 
 class AudioValues(PublicModel):
-    type: Literal[ResponseType.AUDIO] | None
+    type: Literal[ResponseType.AUDIO]
     max_duration: NonNegativeInt = 300
 
 
 class AudioPlayerValues(PublicModel):
-    type: Literal[ResponseType.AUDIOPLAYER] | None
-    file: str | None = Field(default=None)
+    type: Literal[ResponseType.AUDIOPLAYER]
+    file: str | None = None
 
 
 class _PhrasalTemplateSentenceField(PublicModel):
@@ -384,23 +405,23 @@ PhrasalTemplateField = (
 
 
 class PhrasalTemplatePhrase(PublicModel):
-    image: str | None = Field(default=None)
+    image: str | None = None
     fields: list[PhrasalTemplateField]
 
 
 class PhrasalTemplateValues(PublicModel):
-    type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
+    type: Literal[ResponseType.PHRASAL_TEMPLATE]
     card_title: str
     phrases: list[PhrasalTemplatePhrase]
 
 
 class RequestHealthRecordDataOption(PublicModel):
-    id: RequestHealthRecordDataOptType = Field(default=...)  # ellipsis indicates that the field is required
-    label: str = Field(default=...)
+    id: RequestHealthRecordDataOptType
+    label: str
 
 
 class RequestHealthRecordDataValues(PublicModel):
-    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
+    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA]
     opt_in_out_options: list[RequestHealthRecordDataOption]
 
 

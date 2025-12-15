@@ -49,7 +49,7 @@ class SubjectsService:
             raise SecretIDUniqueViolationError()
 
         updated_schema = await SubjectsCrud(self.session).upsert(schema)
-        return Subject.from_orm(updated_schema)
+        return Subject.model_validate(updated_schema)
 
     async def update(self, id_: uuid.UUID, **values) -> SubjectSchema:
         return await SubjectsCrud(self.session).update_by_id(id_, **values)
@@ -70,21 +70,21 @@ class SubjectsService:
             subject.user_id = self.user_id
             subject.email = email
             subject_model = await crud.update(subject)
-            return Subject.from_orm(subject_model)
+            return Subject.model_validate(subject_model)
         return None
 
     async def get(self, id_: uuid.UUID) -> Subject | None:
         schema = await SubjectsCrud(self.session).get_by_id(id_)
-        return Subject.from_orm(schema) if schema else None
+        return Subject.model_validate(schema) if schema else None
 
     async def get_by_ids(self, ids: list[uuid.UUID], include_deleted=False) -> list[Subject]:
         subjects = await SubjectsCrud(self.session).get_by_ids(ids, include_deleted)
-        return [Subject.from_orm(subject) for subject in subjects]
+        return [Subject.model_validate(subject) for subject in subjects]
 
     async def get_if_soft_exist(self, id_: uuid.UUID) -> Subject | None:
         schema = await SubjectsCrud(self.session).get_by_id(id_)
         if schema and schema.soft_exists():
-            return Subject.from_orm(schema)
+            return Subject.model_validate(schema)
         return None
 
     async def exist_by_id(self, subject_id: uuid.UUID) -> Subject:
@@ -121,7 +121,7 @@ class SubjectsService:
     async def get_by_secret_id(self, applet_id: uuid.UUID, secret_id: str) -> Subject | None:
         subject = await SubjectsCrud(self.session).get_by_secret_id(applet_id, secret_id)
         if subject:
-            return Subject.from_orm(subject)
+            return Subject.model_validate(subject)
         return None
 
     async def check_secret_id(self, subject_id: uuid.UUID, secret_id: str, applet_id: uuid.UUID) -> bool:
@@ -132,11 +132,11 @@ class SubjectsService:
 
     async def upsert(self, subject: Subject) -> Subject:
         schema = await SubjectsCrud(self.session).upsert(subject)
-        return Subject.from_orm(schema)
+        return Subject.model_validate(schema)
 
     async def get_by_user_and_applet(self, user_id: uuid.UUID, applet_id: uuid.UUID) -> Subject | None:
         model = await SubjectsCrud(self.session).get_by_user_and_applet(user_id, applet_id)
-        return Subject.from_orm(model) if model else None
+        return Subject.model_validate(model) if model else None
 
     async def delete_hard(self, id_: uuid.UUID):
         await InvitationCRUD(self.session).delete_by_subject(id_)

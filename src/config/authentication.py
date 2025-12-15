@@ -1,14 +1,16 @@
 import datetime
 
-from pydantic import BaseSettings, Field, validator
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 
 
 class AccessTokenSettings(BaseSettings):
-    secret_key: str = Field("", env="AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY")
+    secret_key: str
     # Set in minutes
     expiration: int = 30
 
-    @validator("secret_key")
+    @field_validator("secret_key")
+    @classmethod
     def check_secret_key(cls, v: str) -> str:
         if not v:
             raise ValueError("Please specify AUTHENTICATION__ACCESS_TOKEN__SECRET_KEY variable")
@@ -16,14 +18,15 @@ class AccessTokenSettings(BaseSettings):
 
 
 class RefreshTokenSettings(BaseSettings):
-    secret_key: str = Field("", env="AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY")
+    secret_key: str
     # Set in minutes
     expiration: int = 540
 
     transition_key: str | None = None
     transition_expire_date: datetime.date | None = None
 
-    @validator("secret_key")
+    @field_validator("secret_key")
+    @classmethod
     def check_secret_key(cls, v: str) -> str:
         if not v:
             raise ValueError("Please specify AUTHENTICATION__REFRESH_TOKEN__SECRET_KEY variable")
@@ -38,11 +41,12 @@ class PasswordRecoverSettings(BaseSettings):
 class MFATokenSettings(BaseSettings):
     """Settings for temporary MFA verification tokens."""
 
-    secret_key: str = Field("", env="AUTHENTICATION__MFA_TOKEN__SECRET_KEY")
+    secret_key: str
     # Set in minutes (matches Redis session TTL)
     expiration: int = 5
 
-    @validator("secret_key")
+    @field_validator("secret_key")
+    @classmethod
     def check_secret_key(cls, v: str) -> str:
         if not v:
             raise ValueError("Please specify AUTHENTICATION__MFA_TOKEN__SECRET_KEY variable")
