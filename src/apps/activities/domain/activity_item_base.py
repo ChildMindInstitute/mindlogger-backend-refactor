@@ -48,7 +48,7 @@ class BaseActivityItem(BaseModel):
     response_type: ResponseType
     # smart_union ?
     response_values: Annotated[ResponseValueConfig | None, Field(None, discriminator="type")]
-    config: Annotated[ResponseTypeConfig, Field(..., discriminator="type")]
+    config: Annotated[ResponseTypeConfig, Field(discriminator="type")]
     name: str
     is_hidden: bool | None = False
     conditional_logic: ConditionalLogic | None = None

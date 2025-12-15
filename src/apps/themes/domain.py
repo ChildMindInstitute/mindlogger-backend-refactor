@@ -18,55 +18,14 @@ from apps.shared.query_params import BaseQueryParams
 
 
 class ThemeBase(BaseModel):
-    name: Annotated[
-        str,
-        Field(
-            ...,
-            description="Name of the theme",
-            examples=["My theme"],
-            max_length=100,
-        ),
-    ]
-    logo: Annotated[
-        str | None,
-        Field(
-            ...,
-            description="URL to logo image",
-            examples=["https://example.com/logo.png"],
-        ),
-    ]
+    name: Annotated[str, Field(description="Name of the theme", examples=["My theme"], max_length=100)]
+    logo: Annotated[str | None, Field(description="URL to logo image", examples=["https://example.com/logo.png"])]
     background_image: Annotated[
-        str | None,
-        Field(
-            ...,
-            description="URL to background image",
-            examples=["https://example.com/background.png"],
-        ),
+        str | None, Field(description="URL to background image", examples=["https://example.com/background.png"])
     ]
-    primary_color: Annotated[
-        Color,
-        Field(
-            ...,
-            description="Primary color",
-            examples=["#FFFFFF"],
-        ),
-    ]
-    secondary_color: Annotated[
-        Color,
-        Field(
-            ...,
-            description="Secondary color",
-            examples=["#FFFFFF"],
-        ),
-    ]
-    tertiary_color: Annotated[
-        Color,
-        Field(
-            ...,
-            description="Tertiary color",
-            examples=["#FFFFFF"],
-        ),
-    ]
+    primary_color: Annotated[Color, Field(description="Primary color", examples=["#FFFFFF"])]
+    secondary_color: Annotated[Color, Field(description="Secondary color", examples=["#FFFFFF"])]
+    tertiary_color: Annotated[Color, Field(description="Tertiary color", examples=["#FFFFFF"])]
 
     def __str__(self) -> str:
         return self.name
@@ -97,55 +56,14 @@ class PublicTheme(ThemeBase, PublicModel):
 
 class PublicThemeMobile(PublicModel):
     id: uuid.UUID
-    name: Annotated[
-        str,
-        Field(
-            ...,
-            description="Name of the theme",
-            examples=["My theme"],
-            max_length=100,
-        ),
-    ]
-    logo: Annotated[
-        str | None,
-        Field(
-            ...,
-            description="URL to logo image",
-            examples=["https://example.com/logo.png"],
-        ),
-    ]
+    name: Annotated[str, Field(description="Name of the theme", examples=["My theme"], max_length=100)]
+    logo: Annotated[str | None, Field(description="URL to logo image", examples=["https://example.com/logo.png"])]
     background_image: Annotated[
-        str | None,
-        Field(
-            ...,
-            description="URL to background image",
-            examples=["https://example.com/background.png"],
-        ),
+        str | None, Field(description="URL to background image", examples=["https://example.com/background.png"])
     ]
-    primary_color: Annotated[
-        Color,
-        Field(
-            ...,
-            description="Primary color",
-            examples=["#FFFFFF"],
-        ),
-    ]
-    secondary_color: Annotated[
-        Color,
-        Field(
-            ...,
-            description="Secondary color",
-            examples=["#FFFFFF"],
-        ),
-    ]
-    tertiary_color: Annotated[
-        Color,
-        Field(
-            ...,
-            description="Tertiary color",
-            examples=["#FFFFFF"],
-        ),
-    ]
+    primary_color: Annotated[Color, Field(description="Primary color", examples=["#FFFFFF"])]
+    secondary_color: Annotated[Color, Field(description="Secondary color", examples=["#FFFFFF"])]
+    tertiary_color: Annotated[Color, Field(description="Tertiary color", examples=["#FFFFFF"])]
 
     def __str__(self) -> str:
         return self.name

@@ -25,14 +25,15 @@ class StrictBaseModel(BaseModel):
 
 
 class UserConfig(StrictBaseModel):
-    id: Annotated[uuid.UUID, Field(..., description="User ID")]
-    email: Annotated[str, Field(..., description="User email")]
-    first_name: Annotated[str, Field(..., description="User first name")]
-    last_name: Annotated[str, Field(..., description="User last name")]
-    password: Annotated[str, Field(..., description="User password")]
-    created_at: Annotated[datetime, Field(description="The date when the user was created")] = datetime.now(
-        tz=UTC
-    ).replace(tzinfo=None)
+    id: Annotated[uuid.UUID, Field(description="User ID")]
+    email: Annotated[str, Field(description="User email")]
+    first_name: Annotated[str, Field(description="User first name")]
+    last_name: Annotated[str, Field(description="User last name")]
+    password: Annotated[str, Field(description="User password")]
+    created_at: Annotated[
+        datetime,
+        Field(description="The date when the user was created"),
+    ] = datetime.now(tz=UTC).replace(tzinfo=None)
 
     @field_validator("created_at")
     @classmethod
@@ -41,15 +42,16 @@ class UserConfig(StrictBaseModel):
 
 
 class SubjectConfig(StrictBaseModel):
-    id: Annotated[uuid.UUID, Field(..., description="Subject ID")]
-    created_at: Annotated[datetime, Field(description="Date when the subject was created")] = datetime.now(
-        tz=UTC
-    ).replace(tzinfo=None)
+    id: Annotated[uuid.UUID, Field(description="Subject ID")]
+    created_at: Annotated[
+        datetime,
+        Field(description="Date when the subject was created"),
+    ] = datetime.now(tz=UTC).replace(tzinfo=None)
     user_id: Annotated[Optional[uuid.UUID], Field(None, description="User ID for full accounts and team members")]
     email: Annotated[Optional[str], Field(None, description="Email address that received the applet invitation")]
-    secret_user_id: Annotated[str, Field(..., description="Subject secret user ID. Should be unique within the applet")]
-    first_name: Annotated[str, Field(..., min_length=1, description="Subject first name")]
-    last_name: Annotated[str, Field(..., min_length=1, description="Subject last name")]
+    secret_user_id: Annotated[str, Field(description="Subject secret user ID. Should be unique within the applet")]
+    first_name: Annotated[str, Field(min_length=1, description="Subject first name")]
+    last_name: Annotated[str, Field(min_length=1, description="Subject last name")]
     nickname: Annotated[Optional[str], Field(None, description="Optional subject nickname")]
     roles: Annotated[
         set[Literal["super_admin", "owner", "manager", "coordinator", "editor", "reviewer", "respondent"]],
@@ -57,9 +59,7 @@ class SubjectConfig(StrictBaseModel):
     ]
     reviewer_subjects: Annotated[
         set[uuid.UUID],
-        Field(
-            description="List of UUIDs of subjects who this reviewer will review",
-        ),
+        Field(description="List of UUIDs of subjects who this reviewer will review"),
     ] = set()
     tag: Annotated[Optional[Literal["Child", "Parent", "Teacher", "Team"]], Field(description="Subject tag")] = None
 
@@ -105,29 +105,22 @@ class SubjectConfig(StrictBaseModel):
 
 
 class FixedNotificationConfig(StrictBaseModel):
-    trigger_type: Annotated[Literal["fixed"], Field(..., description="Trigger type for fixed notifications")]
-    at_time: Annotated[
-        Optional[time],
-        Field(
-            description="Time when the notification should be sent",
-        ),
-    ] = None
+    trigger_type: Annotated[Literal["fixed"], Field(description="Trigger type for fixed notifications")]
+    at_time: Annotated[Optional[time], Field(description="Time when the notification should be sent")] = None
 
 
 class RandomNotificationConfig(StrictBaseModel):
     trigger_type: Annotated[
-        Literal["random"], Field(..., description="Trigger type for random notifications within a given time period")
+        Literal["random"],
+        Field(description="Trigger type for random notifications within a given time period"),
     ]
-    from_time: Annotated[Optional[time], Field(..., description="Start time for random notifications")]
-    to_time: Annotated[Optional[time], Field(..., description="End time for random notifications")]
+    from_time: Annotated[Optional[time], Field(description="Start time for random notifications")]
+    to_time: Annotated[Optional[time], Field(description="End time for random notifications")]
 
 
 NotificationConfig = Annotated[
     Union[FixedNotificationConfig, RandomNotificationConfig],
-    Field(
-        ...,
-        discriminator="trigger_type",
-    ),
+    Field(discriminator="trigger_type"),
 ]
 
 
@@ -135,29 +128,25 @@ class ReminderConfig(StrictBaseModel):
     activity_incomplete: Annotated[
         int,
         Field(
-            ...,
-            description="Number of consecutive days that the user has "
-            "not completed the activity after which to trigger the "
-            "reminder",
+            description="Number of consecutive days that the user has not "
+            "completed the activity after which to trigger the reminder"
         ),
     ]
-    reminder_time: Annotated[time, Field(..., description="Time when the reminder should be sent")]
+    reminder_time: Annotated[time, Field(description="Time when the reminder should be sent")]
 
 
 class BaseEventConfig(StrictBaseModel):
-    id: Annotated[uuid.UUID, Field(..., description="Event ID")]
+    id: Annotated[uuid.UUID, Field(description="Event ID")]
     user_id: Annotated[Optional[uuid.UUID], Field(None, description="User ID for individual schedule events")]
     is_deleted: Annotated[bool, Field(description="Whether the event has been deleted. Default is False")] = False
     version: Annotated[
         str,
-        Field(..., description="Event version in the format YYYYMMdd-n (e.g. 20250301-1)", pattern=r"^\d{8}-\d{1,4}$"),
+        Field(description="Event version in the format YYYYMMdd-n (e.g. 20250301-1)", pattern=r"^\d{8}-\d{1,4}$"),
     ]
-    created_at: Annotated[datetime, Field(..., description="Date when the event was created")]
+    created_at: Annotated[datetime, Field(description="Date when the event was created")]
     notifications: Annotated[
         list[NotificationConfig],
-        Field(
-            description="List of notifications for the event. Each notification is a dictionary with keys: ",
-        ),
+        Field(description="List of notifications for the event. Each notification is a dictionary with keys: "),
     ] = []
     reminder: Annotated[Optional[ReminderConfig], Field(description="Reminder settings for the event")] = None
 
@@ -170,15 +159,15 @@ class BaseEventConfig(StrictBaseModel):
 class AlwaysAvailableEventConfig(BaseEventConfig):
     periodicity: Annotated[
         Literal["ALWAYS"],
-        Field(..., description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
+        Field(description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
     ]
-    start_time: Annotated[time, Field(..., description="Event start time")]
-    end_time: Annotated[time, Field(..., description="Event end time")]
+    start_time: Annotated[time, Field(description="Event start time")]
+    end_time: Annotated[time, Field(description="Event end time")]
     one_time_completion: Annotated[
         bool,
         Field(
             description="Whether the activity or flow can only be completed once per day. "
-            "Applies only to always available periodicity",
+            "Applies only to always available periodicity"
         ),
     ] = False
 
@@ -186,71 +175,76 @@ class AlwaysAvailableEventConfig(BaseEventConfig):
 class OnceEventConfig(BaseEventConfig):
     periodicity: Annotated[
         Literal["ONCE"],
-        Field(..., description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
+        Field(description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
     ]
-    selected_date: Annotated[date, Field(..., description="Selected date for the event")]
-    start_time: Annotated[time, Field(..., description="Event start time")]
-    end_time: Annotated[time, Field(..., description="Event end time")]
+    selected_date: Annotated[date, Field(description="Selected date for the event")]
+    start_time: Annotated[time, Field(description="Event start time")]
+    end_time: Annotated[time, Field(description="Event end time")]
     access_before_start_time: Annotated[
-        bool, Field(description="Whether to allow access before the event start time")
+        bool,
+        Field(description="Whether to allow access before the event start time"),
     ] = False
 
 
 class DailyEventConfig(BaseEventConfig):
     periodicity: Annotated[
         Literal["DAILY"],
-        Field(..., description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
+        Field(description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
     ]
-    start_date: Annotated[date, Field(..., description="Event start date")]
-    end_date: Annotated[date, Field(..., description="Event end date")]
-    start_time: Annotated[time, Field(..., description="Event start time")]
-    end_time: Annotated[time, Field(..., description="Event end time")]
+    start_date: Annotated[date, Field(description="Event start date")]
+    end_date: Annotated[date, Field(description="Event end date")]
+    start_time: Annotated[time, Field(description="Event start time")]
+    end_time: Annotated[time, Field(description="Event end time")]
     access_before_start_time: Annotated[
-        bool, Field(description="Whether to allow access before the event start time")
+        bool,
+        Field(description="Whether to allow access before the event start time"),
     ] = False
 
 
 class WeeklyEventConfig(BaseEventConfig):
     periodicity: Annotated[
         Literal["WEEKLY"],
-        Field(..., description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
+        Field(description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
     ]
-    start_date: Annotated[date, Field(..., description="Event start date")]
-    end_date: Annotated[date, Field(..., description="Event end date")]
-    selected_date: Annotated[date, Field(..., description="Selected date for the event recurrence")]
-    start_time: Annotated[time, Field(..., description="Event start time")]
-    end_time: Annotated[time, Field(..., description="Event end time")]
+    start_date: Annotated[date, Field(description="Event start date")]
+    end_date: Annotated[date, Field(description="Event end date")]
+    selected_date: Annotated[date, Field(description="Selected date for the event recurrence")]
+    start_time: Annotated[time, Field(description="Event start time")]
+    end_time: Annotated[time, Field(description="Event end time")]
     access_before_start_time: Annotated[
-        bool, Field(description="Whether to allow access before the event start time")
+        bool,
+        Field(description="Whether to allow access before the event start time"),
     ] = False
 
 
 class WeekdaysEventConfig(BaseEventConfig):
     periodicity: Annotated[
         Literal["WEEKDAYS"],
-        Field(..., description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
+        Field(description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
     ]
-    start_date: Annotated[date, Field(..., description="Event start date")]
-    end_date: Annotated[date, Field(..., description="Event end date")]
-    start_time: Annotated[time, Field(..., description="Event start time")]
-    end_time: Annotated[time, Field(..., description="Event end time")]
+    start_date: Annotated[date, Field(description="Event start date")]
+    end_date: Annotated[date, Field(description="Event end date")]
+    start_time: Annotated[time, Field(description="Event start time")]
+    end_time: Annotated[time, Field(description="Event end time")]
     access_before_start_time: Annotated[
-        bool, Field(description="Whether to allow access before the event start time")
+        bool,
+        Field(description="Whether to allow access before the event start time"),
     ] = False
 
 
 class MonthlyEventConfig(BaseEventConfig):
     periodicity: Annotated[
         Literal["MONTHLY"],
-        Field(..., description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
+        Field(description="Event periodicity. Can be one of ALWAYS, ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY"),
     ]
-    start_date: Annotated[date, Field(..., description="Event start date")]
-    end_date: Annotated[date, Field(..., description="Event end date")]
-    selected_date: Annotated[date, Field(..., description="Selected date for the event recurrence")]
-    start_time: Annotated[time, Field(..., description="Event start time")]
-    end_time: Annotated[time, Field(..., description="Event end time")]
+    start_date: Annotated[date, Field(description="Event start date")]
+    end_date: Annotated[date, Field(description="Event end date")]
+    selected_date: Annotated[date, Field(description="Selected date for the event recurrence")]
+    start_time: Annotated[time, Field(description="Event start time")]
+    end_time: Annotated[time, Field(description="Event end time")]
     access_before_start_time: Annotated[
-        bool, Field(description="Whether to allow access before the event start time")
+        bool,
+        Field(description="Whether to allow access before the event start time"),
     ] = False
 
 
@@ -263,46 +257,44 @@ EventConfig = Annotated[
         WeekdaysEventConfig,
         MonthlyEventConfig,
     ],
-    Field(
-        ...,
-        discriminator="periodicity",
-    ),
+    Field(discriminator="periodicity"),
 ]
 
 
 class AssignmentConfig(StrictBaseModel):
-    id: Annotated[uuid.UUID, Field(..., description="Assignment ID")]
-    assignment_type: Annotated[Literal["activity", "flow"], Field(..., description="Type of the assignment")]
-    activity_or_flow_id: Annotated[uuid.UUID, Field(..., description="Activity or flow ID")]
+    id: Annotated[uuid.UUID, Field(description="Assignment ID")]
+    assignment_type: Annotated[Literal["activity", "flow"], Field(description="Type of the assignment")]
+    activity_or_flow_id: Annotated[uuid.UUID, Field(description="Activity or flow ID")]
     respondent_subject_id: Annotated[
-        uuid.UUID, Field(..., description="ID of the subject to whom the activity or flow is assigned")
+        uuid.UUID,
+        Field(description="ID of the subject to whom the activity or flow is assigned"),
     ]
     target_subject_id: Annotated[
-        uuid.UUID, Field(..., description="ID of the subject about whom the respondent will provide answers")
+        uuid.UUID,
+        Field(description="ID of the subject about whom the respondent will provide answers"),
     ]
 
 
 class ReportServerConfig(StrictBaseModel):
-    ip_address: Annotated[AnyHttpUrl, Field(..., description="IP address of the report server")]
-    public_key: Annotated[str, Field(..., min_length=1, description="RSA Public key for the report server")]
+    ip_address: Annotated[AnyHttpUrl, Field(description="IP address of the report server")]
+    public_key: Annotated[str, Field(min_length=1, description="RSA Public key for the report server")]
     recipients: Annotated[list[str], Field(description="List of email addresses to receive reports")] = []
     include_user_id: Annotated[bool, Field(description="Whether to include user ID in the report")] = False
     include_case_id: bool = False
-    email_body: Annotated[str, Field(..., min_length=1, description="Email body for the report")]
+    email_body: Annotated[str, Field(min_length=1, description="Email body for the report")]
 
 
 class ActivityConfig(StrictBaseModel):
-    id: Annotated[uuid.UUID, Field(..., description="Activity ID")]
-    name: Annotated[str, Field(..., description="Activity name")]
+    id: Annotated[uuid.UUID, Field(description="Activity ID")]
+    name: Annotated[str, Field(description="Activity name")]
     description: Annotated[str, Field("", description="Activity description")]
     is_hidden: Annotated[bool, Field(False, description="Whether the activity is hidden")]
     created_at: Annotated[
-        datetime, Field(datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the activity was created")
+        datetime,
+        Field(datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the activity was created"),
     ]
     auto_assign: Annotated[bool, Field(True, description="Whether the activity is auto-assigned to all participants")]
-    events: Annotated[
-        list[EventConfig], Field(..., min_length=1, description="List of scheduled events for this activity")
-    ]
+    events: Annotated[list[EventConfig], Field(min_length=1, description="List of scheduled events for this activity")]
 
     @field_validator("created_at")
     @classmethod
@@ -322,19 +314,20 @@ class ActivityConfig(StrictBaseModel):
 
 
 class FlowConfig(StrictBaseModel):
-    id: Annotated[uuid.UUID, Field(..., description="Flow ID")]
-    name: Annotated[str, Field(..., description="Flow name")]
+    id: Annotated[uuid.UUID, Field(description="Flow ID")]
+    name: Annotated[str, Field(description="Flow name")]
     description: Annotated[str, Field("", description="Flow description")]
     is_hidden: Annotated[bool, Field(False, description="Whether the flow is hidden")]
     created_at: Annotated[
-        datetime, Field(datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the flow was created")
+        datetime,
+        Field(datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the flow was created"),
     ]
     auto_assign: Annotated[bool, Field(True, description="Whether the flow is auto-assigned to all participants")]
-    events: Annotated[list[EventConfig], Field(..., min_length=1, description="List of scheduled events for this flow")]
+    events: Annotated[list[EventConfig], Field(min_length=1, description="List of scheduled events for this flow")]
     assignments: Annotated[list[AssignmentConfig], Field(description="List of flow assignments")] = []
     activities: Annotated[
         list[uuid.UUID],
-        Field(..., min_length=1, description="List of activity IDs in the flow, arranged in the desired order"),
+        Field(min_length=1, description="List of activity IDs in the flow, arranged in the desired order"),
     ]
 
     @field_validator("created_at")
@@ -344,33 +337,32 @@ class FlowConfig(StrictBaseModel):
 
 
 class AppletEncryptionConfig(StrictBaseModel):
-    public_key: Annotated[str, Field(..., description="Public key for encryption")]
-    prime: Annotated[str, Field(..., description="Large prime number array")]
-    base: Annotated[str, Field(..., description="Generator base")]
-    account_id: Annotated[uuid.UUID, Field(..., description="Applet owner user ID")]
+    public_key: Annotated[str, Field(description="Public key for encryption")]
+    prime: Annotated[str, Field(description="Large prime number array")]
+    base: Annotated[str, Field(description="Generator base")]
+    account_id: Annotated[uuid.UUID, Field(description="Applet owner user ID")]
 
 
 class AppletConfig(StrictBaseModel):
-    id: Annotated[uuid.UUID, Field(..., description="Applet ID")]
+    id: Annotated[uuid.UUID, Field(description="Applet ID")]
     encryption: Annotated[
-        AppletEncryptionConfig, Field(..., description="Encryption config for an existing applet from the applet owner")
+        AppletEncryptionConfig,
+        Field(description="Encryption config for an existing applet from the applet owner"),
     ]
-    display_name: Annotated[str, Field(..., description="Applet display name")]
+    display_name: Annotated[str, Field(description="Applet display name")]
     description: Annotated[str, Field("", description="Applet description")]
     created_at: Annotated[
-        datetime, Field(datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the applet was created")
+        datetime,
+        Field(datetime.now(tz=UTC).replace(tzinfo=None), description="Date when the applet was created"),
     ]
     subjects: Annotated[
         list[SubjectConfig],
-        Field(
-            ..., min_length=1, description="List of subjects in the applet. You must provide at least the applet owner"
-        ),
+        Field(min_length=1, description="List of subjects in the applet. You must provide at least the applet owner"),
     ]
-    activities: Annotated[
-        list[ActivityConfig], Field(..., min_length=1, description="List of activities in the applet")
-    ]
+    activities: Annotated[list[ActivityConfig], Field(min_length=1, description="List of activities in the applet")]
     report_server: Annotated[
-        Optional[ReportServerConfig], Field(description="Report server settings for the applet")
+        Optional[ReportServerConfig],
+        Field(description="Report server settings for the applet"),
     ] = None
 
     @field_validator("created_at")
@@ -465,8 +457,7 @@ class AppletConfig(StrictBaseModel):
 
 
 class AppletConfigFileV1(StrictBaseModel):
-    version: Annotated[Literal["1.0"], Field(..., description="Version of the config file")]
-
+    version: Annotated[Literal["1.0"], Field(description="Version of the config file")]
     users: Annotated[list[UserConfig], Field(description="List of users to create")] = []
     applets: Annotated[list[AppletConfig], Field(description="List of applets to create")] = []
 

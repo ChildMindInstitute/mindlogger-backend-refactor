@@ -207,8 +207,8 @@ class SliderValueAlert(PublicModel):
 
 
 class SliderValuesBase(PublicModel):
-    min_label: Annotated[str | None, Field(..., max_length=100)]
-    max_label: Annotated[str | None, Field(..., max_length=100)]
+    min_label: Annotated[str | None, Field(max_length=100)]
+    max_label: Annotated[str | None, Field(max_length=100)]
     min_value: Annotated[NonNegativeInt, Field(le=11)] = 0
     max_value: Annotated[NonNegativeInt, Field(le=12)] = 12
     min_image: str | None = None
@@ -283,7 +283,7 @@ class DrawingValues(PublicModel):
 
 class SliderRowsValue(SliderValuesBase, PublicModel):
     id: str | None = None
-    label: Annotated[str, Field(..., max_length=100)]
+    label: Annotated[str, Field(max_length=100)]
 
     @field_validator("id")
     @classmethod
@@ -298,7 +298,7 @@ class SliderRowsValues(PublicModel):
 
 class _SingleSelectionOption(PublicModel):
     id: str | None = None
-    text: Annotated[str, Field(..., max_length=100)]
+    text: Annotated[str, Field(max_length=100)]
     image: str | None = None
     tooltip: str | None = None
 
@@ -317,7 +317,7 @@ class _SingleSelectionOption(PublicModel):
 
 class _SingleSelectionRow(PublicModel):
     id: str | None = None
-    row_name: Annotated[str, Field(..., max_length=100)]
+    row_name: Annotated[str, Field(max_length=100)]
     row_image: str | None = None
     tooltip: str | None = None
 
