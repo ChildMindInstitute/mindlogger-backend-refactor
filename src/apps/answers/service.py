@@ -11,7 +11,6 @@ from json import JSONDecodeError
 from typing import Callable, List, Mapping, Optional
 
 import aiohttp
-import pydantic
 import sentry_sdk
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -101,6 +100,7 @@ from apps.integrations.oneup_health.service.ehr_storage import EHRStorage
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.shared.domain import parse_obj_as
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError, ValidationError
 from apps.shared.query_params import QueryParams
@@ -1748,7 +1748,7 @@ class AnswerService:
     async def send_alert_mail(users: List[UserSchema]):
         domain = os.environ.get("ADMIN_DOMAIN", "")
         mail_service = MailingService()
-        schemas = pydantic.parse_obj_as(List[User], users)
+        schemas = parse_obj_as(List[User], users)
         email_list = [schema.email_encrypted for schema in schemas]
         return await mail_service.send(
             MessageSchema(
