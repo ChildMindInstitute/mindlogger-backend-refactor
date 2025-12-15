@@ -268,7 +268,7 @@ class MFADisableInitiateResponse(PublicModel):
 
 
 class MFADisableVerifyRequest(PublicModel):
-    """Request to verify TOTP code and disable MFA."""
+    """Request to verify TOTP code or recovery code and disable MFA."""
 
     mfa_token: Annotated[str, Field(description="JWT token from MFA disable initiation")]
     code: Annotated[

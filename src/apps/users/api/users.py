@@ -42,6 +42,7 @@ from apps.users.errors import (
     MFASessionPurposeMismatchError,
     RecoveryCodeAlreadyUsedError,
     RecoveryCodeInvalidError,
+    RecoveryCodeNotFoundError,
     RecoveryCodesNotFoundError,
 )
 from apps.users.services.totp import totp_service
@@ -238,7 +239,11 @@ async def user_mfa_totp_disable_verify(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[MFADisableVerifyResponse]:
-    """Verify TOTP code and disable MFA (requires authentication and user validation)."""
+    """Verify TOTP code or recovery code and disable MFA.
+
+    Accepts either a TOTP code (preferred) or a recovery code as verification.
+    After successful verification, disables MFA and invalidates all recovery codes.
+    """
 
     # Step 1: Validate mfa_token and get session data
     mfa_service = MFASessionService()
@@ -290,46 +295,53 @@ async def user_mfa_totp_disable_verify(
             )
             raise MFANotEnabledError()
 
-        # Step 9: Decrypt TOTP secret
+        # Step 9: Try TOTP verification first
+
+        # Decrypt TOTP secret
         decrypted_secret = totp_service.decrypt_secret(db_user.mfa_secret)
 
-        # Step 10: Verify TOTP code with replay protection
+        # Verify TOTP code with replay protection
         is_valid, time_step_used = totp_service.verify_with_replay_check(
             secret=decrypted_secret,
             code=schema.code,
             last_used_step=db_user.last_totp_time_step,
         )
 
-        # Step 10: Handle verification failure
-        if not is_valid:
-            # Increment per-session attempts
-            new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+        if is_valid:
+            # Update last TOTP time step (replay protection)
+            assert time_step_used is not None
+            await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
+            logger.info(f"TOTP verified for MFA disable user_id={token_user_id} time_step={time_step_used}")
+        else:
+            # Step 10: TOTP failed, try recovery code verification
+            try:
+                await verify_recovery_code_service(session, token_user_id, schema.code)
+                logger.info(f"Recovery code verified for MFA disable user_id={token_user_id}")
+            except (
+                RecoveryCodeInvalidError,
+                RecoveryCodeAlreadyUsedError,
+                RecoveryCodesNotFoundError,
+                RecoveryCodeNotFoundError,
+            ):
+                # Both TOTP and recovery code failed - increment counters and raise error
+                new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+                global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
 
-            # Increment global attempts
-            global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
+                logger.warning(
+                    f"Invalid TOTP/recovery code for MFA disable user_id={token_user_id} "
+                    f"session_attempts={new_count} global_attempts={global_count}"
+                )
 
-            logger.warning(
-                f"Invalid TOTP code for MFA disable user_id={token_user_id} "
-                f"session_attempts={new_count} global_attempts={global_count}"
-            )
+                # Check if global lockout threshold reached
+                if global_count >= settings.redis.mfa_global_lockout_attempts:
+                    logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
 
-            # Check if global lockout threshold reached
-            if global_count >= settings.redis.mfa_global_lockout_attempts:
-                logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
-                # Note: Next attempt will be blocked by is_globally_locked_out check
+                # Check if per-session threshold reached
+                if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
+                    await mfa_service.delete_session(mfa_session_id)
+                    logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
 
-            # Check if per-session threshold reached
-            if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
-                await mfa_service.delete_session(mfa_session_id)
-                logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
-
-            raise InvalidTOTPCodeError()
-
-        # Step 11: Update last TOTP time step (replay protection)
-        assert time_step_used is not None  # Guaranteed by is_valid=True
-        await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
-
-        logger.info(f"TOTP verified for MFA disable user_id={token_user_id} time_step={time_step_used}")
+                raise InvalidTOTPCodeError()
 
         # Step 12: Disable MFA and clear all related fields
         disabled_at = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -509,7 +521,12 @@ async def user_recovery_codes_view_verify(
                 await verify_recovery_code_service(session, token_user_id, schema.code)
                 verification_method = "recovery_code"
                 logger.info(f"Recovery code verified for recovery codes view user_id={token_user_id}")
-            except (RecoveryCodeInvalidError, RecoveryCodeAlreadyUsedError, RecoveryCodesNotFoundError):
+            except (
+                RecoveryCodeInvalidError,
+                RecoveryCodeAlreadyUsedError,
+                RecoveryCodesNotFoundError,
+                RecoveryCodeNotFoundError,
+            ):
                 # Both TOTP and recovery code failed - increment counters and raise error
                 new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
                 global_count = await mfa_service.increment_global_failed_attempts(token_user_id)

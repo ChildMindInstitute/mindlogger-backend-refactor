@@ -191,9 +191,10 @@ router.post(
     "/me/mfa/totp/disable/verify",
     response_model=Response[MFADisableVerifyResponse],
     name="user_mfa_totp_disable_verify",
-    summary="Verify TOTP and disable MFA",
+    summary="Verify TOTP or recovery code and disable MFA",
     description=(
-        "Verifies TOTP code and disables MFA. "
+        "Verifies TOTP code or recovery code and disables MFA. "
+        "Accepts either a 6-digit TOTP code (preferred) or an 11-character recovery code (XXXXX-XXXXX). "
         "Requires mfa_token from the initiate endpoint. "
         "This permanently disables MFA and invalidates all recovery codes."
     ),

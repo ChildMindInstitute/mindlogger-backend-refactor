@@ -430,3 +430,118 @@ class TestMFADisableRecoveryCodes:
         # Verify MFA still enabled
         user = await crud.get_by_id(user_with_mfa.id)
         assert user.mfa_enabled is True
+
+    async def test_disable_with_recovery_code_succeeds(
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+    ):
+        """Recovery code can be used to verify and disable MFA."""
+        from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
+        from apps.authentication.services.recovery_codes import generate_recovery_codes
+
+        client.login(user_with_mfa)
+
+        # Clear any existing global lockout from previous tests
+        mfa_service = MFASessionService()
+        await mfa_service.clear_global_lockout(user_with_mfa.id)
+
+        # Generate recovery codes
+        codes = await generate_recovery_codes(session, user_with_mfa.id)
+        assert len(codes) == 10
+
+        # Get first unused recovery code (codes are returned as plain strings)
+        recovery_code = codes[0]
+
+        # Initiate disable
+        response = await client.post(self.disable_initiate_url)
+        assert response.status_code == status.HTTP_200_OK
+        mfa_token = response.json()["result"]["mfaToken"]
+
+        # Verify with recovery code
+        verify_data = {"mfaToken": mfa_token, "code": recovery_code}
+        response = await client.post(self.disable_verify_url, data=verify_data)
+        assert response.status_code == status.HTTP_200_OK
+
+        result = response.json()["result"]
+        assert result["mfaDisabled"] is True
+        assert "successfully disabled" in result["message"]
+
+        # Verify MFA is disabled
+        crud = UsersCRUD(session)
+        user = await crud.get_by_id(user_with_mfa.id)
+        assert user.mfa_enabled is False
+        assert user.mfa_secret is None
+
+        # Verify all recovery codes were deleted
+        recovery_crud = RecoveryCodeCRUD(session)
+        remaining_codes = await recovery_crud.get_by_user_id(user_with_mfa.id)
+        assert len(remaining_codes) == 0
+
+    async def test_disable_with_invalid_recovery_code_fails(
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+    ):
+        """Invalid recovery code cannot be used to disable MFA."""
+        from apps.authentication.services.recovery_codes import generate_recovery_codes
+
+        client.login(user_with_mfa)
+
+        # Clear any existing global lockout from previous tests
+        mfa_service = MFASessionService()
+        await mfa_service.clear_global_lockout(user_with_mfa.id)
+
+        # Generate recovery codes
+        codes = await generate_recovery_codes(session, user_with_mfa.id)
+        assert len(codes) == 10
+
+        # Initiate disable
+        response = await client.post(self.disable_initiate_url)
+        assert response.status_code == status.HTTP_200_OK
+        mfa_token = response.json()["result"]["mfaToken"]
+
+        # Try to verify with invalid recovery code
+        verify_data = {"mfaToken": mfa_token, "code": "AAAAA-BBBBB"}  # Invalid format/code
+        response = await client.post(self.disable_verify_url, data=verify_data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+        # Verify MFA still enabled
+        crud = UsersCRUD(session)
+        user = await crud.get_by_id(user_with_mfa.id)
+        assert user.mfa_enabled is True
+
+    async def test_disable_with_used_recovery_code_fails(
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+    ):
+        """Already used recovery code cannot be used to disable MFA."""
+        from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
+        from apps.authentication.services.recovery_codes import generate_recovery_codes
+
+        client.login(user_with_mfa)
+
+        # Clear any existing global lockout from previous tests
+        mfa_service = MFASessionService()
+        await mfa_service.clear_global_lockout(user_with_mfa.id)
+
+        # Generate recovery codes
+        codes = await generate_recovery_codes(session, user_with_mfa.id)
+        assert len(codes) == 10
+
+        # Get first recovery code and mark it as used
+        recovery_code = codes[0]
+        recovery_crud = RecoveryCodeCRUD(session)
+        # Get code ID from database to mark as used
+        db_codes = await recovery_crud.get_by_user_id(user_with_mfa.id)
+        await recovery_crud.mark_as_used(db_codes[0].id)
+
+        # Initiate disable
+        response = await client.post(self.disable_initiate_url)
+        assert response.status_code == status.HTTP_200_OK
+        mfa_token = response.json()["result"]["mfaToken"]
+
+        # Try to verify with already used recovery code
+        verify_data = {"mfaToken": mfa_token, "code": recovery_code}
+        response = await client.post(self.disable_verify_url, data=verify_data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+        # Verify MFA still enabled
+        crud = UsersCRUD(session)
+        user = await crud.get_by_id(user_with_mfa.id)
+        assert user.mfa_enabled is True
