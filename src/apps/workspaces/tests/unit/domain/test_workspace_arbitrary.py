@@ -23,7 +23,7 @@ def arbitrary_aws_create_data() -> WorkspaceArbitraryCreate:
 def arbitrary_gcp_create_data(
     arbitrary_aws_create_data: WorkspaceArbitraryCreate,
 ) -> WorkspaceArbitraryCreate:
-    workspace = arbitrary_aws_create_data.copy(deep=True)
+    workspace = arbitrary_aws_create_data.model_copy(deep=True)
     workspace.storage_type = StorageType.GCP
     return workspace
 
@@ -41,7 +41,7 @@ def arbitrary_gcp_create_data(
 def test_arbitrary_workspace_common_required_fields(
     arbitrary_aws_create_data: WorkspaceArbitraryCreate, field_name: str
 ) -> None:
-    data = arbitrary_aws_create_data.dict()
+    data = arbitrary_aws_create_data.model_dump()
     del data[field_name]
     with pytest.raises(ValidationError):
         WorkspaceArbitraryCreate(**data)
@@ -54,13 +54,16 @@ def test_arbitrary_workspace_common_required_fields(
 def test_arbitrary_workspace_aws_required_fields(
     arbitrary_aws_create_data: WorkspaceArbitraryCreate, field_name: str
 ) -> None:
-    data = arbitrary_aws_create_data.dict()
+    data = arbitrary_aws_create_data.model_dump()
     del data[field_name]
     with pytest.raises(ValidationError) as exc:
         WorkspaceArbitraryCreate(**data)
     errors = exc.value.errors()
-    len(errors) == 1
-    assert errors[0]["msg"] == "storage_access_key, storage_region, storage_bucket are required for aws storage"
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, storage_access_key, storage_region, storage_bucket are required for aws storage"
+    )
 
 
 @pytest.mark.parametrize(
@@ -70,10 +73,12 @@ def test_arbitrary_workspace_aws_required_fields(
 def test_arbitrary_workspace_gcp_required_fields(
     arbitrary_gcp_create_data: WorkspaceArbitraryCreate, field_name: str
 ) -> None:
-    data = arbitrary_gcp_create_data.dict()
+    data = arbitrary_gcp_create_data.model_dump()
     del data[field_name]
     with pytest.raises(ValidationError) as exc:
         WorkspaceArbitraryCreate(**data)
     errors = exc.value.errors()
-    len(errors) == 1
-    assert errors[0]["msg"] == "storage_url, storage_bucket, storage_access_key are required for gcp storage"
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"] == "Value error, storage_url, storage_bucket, storage_access_key are required for gcp storage"
+    )

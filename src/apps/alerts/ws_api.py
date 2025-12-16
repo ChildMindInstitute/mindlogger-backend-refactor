@@ -89,6 +89,6 @@ async def _handle_websocket(websocket, user_id, session):
                 subject_id=str(alert_message.subject_id),
                 type=alert_message.type,
             )
-            await websocket.send_json(applet_alert.dict())
+            await websocket.send_json(applet_alert.model_dump())
         except ConnectionClosed:
             break

@@ -886,7 +886,7 @@ class LorisIntegrationService:
                         activity_id=alert.activity_id,
                         activity_item_id=alert.activity_item_id,
                         type=alert.type,
-                    ).dict(),
+                    ).model_dump(),
                 )
 
             except Exception as e:

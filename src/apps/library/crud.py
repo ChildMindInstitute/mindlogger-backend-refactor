@@ -93,7 +93,7 @@ class LibraryCRUD(BaseCRUD[LibrarySchema]):
         if not db_result:
             raise LibraryItemDoesNotExistError()
 
-        return LibraryItem.from_orm(db_result)
+        return LibraryItem.model_validate(db_result)
 
     async def check_applet_name(self, name: str):
         query: Query = select(AppletHistorySchema.display_name)

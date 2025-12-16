@@ -16,7 +16,7 @@ class FlowsCRUD(BaseCRUD[ActivityFlowSchema]):
     async def get_by_id(self, id_: uuid.UUID) -> Flow | None:
         flow = await self._get("id", id_)
         if flow:
-            return Flow.from_orm(flow)
+            return Flow.model_validate(flow)
         return None
 
     async def update_by_id(self, id_, **values):

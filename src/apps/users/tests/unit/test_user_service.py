@@ -2,7 +2,6 @@ import uuid
 from typing import cast
 
 import pytest
-from pydantic import EmailStr
 from sqlalchemy import true
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +21,7 @@ from config import settings
 async def test_get_user_by_id(session: AsyncSession, user: User):
     srv = UserService(session)
     result = await srv.get(user.id)
-    assert result == User.from_orm(user)
+    assert result == User.model_validate(user)
 
 
 async def test_user_exists_by_id__user_does_not_exist(session: AsyncSession, uuid_zero: uuid.UUID):
@@ -38,7 +37,7 @@ async def test_get_user_by_email(
 ):
     srv = UserService(session)
     result = await srv.get_by_email(user_create.email)
-    assert result == User.from_orm(user)
+    assert result == User.model_validate(user)
 
 
 async def test_create_super_user_admin(session: AsyncSession):
@@ -159,7 +158,7 @@ async def test_create_user(session: AsyncSession):
     crud = UsersCRUD(session)
     srv = UserService(session)
     data = UserCreate(
-        email=EmailStr("test@example.com"),
+        email="test@example.com",
         first_name="first",
         last_name="last",
         password="pass",
@@ -177,7 +176,7 @@ async def test_create_user_with_test_id(session: AsyncSession):
     id_ = uuid.uuid4()
     srv = UserService(session)
     data = UserCreate(
-        email=EmailStr("test@example.com"),
+        email="test@example.com",
         first_name="first",
         last_name="last",
         password="pass",

@@ -28,7 +28,7 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
         result = await self._execute(query)
         logs = result.scalars().all()
 
-        return [PublicNotificationLog.from_orm(log) for log in logs]
+        return [PublicNotificationLog.model_validate(log) for log in logs]
 
     async def save(self, schema: NotificationLogCreate, user_id: str) -> PublicNotificationLog:
         """Return NotificationLog instance."""
@@ -67,7 +67,7 @@ class NotificationLogCRUD(BaseCRUD[NotificationLogSchema]):
                     scheduled_notifications_updated=sched_notif_upd,
                 )
             )
-            notification_log = PublicNotificationLog.from_orm(instance)
+            notification_log = PublicNotificationLog.model_validate(instance)
 
             return notification_log
         except Exception:

@@ -24,7 +24,7 @@ class ActivityItemService:
 
         for activity_item in activity_items:
             schema = ActivityItemSchema(
-                **activity_item.dict(),
+                **activity_item.model_dump(),
                 order=activity_id_ordering_map[activity_item.activity_id] + 1,
             )
 
@@ -35,7 +35,7 @@ class ActivityItemService:
             schemas.append(schema)
             activity_id_ordering_map[activity_item.activity_id] += 1
         item_schemas = await ActivityItemsCRUD(self.session).create_many(schemas)
-        return [ActivityItemFull.from_orm(item) for item in item_schemas]
+        return [ActivityItemFull.model_validate(item) for item in item_schemas]
 
     async def update_create(self, activity_items: list[PreparedActivityItemUpdate]):
         schemas = list()
@@ -44,13 +44,13 @@ class ActivityItemService:
         for activity_item in activity_items:
             schemas.append(
                 ActivityItemSchema(
-                    **activity_item.dict(),
+                    **activity_item.model_dump(),
                     order=activity_id_ordering_map[activity_item.activity_id] + 1,
                 )
             )
             activity_id_ordering_map[activity_item.activity_id] += 1
         item_schemas = await ActivityItemsCRUD(self.session).create_many(schemas)
-        return [ActivityItemFull.from_orm(item) for item in item_schemas]
+        return [ActivityItemFull.model_validate(item) for item in item_schemas]
 
     async def get_single_language_by_activity_id(
         self, activity_id: uuid.UUID, language: str
@@ -118,13 +118,13 @@ class ActivityItemService:
 
     async def get_items_by_activity_ids(self, activity_ids: list[uuid.UUID]) -> list[ActivityItemFull]:
         schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(activity_ids)
-        return [ActivityItemFull.from_orm(schema) for schema in schemas]
+        return [ActivityItemFull.model_validate(schema) for schema in schemas]
 
     async def get_items_by_activity_ids_for_duplicate(
         self, activity_ids: list[uuid.UUID]
     ) -> list[ActivityItemDuplicate]:
         schemas = await ActivityItemsCRUD(self.session).get_by_activity_ids(activity_ids)
-        return [ActivityItemDuplicate.from_orm(schema) for schema in schemas]
+        return [ActivityItemDuplicate.model_validate(schema) for schema in schemas]
 
     async def remove_applet_activity_items(self, applet_id: uuid.UUID):
         await ActivityItemsCRUD(self.session).delete_by_applet_id(applet_id)

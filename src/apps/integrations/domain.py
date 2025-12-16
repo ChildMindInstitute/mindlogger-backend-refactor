@@ -59,4 +59,4 @@ class Integration(InternalModel):
 
 
 class IntegrationFilter(InternalModel):
-    integration_types: list[AvailableIntegrations] | None
+    integration_types: list[AvailableIntegrations] | None = None

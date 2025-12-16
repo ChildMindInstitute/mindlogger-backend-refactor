@@ -1,10 +1,9 @@
 import datetime
 import uuid
 
-from pydantic import EmailStr, validator
+from pydantic import EmailStr, field_validator
 
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.domain.custom_validations import lowercase
 from apps.workspaces.domain.constants import Role
 
 
@@ -29,7 +28,7 @@ class Subject(SubjectCreate):
 
 
 class SubjectRespondent(PublicModel):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
     respondent_access_id: uuid.UUID
     subject_id: uuid.UUID
     relation: str
@@ -41,12 +40,12 @@ class SubjectRelationCreate(PublicModel):
 
 
 class SubjectBase(PublicModel):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
     applet_id: uuid.UUID
-    email: EmailStr | None
+    email: EmailStr | None = None
     creator_id: uuid.UUID
-    user_id: uuid.UUID | None
-    tag: str | None
+    user_id: uuid.UUID | None = None
+    tag: str | None = None
 
 
 class SubjectCreateRequest(PublicModel):
@@ -55,17 +54,20 @@ class SubjectCreateRequest(PublicModel):
     first_name: str
     last_name: str
     secret_user_id: str
-    nickname: str | None
-    email: EmailStr | None
-    tag: str | None
+    nickname: str | None = None
+    email: EmailStr | None = None
+    tag: str | None = None
 
-    _email_lower = validator("email", pre=True, allow_reuse=True)(lowercase)
+    @field_validator("email")
+    @classmethod
+    def lowercase_email(cls, value: EmailStr | None) -> EmailStr | None:
+        return value and value.lower()
 
 
 class SubjectCreateResponse(SubjectCreateRequest):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
     creator_id: uuid.UUID
-    user_id: uuid.UUID | None
+    user_id: uuid.UUID | None = None
 
 
 class SubjectFull(SubjectBase):
@@ -74,8 +76,8 @@ class SubjectFull(SubjectBase):
 
 class SubjectUpdateRequest(PublicModel):
     secret_user_id: str
-    nickname: str | None
-    tag: str | None
+    nickname: str | None = None
+    tag: str | None = None
 
 
 class SubjectDeleteRequest(PublicModel):
@@ -84,9 +86,9 @@ class SubjectDeleteRequest(PublicModel):
 
 class SubjectReadResponse(SubjectUpdateRequest):
     id: uuid.UUID
-    last_seen: datetime.datetime | None
+    last_seen: datetime.datetime | None = None
     applet_id: uuid.UUID
-    user_id: uuid.UUID | None
+    user_id: uuid.UUID | None = None
     first_name: str
     last_name: str
 
@@ -105,4 +107,4 @@ class SubjectRelation(InternalModel):
     source_subject_id: uuid.UUID
     target_subject_id: uuid.UUID
     relation: str
-    meta: dict | None
+    meta: dict | None = None

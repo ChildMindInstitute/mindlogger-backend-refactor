@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from config.alerts import AlertsSettings
 from config.anonymous_respondent import AnonymousRespondent
@@ -11,6 +11,7 @@ from config.cors import CorsSettings
 from config.database import DatabaseSettings
 from config.logs import Logs
 from config.mailing import MailingSettings
+from config.mfa import MFASettings
 from config.multiinformant import MultiInformantSettings
 from config.notification import FirebaseCloudMessagingSettings
 from config.oneup_health import OneUpHealthSettings
@@ -79,20 +80,22 @@ class Settings(BaseSettings):
     # NOTE: This config is used by SQLAlchemy for imports
     migrations_apps: list[str]
 
-    super_admin = SuperAdmin()
+    super_admin: SuperAdmin = SuperAdmin()
 
-    anonymous_respondent = AnonymousRespondent()
-    prolific_respondent = ProlificRespondent()
+    anonymous_respondent: AnonymousRespondent = AnonymousRespondent()
+    prolific_respondent: ProlificRespondent = ProlificRespondent()
 
-    task_answer_encryption = AnswerEncryption()
-    task_audio_file_convert = AudioFileConvert()
-    task_image_convert = ImageConvert()
+    task_answer_encryption: AnswerEncryption = AnswerEncryption()
+    task_audio_file_convert: AudioFileConvert = AudioFileConvert()
+    task_image_convert: ImageConvert = ImageConvert()
 
-    applet_ema = AppletEMASettings()
+    applet_ema: AppletEMASettings = AppletEMASettings()
 
     logs: Logs = Logs()
 
     multi_informant: MultiInformantSettings = MultiInformantSettings()
+
+    mfa: MFASettings = MFASettings()
 
     oneup_health: OneUpHealthSettings = OneUpHealthSettings()
 
@@ -100,9 +103,7 @@ class Settings(BaseSettings):
     def uploads_dir(self):
         return self.root_dir.parent / "uploads"
 
-    class Config:
-        env_nested_delimiter = "__"
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env", env_nested_delimiter="__", extra="ignore")
 
 
 # Load settings

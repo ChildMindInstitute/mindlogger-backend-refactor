@@ -52,7 +52,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             raise ThemeNotFoundError(key=key, value=value)
 
         # Get internal model
-        theme: Theme = Theme.from_orm(instance)
+        theme: Theme = Theme.model_validate(instance)
 
         return theme
 
@@ -94,7 +94,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         result: Result = await self._execute(query)
         results: list[PublicTheme] = result.scalars().all()
 
-        return [PublicTheme.from_orm(theme) for theme in results]
+        return [PublicTheme.model_validate(theme) for theme in results]
 
     async def save(self, schema: ThemeSchema) -> Theme:
         """Return theme instance and the created information."""
@@ -105,7 +105,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
             raise ThemeAlreadyExist()
 
         # Create internal data model
-        theme: Theme = Theme.from_orm(instance)
+        theme: Theme = Theme.model_validate(instance)
 
         return theme
 
@@ -129,7 +129,7 @@ class ThemesCRUD(BaseCRUD[ThemeSchema]):
         except IntegrityError:
             raise ThemeAlreadyExist()
 
-        return Theme.from_orm(instance)
+        return Theme.model_validate(instance)
 
     async def get_by_name_and_creator_id(self, name: str, creator_id: uuid.UUID) -> Theme:
         query: Query = select(ThemeSchema)

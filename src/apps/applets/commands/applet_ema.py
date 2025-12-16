@@ -9,7 +9,6 @@ import uuid
 from typing import BinaryIO, Optional, TypeVar, cast
 
 import typer
-from pydantic import parse_obj_as
 from rich import print
 from sqlalchemy import Date, and_, case, false, func, literal, null, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +24,7 @@ from apps.job.errors import JobStatusError
 from apps.job.service import JobService
 from apps.schedule.db.schemas import EventSchema
 from apps.schedule.domain.constants import PeriodicityType
+from apps.shared.domain import parse_obj_as
 from apps.shared.domain.base import PublicModel
 from apps.subjects.db.schemas import SubjectSchema
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -96,8 +96,8 @@ class RawRow(PublicModel):
     schedule_end_time: datetime.time
     event_id: uuid.UUID
     event_type: PeriodicityType
-    start_date: datetime.date | None
-    end_date: datetime.date | None
+    start_date: datetime.date | None = None
+    end_date: datetime.date | None = None
     selected_date: datetime.date
 
     @property
@@ -435,7 +435,7 @@ async def export_flow_schedule(
                 schedule_start_time=row.schedule_start_time.strftime(OUTPUT_TIME_FORMAT),
                 schedule_end_time=row.schedule_end_time.strftime(OUTPUT_TIME_FORMAT),
                 event_id=row.event_id,
-            ).dict()
+            ).model_dump()
             result.append(outrow)
 
         cdn_client = await get_operations_bucket()
@@ -619,7 +619,7 @@ async def export_activity_schedule(
                 schedule_start_time=row.schedule_start_time.strftime(OUTPUT_TIME_FORMAT),
                 schedule_end_time=row.schedule_end_time.strftime(OUTPUT_TIME_FORMAT),
                 event_id=row.event_id,
-            ).dict()
+            ).model_dump()
             result.append(outrow)
 
         cdn_client = await get_operations_bucket()

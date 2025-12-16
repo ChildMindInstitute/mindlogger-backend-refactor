@@ -725,7 +725,7 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
         result = resp.json()["result"]
         assert len(result) == 1
-        assert result[0]["message"] == "field required"
+        assert result[0]["message"] == "Field required"
         assert result[0]["path"] == ["query", "days"]
 
     async def test_download_logs__user_is_not_developer(self, client: TestClient, device_tom: str, tom: User):

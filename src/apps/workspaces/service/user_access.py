@@ -223,7 +223,7 @@ class UserAccessService:
             owner_id, respondent_id, query_params.page, query_params.limit
         )
 
-        return [PublicRespondentAppletAccess.from_orm(access) for access in accesses]
+        return [PublicRespondentAppletAccess.model_validate(access) for access in accesses]
 
     async def get_respondent_accesses_by_workspace_count(
         self,
@@ -286,7 +286,7 @@ class UserAccessService:
                             if len(existing_subject_ids) != len(subject_ids):
                                 raise ValidationError(_("Subject does not exist in applet"))
 
-                            meta = ReviewerMeta(subjects=list(map(str, subject_ids))).dict()
+                            meta = ReviewerMeta(subjects=list(map(str, subject_ids))).model_dump()
                         else:
                             raise RespondentsNotSet()
                     schemas.append(

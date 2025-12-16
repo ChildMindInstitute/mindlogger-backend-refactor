@@ -79,7 +79,7 @@ class UserService:
             )
         user_schema = await UsersCRUD(self.session).save(schema)
 
-        user: User = User.from_orm(user_schema)
+        user: User = User.model_validate(user_schema)
         return user
 
     async def get_by_email(self, email: str) -> User:

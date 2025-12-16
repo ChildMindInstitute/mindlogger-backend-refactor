@@ -1,8 +1,9 @@
 import datetime
 import json
 import uuid
+from typing import Self
 
-from pydantic import BaseModel, root_validator, validator
+from pydantic import BaseModel, field_validator, model_validator
 from pydantic.types import PositiveInt
 
 from apps.shared.domain import InternalModel, PublicModel
@@ -27,16 +28,12 @@ class NotificationLogQuery(BaseModel):
 
 
 class NotificationLogCreate(_NotificationLogBase, InternalModel):
-    notification_descriptions: list[dict] | None
-    notification_in_queue: list[dict] | None
-    scheduled_notifications: list[dict] | None
+    notification_descriptions: list[dict] | None = None
+    notification_in_queue: list[dict] | None = None
+    scheduled_notifications: list[dict] | None = None
 
-    @validator(
-        "notification_descriptions",
-        "notification_in_queue",
-        "scheduled_notifications",
-        pre=True,
-    )
+    @field_validator("notification_descriptions", "notification_in_queue", "scheduled_notifications", mode="before")
+    @classmethod
     def convert_string_to_list(cls, v):
         """Convert legacy JSON string format to array format for backward compatibility.
 
@@ -63,13 +60,13 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
 
         return None
 
-    @root_validator
-    def validate_json_fields(cls, values):
+    @model_validator(mode="after")
+    def validate_json_fields(self) -> Self:
         if not any(
             [
-                values.get("notification_descriptions"),
-                values.get("notification_in_queue"),
-                values.get("scheduled_notifications"),
+                self.notification_descriptions,
+                self.notification_in_queue,
+                self.scheduled_notifications,
             ]
         ):
             raise ValueError(
@@ -78,24 +75,20 @@ class NotificationLogCreate(_NotificationLogBase, InternalModel):
                 notification_in_queue,
                 scheduled_notifications) must be provided"""
             )
-        return values
+        return self
 
 
 class PublicNotificationLog(_NotificationLogBase, PublicModel):
     """Public NotificationLog model."""
 
     id: uuid.UUID
-    notification_descriptions: list | None
-    notification_in_queue: list | None
-    scheduled_notifications: list | None
+    notification_descriptions: list | None = None
+    notification_in_queue: list | None = None
+    scheduled_notifications: list | None = None
     created_at: datetime.datetime
 
-    @validator(
-        "notification_descriptions",
-        "notification_in_queue",
-        "scheduled_notifications",
-        pre=True,
-    )
+    @field_validator("notification_descriptions", "notification_in_queue", "scheduled_notifications", mode="before")
+    @classmethod
     def validate_json(cls, v):
         try:
             if isinstance(v, str):

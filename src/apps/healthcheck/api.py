@@ -44,7 +44,7 @@ async def emergency_message(
     if test:
         message = (
             f"User: {user.email_encrypted if user else None}, "
-            f"request: {info.json()}, "
+            f"request: {info.model_dump_json()}, "
             f"test url: [url](https://{settings.service.urls.frontend.web_base})"
         )
 

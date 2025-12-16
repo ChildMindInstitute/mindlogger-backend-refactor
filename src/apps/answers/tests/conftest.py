@@ -62,7 +62,7 @@ def applet_data(
     applet_report_configuration_data: AppletReportConfigurationBase,
     scores_and_reports: ScoresAndReports,
 ) -> AppletCreate:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "answers"
     data.activities[0].items[0].response_values = cast(
         SingleSelectionValues, data.activities[0].items[0].response_values
@@ -74,7 +74,7 @@ def applet_data(
     data.report_server_ip = applet_report_configuration_data.report_server_ip
     data.report_public_key = applet_report_configuration_data.report_public_key
     data.report_recipients = applet_report_configuration_data.report_recipients
-    return AppletCreate(**data.dict())
+    return AppletCreate(**data.model_dump())
 
 
 # TODO: investigate why scope class does not work if run all tests in app and if fixute is defined in conftest
@@ -106,13 +106,13 @@ async def public_applet(session: AsyncSession, applet: AppletFull, tom: User) ->
 async def applet_with_reviewable_activity(
     session: AsyncSession, applet_minimal_data: AppletCreate, tom: User
 ) -> AppletFull:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "applet with reviewable activity"
-    reviewable_activity = data.activities[0].copy(deep=True)
+    reviewable_activity = data.activities[0].model_copy(deep=True)
     reviewable_activity.name = data.activities[0].name + " review"
     reviewable_activity.is_reviewable = True
     data.activities.append(reviewable_activity)
-    applet_create = AppletCreate(**data.dict())
+    applet_create = AppletCreate(**data.model_dump())
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_create)
     return applet
@@ -130,11 +130,11 @@ async def applet_with_flow(
     tom: User,
     applet_report_configuration_data: AppletReportConfigurationBase,
 ) -> AppletFull:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "applet with flow"
 
     for i in range(2, 4):
-        activity = data.activities[0].copy(deep=True)
+        activity = data.activities[0].model_copy(deep=True)
         activity.name = data.activities[0].name + f"#{i}"
         activity.key = uuid.uuid4()
         data.activities.append(activity)
@@ -158,7 +158,7 @@ async def applet_with_flow(
     data.report_server_ip = applet_report_configuration_data.report_server_ip
     data.report_public_key = applet_report_configuration_data.report_public_key
     data.report_recipients = applet_report_configuration_data.report_recipients
-    applet_create = AppletCreate(**data.dict())
+    applet_create = AppletCreate(**data.model_dump())
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_create, applet_id=uuid.uuid4())
 
@@ -172,7 +172,7 @@ async def applet_with_flow_duplicated_activities(
     tom: User,
     applet_report_configuration_data: AppletReportConfigurationBase,
 ) -> AppletFull:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "applet with flow"
 
     data.activity_flows = [
@@ -188,7 +188,7 @@ async def applet_with_flow_duplicated_activities(
     data.report_server_ip = applet_report_configuration_data.report_server_ip
     data.report_public_key = applet_report_configuration_data.report_public_key
     data.report_recipients = applet_report_configuration_data.report_recipients
-    applet_create = AppletCreate(**data.dict())
+    applet_create = AppletCreate(**data.model_dump())
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_create, applet_id=uuid.uuid4())
 
@@ -294,7 +294,7 @@ async def answer(session: AsyncSession, tom: User, answer_create: AppletAnswerCr
 def public_answer_create(
     public_applet: AppletFull, answer_item_create: ItemAnswerCreate, client_meta: ClientMeta
 ) -> AppletAnswerCreate:
-    item_create = answer_item_create.copy(deep=True)
+    item_create = answer_item_create.model_copy(deep=True)
     item_create.item_ids = [i.id for i in public_applet.activities[0].items]
     return AppletAnswerCreate(
         applet_id=public_applet.id,
@@ -330,8 +330,8 @@ def answer_with_flow_create(
 
 @pytest.fixture
 async def applet_with_additional_item(applet: AppletFull, session: AsyncSession, tom: User) -> AppletFull:
-    data = AppletUpdate(**applet.dict())
-    item = data.activities[0].items[0].copy(deep=True)
+    data = AppletUpdate(**applet.model_dump())
+    item = data.activities[0].items[0].model_copy(deep=True)
     item.name += "second"
     item.id = None
     data.activities[0].items.append(item)
@@ -344,7 +344,7 @@ async def applet_with_additional_item(applet: AppletFull, session: AsyncSession,
 def answer_reviewable_activity_create(
     applet_with_reviewable_activity: AppletFull, answer_item_create: ItemAnswerCreate, client_meta: ClientMeta
 ) -> AppletAnswerCreate:
-    item_create = answer_item_create.copy(deep=True)
+    item_create = answer_item_create.model_copy(deep=True)
     activity = next(i for i in applet_with_reviewable_activity.activities if not i.is_reviewable)
     item_create.item_ids = [i.id for i in activity.items]
     return AppletAnswerCreate(
@@ -374,7 +374,7 @@ async def answer_reviewable_activity(
 def answer_reviewable_activity_with_tz_offset_create(
     answer_reviewable_activity_create: AppletAnswerCreate,
 ) -> AppletAnswerCreate:
-    data = answer_reviewable_activity_create.copy(deep=True)
+    data = answer_reviewable_activity_create.model_copy(deep=True)
     data.submit_id = uuid.uuid4()
     # US/Pacific
     tz_offset = -420
@@ -544,14 +544,14 @@ async def editor_user_reviewer_applet_one(user: UserSchema, session: AsyncSessio
 async def applet_with_reviewable_flow(
     session: AsyncSession, applet_minimal_data: AppletCreate, tom: User
 ) -> AppletFull:
-    data = applet_minimal_data.copy(deep=True)
+    data = applet_minimal_data.model_copy(deep=True)
     data.display_name = "applet with reviewable flow"
 
-    second_activity = data.activities[0].copy(deep=True)
+    second_activity = data.activities[0].model_copy(deep=True)
     second_activity.name = data.activities[0].name + " second"
     second_activity.key = uuid.uuid4()
 
-    third_activity = data.activities[0].copy(deep=True)
+    third_activity = data.activities[0].model_copy(deep=True)
     third_activity.name = data.activities[0].name + " third"
     third_activity.key = uuid.uuid4()
     third_activity.is_reviewable = True
@@ -569,7 +569,7 @@ async def applet_with_reviewable_flow(
             ],
         ),
     ]
-    applet_create = AppletCreate(**data.dict())
+    applet_create = AppletCreate(**data.model_dump())
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_create, applet_id=uuid.uuid4())
     return applet
@@ -579,7 +579,7 @@ async def applet_with_reviewable_flow(
 def answers_reviewable_submission_create(
     applet_with_reviewable_flow: AppletFull, answer_item_create: ItemAnswerCreate, client_meta: ClientMeta
 ) -> list[AppletAnswerCreate]:
-    item_create = answer_item_create.copy(deep=True)
+    item_create = answer_item_create.model_copy(deep=True)
     activities = []
     flow_items = applet_with_reviewable_flow.activity_flows[0].items
     flow_activity_ids = list(map(lambda x: x.activity_id, flow_items))
@@ -703,9 +703,9 @@ async def applet__activity_turned_into_assessment(
     """
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_data)
-    data = AppletUpdate(**applet.dict())
+    data = AppletUpdate(**applet.model_dump())
 
-    activity_new = data.activities[0].copy(deep=True)
+    activity_new = data.activities[0].model_copy(deep=True)
     activity_new.id = uuid.uuid4()
     activity_new.key = uuid.uuid4()
     for i in range(len(activity_new.items)):
@@ -729,9 +729,9 @@ async def applet__deleted_activity_without_answers(
     """
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_data)
-    data = AppletUpdate(**applet.dict())
+    data = AppletUpdate(**applet.model_dump())
 
-    activity_new = data.activities[0].copy(deep=True)
+    activity_new = data.activities[0].model_copy(deep=True)
     activity_new.id = uuid.uuid4()
     activity_new.key = uuid.uuid4()
     for i in range(len(activity_new.items)):
@@ -747,7 +747,7 @@ async def applet__deleted_flow_without_answers(
     session: AsyncSession, tom: User, applet_with_flow: AppletFull
 ) -> AppletFull:
     srv = AppletService(session, tom.id)
-    data = applet_with_flow.dict()
+    data = applet_with_flow.model_dump()
     activity_flow = data["activity_flows"][0]
     for i in range(len(activity_flow["items"])):
         activity_flow["items"][i]["activity_key"] = data["activities"][0]["key"]
@@ -761,10 +761,10 @@ async def applet__deleted_flow_without_answers(
 async def applet__with_ordered_activities(session: AsyncSession, tom: User, applet_data: AppletCreate) -> AppletFull:
     srv = AppletService(session, tom.id)
     applet = await srv.create(applet_data)
-    data = AppletUpdate(**applet.dict())
+    data = AppletUpdate(**applet.model_dump())
     activities = []
     for i in range(4):
-        activity_new = data.activities[0].copy(deep=True)
+        activity_new = data.activities[0].model_copy(deep=True)
         activity_new.id = uuid.uuid4()
         activity_new.key = uuid.uuid4()
         for j in range(len(activity_new.items)):

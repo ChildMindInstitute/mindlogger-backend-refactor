@@ -14,23 +14,23 @@ class ThemeService:
 
     async def get_users_by_ids(self, ids: list[uuid.UUID]) -> list[Theme]:
         themes = await ThemesCRUD(self.session).get_users_themes_by_ids(self.user_id, ids)
-        return [Theme.from_orm(theme) for theme in themes]
+        return [Theme.model_validate(theme) for theme in themes]
 
     async def get_by_ids(self, ids: list[uuid.UUID]) -> list[Theme]:
         themes = await ThemesCRUD(self.session).get_by_ids(ids)
-        return [Theme.from_orm(theme) for theme in themes]
+        return [Theme.model_validate(theme) for theme in themes]
 
     async def get_users_by_id(self, theme_id: uuid.UUID) -> Theme:
         theme = await ThemesCRUD(self.session).get_users_theme_by_id(theme_id)
         if not theme:
             raise ThemeNotFoundError(key="id", id=theme_id)
-        return Theme.from_orm(theme)
+        return Theme.model_validate(theme)
 
     async def get_by_id(self, theme_id: uuid.UUID) -> Theme:
         theme = await ThemesCRUD(self.session).get_by_id(theme_id)
         if not theme:
             raise ThemeNotFoundError(key="id", id=theme_id)
-        return Theme.from_orm(theme)
+        return Theme.model_validate(theme)
 
     async def create(self, theme_request: ThemeRequest) -> PublicTheme:
         # check name and creator_id combination is unique before save
@@ -39,14 +39,14 @@ class ThemeService:
 
         theme: Theme = await ThemesCRUD(self.session).save(
             ThemeSchema(
-                **theme_request.dict(),
+                **theme_request.model_dump(),
                 creator_id=self.user_id,
                 public=False,
                 allow_rename=False,
             )
         )
 
-        return PublicTheme.from_orm(theme)
+        return PublicTheme.model_validate(theme)
 
     async def get_all(self, query_params: QueryParams) -> list[PublicTheme]:
         themes: list[PublicTheme] = await ThemesCRUD(self.session).list(query_params)
@@ -59,11 +59,11 @@ class ThemeService:
     async def update(self, theme_id: uuid.UUID, theme_request: ThemeRequest) -> PublicTheme:
         theme: Theme = await ThemesCRUD(self.session).update(
             pk=theme_id,
-            update_schema=ThemeSchema(**theme_request.dict(), public=False, allow_rename=False),
+            update_schema=ThemeSchema(**theme_request.model_dump(), public=False, allow_rename=False),
             creator_id=self.user_id,
         )
 
-        return PublicTheme(**theme.dict())
+        return PublicTheme(**theme.model_dump())
 
     async def get_default(self) -> Theme:
         return await ThemesCRUD(self.session).get_default()
@@ -89,5 +89,5 @@ class ThemeService:
                     is_default=True,
                 )
             )
-            theme = Theme.from_orm(inst)
+            theme = Theme.model_validate(inst)
         return theme

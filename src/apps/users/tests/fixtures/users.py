@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-from pydantic import EmailStr
 from pytest import Config
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,14 +18,14 @@ async def _get_or_create_user(
         user = await UserService(global_session).create_user(create_data, test_id=id_)
         await global_session.commit()
     else:
-        user = User.from_orm(user_db)
+        user = User.model_validate(user_db)
     return user
 
 
 @pytest.fixture(scope="session", autouse=True)
 def user_create() -> UserCreate:
     return UserCreate(
-        email=EmailStr("user@example.com"),
+        email="user@example.com",
         password="Test1234!",
         first_name="user",
         last_name="test",
@@ -36,7 +35,7 @@ def user_create() -> UserCreate:
 @pytest.fixture(scope="session", autouse=True)
 def tom_create() -> UserCreate:
     return UserCreate(
-        email=EmailStr("tom@mindlogger.com"),
+        email="tom@mindlogger.com",
         password="Test1234!",
         first_name="Tom",
         last_name="Isaak",
@@ -46,7 +45,7 @@ def tom_create() -> UserCreate:
 @pytest.fixture(scope="session", autouse=True)
 def lucy_create() -> UserCreate:
     return UserCreate(
-        email=EmailStr("lucy@gmail.com"),
+        email="lucy@gmail.com",
         password="Test123",
         first_name="Lucy",
         last_name="Gabel",
@@ -56,7 +55,7 @@ def lucy_create() -> UserCreate:
 @pytest.fixture(scope="session", autouse=True)
 def bob_create() -> UserCreate:
     return UserCreate(
-        email=EmailStr("bob@gmail.com"),
+        email="bob@gmail.com",
         password="Test1234!",
         first_name="Bob",
         last_name="Martin",
@@ -66,7 +65,7 @@ def bob_create() -> UserCreate:
 @pytest.fixture(scope="session", autouse=True)
 def mike_create() -> UserCreate:
     return UserCreate(
-        email=EmailStr("mike@gmail.com"),
+        email="mike@gmail.com",
         password="Test1234",
         first_name="Mike",
         last_name="Samuel",
@@ -76,7 +75,7 @@ def mike_create() -> UserCreate:
 @pytest.fixture(scope="session", autouse=True)
 def pit_create() -> UserCreate:
     return UserCreate(
-        email=EmailStr("pit@gmail.com"),
+        email="pit@gmail.com",
         password="Test1234",
         first_name="Pit",
         last_name="Mitch",
@@ -85,7 +84,7 @@ def pit_create() -> UserCreate:
 
 @pytest.fixture(scope="session", autouse=True)
 def kate_create() -> UserCreate:
-    return UserCreate(email=EmailStr("kate@gmail.com"), password="Test1234", first_name="Kate", last_name="Manson")
+    return UserCreate(email="kate@gmail.com", password="Test1234", first_name="Kate", last_name="Manson")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -165,7 +164,7 @@ async def reviewer(global_session: AsyncSession, pytestconfig: Config):
     user = await _get_or_create_user(
         crud,
         UserCreate(
-            email=EmailStr("reviewer@mail.com"),
+            email="reviewer@mail.com",
             password="Test1234!",
             first_name="Reviewer",
             last_name="User",
@@ -198,7 +197,7 @@ async def patric(kate_create: UserCreate, global_session: AsyncSession, pytestco
     user = await _get_or_create_user(
         crud,
         UserCreate(
-            email=EmailStr("patric@mail.com"),
+            email="patric@mail.com",
             password="Test1234",
             first_name="Patric",
             last_name="Davison",
@@ -218,7 +217,7 @@ async def pit_bronson(kate_create: UserCreate, global_session: AsyncSession, pyt
     crud = UsersCRUD(global_session)
     kate_create.last_name = "Pit"
     kate_create.first_name = "Bronson"
-    kate_create.email = EmailStr("pitbronson@mail.com")
+    kate_create.email = "pitbronson@mail.com"
     user = await _get_or_create_user(
         crud, kate_create, global_session, uuid.UUID("965f1d93-e64a-4f67-b76b-8427f033a864")
     )
@@ -235,7 +234,7 @@ async def bill_bronson(global_session: AsyncSession, pytestconfig: Config):
     user = await _get_or_create_user(
         crud,
         UserCreate(
-            email=EmailStr("billbronson@mail.com"),
+            email="billbronson@mail.com",
             password="Test1234!",
             first_name="Boll",
             last_name="Bronson",
@@ -258,7 +257,7 @@ async def anonym(global_session: AsyncSession, pytestconfig: Config):
             test_id=uuid.UUID("7484f34a-3acc-4ee6-8a94-fd7299502fa7")
         )
         schema = await crud.get_anonymous_respondent()
-    user = User.from_orm(schema)
+    user = User.model_validate(schema)
     await global_session.commit()
     yield user
     if not pytestconfig.getoption("--keepdb"):
@@ -275,7 +274,7 @@ async def superadmin(global_session: AsyncSession, pytestconfig: Config):
         await UserService(global_session).create_superuser(test_id=id_)
         await global_session.commit()
         schema = await crud.get_super_admin()
-    user = User.from_orm(schema)
+    user = User.model_validate(schema)
     yield user
     if not pytestconfig.getoption("--keepdb"):
         await UserWorkspaceCRUD(global_session)._delete(user_id=id_)

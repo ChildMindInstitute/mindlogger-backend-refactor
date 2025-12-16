@@ -7,4 +7,4 @@ __all__ = ["AppletFolder"]
 
 class AppletFolder(InternalModel):
     applet_id: uuid.UUID
-    folder_id: uuid.UUID | None
+    folder_id: uuid.UUID | None = None

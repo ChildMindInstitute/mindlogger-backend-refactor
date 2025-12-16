@@ -458,7 +458,7 @@ applets:
         errors = info.value.errors()
         assert len(errors) == 1
         assert errors[0]["loc"] == ("version",)
-        assert errors[0]["msg"] == "unexpected value; permitted: '1.0'"
+        assert errors[0]["msg"] == "Input should be '1.0'"
 
     async def test_seed_duplicate_user_ids(self):
         user_id = uuid.UUID("7e6c8635-3a16-48bd-ae0b-0ed89eb4be4d")
@@ -701,7 +701,7 @@ applets:
         errors = info.value.errors()
         assert len(errors) == 1
         assert errors[0]["loc"] == ("applets", 0, "activities")
-        assert errors[0]["msg"] == "ensure this value has at least 1 items"
+        assert errors[0]["msg"] == "List should have at least 1 item after validation, not 0"
 
     async def test_seed_undefined_subject_user(self):
         user_id = uuid.uuid4()

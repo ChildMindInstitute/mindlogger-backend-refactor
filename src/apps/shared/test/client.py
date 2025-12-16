@@ -34,7 +34,7 @@ class TestClient:
     ) -> str | None:
         if data:
             if isinstance(data, BaseModel):
-                request_data = data.dict()
+                request_data = data.model_dump()
             else:
                 request_data = data  # type: ignore[assignment]
             return json.dumps(request_data, default=str)

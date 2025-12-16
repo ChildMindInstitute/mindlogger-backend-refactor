@@ -1,7 +1,7 @@
 from enum import StrEnum
-from typing import Any
+from typing import Annotated, Any, List
 
-from pydantic import Field, conlist
+from pydantic import Field
 from starlette import status
 
 from apps.shared.domain.base import PublicModel
@@ -15,30 +15,35 @@ class ErrorResponseType(StrEnum):
 class ErrorResponseMessage(PublicModel):
     """Error response message model."""
 
-    en: str = Field(
-        description="This field represent english representation of an error",
-        min_length=1,
-    )
+    en: Annotated[
+        str,
+        Field(
+            description="This field represent english representation of an error",
+            min_length=1,
+        ),
+    ]
 
 
 class ErrorResponse(PublicModel):
     """Error response model."""
 
-    message: str = Field(description="This field represent the objects with language-specific errors")
-    type: str = Field(
-        description="This field represents the business-specific error type",
-        default=ErrorResponseType.UNDEFINED,
+    message: Annotated[str, Field(description="This field represent the objects with language-specific errors")]
+    type: Annotated[str, Field(description="This field represents the business-specific error type")] = (
+        ErrorResponseType.UNDEFINED
     )
-    path: list = Field(
-        description="The path to the field that raised the error",
-        default_factory=list,
-    )
+    path: Annotated[
+        list,
+        Field(
+            description="The path to the field that raised the error",
+            default_factory=list,
+        ),
+    ]
 
 
 class ErrorResponseMulti(PublicModel):
     """The public error respnse model that includes multiple objects."""
 
-    result: conlist(ErrorResponse)  # type: ignore
+    result: List[ErrorResponse]
 
 
 # NOTE: This constant represents the default error response for each request

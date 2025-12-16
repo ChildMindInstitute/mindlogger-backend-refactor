@@ -171,7 +171,7 @@ class AppletService:
             report_include_user_id=create_data.report_include_user_id,
             report_include_case_id=create_data.report_include_case_id,
             report_email_body=create_data.report_email_body,
-            encryption=create_data.encryption.dict() if create_data.encryption else None,
+            encryption=create_data.encryption.model_dump() if create_data.encryption else None,
             extra_fields=create_data.extra_fields,
             creator_id=creator_id,
             stream_enabled=create_data.stream_enabled,
@@ -185,7 +185,7 @@ class AppletService:
             data.created_at = getattr(create_data, "created_at")
 
         schema = await AppletsCRUD(self.session).save(data)
-        return AppletFull.from_orm(schema)
+        return AppletFull.model_validate(schema)
 
     async def update(self, applet_id: uuid.UUID, update_data: AppletUpdate) -> AppletFull:
         old_applet_schema = await AppletsCRUD(self.session).get_by_id(applet_id)
@@ -241,7 +241,7 @@ class AppletService:
         if applet.encryption is not None:
             raise AppletEncryptionUpdateDenied()
 
-        applet.encryption = encryption.dict()
+        applet.encryption = encryption.model_dump()
         await AppletsCRUD(self.session).save(applet)
         applt = await AppletsCRUD(self.session).get_by_id(applet_id)
         return applt
@@ -307,7 +307,7 @@ class AppletService:
                     is_skippable=activity.is_skippable,
                     is_reviewable=activity.is_reviewable,
                     response_is_editable=activity.response_is_editable,
-                    items=[ActivityItemCreate.from_orm(item) for item in activity.items],
+                    items=[ActivityItemCreate.model_validate(item) for item in activity.items],
                     is_hidden=activity.is_hidden,
                     report_included_item_name=activity.report_included_item_name,  # noqa: E501
                     subscale_setting=activity.subscale_setting,
@@ -336,10 +336,11 @@ class AppletService:
             AppletReportConfigurationBase(
                 report_server_ip=applet_exist.report_server_ip,
                 report_public_key=applet_exist.report_public_key,
+                report_recipients=[],
                 report_include_user_id=applet_exist.report_include_user_id,
                 report_include_case_id=applet_exist.report_include_case_id,
                 report_email_body=applet_exist.report_email_body,
-            ).dict()
+            ).model_dump()
             if include_report_server
             else {}
         )
@@ -392,7 +393,7 @@ class AppletService:
             AppletSchema(
                 display_name=update_data.display_name,
                 description=update_data.description,
-                encryption=update_data.encryption.dict() if update_data.encryption else None,
+                encryption=update_data.encryption.model_dump() if update_data.encryption else None,
                 about=update_data.about,
                 image=update_data.image,
                 watermark=update_data.watermark,
@@ -403,7 +404,7 @@ class AppletService:
                 stream_port=update_data.stream_port,
             ),
         )
-        return AppletFull.from_orm(schema)
+        return AppletFull.model_validate(schema)
 
     async def get_next_version(
         self,
@@ -510,7 +511,7 @@ class AppletService:
                     display_name=schema.display_name,
                     version=schema.version,
                     description=self._get_by_language(schema.description, language),
-                    theme=theme.dict() if theme else None,
+                    theme=theme.model_dump() if theme else None,
                     about=self._get_by_language(schema.about, language),
                     image=schema.image,
                     watermark=schema.watermark,
@@ -555,7 +556,7 @@ class AppletService:
             description=self._get_by_language(schema.description, language),
             about=self._get_by_language(schema.about, language),
             image=schema.image,
-            theme=theme.dict() if theme else None,
+            theme=theme.model_dump() if theme else None,
             watermark=schema.watermark,
             theme_id=schema.theme_id,
             report_server_ip=schema.report_server_ip,
@@ -598,7 +599,7 @@ class AppletService:
             description=self._get_by_language(schema.description, language),
             about=self._get_by_language(schema.about, language),
             image=schema.image,
-            theme=theme.dict() if theme else None,
+            theme=theme.model_dump() if theme else None,
             watermark=schema.watermark,
             theme_id=schema.theme_id,
             report_server_ip=schema.report_server_ip,
@@ -635,7 +636,7 @@ class AppletService:
             description=schema.description,
             about=schema.about,
             image=schema.image,
-            theme=theme.dict() if theme else None,
+            theme=theme.model_dump() if theme else None,
             watermark=schema.watermark,
             theme_id=schema.theme_id,
             report_server_ip=schema.report_server_ip,
@@ -648,6 +649,8 @@ class AppletService:
             updated_at=schema.updated_at,
             retention_period=schema.retention_period,
             retention_type=schema.retention_type,
+            activities=[],
+            activity_flows=[],
         )
         applet.activities = await ActivityService(self.session, self.user_id).get_by_applet_id_for_duplicate(applet_id)
         applet.activity_flows = await FlowService(self.session, self.user_id).get_by_applet_id_duplicate(applet_id)
@@ -779,7 +782,7 @@ class AppletService:
 
     async def get_full_applet(self, applet_id: uuid.UUID) -> AppletFull:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)
-        applet = AppletFull.from_orm(schema)
+        applet = AppletFull.model_validate(schema)
         applet.activities = await ActivityService(self.session, self.user_id).get_full_activities(applet_id)
         applet.activity_flows = await FlowService(self.session, self.user_id).get_full_flows(applet_id)
         applet_owner = await UserAppletAccessCRUD(self.session).get_applet_owner(applet_id)
@@ -870,4 +873,4 @@ class PublicAppletService:
         schema = await AppletsCRUD(self.session).get_by_link(link, require_login=is_private)
         if not schema:
             return None
-        return Applet.from_orm(schema)
+        return Applet.model_validate(schema)

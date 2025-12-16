@@ -1,6 +1,8 @@
 import uuid
+from datetime import time
+from typing import Annotated, Self, cast
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType
 from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
@@ -39,7 +41,8 @@ class Notification(PublicModel):
     notifications: list[NotificationSettingRequest] | None = None
     reminder: ReminderSettingRequest | None = None
 
-    @validator("notifications")
+    @field_validator("notifications")
+    @classmethod
     def validate_notification_order(cls, value):
         if value:
             # set order of notifications
@@ -52,54 +55,60 @@ class EventUpdateRequest(BaseEvent, InternalModel):
     periodicity: PeriodicityRequest
     notification: Notification | None = None
 
-    @root_validator
-    def validate_optional_fields(cls, values):  # noqa: C901
+    @model_validator(mode="after")
+    def validate_optional_fields(self) -> Self:  # noqa: C901
         # if periodicity is Always, one_time_completion must be set.
-        if values.get("periodicity").type == PeriodicityType.ALWAYS and not isinstance(
-            values.get("one_time_completion"), bool
-        ):
+        if self.periodicity.type == PeriodicityType.ALWAYS and not isinstance(self.one_time_completion, bool):
             raise OneTimeCompletionCaseError()
 
-        start_time = values.get("start_time")
-        end_time = values.get("end_time")
+        start_time = self.start_time
+        end_time = self.end_time
         # if periodicity is not Always, start_time and end_time, access_before_schedule must be set
-        if values.get("periodicity").type != PeriodicityType.ALWAYS:
-            if not start_time or not end_time or not isinstance(values.get("access_before_schedule"), bool):
+        if self.periodicity.type != PeriodicityType.ALWAYS:
+            if not start_time or not end_time or not isinstance(self.access_before_schedule, bool):
                 raise StartEndTimeAccessBeforeScheduleCaseError()
 
             # validate notification time
-            if values.get("notification"):
-                if values.get("notification").notifications:
-                    for notification in values.get("notification").notifications:
+            if self.notification:
+                if self.notification.notifications:
+                    for notification in self.notification.notifications:
                         # keep same logic if the event is not cross-day
                         if start_time < end_time:
                             if notification.trigger_type == NotificationTriggerType.FIXED and (
-                                notification.at_time < start_time or notification.at_time > end_time
+                                cast(time, notification.at_time) < start_time
+                                or cast(time, notification.at_time) > end_time
                             ):
                                 raise UnavailableActivityOrFlowError()
 
                             if notification.trigger_type == NotificationTriggerType.RANDOM and (
-                                notification.from_time < start_time
-                                or notification.from_time > end_time
-                                or notification.to_time < start_time
-                                or notification.to_time > end_time
+                                cast(time, notification.from_time) < start_time
+                                or cast(time, notification.from_time) > end_time
+                                or cast(time, notification.to_time) < start_time
+                                or cast(time, notification.to_time) > end_time
                             ):
                                 raise UnavailableActivityOrFlowError()
                         # logic for cross-day events
                         else:
                             if notification.trigger_type == NotificationTriggerType.FIXED and (
-                                notification.at_time < start_time and notification.at_time > end_time
+                                cast(time, notification.at_time) < start_time
+                                and cast(time, notification.at_time) > end_time
                             ):
                                 raise UnavailableActivityOrFlowError()
 
                             if notification.trigger_type == NotificationTriggerType.RANDOM and (
-                                (notification.from_time < start_time and notification.from_time > end_time)
-                                or (notification.to_time < start_time and notification.to_time > end_time)
+                                (
+                                    cast(time, notification.from_time) < start_time
+                                    and cast(time, notification.from_time) > end_time
+                                )
+                                or (
+                                    cast(time, notification.to_time) < start_time
+                                    and cast(time, notification.to_time) > end_time
+                                )
                             ):
                                 raise UnavailableActivityOrFlowError()
 
-                if values.get("notification").reminder:
-                    reminder = values.get("notification").reminder
+                if self.notification.reminder:
+                    reminder = self.notification.reminder
                     # keep same logic if the event is not cross-day
                     if start_time < end_time:
                         if reminder.reminder_time < start_time or reminder.reminder_time > end_time:
@@ -111,23 +120,28 @@ class EventUpdateRequest(BaseEvent, InternalModel):
         if start_time == end_time:
             raise StartEndTimeEqualError()
 
-        return values
+        return self
 
 
 class EventRequest(EventUpdateRequest):
-    respondent_id: uuid.UUID | None
-    activity_id: uuid.UUID | None = Field(
-        None,
-        description="If flow_id is not set, activity_id must be set.",
-    )
-    flow_id: uuid.UUID | None = Field(
-        None,
-        description="If activity_id is not set, flow_id must be set.",
-    )
+    respondent_id: uuid.UUID | None = None
+    activity_id: Annotated[
+        uuid.UUID | None,
+        Field(
+            None,
+            description="If flow_id is not set, activity_id must be set.",
+        ),
+    ]
+    flow_id: Annotated[
+        uuid.UUID | None,
+        Field(
+            None,
+            description="If activity_id is not set, flow_id must be set.",
+        ),
+    ]
 
-    @root_validator
-    def validate_optional_fields_activity_or_flow(cls, values):
-        if not (bool(values.get("activity_id")) ^ bool(values.get("flow_id"))):
+    @model_validator(mode="after")
+    def validate_optional_fields_activity_or_flow(self) -> Self:
+        if not (bool(self.activity_id) ^ bool(self.flow_id)):
             raise ActivityOrFlowRequiredError()
-
-        return values
+        return self

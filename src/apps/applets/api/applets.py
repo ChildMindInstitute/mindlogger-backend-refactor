@@ -81,7 +81,7 @@ async def applet_list(
         applets = await AppletService(session, user.id).get_list_by_single_language(language, deepcopy(query_params))
         count = await AppletService(session, user.id).get_list_by_single_language_count(deepcopy(query_params))
     return ResponseMulti(
-        result=[AppletSingleLanguageInfoPublic.from_orm(applet) for applet in applets],
+        result=[AppletSingleLanguageInfoPublic.model_validate(applet) for applet in applets],
         count=count,
     )
 
@@ -103,7 +103,7 @@ async def applet_retrieve(
         applet_owner = await UserAppletAccessCRUD(session).get_applet_owner(applet_id)
         applet.owner_id = applet_owner.owner_id
     return AppletRetrieveResponse(
-        result=AppletSingleLanguageDetailPublic.from_orm(applet),
+        result=AppletSingleLanguageDetailPublic.model_validate(applet),
         respondent_meta=SubjectsService.to_respondent_meta(subject),
         applet_meta=AppletMeta(has_assessment=has_assessment),
     )
@@ -119,7 +119,7 @@ async def applet_retrieve_by_key(
         service = AppletService(session, uuid.UUID("00000000-0000-0000-0000-000000000000"))
         await service.exist_by_key(key_guid)
         applet = await service.get_single_language_by_key(key_guid, language)
-    return Response(result=AppletSingleLanguageDetailForPublic.from_orm(applet))
+    return Response(result=AppletSingleLanguageDetailForPublic.model_validate(applet))
 
 
 async def applet_create(
@@ -135,7 +135,7 @@ async def applet_create(
         )
         manager_role = Role.EDITOR if has_editor else None
         applet = await AppletService(session, owner_id).create(schema, user.id, manager_role)
-    return Response(result=public_detail.Applet.from_orm(applet))
+    return Response(result=public_detail.Applet.model_validate(applet))
 
 
 async def applet_update(
@@ -160,7 +160,7 @@ async def applet_update(
         # mute error
         logger.exception(e)
 
-    return Response(result=public_detail.Applet.from_orm(applet))
+    return Response(result=public_detail.Applet.model_validate(applet))
 
 
 async def applet_encryption_update(
@@ -174,7 +174,7 @@ async def applet_encryption_update(
         await service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
         await service.update_encryption(applet_id, schema)
-    return Response(result=public_detail.Encryption.from_orm(schema))
+    return Response(result=public_detail.Encryption.model_validate(schema))
 
 
 async def applet_duplicate(
@@ -192,7 +192,7 @@ async def applet_duplicate(
         applet = await service.duplicate(
             applet_for_duplicate, schema.display_name, schema.encryption, schema.include_report_server
         )
-    return Response(result=public_detail.Applet.from_orm(applet))
+    return Response(result=public_detail.Applet.model_validate(applet))
 
 
 async def applet_set_report_configuration(
@@ -282,7 +282,7 @@ async def applet_versions_retrieve(
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         histories = await retrieve_versions(session, applet_id)
     return ResponseMulti(
-        result=[PublicHistory(**h.dict()) for h in histories],
+        result=[PublicHistory(**h.model_dump()) for h in histories],
         count=len(histories),
     )
 
@@ -313,7 +313,7 @@ async def applet_version_retrieve(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         applet = await retrieve_applet_by_version(session, applet_id, version)
-    return Response(result=public_history_detail.AppletDetailHistory(**applet.dict()))
+    return Response(result=public_history_detail.AppletDetailHistory(**applet.model_dump()))
 
 
 async def applet_version_changes_retrieve(
@@ -326,7 +326,7 @@ async def applet_version_changes_retrieve(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         changes = await AppletHistoryService(session, applet_id, version).get_changes()
-    return Response(result=PublicAppletHistoryChange(**changes.dict()))
+    return Response(result=PublicAppletHistoryChange(**changes.model_dump()))
 
 
 async def applet_delete(
@@ -437,7 +437,7 @@ async def applet_retrieve_base_info(
     await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
     applet = await service.get_info_by_id(applet_id, language)
 
-    return Response(result=AppletActivitiesBaseInfo.from_orm(applet))
+    return Response(result=AppletActivitiesBaseInfo.model_validate(applet))
 
 
 async def applet_retrieve_base_info_by_key(
@@ -449,7 +449,7 @@ async def applet_retrieve_base_info_by_key(
     service = AppletService(session, uuid.UUID("00000000-0000-0000-0000-000000000000"))
     await service.exist_by_key(key_guid)
     applet = await service.get_info_by_key(key_guid, language)
-    return Response(result=AppletActivitiesBaseInfo.from_orm(applet))
+    return Response(result=AppletActivitiesBaseInfo.model_validate(applet))
 
 
 async def flow_item_history(

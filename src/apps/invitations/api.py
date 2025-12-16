@@ -4,8 +4,6 @@ from contextlib import asynccontextmanager
 from copy import deepcopy
 
 from fastapi import Body, Depends
-from fastapi.exceptions import RequestValidationError
-from pydantic.error_wrappers import ErrorWrapper
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
 from apps.answers.service import AnswerService
@@ -63,7 +61,7 @@ async def invitation_list(
     count = await service.fetch_all_count(deepcopy(query_params))
 
     return ResponseMulti[InvitationResponse](
-        result=[InvitationResponse(**invitation.dict()) for invitation in invitations],
+        result=[InvitationResponse(**invitation.model_dump()) for invitation in invitations],
         count=count,
     )
 
@@ -77,7 +75,7 @@ async def invitation_retrieve(
     who was invited.
     """
     invitation = await InvitationsService(session, user).get(key)
-    return Response(result=InvitationResponse.from_orm(invitation))
+    return Response(result=InvitationResponse.model_validate(invitation))
 
 
 async def private_invitation_retrieve(
@@ -85,7 +83,7 @@ async def private_invitation_retrieve(
     session=Depends(get_session),
 ) -> Response[PrivateInvitationResponse]:
     invitation = await PrivateInvitationService(session).get_invitation(key)
-    return Response(result=PrivateInvitationResponse.from_orm(invitation))
+    return Response(result=PrivateInvitationResponse.model_validate(invitation))
 
 
 async def invitation_respondent_send(
@@ -114,16 +112,14 @@ async def invitation_respondent_send(
         subject_service = SubjectsService(session, user.id)
         try:
             subject = await subject_service.create(
-                SubjectCreate(creator_id=user.id, applet_id=applet_id, **invitation_schema.dict(by_alias=False))
+                SubjectCreate(creator_id=user.id, applet_id=applet_id, **invitation_schema.model_dump(by_alias=False))
             )
         except SecretIDUniqueViolationError:
-            wrapper = ErrorWrapper(
-                ValueError(NonUniqueValue()), ("body", InvitationRespondentRequest.field_alias("secret_user_id"))
-            )
-            raise RequestValidationError([wrapper])
+            raise NonUniqueValue(loc=("body", InvitationRespondentRequest.field_alias("secret_user_id")))
+
         invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
 
-    return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))
+    return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.model_dump()))
 
 
 async def invitation_reviewer_send(
@@ -153,7 +149,7 @@ async def invitation_reviewer_send(
             applet_id, invitation_schema
         )
 
-    return Response[InvitationReviewerResponse](result=InvitationReviewerResponse(**invitation.dict()))
+    return Response[InvitationReviewerResponse](result=InvitationReviewerResponse(**invitation.model_dump()))
 
 
 async def invitation_managers_send(
@@ -184,7 +180,7 @@ async def invitation_managers_send(
 
         invitation = await invitation_srv.send_managers_invitation(applet_id, invitation_schema)
 
-    return Response[InvitationManagersResponse](result=InvitationManagersResponse(**invitation.dict()))
+    return Response[InvitationManagersResponse](result=InvitationManagersResponse(**invitation.model_dump()))
 
 
 async def invitation_accept(
@@ -285,4 +281,4 @@ async def invitation_subject_send(
         if subject.email != schema.email:
             await subject_service.update(subject.id, email=schema.email, language=schema.language or subject.language)
 
-    return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.dict()))
+    return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.model_dump()))

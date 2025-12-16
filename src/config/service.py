@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Annotated, Optional
 
 from pydantic import BaseModel, Field
 
@@ -31,7 +31,7 @@ class ServiceSettings(BaseModel):
     name: str = "mindlogger-service"
     port: int = 8000
     urls: ServiceUrlsSettings = ServiceUrlsSettings()
-    result_limit: int = Field(gt=0, default=10000)
+    result_limit: Annotated[int, Field(gt=0)] = 10000
 
 
 class JsonLdConverterSettings(BaseModel):

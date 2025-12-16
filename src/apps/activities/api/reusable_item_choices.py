@@ -23,10 +23,10 @@ async def item_choice_create(
 ) -> Response[PublicReusableItemChoice]:
     async with atomic(session):
         item_template: ReusableItemChoice = await ReusableItemChoiceCRUD(session).save(
-            schema=ReusableItemChoiceCreate(**schema.dict(), user_id=user.id)
+            schema=ReusableItemChoiceCreate(**schema.model_dump(), user_id=user.id)
         )
 
-    return Response(result=PublicReusableItemChoice(**item_template.dict()))
+    return Response(result=PublicReusableItemChoice(**item_template.model_dump()))
 
 
 async def item_choice_delete(

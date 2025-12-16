@@ -74,8 +74,17 @@ jobs:
           start=`date +%s`
 
           echo "Starting migration task"
-          TASK_ID=$(aws ecs run-task --task-definition "${{ steps.taskdef.outputs.task-definition-arn }}" --cluster ${{ needs.setup-vars.outputs.cluster }} | jq -r '.tasks[0].taskArn')
-
+          TASK_RESULT=$(aws ecs run-task --task-definition "${{ steps.taskdef.outputs.task-definition-arn }}" --cluster ${{ needs.setup-vars.outputs.cluster }})
+          TASK_ID=$(echo $TASK_RESULT | jq -r '.tasks[0].taskArn')
+          
+          if [[ "$TASK_ID" == "null" ]]; then
+            echo "Failed to start migration"
+            echo $TASK_RESULT | jq -r '.failures[] | "Reason: \(.reason)"'
+            exit 1
+          fi
+          
+          #TASK_ID=$(aws ecs run-task --task-definition "${{ steps.taskdef.outputs.task-definition-arn }}" --cluster ${{ needs.setup-vars.outputs.cluster }} | jq -r '.tasks[0].taskArn')
+          
           echo "Waiting for task ${{ steps.taskdef.outputs.task-definition-arn }} with ID ${TASK_ID} to finish..." 
           aws ecs wait tasks-stopped --cluster ${{ needs.setup-vars.outputs.cluster }} --tasks "$TASK_ID"
 

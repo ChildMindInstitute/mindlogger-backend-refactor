@@ -15,7 +15,7 @@ class FolderService:
 
     async def list(self) -> list[Folder]:
         schemas = await FolderCRUD(self.session).get_users_folder_in_workspace(self._workspace_id, self._creator_id)
-        return [Folder.from_orm(schema) for schema in schemas]
+        return [Folder.model_validate(schema) for schema in schemas]
 
     async def create(self, data: FolderCreate) -> Folder:
         await self._validate_create(data.name)
@@ -26,7 +26,7 @@ class FolderService:
                 workspace_id=self._workspace_id,
             )
         )
-        return Folder.from_orm(schema)
+        return Folder.model_validate(schema)
 
     async def _validate_create(self, name: str):
         existed_folder = await FolderCRUD(self.session).get_id_of_creators_folder_by_name(
@@ -45,7 +45,7 @@ class FolderService:
                 workspace_id=self._workspace_id,
             )
         )
-        return Folder.from_orm(schema)
+        return Folder.model_validate(schema)
 
     async def _validate_update(self, folder_id, new_name: str):
         await self._validate_folder(folder_id)

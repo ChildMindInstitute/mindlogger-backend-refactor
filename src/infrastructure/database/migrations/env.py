@@ -3,11 +3,11 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from pydantic.tools import parse_obj_as
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from apps.shared.domain import parse_obj_as
 from config import settings
 from infrastructure.database.migrations.base import Base
 from infrastructure.dependency.structured_logs import setup_structured_logging

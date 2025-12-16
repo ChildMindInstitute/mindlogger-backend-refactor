@@ -17,7 +17,7 @@ from apps.users.domain import User
 @pytest.fixture
 async def applet_with_version(applet_base_data: AppletBase, session: AsyncSession) -> AppletSchema:
     crud = AppletsCRUD(session)
-    applet = await crud.save(AppletSchema(**applet_base_data.dict(), version=INITIAL_VERSION))
+    applet = await crud.save(AppletSchema(**applet_base_data.model_dump(), version=INITIAL_VERSION))
     return applet
 
 
@@ -159,7 +159,7 @@ async def test_set_report_configuration(
     applet_report_configuration_data: AppletReportConfigurationBase,
 ):
     crud = AppletHistoriesCRUD(session)
-    schema = AppletReportConfiguration(**applet_report_configuration_data.dict())
+    schema = AppletReportConfiguration(**applet_report_configuration_data.model_dump())
     await crud.set_report_configuration(applet_history.id, applet_history.version, schema)
     updated = await crud.retrieve_by_applet_version(applet_history.id_version)
     for attr, val in schema:

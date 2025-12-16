@@ -60,7 +60,7 @@ async def user_workspaces(
     return ResponseMulti[PublicWorkspace](
         count=len(workspaces),
         result=[
-            PublicWorkspace(owner_id=workspace.user_id, **workspace.dict(exclude={"user_id"}))
+            PublicWorkspace(owner_id=workspace.user_id, **workspace.model_dump(exclude={"user_id"}))
             for workspace in workspaces
         ],
     )
@@ -76,7 +76,7 @@ async def workspace_retrieve(
     await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
     workspace = await WorkspaceService(session, owner_id).get_workspace(user.id)
 
-    return Response(result=PublicWorkspaceInfo.from_orm(workspace))
+    return Response(result=PublicWorkspaceInfo.model_validate(workspace))
 
 
 async def managers_priority_role_retrieve(
@@ -105,8 +105,12 @@ async def workspace_roles_retrieve(
     applet_roles = await UserAccessService(session, user.id).get_workspace_applet_roles(
         owner_id, applet_ids, user.is_super_admin
     )
-
-    return Response(result=applet_roles)
+    # instantiate Response with type hint to avoid cryptic errors when serializing:
+    #     fastapi.exceptions.ResponseValidationError:
+    #         <exception str() failed>
+    #     AttributeError:
+    #         'BaseModel' object has no attribute '__private_attributes__'. Did you mean: '__static_attributes__'?
+    return Response[dict[uuid.UUID, list[Role]]](result=applet_roles)
 
 
 async def workspace_folder_applets(
@@ -124,7 +128,7 @@ async def workspace_folder_applets(
     applets = await service.get_workspace_folder_applets(owner_id, folder_id, language)
 
     return ResponseMulti(
-        result=[WorkspaceAppletPublic.from_orm(applet) for applet in applets],
+        result=[WorkspaceAppletPublic.model_validate(applet) for applet in applets],
         count=len(applets),
     )
 
@@ -146,7 +150,7 @@ async def workspace_applets(
     count = await service.get_workspace_applets_count(owner_id, query_params)
 
     return ResponseMulti(
-        result=[WorkspaceAppletPublic.from_orm(applet) for applet in applets],
+        result=[WorkspaceAppletPublic.model_validate(applet) for applet in applets],
         count=count,
     )
 
@@ -169,7 +173,7 @@ async def search_workspace_applets(
     count = await service.search_workspace_applets_count(owner_id, text)
 
     return ResponseMulti(
-        result=[WorkspaceSearchAppletPublic.from_orm(applet) for applet in applets],
+        result=[WorkspaceSearchAppletPublic.model_validate(applet) for applet in applets],
         count=count,
     )
 
@@ -185,7 +189,7 @@ async def workspace_applet_detail(
     await CheckAccessService(session, user.id).check_workspace_applet_detail_access(applet_id)
     applet = await AppletService(session, user.id).get_full_applet(applet_id)
 
-    return Response(result=PublicAppletFull.from_orm(applet))
+    return Response(result=PublicAppletFull.model_validate(applet))
 
 
 async def workspace_applet_respondent_update(
@@ -208,7 +212,7 @@ async def workspace_applet_respondent_update(
         exist = await subject_service.check_secret_id(subject.id, schema.secret_user_id, applet_id)
         if exist:
             raise NonUniqueValue()
-        await subject_service.update(subject.id, **schema.dict(by_alias=False))
+        await subject_service.update(subject.id, **schema.model_dump(by_alias=False))
 
 
 async def workspace_remove_manager_access(
@@ -256,7 +260,7 @@ async def workspace_respondents_list(
     public_respondents: list[PublicWorkspaceRespondent] = []
     for respondent in respondents:
         public_respondent = PublicWorkspaceRespondent(
-            **respondent.dict(),
+            **respondent.model_dump(),
         )
 
         if public_respondent.details:
@@ -296,7 +300,7 @@ async def workspace_applet_respondents_list(
     public_respondents: list[PublicWorkspaceRespondent] = []
     for respondent in respondents:
         public_respondent = PublicWorkspaceRespondent(
-            **respondent.dict(),
+            **respondent.model_dump(),
         )
 
         if public_respondent.details:
@@ -424,7 +428,7 @@ async def workspace_users_applet_access_list(
     count = await service.get_respondent_accesses_by_workspace_count(owner_id, respondent_id)
 
     return ResponseMulti(
-        result=[PublicRespondentAppletAccess.from_orm(access) for access in accesses],
+        result=[PublicRespondentAppletAccess.model_validate(access) for access in accesses],
         count=count,
     )
 

@@ -1,7 +1,8 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, NonNegativeInt, PositiveInt, validator
+from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.constants_ab_trails_mobile import (
     MOBILE_NODES_FIRST,
@@ -121,158 +122,161 @@ class _ScreenConfig(PublicModel):
 
 
 class TextConfig(_ScreenConfig):
-    type: Literal[ResponseType.TEXT] | None
+    type: Literal[ResponseType.TEXT]
     max_response_length: PositiveInt = 300
     correct_answer_required: bool
-    correct_answer: str | None = Field(
-        default=None,
-        max_length=300,
-        description="Required if correct_answer_required is True",
-    )
+    correct_answer: Annotated[
+        str | None,
+        Field(
+            max_length=300,
+            description="Required if correct_answer_required is True",
+        ),
+    ] = None
     numerical_response_required: bool
     response_data_identifier: bool
     response_required: bool
     is_identifier: bool | None = None
 
-    @validator("correct_answer")
-    def validate_correct_answer(cls, value, values):
+    @field_validator("correct_answer")
+    @classmethod
+    def validate_correct_answer(cls, value, info: ValidationInfo):
         # correct_answer must be set if correct_answer_required is True
-        if values.get("correct_answer_required") and not value:
+        if info.data.get("correct_answer_required") and not value:
             raise CorrectAnswerRequiredError()
         return value
 
 
 class ParagraphTextConfig(_ScreenConfig):
-    type: Literal[ResponseType.PARAGRAPHTEXT] | None
+    type: Literal[ResponseType.PARAGRAPHTEXT]
     max_response_length: PositiveInt = 1000
     response_required: bool
 
 
 class _SelectionConfig(_ScreenConfig):
     randomize_options: bool
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
     add_scores: bool
     set_alerts: bool
     add_tooltip: bool
     set_palette: bool
-    add_tokens: bool | None
+    add_tokens: bool | None = None
     additional_response_option: AdditionalResponseOption
-    portrait_layout: bool | None
+    portrait_layout: bool | None = None
 
 
 class SingleSelectionConfig(_SelectionConfig, PublicModel):
-    type: Literal[ResponseType.SINGLESELECT] | None
+    type: Literal[ResponseType.SINGLESELECT]
     auto_advance: bool = False
     response_data_identifier: bool = False
 
 
 class MultiSelectionConfig(_SelectionConfig, PublicModel):
-    type: Literal[ResponseType.MULTISELECT] | None
+    type: Literal[ResponseType.MULTISELECT]
 
 
 class MessageConfig(PublicModel):
-    type: Literal[ResponseType.MESSAGE] | None
+    type: Literal[ResponseType.MESSAGE]
     remove_back_button: bool
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
 
 
 class SliderConfig(_ScreenConfig):
-    type: Literal[ResponseType.SLIDER] | None
+    type: Literal[ResponseType.SLIDER]
     add_scores: bool
     set_alerts: bool
     additional_response_option: AdditionalResponseOption
     show_tick_marks: bool
     show_tick_labels: bool
     continuous_slider: bool
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
 
 
 class NumberSelectionConfig(_ScreenConfig):
-    type: Literal[ResponseType.NUMBERSELECT] | None
+    type: Literal[ResponseType.NUMBERSELECT]
     additional_response_option: AdditionalResponseOption
 
 
 class DefaultConfig(_ScreenConfig):
     additional_response_option: AdditionalResponseOption
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
 
 
 class TimeRangeConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.TIMERANGE] | None
+    type: Literal[ResponseType.TIMERANGE]
 
 
 class TimeConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.TIME] | None
+    type: Literal[ResponseType.TIME]
 
 
 class GeolocationConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.GEOLOCATION] | None
+    type: Literal[ResponseType.GEOLOCATION]
 
 
 class DrawingConfig(_ScreenConfig):
-    type: Literal[ResponseType.DRAWING] | None
+    type: Literal[ResponseType.DRAWING]
     additional_response_option: AdditionalResponseOption
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
     remove_undo_button: bool = False
     navigation_to_top: bool = False
 
 
 class PhotoConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.PHOTO] | None
+    type: Literal[ResponseType.PHOTO]
 
 
 class VideoConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.VIDEO] | None
+    type: Literal[ResponseType.VIDEO]
 
 
 class DateConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.DATE] | None
+    type: Literal[ResponseType.DATE]
 
 
 class SliderRowsConfig(_ScreenConfig):
-    type: Literal[ResponseType.SLIDERROWS] | None
+    type: Literal[ResponseType.SLIDERROWS]
     add_scores: bool
     set_alerts: bool
-    timer: NonNegativeInt | None
+    timer: NonNegativeInt | None = None
 
 
 class SingleSelectionRowsConfig(_ScreenConfig):
-    type: Literal[ResponseType.SINGLESELECTROWS] | None
-    timer: NonNegativeInt | None
+    type: Literal[ResponseType.SINGLESELECTROWS]
+    timer: NonNegativeInt | None = None
     add_scores: bool
     set_alerts: bool
     add_tooltip: bool
-    add_tokens: bool | None
+    add_tokens: bool | None = None
 
 
 class MultiSelectionRowsConfig(SingleSelectionRowsConfig, PublicModel):
-    type: Literal[ResponseType.MULTISELECTROWS] | None  # type: ignore[assignment]
+    type: Literal[ResponseType.MULTISELECTROWS]  # type: ignore[assignment]
 
 
 class AudioConfig(DefaultConfig, PublicModel):
-    type: Literal[ResponseType.AUDIO] | None
+    type: Literal[ResponseType.AUDIO]
 
 
 class AudioPlayerConfig(_ScreenConfig):
-    type: Literal[ResponseType.AUDIOPLAYER] | None
+    type: Literal[ResponseType.AUDIOPLAYER]
     additional_response_option: AdditionalResponseOption
     play_once: bool
 
 
 class PhrasalTemplateConfig(PublicModel):
-    type: Literal[ResponseType.PHRASAL_TEMPLATE] | None
+    type: Literal[ResponseType.PHRASAL_TEMPLATE]
     remove_back_button: bool
 
 
 class RequestHealthRecordDataConfig(_ScreenConfig):
-    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA] | None
+    type: Literal[ResponseType.REQUEST_HEALTH_RECORD_DATA]
     skippable_item: bool = False
 
 
 class UnityConfig(PublicModel):
-    type: Literal[ResponseType.UNITY] | None
-    device_type: str | None
-    file: str | None
+    type: Literal[ResponseType.UNITY]
+    device_type: str | None = None
+    file: str | None = None
 
 
 class InputType(StrEnum):
@@ -286,8 +290,8 @@ class Phase(StrEnum):
 
 
 class StabilityTrackerConfig(PublicModel):
-    type: Literal[ResponseType.STABILITYTRACKER] | None
-    user_input_type: InputType | None
+    type: Literal[ResponseType.STABILITYTRACKER]
+    user_input_type: InputType | None = None
     phase: Phase
     trials_number: int = 0
     duration_minutes: float
@@ -310,13 +314,12 @@ class StabilityTrackerConfig(PublicModel):
     max_rad: float = 0.26167
 
 
-class StimulusConfigId(str):
-    pass
+StimulusConfigId = str
 
 
 class StimulusConfiguration(PublicModel):
     id: StimulusConfigId
-    image: str | None
+    image: str | None = None
     text: str | None = None  # name
     value: int | None = None
     weight: int | None = None
@@ -349,7 +352,7 @@ class FixationScreen(PublicModel):
 
 
 class FlankerConfig(PublicModel):
-    type: Literal[ResponseType.FLANKER] | None
+    type: Literal[ResponseType.FLANKER]
     stimulus_trials: list[StimulusConfiguration]
     blocks: list[BlockConfiguration]
     buttons: list[ButtonConfiguration]
@@ -382,60 +385,62 @@ class ABTrailsDeviceType(StrEnum):
 
 
 class ABTrailsConfig(PublicModel):
-    type: Literal[ResponseType.ABTRAILS] | None
-    device_type: ABTrailsDeviceType | None
+    type: Literal[ResponseType.ABTRAILS]
+    device_type: ABTrailsDeviceType | None = None
     order_name: ABTrailsOrder
     tutorials: ABTrailsTutorial | None = None
     nodes: ABTrailsNodes | None = None
 
     # HACK: Remember that values get into this validator only because
-    #       of class attributes ordering. Using root_validator over it
+    #       of class attributes ordering. Using model_validator over it
     #       might be preferable since it is more transparent.
     #       This approach is used in order to follow the consistency.
-    @validator("tutorials", pre=True)
-    def validate_tutorials(cls, value, values) -> ABTrailsTutorial | None:
-        if values.get("device_type") == ABTrailsDeviceType.TABLET:
-            if values.get("order_name") == ABTrailsOrder.FIRST:
+    @field_validator("tutorials", mode="before")
+    @classmethod
+    def validate_tutorials(cls, value, info: ValidationInfo) -> ABTrailsTutorial | None:
+        if info.data.get("device_type") == ABTrailsDeviceType.TABLET:
+            if info.data.get("order_name") == ABTrailsOrder.FIRST:
                 return TABLET_TUTORIALS_FIRST
-            if values.get("order_name") == ABTrailsOrder.SECOND:
+            if info.data.get("order_name") == ABTrailsOrder.SECOND:
                 return TABLET_TUTORIALS_SECOND
-            if values.get("order_name") == ABTrailsOrder.THIRD:
+            if info.data.get("order_name") == ABTrailsOrder.THIRD:
                 return TABLET_TUTORIALS_THIRD
-            if values.get("order_name") == ABTrailsOrder.FOURTH:
+            if info.data.get("order_name") == ABTrailsOrder.FOURTH:
                 return TABLET_TUTORIALS_FOURTH
 
-        if values.get("device_type") == ABTrailsDeviceType.MOBILE:
-            if values.get("order_name") == ABTrailsOrder.FIRST:
+        if info.data.get("device_type") == ABTrailsDeviceType.MOBILE:
+            if info.data.get("order_name") == ABTrailsOrder.FIRST:
                 return MOBILE_TUTORIALS_FIRST
-            if values.get("order_name") == ABTrailsOrder.SECOND:
+            if info.data.get("order_name") == ABTrailsOrder.SECOND:
                 return MOBILE_TUTORIALS_SECOND
-            if values.get("order_name") == ABTrailsOrder.THIRD:
+            if info.data.get("order_name") == ABTrailsOrder.THIRD:
                 return MOBILE_TUTORIALS_THIRD
-            if values.get("order_name") == ABTrailsOrder.FOURTH:
+            if info.data.get("order_name") == ABTrailsOrder.FOURTH:
                 return MOBILE_TUTORIALS_FOURTH
 
         return value
 
-    @validator("nodes", pre=True)
-    def validate_nodes(cls, value, values) -> ABTrailsNodes | None:
-        if values.get("device_type") == ABTrailsDeviceType.TABLET:
-            if values.get("order_name") == ABTrailsOrder.FIRST:
+    @field_validator("nodes", mode="before")
+    @classmethod
+    def validate_nodes(cls, value, info: ValidationInfo) -> ABTrailsNodes | None:
+        if info.data.get("device_type") == ABTrailsDeviceType.TABLET:
+            if info.data.get("order_name") == ABTrailsOrder.FIRST:
                 return TABLET_NODES_FIRST
-            if values.get("order_name") == ABTrailsOrder.SECOND:
+            if info.data.get("order_name") == ABTrailsOrder.SECOND:
                 return TABLET_NODES_SECOND
-            if values.get("order_name") == ABTrailsOrder.THIRD:
+            if info.data.get("order_name") == ABTrailsOrder.THIRD:
                 return TABLET_NODES_THIRD
-            if values.get("order_name") == ABTrailsOrder.FOURTH:
+            if info.data.get("order_name") == ABTrailsOrder.FOURTH:
                 return TABLET_NODES_FOURTH
 
-        if values.get("device_type") == ABTrailsDeviceType.MOBILE:
-            if values.get("order_name") == ABTrailsOrder.FIRST:
+        if info.data.get("device_type") == ABTrailsDeviceType.MOBILE:
+            if info.data.get("order_name") == ABTrailsOrder.FIRST:
                 return MOBILE_NODES_FIRST
-            if values.get("order_name") == ABTrailsOrder.SECOND:
+            if info.data.get("order_name") == ABTrailsOrder.SECOND:
                 return MOBILE_NODES_SECOND
-            if values.get("order_name") == ABTrailsOrder.THIRD:
+            if info.data.get("order_name") == ABTrailsOrder.THIRD:
                 return MOBILE_NODES_THIRD
-            if values.get("order_name") == ABTrailsOrder.FOURTH:
+            if info.data.get("order_name") == ABTrailsOrder.FOURTH:
                 return MOBILE_NODES_FOURTH
 
         return value
@@ -447,10 +452,6 @@ class PerformanceTaskType(StrEnum):
     TOUCH = "touch"
     ABTRAILS = "ABTrails"
     UNITY = "unity"
-
-    @classmethod
-    def get_values(cls) -> list[str]:
-        return [i.value for i in cls]
 
 
 ResponseTypeConfig = (

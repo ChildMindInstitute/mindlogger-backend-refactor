@@ -8,7 +8,7 @@ class MailSettings(BaseModel):
     port: int = 1025
     starttls: bool = False
     ssl_tls: bool = False
-    from_email: EmailStr = EmailStr("no-reply@mindlogger.org")
+    from_email: EmailStr = "no-reply@mindlogger.org"
     from_name: str = "Curious"
 
 

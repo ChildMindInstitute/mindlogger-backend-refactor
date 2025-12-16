@@ -47,8 +47,8 @@ class DefaultEvent(BaseModel):
         "selected_date": None,
     }
     respondent_id: uuid.UUID | None = None
-    activity_id: uuid.UUID | None
-    flow_id: uuid.UUID | None
+    activity_id: uuid.UUID | None = None
+    flow_id: uuid.UUID | None = None
 
 
 class AvailabilityType(StrEnum):

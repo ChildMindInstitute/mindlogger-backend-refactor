@@ -1,11 +1,11 @@
 import datetime
 import uuid
+from typing import Annotated
 
-from pydantic import EmailStr, Field, root_validator, validator
+from pydantic import EmailStr, Field, field_validator
 
 from apps.shared.bcrypt import get_password_hash
 from apps.shared.domain import InternalModel, PublicModel
-from apps.shared.domain.custom_validations import lowercase_email
 from apps.shared.hashing import hash_sha224
 from apps.users.db.schemas import UserDeviceSchema
 from apps.users.errors import PasswordHasSpacesError
@@ -21,36 +21,50 @@ __all__ = [
     "PasswordRecoveryRequest",
     "PasswordRecoveryInfo",
     "PasswordRecoveryApproveRequest",
+    "TOTPInitiateResponse",
+    "TOTPVerifyRequest",
+    "TOTPVerifyResponse",
 ]
 
 
 class UserCreateRequest(PublicModel):
-    """This model represents user `create request` data model."""
+    """User creation request model."""
 
     email: EmailStr
 
-    first_name: str = Field(
-        description="This field represents the user first name",
-        min_length=1,
-    )
-    last_name: str = Field(
-        description="This field represents the user last name",
-        min_length=1,
-    )
-    password: str = Field(
-        description="This field represents the user password",
-        min_length=1,
-    )
+    first_name: Annotated[
+        str,
+        Field(
+            description="This field represents the user first name",
+            min_length=1,
+        ),
+    ]
+    last_name: Annotated[
+        str,
+        Field(
+            description="This field represents the user last name",
+            min_length=1,
+        ),
+    ]
+    password: Annotated[
+        str,
+        Field(
+            description="This field represents the user password",
+            min_length=1,
+        ),
+    ]
 
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def validate_password(cls, value: str) -> str:
         if " " in value:
             raise PasswordHasSpacesError()
         return value
 
-    @root_validator
-    def email_validation(cls, values):
-        return lowercase_email(values)
+    @field_validator("email")
+    @classmethod
+    def lowercase_email(cls, value: EmailStr) -> EmailStr:
+        return value.lower()
 
 
 class UserCreate(UserCreateRequest):
@@ -67,33 +81,43 @@ class UserCreate(UserCreateRequest):
 
 
 class UserUpdateRequest(InternalModel):
-    """This model represents user `update request` data model."""
+    """User update request model."""
 
     first_name: str
     last_name: str
 
 
 class User(InternalModel):
+    """Internal user model."""
+
     email: str
     first_name: str
     last_name: str
     id: uuid.UUID
     is_super_admin: bool
+    mfa_enabled: bool = False
+    mfa_secret: str | None = None
+    pending_mfa_secret: str | None = None
+    pending_mfa_created_at: datetime.datetime | None = None
+    last_totp_time_step: int | None = None
+    recovery_codes_generated_at: datetime.datetime | None = None
+    mfa_disabled_at: datetime.datetime | None = None  # Audit field - not exposed in PublicUser
     hashed_password: str
-    email_encrypted: str | None
-    last_seen_at: datetime.datetime | None
+    email_encrypted: str | None = None
+    last_seen_at: datetime.datetime | None = None
 
     def get_full_name(self) -> str:
         return f"{self.first_name} {self.last_name}" if self.last_name else self.first_name
 
 
 class PublicUser(PublicModel):
-    """Public user data model."""
+    """Public-facing user model."""
 
-    email: EmailStr | None
+    email: EmailStr | None = None
     first_name: str
     last_name: str
     id: uuid.UUID
+    mfa_enabled: bool = False
 
     @classmethod
     def from_user(cls, user: User) -> "PublicUser":
@@ -102,6 +126,7 @@ class PublicUser(PublicModel):
             first_name=user.first_name,
             last_name=user.last_name,
             id=user.id,
+            mfa_enabled=user.mfa_enabled,
         )
 
     def get_full_name(self) -> str:
@@ -109,16 +134,19 @@ class PublicUser(PublicModel):
 
 
 class ProlificPublicUser(InternalModel):
+    """Simple flag indicating existence."""
+
     exists: bool
 
 
 class ChangePasswordRequest(InternalModel):
-    """This model represents change password data model."""
+    """Change password request."""
 
     password: str
     prev_password: str
 
-    @validator("password", "prev_password")
+    @field_validator("password", "prev_password")
+    @classmethod
     def validate_password(cls, value: str) -> str:
         if " " in value:
             raise PasswordHasSpacesError()
@@ -126,27 +154,24 @@ class ChangePasswordRequest(InternalModel):
 
 
 class UserChangePassword(InternalModel):
-    """This model represents user `update request` data model."""
+    """Internal model for updated password."""
 
     hashed_password: str
 
 
 class PasswordRecoveryRequest(InternalModel):
-    """This model represents password recovery request
-    for password recover.
-    """
+    """Password recovery request."""
 
     email: EmailStr
 
-    @root_validator
-    def email_validation(cls, values):
-        return lowercase_email(values)
+    @field_validator("email")
+    @classmethod
+    def lowercase_email(cls, value: EmailStr) -> EmailStr:
+        return value.lower()
 
 
 class PasswordRecoveryInfo(InternalModel):
-    """This is a password recovery representation
-    for internal needs.
-    """
+    """Internal password recovery info."""
 
     email: str
     user_id: uuid.UUID
@@ -154,9 +179,7 @@ class PasswordRecoveryInfo(InternalModel):
 
 
 class PasswordRecoveryApproveRequest(InternalModel):
-    """This model represents password recovery approve request
-    for password recover.
-    """
+    """Approve password recovery request."""
 
     email: EmailStr
     key: uuid.UUID
@@ -197,3 +220,57 @@ class UserDevice(UserDeviceCreate):
             user_device.os = AppInfoOS(name=schema.os_name, version=schema.os_version)
 
         return user_device
+
+
+class TOTPInitiateResponse(PublicModel):
+    """Response for TOTP setup initiation."""
+
+    provisioning_uri: Annotated[str, Field(description="URI for generating QR code in authenticator app")]
+    message: Annotated[str, Field(description="Setup instructions for the user")]
+
+
+class TOTPVerifyRequest(PublicModel):
+    """TOTP verification request."""
+
+    code: Annotated[
+        str,
+        Field(description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"),
+    ]
+
+
+class TOTPVerifyResponse(PublicModel):
+    """TOTP verification response."""
+
+    message: Annotated[str, Field(description="Success message")]
+    mfa_enabled: Annotated[bool, Field(description="Whether MFA is now enabled for the user")]
+    recovery_codes: Annotated[
+        list[str] | None,
+        Field(
+            description="Recovery codes generated during first-time MFA setup (displayed once only)",
+        ),
+    ] = None
+
+
+class MFADisableInitiateResponse(PublicModel):
+    """Response when initiating MFA disable flow."""
+
+    mfa_required: bool = True
+    mfa_token: Annotated[str, Field(description="JWT token for MFA disable verification")]
+    message: Annotated[str, Field(description="Instructions for completing MFA disable")]
+
+
+class MFADisableVerifyRequest(PublicModel):
+    """Request to verify TOTP code and disable MFA."""
+
+    mfa_token: Annotated[str, Field(description="JWT token from MFA disable initiation")]
+    code: Annotated[
+        str,
+        Field(description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"),
+    ]
+
+
+class MFADisableVerifyResponse(PublicModel):
+    """Response after successfully disabling MFA."""
+
+    mfa_disabled: bool = True
+    message: Annotated[str, Field(description="Success message confirming MFA has been disabled")]

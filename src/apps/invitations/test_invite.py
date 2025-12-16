@@ -2,7 +2,7 @@ import http
 import json
 import re
 import uuid
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import pytest
 from pydantic import EmailStr
@@ -93,7 +93,7 @@ async def applet_one_lucy_roles(
 @pytest.fixture
 def user_create_data() -> UserCreateRequest:
     return UserCreateRequest(
-        email=EmailStr("tom2@mindlogger.com"),
+        email="tom2@mindlogger.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test1234!",
@@ -292,7 +292,7 @@ class TestInvite(BaseTest):
             assert len(mailbox.mails) == 1
             assert message_language(mailbox.mails[0].body) == invite_language
             assert len(mailbox.mails[0].recipients) == 1
-            assert mailbox.mails[0].recipients[0] == payload.email
+            assert mailbox.mails[0].recipients[0].email == payload.email
 
             if invitee_type == "respondent":
                 assert response.json()["result"]["userId"] == str(user.id)
@@ -335,7 +335,7 @@ class TestInvite(BaseTest):
             url = self.invite_respondent_url
         else:
             raise Exception(f"Invalid invitee_type: {invitee_type}")
-        payload.email = EmailStr(f"new{invitation_manager_data.email}")
+        payload.email = f"new{invitation_manager_data.email}"
         payload.language = InvitationLanguage(invite_language)
 
         response = await client.post(
@@ -403,16 +403,15 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.OK
 
-        invitation_respondent_data.email = EmailStr("patric1@gmail.com")
+        invitation_respondent_data.email = "patric1@gmail.com"
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data,
         )
-        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
         result = response.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == NonUniqueValue.message
-        assert result[0]["path"] == ["body", "secretUserId"]
 
     async def test_invitation_accept_and_absorb_roles(
         self,
@@ -508,7 +507,7 @@ class TestInvite(BaseTest):
         mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_respondent_data.email = EmailStr(lucy.email_encrypted)
+        invitation_respondent_data.email = cast(str, lucy.email_encrypted)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one_lucy_respondent.id)),
             invitation_respondent_data,
@@ -529,7 +528,7 @@ class TestInvite(BaseTest):
         mailbox: TestMail,
     ):
         client.login(tom)
-        invitation_editor_data.email = EmailStr(lucy.email_encrypted)
+        invitation_editor_data.email = cast(str, lucy.email_encrypted)
         response = await client.post(
             self.invite_manager_url.format(applet_id=applet_one_lucy_manager.id),
             invitation_editor_data,
@@ -561,19 +560,19 @@ class TestInvite(BaseTest):
     ) -> None:
         client.login(tom)
         new_email = f"new{invitation_manager_data.email}"
-        invitation_manager_data.email = EmailStr(new_email)
+        invitation_manager_data.email = new_email
         # Send an invite
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
-            invitation_manager_data.dict(),
+            invitation_manager_data.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.OK
         assert not response.json()["result"]["userId"]
 
         invitation_key = response.json()["result"]["key"]
-        user_create_data.email = EmailStr(new_email)
+        user_create_data.email = new_email
         # An invited user creates an account
-        resp = await client.post("/users", data=user_create_data.dict())
+        resp = await client.post("/users", data=user_create_data.model_dump())
         assert resp.status_code == http.HTTPStatus.CREATED
         client.login(uuid.UUID(resp.json()["result"]["id"]))
         exp_user_id = resp.json()["result"]["id"]
@@ -597,7 +596,7 @@ class TestInvite(BaseTest):
     ) -> None:
         client.login(tom)
         new_email = f"new{invitation_manager_data.email}"
-        invitation_manager_data.email = EmailStr(new_email)
+        invitation_manager_data.email = new_email
         # Send an invite
         response = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
@@ -608,7 +607,7 @@ class TestInvite(BaseTest):
 
         user_create_data.email = new_email
         # An invited user creates an account
-        resp = await client.post("/users", data=user_create_data.dict())
+        resp = await client.post("/users", data=user_create_data.model_dump())
         assert resp.status_code == http.HTTPStatus.CREATED
         client.login(uuid.UUID(resp.json()["result"]["id"]))
         exp_user_id = resp.json()["result"]["id"]
@@ -646,7 +645,7 @@ class TestInvite(BaseTest):
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
             invitation_respondent_data,
         )
-        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
     async def test_resend_invitation_for_respondent_with_pending_invitation_only_last_key_valid(
         self,
@@ -810,14 +809,14 @@ class TestInvite(BaseTest):
         self, client: TestClient, invitation_manager_data: InvitationManagersRequest, tom: User, applet_one: AppletFull
     ):
         client.login(tom)
-        data = invitation_manager_data.dict()
+        data = invitation_manager_data.model_dump()
         data["role"] = "notvalid"
         resp = await client.post(
             self.invite_manager_url.format(applet_id=str(applet_one.id)),
             data,
         )
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
-        emsg = "value is not a valid enumeration member; permitted: 'manager', 'coordinator', 'editor'"
+        emsg = "Input should be 'manager', 'coordinator' or 'editor'"
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == emsg
@@ -961,11 +960,11 @@ class TestInvite(BaseTest):
         user_id = tom.id
         # Create invitation to Mike
         client.login(tom)
-        invitation_respondent_data.email = EmailStr(user_email)
+        invitation_respondent_data.email = cast(str, user_email)
         subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
         response = await client.post(
             self.invite_respondent_url.format(applet_id=applet_id),
-            invitation_respondent_data.dict(),
+            invitation_respondent_data.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.OK
         subjects_on_applet1 = await subject_crud.count(applet_id=applet_id)
@@ -998,7 +997,7 @@ class TestInvite(BaseTest):
         subjects_on_applet0 = await subject_crud.count(applet_id=applet_id)
         response = await client.post(
             self.invite_manager_url.format(applet_id=applet_id),
-            invitation_manager_data.dict(),
+            invitation_manager_data.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.OK
         subjects_on_applet1 = await subject_crud.count(applet_id=applet_id)
@@ -1075,9 +1074,9 @@ class TestInvite(BaseTest):
         invitation_respondent_data.secret_user_id = applet_one_shell_account.secret_user_id
         response = await client.post(
             self.invite_respondent_url.format(applet_id=str(applet_one.id)),
-            invitation_respondent_data.dict(),
+            invitation_respondent_data.model_dump(),
         )
-        assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.status_code == http.HTTPStatus.BAD_REQUEST
         payload = response.json()
         assert payload
         assert payload["result"][0]["message"] == NonUniqueValue().error

@@ -42,7 +42,7 @@ class ProlificIntegrationService:
             IntegrationsSchema(
                 applet_id=self.applet_id,
                 type=self.type,
-                configuration=ProlificIntegration(api_key=api_key).json(),
+                configuration=ProlificIntegration(api_key=api_key).model_dump_json(),
             )
         )
 

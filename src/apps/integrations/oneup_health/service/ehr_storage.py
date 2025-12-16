@@ -4,9 +4,9 @@ import os
 import uuid
 import zipfile
 from io import BytesIO
+from typing import BinaryIO
 
 from slugify import slugify
-from typing_extensions import BinaryIO
 
 from apps.file.enums import FileScopeEnum
 from apps.integrations.oneup_health.service.domain import EHRData

@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import StrEnum
+from typing import Annotated
 
 from pydantic import Field
 
@@ -11,7 +12,7 @@ class EHRData(InternalModel):
     date: datetime
     healthcare_provider_id: str | None = None
     healthcare_provider_name: str | None = None
-    resources: list[dict] = Field(default_factory=list)
+    resources: Annotated[list[dict], Field(default_factory=list)]
     submit_id: uuid.UUID
     activity_id: uuid.UUID
     target_subject_id: uuid.UUID

@@ -1,8 +1,7 @@
-from pydantic import EmailStr, root_validator
+from pydantic import EmailStr, field_validator
 
 from apps.authentication.domain.token import Token
 from apps.shared.domain import PublicModel
-from apps.shared.domain.custom_validations import lowercase_email
 from apps.users.domain import PublicUser
 
 
@@ -16,6 +15,30 @@ class UserLoginRequest(PublicModel):
     password: str
     device_id: str | None = None
 
-    @root_validator
-    def email_validation(cls, values):
-        return lowercase_email(values)
+    @field_validator("email")
+    @classmethod
+    def lowercase_email(cls, value: EmailStr) -> EmailStr:
+        return value.lower()
+
+
+class MFARequiredResponse(PublicModel):
+    """Response when user has MFA enabled and must verify."""
+
+    mfa_required: bool = True
+    mfa_session_id: str  # Track session ID for MFA
+    mfa_token: str  # JWT for MFA verification
+
+
+class MFATOTPVerifyRequest(PublicModel):
+    """Request model for verifying TOTP during MFA."""
+
+    mfa_token: str  # JWT for MFA verification
+    totp_code: str  # 6-digit TOTP code
+    device_id: str | None = None  # Optional device identifier
+
+    @field_validator("totp_code")
+    @classmethod
+    def validate_totp_code(cls, value: str) -> str:
+        if not value.isdigit() or len(value) != 6:
+            raise ValueError("TOTP code must be a 6-digit number")
+        return value

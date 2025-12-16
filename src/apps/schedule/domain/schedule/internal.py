@@ -1,7 +1,8 @@
 import uuid
 from datetime import date
+from typing import Annotated, Self
 
-from pydantic import Field, NonNegativeInt, root_validator
+from pydantic import Field, NonNegativeInt, model_validator
 
 from apps.schedule.domain.constants import AvailabilityType, EventType, PeriodicityType, TimerType
 from apps.schedule.domain.schedule.base import BaseEvent, BaseNotificationSetting, BaseReminderSetting
@@ -33,26 +34,33 @@ __all__ = [
 class EventCreate(BaseEvent, InternalModel):
     applet_id: uuid.UUID
     periodicity: PeriodicityType
-    start_date: date | None
-    end_date: date | None
-    selected_date: date | None = Field(
-        None,
-        description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
-    )
+    start_date: date | None = None
+    end_date: date | None = None
+    selected_date: Annotated[
+        date | None,
+        Field(
+            None,
+            description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
+        ),
+    ]
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None = None
     activity_flow_id: uuid.UUID | None = None
     event_type: EventType
 
-    @root_validator
-    def validate_periodicity(cls, values):
-        if values.get("periodicity") in [
-            PeriodicityType.ONCE,
-            PeriodicityType.WEEKLY,
-            PeriodicityType.MONTHLY,
-        ] and not values.get("selected_date"):
+    @model_validator(mode="after")
+    def validate_periodicity(self) -> Self:
+        if (
+            self.periodicity
+            in [
+                PeriodicityType.ONCE,
+                PeriodicityType.WEEKLY,
+                PeriodicityType.MONTHLY,
+            ]
+            and not self.selected_date
+        ):
             raise SelectedDateRequiredError()
-        return values
+        return self
 
 
 class EventUpdate(EventCreate):
@@ -83,12 +91,15 @@ class ReminderSetting(ReminderSettingCreate, InternalModel):
 class EventFull(InternalModel, BaseEvent):
     id: uuid.UUID
     periodicity: PeriodicityType
-    start_date: date | None
-    end_date: date | None
-    selected_date: date | None = Field(
-        None,
-        description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
-    )
+    start_date: date | None = None
+    end_date: date | None = None
+    selected_date: Annotated[
+        date | None,
+        Field(
+            None,
+            description="If type is WEEKLY, MONTHLY or ONCE, selectedDate must be set.",
+        ),
+    ]
     user_id: uuid.UUID | None = None
     activity_id: uuid.UUID | None = None
     flow_id: uuid.UUID | None = None

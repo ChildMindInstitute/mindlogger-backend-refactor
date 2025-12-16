@@ -38,8 +38,10 @@ class ActivityHistoryService:
                     response_is_editable=activity.response_is_editable,
                     order=activity.order,
                     is_hidden=activity.is_hidden,
-                    scores_and_reports=activity.scores_and_reports.dict() if activity.scores_and_reports else None,
-                    subscale_setting=activity.subscale_setting.dict() if activity.subscale_setting else None,
+                    scores_and_reports=activity.scores_and_reports.model_dump()
+                    if activity.scores_and_reports
+                    else None,
+                    subscale_setting=activity.subscale_setting.model_dump() if activity.subscale_setting else None,
                     report_included_item_name=activity.report_included_item_name,  # noqa: E501
                     performance_task_type=activity.performance_task_type,
                 )
@@ -54,7 +56,7 @@ class ActivityHistoryService:
         activity_schemas = await ActivityHistoriesCRUD(self.session).retrieve_by_applet_ids(
             [self._applet_id_version, old_applet_id_version]
         )
-        activities = [ActivityHistoryFull.from_orm(schema) for schema in activity_schemas]
+        activities = [ActivityHistoryFull.model_validate(schema) for schema in activity_schemas]
         activities_id_versions = [activity.id_version for activity in activities]
         activity_items = await ActivityItemHistoryService(
             self.session, self._applet_id, self._version
@@ -77,7 +79,7 @@ class ActivityHistoryService:
         activity_map = dict()
         for schema in schemas:
             schema.key = uuid.uuid4()
-            activity: ActivityHistoryFull = ActivityHistoryFull.from_orm(schema)
+            activity: ActivityHistoryFull = ActivityHistoryFull.model_validate(schema)
             activities.append(activity)
             activity_map[activity.id_version] = activity
             activity_ids.append(activity.id)

@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import Depends
 from pydantic import Field
@@ -13,10 +13,10 @@ class BaseQueryParams(InternalModel):
     Class to declare query parameters
     """
 
-    search: str | None
-    page: int = Field(gt=0, default=1)
-    limit: int = Field(gt=0, default=10, le=settings.service.result_limit)
-    ordering: str | None
+    search: str | None = None
+    page: Annotated[int, Field(gt=0)] = 1
+    limit: Annotated[int, Field(gt=0, le=settings.service.result_limit)] = 10
+    ordering: str | None = None
 
 
 class QueryParams(InternalModel):
@@ -24,11 +24,11 @@ class QueryParams(InternalModel):
     Class to group query parameters into single format
     """
 
-    filters: dict[str, Any] = Field(default_factory=dict)
+    filters: Annotated[dict[str, Any], Field(default_factory=dict)]
     search: str | None = None
-    page: int = Field(gt=0, default=1)
-    limit: int = Field(gt=0, default=10, le=settings.service.result_limit)
-    ordering: list[str] = Field(default_factory=list)
+    page: Annotated[int, Field(gt=0)] = 1
+    limit: Annotated[int, Field(gt=0, le=settings.service.result_limit)] = 10
+    ordering: Annotated[list[str], Field(default_factory=list)]
 
 
 def parse_query_params(query_param_class):
@@ -39,7 +39,7 @@ def parse_query_params(query_param_class):
     def _parse(query_params: query_param_class = Depends()):
         params: QueryParams = query_params
         grouped_query_params = QueryParams()
-        for key, val in params.dict().items():
+        for key, val in params.model_dump().items():
             if val is None:
                 continue
             if key == "search":

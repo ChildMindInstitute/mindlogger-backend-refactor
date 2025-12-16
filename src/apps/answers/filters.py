@@ -1,8 +1,9 @@
 import datetime
 import uuid
+from typing import Annotated, Self
 
 from fastapi import Query
-from pydantic import Field, root_validator, validator
+from pydantic import Field, field_validator, model_validator
 
 from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import array_from_string
@@ -10,8 +11,8 @@ from apps.shared.query_params import BaseQueryParams
 
 
 class SummaryActivityFilter(BaseQueryParams):
-    respondent_id: uuid.UUID | None
-    target_subject_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
+    target_subject_id: uuid.UUID | None = None
 
 
 class ReviewAppletItemFilter(BaseQueryParams):
@@ -20,37 +21,36 @@ class ReviewAppletItemFilter(BaseQueryParams):
 
 
 class AppletSubmissionsFilter(BaseQueryParams):
-    respondent_id: uuid.UUID | None
-    from_datetime: datetime.datetime | None
-    to_datetime: datetime.datetime | None
-    identifiers: str | None
-    versions: str | None
+    respondent_id: uuid.UUID | None = None
+    from_datetime: datetime.datetime | None = None
+    to_datetime: datetime.datetime | None = None
+    identifiers: str | None = None
+    versions: str | None = None
     empty_identifiers: bool = True
-    target_subject_id: uuid.UUID | None
+    target_subject_id: uuid.UUID | None = None
 
-    _parse_array = validator("versions", "identifiers", allow_reuse=True)(array_from_string(True))
+    _parse_array = field_validator("versions", "identifiers")(array_from_string(True))
 
 
 class AppletSubmitDateFilter(BaseQueryParams):
-    respondent_id: uuid.UUID | None
-    target_subject_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
+    target_subject_id: uuid.UUID | None = None
     from_date: datetime.date
     to_date: datetime.date
     activity_or_flow_id: uuid.UUID | None = None
 
-    @classmethod
-    @root_validator
-    def check_both_fields_not_none(cls, values):
-        respondent_id = values.get("respondent_id")
-        target_subject_id = values.get("target_subject_id")
+    @model_validator(mode="after")
+    def check_both_fields_not_none(self) -> Self:
+        respondent_id = self.respondent_id
+        target_subject_id = self.target_subject_id
         if respondent_id is None and target_subject_id is None:
             raise ValueError("At least one of fields be provided")
-        return values
+        return self
 
 
 class AnswerExportFilters(BaseQueryParams):
-    respondent_ids: list[uuid.UUID] | None = Field(Query(None))
-    target_subject_ids: list[uuid.UUID] | None = Field(Query(None))
+    respondent_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
+    target_subject_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None
     limit: int = 10000
@@ -58,8 +58,8 @@ class AnswerExportFilters(BaseQueryParams):
 
 
 class AnswerIdentifierVersionFilter(BaseQueryParams):
-    from_datetime: datetime.datetime | None
-    to_datetime: datetime.datetime | None
+    from_datetime: datetime.datetime | None = None
+    to_datetime: datetime.datetime | None = None
 
 
 class AppletMultiinformantAssessmentParams(InternalModel):
@@ -69,9 +69,9 @@ class AppletMultiinformantAssessmentParams(InternalModel):
 
 
 class AnswerEHRExportFilters(BaseQueryParams):
-    respondent_ids: list[uuid.UUID] | None = Field(Query(None))
-    target_subject_ids: list[uuid.UUID] | None = Field(Query(None))
-    activity_ids: list[uuid.UUID] | None = Field(Query(None))
-    flow_ids: list[uuid.UUID] | None = Field(Query(None))
+    respondent_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
+    target_subject_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
+    activity_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
+    flow_ids: Annotated[list[uuid.UUID] | None, Field(Query(None))]
     from_date: datetime.datetime | None = None
     to_date: datetime.datetime | None = None

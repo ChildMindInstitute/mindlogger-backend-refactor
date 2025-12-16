@@ -1,6 +1,7 @@
 import uuid
+from typing import Annotated
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from apps.activities.domain.response_type_config import PerformanceTaskType
 from apps.shared.domain import InternalModel, PublicModel
@@ -22,16 +23,17 @@ class AppletLibraryInfo(PublicModel):
 
 class AppletLibraryCreate(InternalModel):
     applet_id: uuid.UUID
-    keywords: list[str] = Field(default_factory=list)
+    keywords: Annotated[list[str], Field(default_factory=list)]
     name: str
 
-    @validator("keywords", pre=True)
+    @field_validator("keywords", mode="before")
+    @classmethod
     def validate_keywords(cls, keywords: list[str] | None):
         return keywords if keywords is not None else []
 
 
 class AppletLibraryUpdate(InternalModel):
-    keywords: list[str] = Field(default_factory=list)
+    keywords: Annotated[list[str], Field(default_factory=list)]
     name: str
 
 
@@ -88,7 +90,7 @@ class _LibraryItem(BaseModel):
     about: dict[str, str] | None = None
     image: str = ""
     theme_id: uuid.UUID | None = None
-    keywords: list[str] = Field(default_factory=list)
+    keywords: Annotated[list[str], Field(default_factory=list)]
     activities: list[LibraryItemActivity] | None = None
     activity_flows: list[LibraryItemFlow] | None = None
 
@@ -103,8 +105,8 @@ class PublicLibraryItem(PublicModel, _LibraryItem):
 
 class LibraryQueryParams(InternalModel):
     search: str | None = None
-    page: int = Field(gt=0, default=1)
-    limit: int = Field(gt=0, default=10)
+    page: Annotated[int, Field(gt=0)] = 1
+    limit: Annotated[int, Field(gt=0)] = 10
 
 
 class Cart(PublicModel):

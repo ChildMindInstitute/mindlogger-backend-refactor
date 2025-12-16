@@ -103,7 +103,7 @@ class ScheduleService:
         )
 
         schedule_event = ScheduleEvent(
-            **event.dict(exclude={"applet_id", "activity_flow_id"}),
+            **event.model_dump(exclude={"applet_id", "activity_flow_id"}),
             flow_id=event.activity_flow_id,
         )
 
@@ -141,14 +141,14 @@ class ScheduleService:
             notification_public = PublicNotification(
                 notifications=[
                     PublicNotificationSetting(
-                        **notification.dict(),
+                        **notification.model_dump(),
                     )
                     for notification in notifications
                 ]
                 if notifications
                 else None,
                 reminder=PublicReminderSetting(
-                    **reminder.dict(),
+                    **reminder.model_dump(),
                 )
                 if reminder
                 else None,
@@ -159,7 +159,7 @@ class ScheduleService:
         )
 
         return PublicEvent(
-            **event.dict(exclude={"periodicity"}),
+            **event.model_dump(exclude={"periodicity"}),
             periodicity=PublicPeriodicity(
                 type=event.periodicity,
                 start_date=event.start_date,
@@ -181,7 +181,7 @@ class ScheduleService:
         notification = notifications_map.get(event.id)
 
         return PublicEvent(
-            **event.dict(exclude={"periodicity", "user_id", "activity_flow_id"}),
+            **event.model_dump(exclude={"periodicity", "user_id", "activity_flow_id"}),
             periodicity=PublicPeriodicity(
                 type=event.periodicity,
                 start_date=event.start_date,
@@ -212,11 +212,11 @@ class ScheduleService:
         notification_map = await self._get_notifications_and_reminder({event.id for event in event_schemas})
 
         for event_schema in event_schemas:
-            event: Event = Event.from_orm(event_schema)
+            event: Event = Event.model_validate(event_schema)
 
             events.append(
                 PublicEvent(
-                    **event.dict(exclude={"periodicity", "user_id", "activity_flow_id"}),
+                    **event.model_dump(exclude={"periodicity", "user_id", "activity_flow_id"}),
                     periodicity=PublicPeriodicity(
                         type=event.periodicity,
                         start_date=event.start_date,
@@ -239,13 +239,13 @@ class ScheduleService:
 
         full_events: list[EventFull] = []
         for event_schema in event_schemas:
-            event: Event = Event.from_orm(event_schema)
-            base_event = BaseEvent(**event.dict())
+            event: Event = Event.model_validate(event_schema)
+            base_event = BaseEvent(**event.model_dump())
 
             full_events.append(
                 EventFull(
                     id=event.id,
-                    **base_event.dict(),
+                    **base_event.model_dump(),
                     periodicity=event.periodicity,
                     start_date=event.start_date,
                     end_date=event.end_date,
@@ -267,7 +267,7 @@ class ScheduleService:
             applet_id=applet_id,
             events=[
                 ScheduleEvent(
-                    **full_event.dict(),
+                    **full_event.model_dump(),
                     notifications=notifications_map.get(full_event.id),
                     reminder=reminders_map.get(full_event.id),
                 ).to_schedule_event_dto()
@@ -390,7 +390,7 @@ class ScheduleService:
         )
 
         schedule_event = ScheduleEvent(
-            **event.dict(exclude={"applet_id", "activity_flow_id"}),
+            **event.model_dump(exclude={"applet_id", "activity_flow_id"}),
             flow_id=event.activity_flow_id,
         )
 
@@ -436,14 +436,14 @@ class ScheduleService:
             notification_public = PublicNotification(
                 notifications=[
                     PublicNotificationSetting(
-                        **notification.dict(),
+                        **notification.model_dump(),
                     )
                     for notification in notifications
                 ]
                 if notifications
                 else None,
                 reminder=PublicReminderSetting(
-                    **reminder.dict(),
+                    **reminder.model_dump(),
                 )
                 if reminder
                 else None,
@@ -456,7 +456,7 @@ class ScheduleService:
         )
 
         return PublicEvent(
-            **event.dict(exclude={"periodicity", "user_id", "activity_flow_id"}),
+            **event.model_dump(exclude={"periodicity", "user_id", "activity_flow_id"}),
             periodicity=PublicPeriodicity(
                 type=event.periodicity,
                 start_date=event.start_date,
@@ -568,7 +568,7 @@ class ScheduleService:
         default_event.respondent_id = respondent_id
 
         # Create default event
-        await self.create_schedule(applet_id=applet_id, schedule=EventRequest(**default_event.dict()))
+        await self.create_schedule(applet_id=applet_id, schedule=EventRequest(**default_event.model_dump()))
 
     async def _delete_by_activity_or_flow(
         self,
@@ -679,7 +679,7 @@ class ScheduleService:
                     applet_id=applet_id,
                     events=[
                         ScheduleEvent(
-                            **event.dict(),
+                            **event.model_dump(),
                             notifications=notifications_map.get(event.id),
                             reminder=reminders_map.get(event.id),
                         ).to_schedule_event_dto()
@@ -731,7 +731,7 @@ class ScheduleService:
                     applet_id=applet_id,
                     events=[
                         ScheduleEvent(
-                            **event.dict(),
+                            **event.model_dump(),
                             notifications=notifications_map.get(event.id),
                             reminder=reminders_map.get(event.id),
                         ).to_schedule_event_dto()
@@ -798,7 +798,7 @@ class ScheduleService:
             applet_id=applet_id,
             events=[
                 ScheduleEvent(
-                    **event.dict(),
+                    **event.model_dump(),
                     notifications=notifications_map.get(event.id),
                     reminder=reminders_map.get(event.id),
                 ).to_schedule_event_dto()
@@ -847,13 +847,13 @@ class ScheduleService:
                 public_notifications_map[event_id] = PublicNotification(
                     notifications=[
                         PublicNotificationSetting(
-                            **notification.dict(),
+                            **notification.model_dump(),
                         )
                         for notification in notifications
                     ]
                     if notifications
                     else None,
-                    reminder=PublicReminderSetting.from_orm(reminder) if reminder else None,
+                    reminder=PublicReminderSetting.model_validate(reminder) if reminder else None,
                 )
 
         return public_notifications_map

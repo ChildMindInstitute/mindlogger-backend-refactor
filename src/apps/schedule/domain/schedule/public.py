@@ -2,7 +2,7 @@ import datetime
 import uuid
 from datetime import date
 
-from pydantic import NonNegativeInt, validator
+from pydantic import NonNegativeInt, field_validator
 
 from apps.schedule.domain.constants import AvailabilityType, NotificationTriggerType, PeriodicityType
 from apps.schedule.domain.schedule import BaseEvent, BaseNotificationSetting, BasePeriodicity, BaseReminderSetting
@@ -43,9 +43,9 @@ class PublicNotification(PublicModel):
 class PublicEvent(PublicModel, BaseEvent):
     id: uuid.UUID
     periodicity: PublicPeriodicity
-    respondent_id: uuid.UUID | None
-    activity_id: uuid.UUID | None
-    flow_id: uuid.UUID | None
+    respondent_id: uuid.UUID | None = None
+    activity_id: uuid.UUID | None = None
+    flow_id: uuid.UUID | None = None
     notification: PublicNotification | None = None
     version: str | None = None
 
@@ -63,21 +63,23 @@ class FlowEventCount(PublicModel):
 
 
 class PublicEventCount(PublicModel):
-    activity_events: list[ActivityEventCount] | None
-    flow_events: list[FlowEventCount] | None
+    activity_events: list[ActivityEventCount] | None = None
+    flow_events: list[FlowEventCount] | None = None
 
 
 class HourMinute(PublicModel):
     hours: NonNegativeInt
     minutes: NonNegativeInt
 
-    @validator("hours")
+    @field_validator("hours")
+    @classmethod
     def validate_hour(cls, value):
         if value > 23:
             raise HourRangeError()
         return value
 
-    @validator("minutes")
+    @field_validator("minutes")
+    @classmethod
     def validate_minute(cls, value):
         if value > 59:
             raise MinuteRangeError()

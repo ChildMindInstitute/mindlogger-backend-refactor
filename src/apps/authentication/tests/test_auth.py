@@ -61,7 +61,7 @@ class TestAuthentication(BaseTest):
                 }
             )
         )
-        response = await client.post(url=self.refresh_access_token_url, data=refresh_access_token_request.dict())
+        response = await client.post(url=self.refresh_access_token_url, data=refresh_access_token_request.model_dump())
         assert response.status_code == http.HTTPStatus.OK
 
     async def test_login_and_logout_device(self, client: TestClient, user: User):
@@ -96,7 +96,7 @@ class TestAuthentication(BaseTest):
         login_request_user: UserLoginRequest = UserLoginRequest(email=tom_create.email, password=tom_create.password)
         response = await client.post(
             url=self.get_token_url,
-            data=login_request_user.dict(),
+            data=login_request_user.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]

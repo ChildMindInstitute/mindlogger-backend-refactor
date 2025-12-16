@@ -13,18 +13,20 @@ dependencies = [
     "bcrypt~=4.3.0",
     "boto3~=1.40.60",
     "bytecode==0.16.*",
+    "cryptography>=44.0.0",
     "ddtrace~=3.17.1",
-    "fastapi==0.115.*",
-    "fastapi-mail==1.2.9",
+    "fastapi==0.124.*",
+    "fastapi-mail>=1.5.3",
     "firebase-admin==6.9.*",
     "httpx==0.28.*",
     "jinja2==3.1.*",
     "more-itertools==10.7.0",
     "nh3==0.2.*",
-    "pydantic[email]==1.10.18",
+    "pydantic[email]>=2.0",
     "pyjwt==2.10.1",
     "pymongo==4.13.0",
-    "pyOpenSSL==25.1.0",
+    "pyopenssl>=25.1.0",
+    "pyotp~=2.9.0",
     "python-multipart==0.0.20",
     "python-slugify==8.0.4",
     "redis==5.2.*",
@@ -40,6 +42,7 @@ dependencies = [
     "uvicorn[standard]==0.38.*",
     "boto3-stubs==1.40.60",
     "orjson>=3.11.4",
+    "pydantic-extra-types>=2.0",
 ]
 
 [tool.ruff]
@@ -97,7 +100,6 @@ dev = [
     "types-pytz==2025.2.0.*",
     "types-pyyaml==6.0.12.20250516",
     "types-requests==2.32.0.*",
-    "typing-extensions==4.12.2",
 ]
 
 [tool.ruff.lint]

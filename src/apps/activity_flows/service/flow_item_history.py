@@ -35,7 +35,7 @@ class FlowItemHistoryService:
 
     async def get_by_flow_ids(self, flow_ids: list[uuid.UUID]) -> list[FlowItemHistoryFull]:
         schemas = await FlowItemHistoriesCRUD(self.session).get_by_flow_ids([f"{pk}_{self.version}" for pk in flow_ids])
-        return [FlowItemHistoryFull.from_orm(schema) for schema in schemas]
+        return [FlowItemHistoryFull.model_validate(schema) for schema in schemas]
 
     async def get_by_flow_id_versions(self, activity_id_versions: list[str]) -> list[FlowItemHistoryFull]:
         return await FlowItemHistoriesCRUD(self.session).get_by_flow_id_versions(activity_id_versions)

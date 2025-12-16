@@ -11,7 +11,6 @@ from json import JSONDecodeError
 from typing import Callable, List, Mapping, Optional
 
 import aiohttp
-import pydantic
 import sentry_sdk
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -101,6 +100,7 @@ from apps.integrations.oneup_health.service.ehr_storage import EHRStorage
 from apps.integrations.oneup_health.service.task import task_ingest_user_data
 from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
+from apps.shared.domain import parse_obj_as
 from apps.shared.encryption import decrypt_cbc, encrypt_cbc
 from apps.shared.exception import EncryptionError, ValidationError
 from apps.shared.query_params import QueryParams
@@ -176,7 +176,7 @@ class AnswerService:
         # Timestamp-based duplicate detection: when created_at provided, check for exact duplicate
         # Each unique timestamp represents a distinct submission, bypassing occurrence limits
         if applet_answer.created_at is not None:
-            created_at_ms = int(applet_answer.created_at.timestamp() * 1000)
+            created_at_ms = int(applet_answer.created_at.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
             existing_with_timestamp = await AnswersCRUD(self.answer_session).get_by_applet_activity_submit_or_user_id(
                 applet_answer.applet_id,
                 str(applet_answer.activity_id),
@@ -422,7 +422,7 @@ class AnswerService:
                 flow_history_id=flow_history_id,
                 activity_history_id=activity_history_id,
                 respondent_id=self.user_id,
-                client=applet_answer.client.dict(),
+                client=applet_answer.client.model_dump(),
                 is_flow_completed=is_flow_completed_backend,
                 target_subject_id=target_subject.id,
                 source_subject_id=source_subject.id,
@@ -614,9 +614,9 @@ class AnswerService:
             flow_history_ids = set()
             for submission in submissions:
                 flow_id, _ = HistoryAware.split_id_version(submission.flow_history_id)
-                _submission_date = SubmissionDate.from_orm(submission)
+                _submission_date = SubmissionDate.model_validate(submission)
                 if _flow := flow_map.get(flow_id):
-                    _flow.answer_dates.append(_submission_date)  # type: ignore[arg-type]
+                    _flow.answer_dates.append(_submission_date)
                 else:
                     old_flow_submission_dates[flow_id].append(_submission_date)
                     flow_history_ids.add(submission.flow_history_id)
@@ -714,8 +714,8 @@ class AnswerService:
             )
 
         answer_result = ActivityAnswer(
-            **answer.dict(exclude={"migrated_data"}),
-            **answer.answer_item.dict(
+            **answer.model_dump(exclude={"migrated_data"}),
+            **answer.answer_item.model_dump(
                 include={
                     "user_public_key",
                     "answer",
@@ -841,8 +841,8 @@ class AnswerService:
                 is_completed = True
             answer_result.append(
                 ActivityAnswer(
-                    **answer.dict(exclude={"migrated_data"}),
-                    **answer.answer_item.dict(
+                    **answer.model_dump(exclude={"migrated_data"}),
+                    **answer.answer_item.model_dump(
                         include={
                             "user_public_key",
                             "answer",
@@ -1352,7 +1352,9 @@ class AnswerService:
                 repo_local.get_item_history_by_activity_history(list(activity_hist_ids)),
             )
 
-            activity_map = {activity.id_version: ActivityHistoryFull.from_orm(activity) for activity in activities}
+            activity_map = {
+                activity.id_version: ActivityHistoryFull.model_validate(activity) for activity in activities
+            }
             for item in items:
                 activity = activity_map.get(item.activity_id)
                 if activity:
@@ -1436,7 +1438,7 @@ class AnswerService:
             if not answer_item:
                 continue
             answer_item.items = activity_item_map.get(answer.activity_history_id, [])
-            activity_answer = AppletActivityAnswer.from_orm(answer_item)
+            activity_answer = AppletActivityAnswer.model_validate(answer_item)
             if answer_item.items:
                 activity = activity_map[answer_item.items[0].activity_id]
                 activity_answer.subscale_setting = activity.subscale_setting
@@ -1696,7 +1698,7 @@ class AnswerService:
                         activity_item_id=alert.activity_item_id,
                         answer_id=answer_id,
                         type=alert.type,
-                    ).dict(),
+                    ).model_dump(),
                 )
             except Exception as e:
                 sentry_sdk.capture_exception(e)
@@ -1746,7 +1748,7 @@ class AnswerService:
     async def send_alert_mail(users: List[UserSchema]):
         domain = os.environ.get("ADMIN_DOMAIN", "")
         mail_service = MailingService()
-        schemas = pydantic.parse_obj_as(List[User], users)
+        schemas = parse_obj_as(List[User], users)
         email_list = [schema.email_encrypted for schema in schemas]
         return await mail_service.send(
             MessageSchema(
@@ -1871,7 +1873,7 @@ class AnswerService:
         self, assessment_id: uuid.UUID, answer_id: uuid.UUID
     ) -> AssessmentItem | None:
         schema = await AnswerItemsCRUD(self.answer_session).get_answer_assessment(assessment_id, answer_id)
-        return AssessmentItem.from_orm(schema) if schema else None
+        return AssessmentItem.model_validate(schema) if schema else None
 
     async def delete_assessment(self, assessment_id: uuid.UUID):
         return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)
@@ -2308,7 +2310,7 @@ class ReportServerService:
     ):
         applet_full = await AppletHistoryService(self.session, applet_id, version).get_full(non_performance)
         applet_full.encryption = Encryption(**encryption)
-        return applet_full.dict(by_alias=True)
+        return applet_full.model_dump(by_alias=True)
 
     async def _get_user_info(self, subject_id: uuid.UUID):
         subject = await SubjectsCrud(self.session).get_by_id(subject_id)

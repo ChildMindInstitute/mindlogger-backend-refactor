@@ -1,6 +1,5 @@
 import uuid
 
-from pydantic import parse_obj_as
 from sqlalchemy import distinct, false, select, update
 from sqlalchemy.orm import Query, joinedload
 
@@ -8,6 +7,7 @@ from apps.activities.db.schemas import ActivityHistorySchema
 from apps.activities.domain import ActivityHistory, ActivityHistoryFull
 from apps.activities.errors import ActivityHistoryDoeNotExist
 from apps.applets.db.schemas import AppletHistorySchema
+from apps.shared.domain import parse_obj_as
 from infrastructure.database import BaseCRUD
 
 __all__ = ["ActivityHistoriesCRUD"]

@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from typing import Tuple
 
 from asyncpg.exceptions import UniqueViolationError
-from pydantic import parse_obj_as
 from sqlalchemy import (
     Unicode,
     and_,
@@ -30,6 +29,7 @@ from apps.applets.db.schemas import AppletSchema
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
 from apps.schedule.db.schemas import EventSchema
+from apps.shared.domain import parse_obj_as
 from apps.shared.encryption import get_key
 from apps.shared.filtering import FilterField, Filtering
 from apps.shared.ordering import Ordering
@@ -155,7 +155,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
             raise UserAppletAccessesNotFound(id_=id_)
 
         # Get internal model
-        user_applet_access: UserAppletAccess = UserAppletAccess.from_orm(instance)
+        user_applet_access: UserAppletAccess = UserAppletAccess.model_validate(instance)
 
         return user_applet_access
 
@@ -182,7 +182,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         result: Result = await self._execute(query)
         results: list[UserAppletAccessSchema] = result.scalars().all()
 
-        return [UserAppletAccess.from_orm(user_applet_access) for user_applet_access in results]
+        return [UserAppletAccess.model_validate(user_applet_access) for user_applet_access in results]
 
     async def save(self, schema: UserAppletAccessSchema) -> UserAppletAccessSchema:
         """Return UserAppletAccess instance and the created information."""
@@ -897,7 +897,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         result: Result = await self._execute(query)
         results: list[UserAppletAccessSchema] = result.scalars().all()
 
-        return [UserAppletAccess.from_orm(user_applet_access) for user_applet_access in results]
+        return [UserAppletAccess.model_validate(user_applet_access) for user_applet_access in results]
 
     async def get_user_applet_accesses_by_roles(
         self,

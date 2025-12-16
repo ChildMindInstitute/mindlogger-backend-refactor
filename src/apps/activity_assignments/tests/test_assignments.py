@@ -3,7 +3,6 @@ import re
 import uuid
 
 import pytest
-from pydantic import EmailStr
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,7 +32,7 @@ from apps.users import User
 @pytest.fixture
 def invitation_respondent_data(bill_bronson: User) -> InvitationRespondentRequest:
     return InvitationRespondentRequest(
-        email=EmailStr(bill_bronson.email_encrypted),
+        email=bill_bronson.email_encrypted,
         first_name=bill_bronson.first_name,
         last_name=bill_bronson.last_name,
         language=InvitationLanguage.EN,
@@ -49,7 +48,7 @@ async def lucy_applet_one_subject(session: AsyncSession, lucy: User, applet_one_
     query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -58,7 +57,7 @@ async def lucy_applet_two_subject(session: AsyncSession, lucy: User, applet_two_
     query = select(SubjectSchema).where(SubjectSchema.user_id == lucy.id, SubjectSchema.applet_id == applet_id)
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
@@ -66,7 +65,7 @@ async def applet_one_pending_invitation(client, tom: User, invitation_respondent
     client.login(tom)
     response = await client.post(
         "/invitations/{applet_id}/respondent".format(applet_id=str(applet_one.id)),
-        invitation_respondent_data.dict(),
+        invitation_respondent_data.model_dump(),
     )
     assert response.status_code == http.HTTPStatus.OK
     data = response.json()["result"]
@@ -83,14 +82,14 @@ async def applet_one_pending_subject(
     )
     res = await session.execute(query, execution_options={"synchronize_session": False})
     model = res.scalars().one()
-    return Subject.from_orm(model)
+    return Subject.model_validate(model)
 
 
 @pytest.fixture
 async def applet_one_with_flow(
     session: AsyncSession, applet_one: AppletFull, applet_minimal_data: AppletFull, tom: User
 ):
-    data = AppletUpdate(**applet_minimal_data.dict())
+    data = AppletUpdate(**applet_minimal_data.model_dump())
     flow = FlowUpdate(
         name="flow",
         items=[ActivityFlowItemUpdate(id=None, activity_key=data.activities[0].key)],
@@ -178,7 +177,8 @@ class TestActivityAssignments(BaseTest):
 
         assert str(model.id) == assignment["id"]
         assert model.activity_id == applet_one.activities[0].id
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == tom_applet_one_subject.email
         assert message_language(mailbox.mails[0].body) == invite_language
 
     async def test_create_assignment_fail_wrong_activity(
@@ -298,7 +298,8 @@ class TestActivityAssignments(BaseTest):
         assert len(assignments) == 2
 
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == tom_applet_one_subject.email
         assert mailbox.mails[0].subject == "Assignment Notification"
 
         assignment = assignments[0]
@@ -384,7 +385,8 @@ class TestActivityAssignments(BaseTest):
         response = await client.post(url_accept)
         assert response.status_code == http.HTTPStatus.OK
 
-        assert mailbox.mails[0].recipients == [applet_one_pending_invitation["email"]]
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == applet_one_pending_invitation["email"]
         assert mailbox.mails[0].subject == "Assignment Notification"
 
     async def test_create_assignment_fail_wrong_respondent(
@@ -481,8 +483,8 @@ class TestActivityAssignments(BaseTest):
         assert assignment["activityFlowId"] is None
         assert assignment["id"] is not None
         assert len(mailbox.mails) == 1
-
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert len(mailbox.mails[0].recipients)
+        assert mailbox.mails[0].recipients[0].email == tom_applet_one_subject.email
         assert mailbox.mails[0].subject == "Assignment Notification"
 
     async def test_create_assignment_fail_wrong_target(
@@ -546,7 +548,8 @@ class TestActivityAssignments(BaseTest):
         assert assignment["targetSubjectId"] == str(tom_applet_one_subject.id)
         assert assignment["activityFlowId"] is None
         assert len(mailbox.mails) == 1
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert len(mailbox.mails[0].recipients)
+        assert mailbox.mails[0].recipients[0].email == tom_applet_one_subject.email
         assert mailbox.mails[0].subject == "Assignment Notification"
 
         assignments_create = ActivitiesAssignmentsCreate(
@@ -578,9 +581,11 @@ class TestActivityAssignments(BaseTest):
         assert assignment["targetSubjectId"] == str(lucy_applet_one_subject.id)
         assert assignment["activityFlowId"] == str(applet_one_with_flow.activity_flows[0].id)
         assert len(mailbox.mails) == 2
-        assert mailbox.mails[0].recipients == [tom_applet_one_subject.email]
+        assert len(mailbox.mails[0].recipients) == 1
+        assert mailbox.mails[0].recipients[0].email == tom_applet_one_subject.email
         assert mailbox.mails[0].subject == "Assignment Notification"
-        assert mailbox.mails[1].recipients == [tom_applet_one_subject.email]
+        assert len(mailbox.mails[1].recipients) == 1
+        assert mailbox.mails[1].recipients[0].email == tom_applet_one_subject.email
         assert mailbox.mails[1].subject == "Assignment Notification"
 
     async def test_assignment_list_by_applet_success(
@@ -1048,7 +1053,7 @@ class TestActivityAssignments(BaseTest):
 
         unassign_response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one.id),
-            data=assignments_create.dict(),
+            data=assignments_create.model_dump(),
         )
 
         assert unassign_response.status_code == http.HTTPStatus.NO_CONTENT
@@ -1111,7 +1116,7 @@ class TestActivityAssignments(BaseTest):
 
         response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one.id),
-            data=assignment_delete.dict(),
+            data=assignment_delete.model_dump(),
         )
 
         # Expect a 204 No Content because no assignments match the given applet_id
@@ -1281,7 +1286,7 @@ class TestActivityAssignments(BaseTest):
 
         unassign_response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one_with_flow.id),
-            data=assignment_delete.dict(),
+            data=assignment_delete.model_dump(),
         )
 
         assert unassign_response.status_code == http.HTTPStatus.NO_CONTENT, unassign_response.json()
@@ -1345,7 +1350,7 @@ class TestActivityAssignments(BaseTest):
 
         response = await client.delete(
             self.activities_assign_unassign_applet.format(applet_id=applet_one_with_flow.id),
-            data=assignment_delete.dict(),
+            data=assignment_delete.model_dump(),
         )
 
         # Expect a 204 No Content because no assignments match the given flow_id
@@ -1386,7 +1391,7 @@ class TestActivityAssignments(BaseTest):
         # Create the assignment
         response = await client.post(
             self.activities_assign_unassign_applet.format(applet_id=applet_one.id),
-            data=assignments_create.dict(),
+            data=assignments_create.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 
@@ -1432,7 +1437,7 @@ class TestActivityAssignments(BaseTest):
         # Create the assignment
         response = await client.post(
             self.activities_assign_unassign_applet.format(applet_id=applet_one.id),
-            data=assignments_create.dict(),
+            data=assignments_create.model_dump(),
         )
         assert response.status_code == http.HTTPStatus.CREATED, response.json()
 

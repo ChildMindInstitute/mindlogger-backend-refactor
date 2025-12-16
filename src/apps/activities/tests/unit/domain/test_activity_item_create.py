@@ -37,7 +37,7 @@ def test_create_activity_item_conditional_logic_can_not_be_hidden(
     base_item_data.is_hidden = True
     with pytest.raises(errors.HiddenWhenConditionalLogicSetError):
         ActivityItemCreate(
-            **base_item_data.dict(),
+            **base_item_data.model_dump(),
             config=single_select_config,
             conditional_logic=conditional_logic_equal,
             response_values=single_select_response_values,
@@ -46,16 +46,16 @@ def test_create_activity_item_conditional_logic_can_not_be_hidden(
 
 
 def test_create_activity_item_slider_alerts_provided_but_set_alerts_not_set(slider_item_create, slider_value_alert):
-    data = slider_item_create.dict()
-    data["response_values"]["alerts"] = [slider_value_alert.dict()]
+    data = slider_item_create.model_dump()
+    data["response_values"]["alerts"] = [slider_value_alert.model_dump()]
     data["config"]["set_alerts"] = False
     with pytest.raises(errors.AlertFlagMissingSliderItemError):
         ActivityItemCreate(**data)
 
 
 def test_create_activity_item_slider_alerts_not_valid_alert_value(slider_item_create, slider_value_alert):
-    data = slider_item_create.dict()
-    alert_data = slider_value_alert.dict()
+    data = slider_item_create.model_dump()
+    alert_data = slider_value_alert.model_dump()
     alert_data["value"] = None
     data["response_values"]["alerts"] = [alert_data]
     data["config"]["set_alerts"] = True
@@ -67,8 +67,8 @@ def test_create_activity_item_slider_alerts_not_valid_alert_value(slider_item_cr
 def test_create_activity_item_slider_alerts_not_valid_alert_min_max_values(
     slider_item_create, slider_value_alert, min_value, max_value
 ):
-    data = slider_item_create.dict()
-    alert_data = slider_value_alert.dict()
+    data = slider_item_create.model_dump()
+    alert_data = slider_value_alert.model_dump()
     alert_data["min_value"] = min_value
     alert_data["max_value"] = max_value
     data["response_values"]["alerts"] = [alert_data]
@@ -79,8 +79,8 @@ def test_create_activity_item_slider_alerts_not_valid_alert_min_max_values(
 
 
 def test_create_activity_item_slider_alerts_min_value_greater_then_max_value(slider_item_create, slider_value_alert):
-    data = slider_item_create.dict()
-    alert_data = slider_value_alert.dict()
+    data = slider_item_create.model_dump()
+    alert_data = slider_value_alert.model_dump()
     alert_data["min_value"] = 10
     alert_data["max_value"] = 0
     data["response_values"]["alerts"] = [alert_data]
@@ -93,7 +93,7 @@ def test_create_activity_item_slider_alerts_min_value_greater_then_max_value(sli
 def test_create_activity_item_slider_min_value_greater_then_max_value(
     slider_item_create,
 ):
-    data = slider_item_create.dict()
+    data = slider_item_create.model_dump()
     data["response_values"]["min_value"] = 10
     data["response_values"]["max_value"] = 0
     with pytest.raises(errors.MinValueError):
@@ -102,8 +102,8 @@ def test_create_activity_item_slider_min_value_greater_then_max_value(
 
 def test_create_activity_item_slider_rows_with_alerts_value_is_none(slider_rows_item_create, slider_value_alert):
     slider_value_alert.value = None
-    alert_data = slider_value_alert.dict()
-    data = slider_rows_item_create.dict()
+    alert_data = slider_value_alert.model_dump()
+    data = slider_rows_item_create.model_dump()
     data["response_values"]["rows"][0]["alerts"] = [alert_data]
     with pytest.raises(errors.SliderRowsValueError):
         ActivityItemCreate(**data)
@@ -112,9 +112,9 @@ def test_create_activity_item_slider_rows_with_alerts_value_is_none(slider_rows_
 def test_create_activity_item_slider_rows_with_alerts_value_is_not_none_but_alerts_not_set(  # noqa: E501
     slider_rows_item_create, slider_value_alert
 ):
-    alert_data = slider_value_alert.dict()
+    alert_data = slider_value_alert.model_dump()
     slider_rows_item_create.config.set_alerts = False
-    data = slider_rows_item_create.dict()
+    data = slider_rows_item_create.model_dump()
     data["response_values"]["rows"][0]["alerts"] = [alert_data]
     with pytest.raises(errors.AlertFlagMissingSliderItemError):
         ActivityItemCreate(**data)
@@ -126,7 +126,7 @@ def test_create_activity_item_single_multi_select_alert_is_not_none_but_set_aler
     fixture_name,
 ) -> None:
     fixture = request.getfixturevalue(fixture_name)
-    data = fixture.dict()
+    data = fixture.model_dump()
     data["config"]["set_alerts"] = False
     data["response_values"]["options"][0]["alert"] = "alert"
     with pytest.raises(errors.AlertFlagMissingSingleMultiRowItemError):
@@ -142,7 +142,7 @@ def test_create_activity_item_single_multi_select_row_alert_is_not_none_but_set_
     fixture_name,
 ) -> None:
     fixture = request.getfixturevalue(fixture_name)
-    data = fixture.dict()
+    data = fixture.model_dump()
     data["config"]["set_alerts"] = False
     data["response_values"]["data_matrix"][0]["options"][0]["alert"] = "alert"
     with pytest.raises(errors.AlertFlagMissingSingleMultiRowItemError):
@@ -152,7 +152,7 @@ def test_create_activity_item_single_multi_select_row_alert_is_not_none_but_set_
 def test_single_select_row_response_values_not_valid_data_matrix_len_does_not_equal_len_rows(  # noqa: E501
     single_select_row_response_values: SingleSelectionRowsValues,
 ):
-    data = single_select_row_response_values.dict()
+    data = single_select_row_response_values.model_dump()
     data["data_matrix"] = []
     with pytest.raises(errors.InvalidDataMatrixError):
         SingleSelectionRowsValues(**data)
@@ -161,7 +161,7 @@ def test_single_select_row_response_values_not_valid_data_matrix_len_does_not_eq
 def test_single_select_row_response_values_not_valid_data_matrix_len_options_does_not_equal_len_per_row(  # noqa: E501
     single_select_row_response_values: SingleSelectionRowsValues,
 ):
-    data = single_select_row_response_values.dict()
+    data = single_select_row_response_values.model_dump()
     data["data_matrix"][0]["options"] = []
     with pytest.raises(errors.InvalidDataMatrixByOptionError):
         SingleSelectionRowsValues(**data)
@@ -170,7 +170,7 @@ def test_single_select_row_response_values_not_valid_data_matrix_len_options_doe
 def test_number_selection_response_values_min_value_greater_than_max_value(
     number_selection_response_values,
 ):
-    data = number_selection_response_values.dict()
+    data = number_selection_response_values.model_dump()
     data["min_value"], data["max_value"] = data["max_value"], data["min_value"]
     with pytest.raises(errors.MinValueError):
         NumberSelectionValues(**data)
@@ -179,7 +179,7 @@ def test_number_selection_response_values_min_value_greater_than_max_value(
 def test_number_selection_response_values_min_value_is_equal_max_value(
     number_selection_response_values,
 ):
-    data = number_selection_response_values.dict()
+    data = number_selection_response_values.model_dump()
     data["min_value"], data["max_value"] = 0, 0
     with pytest.raises(errors.MinValueError):
         NumberSelectionValues(**data)
@@ -197,7 +197,7 @@ def test_number_selection_response_values_min_value_is_equal_max_value(
 def test_drawing_response_values_image_name_does_not_start_with_http(
     drawing_response_values: DrawingValues, field_name: str, value: str
 ):
-    data = drawing_response_values.dict()
+    data = drawing_response_values.model_dump()
     data[field_name] = value
     with pytest.raises(InvalidImageError):
         DrawingValues(**data)
@@ -213,7 +213,7 @@ def test_create_item_with_drawing_response_values(
         response_type=ResponseType.DRAWING,
         config=drawing_config,
         response_values=drawing_response_values,
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
     )
     item.response_values = cast(DrawingValues, item.response_values)
     assert item.response_values.drawing_background == remote_image
@@ -238,8 +238,8 @@ def test_create_item_with_drawing_response_values_proportion_from_json(
         response_type=ResponseType.DRAWING,
         config=drawing_config,
         response_values=drawing_response_values,
-        **base_item_data.dict(),
-    ).dict()
+        **base_item_data.model_dump(),
+    ).model_dump()
 
     del data["response_values"]["proportion"]
     if proportion != "N/A":
@@ -251,7 +251,7 @@ def test_create_item_with_drawing_response_values_proportion_from_json(
     if proportion != "N/A":
         assert "proportion" in data["response_values"]
         if isinstance(proportion, dict):
-            assert item.response_values.proportion.dict() == proportion  # type: ignore[union-attr]
+            assert item.response_values.proportion.model_dump() == proportion  # type: ignore[union-attr]
         else:
             assert item.response_values.proportion == proportion
     else:
@@ -267,7 +267,7 @@ def test_create_item_with_drawing_response_values_images_are_none(
         response_type=ResponseType.DRAWING,
         config=drawing_config,
         response_values=DrawingValues(drawing_background=None, drawing_example=None, type=ResponseType.DRAWING),
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
     )
     item.response_values = cast(DrawingValues, item.response_values)
     assert item.response_values.drawing_background is None
@@ -282,7 +282,7 @@ def test_create_item_single_select_row_option_with_image(
         single_select_row_item_create.response_values,
     )
     single_select_row_item_create.response_values.options[0].image = remote_image
-    data = single_select_row_item_create.dict()
+    data = single_select_row_item_create.model_dump()
     item = ActivityItemCreate(**data)
     item.response_values = cast(SingleSelectionRowsValues, item.response_values)
     assert item.response_values.options[0].image == remote_image
@@ -296,7 +296,7 @@ def test_create_item_single_select_row_row_with_image(
         single_select_row_item_create.response_values,
     )
     single_select_row_item_create.response_values.rows[0].row_image = remote_image
-    data = single_select_row_item_create.dict()
+    data = single_select_row_item_create.model_dump()
     item = ActivityItemCreate(**data)
     item.response_values = cast(SingleSelectionRowsValues, item.response_values)
     assert item.response_values.rows[0].row_image == remote_image
@@ -305,7 +305,7 @@ def test_create_item_single_select_row_row_with_image(
 def test_text_item_config_correct_anser_required(
     text_config: TextConfig,
 ):
-    data = text_config.dict()
+    data = text_config.model_dump()
     data["correct_answer"] = None
     data["correct_answer_required"] = True
     with pytest.raises(errors.CorrectAnswerRequiredError):
@@ -316,8 +316,8 @@ def test_activity_item_create_response_values_not_none_for_non_response_response
     text_item_create: ActivityItemCreate,
     single_select_response_values: SingleSelectionValues,
 ):
-    data = text_item_create.dict()
-    data["response_values"] = single_select_response_values.dict()
+    data = text_item_create.model_dump()
+    data["response_values"] = single_select_response_values.model_dump()
     with pytest.raises(errors.IncorrectResponseValueError):
         ActivityItemCreate(**data)
 
@@ -325,7 +325,7 @@ def test_activity_item_create_response_values_not_none_for_non_response_response
 def test_multi_select_response_values_multiple_none_options(  # noqa: E501
     multi_select_response_values: MultiSelectionValues,
 ):
-    data = multi_select_response_values.dict()
+    data = multi_select_response_values.model_dump()
     data["options"].append(
         _MultiSelectionValue(
             id=str(uuid.uuid4()),
@@ -373,7 +373,7 @@ def test_create_item__item_name_with_not_valid_character(base_item_data: BaseIte
 def test_create_item__not_valid_config_missing_add_scores_and_set_alerts(
     single_select_item_create, field_to_delete
 ) -> None:
-    data = single_select_item_create.dict()
+    data = single_select_item_create.model_dump()
     del data["config"][field_to_delete]
     with pytest.raises(errors.IncorrectConfigError) as exc:
         ActivityItemCreate(**data)
@@ -382,7 +382,7 @@ def test_create_item__not_valid_config_missing_add_scores_and_set_alerts(
 
 @pytest.mark.parametrize("response_type", (None, "NotValid"))
 def test_create_item__not_valid_response_type(single_select_item_create, response_type) -> None:
-    data = single_select_item_create.dict()
+    data = single_select_item_create.model_dump()
     data["response_type"] = response_type
     with pytest.raises(errors.IncorrectResponseValueError) as exc:
         ActivityItemCreate(**data)
@@ -391,7 +391,7 @@ def test_create_item__not_valid_response_type(single_select_item_create, respons
 
 @pytest.mark.parametrize("value", (None, {}))
 def test_create_single_select_item__not_valid_response_values(single_select_item_create, value):
-    data = single_select_item_create.dict()
+    data = single_select_item_create.model_dump()
     data["response_values"] = value
     with pytest.raises(errors.IncorrectResponseValueError) as exc:
         ActivityItemCreate(**data)
@@ -399,7 +399,7 @@ def test_create_single_select_item__not_valid_response_values(single_select_item
 
 
 def test_create_item__reponse_type_absent(single_select_item_create) -> None:
-    data = single_select_item_create.dict()
+    data = single_select_item_create.model_dump()
     del data["response_type"]
     with pytest.raises(ValueError):
         ActivityItemCreate(**data)
@@ -408,21 +408,21 @@ def test_create_item__reponse_type_absent(single_select_item_create) -> None:
 @pytest.mark.parametrize("fixture_name", ("single_select_item_create", "multi_select_item_create"))
 def test_create_single_multi_select_item__add_scores_is_true_without_scores(request, fixture_name):
     fixture = request.getfixturevalue(fixture_name)
-    data = fixture.dict()
+    data = fixture.model_dump()
     data["config"]["add_scores"] = True
     with pytest.raises(errors.ScoreRequiredForResponseValueError):
         ActivityItemCreate(**data)
 
 
 def test_create_slider_item__add_scores_is_true_without_scores(slider_item_create):
-    data = slider_item_create.dict()
+    data = slider_item_create.model_dump()
     data["config"]["add_scores"] = True
     with pytest.raises(errors.NullScoreError):
         ActivityItemCreate(**data)
 
 
 def test_create_slider_item__add_scores__scores_not_for_all_values(slider_item_create):
-    data = slider_item_create.dict()
+    data = slider_item_create.model_dump()
     min_val = slider_item_create.response_values.min_value
     max_val = slider_item_create.response_values.max_value
     scores = [i for i in range(max_val - min_val)]
@@ -433,7 +433,7 @@ def test_create_slider_item__add_scores__scores_not_for_all_values(slider_item_c
 
 
 def test_create_slider_rows_item__add_scores_is_true__no_scores(slider_rows_item_create):
-    data = slider_rows_item_create.dict()
+    data = slider_rows_item_create.model_dump()
     data["config"]["add_scores"] = True
     data["response_values"]["rows"][0]["scores"] = None
     with pytest.raises(errors.NullScoreError):
@@ -441,7 +441,7 @@ def test_create_slider_rows_item__add_scores_is_true__no_scores(slider_rows_item
 
 
 def test_create_slider_rows_item__add_scores__scores_not_for_all_values(slider_rows_item_create):
-    data = slider_rows_item_create.dict()
+    data = slider_rows_item_create.model_dump()
     min_val = slider_rows_item_create.response_values.rows[0].min_value
     max_val = slider_rows_item_create.response_values.rows[0].max_value
     scores = [i for i in range(max_val - min_val)]
@@ -462,7 +462,7 @@ def test_create_slider_rows_item__add_scores__scores_not_for_all_values(slider_r
 )
 def test_create_single_multi_select_row_item_no_datamatrix(request, fixture_name, field):
     fixture = request.getfixturevalue(fixture_name)
-    data = fixture.dict()
+    data = fixture.model_dump()
     data["config"][field] = True
     data["response_values"]["data_matrix"] = None
     with pytest.raises(errors.DataMatrixRequiredError):
@@ -476,7 +476,7 @@ def test_create_slider_rows_item_with_scores(slider_rows_item_create: ActivityIt
     max_val = slider_rows_item_create.response_values.rows[0].max_value
     slider_rows_item_create.response_values.rows[0].scores = [i for i in range(max_val - min_val + 1)]
     slider_rows_item_create.config.add_scores = True
-    item = ActivityItemCreate(**slider_rows_item_create.dict())
+    item = ActivityItemCreate(**slider_rows_item_create.model_dump())
     item.config = cast(SliderRowsConfig, item.config)
     item.response_values = cast(SliderRowsValues, item.response_values)
     assert item.config.add_scores
@@ -486,7 +486,7 @@ def test_create_slider_rows_item_with_scores(slider_rows_item_create: ActivityIt
 @pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
 def test_create_single_multi_select_row_item_add_alerts(request, fixture_name):
     fixture = request.getfixturevalue(fixture_name)
-    data = fixture.dict()
+    data = fixture.model_dump()
     data["config"]["set_alerts"] = True
     item = ActivityItemCreate(**data)
     assert item.config.set_alerts
@@ -498,7 +498,7 @@ def test_slider_item_with_alert(
     slider_config.set_alerts = True
     slider_response_values.alerts = [slider_value_alert]
     item = ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=slider_config,
         response_values=slider_response_values,
         response_type=ResponseType.SLIDER,
@@ -520,7 +520,7 @@ def test_slider_item__continuous_slider_with_alert(
     slider_value_alert.max_value = slider_response_values.max_value
     slider_response_values.alerts = [slider_value_alert]
     item = ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=slider_config,
         response_values=slider_response_values,
         response_type=ResponseType.SLIDER,
@@ -539,7 +539,7 @@ def test_slider_rows_item_with_alert(
     slider_rows_config.set_alerts = True
     slider_rows_response_values.rows[0].alerts = [slider_value_alert]
     item = ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=slider_rows_config,
         response_values=slider_rows_response_values,
         response_type=ResponseType.SLIDERROWS,
@@ -554,7 +554,7 @@ def test_slider_rows_item_with_alert(
 @pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
 def test_single_multi_select_item_row_without_datamatrix(request, fixture_name: str):
     fixture = request.getfixturevalue(fixture_name)
-    data = fixture.dict()
+    data = fixture.model_dump()
     data["response_values"].pop("data_matrix", None)
     item = ActivityItemCreate(**data)
     assert item.response_values.data_matrix is None  # type: ignore[union-attr]
@@ -563,7 +563,7 @@ def test_single_multi_select_item_row_without_datamatrix(request, fixture_name: 
 @pytest.mark.parametrize("fixture_name", ("single_select_row_item_create", "multi_select_row_item_create"))
 def test_single_multi_select_item_row__option_value_is_none(request, fixture_name: str):
     fixture = request.getfixturevalue(fixture_name)
-    data = fixture.dict()
+    data = fixture.model_dump()
     data["response_values"]["options"][0]["value"] = None
     item = ActivityItemCreate(**data)
     assert item.response_values.data_matrix[0].options[0].value == 0  # type: ignore
@@ -572,7 +572,7 @@ def test_single_multi_select_item_row__option_value_is_none(request, fixture_nam
 @pytest.mark.parametrize("fixture_name", ("single_select_item_create", "multi_select_item_create"))
 def test_create_single_multi_select_item__add_scores_is_true_with_scores_float_rounded(request, fixture_name):
     fixture = request.getfixturevalue(fixture_name)
-    data = fixture.dict()
+    data = fixture.model_dump()
     data["config"]["add_scores"] = True
     data["response_values"]["options"][0]["score"] = 1.333
     item = ActivityItemCreate(**data)
@@ -580,7 +580,7 @@ def test_create_single_multi_select_item__add_scores_is_true_with_scores_float_r
 
 
 def test_create_slider_item__add_scores_is_true_with_scores_float_rounded(slider_item_create):
-    data = slider_item_create.dict()
+    data = slider_item_create.model_dump()
     data["config"]["add_scores"] = True
     data["response_values"]["scores"] = [
         i + 0.343 for i in range(data["response_values"]["max_value"] - data["response_values"]["min_value"] + 1)
@@ -593,7 +593,7 @@ def test_create_slider_item__add_scores_is_true_with_scores_float_rounded(slider
 
 
 def test_create_message_item__sanitize_question(message_item_create):
-    data = message_item_create.dict()
+    data = message_item_create.model_dump()
     data["question"] = {"en": "One <script>alert('test')</script> Two"}
     item = ActivityItemCreate(**data)
     assert item.question["en"] == "One  Two"
@@ -605,7 +605,7 @@ def test_single_select_logic(base_item_data, request) -> None:
     response_values = request.getfixturevalue("single_select_response_values")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.SINGLESELECT,
         conditional_logic=cnd_logic,
@@ -619,7 +619,7 @@ def test_multi_select_logic(base_item_data, request) -> None:
     response_values = request.getfixturevalue("multi_select_response_values")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.MULTISELECT,
         conditional_logic=cnd_logic,
@@ -633,7 +633,7 @@ def test_slider_logic(base_item_data, request) -> None:
     response_values = request.getfixturevalue("slider_response_values")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.SLIDER,
         conditional_logic=cnd_logic,
@@ -646,7 +646,7 @@ def test_time_logic(base_item_data, request) -> None:
     cnd_logic = request.getfixturevalue("conditional_logic_between")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.TIME,
         conditional_logic=cnd_logic,
@@ -659,7 +659,7 @@ def test_time_range_logic(base_item_data, request) -> None:
     cnd_logic = request.getfixturevalue("conditional_logic_between")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.TIMERANGE,
         conditional_logic=cnd_logic,
@@ -673,7 +673,7 @@ def test_number_select_logic(base_item_data, request) -> None:
     response_values = request.getfixturevalue("number_selection_response_values")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.NUMBERSELECT,
         conditional_logic=cnd_logic,
@@ -686,7 +686,7 @@ def test_date_logic(base_item_data, request) -> None:
     cnd_logic = request.getfixturevalue("conditional_logic_equal")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.DATE,
         conditional_logic=cnd_logic,
@@ -700,7 +700,7 @@ def test_single_select_row_logic(base_item_data, request) -> None:
     response_values = request.getfixturevalue("single_select_row_response_values")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.SINGLESELECTROWS,
         conditional_logic=cnd_logic,
@@ -714,7 +714,7 @@ def test_multi_select_row_logic(base_item_data, request) -> None:
     response_values = request.getfixturevalue("multi_select_row_response_values")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.MULTISELECTROWS,
         conditional_logic=cnd_logic,
@@ -728,7 +728,7 @@ def test_slider_rows_logic(base_item_data, request) -> None:
     response_values = request.getfixturevalue("slider_rows_response_values")
 
     ActivityItemCreate(
-        **base_item_data.dict(),
+        **base_item_data.model_dump(),
         config=config,
         response_type=ResponseType.SLIDERROWS,
         conditional_logic=cnd_logic,

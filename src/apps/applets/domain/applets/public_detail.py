@@ -1,4 +1,5 @@
 import uuid
+from typing import Annotated
 
 from pydantic import Field
 
@@ -14,10 +15,10 @@ class ActivityItem(PublicModel):
     activity_id: uuid.UUID
     question: dict[str, str]
     response_type: str
-    response_values: ResponseValueConfig | None
+    response_values: ResponseValueConfig | None = None
     config: ResponseTypeConfig
     order: int
-    is_hidden: bool | None
+    is_hidden: bool | None = None
     conditional_logic: ConditionalLogic | None = None
     allow_edit: bool | None = None
     name: str
@@ -26,7 +27,7 @@ class ActivityItem(PublicModel):
 class Activity(PublicModel):
     id: uuid.UUID
     name: str
-    description: dict[str, str] = Field(default_factory=dict)
+    description: Annotated[dict[str, str], Field(default_factory=dict)]
     splash_screen: str = ""
     image: str = ""
     show_all_at_once: bool = False
@@ -34,7 +35,7 @@ class Activity(PublicModel):
     is_reviewable: bool = False
     response_is_editable: bool = False
     order: int
-    items: list[ActivityItem] = Field(default_factory=list)
+    items: Annotated[list[ActivityItem], Field(default_factory=list)]
     scores_and_reports: ScoresAndReports | None = None
     subscale_setting: SubscaleSetting | None = None
     performance_task_type: PerformanceTaskType | None = None
@@ -48,7 +49,7 @@ class ActivityFlowItem(PublicModel):
     activity_flow_id: uuid.UUID
     activity_id: uuid.UUID
     order: int
-    activity: Activity | None
+    activity: Activity | None = None
 
 
 class ActivityFlow(PublicModel):
@@ -58,7 +59,7 @@ class ActivityFlow(PublicModel):
     is_single_report: bool = False
     hide_badge: bool = False
     order: int
-    items: list[ActivityFlowItem] = Field(default_factory=list)
+    items: Annotated[list[ActivityFlowItem], Field(default_factory=list)]
     report_included_activity_name: str | None = None
     report_included_item_name: str | None = None
     auto_assign: bool | None = True
@@ -75,17 +76,17 @@ class Applet(PublicModel):
     id: uuid.UUID
     display_name: str
     version: str
-    description: dict[str, str] = Field(default_factory=dict)
-    about: dict[str, str] = Field(default_factory=dict)
+    description: Annotated[dict[str, str], Field(default_factory=dict)]
+    about: Annotated[dict[str, str], Field(default_factory=dict)]
     image: str = ""
     watermark: str = ""
     theme_id: uuid.UUID | None = None
     report_server_ip: str = ""
     report_public_key: str = ""
-    report_recipients: list[str] = Field(default_factory=list)
+    report_recipients: Annotated[list[str], Field(default_factory=list)]
     report_include_user_id: bool = False
     report_include_case_id: bool = False
     report_email_body: str = ""
-    activities: list[Activity] = Field(default_factory=list)
-    activity_flows: list[ActivityFlow] = Field(default_factory=list)
-    encryption: Encryption | None
+    activities: Annotated[list[Activity], Field(default_factory=list)]
+    activity_flows: Annotated[list[ActivityFlow], Field(default_factory=list)]
+    encryption: Encryption | None = None

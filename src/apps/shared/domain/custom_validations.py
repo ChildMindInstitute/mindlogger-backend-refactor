@@ -8,8 +8,9 @@ from urllib.parse import urlparse
 import nh3
 import requests
 from pydantic import BaseModel, HttpUrl
-from pydantic.color import Color
-from pydantic.error_wrappers import ValidationError as PValidationError
+from pydantic import ValidationError as PValidationError
+from pydantic_core.core_schema import ValidationInfo
+from pydantic_extra_types.color import Color
 
 __all__ = [
     "validate_image",
@@ -17,8 +18,6 @@ __all__ = [
     "validate_audio",
     "extract_history_version",
     "validate_uuid",
-    "lowercase",
-    "lowercase_email",
 ]
 
 from apps.shared.exception import ValidationError
@@ -97,11 +96,11 @@ def validate_audio(value: str) -> str:
     raise InvalidAudioError()
 
 
-def extract_history_version(value, values):
+def extract_history_version(value: str | None, info: ValidationInfo) -> str | None:
     """
     Requires id_version in values. Format: <uuid4>_<version_str>
     """
-    if val := values.get("id_version"):
+    if val := info.data.get("id_version"):
         return val[37:]
 
     return value
@@ -126,23 +125,10 @@ def datetime_from_ms(value):
     return value
 
 
-def lowercase_email(values):
-    email = values.get("email")
-    if email:
-        values["email"] = email.lower()
-    return values
-
-
 def translate(val):
     lang = "en"
     if isinstance(val, dict):
         return val.get(lang, None)
-
-
-def lowercase(value: str | None):
-    if value is not None:
-        value = value.lower()
-    return value
 
 
 def array_from_string(comma_separated: bool = False):

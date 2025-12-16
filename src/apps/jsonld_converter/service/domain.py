@@ -41,4 +41,4 @@ class NotEncryptedApplet(AppletCreate):
 @dataclass
 class FinalSubscale:
     calculate_total_score: SubscaleCalculationType
-    total_scores_table_data: list[TotalScoreTable] | None
+    total_scores_table_data: list[TotalScoreTable] | None = None

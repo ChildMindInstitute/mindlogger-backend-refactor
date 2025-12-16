@@ -254,17 +254,17 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
                 meta=invitation.meta,
                 nickname=nickname,
                 secret_user_id=secret_id,
-                **invitation_detail_base.dict(),
+                **invitation_detail_base.model_dump(),
             )
         elif invitation.role == Role.REVIEWER:
             return InvitationDetailReviewer(
                 meta=invitation.meta,
-                **invitation_detail_base.dict(),
+                **invitation_detail_base.model_dump(),
             )
         else:
             return InvitationDetail(
                 meta={},
-                **invitation_detail_base.dict(),
+                **invitation_detail_base.model_dump(),
             )
 
     async def get_pending_invitation(self, email: str, applet_id: uuid.UUID) -> InvitationRespondent:

@@ -127,7 +127,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         schema = result.scalars().one_or_none()
         if not schema:
             return None
-        return SubjectRelation.from_orm(schema)
+        return SubjectRelation.model_validate(schema)
 
     async def exist(self, subject_id: uuid.UUID, applet_id: uuid.UUID) -> bool:
         query: Query = select(SubjectSchema.id)
@@ -162,7 +162,7 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         return bool(res.scalar_one_or_none())
 
     async def upsert(self, schema: SubjectCreate) -> SubjectSchema | None:
-        values = {**schema.dict()}
+        values = {**schema.model_dump()}
         stmt = insert(SubjectSchema).values(values)
         stmt = stmt.on_conflict_do_update(
             index_elements=[SubjectSchema.user_id, SubjectSchema.applet_id],

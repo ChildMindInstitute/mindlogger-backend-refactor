@@ -121,7 +121,7 @@ class InvitationsService:
             "invitor_id": self._user.id,
             "status": InvitationStatus.PENDING,
             "user_id": invited_user_id,
-            "meta": meta.dict(),
+            "meta": meta.model_dump(),
             "tag": schema.tag,
         }
         pending_invitation = await self.invitations_crud.get_pending_invitation(schema.email, applet_id)
@@ -133,7 +133,7 @@ class InvitationsService:
             )
         else:
             invitation_schema = await self.invitations_crud.save(InvitationSchema(**payload))
-        invitation_internal: InvitationRespondent = InvitationRespondent.from_orm(invitation_schema)
+        invitation_internal: InvitationRespondent = InvitationRespondent.model_validate(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
 
@@ -198,7 +198,7 @@ class InvitationsService:
             "last_name": schema.last_name,
             "user_id": invited_user_id,
             "nickname": None,
-            "meta": meta.dict(),
+            "meta": meta.model_dump(),
             "tag": SubjectTag.TEAM,
             "title": schema.title,
         }
@@ -212,7 +212,7 @@ class InvitationsService:
             )
         else:
             invitation_schema = await self.invitations_crud.save(InvitationSchema(**payload))
-        invitation_internal = InvitationReviewer.from_orm(invitation_schema)
+        invitation_internal = InvitationReviewer.model_validate(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
 
@@ -287,7 +287,7 @@ class InvitationsService:
             )
         else:
             invitation_schema = await self.invitations_crud.save(InvitationSchema(**payload))
-        invitation_internal = InvitationManagers.from_orm(invitation_schema)
+        invitation_internal = InvitationManagers.model_validate(invitation_schema)
 
         applet = await AppletsCRUD(self.session).get_by_id(invitation_internal.applet_id)
 

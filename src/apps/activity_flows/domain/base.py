@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 from apps.shared.domain.custom_validations import sanitize_string
 from apps.shared.enums import Language
@@ -16,7 +16,8 @@ class FlowBase(BaseModel):
     is_hidden: bool | None = False
     auto_assign: bool | None = True
 
-    @validator("description")
+    @field_validator("description")
+    @classmethod
     def validate_description(cls, value):
         if isinstance(value, dict):
             for key in value:
@@ -25,7 +26,8 @@ class FlowBase(BaseModel):
             value = sanitize_string(value)
         return value
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_string(cls, value):
         return sanitize_string(value)
 

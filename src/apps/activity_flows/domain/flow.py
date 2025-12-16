@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import Field
 
@@ -23,7 +24,7 @@ class FlowSingleLanguageDetail(FlowBase, InternalModel):
     id: uuid.UUID
     order: int
     description: str  # type: ignore[assignment]
-    activity_ids: list[uuid.UUID] = Field(default_factory=list)
+    activity_ids: Annotated[list[uuid.UUID], Field(default_factory=list)]
     created_at: datetime
 
 
@@ -31,7 +32,7 @@ class FlowSingleLanguageDetailPublic(FlowPublic):
     id: uuid.UUID
     order: int
     description: str  # type: ignore[assignment]
-    activity_ids: list[uuid.UUID] = Field(default_factory=list)
+    activity_ids: Annotated[list[uuid.UUID], Field(default_factory=list)]
     created_at: datetime
 
 
@@ -42,8 +43,8 @@ class FlowBaseInfo(InternalModel):
     hide_badge: bool = False
     order: int
     is_hidden: bool | None = False
-    activity_ids: list[uuid.UUID] = Field(default_factory=list)
-    auto_assign: bool
+    activity_ids: Annotated[list[uuid.UUID], Field(default_factory=list)]
+    auto_assign: bool | None = True
 
 
 class FlowSingleLanguageMobileDetailPublic(FlowBaseInfo, InternalModel):
@@ -51,10 +52,10 @@ class FlowSingleLanguageMobileDetailPublic(FlowBaseInfo, InternalModel):
 
 
 class FlowWithAssignmentDetailsPublic(FlowSingleLanguageMobileDetailPublic):
-    assignments: list[ActivityAssignmentWithSubject] = Field(default_factory=list)
+    assignments: Annotated[list[ActivityAssignmentWithSubject], Field(default_factory=list)]
 
 
 class FlowDuplicate(FlowBase, InternalModel):
     id: uuid.UUID
     order: int
-    activity_ids: list[uuid.UUID] = Field(default_factory=list)
+    activity_ids: Annotated[list[uuid.UUID], Field(default_factory=list)]

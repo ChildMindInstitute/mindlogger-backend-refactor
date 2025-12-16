@@ -48,7 +48,7 @@ async def activity_retrieve(
         schema = await ActivitiesCRUD(session).get_by_id(activity_id)
         await CheckAccessService(session, user.id).check_applet_detail_access(schema.applet_id)
         activity = await ActivityService(session, user.id).get_single_language_by_id(activity_id, language)
-    result = ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity)
+    result = ActivitySingleLanguageWithItemsDetailPublic.model_validate(activity)
     return Response(result=result)
 
 
@@ -62,7 +62,7 @@ async def public_activity_retrieve(
             session, uuid.UUID("00000000-0000-0000-0000-000000000000")
         ).get_public_single_language_by_id(id_, language)
 
-    return Response(result=ActivitySingleLanguageWithItemsDetailPublic.from_orm(activity))
+    return Response(result=ActivitySingleLanguageWithItemsDetailPublic.model_validate(activity))
 
 
 async def applet_activities(
@@ -91,7 +91,7 @@ async def applet_activities(
             subject_future,
             activities_future,
         )
-        applet_detail = AppletSingleLanguageDetailMobilePublic.from_orm(applet)
+        applet_detail = AppletSingleLanguageDetailMobilePublic.model_validate(applet)
         respondent_meta = SubjectsService.to_respondent_meta(subject)
 
         if filters.has_submitted or filters.has_score:
@@ -138,7 +138,7 @@ async def applet_activities_for_subject(
 
         for activity in activities:
             activity_with_assignment = ActivityWithAssignmentDetailsPublic(
-                **activity.dict(exclude={"report_included_activity_name", "report_included_item_name"})
+                **activity.model_dump(exclude={"report_included_activity_name", "report_included_item_name"})
             )
             activity_with_assignment.assignments = [
                 assignment for assignment in assignments if assignment.activity_id == activity.id
@@ -149,7 +149,7 @@ async def applet_activities_for_subject(
 
         for flow in flows:
             flow_with_assignment = FlowWithAssignmentDetailsPublic(
-                **flow.dict(exclude={"created_at", "report_included_activity_name", "report_included_item_name"})
+                **flow.model_dump(exclude={"created_at", "report_included_activity_name", "report_included_item_name"})
             )
             flow_with_assignment.assignments = [
                 assignment for assignment in assignments if assignment.activity_flow_id == flow.id
@@ -211,7 +211,7 @@ async def applet_activities_for_target_subject(
 
         result.append(
             ActivityOrFlowWithAssignmentsPublic(
-                **activity_or_flow.dict(),
+                **activity_or_flow.model_dump(),
                 assignments=activity_or_flow_assignments,
             )
         )
@@ -272,7 +272,7 @@ async def applet_activities_for_respondent_subject(
 
         result.append(
             ActivityOrFlowWithAssignmentsPublic(
-                **activity_or_flow.dict(),
+                **activity_or_flow.model_dump(),
                 assignments=activity_or_flow_assignments,
             )
         )

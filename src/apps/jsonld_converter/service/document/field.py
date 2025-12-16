@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from copy import copy, deepcopy
 from typing import Type
 
-from pydantic.color import Color
+from pydantic_extra_types.color import Color
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.conditions import AnyCondition, ConditionType

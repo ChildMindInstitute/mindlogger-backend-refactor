@@ -1,6 +1,7 @@
 import uuid
+from typing import Annotated
 
-from pydantic import BaseModel, conint
+from pydantic import BaseModel, Field
 
 from apps.activities.domain.constants import InputType
 from apps.shared.domain import InternalModel, PublicModel
@@ -15,7 +16,7 @@ __all__ = [
 
 class _ReusableItemChoiceBase(BaseModel):
     token_name: str
-    token_value: conint(gt=-2147483648, lt=2147483647)  # type: ignore
+    token_value: Annotated[int, Field(gt=-2147483648, lt=2147483647)]
     input_type: InputType
 
 

@@ -2,7 +2,7 @@ from apps.shared.domain import InternalModel, PublicModel
 
 
 class AppletLink(PublicModel):
-    link: str | None
+    link: str | None = None
     require_login: bool = False
 
 
