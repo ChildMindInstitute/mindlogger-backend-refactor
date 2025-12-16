@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class CdnConfig(BaseSettings):
@@ -9,3 +9,5 @@ class CdnConfig(BaseSettings):
     access_key: str | None = None
     domain: str = ""
     ttl_signed_urls: int = 3600
+
+    model_config = SettingsConfigDict(extra="ignore")

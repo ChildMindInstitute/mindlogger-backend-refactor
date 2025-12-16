@@ -1,10 +1,9 @@
 import datetime
 
-from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, field_validator
 
 
-class AccessTokenSettings(BaseSettings):
+class AccessTokenSettings(BaseModel):
     secret_key: str
     # Set in minutes
     expiration: int = 30
@@ -17,7 +16,7 @@ class AccessTokenSettings(BaseSettings):
         return v
 
 
-class RefreshTokenSettings(BaseSettings):
+class RefreshTokenSettings(BaseModel):
     secret_key: str
     # Set in minutes
     expiration: int = 540
@@ -33,12 +32,12 @@ class RefreshTokenSettings(BaseSettings):
         return v
 
 
-class PasswordRecoverSettings(BaseSettings):
+class PasswordRecoverSettings(BaseModel):
     # Set in seconds
     expiration: int = 900
 
 
-class MFATokenSettings(BaseSettings):
+class MFATokenSettings(BaseModel):
     """Settings for temporary MFA verification tokens."""
 
     secret_key: str
@@ -53,7 +52,7 @@ class MFATokenSettings(BaseSettings):
         return v
 
 
-class AuthenticationSettings(BaseSettings):
+class AuthenticationSettings(BaseModel):
     access_token: AccessTokenSettings
     refresh_token: RefreshTokenSettings
     algorithm: str = "HS256"

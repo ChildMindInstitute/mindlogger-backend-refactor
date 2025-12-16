@@ -101,7 +101,7 @@ class SubjectConfig(StrictBaseModel):
         )
         schema["properties"]["roles"] = roles_schema
 
-    model_config = ConfigDict(StrictBaseModel.model_config, json_schema_extra=json_schema_extra)  # type: ignore[misc]
+    model_config = ConfigDict(json_schema_extra=json_schema_extra)
 
 
 class FixedNotificationConfig(StrictBaseModel):
