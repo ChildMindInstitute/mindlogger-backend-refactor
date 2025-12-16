@@ -27,6 +27,10 @@ class MFASettings(BaseModel):
     # Length of random characters in recovery code (formatted as XXXXX-XXXXX)
     recovery_code_length: int = 10
 
+    # Download token expiration time in seconds (default: 5 minutes)
+    # This token is issued after TOTP verification for downloading recovery codes
+    download_token_expiration_seconds: int = 300
+
     @property
     def encryption_key_bytes(self) -> bytes:
         """Get the encryption key as bytes."""

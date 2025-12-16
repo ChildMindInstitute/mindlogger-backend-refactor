@@ -12,6 +12,7 @@ class TokenPurpose(StrEnum):
     ACCESS = "access"
     REFRESH = "refresh"
     MFA = "mfa"
+    DOWNLOAD_RECOVERY_CODES = "download_recovery_codes"
 
 
 class JWTClaim(StrEnum):

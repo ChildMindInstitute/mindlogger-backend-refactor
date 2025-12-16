@@ -18,11 +18,12 @@ from apps.users.api import (
     user_create,
     user_delete,
     user_download_recovery_codes,
-    user_get_recovery_codes,
     user_mfa_totp_disable_initiate,
     user_mfa_totp_disable_verify,
     user_mfa_totp_initiate,
     user_mfa_totp_verify,
+    user_recovery_codes_view_initiate,
+    user_recovery_codes_view_verify,
     user_retrieve,
     user_save_device,
     user_update,
@@ -31,6 +32,7 @@ from apps.users.domain import (
     MFADisableInitiateResponse,
     MFADisableVerifyResponse,
     PublicUser,
+    RecoveryCodesViewInitiateResponse,
     TOTPInitiateResponse,
     TOTPVerifyResponse,
     UserDevice,
@@ -189,9 +191,10 @@ router.post(
     "/me/mfa/totp/disable/verify",
     response_model=Response[MFADisableVerifyResponse],
     name="user_mfa_totp_disable_verify",
-    summary="Verify TOTP and disable MFA",
+    summary="Verify TOTP or recovery code and disable MFA",
     description=(
-        "Verifies TOTP code and disables MFA. "
+        "Verifies TOTP code or recovery code and disables MFA. "
+        "Accepts either a 6-digit TOTP code (preferred) or an 11-character recovery code (XXXXX-XXXXX). "
         "Requires mfa_token from the initiate endpoint. "
         "This permanently disables MFA and invalidates all recovery codes."
     ),
@@ -202,22 +205,42 @@ router.post(
     },
 )(user_mfa_totp_disable_verify)
 
-# Get recovery codes
-router.get(
-    "/me/mfa/recovery-codes",
-    response_model=Response[RecoveryCodesListResponse],
-    name="user_get_recovery_codes",
-    summary="Get recovery codes list",
+# Recovery codes view initiate
+router.post(
+    "/me/mfa/recovery-codes/view/initiate",
+    response_model=Response[RecoveryCodesViewInitiateResponse],
+    name="user_recovery_codes_view_initiate",
+    summary="Initiate recovery codes viewing",
     description=(
-        "Returns all recovery codes with their usage status. "
-        "Each code shows whether it has been used and when. Requires MFA to be enabled."
+        "Initiates the recovery codes viewing process by creating an MFA verification session. "
+        "Returns an mfa_token that must be used with a TOTP code or recovery code to view recovery codes. "
+        "Requires MFA to be enabled and recovery codes to exist."
+    ),
+    responses={
+        status.HTTP_200_OK: {"model": Response[RecoveryCodesViewInitiateResponse]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_recovery_codes_view_initiate)
+
+# Recovery codes view verify
+router.post(
+    "/me/mfa/recovery-codes/view/verify",
+    response_model=Response[RecoveryCodesListResponse],
+    name="user_recovery_codes_view_verify",
+    summary="Verify TOTP/recovery code and view recovery codes",
+    description=(
+        "Verifies TOTP code or recovery code and returns recovery codes with a short-lived download token (5 minutes). "
+        "Requires mfa_token from the initiate endpoint. "
+        "Accepts either a 6-digit TOTP code or an 11-character recovery code (XXXXX-XXXXX). "
+        "Returns all recovery codes with their usage status and a download_token for downloading the codes as a file."
     ),
     responses={
         status.HTTP_200_OK: {"model": Response[RecoveryCodesListResponse]},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
-)(user_get_recovery_codes)
+)(user_recovery_codes_view_verify)
 
 # Download recovery codes
 router.get(
@@ -226,7 +249,9 @@ router.get(
     name="user_download_recovery_codes",
     summary="Download recovery codes as text file",
     description=(
-        "Downloads all recovery codes with their usage status as a plain text file. Requires MFA to be enabled."
+        "Downloads all recovery codes with their usage status as a plain text file. "
+        "Requires a valid download_token (5 min expiry) obtained from the view/verify endpoint. "
+        "The token must match the authenticated user and MFA must be enabled."
     ),
     responses={
         status.HTTP_200_OK: {
