@@ -1,6 +1,6 @@
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Any, Optional
 
-from pydantic import AnyHttpUrl, BaseModel, field_validator
+from pydantic import BaseModel, field_validator
 from pydantic_settings import NoDecode
 
 __all__ = ["CorsSettings"]
@@ -8,7 +8,7 @@ __all__ = ["CorsSettings"]
 
 class CorsSettings(BaseModel):
     # Annotated[*, NoDecode] to avoid parsing environment variable as JSON
-    allow_origins: Annotated[list[AnyHttpUrl | Literal["*"]], NoDecode] = ["*"]
+    allow_origins: Annotated[list[str], NoDecode] = ["*"]
     allow_origin_regex: Optional[str] = None
     allow_methods: Annotated[list[str], NoDecode] = ["*"]
     allow_headers: Annotated[list[str], NoDecode] = ["*"]
@@ -18,5 +18,7 @@ class CorsSettings(BaseModel):
 
     @field_validator("allow_origins", "allow_methods", "allow_headers", "expose_headers", mode="before")
     @classmethod
-    def as_list(cls, value: str):
-        return value.split(",")
+    def as_list(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.split(",")
+        return value
