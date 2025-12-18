@@ -133,18 +133,25 @@ async def verify_mfa_totp(
     if is_locked:
         logger.warning(f"User globally locked out from MFA attempts user_id={user_id}")
         await mfa_service.delete_session(mfa_session_id)
-        raise MFAGlobalLockoutError()
+        raise MFAGlobalLockoutError(
+            global_attempts_remaining=0,
+        )
 
     # Check if max attempts exceeded BEFORE attempting verification
     session_data = await mfa_service.get_session(mfa_session_id)
     if session_data and session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
+        global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
         logger.warning(
             f"MFA max attempts exceeded user_id={user_id} "
             f"failed_attempts={session_data.failed_totp_attempts} max_attempts={settings.redis.mfa_max_attempts}"
         )
         # Delete session to force re-login
         await mfa_service.delete_session(mfa_session_id)
-        raise TooManyTOTPAttemptsError()
+        raise TooManyTOTPAttemptsError(
+            session_attempts_remaining=0,
+            global_attempts_remaining=global_remaining,
+            lockout_reason="session_limit",
+        )
 
     # Get user from DB
     async with atomic(session):
@@ -175,6 +182,10 @@ async def verify_mfa_totp(
             new_attempt_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
             global_attempt_count = await mfa_service.increment_global_failed_attempts(user.id)
 
+            # Calculate remaining attempts using service methods
+            session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
+            global_remaining = await mfa_service.get_remaining_global_attempts(user.id)
+
             logger.warning(
                 f"Invalid TOTP code provided user_id={user.id} email={user.email_encrypted} "
                 f"failed_attempts={new_attempt_count} global_failed_attempts={global_attempt_count}"
@@ -187,7 +198,9 @@ async def verify_mfa_totp(
                     f"email={user.email_encrypted} global_failed_attempts={global_attempt_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
-                raise MFAGlobalLockoutError()
+                raise MFAGlobalLockoutError(
+                    global_attempts_remaining=0,
+                )
 
             # If this was the last allowed attempt for this session, delete session
             if new_attempt_count is not None and new_attempt_count >= settings.redis.mfa_max_attempts:
@@ -196,10 +209,17 @@ async def verify_mfa_totp(
                     f"email={user.email_encrypted} failed_attempts={new_attempt_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
-                raise TooManyTOTPAttemptsError()
+                raise TooManyTOTPAttemptsError(
+                    session_attempts_remaining=0,
+                    global_attempts_remaining=global_remaining,
+                    lockout_reason="session_limit",
+                )
 
-            # Otherwise, raise normal invalid code error
-            raise InvalidTOTPCodeError()
+            # Otherwise, raise normal invalid code error with remaining attempts
+            raise InvalidTOTPCodeError(
+                session_attempts_remaining=session_remaining,
+                global_attempts_remaining=global_remaining,
+            )
 
         # TOTP is valid - Update last used time step for replay protection
         assert time_step_used is not None  # Always set when is_valid is True
@@ -271,18 +291,25 @@ async def verify_mfa_recovery_code(
     is_locked = await mfa_service.is_globally_locked_out(user_id)
     if is_locked:
         logger.warning(f"User globally locked out from MFA attempts user_id={user_id}")
-        raise MFAGlobalLockoutError()
+        raise MFAGlobalLockoutError(
+            global_attempts_remaining=0,
+        )
 
     # Check if max per-session attempts exceeded BEFORE attempting verification
     session_data = await mfa_service.get_session(mfa_session_id)
     if session_data and session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
+        global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
         logger.warning(
             f"MFA max attempts exceeded user_id={user_id} "
             f"failed_attempts={session_data.failed_totp_attempts} max_attempts={settings.redis.mfa_max_attempts}"
         )
         # Delete session to force re-login
         await mfa_service.delete_session(mfa_session_id)
-        raise TooManyTOTPAttemptsError()
+        raise TooManyTOTPAttemptsError(
+            session_attempts_remaining=0,
+            global_attempts_remaining=global_remaining,
+            lockout_reason="session_limit",
+        )
 
     # Get user and verify recovery code
     async with atomic(session):
@@ -295,6 +322,9 @@ async def verify_mfa_recovery_code(
             # No unused codes exist - increment both counters
             session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
             global_count = await mfa_service.increment_global_failed_attempts(user_id)
+
+            # Calculate remaining attempts using service methods
+            global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
 
             logger.warning(
                 f"Recovery code verification failed - no unused codes user_id={user_id} "
@@ -309,7 +339,9 @@ async def verify_mfa_recovery_code(
                     f"email={user.email_encrypted} global_failed_attempts={global_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
-                raise MFAGlobalLockoutError()
+                raise MFAGlobalLockoutError(
+                    global_attempts_remaining=0,
+                )
 
             # Check if per-session lockout threshold reached
             if session_count is not None and session_count >= settings.redis.mfa_max_attempts:
@@ -318,7 +350,11 @@ async def verify_mfa_recovery_code(
                     f"user_id={user_id} email={user.email_encrypted} failed_attempts={session_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
-                raise TooManyTOTPAttemptsError()
+                raise TooManyTOTPAttemptsError(
+                    session_attempts_remaining=0,
+                    global_attempts_remaining=global_remaining,
+                    lockout_reason="session_limit",
+                )
 
             raise
 
@@ -326,6 +362,9 @@ async def verify_mfa_recovery_code(
             # Invalid code - increment both per-session and global counters
             session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
             global_count = await mfa_service.increment_global_failed_attempts(user_id)
+
+            # Calculate remaining attempts using service methods
+            global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
 
             logger.warning(
                 f"Invalid recovery code provided user_id={user_id} email={user.email_encrypted} "
@@ -339,7 +378,9 @@ async def verify_mfa_recovery_code(
                     f"user_id={user_id} email={user.email_encrypted} global_failed_attempts={global_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
-                raise MFAGlobalLockoutError()
+                raise MFAGlobalLockoutError(
+                    global_attempts_remaining=0,
+                )
 
             # Check if per-session lockout threshold reached
             if session_count is not None and session_count >= settings.redis.mfa_max_attempts:
@@ -348,7 +389,11 @@ async def verify_mfa_recovery_code(
                     f"user_id={user_id} email={user.email_encrypted} failed_attempts={session_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
-                raise TooManyTOTPAttemptsError()
+                raise TooManyTOTPAttemptsError(
+                    session_attempts_remaining=0,
+                    global_attempts_remaining=global_remaining,
+                    lockout_reason="session_limit",
+                )
 
             raise
 

@@ -288,6 +288,88 @@ class MFASessionService:
 
         logger.info(f"Global MFA lockout counter cleared user_id={user_id}")
 
+    async def get_remaining_session_attempts(self, mfa_session_id: str) -> int:
+        """
+        Calculate remaining attempts for current MFA session.
+
+        Args:
+            mfa_session_id: The session identifier
+
+        Returns:
+            Number of attempts remaining (0 if session not found or maxed out)
+        """
+        session_data = await self.get_session(mfa_session_id)
+        if not session_data:
+            return 0
+
+        remaining = settings.redis.mfa_max_attempts - session_data.failed_totp_attempts
+        return max(0, remaining)
+
+    async def get_remaining_global_attempts(self, user_id: uuid.UUID) -> int:
+        """
+        Calculate remaining global attempts for user across all sessions.
+
+        Args:
+            user_id: The user's unique identifier
+
+        Returns:
+            Number of attempts remaining (0 if locked out)
+        """
+        redis_key = self._build_global_lockout_key(user_id)
+        count = await self.redis_client.get(redis_key)
+
+        if count is None:
+            return settings.redis.mfa_global_lockout_attempts
+
+        try:
+            attempts_used = int(count)
+            remaining = settings.redis.mfa_global_lockout_attempts - attempts_used
+            return max(0, remaining)
+        except (ValueError, TypeError):
+            return settings.redis.mfa_global_lockout_attempts
+
+    # NOTE: This method is kept for debugging purposes and is not used in production code
+    async def get_attempts_info(self, mfa_session_id: str, user_id: uuid.UUID) -> dict:
+        """
+        Get comprehensive attempt information for MFA verification.
+
+        **This method is for debugging/monitoring purposes only and is not used in production code.**
+
+        Args:
+            mfa_session_id: The session identifier
+            user_id: The user's unique identifier
+
+        Returns:
+            Dictionary containing:
+                - session_attempts_used: Current failed attempts in this session
+                - session_attempts_remaining: Remaining attempts for this session
+                - session_max_attempts: Maximum allowed per session
+                - global_attempts_used: Total failed attempts across all sessions
+                - global_attempts_remaining: Remaining attempts globally
+                - global_max_attempts: Maximum allowed globally
+        """
+        # Get session data
+        session_data = await self.get_session(mfa_session_id)
+        session_attempts_used = session_data.failed_totp_attempts if session_data else 0
+        session_max_attempts = settings.redis.mfa_max_attempts
+        session_attempts_remaining = max(0, session_max_attempts - session_attempts_used)
+
+        # Get global data
+        redis_key = self._build_global_lockout_key(user_id)
+        global_count = await self.redis_client.get(redis_key)
+        global_attempts_used = int(global_count) if global_count else 0
+        global_max_attempts = settings.redis.mfa_global_lockout_attempts
+        global_attempts_remaining = max(0, global_max_attempts - global_attempts_used)
+
+        return {
+            "session_attempts_used": session_attempts_used,
+            "session_attempts_remaining": session_attempts_remaining,
+            "session_max_attempts": session_max_attempts,
+            "global_attempts_used": global_attempts_used,
+            "global_attempts_remaining": global_attempts_remaining,
+            "global_max_attempts": global_max_attempts,
+        }
+
     async def validate_and_get_session(self, mfa_token: str) -> tuple[str, uuid.UUID, str]:
         """
         Validate MFA token and extract session ID, user ID, and purpose.

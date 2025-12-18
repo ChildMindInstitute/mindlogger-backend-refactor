@@ -265,7 +265,9 @@ async def user_mfa_totp_disable_verify(
     is_locked = await mfa_service.is_globally_locked_out(token_user_id)
     if is_locked:
         logger.warning(f"MFA disable blocked - global lockout user_id={token_user_id}")
-        raise MFAGlobalLockoutError()
+        raise MFAGlobalLockoutError(
+            global_attempts_remaining=0,
+        )
 
     # Step 5: Get session data to check per-session attempts
     session_data = await mfa_service.get_session(mfa_session_id)
@@ -276,11 +278,16 @@ async def user_mfa_totp_disable_verify(
     # Step 6: Check per-session max attempts
     max_attempts = settings.redis.mfa_max_attempts
     if session_data.has_exceeded_max_attempts(max_attempts):
+        global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
         logger.warning(
             f"MFA disable blocked - max attempts exceeded user_id={token_user_id} "
             f"attempts={session_data.failed_totp_attempts}"
         )
-        raise TooManyTOTPAttemptsError()
+        raise TooManyTOTPAttemptsError(
+            session_attempts_remaining=0,
+            global_attempts_remaining=global_remaining,
+            lockout_reason="session_limit",
+        )
 
     # Step 7: Fetch user from database
     async with atomic(session):
@@ -327,6 +334,10 @@ async def user_mfa_totp_disable_verify(
                 new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
                 global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
 
+                # Calculate remaining attempts using service methods
+                session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
+                global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
+
                 logger.warning(
                     f"Invalid TOTP/recovery code for MFA disable user_id={token_user_id} "
                     f"session_attempts={new_count} global_attempts={global_count}"
@@ -341,7 +352,10 @@ async def user_mfa_totp_disable_verify(
                     await mfa_service.delete_session(mfa_session_id)
                     logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
 
-                raise InvalidTOTPCodeError()
+                raise InvalidTOTPCodeError(
+                    session_attempts_remaining=session_remaining,
+                    global_attempts_remaining=global_remaining,
+                )
 
         # Step 12: Disable MFA and clear all related fields
         disabled_at = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -466,7 +480,9 @@ async def user_recovery_codes_view_verify(
     is_locked = await mfa_service.is_globally_locked_out(token_user_id)
     if is_locked:
         logger.warning(f"Recovery codes view blocked - global lockout user_id={token_user_id}")
-        raise MFAGlobalLockoutError()
+        raise MFAGlobalLockoutError(
+            global_attempts_remaining=0,
+        )
 
     # Step 5: Get session data to check per-session attempts
     session_data = await mfa_service.get_session(mfa_session_id)
@@ -477,11 +493,16 @@ async def user_recovery_codes_view_verify(
     # Step 6: Check per-session max attempts
     max_attempts = settings.redis.mfa_max_attempts
     if session_data.has_exceeded_max_attempts(max_attempts):
+        global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
         logger.warning(
             f"Recovery codes view blocked - max attempts exceeded user_id={token_user_id} "
             f"attempts={session_data.failed_totp_attempts}"
         )
-        raise TooManyTOTPAttemptsError()
+        raise TooManyTOTPAttemptsError(
+            session_attempts_remaining=0,
+            global_attempts_remaining=global_remaining,
+            lockout_reason="session_limit",
+        )
 
     # Step 7: Fetch user from database
     async with atomic(session):
@@ -531,6 +552,10 @@ async def user_recovery_codes_view_verify(
                 new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
                 global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
 
+                # Calculate remaining attempts using service methods
+                session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
+                global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
+
                 logger.warning(
                     f"Invalid TOTP/recovery code for recovery codes view user_id={token_user_id} "
                     f"session_attempts={new_count} global_attempts={global_count}"
@@ -545,7 +570,10 @@ async def user_recovery_codes_view_verify(
                     await mfa_service.delete_session(mfa_session_id)
                     logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
 
-                raise InvalidTOTPCodeError()
+                raise InvalidTOTPCodeError(
+                    session_attempts_remaining=session_remaining,
+                    global_attempts_remaining=global_remaining,
+                )
 
         # Step 11: Get recovery codes with decrypted values
         codes = await get_recovery_codes(session, db_user.id)
