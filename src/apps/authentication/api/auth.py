@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 import jwt
-from fastapi import Body, Depends, Header
+from fastapi import Body, Depends, Header, Request
 from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
@@ -31,6 +31,7 @@ from apps.authentication.errors import (
     MFATokenMalformedError,
     TooManyTOTPAttemptsError,
 )
+from apps.authentication.services.mfa_helpers import extract_request_metadata
 from apps.authentication.services.mfa_notifications import MFANotificationService
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import verify_recovery_code_service
@@ -279,6 +280,7 @@ async def verify_mfa_totp(
 
 
 async def verify_mfa_recovery_code(
+    request: Request,
     verify_request: RecoveryCodeVerifyRequest = Body(...),
     session=Depends(get_session),
     os_name: Annotated[str | None, Header()] = None,
@@ -335,13 +337,16 @@ async def verify_mfa_recovery_code(
             remaining_codes_list = await RecoveryCodeCRUD(session).get_unused_by_user_id(user_id)
             remaining_count = len(remaining_codes_list)
             
+            # Extract request metadata for security notification
+            request_metadata = extract_request_metadata(request)
+            
             # Send recovery code used notification
             notification_service = MFANotificationService()
             await notification_service.send_recovery_code_used_notification(
                 user=user,
                 used_at=datetime.now(timezone.utc),
                 remaining_codes=remaining_count,
-                request_info=None,  # TODO: Add request metadata
+                request_info=request_metadata,
             )
             
             # Send warning if at or below threshold
