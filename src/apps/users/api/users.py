@@ -8,6 +8,7 @@ from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.deps import get_current_user
 from apps.authentication.domain.recovery_code.public import RecoveryCodesListResponse
 from apps.authentication.errors import MFAGlobalLockoutError, MFASessionNotFoundError, TooManyTOTPAttemptsError
+from apps.authentication.services.mfa_notifications import MFANotificationService
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import (
     format_recovery_codes_text,
@@ -372,6 +373,13 @@ async def user_mfa_totp_disable_verify(
 
     # Step 15: Delete MFA session (cleanup)
     await mfa_service.delete_session(mfa_session_id)
+
+    # Send MFA disabled notification
+    notification_service = MFANotificationService()
+    await notification_service.send_mfa_disabled_notification(
+        user=db_user,
+        disabled_at=datetime.now(timezone.utc),
+    )
 
     logger.info(f"MFA disable completed user_id={token_user_id}")
 

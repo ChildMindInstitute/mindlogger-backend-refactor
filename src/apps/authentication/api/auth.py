@@ -7,6 +7,7 @@ from fastapi import Body, Depends, Header
 from pydantic import ValidationError
 
 from apps.authentication.deps import get_current_token, get_current_user
+from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.recovery_code import RecoveryCodeVerifyRequest
@@ -30,6 +31,7 @@ from apps.authentication.errors import (
     MFATokenMalformedError,
     TooManyTOTPAttemptsError,
 )
+from apps.authentication.services.mfa_notifications import MFANotificationService
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import verify_recovery_code_service
 from apps.authentication.services.security import AuthenticationService
@@ -198,6 +200,16 @@ async def verify_mfa_totp(
                     f"email={user.email_encrypted} global_failed_attempts={global_attempt_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
+                
+                # Send account locked notification
+                notification_service = MFANotificationService()
+                await notification_service.send_account_locked_email(
+                    user=user,
+                    lockout_reason="Too many failed MFA verification attempts",
+                    failed_attempts=global_attempt_count,
+                    lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                )
+                
                 raise MFAGlobalLockoutError(
                     global_attempts_remaining=0,
                 )
@@ -318,6 +330,27 @@ async def verify_mfa_recovery_code(
         # Verify and mark recovery code as used
         try:
             await verify_recovery_code_service(session, user_id, verify_request.code)
+            
+            # Count remaining unused recovery codes
+            remaining_codes_list = await RecoveryCodeCRUD(session).get_unused_by_user_id(user_id)
+            remaining_count = len(remaining_codes_list)
+            
+            # Send recovery code used notification
+            notification_service = MFANotificationService()
+            await notification_service.send_recovery_code_used_notification(
+                user=user,
+                used_at=datetime.now(timezone.utc),
+                remaining_codes=remaining_count,
+                request_info=None,  # TODO: Add request metadata
+            )
+            
+            # Send warning if at or below threshold
+            if remaining_count <= settings.mfa.last_recovery_code_warning_threshold:
+                await notification_service.send_last_recovery_code_warning(
+                    user=user,
+                    remaining_count=remaining_count,
+                )
+            
         except RecoveryCodeNotFoundError:
             # No unused codes exist - increment both counters
             session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
