@@ -1,0 +1,56 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en">
+  <body>
+    {% include 'header.html' %}
+    <table style="padding: 0; font-size: 1.4rem">
+      <tr>
+        <td style="padding-bottom: 16px">
+          Hi {{first_name}},
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;">
+          A recovery code was used to access your account.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          <strong>Login Details:</strong>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • Time: {{used_at.strftime('%B %d, %Y at %I:%M %p UTC')}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • IP Address: {{ip_address}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          • Device: {{user_agent}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          You have <strong>{{remaining_codes}} recovery code{% if remaining_codes != 1 %}s{% endif %} remaining</strong>.
+        </td>
+      </tr>
+      {% if remaining_codes <= 3 %}
+      <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;">
+          You're running low on recovery codes. Consider generating new ones soon.
+        </td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td style="padding-bottom: 16px">
+          If this wasn't you, your account may be compromised. Change your password and review your security settings immediately.
+        </td>
+      </tr>
+      {% include 'blocks/team_info_en.html' %}
+    </table>
+    {% include 'footers/footer_info_en.html' %}
+  </body>
+</html>

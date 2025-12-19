@@ -1,0 +1,59 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en">
+  <body>
+    {% include 'header.html' %}
+    <table style="padding: 0; font-size: 1.4rem">
+      <tr>
+        <td style="padding-bottom: 16px">
+          Hi {{first_name}},
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;">
+          We detected multiple failed verification attempts on your account.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          <strong>Failed Attempts:</strong> {{failed_attempts}} of {{max_attempts}} maximum attempts
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          <strong>Remaining Attempts:</strong> {{remaining_attempts}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;">
+          Warning: Your account will be temporarily locked if you reach {{max_attempts}} failed attempts.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          If this is you, please:
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • Make sure you're using the correct verification code from your authenticator app
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • Check that your device's time is synchronized
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          • Use a recovery code if you can't access your authenticator app
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          If you didn't attempt to log in, someone may be trying to access your account. Consider changing your password.
+        </td>
+      </tr>
+      {% include 'blocks/team_info_en.html' %}
+    </table>
+    {% include 'footers/footer_info_en.html' %}
+  </body>
+</html>
