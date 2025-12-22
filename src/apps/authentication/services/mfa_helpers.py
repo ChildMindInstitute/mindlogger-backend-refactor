@@ -15,12 +15,12 @@ def extract_request_metadata(request: Optional[Request] = None) -> dict:
         "user_agent": "Unknown",
         "timestamp": datetime.now(timezone.utc),
     }
-    
+
     if request:
         if request.client:
             metadata["ip_address"] = request.client.host
         metadata["user_agent"] = request.headers.get("user-agent", "Unknown")
-    
+
     return metadata
 
 
@@ -40,10 +40,10 @@ def get_user_email(user: User) -> str:
     """Get user's email address (encrypted or regular)."""
     email_encrypted = getattr(user, "email_encrypted", None)
     email = getattr(user, "email", None)
-    
+
     user_email = email_encrypted or email
-    
+
     if not user_email:
         raise ValueError(f"No email found for user_id={user.id}")
-    
+
     return user_email

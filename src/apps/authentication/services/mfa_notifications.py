@@ -7,9 +7,9 @@ Handles email notifications for MFA security events:
 """
 
 import asyncio
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
-import uuid
 
 from apps.authentication.services.mfa_helpers import (
     get_user_display_name,
@@ -45,19 +45,19 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             # Calculate lockout expiration time
             lockout_until = None
             if lockout_ttl_seconds:
                 lockout_until = datetime.now(timezone.utc)
                 # Add TTL seconds to get expiration time
-            
+
             # Get localized subject
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_account_locked",
                 language=language,
             )
-            
+
             # Get localized HTML body
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_account_locked",
@@ -71,21 +71,20 @@ class MFANotificationService:
                 support_email=settings.mailing.mail.from_email,
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             # Send asynchronously
             await self._send_email_async(message, "account_locked", user.id)
-            
+
             logger.info(
-                f"Account locked email sent user_id={user.id} "
-                f"failed_attempts={failed_attempts} reason={lockout_reason}"
+                f"Account locked email sent user_id={user.id} failed_attempts={failed_attempts} reason={lockout_reason}"
             )
-        
+
         except Exception as e:
             logger.error(
                 f"Failed to send account locked email user_id={user.id} error={str(e)}",
@@ -106,12 +105,12 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_last_recovery_code",
                 language=language,
             )
-            
+
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_last_recovery_code",
                 language=language,
@@ -120,17 +119,17 @@ class MFANotificationService:
                 used_at=datetime.now(timezone.utc),
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             await self._send_email_async(message, "last_recovery_code", user.id)
-            
+
             logger.info(f"Last recovery code warning sent user_id={user.id} remaining={remaining_count}")
-        
+
         except Exception as e:
             logger.error(f"Failed to send last recovery code warning user_id={user.id} error={str(e)}", exc_info=True)
 
@@ -148,12 +147,12 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_disabled",
                 language=language,
             )
-            
+
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_disabled",
                 language=language,
@@ -161,17 +160,17 @@ class MFANotificationService:
                 disabled_at=disabled_at,
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             await self._send_email_async(message, "mfa_disabled", user.id)
-            
+
             logger.info(f"MFA disabled notification sent user_id={user.id} disabled_at={disabled_at}")
-        
+
         except Exception as e:
             logger.error(f"Failed to send MFA disabled notification user_id={user.id} error={str(e)}", exc_info=True)
 
@@ -190,12 +189,12 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_enabled",
                 language=language,
             )
-            
+
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_enabled",
                 language=language,
@@ -204,17 +203,17 @@ class MFANotificationService:
                 recovery_codes_count=recovery_codes_count,
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             await self._send_email_async(message, "mfa_enabled", user.id)
-            
+
             logger.info(f"MFA enabled notification sent user_id={user.id} enabled_at={enabled_at}")
-        
+
         except Exception as e:
             logger.error(f"Failed to send MFA enabled notification user_id={user.id} error={str(e)}", exc_info=True)
 
@@ -234,19 +233,19 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             # Extract request metadata
             ip_address = "Unknown"
             user_agent = "Unknown"
             if request_info:
                 ip_address = request_info.get("ip_address", "Unknown")
                 user_agent = request_info.get("user_agent", "Unknown")
-            
+
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_recovery_code_used",
                 language=language,
             )
-            
+
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_recovery_code_used",
                 language=language,
@@ -257,20 +256,19 @@ class MFANotificationService:
                 user_agent=user_agent,
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             await self._send_email_async(message, "recovery_code_used", user.id)
-            
+
             logger.info(
-                f"Recovery code used notification sent user_id={user.id} "
-                f"remaining={remaining_codes} ip={ip_address}"
+                f"Recovery code used notification sent user_id={user.id} remaining={remaining_codes} ip={ip_address}"
             )
-        
+
         except Exception as e:
             logger.error(
                 f"Failed to send recovery code used notification user_id={user.id} error={str(e)}", exc_info=True
@@ -291,12 +289,12 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_failed_attempts_warning",
                 language=language,
             )
-            
+
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_failed_attempts_warning",
                 language=language,
@@ -306,20 +304,17 @@ class MFANotificationService:
                 remaining_attempts=max_attempts - failed_attempts,
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             await self._send_email_async(message, "failed_attempts_warning", user.id)
-            
-            logger.info(
-                f"Failed attempts warning sent user_id={user.id} "
-                f"failed={failed_attempts}/{max_attempts}"
-            )
-        
+
+            logger.info(f"Failed attempts warning sent user_id={user.id} failed={failed_attempts}/{max_attempts}")
+
         except Exception as e:
             logger.error(f"Failed to send failed attempts warning user_id={user.id} error={str(e)}", exc_info=True)
 
@@ -338,12 +333,12 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_disable_failed_attempts",
                 language=language,
             )
-            
+
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_disable_failed_attempts",
                 language=language,
@@ -352,17 +347,17 @@ class MFANotificationService:
                 attempted_at=attempted_at,
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             await self._send_email_async(message, "disable_failed_attempts", user.id)
-            
+
             logger.info(f"Disable failed attempts warning sent user_id={user.id} attempts={failed_attempts}")
-        
+
         except Exception as e:
             logger.error(
                 f"Failed to send disable failed attempts warning user_id={user.id} error={str(e)}", exc_info=True
@@ -382,12 +377,12 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_recovery_codes_downloaded",
                 language=language,
             )
-            
+
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_recovery_codes_downloaded",
                 language=language,
@@ -395,17 +390,17 @@ class MFANotificationService:
                 downloaded_at=downloaded_at,
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             await self._send_email_async(message, "codes_downloaded", user.id)
-            
+
             logger.info(f"Recovery codes downloaded notification sent user_id={user.id}")
-        
+
         except Exception as e:
             logger.error(
                 f"Failed to send codes downloaded notification user_id={user.id} error={str(e)}", exc_info=True
@@ -425,12 +420,12 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-            
+
             subject = self.mailing_service.get_localized_text_template(
                 template_name="mfa_recovery_codes_viewed",
                 language=language,
             )
-            
+
             body = self.mailing_service.get_localized_html_template(
                 template_name="mfa_recovery_codes_viewed",
                 language=language,
@@ -438,17 +433,17 @@ class MFANotificationService:
                 viewed_at=viewed_at,
                 current_year=datetime.now().year,
             )
-            
+
             message = MessageSchema(
                 recipients=[email],
                 subject=subject,
                 body=body,
             )
-            
+
             await self._send_email_async(message, "codes_viewed", user.id)
-            
+
             logger.info(f"Recovery codes viewed notification sent user_id={user.id}")
-        
+
         except Exception as e:
             logger.error(f"Failed to send codes viewed notification user_id={user.id} error={str(e)}", exc_info=True)
 
@@ -462,12 +457,10 @@ class MFANotificationService:
         try:
             asyncio.create_task(self.mailing_service.send(message))
             logger.debug(
-                f"MFA notification email queued type={notification_type} "
-                f"user_id={user_id} subject='{message.subject}'"
+                f"MFA notification email queued type={notification_type} user_id={user_id} subject='{message.subject}'"
             )
         except Exception as e:
             logger.error(
-                f"Failed to queue MFA notification email type={notification_type} "
-                f"user_id={user_id} error={str(e)}",
+                f"Failed to queue MFA notification email type={notification_type} user_id={user_id} error={str(e)}",
                 exc_info=True,
             )

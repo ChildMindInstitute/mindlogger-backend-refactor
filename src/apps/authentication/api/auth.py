@@ -6,8 +6,8 @@ import jwt
 from fastapi import Body, Depends, Header, Request
 from pydantic import ValidationError
 
-from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
+from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.recovery_code import RecoveryCodeVerifyRequest
@@ -193,15 +193,14 @@ async def verify_mfa_totp(
                 f"Invalid TOTP code provided user_id={user.id} email={user.email_encrypted} "
                 f"failed_attempts={new_attempt_count} global_failed_attempts={global_attempt_count}"
             )
-            
+
             # Send warning email if global attempts hit threshold
             if global_attempt_count == settings.mfa.failed_attempts_warning_threshold:
-                remaining = settings.redis.mfa_global_lockout_attempts - global_attempt_count
                 notification_service = MFANotificationService()
                 await notification_service.send_failed_attempts_warning(
                     user=user,
                     failed_attempts=global_attempt_count,
-                    remaining_attempts=remaining,
+                    max_attempts=settings.redis.mfa_global_lockout_attempts,
                 )
 
             # Check if global lockout threshold reached
@@ -211,7 +210,7 @@ async def verify_mfa_totp(
                     f"email={user.email_encrypted} global_failed_attempts={global_attempt_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
-                
+
                 # Send account locked notification
                 notification_service = MFANotificationService()
                 await notification_service.send_account_locked_email(
@@ -220,7 +219,7 @@ async def verify_mfa_totp(
                     failed_attempts=global_attempt_count,
                     lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
                 )
-                
+
                 raise MFAGlobalLockoutError(
                     global_attempts_remaining=0,
                 )
@@ -342,14 +341,14 @@ async def verify_mfa_recovery_code(
         # Verify and mark recovery code as used
         try:
             await verify_recovery_code_service(session, user_id, verify_request.code)
-            
+
             # Count remaining unused recovery codes
             remaining_codes_list = await RecoveryCodeCRUD(session).get_unused_by_user_id(user_id)
             remaining_count = len(remaining_codes_list)
-            
+
             # Extract request metadata for security notification
             request_metadata = extract_request_metadata(request)
-            
+
             # Send recovery code used notification
             notification_service = MFANotificationService()
             await notification_service.send_recovery_code_used_notification(
@@ -358,14 +357,14 @@ async def verify_mfa_recovery_code(
                 remaining_codes=remaining_count,
                 request_info=request_metadata,
             )
-            
+
             # Send warning if at or below threshold
             if remaining_count <= settings.mfa.last_recovery_code_warning_threshold:
                 await notification_service.send_last_recovery_code_warning(
                     user=user,
                     remaining_count=remaining_count,
                 )
-            
+
         except RecoveryCodeNotFoundError:
             # No unused codes exist - increment both counters
             session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)

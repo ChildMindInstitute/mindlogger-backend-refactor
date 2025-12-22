@@ -1,1 +1,1 @@
-🔓 Two-Factor Authentication Disabled
+Two-Factor Authentication Disabled

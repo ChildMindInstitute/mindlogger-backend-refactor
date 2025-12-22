@@ -32,19 +32,19 @@ class MFASettings(BaseModel):
     download_token_expiration_seconds: int = 300
 
     # === Email Notification Settings ===
-    
+
     # Enable/disable MFA email notifications (feature flag)
     enable_email_notifications: bool = True
-    
+
     # Warning threshold for failed MFA attempts (before global lockout)
     # Sends warning email after this many failed attempts (default: 5)
     failed_attempts_warning_threshold: int = 5
-    
+
     # Warning threshold for failed MFA disable attempts
     # Sends warning email after this many failed disable attempts (default: 1)
     # Set to 1 to send on every failed attempt (recommended for security)
     disable_failed_attempts_warning_threshold: int = 1
-    
+
     # Last recovery code warning threshold
     # Sends warning when this many or fewer codes remain (default: 1)
     last_recovery_code_warning_threshold: int = 1

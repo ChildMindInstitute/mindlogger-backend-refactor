@@ -1,1 +1,1 @@
-🚨 Failed Attempt to Disable Two-Factor Authentication
+Failed Attempt to Disable Two-Factor Authentication

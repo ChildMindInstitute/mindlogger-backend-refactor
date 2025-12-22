@@ -1,1 +1,1 @@
-✅ Two-Factor Authentication Enabled
+Two-Factor Authentication Enabled
