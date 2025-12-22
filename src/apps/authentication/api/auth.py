@@ -193,6 +193,16 @@ async def verify_mfa_totp(
                 f"Invalid TOTP code provided user_id={user.id} email={user.email_encrypted} "
                 f"failed_attempts={new_attempt_count} global_failed_attempts={global_attempt_count}"
             )
+            
+            # Send warning email if global attempts hit threshold
+            if global_attempt_count == settings.mfa.failed_attempts_warning_threshold:
+                remaining = settings.redis.mfa_global_lockout_attempts - global_attempt_count
+                notification_service = MFANotificationService()
+                await notification_service.send_failed_attempts_warning(
+                    user=user,
+                    failed_attempts=global_attempt_count,
+                    remaining_attempts=remaining,
+                )
 
             # Check if global lockout threshold reached
             if global_attempt_count >= settings.redis.mfa_global_lockout_attempts:

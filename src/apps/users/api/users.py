@@ -192,6 +192,13 @@ async def user_mfa_totp_verify(
                 f"Recovery codes generated during MFA setup user_id={fresh_user.id} "
                 f"download_token_expires_in={settings.mfa.download_token_expiration_seconds}s"
             )
+        
+        # Send MFA enabled notification
+        notification_service = MFANotificationService()
+        await notification_service.send_mfa_enabled_notification(
+            user=fresh_user,
+            enabled_at=datetime.now(timezone.utc),
+        )
 
     result = TOTPVerifyResponse(
         message="TOTP MFA has been successfully enabled for your account.",
@@ -343,6 +350,18 @@ async def user_mfa_totp_disable_verify(
                     f"Invalid TOTP/recovery code for MFA disable user_id={token_user_id} "
                     f"session_attempts={new_count} global_attempts={global_count}"
                 )
+                
+                # Send security alert for failed MFA disable attempt
+                if global_count >= settings.mfa.disable_failed_attempts_warning_threshold:
+                    from apps.authentication.services.mfa_helpers import extract_request_metadata
+                    from fastapi import Request
+                    # Note: Request object not available here, send without metadata
+                    notification_service = MFANotificationService()
+                    await notification_service.send_disable_failed_attempts_warning(
+                        user=db_user,
+                        failed_at=datetime.now(timezone.utc),
+                        request_info=None,
+                    )
 
                 # Check if global lockout threshold reached
                 if global_count >= settings.redis.mfa_global_lockout_attempts:
