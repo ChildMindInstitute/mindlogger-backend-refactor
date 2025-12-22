@@ -154,7 +154,7 @@ async def user_mfa_totp_verify(
 ) -> Response[TOTPVerifyResponse]:
     """Verify TOTP code and enable MFA.
 
-    Returns 10 recovery codes on first-time setup only (displayed once).
+    Returns recovery codes on first-time setup only (displayed once).
     """
     async with atomic(session):
         # Refetch user from database to ensure we have latest MFA state
@@ -199,7 +199,7 @@ async def user_mfa_totp_verify(
         await notification_service.send_mfa_enabled_notification(
             user=fresh_user,
             enabled_at=datetime.now(timezone.utc),
-            recovery_codes_count=10,
+            recovery_codes_count=settings.mfa.recovery_code_count,
         )
 
     result = TOTPVerifyResponse(
@@ -245,10 +245,10 @@ async def user_mfa_totp_disable_initiate(
 
 
 async def user_mfa_totp_disable_verify(
+    request: Request,
     schema: MFADisableVerifyRequest = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-    request: Request = None,
 ) -> Response[MFADisableVerifyResponse]:
     """Verify TOTP code or recovery code and disable MFA.
 
@@ -334,7 +334,7 @@ async def user_mfa_totp_disable_verify(
             # TOTP failed, try recovery code verification
             try:
                 await verify_recovery_code_service(session, token_user_id, schema.code)
-                
+
                 # Send recovery code notifications (used + warning if needed)
                 request_metadata = extract_request_metadata(request)
                 await send_recovery_code_notifications(
@@ -343,7 +343,7 @@ async def user_mfa_totp_disable_verify(
                     used_at=datetime.now(timezone.utc),
                     request_info=request_metadata,
                 )
-                
+
                 logger.info(f"Recovery code verified for MFA disable user_id={token_user_id}")
             except (
                 RecoveryCodeInvalidError,

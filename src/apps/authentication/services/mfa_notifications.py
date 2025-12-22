@@ -34,7 +34,7 @@ class MFANotificationService:
 
     def _format_datetime_for_template(self, dt: datetime) -> str:
         """Format datetime for email templates."""
-        return dt.strftime('%B %d, %Y at %I:%M %p UTC')
+        return dt.strftime("%B %d, %Y at %I:%M %p UTC")
 
     def _prepare_template_params(self, params: dict) -> dict:
         """Convert datetime objects to formatted strings for RabbitMQ serialization."""
@@ -101,7 +101,7 @@ class MFANotificationService:
             lockout_until = datetime.now(timezone.utc)
 
         await self._queue_email(
-            notification_type="mfa_account_locked",
+            notification_type="mfa/mfa_account_locked",
             user=user,
             template_params={
                 "failed_attempts": failed_attempts,
@@ -128,7 +128,7 @@ class MFANotificationService:
             return
 
         await self._queue_email(
-            notification_type="mfa_last_recovery_code",
+            notification_type="mfa/mfa_last_recovery_code",
             user=user,
             template_params={
                 "remaining_count": remaining_count,
@@ -149,7 +149,7 @@ class MFANotificationService:
             return
 
         await self._queue_email(
-            notification_type="mfa_disabled",
+            notification_type="mfa/mfa_disabled",
             user=user,
             template_params={
                 "disabled_at": disabled_at,
@@ -170,7 +170,7 @@ class MFANotificationService:
             return
 
         await self._queue_email(
-            notification_type="mfa_enabled",
+            notification_type="mfa/mfa_enabled",
             user=user,
             template_params={
                 "enabled_at": enabled_at,
@@ -200,7 +200,7 @@ class MFANotificationService:
             user_agent = request_info.get("user_agent", "Unknown")
 
         await self._queue_email(
-            notification_type="mfa_recovery_code_used",
+            notification_type="mfa/mfa_recovery_code_used",
             user=user,
             template_params={
                 "used_at": used_at,
@@ -226,7 +226,7 @@ class MFANotificationService:
             return
 
         await self._queue_email(
-            notification_type="mfa_failed_attempts_warning",
+            notification_type="mfa/mfa_failed_attempts_warning",
             user=user,
             template_params={
                 "failed_attempts": failed_attempts,
@@ -249,7 +249,7 @@ class MFANotificationService:
             return
 
         await self._queue_email(
-            notification_type="mfa_disable_failed_attempts",
+            notification_type="mfa/mfa_disable_failed_attempts",
             user=user,
             template_params={
                 "failed_attempts": failed_attempts,
@@ -270,7 +270,7 @@ class MFANotificationService:
             return
 
         await self._queue_email(
-            notification_type="mfa_recovery_codes_downloaded",
+            notification_type="mfa/mfa_recovery_codes_downloaded",
             user=user,
             template_params={
                 "downloaded_at": downloaded_at,
@@ -290,7 +290,7 @@ class MFANotificationService:
             return
 
         await self._queue_email(
-            notification_type="mfa_recovery_codes_viewed",
+            notification_type="mfa/mfa_recovery_codes_viewed",
             user=user,
             template_params={
                 "viewed_at": viewed_at,

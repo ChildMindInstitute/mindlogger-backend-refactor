@@ -6,7 +6,6 @@ import jwt
 from fastapi import Body, Depends, Header, Request
 from pydantic import ValidationError
 
-from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest

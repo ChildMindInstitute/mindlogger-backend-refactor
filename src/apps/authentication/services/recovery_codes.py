@@ -18,6 +18,7 @@ from apps.authentication.services.mfa_notifications import MFANotificationServic
 from apps.shared.bcrypt import get_password_hash, verify
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
+from apps.users.domain import User
 from apps.users.errors import (
     RecoveryCodeAlreadyUsedError,
     RecoveryCodeInvalidError,
@@ -332,12 +333,12 @@ async def verify_recovery_code_service(
 
 async def send_recovery_code_notifications(
     session: AsyncSession,
-    user: UserSchema,
+    user: User,
     used_at: datetime.datetime,
     request_info: dict | None = None,
 ) -> None:
     """Send recovery code usage notifications.
-    
+
     Sends two notifications after recovery code verification:
     - Recovery code used notification (with request metadata)
     - Last recovery code warning (if at or below threshold)
