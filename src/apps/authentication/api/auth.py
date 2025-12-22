@@ -34,7 +34,7 @@ from apps.authentication.errors import (
 from apps.authentication.services.mfa_helpers import extract_request_metadata
 from apps.authentication.services.mfa_notifications import MFANotificationService
 from apps.authentication.services.mfa_session import MFASessionService
-from apps.authentication.services.recovery_codes import verify_recovery_code_service
+from apps.authentication.services.recovery_codes import send_recovery_code_notifications, verify_recovery_code_service
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.response import EmptyResponse
@@ -342,28 +342,16 @@ async def verify_mfa_recovery_code(
         try:
             await verify_recovery_code_service(session, user_id, verify_request.code)
 
-            # Count remaining unused recovery codes
-            remaining_codes_list = await RecoveryCodeCRUD(session).get_unused_by_user_id(user_id)
-            remaining_count = len(remaining_codes_list)
-
             # Extract request metadata for security notification
             request_metadata = extract_request_metadata(request)
 
-            # Send recovery code used notification
-            notification_service = MFANotificationService()
-            await notification_service.send_recovery_code_used_notification(
+            # Send recovery code notifications (used + warning if needed)
+            await send_recovery_code_notifications(
+                session=session,
                 user=user,
                 used_at=datetime.now(timezone.utc),
-                remaining_codes=remaining_count,
                 request_info=request_metadata,
             )
-
-            # Send warning if at or below threshold
-            if remaining_count <= settings.mfa.last_recovery_code_warning_threshold:
-                await notification_service.send_last_recovery_code_warning(
-                    user=user,
-                    remaining_count=remaining_count,
-                )
 
         except RecoveryCodeNotFoundError:
             # No unused codes exist - increment both counters

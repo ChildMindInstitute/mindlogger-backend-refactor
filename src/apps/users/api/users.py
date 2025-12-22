@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import Body, Depends, HTTPException, Query
+from fastapi import Body, Depends, HTTPException, Query, Request
 from fastapi import status as http_status
 from fastapi.responses import Response as FastAPIResponse
 
@@ -8,12 +8,14 @@ from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.deps import get_current_user
 from apps.authentication.domain.recovery_code.public import RecoveryCodesListResponse
 from apps.authentication.errors import MFAGlobalLockoutError, MFASessionNotFoundError, TooManyTOTPAttemptsError
+from apps.authentication.services.mfa_helpers import extract_request_metadata
 from apps.authentication.services.mfa_notifications import MFANotificationService
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import (
     format_recovery_codes_text,
     generate_recovery_codes,
     get_recovery_codes,
+    send_recovery_code_notifications,
     verify_recovery_code_service,
 )
 from apps.authentication.services.security import AuthenticationService
@@ -246,7 +248,7 @@ async def user_mfa_totp_disable_verify(
     schema: MFADisableVerifyRequest = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
-    request: Request | None = None,
+    request: Request = None,
 ) -> Response[MFADisableVerifyResponse]:
     """Verify TOTP code or recovery code and disable MFA.
 
@@ -641,12 +643,14 @@ async def user_recovery_codes_view_verify(
     viewed_at = datetime.now(timezone.utc)
 
     if verification_method == "recovery_code":
-        await notification_service.send_recovery_code_used_notification(
+        # Send recovery code notifications (used + warning if needed)
+        await send_recovery_code_notifications(
+            session=session,
             user=db_user,
             used_at=viewed_at,
-            remaining_codes=unused,
             request_info=None,
         )
+        # Also send recovery codes viewed notification
         await notification_service.send_recovery_codes_viewed_notification(
             user=db_user,
             viewed_at=viewed_at,
