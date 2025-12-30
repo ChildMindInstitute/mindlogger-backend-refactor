@@ -8,7 +8,7 @@ Handles email notifications for MFA security events:
 All notifications are sent asynchronously via RabbitMQ to ensure non-blocking execution.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from apps.authentication.services.mfa_helpers import (
@@ -37,8 +37,11 @@ class MFANotificationService:
         return dt.strftime("%B %d, %Y at %I:%M %p UTC")
 
     def _prepare_template_params(self, params: dict) -> dict:
-        """Convert datetime objects to formatted strings for RabbitMQ serialization."""
-        prepared = {}
+        """Convert datetime objects to formatted strings for RabbitMQ serialization.
+
+        Also adds current_year to all templates.
+        """
+        prepared: dict = {"current_year": datetime.now().year}
         for key, value in params.items():
             if isinstance(value, datetime):
                 prepared[key] = self._format_datetime_for_template(value)
@@ -57,9 +60,6 @@ class MFANotificationService:
             language = get_user_language(user)
             first_name = get_user_display_name(user)
             email = get_user_email(user)
-
-            # Add current_year to all templates
-            template_params["current_year"] = datetime.now().year
 
             # Prepare template params (convert datetimes to formatted strings)
             prepared_params = self._prepare_template_params(template_params)
@@ -98,7 +98,7 @@ class MFANotificationService:
         # Calculate lockout expiration time
         lockout_until = None
         if lockout_ttl_seconds:
-            lockout_until = datetime.now(timezone.utc)
+            lockout_until = datetime.now(timezone.utc) + timedelta(seconds=lockout_ttl_seconds)
 
         await self._queue_email(
             notification_type="mfa/mfa_account_locked",
