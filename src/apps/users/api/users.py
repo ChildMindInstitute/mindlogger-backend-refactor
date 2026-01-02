@@ -22,6 +22,8 @@ from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
+    MFADisableConfirmRequest,
+    MFADisableConfirmResponse,
     MFADisableInitiateResponse,
     MFADisableVerifyRequest,
     MFADisableVerifyResponse,
@@ -250,10 +252,12 @@ async def user_mfa_totp_disable_verify(
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> Response[MFADisableVerifyResponse]:
-    """Verify TOTP code or recovery code and disable MFA.
+    """Verify TOTP code or recovery code for MFA disable (Step 2 of 3-step flow).
 
+    Validates the code but does NOT disable MFA yet. After successful validation,
+    returns a confirmation token that must be used in the confirm endpoint.
+    
     Accepts either a TOTP code (preferred) or a recovery code as verification.
-    After successful verification, disables MFA and invalidates all recovery codes.
     """
 
     # Step 1: Validate mfa_token and get session data
@@ -387,6 +391,71 @@ async def user_mfa_totp_disable_verify(
                     global_attempts_remaining=global_remaining,
                 )
 
+    # Code validation successful - transition session to confirmation phase
+    # (MFA is NOT disabled yet)
+    confirmation_token = await mfa_service.transition_to_confirmation(mfa_session_id, confirmation_ttl=300)
+    
+    # Clear global lockout after successful code validation
+    await mfa_service.clear_global_lockout(token_user_id)
+
+    logger.info(f"MFA disable code validated user_id={token_user_id} - awaiting confirmation")
+
+    # Return success response with confirmation token
+    return Response(
+        result=MFADisableVerifyResponse(
+            code_validated=True,
+            confirmation_token=confirmation_token,
+            message="Code verified successfully. Please confirm to complete MFA disable.",
+        )
+    )
+
+
+async def user_mfa_totp_disable_confirm(
+    request: Request,
+    schema: MFADisableConfirmRequest = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[MFADisableConfirmResponse]:
+    """Confirm MFA disable after successful code validation (Step 3 of 3-step flow).
+
+    This is the final step that actually disables MFA. Requires a confirmation_token
+    from the successful verify endpoint call.
+    """
+
+    # Step 1: Validate confirmation_token and get session data
+    mfa_service = MFASessionService()
+    mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.confirmation_token)
+
+    # Step 2: SECURITY - Validate current user matches token's user
+    if user.id != token_user_id:
+        logger.warning(
+            f"MFA disable confirm attempted with mismatched user current_user={user.id} token_user={token_user_id}"
+        )
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN, detail="This confirmation token belongs to a different user"
+        )
+
+    # Step 3: Validate session purpose is "disable_confirmed"
+    if purpose != "disable_confirmed":
+        logger.warning(
+            f"MFA session purpose mismatch for confirm user_id={token_user_id} expected=disable_confirmed actual={purpose}"
+        )
+        raise MFASessionPurposeMismatchError()
+
+    # Step 4-8: Single atomic transaction for all database operations
+    async with atomic(session):
+        # Fetch user from database
+        crud = UsersCRUD(session)
+        db_user = await crud.get_by_id(token_user_id)
+
+        # Validate user has MFA enabled (race condition protection)
+        if not db_user.mfa_enabled or not db_user.mfa_secret:
+            logger.warning(
+                f"MFA disable confirm attempted but MFA not enabled user_id={token_user_id} "
+                f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
+            )
+            raise MFANotEnabledError()
+
         # Disable MFA and clear all related fields
         disabled_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await crud.disable_mfa(user_id=db_user.id, disabled_at=disabled_at)
@@ -397,13 +466,10 @@ async def user_mfa_totp_disable_verify(
 
         logger.info(f"MFA disabled and recovery codes invalidated user_id={token_user_id}")
 
-    # Step 12: Clear global lockout (outside atomic block, Redis operation)
-    await mfa_service.clear_global_lockout(token_user_id)
-
-    # Step 13: Delete MFA session (cleanup)
+    # Step 9: Delete MFA session (cleanup)
     await mfa_service.delete_session(mfa_session_id)
 
-    # Step 14: Send MFA disabled notification
+    # Step 10: Send MFA disabled notification
     notification_service = MFANotificationService()
     await notification_service.send_mfa_disabled_notification(
         user=db_user,
@@ -412,9 +478,9 @@ async def user_mfa_totp_disable_verify(
 
     logger.info(f"MFA disable completed user_id={token_user_id}")
 
-    # Step 15: Return success response
+    # Step 11: Return success response
     return Response(
-        result=MFADisableVerifyResponse(
+        result=MFADisableConfirmResponse(
             mfa_disabled=True,
             message="MFA has been successfully disabled for your account.",
         )
