@@ -175,6 +175,7 @@ class TestMFAConcurrentDisable:
 
     totp_disable_initiate_url = "/users/me/mfa/totp/disable/initiate"
     totp_disable_verify_url = "/users/me/mfa/totp/disable/verify"
+    totp_disable_confirm_url = "/users/me/mfa/totp/disable/confirm"
 
     async def test_mfa_totp_disable_initiate_already_disabled_fails(
         self, client: TestClient, user: User, session: AsyncSession
@@ -224,17 +225,22 @@ class TestMFAConcurrentDisable:
         # Tokens should be different
         assert mfa_token1 != mfa_token2
 
-        # Tab 1: Completes first with valid TOTP
+        # Tab 1: Verifies code
         code1 = pyotp.TOTP(decrypted_secret).now()
         verify1 = await client.post(self.totp_disable_verify_url, data={"code": code1, "mfaToken": mfa_token1})
         assert verify1.status_code == status.HTTP_200_OK
+        confirmation_token1 = verify1.json()["result"]["confirmationToken"]
+
+        # Tab 1: Confirms disable (completes first)
+        confirm1 = await client.post(self.totp_disable_confirm_url, data={"confirmationToken": confirmation_token1})
+        assert confirm1.status_code == status.HTTP_200_OK
 
         # Verify MFA is now disabled in database
         updated_user = await crud.get_by_id(user_with_mfa.id)
         assert updated_user.mfa_enabled is False
         assert updated_user.mfa_secret is None
 
-        # Tab 2: Tries to complete (should fail - MFA already disabled)
+        # Tab 2: Tries to verify (should fail - MFA already disabled)
         code2 = pyotp.TOTP(decrypted_secret).now()
         verify2 = await client.post(self.totp_disable_verify_url, data={"code": code2, "mfaToken": mfa_token2})
         assert verify2.status_code == status.HTTP_403_FORBIDDEN
@@ -261,10 +267,15 @@ class TestMFAConcurrentDisable:
         response2 = await client.post(self.totp_disable_initiate_url)
         mfa_token2 = response2.json()["result"]["mfaToken"]
 
-        # Tab 1: Successfully disables MFA
+        # Tab 1: Successfully verifies and confirms to disable MFA
         code1 = pyotp.TOTP(decrypted_secret).now()
         verify1 = await client.post(self.totp_disable_verify_url, data={"code": code1, "mfaToken": mfa_token1})
         assert verify1.status_code == status.HTTP_200_OK
+        confirmation_token1 = verify1.json()["result"]["confirmationToken"]
+
+        # Tab 1: Confirms disable
+        confirm1 = await client.post(self.totp_disable_confirm_url, data={"confirmationToken": confirmation_token1})
+        assert confirm1.status_code == status.HTTP_200_OK
 
         # Verify MFA disabled
         updated_user = await crud.get_by_id(user_with_mfa.id)

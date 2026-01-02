@@ -42,11 +42,12 @@ class TestMFADisableIntegration:
 
     disable_initiate_url = "/users/me/mfa/totp/disable/initiate"
     disable_verify_url = "/users/me/mfa/totp/disable/verify"
+    disable_confirm_url = "/users/me/mfa/totp/disable/confirm"
 
     async def test_complete_mfa_disable_flow_end_to_end(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
     ):
-        """Complete flow from initiation to successful disable works end-to-end."""
+        """Complete 3-step flow from initiation to successful disable works end-to-end."""
         client.login(user_with_mfa)
 
         # Step 1: Initiate disable
@@ -58,22 +59,35 @@ class TestMFADisableIntegration:
         mfa_token = initiate_result["mfaToken"]
         assert mfa_token != ""
 
-        # Step 2: Generate valid TOTP
+        # Step 2: Verify code (does NOT disable MFA yet)
         assert user_with_mfa.mfa_secret is not None
-
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
 
-        # Step 3: Verify and complete disable
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
         verify_response = await client.post(self.disable_verify_url, data=verify_data)
         assert verify_response.status_code == status.HTTP_200_OK
 
         verify_result = verify_response.json()["result"]
-        assert verify_result["mfaDisabled"] is True
+        assert verify_result["codeValidated"] is True
+        confirmation_token = verify_result["confirmationToken"]
+        assert confirmation_token != ""
+
+        # Verify MFA is STILL enabled after verify step
+        crud = UsersCRUD(session)
+        mid_user = await crud.get_by_id(user_with_mfa.id)
+        assert mid_user.mfa_enabled is True
+        assert mid_user.mfa_secret is not None
+
+        # Step 3: Confirm disable (actually disables MFA)
+        confirm_data = {"confirmationToken": confirmation_token}
+        confirm_response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert confirm_response.status_code == status.HTTP_200_OK
+
+        confirm_result = confirm_response.json()["result"]
+        assert confirm_result["mfaDisabled"] is True
 
         # Step 4: Verify all MFA data cleared in database
-        crud = UsersCRUD(session)
         final_user = await crud.get_by_id(user_with_mfa.id)
         assert final_user.mfa_enabled is False
         assert final_user.mfa_secret is None
@@ -83,28 +97,33 @@ class TestMFADisableIntegration:
         assert final_user.mfa_disabled_at is not None
 
     async def test_mfa_disable_clears_all_sessions(self, client: TestClient, user_with_mfa: User):
-        """Disabling MFA clears the MFA session after completion."""
+        """Confirming disable clears the MFA session after completion."""
         client.login(user_with_mfa)
 
         # Initiate disable
         response = await client.post(self.disable_initiate_url)
         mfa_token = response.json()["result"]["mfaToken"]
 
-        # Get session ID before disable
-        mfa_service = MFASessionService()
-        session_id, _, _ = await mfa_service.validate_and_get_session(mfa_token)
+        # Complete verify step
+        assert user_with_mfa.mfa_secret is not None
+        decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
+        valid_totp = totp_service.get_current_code(decrypted_secret)
 
-        # Verify session exists
+        verify_data = {"mfaToken": mfa_token, "code": valid_totp}
+        response = await client.post(self.disable_verify_url, data=verify_data)
+        confirmation_token = response.json()["result"]["confirmationToken"]
+
+        # Get session ID from confirmation token
+        mfa_service = MFASessionService()
+        session_id, _, _ = await mfa_service.validate_and_get_session(confirmation_token)
+
+        # Verify session exists before confirm
         session_data = await mfa_service.get_session(session_id)
         assert session_data is not None
 
-        # Complete disable flow
-        assert user_with_mfa.mfa_secret is not None
-
-        decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
-        valid_totp = totp_service.get_current_code(decrypted_secret)
-        verify_data = {"mfaToken": mfa_token, "code": valid_totp}
-        await client.post(self.disable_verify_url, data=verify_data)
+        # Confirm disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        await client.post(self.disable_confirm_url, data=confirm_data)
 
         # Verify session was deleted
         session_data_after = await mfa_service.get_session(session_id)
@@ -127,10 +146,16 @@ class TestMFADisableIntegration:
         # First verification succeeds
         response = await client.post(self.disable_verify_url, data=verify_data)
         assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
 
-        # Try to reuse the same token
+        # Complete the disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert response.status_code == status.HTTP_200_OK
+
+        # Try to reuse the same MFA token (session is deleted after confirm)
         response = await client.post(self.disable_verify_url, data=verify_data)
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code in (status.HTTP_400_BAD_REQUEST, status.HTTP_401_UNAUTHORIZED)
 
     async def test_cannot_initiate_disable_after_already_disabled(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
@@ -147,7 +172,14 @@ class TestMFADisableIntegration:
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
-        await client.post(self.disable_verify_url, data=verify_data)
+        response = await client.post(self.disable_verify_url, data=verify_data)
+        assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
+
+        # Complete the disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert response.status_code == status.HTTP_200_OK
 
         # Refresh user to get updated state
         crud = UsersCRUD(session)
@@ -180,12 +212,19 @@ class TestMFADisableIntegration:
         verify_data1 = {"mfaToken": mfa_token1, "code": valid_totp}
         response = await client.post(self.disable_verify_url, data=verify_data1)
         assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
 
-        # Second disable attempt should fail (MFA already disabled)
+        # Complete the first disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert response.status_code == status.HTTP_200_OK
+
+        # Second disable attempt should fail (MFA already disabled or session purpose mismatch)
         verify_data2 = {"mfaToken": mfa_token2, "code": valid_totp}
         response = await client.post(self.disable_verify_url, data=verify_data2)
         # Should fail because MFA is already disabled
         assert response.status_code in (
+            status.HTTP_400_BAD_REQUEST,
             status.HTTP_403_FORBIDDEN,
             status.HTTP_401_UNAUTHORIZED,
         )

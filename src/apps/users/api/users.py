@@ -256,7 +256,7 @@ async def user_mfa_totp_disable_verify(
 
     Validates the code but does NOT disable MFA yet. After successful validation,
     returns a confirmation token that must be used in the confirm endpoint.
-    
+
     Accepts either a TOTP code (preferred) or a recovery code as verification.
     """
 
@@ -394,7 +394,7 @@ async def user_mfa_totp_disable_verify(
     # Code validation successful - transition session to confirmation phase
     # (MFA is NOT disabled yet)
     confirmation_token = await mfa_service.transition_to_confirmation(mfa_session_id, confirmation_ttl=300)
-    
+
     # Clear global lockout after successful code validation
     await mfa_service.clear_global_lockout(token_user_id)
 
@@ -438,7 +438,8 @@ async def user_mfa_totp_disable_confirm(
     # Step 3: Validate session purpose is "disable_confirmed"
     if purpose != "disable_confirmed":
         logger.warning(
-            f"MFA session purpose mismatch for confirm user_id={token_user_id} expected=disable_confirmed actual={purpose}"
+            f"MFA session purpose mismatch for confirm user_id={token_user_id} "
+            f"expected=disable_confirmed actual={purpose}"
         )
         raise MFASessionPurposeMismatchError()
 

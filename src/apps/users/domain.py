@@ -296,7 +296,7 @@ class MFADisableVerifyRequest(PublicModel):
 
 class MFADisableVerifyResponse(PublicModel):
     """Response after successfully validating code (MFA not yet disabled).
-    
+
     This is step 2 of the 3-step disable flow. The code has been validated,
     but MFA is not yet disabled. Use the confirmation_token to complete the disable.
     """
@@ -308,7 +308,7 @@ class MFADisableVerifyResponse(PublicModel):
 
 class MFADisableConfirmRequest(PublicModel):
     """Request to confirm MFA disable after successful code validation.
-    
+
     This is step 3 of the 3-step disable flow.
     """
 
@@ -317,7 +317,7 @@ class MFADisableConfirmRequest(PublicModel):
 
 class MFADisableConfirmResponse(PublicModel):
     """Response after successfully disabling MFA.
-    
+
     This is the final response of the 3-step disable flow.
     """
 

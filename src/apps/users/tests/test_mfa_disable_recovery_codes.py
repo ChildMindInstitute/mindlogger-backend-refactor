@@ -42,6 +42,7 @@ class TestMFADisableRecoveryCodes:
 
     disable_initiate_url = "/users/me/mfa/totp/disable/initiate"
     disable_verify_url = "/users/me/mfa/totp/disable/verify"
+    disable_confirm_url = "/users/me/mfa/totp/disable/confirm"
 
     async def test_disable_clears_recovery_codes_timestamp(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
@@ -72,6 +73,12 @@ class TestMFADisableRecoveryCodes:
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
         response = await client.post(self.disable_verify_url, data=verify_data)
+        assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
+
+        # Complete the disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
         assert response.status_code == status.HTTP_200_OK
 
         # Verify timestamp cleared
@@ -137,6 +144,12 @@ class TestMFADisableRecoveryCodes:
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
         response = await client.post(self.disable_verify_url, data=verify_data)
         assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
+
+        # Complete the disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert response.status_code == status.HTTP_200_OK
 
         # Verify all codes deleted
         codes_after = await recovery_crud.get_by_user_id(user_with_mfa.id)
@@ -201,6 +214,12 @@ class TestMFADisableRecoveryCodes:
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
         response = await client.post(self.disable_verify_url, data=verify_data)
         assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
+
+        # Complete the disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert response.status_code == status.HTTP_200_OK
 
         # Verify all codes deleted (both used and unused)
         codes_after = await recovery_crud.get_by_user_id(user_with_mfa.id)
@@ -233,6 +252,12 @@ class TestMFADisableRecoveryCodes:
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
         response = await client.post(self.disable_verify_url, data=verify_data)
+        assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
+
+        # Complete the disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
         assert response.status_code == status.HTTP_200_OK
 
         # Verify MFA disabled successfully
@@ -282,7 +307,14 @@ class TestMFADisableRecoveryCodes:
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
-        await client.post(self.disable_verify_url, data=verify_data)
+        response = await client.post(self.disable_verify_url, data=verify_data)
+        assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
+
+        # Complete the disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert response.status_code == status.HTTP_200_OK
 
         # Verify old codes deleted
         codes_after_disable = await recovery_crud.get_by_user_id(user_with_mfa.id)
@@ -364,7 +396,14 @@ class TestMFADisableRecoveryCodes:
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
-        await client.post(self.disable_verify_url, data=verify_data)
+        response = await client.post(self.disable_verify_url, data=verify_data)
+        assert response.status_code == status.HTTP_200_OK
+        confirmation_token = response.json()["result"]["confirmationToken"]
+
+        # Complete the disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert response.status_code == status.HTTP_200_OK
 
         # Verify recovery codes deleted
         codes_after = await recovery_crud.get_by_user_id(user_with_mfa.id)
@@ -434,7 +473,7 @@ class TestMFADisableRecoveryCodes:
     async def test_disable_with_recovery_code_succeeds(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
     ):
-        """Recovery code can be used to verify and disable MFA."""
+        """Recovery code can be used to verify and disable MFA (3-step flow)."""
         from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
         from apps.authentication.services.recovery_codes import generate_recovery_codes
 
@@ -451,22 +490,36 @@ class TestMFADisableRecoveryCodes:
         # Get first unused recovery code (codes are returned as plain strings)
         recovery_code = codes[0]
 
-        # Initiate disable
+        # Step 1: Initiate disable
         response = await client.post(self.disable_initiate_url)
         assert response.status_code == status.HTTP_200_OK
         mfa_token = response.json()["result"]["mfaToken"]
 
-        # Verify with recovery code
+        # Step 2: Verify with recovery code
         verify_data = {"mfaToken": mfa_token, "code": recovery_code}
         response = await client.post(self.disable_verify_url, data=verify_data)
         assert response.status_code == status.HTTP_200_OK
 
         result = response.json()["result"]
+        assert result["codeValidated"] is True
+        confirmation_token = result["confirmationToken"]
+
+        # Verify MFA is STILL enabled after verify step
+        crud = UsersCRUD(session)
+        user = await crud.get_by_id(user_with_mfa.id)
+        assert user.mfa_enabled is True
+        assert user.mfa_secret is not None
+
+        # Step 3: Confirm disable
+        confirm_data = {"confirmationToken": confirmation_token}
+        response = await client.post(self.disable_confirm_url, data=confirm_data)
+        assert response.status_code == status.HTTP_200_OK
+
+        result = response.json()["result"]
         assert result["mfaDisabled"] is True
-        assert "successfully disabled" in result["message"]
+        assert "successfully disabled" in result["message"].lower()
 
         # Verify MFA is disabled
-        crud = UsersCRUD(session)
         user = await crud.get_by_id(user_with_mfa.id)
         assert user.mfa_enabled is False
         assert user.mfa_secret is None
