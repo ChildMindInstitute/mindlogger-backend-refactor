@@ -47,6 +47,19 @@ class MFASetupExpiredError(ValidationError):
 class InvalidTOTPCodeError(ValidationError):
     message = _("Invalid TOTP code. Please check your authenticator app and try again.")
 
+    def __init__(
+        self,
+        session_attempts_remaining: int | None = None,
+        global_attempts_remaining: int | None = None,
+        **kwargs,
+    ):
+        metadata: dict[str, int] = {}
+        if session_attempts_remaining is not None:
+            metadata["session_attempts_remaining"] = session_attempts_remaining
+        if global_attempts_remaining is not None:
+            metadata["global_attempts_remaining"] = global_attempts_remaining
+        super().__init__(metadata=metadata if metadata else None, **kwargs)
+
 
 class MFAAlreadyEnabledError(ValidationError):
     message = _("Two-factor authentication is already enabled for your account.")
