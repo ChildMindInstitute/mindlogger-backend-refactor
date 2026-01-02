@@ -18,6 +18,7 @@ from apps.users.api import (
     user_create,
     user_delete,
     user_download_recovery_codes,
+    user_mfa_totp_disable_confirm,
     user_mfa_totp_disable_initiate,
     user_mfa_totp_disable_verify,
     user_mfa_totp_initiate,
@@ -29,6 +30,7 @@ from apps.users.api import (
     user_update,
 )
 from apps.users.domain import (
+    MFADisableConfirmResponse,
     MFADisableInitiateResponse,
     MFADisableVerifyResponse,
     PublicUser,
@@ -191,12 +193,12 @@ router.post(
     "/me/mfa/totp/disable/verify",
     response_model=Response[MFADisableVerifyResponse],
     name="user_mfa_totp_disable_verify",
-    summary="Verify TOTP or recovery code and disable MFA",
+    summary="Verify TOTP or recovery code (Step 2 of 3)",
     description=(
-        "Verifies TOTP code or recovery code and disables MFA. "
+        "Verifies TOTP code or recovery code but does NOT disable MFA yet. "
         "Accepts either a 6-digit TOTP code (preferred) or an 11-character recovery code (XXXXX-XXXXX). "
         "Requires mfa_token from the initiate endpoint. "
-        "This permanently disables MFA and invalidates all recovery codes."
+        "Returns a confirmation_token that must be used in the confirm endpoint to actually disable MFA."
     ),
     responses={
         status.HTTP_200_OK: {"model": Response[MFADisableVerifyResponse]},
@@ -204,6 +206,24 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(user_mfa_totp_disable_verify)
+
+# TOTP disable confirm
+router.post(
+    "/me/mfa/totp/disable/confirm",
+    response_model=Response[MFADisableConfirmResponse],
+    name="user_mfa_totp_disable_confirm",
+    summary="Confirm MFA disable (Step 3 of 3)",
+    description=(
+        "Confirms and completes the MFA disable process. "
+        "Requires confirmation_token from the verify endpoint. "
+        "This permanently disables MFA and invalidates all recovery codes."
+    ),
+    responses={
+        status.HTTP_200_OK: {"model": Response[MFADisableConfirmResponse]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(user_mfa_totp_disable_confirm)
 
 # Recovery codes view initiate
 router.post(
