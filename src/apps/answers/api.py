@@ -66,7 +66,7 @@ from apps.integrations.prolific.domain import ProlificUserInfo
 from apps.schedule.crud.user_device_events_history import UserDeviceEventsHistoryCRUD
 from apps.schedule.service.schedule_history import ScheduleHistoryService
 from apps.shared.deps import get_client_ip, get_i18n
-from apps.shared.domain import Response, ResponseMulti, parse_obj_as
+from apps.shared.domain import Response, ResponseMulti, TruncatedDate, parse_obj_as
 from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 from apps.shared.locale import I18N
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
@@ -771,7 +771,7 @@ async def applet_answers_export(
 async def applet_completed_entities(
     applet_id: uuid.UUID,
     version: Optional[str] = None,
-    from_date: datetime.date = Query(..., alias="fromDate"),
+    from_date: TruncatedDate = Query(..., alias="fromDate"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
@@ -804,7 +804,7 @@ async def _get_arbitrary_answer(
 
 
 async def applets_completed_entities(
-    from_date: datetime.date = Query(..., alias="fromDate"),
+    from_date: TruncatedDate = Query(..., alias="fromDate"),
     filter_by_version: bool = Query(False),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
