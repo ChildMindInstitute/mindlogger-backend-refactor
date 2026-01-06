@@ -2,7 +2,6 @@ import datetime
 import enum
 import uuid
 from copy import deepcopy
-from decimal import Decimal
 from typing import Annotated, Any, Generic, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -23,7 +22,7 @@ from apps.integrations.oneup_health.service.domain import EHRMetadata
 from apps.integrations.prolific.domain import ProlificParamsActivityAnswer
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
-from apps.shared.domain.types import _BaseModel
+from apps.shared.domain.types import TruncatedInt, _BaseModel
 from apps.shared.locale import I18N
 from apps.subjects.domain import SubjectReadResponse
 
@@ -31,15 +30,8 @@ from apps.subjects.domain import SubjectReadResponse
 class ClientMeta(InternalModel):
     app_id: str
     app_version: str
-    width: int | None = None
-    height: int | None = None
-
-    @field_validator("width", "height", mode="before")
-    @classmethod
-    def truncate_decimal(cls, v: Any) -> Any:
-        if isinstance(v, (float, Decimal)):
-            return int(v)
-        return v
+    width: TruncatedInt | None = None
+    height: TruncatedInt | None = None
 
 
 class Answer(InternalModel):
