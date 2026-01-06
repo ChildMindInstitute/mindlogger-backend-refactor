@@ -2,6 +2,7 @@ import datetime
 import enum
 import uuid
 from copy import deepcopy
+from decimal import Decimal
 from typing import Annotated, Any, Generic, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -32,6 +33,13 @@ class ClientMeta(InternalModel):
     app_version: str
     width: int | None = None
     height: int | None = None
+
+    @field_validator("width", "height", mode="before")
+    @classmethod
+    def truncate_decimal(cls, v: Any) -> Any:
+        if isinstance(v, (float, Decimal)):
+            return int(v)
+        return v
 
 
 class Answer(InternalModel):
