@@ -399,6 +399,7 @@ async def verify_mfa_recovery_code(
 
             # Calculate remaining attempts using service methods
             global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
+            session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
 
             logger.warning(
                 f"Invalid recovery code provided user_id={user_id} email={user.email_encrypted} "
@@ -429,7 +430,13 @@ async def verify_mfa_recovery_code(
                     lockout_reason="session_limit",
                 )
 
-            raise
+            # Re-raise with metadata to inform frontend of remaining attempts
+            raise RecoveryCodeInvalidError(
+                metadata={
+                    "session_attempts_remaining": session_remaining if session_remaining is not None else 0,
+                    "global_attempts_remaining": global_remaining if global_remaining is not None else 0,
+                }
+            )
 
         # Recovery code valid - clear lockout and delete MFA session
         await mfa_service.clear_global_lockout(user_id)

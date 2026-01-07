@@ -1,6 +1,7 @@
 from gettext import gettext as _
 
 from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
+from apps.authentication.constants import AuthErrorCode
 
 
 class UserNotFound(NotFoundError):
@@ -75,6 +76,7 @@ class RecoveryCodesNotFoundError(NotFoundError):
 
 class RecoveryCodeInvalidError(ValidationError):
     message = _("Invalid recovery code. Please check the code and try again.")
+    error_code = AuthErrorCode.MFA_INVALID_RECOVERY_CODE
 
 
 class RecoveryCodeAlreadyUsedError(ValidationError):
