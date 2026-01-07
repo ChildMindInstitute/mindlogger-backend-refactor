@@ -8,7 +8,6 @@ from rich import print
 from rich.style import Style
 from rich.table import Table
 from sqlalchemy import Text, column, select, update
-from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Values
@@ -105,7 +104,7 @@ async def migrate_subjects(applet_id, profiles, session: AsyncSession):
         .values(secret_user_id=vals.c.secret_user_id, updated_at=UPDATED_AT, migrated_updated=UPDATED_AT)
     ).returning(SubjectSchema.id, SubjectSchema.applet_id, SubjectSchema.user_id)
 
-    res = await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    res = await session.execute(query, execution_options={"synchronize_session": False})
     migrated_data = res.all()
 
     table = Table(
