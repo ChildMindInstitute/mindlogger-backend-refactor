@@ -85,6 +85,8 @@ async def get_token(
                 mfa_required=True,
                 mfa_session_id=mfa_session_id,
                 mfa_token=mfa_token,
+                user_id=str(user.id),
+                user_email=user.email_encrypted,
             )
         )
 

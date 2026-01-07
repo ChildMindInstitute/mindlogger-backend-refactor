@@ -1,7 +1,7 @@
 from gettext import gettext as _
 
-from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 from apps.authentication.constants import AuthErrorCode
+from apps.shared.exception import AccessDeniedError, NotFoundError, ValidationError
 
 
 class UserNotFound(NotFoundError):

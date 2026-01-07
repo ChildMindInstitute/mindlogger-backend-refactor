@@ -7,6 +7,7 @@ from typing import Optional
 
 from apps.authentication.errors import MFASessionNotFoundError
 from apps.authentication.services.security import AuthenticationService
+from apps.users.errors import MFASessionPurposeMismatchError
 from config import settings
 from infrastructure.logger import logger
 from infrastructure.utility.redis_client import RedisCache
@@ -204,7 +205,7 @@ class MFASessionService:
                 f"Cannot transition - invalid purpose mfa_session_id={mfa_session_id} "
                 f"expected=disable actual={session_data.purpose}"
             )
-            raise ValueError(f"Session purpose must be 'disable' to transition, got '{session_data.purpose}'")
+            raise MFASessionPurposeMismatchError()
 
         # Update purpose to mark validation complete and save with shorter TTL
         session_data.purpose = "disable_confirmed"
