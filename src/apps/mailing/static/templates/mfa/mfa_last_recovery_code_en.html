@@ -1,0 +1,49 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en">
+  <body>
+    {% include 'header.html' %}
+    <table style="padding: 0; font-size: 1.4rem">
+      <tr>
+        <td style="padding-bottom: 16px">
+          Hi {{first_name}},
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;">
+          You have {% if remaining_count == 0 %}no{% else %}only {{remaining_count}}{% endif %} recovery code{% if remaining_count != 1 %}s{% endif %} remaining.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          Recovery codes are used to access your account when you don't have access to your authenticator app. Once you've used all your codes, you won't be able to use them to log in.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;">
+          We strongly recommend generating new recovery codes now to ensure you can always access your account.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          To generate new recovery codes:
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          1. Log in to your account
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          2. Go to your security settings
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          3. Select "Generate New Recovery Codes"
+        </td>
+      </tr>
+      {% include 'blocks/team_info_en.html' %}
+    </table>
+    {% include 'footers/footer_info_en.html' %}
+  </body>
+</html>

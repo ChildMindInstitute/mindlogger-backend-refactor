@@ -30,6 +30,11 @@ COVERAGE_DOCKER_EXEC = ${DOCKER_COMPOSE_CMD} run --rm -u root app
 run:
 	PYTHONPATH=src uv run uvicorn src.main:app --proxy-headers --host ${HOST} --port ${PORT} --reload
 
+# Run taskiq worker to process background tasks (MFA emails, etc.)
+.PHONY: run-worker
+run-worker:
+	PYTHONPATH=src uv run taskiq worker worker:worker -fsd -tp src/**/tasks.py
+
 # Start every dependency.  Not always needed
 .PHONY: start-all-deps
 start-all-deps:

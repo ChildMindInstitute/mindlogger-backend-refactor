@@ -1,0 +1,56 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en">
+  <body>
+    {% include 'header.html' %}
+    <table style="padding: 0; font-size: 1.4rem">
+      <tr>
+        <td style="padding-bottom: 16px">
+          Hi {{first_name}},
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;">
+          Your account has been locked due to too many failed multi-factor authentication attempts.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          <strong>Details:</strong>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • Failed attempts: {{failed_attempts}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • Reason: {{lockout_reason}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          • Locked at: {{locked_at}}
+        </td>
+      </tr>
+      {% if lockout_ttl_seconds %}
+      <tr>
+        <td style="padding-bottom: 16px">
+          Your account will be automatically unlocked in approximately {{(lockout_ttl_seconds / 60)|int}} minutes.
+        </td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td style="padding-bottom: 16px">
+          If you didn't attempt to log in, someone may be trying to access your account. We recommend changing your password immediately after your account is unlocked.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          If you need immediate assistance, please contact our support team at <a href="mailto:{{support_email}}">{{support_email}}</a>.
+        </td>
+      </tr>
+      {% include 'blocks/team_info_en.html' %}
+    </table>
+    {% include 'footers/footer_info_en.html' %}
+  </body>
+</html>
