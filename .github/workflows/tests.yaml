@@ -15,15 +15,16 @@ jobs:
         with:
           version: '2.23.3'
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'  # or your preferred version
+#      - name: Set up Python
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.13'  # or your preferred version
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
         run: |
+          uv python install
           uv sync --locked
 
       - name: "Running tests"
@@ -32,6 +33,10 @@ jobs:
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
           docker compose up -d rabbitmq postgres redis mailhog
           make test
+
+      - name: Ensure CLI Runs
+        run: |
+          uv run python src/cli.py --help
 
 #      - name: Collect artifacts
 #        uses: actions/upload-artifact@v4
