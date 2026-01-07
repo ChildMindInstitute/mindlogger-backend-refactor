@@ -7,7 +7,6 @@ from typing import cast
 import typer
 from pydantic import EmailStr, NonNegativeInt
 from sqlalchemy import update
-from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -96,7 +95,7 @@ async def update_subject_details(
 
     query = query.values(**values)
     query = query.returning(SubjectSchema)
-    db_result = await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    db_result = await session.execute(query, execution_options={"synchronize_session": False})
     mappings = db_result.mappings().all()
     updated_subject = SubjectSchema(**mappings[0])
 
@@ -218,7 +217,7 @@ async def update_first_event_version(
     query = query.where(EventSchema.id == existing_event.id)
     query = query.values(**values)
     query = query.returning(EventSchema)
-    db_result = await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    db_result = await session.execute(query, execution_options={"synchronize_session": False})
     mappings = db_result.mappings().all()
     updated_event = EventSchema(**mappings[0])
 
@@ -235,7 +234,7 @@ async def update_first_event_version(
         "is_deleted": is_deleted,
     }
     history_query = history_query.values(**history_values)
-    await session.execute(history_query, execution_options=immutabledict({"synchronize_session": False}))
+    await session.execute(history_query, execution_options={"synchronize_session": False})
 
     # Update `applet_events` table
     applet_events_query = update(AppletEventsSchema)
@@ -246,7 +245,7 @@ async def update_first_event_version(
         created_at=new_event_created_at,
         updated_at=new_event_created_at,
     )
-    await session.execute(applet_events_query, execution_options=immutabledict({"synchronize_session": False}))
+    await session.execute(applet_events_query, execution_options={"synchronize_session": False})
 
 
 async def update_subsequent_event_version(
@@ -311,7 +310,7 @@ async def update_subsequent_event_version(
     query = query.where(EventSchema.id == existing_event.id)
     query = query.values(**values)
     query = query.returning(EventSchema)
-    db_result = await session.execute(query, execution_options=immutabledict({"synchronize_session": False}))
+    db_result = await session.execute(query, execution_options={"synchronize_session": False})
     updated_event = EventSchema(**db_result.mappings().all()[0])
 
     existing_id_version = f"{existing_event.id}_{updated_schedule.version}"
@@ -329,7 +328,7 @@ async def update_subsequent_event_version(
         "is_deleted": event_data.is_deleted,
     }
     history_query = history_query.values(**history_values)
-    await session.execute(history_query, execution_options=immutabledict({"synchronize_session": False}))
+    await session.execute(history_query, execution_options={"synchronize_session": False})
 
     # Update `applet_events` table
     applet_events_query = update(AppletEventsSchema)
@@ -340,7 +339,7 @@ async def update_subsequent_event_version(
         created_at=event_data.created_at,
         updated_at=event_data.created_at,
     )
-    await session.execute(applet_events_query, execution_options=immutabledict({"synchronize_session": False}))
+    await session.execute(applet_events_query, execution_options={"synchronize_session": False})
 
 
 async def find_schema_user(
@@ -384,7 +383,7 @@ async def create_schema_user(session: AsyncSession, user_config: UserConfig) -> 
     }
 
     update_query = update_query.values(**values)
-    await session.execute(update_query, execution_options=immutabledict({"synchronize_session": False}))
+    await session.execute(update_query, execution_options={"synchronize_session": False})
 
     return schema_user
 
