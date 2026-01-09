@@ -669,11 +669,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         include_in_progress: bool = False,
     ) -> list[AppletCompletedEntities]:
         """
-         -Create applet filter:
-         -When filter_by_version is True, we match both applet_id and version
-            to avoid mixing data across versions.
-         -When False, we use only applet_id to keep existing behavior
-            and include all versions for backward compatibility.
+        -Create applet filter:
+        -When filter_by_version is True, we match both applet_id and version
+           to avoid mixing data across versions.
+        -When False, we use only applet_id to keep existing behavior
+           and include all versions for backward compatibility.
         """
         # When include_in_progress is False, only return completed flows and standalone activities
         # When True, also return in-progress flow activities
