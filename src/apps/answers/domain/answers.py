@@ -662,17 +662,25 @@ class ReportServerResponse(InternalModel):
 
 
 class CompletedEntity(PublicModel):
-    id: uuid.UUID
+    id: uuid.UUID = Field(
+        deprecated=True,
+        description="Deprecated: Use activity_history_id and flow_history_id instead. "
+        "For activities, this is the activity_history_id. For flows, this is the flow_history_id.",
+    )
     answer_id: uuid.UUID
     submit_id: uuid.UUID
+    activity_history_id: uuid.UUID | None = None
+    flow_history_id: uuid.UUID | None = None
     target_subject_id: uuid.UUID | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
 
-    @field_validator("id", mode="before")
+    @field_validator("id", "activity_history_id", "flow_history_id", mode="before")
     @classmethod
     def id_from_history_id(cls, value):
+        if value is None:
+            return None
         return uuid.UUID(str(value)[:36])
 
 
