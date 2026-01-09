@@ -587,15 +587,20 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         from_date: datetime.date,
         include_in_progress: bool = False,
     ) -> AppletCompletedEntities:
+        extra_filters = []
+
         # When include_in_progress is False, only return completed flows and standalone activities
         # When True, also return in-progress flow activities
-        is_completed_filter = []
         if not include_in_progress:
             is_completed = or_(
                 AnswerSchema.is_flow_completed,
                 AnswerSchema.flow_history_id.is_(None),
             )
-            is_completed_filter = [is_completed]
+            extra_filters.append(is_completed)
+
+        # When version is given, only return flows and activities with the given version
+        if version:
+            extra_filters.append(AnswerSchema.version == version)
 
         query: Query = (
             select(
@@ -613,8 +618,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.applet_id == applet_id,
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
-                *is_completed_filter,
-                *([AnswerSchema.version == version] if version else []),
+                *extra_filters,
             )
             .order_by(
                 AnswerSchema.activity_history_id,
@@ -675,15 +679,16 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         -When False, we use only applet_id to keep existing behavior
            and include all versions for backward compatibility.
         """
+        extra_filters = []
+
         # When include_in_progress is False, only return completed flows and standalone activities
         # When True, also return in-progress flow activities
-        is_completed_filter = []
         if not include_in_progress:
             is_completed = or_(
                 AnswerSchema.is_flow_completed,
                 AnswerSchema.flow_history_id.is_(None),
             )
-            is_completed_filter = [is_completed]
+            extra_filters.append(is_completed)
 
         if filter_by_version:
             applet_predicate = or_(
@@ -694,8 +699,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                     for applet_id, version in applets_version_map.items()
                 ]
             )
+            extra_filters.append(applet_predicate)
         else:
             applet_predicate = AnswerSchema.applet_id.in_(list(applets_version_map.keys()))
+            extra_filters.append(applet_predicate)
 
         query: Query = (
             select(
@@ -713,8 +720,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .where(
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
-                *is_completed_filter,
-                applet_predicate,
+                *extra_filters,
             )
             .order_by(
                 AnswerSchema.activity_history_id,
