@@ -585,11 +585,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         version: Optional[str],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
+        include_in_progress: bool = False,
     ) -> AppletCompletedEntities:
-        is_completed = or_(
-            AnswerSchema.is_flow_completed,
-            AnswerSchema.flow_history_id.is_(None),
-        )
+        # When include_in_progress is False, only return completed flows and standalone activities
+        # When True, also return in-progress flow activities
+        is_completed_filter = []
+        if not include_in_progress:
+            is_completed = or_(
+                AnswerSchema.is_flow_completed,
+                AnswerSchema.flow_history_id.is_(None),
+            )
+            is_completed_filter = [is_completed]
 
         query: Query = (
             select(
@@ -607,7 +613,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.applet_id == applet_id,
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
-                is_completed,
+                *is_completed_filter,
                 *([AnswerSchema.version == version] if version else []),
             )
             .order_by(
@@ -633,9 +639,19 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         flows = []
         for row in data:
             if row.flow_history_id:
-                flows.append(CompletedEntity(**row, id=row.flow_history_id))
+                flows.append(
+                    CompletedEntity(
+                        **row,
+                        id=row.flow_history_id,
+                    )
+                )
             else:
-                activities.append(CompletedEntity(**row, id=row.activity_history_id))
+                activities.append(
+                    CompletedEntity(
+                        **row,
+                        id=row.activity_history_id,
+                    )
+                )
 
         return AppletCompletedEntities(
             id=applet_id,
@@ -650,19 +666,25 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         respondent_id: uuid.UUID,
         from_date: datetime.date,
         filter_by_version: bool = False,
+        include_in_progress: bool = False,
     ) -> list[AppletCompletedEntities]:
-        is_completed = or_(
-            AnswerSchema.is_flow_completed,
-            AnswerSchema.flow_history_id.is_(None),
-        )
-
         """
          -Create applet filter:
          -When filter_by_version is True, we match both applet_id and version
             to avoid mixing data across versions.
-         -When False, we use only applet_id to keep existing behavior 
+         -When False, we use only applet_id to keep existing behavior
             and include all versions for backward compatibility.
         """
+        # When include_in_progress is False, only return completed flows and standalone activities
+        # When True, also return in-progress flow activities
+        is_completed_filter = []
+        if not include_in_progress:
+            is_completed = or_(
+                AnswerSchema.is_flow_completed,
+                AnswerSchema.flow_history_id.is_(None),
+            )
+            is_completed_filter = [is_completed]
+
         if filter_by_version:
             applet_predicate = or_(
                 *[
@@ -691,7 +713,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .where(
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
-                is_completed,
+                *is_completed_filter,
                 applet_predicate,
             )
             .order_by(
