@@ -920,6 +920,8 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "activityHistoryId",
+            "flowHistoryId",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
