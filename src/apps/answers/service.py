@@ -1706,7 +1706,11 @@ class AnswerService:
         await self.send_alert_mail(persons)
 
     async def get_completed_answers_data(
-        self, applet_id: uuid.UUID, version: Optional[str], from_date: datetime.date
+        self,
+        applet_id: uuid.UUID,
+        version: Optional[str],
+        from_date: datetime.date,
+        include_in_progress: bool = False,
     ) -> AppletCompletedEntities:
         assert self.user_id
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data(
@@ -1714,6 +1718,7 @@ class AnswerService:
             version,
             self.user_id,
             from_date,
+            include_in_progress=include_in_progress,
         )
         return result
 
@@ -1722,6 +1727,7 @@ class AnswerService:
         applets_version_map: Mapping[uuid.UUID, Optional[str]],
         from_date: datetime.date,
         filter_by_version: bool = False,
+        include_in_progress: bool = False,
     ) -> list[AppletCompletedEntities]:
         assert self.user_id
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data_list(
@@ -1729,6 +1735,7 @@ class AnswerService:
             self.user_id,
             from_date,
             filter_by_version=filter_by_version,
+            include_in_progress=include_in_progress,
         )
         return result
 

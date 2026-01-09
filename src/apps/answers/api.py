@@ -770,8 +770,9 @@ async def applet_answers_export(
 
 async def applet_completed_entities(
     applet_id: uuid.UUID,
-    version: Optional[str] = None,
     from_date: TruncatedDate = Query(..., alias="fromDate"),
+    version: Optional[str] = None,
+    include_in_progress: bool = Query(False, alias="includeInProgress"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
@@ -779,7 +780,7 @@ async def applet_completed_entities(
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answer_create_access(applet_id)
     data = await AnswerService(session, user.id, answer_session).get_completed_answers_data(
-        applet_id, version, from_date
+        applet_id, version, from_date, include_in_progress=include_in_progress
     )
 
     return Response(result=data)
@@ -791,6 +792,7 @@ async def _get_arbitrary_answer(
     arb_uri: str,
     applets_version_map: dict[uuid.UUID, Optional[str]],
     user_id: uuid.UUID | None = None,
+    include_in_progress: bool = False,
 ) -> list[AppletCompletedEntities]:
     arb_session_maker = session_manager.get_session(arb_uri)
     async with arb_session_maker() as arb_session:
@@ -798,7 +800,7 @@ async def _get_arbitrary_answer(
             session,
             user_id=user_id,
             arbitrary_session=arb_session,
-        ).get_completed_answers_data_list(applets_version_map, from_date)
+        ).get_completed_answers_data_list(applets_version_map, from_date, include_in_progress=include_in_progress)
 
     return data
 
@@ -806,6 +808,7 @@ async def _get_arbitrary_answer(
 async def applets_completed_entities(
     from_date: TruncatedDate = Query(..., alias="fromDate"),
     filter_by_version: bool = Query(False),
+    include_in_progress: bool = Query(False, alias="includeInProgress"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> ResponseMulti[AppletCompletedEntities]:
@@ -842,12 +845,14 @@ async def applets_completed_entities(
                 arb_uri,
                 applets_version_arb_map,
                 user_id=user.id,
+                include_in_progress=include_in_progress,
             )
         else:
             data = AnswerService(session, user_id=user.id).get_completed_answers_data_list(
                 applets_version_map=applets_version_arb_map,
                 from_date=from_date,
                 filter_by_version=filter_by_version,
+                include_in_progress=include_in_progress,
             )
         data_future_list.append(data)
 
