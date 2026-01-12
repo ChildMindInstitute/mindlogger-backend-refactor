@@ -675,6 +675,7 @@ class CompletedEntity(PublicModel):
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
+    is_flow_completed: bool | None = None
 
     @field_validator("id", "activity_history_id", "flow_history_id", mode="before")
     @classmethod
