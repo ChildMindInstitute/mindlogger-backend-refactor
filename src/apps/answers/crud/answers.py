@@ -11,7 +11,7 @@ from sqlalchemy.sql import Values
 
 from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
-from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
+from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, ActivityFlowItemHistorySchema
 from apps.answers.db.schemas import AnswerEHRSchema, AnswerItemSchema, AnswerSchema
 from apps.answers.domain import (
     Answer,
@@ -609,10 +609,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         if version:
             filters.append(AnswerSchema.version == version)
 
-        # Query for flows returns one row per (flow, subject, event) with the latest completed activity
+        # Query for flows returns one row per (flow, subject, event) with the last completed activity
         flows_query: Query = (
-            select(*columns)
+            select(*columns, ActivityFlowItemHistorySchema.order.label("activity_flow_order"))
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
+            .join(
+                ActivityFlowItemHistorySchema,
+                and_(
+                    ActivityFlowItemHistorySchema.activity_flow_id == AnswerSchema.flow_history_id,
+                    ActivityFlowItemHistorySchema.activity_id == AnswerSchema.activity_history_id,
+                ),
+            )
             .where(
                 *filters,
                 *([] if include_in_progress else [AnswerSchema.is_flow_completed.is_(True)]),
@@ -627,14 +634,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.flow_history_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
-                AnswerItemSchema.local_end_date.desc(),
-                AnswerItemSchema.local_end_time.desc(),
+                ActivityFlowItemHistorySchema.order.desc(),
             )
         )
 
         # Query for standalone activities (not part of a flow) returns one row per (activity, subject, event)
         activities_query: Query = (
-            select(*columns)
+            select(*columns, null().label("activity_flow_order"))
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 *filters,
@@ -714,10 +720,17 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             applet_predicate = AnswerSchema.applet_id.in_(list(applets_version_map.keys()))
             filters.append(applet_predicate)
 
-        # Query for flows returns one row per (flow, subject, event) with the latest completed activity
+        # Query for flows returns one row per (flow, subject, event) with the last completed activity
         flows_query: Query = (
-            select(*columns)
+            select(*columns, ActivityFlowItemHistorySchema.order.label("activity_flow_order"))
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
+            .join(
+                ActivityFlowItemHistorySchema,
+                and_(
+                    ActivityFlowItemHistorySchema.activity_flow_id == AnswerSchema.flow_history_id,
+                    ActivityFlowItemHistorySchema.activity_id == AnswerSchema.activity_history_id,
+                ),
+            )
             .where(
                 *filters,
                 *([] if include_in_progress else [AnswerSchema.is_flow_completed.is_(True)]),
@@ -732,14 +745,13 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.flow_history_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
-                AnswerItemSchema.local_end_date.desc(),
-                AnswerItemSchema.local_end_time.desc(),
+                ActivityFlowItemHistorySchema.order.desc(),
             )
         )
 
         # Query for standalone activities (not part of a flow) returns one row per (activity, subject, event)
         activities_query: Query = (
-            select(*columns)
+            select(*columns, null().label("activity_flow_order"))
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
                 *filters,
