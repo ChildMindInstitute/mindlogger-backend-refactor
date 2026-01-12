@@ -4856,12 +4856,14 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     @pytest.mark.parametrize("use_version", [False, True])
+    @pytest.mark.parametrize("include_in_progress", [False, True])
     async def test_applet_completions(
         self,
         client: TestClient,
         olive: User,
         olive_answer_and_create: tuple[AnswerSchema, AppletAnswerCreate],
         use_version: bool,
+        include_in_progress: bool,
     ):
         """Validate per‑applet completions for Olive."""
         olive_answer, olive_answer_create = olive_answer_and_create
@@ -4874,6 +4876,8 @@ class TestAnswerActivityItems(BaseTest):
         params = {"fromDate": olive_answer_create.answer.local_end_date.isoformat()}
         if use_version:
             params["version"] = olive_answer.version
+        if include_in_progress:
+            params["includeInProgress"] = "true"
 
         response = await client.get(
             self.applet_answers_completions_url.format(applet_id=str(olive_answer.applet_id)),
@@ -4894,17 +4898,25 @@ class TestAnswerActivityItems(BaseTest):
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
+            "isFlowCompleted",
+            "activityFlowOrder",
         }
         assert activity["answerId"] == str(olive_answer.id)
+        assert activity["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
+        assert activity["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
         assert activity["localEndTime"] == str(olive_answer_create.answer.local_end_time)
+        assert activity["isFlowCompleted"] is None
+        assert activity["activityFlowOrder"] is None
 
     @pytest.mark.parametrize("filter_by_version", [False, True])
+    @pytest.mark.parametrize("include_in_progress", [False, True])
     async def test_applets_completions(
         self,
         client: TestClient,
         olive: User,
         olive_assigned_three_applets_one_answer: tuple[AnswerSchema, AppletAnswerCreate],
         filter_by_version: bool,
+        include_in_progress: bool,
     ):
         """
         Aggregate completions for Olive across three applets: one with an answer and two without.
@@ -4918,6 +4930,8 @@ class TestAnswerActivityItems(BaseTest):
         query_params = {"fromDate": olive_answer_create.answer.local_end_date.isoformat()}
         if filter_by_version:
             query_params["filter_by_version"] = "true"
+        if include_in_progress:
+            query_params["includeInProgress"] = "true"
 
         response = await client.get(
             url=self.applets_answers_completions_url,
@@ -4948,11 +4962,15 @@ class TestAnswerActivityItems(BaseTest):
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
+            "isFlowCompleted",
+            "activityFlowOrder",
         }
         assert activity_data["answerId"] == str(olive_answer.id)
         assert activity_data["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
         assert activity_data["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
         assert activity_data["localEndTime"] == str(olive_answer_create.answer.local_end_time)
+        assert activity_data["isFlowCompleted"] is None
+        assert activity_data["activityFlowOrder"] is None
 
         for applet_data in data:
             if applet_data["id"] != str(olive_answer.applet_id):
