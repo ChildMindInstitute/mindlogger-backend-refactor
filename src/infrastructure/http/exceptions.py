@@ -42,14 +42,12 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
 
 
 def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
-    """This function is called if the Exception was raised."""
+    """This function is called if an Exception was raised."""
 
-    # Why send the trace to the client?
-    # error_message = "".join(traceback.format_tb(error.__traceback__))
     error_message = str(error)
     response = ErrorResponseMulti(result=[ErrorResponse(message=f"Unhandled error: {error_message}")])
 
-    logger.error(str(error), exc_info=error)
+    logger.error(error_message, exc_info=error)
 
     return JSONResponse(
         content=jsonable_encoder(response.model_dump(by_alias=True)),
