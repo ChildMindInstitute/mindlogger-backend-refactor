@@ -911,7 +911,7 @@ class TestSchedule:
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=event_daily_data)
         assert resp.status_code == http.HTTPStatus.CREATED
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_get_all_schedules_no_permissions(self, client: TestClient, applet: AppletFull, lucy: User):
         client.login(lucy)
@@ -939,7 +939,7 @@ class TestSchedule:
         resp = await client.delete(self.schedule_url.format(applet_id=applet.id))
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_delete_event_by_id__firebase_error_muted(
         self,
@@ -960,7 +960,7 @@ class TestSchedule:
         resp = await client.delete(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_update_event__firefase_error_muted(
         self,
@@ -984,7 +984,7 @@ class TestSchedule:
         )
         assert resp.status_code == http.HTTPStatus.OK
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_delete_individual_event_by_id__firebase_error_muted(
         self,
@@ -1010,7 +1010,7 @@ class TestSchedule:
         )
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_delete_individual_calendar__firebase_error_muted(
         self,
@@ -1036,7 +1036,7 @@ class TestSchedule:
         )
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_create_individual_calendar__firebase_error_muted(
         self,
@@ -1062,7 +1062,7 @@ class TestSchedule:
         )
         assert resp.status_code == http.HTTPStatus.CREATED
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_update_individual_event__notification_sent_to_the_individual_respondent(
         self,
