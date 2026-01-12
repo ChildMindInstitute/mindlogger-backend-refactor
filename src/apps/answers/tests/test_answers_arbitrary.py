@@ -232,11 +232,14 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == 404
 
     async def test_public_answer_activity_items_create_for_respondent(
-        self, arbitrary_session: AsyncSession, arbitrary_client: TestClient, public_answer_create: AppletAnswerCreate
+        self,
+        arbitrary_session: AsyncSession,
+        arbitrary_client: TestClient,
+        answer_create_public_applet: AppletAnswerCreate,
     ):
-        response = await arbitrary_client.post(self.public_answer_url, data=public_answer_create)
+        response = await arbitrary_client.post(self.public_answer_url, data=answer_create_public_applet)
         assert response.status_code == 201, response.json()
-        await assert_answer_exist_on_arbitrary(str(public_answer_create.submit_id), arbitrary_session)
+        await assert_answer_exist_on_arbitrary(str(answer_create_public_applet.submit_id), arbitrary_session)
 
     async def test_answer_skippable_activity_items_create_for_respondent(
         self,

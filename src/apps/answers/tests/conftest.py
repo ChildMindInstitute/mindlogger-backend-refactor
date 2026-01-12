@@ -291,7 +291,7 @@ async def answer(session: AsyncSession, tom: User, answer_create: AppletAnswerCr
 
 
 @pytest.fixture
-def public_answer_create(
+def answer_create_public_applet(
     public_applet: AppletFull, answer_item_create: ItemAnswerCreate, client_meta: ClientMeta
 ) -> AppletAnswerCreate:
     item_create = answer_item_create.model_copy(deep=True)
@@ -309,7 +309,7 @@ def public_answer_create(
 
 
 @pytest.fixture
-def answer_with_flow_create(
+def answer_create_applet_with_flow(
     applet_with_flow: AppletFull,
     answer_item_create: ItemAnswerCreate,
     client_meta: ClientMeta,

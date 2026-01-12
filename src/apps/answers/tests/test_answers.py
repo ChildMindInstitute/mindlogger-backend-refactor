@@ -1066,7 +1066,7 @@ class TestAnswerActivityItems(BaseTest):
         self,
         client: TestClient,
         tom: User,
-        answer_with_flow_create: AppletAnswerCreate,
+        answer_create_applet_with_flow: AppletAnswerCreate,
         applet_with_flow_default_events,
         device_create_data,
     ):
@@ -1084,9 +1084,13 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.OK
 
-        data = answer_with_flow_create.model_copy(deep=True)
+        data = answer_create_applet_with_flow.model_copy(deep=True)
         event = next(
-            (event for event in applet_with_flow_default_events if event.flow_id == answer_with_flow_create.flow_id),
+            (
+                event
+                for event in applet_with_flow_default_events
+                if event.flow_id == answer_create_applet_with_flow.flow_id
+            ),
             None,
         )
         assert event
@@ -1322,9 +1326,9 @@ class TestAnswerActivityItems(BaseTest):
         assert response.content == b"pdf body"
 
     async def test_public_answer_activity_items_create_for_respondent(
-        self, client: TestClient, public_answer_create: AppletAnswerCreate
+        self, client: TestClient, answer_create_public_applet: AppletAnswerCreate
     ):
-        response = await client.post(self.public_answer_url, data=public_answer_create)
+        response = await client.post(self.public_answer_url, data=answer_create_public_applet)
         assert response.status_code == http.HTTPStatus.CREATED
 
     async def test_answer_skippable_activity_items_create_for_respondent(
@@ -2539,9 +2543,9 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_public_answer_with_zero_start_time_end_time_timestamps(
-        self, client: TestClient, public_answer_create: AppletAnswerCreate
+        self, client: TestClient, answer_create_public_applet: AppletAnswerCreate
     ):
-        create_data = public_answer_create.model_dump()
+        create_data = answer_create_public_applet.model_dump()
         create_data["answer"]["start_time"] = 0
         create_data["answer"]["end_time"] = 0
 
