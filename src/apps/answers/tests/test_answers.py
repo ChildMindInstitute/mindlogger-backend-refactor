@@ -297,7 +297,7 @@ async def olive_assigned_three_applets_one_answer(
 
 
 @pytest.fixture
-async def olive_assigned_two_app_different_versions(
+async def olive_assigned_two_applets_different_versions(
     session: AsyncSession,
     tom: User,
     olive: User,
@@ -317,6 +317,52 @@ async def olive_assigned_two_app_different_versions(
 
     await session.commit()
     return [applet_one, applet_two]
+
+
+@pytest.fixture
+async def olive_assigned_applet_with_flow_three_answers(
+    session: AsyncSession,
+    olive: User,
+    tom: User,
+    applet_with_flow: AppletFull,
+    answer_create_applet_with_flow: AppletAnswerCreate,
+    in_progress_answer_create_applet_with_flow: AppletAnswerCreate,
+    standalone_answer_create_applet_with_flow: AppletAnswerCreate,
+) -> tuple[AnswerSchema, AppletAnswerCreate, AnswerSchema, AppletAnswerCreate, AnswerSchema, AppletAnswerCreate]:
+    """
+    Assign Olive to applet with flow with three answers.
+
+    Answers for three cases:
+    1. completed flow
+    2. in-progress flow
+    3. standalone activity
+    """
+    await UserAppletAccessService(session, tom.id, applet_with_flow.id).add_role(olive.id, Role.RESPONDENT)
+    subject = await SubjectsService(session, olive.id).get_by_user_and_applet(olive.id, applet_with_flow.id)
+    if not subject:
+        subject = await SubjectsService(session, olive.id).create(
+            SubjectCreate(
+                applet_id=applet_with_flow.id,
+                first_name="Olive",
+                last_name="Johnson",
+                creator_id=tom.id,
+                secret_user_id=olive.id,
+            )
+        )
+
+    answer_service = AnswerService(session, olive.id)
+    ans_applet_with_flow = await answer_service.create_answer(answer_create_applet_with_flow)
+    in_progress_ans_applet_with_flow = await answer_service.create_answer(in_progress_answer_create_applet_with_flow)
+    standalone_ans_applet_with_flow = await answer_service.create_answer(standalone_answer_create_applet_with_flow)
+
+    return (
+        ans_applet_with_flow,
+        answer_create_applet_with_flow,
+        in_progress_ans_applet_with_flow,
+        in_progress_answer_create_applet_with_flow,
+        standalone_ans_applet_with_flow,
+        standalone_answer_create_applet_with_flow,
+    )
 
 
 @pytest.fixture
@@ -4919,7 +4965,7 @@ class TestAnswerActivityItems(BaseTest):
         client: TestClient,
         session: AsyncSession,
         olive: User,
-        olive_assigned_two_app_different_versions: list[AppletFull],
+        olive_assigned_two_applets_different_versions: list[AppletFull],
     ) -> None:
         """
         Ensure Olive can query multiple applets with different versions.
