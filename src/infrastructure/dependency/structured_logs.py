@@ -72,6 +72,13 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
         # Console renderer does not like this, and it doesn't seem to affect JSON logs
         # structlog.processors.dict_tracebacks,
         structlog.processors.StackInfoRenderer(),
+        structlog.processors.CallsiteParameterAdder(
+            [
+                structlog.processors.CallsiteParameter.PATHNAME,
+                structlog.processors.CallsiteParameter.LINENO,
+                structlog.processors.CallsiteParameter.FUNC_NAME,
+            ]
+        ),
     ]
 
     if json_logs:
