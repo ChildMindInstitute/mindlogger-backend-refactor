@@ -677,7 +677,11 @@ class CompletedEntity(PublicModel):
     local_end_date: datetime.date
     local_end_time: datetime.time
     is_flow_completed: bool | None = None
-    activity_flow_order: int | None = None
+    activity_flow_order: int | None = Field(
+        default=None,
+        description="1-indexed position of the activity within the flow, from flow_item_histories.order. "
+        "None for standalone activities (not part of a flow).",
+    )
 
     @field_validator("id", mode="before")
     @classmethod
