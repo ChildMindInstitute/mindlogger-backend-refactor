@@ -929,9 +929,14 @@ class TestAnswerActivityItems(BaseTest):
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
+            "isFlowCompleted",
+            "activityFlowOrder",
         }
         assert activity_answer_data["answerId"] == str(answer_arbitrary.id)
         assert activity_answer_data["localEndTime"] == str(answer_create.answer.local_end_time)
+        # Standalone activities have no flow info
+        assert activity_answer_data["isFlowCompleted"] is None
+        assert activity_answer_data["activityFlowOrder"] is None
 
     async def test_applets_completions(
         self,

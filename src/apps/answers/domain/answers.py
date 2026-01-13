@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 from typing import Annotated, Any, Generic, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_serializer, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
@@ -669,8 +669,9 @@ class CompletedEntity(PublicModel):
     )
     answer_id: uuid.UUID
     submit_id: uuid.UUID
-    activity_history_id: uuid.UUID | None = None
-    flow_history_id: uuid.UUID | None = None
+    # Store versioned IDs internally (e.g., "uuid_1.0.0"), serialize as UUID
+    activity_history_id: str | None = None
+    flow_history_id: str | None = None
     target_subject_id: uuid.UUID | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
@@ -678,12 +679,20 @@ class CompletedEntity(PublicModel):
     is_flow_completed: bool | None = None
     activity_flow_order: int | None = None
 
-    @field_validator("id", "activity_history_id", "flow_history_id", mode="before")
+    @field_validator("id", mode="before")
     @classmethod
     def id_from_history_id(cls, value):
         if value is None:
             return None
         return uuid.UUID(str(value)[:36])
+
+    @field_serializer("activity_history_id", "flow_history_id")
+    @classmethod
+    def serialize_history_id(cls, value: str | None) -> str | None:
+        """Strip version suffix when serializing to JSON (e.g., 'uuid_1.0.0' -> 'uuid')"""
+        if value is None:
+            return None
+        return value[:36]
 
 
 class AppletCompletedEntities(InternalModel):
