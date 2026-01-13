@@ -689,12 +689,12 @@ class CompletedEntity(PublicModel):
     def id_from_history_id(cls, value):
         return HistoryAware().id_from_history_id(value)
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def activity_id(self) -> uuid.UUID | None:
         return HistoryAware().id_from_history_id(self.activity_history_id)
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def flow_id(self) -> uuid.UUID | None:
         return HistoryAware().id_from_history_id(self.flow_history_id)
