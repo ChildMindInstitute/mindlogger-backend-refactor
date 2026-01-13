@@ -7,6 +7,7 @@ from pydantic import Field, field_validator, model_validator
 
 from apps.shared.domain.base import InternalModel
 from apps.shared.domain.custom_validations import array_from_string
+from apps.shared.domain.types import TruncatedDate
 from apps.shared.query_params import BaseQueryParams
 
 
@@ -17,7 +18,7 @@ class SummaryActivityFilter(BaseQueryParams):
 
 class ReviewAppletItemFilter(BaseQueryParams):
     target_subject_id: uuid.UUID
-    created_date: datetime.date
+    created_date: TruncatedDate
 
 
 class AppletSubmissionsFilter(BaseQueryParams):
@@ -35,8 +36,8 @@ class AppletSubmissionsFilter(BaseQueryParams):
 class AppletSubmitDateFilter(BaseQueryParams):
     respondent_id: uuid.UUID | None = None
     target_subject_id: uuid.UUID | None = None
-    from_date: datetime.date
-    to_date: datetime.date
+    from_date: TruncatedDate
+    to_date: TruncatedDate
     activity_or_flow_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
