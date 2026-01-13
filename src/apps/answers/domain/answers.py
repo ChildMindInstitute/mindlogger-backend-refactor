@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 from typing import Annotated, Any, Generic, Optional
 
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
@@ -25,6 +25,7 @@ from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.domain.types import TruncatedInt, _BaseModel
 from apps.shared.locale import I18N
 from apps.subjects.domain import SubjectReadResponse
+from infrastructure.database.mixins import HistoryAware
 
 
 class ClientMeta(InternalModel):
@@ -664,14 +665,14 @@ class ReportServerResponse(InternalModel):
 class CompletedEntity(PublicModel):
     id: uuid.UUID = Field(
         deprecated=True,
-        description="Deprecated: Use activity_history_id and flow_history_id instead. "
-        "For activities, this is the activity_history_id. For flows, this is the flow_history_id.",
+        description="Deprecated: Use activity_id and flow_id instead. "
+        "For activities, this is the activity_id. For flows, this is the flow_id.",
     )
     answer_id: uuid.UUID
     submit_id: uuid.UUID
-    # Store versioned IDs internally (e.g., "uuid_1.0.0"), serialize as UUID
-    activity_history_id: str | None = None
-    flow_history_id: str | None = None
+    # Store versioned *_history_id (e.g., "{uuid}_{version}") internally, serialize as UUID
+    activity_history_id: str | None = Field(None, exclude=True)
+    flow_history_id: str | None = Field(None, exclude=True)
     target_subject_id: uuid.UUID | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
@@ -686,17 +687,22 @@ class CompletedEntity(PublicModel):
     @field_validator("id", mode="before")
     @classmethod
     def id_from_history_id(cls, value):
-        if value is None:
-            return None
-        return uuid.UUID(str(value)[:36])
+        return HistoryAware().id_from_history_id(value)
 
-    @field_serializer("activity_history_id", "flow_history_id")
-    @classmethod
-    def serialize_history_id(cls, value: str | None) -> str | None:
-        """Strip version suffix when serializing to JSON (e.g., 'uuid_1.0.0' -> 'uuid')"""
-        if value is None:
-            return None
-        return value[:36]
+    @computed_field
+    @property
+    def activity_id(self) -> uuid.UUID | None:
+        return HistoryAware().id_from_history_id(self.activity_history_id)
+
+    @computed_field
+    @property
+    def flow_id(self) -> uuid.UUID | None:
+        return HistoryAware().id_from_history_id(self.flow_history_id)
+
+    @property
+    def group_progress_id(self) -> tuple[uuid.UUID | None, str | None, uuid.UUID | None]:
+        """Used to group activities in flow. Mimics groupProgressId in client."""
+        return (self.flow_id or self.activity_id, self.scheduled_event_id, self.target_subject_id)
 
 
 class AppletCompletedEntities(InternalModel):
