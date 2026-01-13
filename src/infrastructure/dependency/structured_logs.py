@@ -41,7 +41,6 @@ def drop_color_message_key(_, __, event_dict: EventDict) -> EventDict:
 def tracer_injection(_, __, event_dict: EventDict) -> EventDict:
     """
     Inject Datadog trace info into the event dict.
-    DEPRECATED, this is done with ddtrace.patch
     """
     # get correlation ids from current tracer context
     span = tracer.current_span()
