@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse  # Fast, efficient JSON response
 from fastapi.routing import APIRouter
+from pydantic_core._pydantic_core import PydanticSerializationUnexpectedValue
 
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
@@ -38,7 +39,8 @@ from config import settings
 from infrastructure.dependency.structured_logs import StructuredLoggingMiddleware
 from infrastructure.http.exceptions import (
     custom_base_errors_handler,
-    pydantic_validation_errors_handler,
+    pydantic_request_validation_errors_handler,
+    pydantic_serialization_validation_errors_handler,
     python_base_error_handler,
     sqlalchemy_database_error_handler,
 )
@@ -117,7 +119,8 @@ def create_app():
     for middleware, options in middlewares:
         app.add_middleware(middleware, **options)
 
-    app.add_exception_handler(RequestValidationError, pydantic_validation_errors_handler)
+    app.add_exception_handler(RequestValidationError, pydantic_request_validation_errors_handler)
+    app.add_exception_handler(PydanticSerializationUnexpectedValue, pydantic_serialization_validation_errors_handler)
     app.add_exception_handler(BaseError, custom_base_errors_handler)
     app.add_exception_handler(TimeoutError, sqlalchemy_database_error_handler)
     app.add_exception_handler(ConnectionRefusedError, sqlalchemy_database_error_handler)

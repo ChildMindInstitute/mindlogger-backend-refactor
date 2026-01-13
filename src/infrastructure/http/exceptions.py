@@ -1,6 +1,7 @@
 from asyncpg import InvalidPasswordError
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from pydantic_core._pydantic_core import PydanticSerializationUnexpectedValue
 from starlette import status
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -55,8 +56,8 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     )
 
 
-def pydantic_validation_errors_handler(request: Request, error: RequestValidationError) -> JSONResponse:
-    """This function is called if the Pydantic validation error was raised."""
+def pydantic_request_validation_errors_handler(_: Request, error: RequestValidationError) -> JSONResponse:
+    """This function is called if the Pydantic validation error was raised when a request is validated."""
     errors = []
     this_logger = logger.bind(
         error_location={"file": error.endpoint_file, "line": error.endpoint_line, "function": error.endpoint_function}
@@ -81,6 +82,21 @@ def pydantic_validation_errors_handler(request: Request, error: RequestValidatio
     return JSONResponse(
         content=jsonable_encoder(response.model_dump(by_alias=True)),
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+    )
+
+
+def pydantic_serialization_validation_errors_handler(
+    _: Request, error: PydanticSerializationUnexpectedValue
+) -> JSONResponse:
+    """
+    This function is called if the Pydantic serialization validation error was raised when a response is serialized.
+    """
+    logger.error(str(error), exc_info=error)
+    response = ErrorResponseMulti(result=[ErrorResponse(message="Internal server error")])
+
+    return JSONResponse(
+        content=jsonable_encoder(response.model_dump(by_alias=True)),
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
     )
 
 
