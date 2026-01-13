@@ -22,7 +22,7 @@ from apps.integrations.oneup_health.service.domain import EHRMetadata
 from apps.integrations.prolific.domain import ProlificParamsActivityAnswer
 from apps.shared.domain import InternalModel, PublicModel, Response
 from apps.shared.domain.custom_validations import datetime_from_ms
-from apps.shared.domain.types import _BaseModel
+from apps.shared.domain.types import TruncatedInt, _BaseModel
 from apps.shared.locale import I18N
 from apps.subjects.domain import SubjectReadResponse
 
@@ -30,8 +30,8 @@ from apps.subjects.domain import SubjectReadResponse
 class ClientMeta(InternalModel):
     app_id: str
     app_version: str
-    width: int | None = None
-    height: int | None = None
+    width: TruncatedInt | None = None
+    height: TruncatedInt | None = None
 
 
 class Answer(InternalModel):
