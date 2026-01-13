@@ -4908,6 +4908,79 @@ class TestAnswerActivityItems(BaseTest):
         assert activity["isFlowCompleted"] is None
         assert activity["activityFlowOrder"] is None
 
+    @pytest.mark.parametrize("use_version", [False, True])
+    @pytest.mark.parametrize("include_in_progress", [False, True])
+    async def test_applet_completions_with_flow(
+        self,
+        client: TestClient,
+        olive: User,
+        applet_with_flow: AppletFull,
+        olive_assigned_applet_with_flow_three_answers: tuple,
+        use_version: bool,
+        include_in_progress: bool,
+    ):
+        """
+        Validate per-applet completions for Olive with flow answers.
+
+        - Completed flows are always returned
+        - In-progress flows are only returned when includeInProgress=true
+        - Standalone activities are always returned
+        """
+        (
+            completed_flow_answer,
+            completed_flow_answer_create,
+            in_progress_flow_answer,
+            in_progress_flow_answer_create,
+            standalone_answer,
+            standalone_answer_create,
+        ) = olive_assigned_applet_with_flow_three_answers
+
+        client.login(olive)
+
+        params: dict = {"fromDate": completed_flow_answer_create.answer.local_end_date.isoformat()}
+        if use_version:
+            params["version"] = applet_with_flow.version
+        if include_in_progress:
+            params["includeInProgress"] = "true"
+
+        response = await client.get(
+            self.applet_answers_completions_url.format(applet_id=str(applet_with_flow.id)),
+            params,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()["result"]
+
+        # Flow answers depend on include_in_progress
+        if include_in_progress:
+            assert len(data["activityFlows"]) == 2
+            assert {activity["answerId"] for activity in data["activityFlows"]} == {
+                str(completed_flow_answer.id),
+                str(in_progress_flow_answer.id),
+            }
+        else:
+            assert len(data["activityFlows"]) == 1
+            assert data["activityFlows"][0]["answerId"] == str(completed_flow_answer.id)
+        for activity in data["activityFlows"]:
+            if activity["answerId"] == str(completed_flow_answer.id):
+                assert activity["activityHistoryId"] == completed_flow_answer.activity_history_id[:36]
+                assert activity["flowHistoryId"] == completed_flow_answer.flow_history_id[:36]
+                assert activity["isFlowCompleted"] is True
+                assert activity["activityFlowOrder"] == 1
+            elif activity["answerId"] == str(in_progress_flow_answer.id):
+                assert activity["activityHistoryId"] == in_progress_flow_answer.activity_history_id[:36]
+                assert activity["flowHistoryId"] == in_progress_flow_answer.flow_history_id[:36]
+                assert activity["isFlowCompleted"] is False
+                assert activity["activityFlowOrder"] == 1
+
+        # Standalone activity should always be returned
+        assert len(data["activities"]) == 1
+        activity = data["activities"][0]
+        assert activity["answerId"] == str(standalone_answer.id)
+        assert activity["activityHistoryId"] == standalone_answer.activity_history_id[:36]
+        assert activity["flowHistoryId"] is None
+        assert activity["isFlowCompleted"] is None
+        assert activity["activityFlowOrder"] is None
+
     @pytest.mark.parametrize("filter_by_version", [False, True])
     @pytest.mark.parametrize("include_in_progress", [False, True])
     async def test_applets_completions(
@@ -4976,6 +5049,84 @@ class TestAnswerActivityItems(BaseTest):
             if applet_data["id"] != str(olive_answer.applet_id):
                 assert not applet_data["activities"]
                 assert not applet_data["activityFlows"]
+
+    @pytest.mark.parametrize("filter_by_version", [False, True])
+    @pytest.mark.parametrize("include_in_progress", [False, True])
+    async def test_applets_completions_with_flow(
+        self,
+        client: TestClient,
+        olive: User,
+        applet_with_flow: AppletFull,
+        olive_assigned_applet_with_flow_three_answers: tuple,
+        filter_by_version: bool,
+        include_in_progress: bool,
+    ):
+        """
+        Aggregate completions for Olive with flow answers.
+
+        - Completed flows are always returned
+        - In-progress flows are only returned when includeInProgress=true
+        - Standalone activities are always returned
+        """
+        (
+            completed_flow_answer,
+            completed_flow_answer_create,
+            in_progress_flow_answer,
+            in_progress_flow_answer_create,
+            standalone_answer,
+            standalone_answer_create,
+        ) = olive_assigned_applet_with_flow_three_answers
+
+        client.login(olive)
+
+        query_params: dict = {"fromDate": completed_flow_answer_create.answer.local_end_date.isoformat()}
+        if filter_by_version:
+            query_params["filterByVersion"] = "true"
+        if include_in_progress:
+            query_params["includeInProgress"] = "true"
+
+        response = await client.get(
+            url=self.applets_answers_completions_url,
+            query=query_params,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()["result"]
+
+        # Find the applet_with_flow in results
+        assert len(data) == 1
+        applet_data = next(i for i in data if i["id"] == str(completed_flow_answer.applet_id))
+        assert applet_data is not None
+
+        # Flow answers depend on include_in_progress
+        if include_in_progress:
+            assert len(applet_data["activityFlows"]) == 2
+            assert {activity["answerId"] for activity in applet_data["activityFlows"]} == {
+                str(completed_flow_answer.id),
+                str(in_progress_flow_answer.id),
+            }
+        else:
+            assert len(applet_data["activityFlows"]) == 1
+            assert applet_data["activityFlows"][0]["answerId"] == str(completed_flow_answer.id)
+        for activity in applet_data["activityFlows"]:
+            if activity["answerId"] == str(completed_flow_answer.id):
+                assert activity["activityHistoryId"] == completed_flow_answer.activity_history_id[:36]
+                assert activity["flowHistoryId"] == completed_flow_answer.flow_history_id[:36]
+                assert activity["isFlowCompleted"] is True
+                assert activity["activityFlowOrder"] == 1
+            elif activity["answerId"] == str(in_progress_flow_answer.id):
+                assert activity["activityHistoryId"] == in_progress_flow_answer.activity_history_id[:36]
+                assert activity["flowHistoryId"] == in_progress_flow_answer.flow_history_id[:36]
+                assert activity["isFlowCompleted"] is False
+                assert activity["activityFlowOrder"] == 1
+
+        # Standalone activity should always be returned
+        assert len(applet_data["activities"]) == 1
+        activity = applet_data["activities"][0]
+        assert activity["answerId"] == str(standalone_answer.id)
+        assert activity["activityHistoryId"] == standalone_answer.activity_history_id[:36]
+        assert activity["flowHistoryId"] is None
+        assert activity["isFlowCompleted"] is None
+        assert activity["activityFlowOrder"] is None
 
     @pytest.mark.asyncio
     async def test_multiple_applets_with_different_versions(
