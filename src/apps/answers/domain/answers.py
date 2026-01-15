@@ -701,8 +701,28 @@ class CompletedEntity(PublicModel):
 
     @property
     def group_progress_id(self) -> tuple[uuid.UUID | None, str | None, uuid.UUID | None]:
-        """Used to group activities in flow. Mimics groupProgressId in client."""
+        """Mimics groupProgressId in client.
+
+        This should be deprecated in the future if we support versioning more fully on the client.
+        """
         return (self.flow_id or self.activity_id, self.scheduled_event_id, self.target_subject_id)
+
+    @property
+    def group_progress_history_id(self) -> tuple[str | None, str | None, uuid.UUID | None]:
+        """Similar to groupProgressId in client, except with versioned IDs.
+
+        Also mirrors the DISTINCT clause in SQL queries for:
+
+            AnswersCRUD.get_completed_answers_data
+            AnswersCRUD.get_completed_answers_data_list
+
+        We use this as the natural key for grouping activities in flows in:
+
+            AnswerService.get_completed_answers_data
+            AnswerService.get_completed_answers_data_list
+
+        """
+        return (self.flow_history_id or self.activity_history_id, self.scheduled_event_id, self.target_subject_id)
 
 
 class AppletCompletedEntities(InternalModel):

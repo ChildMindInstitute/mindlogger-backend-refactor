@@ -1728,8 +1728,8 @@ class AnswerService:
         await AnswersCRUD(self.session).populate_activity_flow_orders(result)
 
         # Keep last activity in each flow
-        sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_id"))
-        grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_id"))
+        sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
+        grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_id"))
         result.activity_flows = [
             max(activity_flows, key=attrgetter("activity_flow_order"))
             for group_progress_id, activity_flows in grouped_activity_flows
@@ -1760,8 +1760,8 @@ class AnswerService:
 
         # Keep last activity in each flow
         for result in result_list:
-            sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_id"))
-            grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_id"))
+            sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
+            grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_id"))
             result.activity_flows = [
                 max(activity_flows, key=attrgetter("activity_flow_order"))
                 for group_progress_id, activity_flows in grouped_activity_flows
