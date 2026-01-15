@@ -7,6 +7,7 @@ from typing import Optional
 
 from apps.authentication.errors import MFASessionNotFoundError
 from apps.authentication.services.security import AuthenticationService
+from apps.users.errors import MFASessionPurposeMismatchError
 from config import settings
 from infrastructure.logger import logger
 from infrastructure.utility.redis_client import RedisCache
@@ -185,6 +186,44 @@ class MFASessionService:
         if deleted:
             logger.info(f"MFA session deleted mfa_session_id={mfa_session_id}")
         return deleted
+
+    async def transition_to_confirmation(self, mfa_session_id: str, confirmation_ttl: int = 300) -> str:
+        """
+        Transition session from 'disable' to 'disable_confirmed' purpose with shorter TTL.
+
+        Returns:
+            confirmation_token: New JWT token with same session_id
+        """
+        session_data = await self.get_session(mfa_session_id)
+
+        if not session_data:
+            logger.warning(f"Cannot transition - session not found mfa_session_id={mfa_session_id}")
+            raise MFASessionNotFoundError()
+
+        if session_data.purpose != "disable":
+            logger.warning(
+                f"Cannot transition - invalid purpose mfa_session_id={mfa_session_id} "
+                f"expected=disable actual={session_data.purpose}"
+            )
+            raise MFASessionPurposeMismatchError()
+
+        # Update purpose to mark validation complete and save with shorter TTL
+        session_data.purpose = "disable_confirmed"
+        redis_key = self._build_redis_key(mfa_session_id)
+        await self.redis_client.set(
+            key=redis_key,
+            value=json.dumps(session_data.to_dict()),
+            ex=confirmation_ttl,
+        )
+
+        confirmation_token = AuthenticationService.create_mfa_token(mfa_session_id=mfa_session_id)
+
+        logger.info(
+            f"MFA session transitioned to confirmation mfa_session_id={mfa_session_id} "
+            f"user_id={session_data.user_id} ttl_seconds={confirmation_ttl}"
+        )
+
+        return confirmation_token
 
     async def increment_failed_totp_attempts(self, mfa_session_id: str) -> Optional[int]:
         """
