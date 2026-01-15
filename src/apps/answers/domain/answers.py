@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 from typing import Annotated, Any, Generic, Optional
 
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
@@ -665,14 +665,13 @@ class ReportServerResponse(InternalModel):
 class CompletedEntity(PublicModel):
     id: uuid.UUID = Field(
         deprecated=True,
-        description="Deprecated: Use activity_id and flow_id instead. "
-        "For activities, this is the activity_id. For flows, this is the flow_id.",
+        description="Deprecated: id is the unversioned activity_id or flow_id. "
+        "Use versioned activity_history_id and flow_history_id instead.",
     )
     answer_id: uuid.UUID
     submit_id: uuid.UUID
-    # Store versioned *_history_id (e.g., "{uuid}_{version}") internally, serialize as UUID
-    activity_history_id: str | None = Field(None, exclude=True)
-    flow_history_id: str | None = Field(None, exclude=True)
+    activity_history_id: str | None
+    flow_history_id: str | None
     target_subject_id: uuid.UUID | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
@@ -689,14 +688,14 @@ class CompletedEntity(PublicModel):
     def id_from_history_id(cls, value):
         return HistoryAware().id_from_history_id(value)
 
-    @computed_field  # type: ignore[prop-decorator]
     @property
     def activity_id(self) -> uuid.UUID | None:
+        """Deprecated: Use versioned activity_history_id instead."""
         return HistoryAware().id_from_history_id(self.activity_history_id)
 
-    @computed_field  # type: ignore[prop-decorator]
     @property
     def flow_id(self) -> uuid.UUID | None:
+        """Deprecated: Use versioned flow_history_id instead."""
         return HistoryAware().id_from_history_id(self.flow_history_id)
 
     @property
