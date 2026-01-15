@@ -14,8 +14,6 @@ allure-results/
 __pycache__/
 .ruff_cache/
 
-# Pyenv stuff
-.python-version
 
 # Mypy
 .mypy_cache/
