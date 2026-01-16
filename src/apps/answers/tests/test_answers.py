@@ -4892,8 +4892,6 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
-            "activityHistoryId",
-            "flowHistoryId",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
@@ -4962,13 +4960,9 @@ class TestAnswerActivityItems(BaseTest):
             assert data["activityFlows"][0]["answerId"] == str(completed_flow_answer.id)
         for activity in data["activityFlows"]:
             if activity["answerId"] == str(completed_flow_answer.id):
-                assert activity["activityHistoryId"] == completed_flow_answer.activity_history_id
-                assert activity["flowHistoryId"] == completed_flow_answer.flow_history_id
                 assert activity["isFlowCompleted"] is True
                 assert activity["activityFlowOrder"] == 1
             elif activity["answerId"] == str(in_progress_flow_answer.id):
-                assert activity["activityHistoryId"] == in_progress_flow_answer.activity_history_id
-                assert activity["flowHistoryId"] == in_progress_flow_answer.flow_history_id
                 assert activity["isFlowCompleted"] is False
                 assert activity["activityFlowOrder"] == 1
 
@@ -4976,8 +4970,6 @@ class TestAnswerActivityItems(BaseTest):
         assert len(data["activities"]) == 1
         activity = data["activities"][0]
         assert activity["answerId"] == str(standalone_answer.id)
-        assert activity["activityHistoryId"] == standalone_answer.activity_history_id
-        assert activity["flowHistoryId"] is None
         assert activity["isFlowCompleted"] is None
         assert activity["activityFlowOrder"] is None
 
@@ -5029,8 +5021,6 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
-            "activityHistoryId",
-            "flowHistoryId",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
@@ -5109,13 +5099,9 @@ class TestAnswerActivityItems(BaseTest):
             assert applet_data["activityFlows"][0]["answerId"] == str(completed_flow_answer.id)
         for activity in applet_data["activityFlows"]:
             if activity["answerId"] == str(completed_flow_answer.id):
-                assert activity["activityHistoryId"] == completed_flow_answer.activity_history_id
-                assert activity["flowHistoryId"] == completed_flow_answer.flow_history_id
                 assert activity["isFlowCompleted"] is True
                 assert activity["activityFlowOrder"] == 1
             elif activity["answerId"] == str(in_progress_flow_answer.id):
-                assert activity["activityHistoryId"] == in_progress_flow_answer.activity_history_id
-                assert activity["flowHistoryId"] == in_progress_flow_answer.flow_history_id
                 assert activity["isFlowCompleted"] is False
                 assert activity["activityFlowOrder"] == 1
 
@@ -5123,8 +5109,6 @@ class TestAnswerActivityItems(BaseTest):
         assert len(applet_data["activities"]) == 1
         activity = applet_data["activities"][0]
         assert activity["answerId"] == str(standalone_answer.id)
-        assert activity["activityHistoryId"] == standalone_answer.activity_history_id
-        assert activity["flowHistoryId"] is None
         assert activity["isFlowCompleted"] is None
         assert activity["activityFlowOrder"] is None
 

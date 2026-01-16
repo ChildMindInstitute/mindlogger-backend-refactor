@@ -670,8 +670,8 @@ class CompletedEntity(PublicModel):
     )
     answer_id: uuid.UUID
     submit_id: uuid.UUID
-    activity_history_id: str | None
-    flow_history_id: str | None
+    activity_history_id: str | None = Field(None, exclude=True)
+    flow_history_id: str | None = Field(None, exclude=True)
     target_subject_id: uuid.UUID | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
