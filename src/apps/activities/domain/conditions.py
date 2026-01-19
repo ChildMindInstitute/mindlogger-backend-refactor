@@ -140,6 +140,7 @@ class SingleDatePayload(PublicModel):
 
 
 class DateRangePayload(PublicModel):
+    # camelCase in ActivityItemSchema.conditional_logic JSONB column
     minDate: datetime.date
     maxDate: datetime.date
     fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
@@ -178,6 +179,7 @@ class SingleTimePayload(PublicModel):
     time: Optional[datetime.time] = None
     max_value: Optional[datetime.time] = None
     min_value: Optional[datetime.time] = None
+    # camelCase in ActivityItemSchema.conditional_logic JSONB column
     fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
 
     @field_validator("time", "max_value", "min_value", mode="before")
@@ -234,6 +236,7 @@ class SingleTimePayload(PublicModel):
 
 
 class MinMaxTimePayload(PublicModel):
+    # camelCase in ActivityItemSchema.conditional_logic JSONB column
     minTime: Optional[datetime.time] = None
     maxTime: Optional[datetime.time] = None
     fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
