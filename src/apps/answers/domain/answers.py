@@ -25,6 +25,7 @@ from apps.shared.domain.custom_validations import datetime_from_ms
 from apps.shared.domain.types import TruncatedInt, _BaseModel
 from apps.shared.locale import I18N
 from apps.subjects.domain import SubjectReadResponse
+from infrastructure.database.mixins import HistoryAware
 
 
 class ClientMeta(InternalModel):
@@ -662,18 +663,65 @@ class ReportServerResponse(InternalModel):
 
 
 class CompletedEntity(PublicModel):
-    id: uuid.UUID
+    id: uuid.UUID = Field(
+        deprecated=True,
+        description="Deprecated: id is the unversioned activity_id or flow_id. "
+        "Use versioned activity_history_id and flow_history_id instead.",
+    )
     answer_id: uuid.UUID
     submit_id: uuid.UUID
+    activity_history_id: str | None = Field(None, exclude=True)
+    flow_history_id: str | None = Field(None, exclude=True)
     target_subject_id: uuid.UUID | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
+    is_flow_completed: bool | None = None
+    activity_flow_order: int | None = Field(
+        default=None,
+        description="1-indexed position of the activity within the flow, from flow_item_histories.order. "
+        "None for standalone activities (not part of a flow).",
+    )
 
     @field_validator("id", mode="before")
     @classmethod
     def id_from_history_id(cls, value):
-        return uuid.UUID(str(value)[:36])
+        return HistoryAware().id_from_history_id(value)
+
+    @property
+    def activity_id(self) -> uuid.UUID | None:
+        """Deprecated: Use versioned activity_history_id instead."""
+        return HistoryAware().id_from_history_id(self.activity_history_id)
+
+    @property
+    def flow_id(self) -> uuid.UUID | None:
+        """Deprecated: Use versioned flow_history_id instead."""
+        return HistoryAware().id_from_history_id(self.flow_history_id)
+
+    @property
+    def group_progress_id(self) -> tuple[uuid.UUID | None, str | None, uuid.UUID | None]:
+        """Mimics groupProgressId in client.
+
+        This should be deprecated in the future if we support versioning more fully on the client.
+        """
+        return (self.flow_id or self.activity_id, self.scheduled_event_id, self.target_subject_id)
+
+    @property
+    def group_progress_history_id(self) -> tuple[str | None, str | None, uuid.UUID | None]:
+        """Similar to groupProgressId in client, except with versioned IDs.
+
+        Also mirrors the DISTINCT clause in SQL queries for:
+
+            AnswersCRUD.get_completed_answers_data
+            AnswersCRUD.get_completed_answers_data_list
+
+        We use this as the natural key for grouping activities in flows in:
+
+            AnswerService.get_completed_answers_data
+            AnswerService.get_completed_answers_data_list
+
+        """
+        return (self.flow_history_id or self.activity_history_id, self.scheduled_event_id, self.target_subject_id)
 
 
 class AppletCompletedEntities(InternalModel):

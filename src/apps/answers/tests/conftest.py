@@ -291,7 +291,7 @@ async def answer(session: AsyncSession, tom: User, answer_create: AppletAnswerCr
 
 
 @pytest.fixture
-def public_answer_create(
+def answer_create_public_applet(
     public_applet: AppletFull, answer_item_create: ItemAnswerCreate, client_meta: ClientMeta
 ) -> AppletAnswerCreate:
     item_create = answer_item_create.model_copy(deep=True)
@@ -309,11 +309,12 @@ def public_answer_create(
 
 
 @pytest.fixture
-def answer_with_flow_create(
+def answer_create_applet_with_flow(
     applet_with_flow: AppletFull,
     answer_item_create: ItemAnswerCreate,
     client_meta: ClientMeta,
 ) -> AppletAnswerCreate:
+    """Last activity answer of flow (is_flow_completed=True) on applet_with_flow."""
     return AppletAnswerCreate(
         applet_id=applet_with_flow.id,
         version=applet_with_flow.version,
@@ -324,6 +325,46 @@ def answer_with_flow_create(
         client=client_meta,
         flow_id=applet_with_flow.activity_flows[0].id,
         is_flow_completed=True,
+        consent_to_share=False,
+    )
+
+
+@pytest.fixture
+def in_progress_answer_create_applet_with_flow(
+    applet_with_flow: AppletFull,
+    answer_item_create: ItemAnswerCreate,
+    client_meta: ClientMeta,
+) -> AppletAnswerCreate:
+    """First activity answer of flow (is_flow_completed=False) on applet_with_flow."""
+    return AppletAnswerCreate(
+        applet_id=applet_with_flow.id,
+        version=applet_with_flow.version,
+        submit_id=uuid.uuid4(),
+        activity_id=applet_with_flow.activities[0].id,
+        answer=answer_item_create,
+        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
+        client=client_meta,
+        flow_id=applet_with_flow.activity_flows[1].id,
+        is_flow_completed=False,
+        consent_to_share=False,
+    )
+
+
+@pytest.fixture
+def standalone_answer_create_applet_with_flow(
+    applet_with_flow: AppletFull,
+    answer_item_create: ItemAnswerCreate,
+    client_meta: ClientMeta,
+) -> AppletAnswerCreate:
+    """Standalone activity answer (no flow) on applet_with_flow."""
+    return AppletAnswerCreate(
+        applet_id=applet_with_flow.id,
+        version=applet_with_flow.version,
+        submit_id=uuid.uuid4(),
+        activity_id=applet_with_flow.activities[0].id,
+        answer=answer_item_create,
+        created_at=datetime.datetime.now(datetime.UTC).replace(microsecond=0),
+        client=client_meta,
         consent_to_share=False,
     )
 

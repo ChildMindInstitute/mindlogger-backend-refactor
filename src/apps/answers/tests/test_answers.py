@@ -297,7 +297,7 @@ async def olive_assigned_three_applets_one_answer(
 
 
 @pytest.fixture
-async def olive_assigned_two_app_different_versions(
+async def olive_assigned_two_applets_different_versions(
     session: AsyncSession,
     tom: User,
     olive: User,
@@ -317,6 +317,52 @@ async def olive_assigned_two_app_different_versions(
 
     await session.commit()
     return [applet_one, applet_two]
+
+
+@pytest.fixture
+async def olive_assigned_applet_with_flow_three_answers(
+    session: AsyncSession,
+    olive: User,
+    tom: User,
+    applet_with_flow: AppletFull,
+    answer_create_applet_with_flow: AppletAnswerCreate,
+    in_progress_answer_create_applet_with_flow: AppletAnswerCreate,
+    standalone_answer_create_applet_with_flow: AppletAnswerCreate,
+) -> tuple[AnswerSchema, AppletAnswerCreate, AnswerSchema, AppletAnswerCreate, AnswerSchema, AppletAnswerCreate]:
+    """
+    Assign Olive to applet with flow with three answers.
+
+    Answers for three cases:
+    1. completed flow
+    2. in-progress flow
+    3. standalone activity
+    """
+    await UserAppletAccessService(session, tom.id, applet_with_flow.id).add_role(olive.id, Role.RESPONDENT)
+    subject = await SubjectsService(session, olive.id).get_by_user_and_applet(olive.id, applet_with_flow.id)
+    if not subject:
+        subject = await SubjectsService(session, olive.id).create(
+            SubjectCreate(
+                applet_id=applet_with_flow.id,
+                first_name="Olive",
+                last_name="Johnson",
+                creator_id=tom.id,
+                secret_user_id=olive.id,
+            )
+        )
+
+    answer_service = AnswerService(session, olive.id)
+    ans_applet_with_flow = await answer_service.create_answer(answer_create_applet_with_flow)
+    in_progress_ans_applet_with_flow = await answer_service.create_answer(in_progress_answer_create_applet_with_flow)
+    standalone_ans_applet_with_flow = await answer_service.create_answer(standalone_answer_create_applet_with_flow)
+
+    return (
+        ans_applet_with_flow,
+        answer_create_applet_with_flow,
+        in_progress_ans_applet_with_flow,
+        in_progress_answer_create_applet_with_flow,
+        standalone_ans_applet_with_flow,
+        standalone_answer_create_applet_with_flow,
+    )
 
 
 @pytest.fixture
@@ -1066,7 +1112,7 @@ class TestAnswerActivityItems(BaseTest):
         self,
         client: TestClient,
         tom: User,
-        answer_with_flow_create: AppletAnswerCreate,
+        answer_create_applet_with_flow: AppletAnswerCreate,
         applet_with_flow_default_events,
         device_create_data,
     ):
@@ -1084,9 +1130,13 @@ class TestAnswerActivityItems(BaseTest):
 
         assert response.status_code == http.HTTPStatus.OK
 
-        data = answer_with_flow_create.model_copy(deep=True)
+        data = answer_create_applet_with_flow.model_copy(deep=True)
         event = next(
-            (event for event in applet_with_flow_default_events if event.flow_id == answer_with_flow_create.flow_id),
+            (
+                event
+                for event in applet_with_flow_default_events
+                if event.flow_id == answer_create_applet_with_flow.flow_id
+            ),
             None,
         )
         assert event
@@ -1322,9 +1372,9 @@ class TestAnswerActivityItems(BaseTest):
         assert response.content == b"pdf body"
 
     async def test_public_answer_activity_items_create_for_respondent(
-        self, client: TestClient, public_answer_create: AppletAnswerCreate
+        self, client: TestClient, answer_create_public_applet: AppletAnswerCreate
     ):
-        response = await client.post(self.public_answer_url, data=public_answer_create)
+        response = await client.post(self.public_answer_url, data=answer_create_public_applet)
         assert response.status_code == http.HTTPStatus.CREATED
 
     async def test_answer_skippable_activity_items_create_for_respondent(
@@ -2539,9 +2589,9 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.FORBIDDEN
 
     async def test_public_answer_with_zero_start_time_end_time_timestamps(
-        self, client: TestClient, public_answer_create: AppletAnswerCreate
+        self, client: TestClient, answer_create_public_applet: AppletAnswerCreate
     ):
-        create_data = public_answer_create.model_dump()
+        create_data = answer_create_public_applet.model_dump()
         create_data["answer"]["start_time"] = 0
         create_data["answer"]["end_time"] = 0
 
@@ -4806,12 +4856,14 @@ class TestAnswerActivityItems(BaseTest):
         assert response.status_code == http.HTTPStatus.NOT_FOUND
 
     @pytest.mark.parametrize("use_version", [False, True])
+    @pytest.mark.parametrize("include_in_progress", [False, True])
     async def test_applet_completions(
         self,
         client: TestClient,
         olive: User,
         olive_answer_and_create: tuple[AnswerSchema, AppletAnswerCreate],
         use_version: bool,
+        include_in_progress: bool,
     ):
         """Validate per‑applet completions for Olive."""
         olive_answer, olive_answer_create = olive_answer_and_create
@@ -4824,6 +4876,8 @@ class TestAnswerActivityItems(BaseTest):
         params = {"fromDate": olive_answer_create.answer.local_end_date.isoformat()}
         if use_version:
             params["version"] = olive_answer.version
+        if include_in_progress:
+            params["includeInProgress"] = "true"
 
         response = await client.get(
             self.applet_answers_completions_url.format(applet_id=str(olive_answer.applet_id)),
@@ -4842,17 +4896,92 @@ class TestAnswerActivityItems(BaseTest):
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
+            "isFlowCompleted",
+            "activityFlowOrder",
         }
         assert activity["answerId"] == str(olive_answer.id)
+        assert activity["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
+        assert activity["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
         assert activity["localEndTime"] == str(olive_answer_create.answer.local_end_time)
+        assert activity["isFlowCompleted"] is None
+        assert activity["activityFlowOrder"] is None
+
+    @pytest.mark.parametrize("use_version", [False, True])
+    @pytest.mark.parametrize("include_in_progress", [False, True])
+    async def test_applet_completions_with_flow(
+        self,
+        client: TestClient,
+        olive: User,
+        applet_with_flow: AppletFull,
+        olive_assigned_applet_with_flow_three_answers: tuple,
+        use_version: bool,
+        include_in_progress: bool,
+    ):
+        """
+        Validate per-applet completions for Olive with flow answers.
+
+        - Completed flows are always returned
+        - In-progress flows are only returned when includeInProgress=true
+        - Standalone activities are always returned
+        """
+        (
+            completed_flow_answer,
+            completed_flow_answer_create,
+            in_progress_flow_answer,
+            in_progress_flow_answer_create,
+            standalone_answer,
+            standalone_answer_create,
+        ) = olive_assigned_applet_with_flow_three_answers
+
+        client.login(olive)
+
+        params: dict = {"fromDate": completed_flow_answer_create.answer.local_end_date.isoformat()}
+        if use_version:
+            params["version"] = applet_with_flow.version
+        if include_in_progress:
+            params["includeInProgress"] = "true"
+
+        response = await client.get(
+            self.applet_answers_completions_url.format(applet_id=str(applet_with_flow.id)),
+            params,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()["result"]
+
+        # Flow answers depend on include_in_progress
+        if include_in_progress:
+            assert len(data["activityFlows"]) == 2
+            assert {activity["answerId"] for activity in data["activityFlows"]} == {
+                str(completed_flow_answer.id),
+                str(in_progress_flow_answer.id),
+            }
+        else:
+            assert len(data["activityFlows"]) == 1
+            assert data["activityFlows"][0]["answerId"] == str(completed_flow_answer.id)
+        for activity in data["activityFlows"]:
+            if activity["answerId"] == str(completed_flow_answer.id):
+                assert activity["isFlowCompleted"] is True
+                assert activity["activityFlowOrder"] == 1
+            elif activity["answerId"] == str(in_progress_flow_answer.id):
+                assert activity["isFlowCompleted"] is False
+                assert activity["activityFlowOrder"] == 1
+
+        # Standalone activity should always be returned
+        assert len(data["activities"]) == 1
+        activity = data["activities"][0]
+        assert activity["answerId"] == str(standalone_answer.id)
+        assert activity["isFlowCompleted"] is None
+        assert activity["activityFlowOrder"] is None
 
     @pytest.mark.parametrize("filter_by_version", [False, True])
+    @pytest.mark.parametrize("include_in_progress", [False, True])
     async def test_applets_completions(
         self,
         client: TestClient,
         olive: User,
         olive_assigned_three_applets_one_answer: tuple[AnswerSchema, AppletAnswerCreate],
         filter_by_version: bool,
+        include_in_progress: bool,
     ):
         """
         Aggregate completions for Olive across three applets: one with an answer and two without.
@@ -4866,6 +4995,8 @@ class TestAnswerActivityItems(BaseTest):
         query_params = {"fromDate": olive_answer_create.answer.local_end_date.isoformat()}
         if filter_by_version:
             query_params["filter_by_version"] = "true"
+        if include_in_progress:
+            query_params["includeInProgress"] = "true"
 
         response = await client.get(
             url=self.applets_answers_completions_url,
@@ -4894,16 +5025,92 @@ class TestAnswerActivityItems(BaseTest):
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
+            "isFlowCompleted",
+            "activityFlowOrder",
         }
         assert activity_data["answerId"] == str(olive_answer.id)
         assert activity_data["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
         assert activity_data["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
         assert activity_data["localEndTime"] == str(olive_answer_create.answer.local_end_time)
+        assert activity_data["isFlowCompleted"] is None
+        assert activity_data["activityFlowOrder"] is None
 
         for applet_data in data:
             if applet_data["id"] != str(olive_answer.applet_id):
                 assert not applet_data["activities"]
                 assert not applet_data["activityFlows"]
+
+    @pytest.mark.parametrize("filter_by_version", [False, True])
+    @pytest.mark.parametrize("include_in_progress", [False, True])
+    async def test_applets_completions_with_flow(
+        self,
+        client: TestClient,
+        olive: User,
+        applet_with_flow: AppletFull,
+        olive_assigned_applet_with_flow_three_answers: tuple,
+        filter_by_version: bool,
+        include_in_progress: bool,
+    ):
+        """
+        Aggregate completions for Olive with flow answers.
+
+        - Completed flows are always returned
+        - In-progress flows are only returned when includeInProgress=true
+        - Standalone activities are always returned
+        """
+        (
+            completed_flow_answer,
+            completed_flow_answer_create,
+            in_progress_flow_answer,
+            in_progress_flow_answer_create,
+            standalone_answer,
+            standalone_answer_create,
+        ) = olive_assigned_applet_with_flow_three_answers
+
+        client.login(olive)
+
+        query_params: dict = {"fromDate": completed_flow_answer_create.answer.local_end_date.isoformat()}
+        if filter_by_version:
+            query_params["filterByVersion"] = "true"
+        if include_in_progress:
+            query_params["includeInProgress"] = "true"
+
+        response = await client.get(
+            url=self.applets_answers_completions_url,
+            query=query_params,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        data = response.json()["result"]
+
+        # Find the applet_with_flow in results
+        assert len(data) == 1
+        applet_data = next(i for i in data if i["id"] == str(completed_flow_answer.applet_id))
+        assert applet_data is not None
+
+        # Flow answers depend on include_in_progress
+        if include_in_progress:
+            assert len(applet_data["activityFlows"]) == 2
+            assert {activity["answerId"] for activity in applet_data["activityFlows"]} == {
+                str(completed_flow_answer.id),
+                str(in_progress_flow_answer.id),
+            }
+        else:
+            assert len(applet_data["activityFlows"]) == 1
+            assert applet_data["activityFlows"][0]["answerId"] == str(completed_flow_answer.id)
+        for activity in applet_data["activityFlows"]:
+            if activity["answerId"] == str(completed_flow_answer.id):
+                assert activity["isFlowCompleted"] is True
+                assert activity["activityFlowOrder"] == 1
+            elif activity["answerId"] == str(in_progress_flow_answer.id):
+                assert activity["isFlowCompleted"] is False
+                assert activity["activityFlowOrder"] == 1
+
+        # Standalone activity should always be returned
+        assert len(applet_data["activities"]) == 1
+        activity = applet_data["activities"][0]
+        assert activity["answerId"] == str(standalone_answer.id)
+        assert activity["isFlowCompleted"] is None
+        assert activity["activityFlowOrder"] is None
 
     @pytest.mark.asyncio
     async def test_multiple_applets_with_different_versions(
@@ -4911,7 +5118,7 @@ class TestAnswerActivityItems(BaseTest):
         client: TestClient,
         session: AsyncSession,
         olive: User,
-        olive_assigned_two_app_different_versions: list[AppletFull],
+        olive_assigned_two_applets_different_versions: list[AppletFull],
     ) -> None:
         """
         Ensure Olive can query multiple applets with different versions.
