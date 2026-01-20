@@ -1,7 +1,7 @@
 from datetime import date, time, timedelta
 from typing import Annotated, Self
 
-from pydantic import BaseModel, Field, NonNegativeInt, model_validator, PlainSerializer, field_serializer
+from pydantic import BaseModel, Field, NonNegativeInt, PlainSerializer, model_validator
 
 from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType, TimerType
 from apps.schedule.errors import (
@@ -13,6 +13,7 @@ from apps.schedule.errors import (
 
 # Pydantic v1 sent seconds to the client.  Use this to maintain API contract with older clients.
 StringDuration = Annotated[timedelta, PlainSerializer(lambda v: v.total_seconds(), return_type=float, when_used="json")]
+
 
 class BasePeriodicity(BaseModel):
     """Periodicity of an event"""
@@ -41,6 +42,7 @@ class BasePeriodicity(BaseModel):
         ):
             raise SelectedDateRequiredError()
         return self
+
 
 class BaseEvent(BaseModel):
     """Event of a schedule"""
@@ -82,7 +84,6 @@ class BaseEvent(BaseModel):
         ),
     ]
     timer_type: TimerType
-
 
     @model_validator(mode="after")
     def validate_timer(self) -> Self:
