@@ -12,7 +12,7 @@ from apps.schedule.errors import (
 )
 
 # Pydantic v1 sent seconds to the client.  Use this to maintain API contract with older clients.
-StringDuration = Annotated[timedelta, PlainSerializer(lambda v: v.total_seconds(), return_type=float, when_used="json")]
+TimedeltaSeconds = Annotated[timedelta, PlainSerializer(lambda v: v.total_seconds(), return_type=float, when_used="json")]
 
 
 class BasePeriodicity(BaseModel):
@@ -76,7 +76,7 @@ class BaseEvent(BaseModel):
         ),
     ]
     timer: Annotated[
-        StringDuration | None,
+        TimedeltaSeconds | None,
         Field(
             None,
             description="If timer_type is TIMER or IDLE, timer must be set.  In responses the client expects a float.",
