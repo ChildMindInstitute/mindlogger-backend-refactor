@@ -9,6 +9,7 @@ from .base import parse_obj_as
 __all__ = [
     "_BaseModel",
     "ResponseType",
+    "TimeHHMM",
     "TimeHoursMinutes",
     "TruncatedDate",
     "TruncatedInt",
@@ -58,6 +59,18 @@ def string_to_time(time_string: str) -> datetime.time:
 def time_to_dict(v: datetime.time) -> dict[str, int]:
     """Serialize datetime.time as {"hours": int, "minutes": int} dict."""
     return {"hours": v.hour, "minutes": v.minute}
+
+
+def time_to_string(v: datetime.time) -> str:
+    """Serialize datetime.time as "HH:MM" string."""
+    return v.strftime("%H:%M")
+
+
+TimeHHMM = Annotated[
+    datetime.time,
+    BeforeValidator(ensure_time),
+    PlainSerializer(time_to_string),
+]
 
 
 TimeHoursMinutes = Annotated[
