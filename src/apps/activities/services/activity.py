@@ -60,10 +60,10 @@ class ActivityService:
                 is_reviewable=activity_data.is_reviewable,
                 response_is_editable=activity_data.response_is_editable,
                 is_hidden=activity_data.is_hidden,
-                scores_and_reports=activity_data.scores_and_reports.model_dump()
+                scores_and_reports=activity_data.scores_and_reports.model_dump(mode="json")
                 if activity_data.scores_and_reports
                 else None,
-                subscale_setting=activity_data.subscale_setting.model_dump()
+                subscale_setting=activity_data.subscale_setting.model_dump(mode="json")
                 if activity_data.subscale_setting
                 else None,
                 order=index + 1,
@@ -157,10 +157,10 @@ class ActivityService:
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
                     is_hidden=activity_data.is_hidden,
-                    scores_and_reports=activity_data.scores_and_reports.model_dump()
+                    scores_and_reports=activity_data.scores_and_reports.model_dump(mode="json")
                     if activity_data.scores_and_reports
                     else None,
-                    subscale_setting=activity_data.subscale_setting.model_dump()
+                    subscale_setting=activity_data.subscale_setting.model_dump(mode="json")
                     if activity_data.subscale_setting
                     else None,
                     order=index + 1,
