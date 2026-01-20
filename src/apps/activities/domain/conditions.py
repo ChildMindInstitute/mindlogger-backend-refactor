@@ -6,6 +6,7 @@ from pydantic import Field, field_validator, model_validator
 
 from apps.activities.errors import IncorrectMaxTimeRange, IncorrectMinTimeRange, IncorrectTimeRange
 from apps.shared.domain import PublicModel, PublicModelNoExtra
+from apps.shared.domain.types import TimeHHMM, TimeHoursMinutes
 
 
 class ConditionType(StrEnum):
@@ -167,29 +168,15 @@ class DateRangePayload(PublicModel):
 
 class TimePayload(PublicModel):
     type: TimePayloadType | None = None
-    value: datetime.time
-
-    def model_dump(self, *args, **kwargs):
-        d = super().model_dump(*args, **kwargs)
-        d["value"] = self.value.strftime("%H:%M")
-        return d
+    value: TimeHHMM
 
 
 class SingleTimePayload(PublicModel):
-    time: Optional[datetime.time] = None
-    max_value: Optional[datetime.time] = None
-    min_value: Optional[datetime.time] = None
+    time: Optional[TimeHHMM] = None
+    max_value: Optional[TimeHHMM] = None
+    min_value: Optional[TimeHHMM] = None
     # camelCase in ActivityItemSchema.conditional_logic JSONB column
     fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
-
-    @field_validator("time", "max_value", "min_value", mode="before")
-    @classmethod
-    def ensure_time(cls, v):
-        if isinstance(v, dict):
-            return cls._dict_to_time(v)
-        elif isinstance(v, str):
-            return cls._string_to_time(v)
-        return v
 
     @field_validator("fieldName", mode="before")
     @classmethod
@@ -211,42 +198,12 @@ class SingleTimePayload(PublicModel):
                 raise IncorrectMinTimeRange()
         return self
 
-    def model_dump(self, *args, **kwargs) -> Dict[str, Any]:
-        d = super().model_dump(*args, **kwargs)
-        if self.time:
-            d["time"] = self.time.strftime("%H:%M")
-        return d
-
-    @staticmethod
-    def _dict_to_time(time_dict: Dict[str, Any]) -> datetime.time:
-        if "hours" in time_dict and "minutes" in time_dict:
-            return datetime.time(hour=int(time_dict["hours"]), minute=int(time_dict["minutes"]))
-        raise ValueError("Invalid time dictionary structure")
-
-    @staticmethod
-    def _string_to_time(time_string: str) -> datetime.time:
-        try:
-            return datetime.datetime.strptime(time_string, "%H:%M").time()
-        except ValueError:
-            raise ValueError("Invalid time string format. Expected 'HH:MM'.")
-
-    @staticmethod
-    def _time_to_dict(time: datetime.time) -> Dict[str, int]:
-        return {"hours": time.hour, "minutes": time.minute}
-
 
 class MinMaxTimePayload(PublicModel):
     # camelCase in ActivityItemSchema.conditional_logic JSONB column
-    minTime: Optional[datetime.time] = None
-    maxTime: Optional[datetime.time] = None
+    minTime: Optional[TimeHoursMinutes] = None
+    maxTime: Optional[TimeHoursMinutes] = None
     fieldName: Annotated[FieldNamePayloadType | None, Field(validate_default=True)] = None
-
-    @field_validator("minTime", "maxTime", mode="before")
-    @classmethod
-    def ensure_time(cls, v):
-        if isinstance(v, dict):
-            return cls._dict_to_time(v)
-        return v
 
     @field_validator("fieldName", mode="before")
     @classmethod
@@ -257,29 +214,7 @@ class MinMaxTimePayload(PublicModel):
 
     def model_dump(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         d = super().model_dump(*args, **kwargs)
-        if self.minTime:
-            d["minTime"] = self._time_to_dict(self.minTime)
-        if self.maxTime:
-            d["maxTime"] = self._time_to_dict(self.maxTime)
         return {key: value for key, value in d.items() if value is not None}
-
-    @staticmethod
-    def _dict_to_time(time_dict: Dict[str, int]) -> datetime.time:
-        if "hours" in time_dict and "minutes" in time_dict:
-            return datetime.time(hour=int(time_dict["hours"]), minute=int(time_dict["minutes"]))
-        raise ValueError("Invalid time dictionary structure")
-
-    @staticmethod
-    def _time_to_dict(time: datetime.time) -> Dict[str, int]:
-        return {"hours": time.hour, "minutes": time.minute}
-
-    def json_serialize(self) -> Dict[str, Any]:
-        data = self.model_dump()
-        if self.minTime:
-            data["minTime"] = self._time_to_dict(self.minTime)
-        if self.maxTime:
-            data["maxTime"] = self._time_to_dict(self.maxTime)
-        return data
 
 
 class MinMaxSliderRowPayload(PublicModelNoExtra):
