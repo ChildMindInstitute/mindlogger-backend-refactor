@@ -1,7 +1,7 @@
 from datetime import date, time, timedelta
 from typing import Annotated, Self
 
-from pydantic import BaseModel, Field, NonNegativeInt, model_validator
+from pydantic import BaseModel, Field, NonNegativeInt, PlainSerializer, model_validator
 
 from apps.schedule.domain.constants import NotificationTriggerType, PeriodicityType, TimerType
 from apps.schedule.errors import (
@@ -10,6 +10,11 @@ from apps.schedule.errors import (
     SelectedDateRequiredError,
     TimerRequiredError,
 )
+
+# Pydantic v1 sent seconds to the client.  Use this to maintain API contract with older clients.
+TimedeltaSeconds = Annotated[
+    timedelta, PlainSerializer(lambda v: v.total_seconds(), return_type=float, when_used="json")
+]
 
 
 class BasePeriodicity(BaseModel):
@@ -73,10 +78,10 @@ class BaseEvent(BaseModel):
         ),
     ]
     timer: Annotated[
-        timedelta | None,
+        TimedeltaSeconds | None,
         Field(
             None,
-            description="If timer_type is TIMER or IDLE, timer must be set.",
+            description="If timer_type is TIMER or IDLE, timer must be set.  In responses the client expects a float.",
             examples=["00:01:00"],
         ),
     ]
