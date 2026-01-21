@@ -1,8 +1,8 @@
 import datetime
 from enum import StrEnum
-from typing import Annotated, Any, Dict, Literal, Optional, Self
+from typing import Annotated, Literal, Optional, Self
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SerializerFunctionWrapHandler, field_validator, model_serializer, model_validator
 
 from apps.activities.errors import IncorrectMaxTimeRange, IncorrectMinTimeRange, IncorrectTimeRange
 from apps.shared.domain import PublicModel, PublicModelNoExtra
@@ -201,8 +201,10 @@ class MinMaxTimePayload(PublicModel):
             raise ValueError(f"{v} is not a valid FieldNamePayloadType value.")
         return v
 
-    def model_dump(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
-        d = super().model_dump(*args, **kwargs)
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        d = handler(self)
+        # TODO: Consider replacing with exclude_none=True or removing altogether
         return {key: value for key, value in d.items() if value is not None}
 
 
