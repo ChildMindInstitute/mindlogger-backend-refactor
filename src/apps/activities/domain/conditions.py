@@ -134,11 +134,6 @@ class ValueIndexPayload(ValuePayload):
 class SingleDatePayload(PublicModel):
     date: datetime.date
 
-    def model_dump(self, *args, **kwargs):
-        d = super().model_dump(*args, **kwargs)
-        d["date"] = self.date.isoformat()
-        return d
-
 
 class DateRangePayload(PublicModel):
     # camelCase in ActivityItemSchema.conditional_logic JSONB column
@@ -158,12 +153,6 @@ class DateRangePayload(PublicModel):
         if self.minDate and self.maxDate and self.minDate > self.maxDate:
             raise ValueError("minDate cannot be later than maxDate")
         return self
-
-    def model_dump(self, *args, **kwargs):
-        d = super().model_dump(*args, **kwargs)
-        d["minDate"] = self.minDate.isoformat()
-        d["maxDate"] = self.maxDate.isoformat()
-        return d
 
 
 class TimePayload(PublicModel):
@@ -226,12 +215,6 @@ class MinMaxSliderRowPayload(PublicModelNoExtra):
     @classmethod
     def validate_score(cls, value):
         return round(value, 2)
-
-    def model_dump(self, *args, **kwargs):
-        d = super().model_dump(*args, **kwargs)
-        d["minValue"] = round(self.minValue, 2)
-        d["maxValue"] = round(self.maxValue, 2)
-        return d
 
 
 class MinMaxPayload(PublicModelNoExtra):
