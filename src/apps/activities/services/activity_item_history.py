@@ -22,11 +22,13 @@ class ActivityItemHistoryService:
                     activity_id=f"{item.activity_id}_{self.version}",
                     question=item.question,
                     response_type=item.response_type,
-                    response_values=item.response_values.model_dump() if item.response_values else None,
-                    config=item.config.model_dump(),
+                    response_values=item.response_values.model_dump(mode="json") if item.response_values else None,
+                    config=item.config.model_dump(mode="json"),
                     order=item.order,
                     name=item.name,
-                    conditional_logic=item.conditional_logic.model_dump() if item.conditional_logic else None,
+                    conditional_logic=item.conditional_logic.model_dump(mode="json")
+                    if item.conditional_logic
+                    else None,
                     allow_edit=item.allow_edit,
                     is_hidden=item.is_hidden,
                 )

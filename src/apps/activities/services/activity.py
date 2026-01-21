@@ -60,10 +60,10 @@ class ActivityService:
                 is_reviewable=activity_data.is_reviewable,
                 response_is_editable=activity_data.response_is_editable,
                 is_hidden=activity_data.is_hidden,
-                scores_and_reports=activity_data.scores_and_reports.model_dump()
+                scores_and_reports=activity_data.scores_and_reports.model_dump(mode="json")
                 if activity_data.scores_and_reports
                 else None,
-                subscale_setting=activity_data.subscale_setting.model_dump()
+                subscale_setting=activity_data.subscale_setting.model_dump(mode="json")
                 if activity_data.subscale_setting
                 else None,
                 order=index + 1,
@@ -83,11 +83,11 @@ class ActivityService:
                     activity_id=activity_id,
                     question=item.question,
                     response_type=item.response_type,
-                    response_values=item.response_values.model_dump() if item.response_values else None,
-                    config=item.config.model_dump(),
+                    response_values=item.response_values,
+                    config=item.config,
                     name=item.name,
                     is_hidden=item.is_hidden,
-                    conditional_logic=item.conditional_logic.model_dump() if item.conditional_logic else None,
+                    conditional_logic=item.conditional_logic,
                     allow_edit=item.allow_edit,
                     extra_fields=item.extra_fields,
                 )
@@ -157,10 +157,10 @@ class ActivityService:
                     is_reviewable=activity_data.is_reviewable,
                     response_is_editable=activity_data.response_is_editable,
                     is_hidden=activity_data.is_hidden,
-                    scores_and_reports=activity_data.scores_and_reports.model_dump()
+                    scores_and_reports=activity_data.scores_and_reports.model_dump(mode="json")
                     if activity_data.scores_and_reports
                     else None,
-                    subscale_setting=activity_data.subscale_setting.model_dump()
+                    subscale_setting=activity_data.subscale_setting.model_dump(mode="json")
                     if activity_data.subscale_setting
                     else None,
                     order=index + 1,
@@ -187,9 +187,9 @@ class ActivityService:
                         activity_id=activity_id,
                         question=item.question,
                         response_type=item.response_type,
-                        response_values=item.response_values.model_dump() if item.response_values else None,
-                        config=item.config.model_dump(),
-                        conditional_logic=item.conditional_logic.model_dump() if item.conditional_logic else None,
+                        response_values=item.response_values,
+                        config=item.config,
+                        conditional_logic=item.conditional_logic,
                         allow_edit=item.allow_edit,
                         is_hidden=item.is_hidden,
                     )
