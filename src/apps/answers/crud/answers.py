@@ -168,6 +168,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             select(
                 AnswerSchema.submit_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.applet_id,
                 AnswerSchema.version,
                 created_at.label("created_at"),
@@ -186,6 +187,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                         AnswerSchema.activity_history_id,
                         text("'flow_history_id'"),
                         AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                         text("'user_public_key'"),
                         AnswerItemSchema.user_public_key,
                         text("'answer'"),
@@ -610,6 +612,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.submit_id,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerSchema.is_flow_completed,
                 AnswerItemSchema.scheduled_event_id,
@@ -626,6 +629,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
@@ -634,6 +638,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .distinct(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
             )
@@ -719,6 +724,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
@@ -727,6 +733,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .distinct(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
             )
