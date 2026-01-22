@@ -1706,6 +1706,62 @@ class AnswerService:
                 break
         await self.send_alert_mail(persons)
 
+    @staticmethod
+    def _filter_activity_flows(result: AppletCompletedEntities) -> None:
+        """
+        Filter activity flows to keep only the most relevant submission per flow/event/subject.
+        
+        This method:
+        1. Keeps the last activity in each flow (by group_progress_history_id)
+        2. For flows with multiple submissions, keeps only the farthest in-progress flow
+           OR the most recent completed flow if no in-progress flows exist
+        
+        Modifies the result.activity_flows in-place.
+        """
+        # Keep last activity in each flow
+        sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
+        grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_id"))
+        result.activity_flows = [
+            max(activity_flows, key=attrgetter("activity_flow_order"))
+            for group_progress_id, activity_flows in grouped_activity_flows
+        ]
+
+        # Filter to keep only the farthest in-progress flow per flow/event/subject
+        # Group by flow/event/subject (without submit_id) to compare across submissions
+        def flow_group_key(entity):
+            return (
+                entity.flow_history_id or entity.activity_history_id,
+                entity.scheduled_event_id,
+                entity.target_subject_id
+            )
+
+        sorted_by_flow = sorted(result.activity_flows, key=flow_group_key)
+        grouped_by_flow = groupby(sorted_by_flow, key=flow_group_key)
+
+        filtered_flows = []
+        for flow_key, submissions in grouped_by_flow:
+            submissions_list = list(submissions)
+
+            # Filter to in-progress flows only
+            in_progress = [s for s in submissions_list if s.is_flow_completed is False]
+
+            if in_progress:
+                # Return the in-progress flow with highest activity_flow_order (farthest progress)
+                farthest = max(in_progress, key=lambda x: x.activity_flow_order or 0)
+                filtered_flows.append(farthest)
+            else:
+                # No in-progress flows, check if any are completed
+                completed = [s for s in submissions_list if s.is_flow_completed is True]
+                if completed:
+                    # Return the most recent completed flow
+                    latest_completed = max(
+                        completed,
+                        key=lambda x: (x.local_end_date or datetime.date.min, x.local_end_time or datetime.time.min)
+                    )
+                    filtered_flows.append(latest_completed)
+
+        result.activity_flows = filtered_flows
+
     async def get_completed_answers_data(
         self,
         applet_id: uuid.UUID,
@@ -1727,13 +1783,8 @@ class AnswerService:
         # Get activity_flow_order from main database (flow_item_histories only exists there)
         await AnswersCRUD(self.session).populate_activity_flow_orders(result)
 
-        # Keep last activity in each flow
-        sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
-        grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_id"))
-        result.activity_flows = [
-            max(activity_flows, key=attrgetter("activity_flow_order"))
-            for group_progress_id, activity_flows in grouped_activity_flows
-        ]
+        # Filter activity flows using the shared helper method
+        self._filter_activity_flows(result)
 
         return result
 
@@ -1758,14 +1809,9 @@ class AnswerService:
         # Get activity_flow_order from main database (flow_item_histories only exists there)
         await AnswersCRUD(self.session).populate_activity_flow_orders(*result_list)
 
-        # Keep last activity in each flow
+        # Filter activity flows for each result using the shared helper method
         for result in result_list:
-            sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
-            grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_id"))
-            result.activity_flows = [
-                max(activity_flows, key=attrgetter("activity_flow_order"))
-                for group_progress_id, activity_flows in grouped_activity_flows
-            ]
+            self._filter_activity_flows(result)
 
         return result_list
 
