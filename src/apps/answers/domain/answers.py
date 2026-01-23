@@ -676,6 +676,8 @@ class CompletedEntity(PublicModel):
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
+    start_time: datetime.time | None = None
+    end_time: datetime.time | None = None
     is_flow_completed: bool | None = None
     activity_flow_order: int | None = Field(
         default=None,
@@ -699,7 +701,7 @@ class CompletedEntity(PublicModel):
         return HistoryAware().id_from_history_id(self.flow_history_id)
 
     @property
-    def group_progress_id(self) -> tuple[uuid.UUID | None, str | None, uuid.UUID | None, str]:
+    def group_progress_id(self) -> tuple[uuid.UUID | None, str | None, uuid.UUID | None, uuid.UUID]:
         """Mimics groupProgressId in client.
 
         This should be deprecated in the future if we support versioning more fully on the client.
@@ -707,7 +709,7 @@ class CompletedEntity(PublicModel):
         return (self.flow_id or self.activity_id, self.scheduled_event_id, self.target_subject_id, self.submit_id)
 
     @property
-    def group_progress_history_id(self) -> tuple[str | None, str | None, uuid.UUID | None, str]:
+    def group_progress_history_id(self) -> tuple[str | None, str | None, uuid.UUID | None, uuid.UUID]:
         """Similar to groupProgressId in client, except with versioned IDs.
 
         Also mirrors the DISTINCT clause in SQL queries for:
