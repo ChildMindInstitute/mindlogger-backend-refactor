@@ -721,7 +721,12 @@ class CompletedEntity(PublicModel):
             AnswerService.get_completed_answers_data_list
 
         """
-        return (self.flow_history_id or self.activity_history_id, self.scheduled_event_id, self.target_subject_id, self.submit_id)
+        return (
+            self.flow_history_id or self.activity_history_id,
+            self.scheduled_event_id,
+            self.target_subject_id,
+            self.submit_id,
+        )
 
 
 class AppletCompletedEntities(InternalModel):

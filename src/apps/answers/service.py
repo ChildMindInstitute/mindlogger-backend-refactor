@@ -413,6 +413,7 @@ class AnswerService:
             )
 
         relation = await self._get_answer_relation(respondent_subject, source_subject, target_subject)
+
         answer = await AnswersCRUD(self.answer_session).create(
             AnswerSchema(
                 submit_id=applet_answer.submit_id,
@@ -1710,29 +1711,36 @@ class AnswerService:
     def _filter_activity_flows(result: AppletCompletedEntities) -> None:
         """
         Filter activity flows to keep only the most relevant submission per flow/event/subject.
-        
+
         This method:
         1. Keeps the last activity in each flow (by group_progress_history_id)
-        2. For flows with multiple submissions, keeps only the farthest in-progress flow
-           OR the most recent completed flow if no in-progress flows exist
-        
+        2. For flows with multiple submissions:
+           - If both completed and in-progress exist, compare timestamps
+           - Return the most recent submission (handles offline sync scenarios)
+           - If only in-progress exist, return the one with highest activity_flow_order
+           - If only completed exist, return the most recent one
+
         Modifies the result.activity_flows in-place.
         """
         # Keep last activity in each flow
         sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
         grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_id"))
-        result.activity_flows = [
-            max(activity_flows, key=attrgetter("activity_flow_order"))
-            for group_progress_id, activity_flows in grouped_activity_flows
-        ]
 
-        # Filter to keep only the farthest in-progress flow per flow/event/subject
+        filtered_results = []
+        for group_progress_id, activity_flows in grouped_activity_flows:
+            flows_list = list(activity_flows)
+            chosen = max(flows_list, key=attrgetter("activity_flow_order"))
+            filtered_results.append(chosen)
+
+        result.activity_flows = filtered_results
+
+        # Filter to keep only the most relevant submission per flow/event/subject
         # Group by flow/event/subject (without submit_id) to compare across submissions
         def flow_group_key(entity):
             return (
                 entity.flow_history_id or entity.activity_history_id,
                 entity.scheduled_event_id,
-                entity.target_subject_id
+                entity.target_subject_id,
             )
 
         sorted_by_flow = sorted(result.activity_flows, key=flow_group_key)
@@ -1742,23 +1750,56 @@ class AnswerService:
         for flow_key, submissions in grouped_by_flow:
             submissions_list = list(submissions)
 
-            # Filter to in-progress flows only
+            # Separate completed and in-progress submissions
+            completed = [s for s in submissions_list if s.is_flow_completed is True]
             in_progress = [s for s in submissions_list if s.is_flow_completed is False]
 
-            if in_progress:
-                # Return the in-progress flow with highest activity_flow_order (farthest progress)
-                farthest = max(in_progress, key=lambda x: x.activity_flow_order or 0)
-                filtered_flows.append(farthest)
-            else:
-                # No in-progress flows, check if any are completed
-                completed = [s for s in submissions_list if s.is_flow_completed is True]
-                if completed:
-                    # Return the most recent completed flow
-                    latest_completed = max(
-                        completed,
-                        key=lambda x: (x.local_end_date or datetime.date.min, x.local_end_time or datetime.time.min)
-                    )
-                    filtered_flows.append(latest_completed)
+            if completed and in_progress:
+                # Both exist - compare timestamps to determine which is more recent
+                # For both completed and in-progress: use timestamp to get the most recent
+                best_completed = max(
+                    completed,
+                    key=lambda x: (x.local_end_date or datetime.date.min, x.local_end_time or datetime.time.min),
+                )
+                best_in_progress = max(
+                    in_progress,
+                    key=lambda x: (x.local_end_date or datetime.date.min, x.local_end_time or datetime.time.min),
+                )
+
+                completed_time = (
+                    best_completed.local_end_date or datetime.date.min,
+                    best_completed.local_end_time or datetime.time.min,
+                )
+                in_progress_time = (
+                    best_in_progress.local_end_date or datetime.date.min,
+                    best_in_progress.local_end_time or datetime.time.min,
+                )
+
+                # If completed timestamp is more recent, use completed (offline sync scenario)
+                # If in-progress timestamp is more recent, use in-progress (restart scenario)
+                if completed_time > in_progress_time:
+                    filtered_flows.append(best_completed)
+                elif in_progress_time > completed_time:
+                    filtered_flows.append(best_in_progress)
+                else:
+                    # Same timestamp (unlikely) - prefer higher progress
+                    if (best_completed.activity_flow_order or 0) >= (best_in_progress.activity_flow_order or 0):
+                        filtered_flows.append(best_completed)
+                    else:
+                        filtered_flows.append(best_in_progress)
+
+            elif completed:
+                # Only completed submissions exist
+                latest_completed = max(
+                    completed,
+                    key=lambda x: (x.local_end_date or datetime.date.min, x.local_end_time or datetime.time.min),
+                )
+                filtered_flows.append(latest_completed)
+
+            elif in_progress:
+                # Only in-progress submissions exist - return highest activity_flow_order
+                farthest_in_progress = max(in_progress, key=lambda x: x.activity_flow_order or 0)
+                filtered_flows.append(farthest_in_progress)
 
         result.activity_flows = filtered_flows
 
