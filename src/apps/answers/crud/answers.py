@@ -187,7 +187,6 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                         AnswerSchema.activity_history_id,
                         text("'flow_history_id'"),
                         AnswerSchema.flow_history_id,
-                        AnswerSchema.submit_id,
                         text("'user_public_key'"),
                         AnswerItemSchema.user_public_key,
                         text("'answer'"),
