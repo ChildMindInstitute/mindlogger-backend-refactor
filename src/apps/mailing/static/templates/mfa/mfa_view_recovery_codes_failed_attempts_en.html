@@ -1,0 +1,74 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en">
+  <body>
+    {% include 'header.html' %}
+    <table style="padding: 0; font-size: 1.4rem">
+      <tr>
+        <td style="padding-bottom: 16px">
+          Hi {{first_name}},
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;">
+          Someone attempted to view your recovery codes with an incorrect verification code.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          <strong>Attempt Details:</strong>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • Time: {{attempted_at}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          • Failed attempts: {{failed_attempts}} of {{max_attempts}} maximum attempts
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          • Remaining attempts: {{remaining_attempts}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          Your recovery codes remain secure and have not been accessed.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;">
+          Warning: Your account will be temporarily locked if you reach {{max_attempts}} failed attempts.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;">
+          If this wasn't you, someone may have access to your password. Take action immediately:
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          1. Change your password now
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          2. Review your recent account activity
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          3. Make sure your authenticator app is synced and working correctly
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          If you were trying to view your recovery codes, please ensure you're using the correct verification code from your authenticator app.
+        </td>
+      </tr>
+      {% include 'blocks/team_info_en.html' %}
+    </table>
+    {% include 'footers/footer_info_en.html' %}
+  </body>
+</html>

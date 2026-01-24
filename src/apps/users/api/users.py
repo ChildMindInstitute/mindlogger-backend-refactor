@@ -371,6 +371,20 @@ async def user_mfa_totp_disable_verify(
                 # Check if global lockout threshold reached
                 if global_count >= settings.redis.mfa_global_lockout_attempts:
                     logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
+                    await mfa_service.delete_session(mfa_session_id)
+
+                    # Send account locked notification
+                    notification_service = MFANotificationService()
+                    await notification_service.send_account_locked_email(
+                        user=db_user,
+                        lockout_reason="Too many failed MFA disable attempts",
+                        failed_attempts=global_count,
+                        lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                    )
+
+                    raise MFAGlobalLockoutError(
+                        global_attempts_remaining=0,
+                    )
 
                 # Check if per-session threshold reached
                 if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
@@ -662,12 +676,43 @@ async def user_recovery_codes_view_verify(
 
                 logger.warning(
                     f"Invalid TOTP/recovery code for recovery codes view user_id={token_user_id} "
-                    f"session_attempts={new_count} global_attempts={global_count}"
+                    f"session_attempts={new_count} global_attempts={global_count} "
+                    f"warning_threshold={settings.mfa.failed_attempts_warning_threshold}"
                 )
+
+                # Send warning email if global attempts hit threshold
+                if global_count == settings.mfa.failed_attempts_warning_threshold:
+                    logger.info(
+                        f"Sending view recovery codes failed attempts warning email user_id={token_user_id} "
+                        f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
+                    )
+                    notification_service = MFANotificationService()
+                    await notification_service.send_view_recovery_codes_failed_attempts_warning(
+                        user=db_user,
+                        failed_attempts=global_count,
+                        max_attempts=settings.redis.mfa_global_lockout_attempts,
+                        remaining_attempts=global_remaining,
+                        attempted_at=datetime.now(timezone.utc),
+                    )
+                    logger.info(f"View recovery codes failed attempts warning email sent user_id={token_user_id}")
 
                 # Check if global lockout threshold reached
                 if global_count >= settings.redis.mfa_global_lockout_attempts:
                     logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
+                    await mfa_service.delete_session(mfa_session_id)
+
+                    # Send account locked notification
+                    notification_service = MFANotificationService()
+                    await notification_service.send_account_locked_email(
+                        user=db_user,
+                        lockout_reason="Too many failed attempts to view recovery codes",
+                        failed_attempts=global_count,
+                        lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                    )
+
+                    raise MFAGlobalLockoutError(
+                        global_attempts_remaining=0,
+                    )
 
                 # Check if per-session threshold reached
                 if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
