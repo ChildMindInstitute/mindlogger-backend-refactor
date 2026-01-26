@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 from typing import Annotated, Any, Generic, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_serializer, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
@@ -676,14 +676,20 @@ class CompletedEntity(PublicModel):
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
-    start_time: datetime.time | None = None
-    end_time: datetime.time | None = None
+    start_time: datetime.datetime | None = None
+    end_time: datetime.datetime | None = None
     is_flow_completed: bool | None = None
     activity_flow_order: int | None = Field(
         default=None,
         description="1-indexed position of the activity within the flow, from flow_item_histories.order. "
         "None for standalone activities (not part of a flow).",
     )
+
+    @field_serializer("start_time", "end_time", when_used="json")
+    def datetime_to_ms(self, value: datetime.datetime | None):
+        if value is None:
+            return None
+        return int(value.timestamp() * 1000)
 
     @field_validator("id", mode="before")
     @classmethod
@@ -701,27 +707,37 @@ class CompletedEntity(PublicModel):
         return HistoryAware().id_from_history_id(self.flow_history_id)
 
     @property
-    def group_progress_id(self) -> tuple[uuid.UUID | None, str | None, uuid.UUID | None, uuid.UUID]:
+    def group_progress_id(self) -> tuple[uuid.UUID | None, str | None, uuid.UUID | None]:
         """Mimics groupProgressId in client.
 
         This should be deprecated in the future if we support versioning more fully on the client.
         """
-        return (self.flow_id or self.activity_id, self.scheduled_event_id, self.target_subject_id, self.submit_id)
+        return (self.flow_id or self.activity_id, self.scheduled_event_id, self.target_subject_id)
 
     @property
-    def group_progress_history_id(self) -> tuple[str | None, str | None, uuid.UUID | None, uuid.UUID]:
+    def group_progress_history_id(self) -> tuple[str | None, str | None, uuid.UUID | None]:
         """Similar to groupProgressId in client, except with versioned IDs.
+
+        Groups by flow/event/subject identity without submit_id to compare across submissions.
+        Used in AnswerService._filter_activity_flows to group different submission attempts
+        of the same flow together.
+        """
+        return (
+            self.flow_history_id or self.activity_history_id,
+            self.scheduled_event_id,
+            self.target_subject_id,
+        )
+
+    @property
+    def group_progress_history_submit_id(self) -> tuple[str | None, str | None, uuid.UUID | None, uuid.UUID]:
+        """Unique key per submission attempt - includes submit_id.
 
         Also mirrors the DISTINCT clause in SQL queries for:
 
             AnswersCRUD.get_completed_answers_data
             AnswersCRUD.get_completed_answers_data_list
 
-        We use this as the natural key for grouping activities in flows in:
-
-            AnswerService.get_completed_answers_data
-            AnswerService.get_completed_answers_data_list
-
+        We use this to distinguish individual submission attempts within the same flow.
         """
         return (
             self.flow_history_id or self.activity_history_id,

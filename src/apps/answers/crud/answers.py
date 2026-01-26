@@ -617,6 +617,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
+                AnswerItemSchema.start_datetime.label("start_time"),
+                AnswerItemSchema.end_datetime.label("end_time"),
             )
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
@@ -713,6 +715,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
+                AnswerItemSchema.start_datetime.label("start_time"),
+                AnswerItemSchema.end_datetime.label("end_time"),
             )
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
