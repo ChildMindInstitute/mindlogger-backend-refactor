@@ -43,23 +43,27 @@ async def soft_delete(
             if not subject:
                 raise typer.BadParameter("Subject does not exist for applet")
 
+            if subject.is_deleted:
+                raise typer.BadParameter("Subject is already soft deleted")
+
             print(f"[bold green]Found subject {subject.id} ({subject.email})[/bold green]")
 
-            typer.confirm("Are you sure that you soft delete this user?", abort=True)
+            if not yes:
+                typer.confirm("Are you sure that you soft delete this user?", abort=True)
 
-            update_schema = SoftDeleteUserRequest(
-                first_name="NAME_REMOVED_BY_CURIOUS_TEAM",
-                last_name="NAME_REMOVED_BY_CURIOUS_TEAM",
-                email="asdf@asf.com"
-            )
-            #
-            # await users_crud.update(user, update_schema)
-            #
-            # subject.first_name = "NAME_REMOVED_BY_CURIOUS_TEAM"
-            # subject.last_name = "NAME_REMOVED_BY_CURIOUS_TEAM"
-            # subject.email = "asdf@asdf.com"
-            #
-            # await subjects_crud.update(subject)
+            name = f"NAME_REMOVED_BY_CURIOUS_TEAM-{ticket_id}"
+            email = f"{uuid.uuid4()}@NAME_REMOVED_BY_CURIOUS_TEAM.com"
+
+            update_schema = SoftDeleteUserRequest(first_name=name, last_name=name, email=email)
+
+            await users_crud.update(user, update_schema)
+
+            subject.first_name = name
+            subject.last_name = name
+            subject.email = email
+            subject.is_deleted = True
+
+            await subjects_crud.update(subject)
 
 
 # Placeholder until there are more commands, mostly for testing
