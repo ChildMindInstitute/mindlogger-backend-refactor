@@ -70,14 +70,53 @@ class InvalidTOTPCodeError(AuthenticationError):
     status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_INVALID_TOTP_CODE
 
+    def __init__(
+        self,
+        session_attempts_remaining: int | None = None,
+        global_attempts_remaining: int | None = None,
+        **kwargs,
+    ):
+        metadata: dict[str, int] = {}
+        if session_attempts_remaining is not None:
+            metadata["session_attempts_remaining"] = session_attempts_remaining
+        if global_attempts_remaining is not None:
+            metadata["global_attempts_remaining"] = global_attempts_remaining
+        super().__init__(metadata=metadata if metadata else None, **kwargs)
+
 
 class TooManyTOTPAttemptsError(AuthenticationError):
     message = _("Too many invalid TOTP attempts. Please login again.")
     status_code = status.HTTP_429_TOO_MANY_REQUESTS
     error_code = AuthErrorCode.MFA_TOO_MANY_ATTEMPTS
 
+    def __init__(
+        self,
+        session_attempts_remaining: int | None = None,
+        global_attempts_remaining: int | None = None,
+        lockout_reason: str | None = None,
+        **kwargs,
+    ):
+        metadata: dict[str, int | str] = {}
+        if session_attempts_remaining is not None:
+            metadata["session_attempts_remaining"] = session_attempts_remaining
+        if global_attempts_remaining is not None:
+            metadata["global_attempts_remaining"] = global_attempts_remaining
+        if lockout_reason:
+            metadata["lockout_reason"] = lockout_reason
+        super().__init__(metadata=metadata if metadata else None, **kwargs)
+
 
 class MFAGlobalLockoutError(AuthenticationError):
     message = _("Account temporarily locked due to multiple failed MFA attempts. Please try again later.")
     status_code = status.HTTP_429_TOO_MANY_REQUESTS
     error_code = AuthErrorCode.MFA_GLOBAL_LOCKOUT
+
+    def __init__(
+        self,
+        global_attempts_remaining: int = 0,
+        **kwargs,
+    ):
+        metadata: dict[str, int] = {
+            "global_attempts_remaining": global_attempts_remaining,
+        }
+        super().__init__(metadata=metadata, **kwargs)

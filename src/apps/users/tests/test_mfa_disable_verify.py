@@ -43,10 +43,10 @@ class TestMFADisableVerify:
     disable_initiate_url = "/users/me/mfa/totp/disable/initiate"
     disable_verify_url = "/users/me/mfa/totp/disable/verify"
 
-    async def test_disable_verify_with_valid_totp_clears_mfa_secrets(
+    async def test_disable_verify_with_valid_totp_returns_confirmation_token(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession
     ):
-        """Valid TOTP code successfully disables MFA and clears secrets."""
+        """Valid TOTP code returns confirmation token but does NOT disable MFA yet."""
         client.login(user_with_mfa)
 
         # Initiate disable flow
@@ -56,8 +56,6 @@ class TestMFADisableVerify:
 
         # Decrypt the secret to generate valid TOTP
         assert user_with_mfa.mfa_secret is not None
-        assert user_with_mfa.mfa_secret is not None
-
         decrypted_secret = totp_service.decrypt_secret(user_with_mfa.mfa_secret)
         valid_totp = totp_service.get_current_code(decrypted_secret)
 
@@ -67,15 +65,16 @@ class TestMFADisableVerify:
 
         assert response.status_code == status.HTTP_200_OK
         result = response.json()["result"]
-        assert result["mfaDisabled"] is True
-        assert "MFA has been successfully disabled" in result["message"]
+        assert result["codeValidated"] is True
+        assert "confirmationToken" in result
+        assert result["confirmationToken"] != ""
+        assert "confirm" in result["message"].lower()
 
-        # Verify MFA is disabled in database
+        # Verify MFA is STILL ENABLED in database (not disabled yet)
         crud = UsersCRUD(session)
         updated_user = await crud.get_by_id(user_with_mfa.id)
-        assert updated_user.mfa_enabled is False
-        assert updated_user.mfa_secret is None
-        assert updated_user.pending_mfa_secret is None
+        assert updated_user.mfa_enabled is True  # Still enabled!
+        assert updated_user.mfa_secret is not None  # Secret still exists!
 
     async def test_disable_verify_with_invalid_totp_returns_error(self, client: TestClient, user_with_mfa: User):
         """Invalid TOTP code returns error."""

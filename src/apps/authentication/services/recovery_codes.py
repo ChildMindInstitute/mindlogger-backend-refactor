@@ -14,9 +14,11 @@ from apps.authentication.domain.recovery_code import (
     RecoveryCodeCreate,
     RecoveryCodeView,
 )
+from apps.authentication.services.mfa_notifications import MFANotificationService
 from apps.shared.bcrypt import get_password_hash, verify
 from apps.users.cruds.user import UsersCRUD
 from apps.users.db.schemas import UserSchema
+from apps.users.domain import User
 from apps.users.errors import (
     RecoveryCodeAlreadyUsedError,
     RecoveryCodeInvalidError,
@@ -35,6 +37,7 @@ __all__ = [
     "generate_recovery_codes",
     "get_recovery_codes",
     "verify_recovery_code_service",
+    "send_recovery_code_notifications",
     "format_recovery_codes_text",
 ]
 
@@ -326,6 +329,45 @@ async def verify_recovery_code_service(
 
     # Step 4: Return the updated domain object
     return updated_code
+
+
+async def send_recovery_code_notifications(
+    session: AsyncSession,
+    user: User,
+    used_at: datetime.datetime,
+    request_info: dict | None = None,
+) -> None:
+    """Send recovery code usage notifications.
+
+    Sends two notifications after recovery code verification:
+    - Recovery code used notification (with request metadata)
+    - Last recovery code warning (if at or below threshold)
+    """
+    # Count remaining unused recovery codes
+    remaining_codes_list = await RecoveryCodeCRUD(session).get_unused_by_user_id(user.id)
+    remaining_count = len(remaining_codes_list)
+
+    # Send recovery code used notification
+    notification_service = MFANotificationService()
+    await notification_service.send_recovery_code_used_notification(
+        user=user,
+        used_at=used_at,
+        remaining_codes=remaining_count,
+        request_info=request_info,
+    )
+
+    # Send warning if at or below threshold
+    if remaining_count <= settings.mfa.last_recovery_code_warning_threshold:
+        await notification_service.send_last_recovery_code_warning(
+            user=user,
+            remaining_count=remaining_count,
+        )
+
+    logger.info(
+        f"Recovery code notifications sent user_id={user.id} "
+        f"remaining_codes={remaining_count} "
+        f"warning_sent={remaining_count <= settings.mfa.last_recovery_code_warning_threshold}"
+    )
 
 
 def format_recovery_codes_text(codes: list[RecoveryCodeView], user_email: str) -> str:

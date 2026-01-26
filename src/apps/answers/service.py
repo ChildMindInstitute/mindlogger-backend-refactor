@@ -1,13 +1,14 @@
 import asyncio
 import base64
 import datetime
-import itertools
 import json
 import os
 import time
 import uuid
 from collections import defaultdict
+from itertools import chain, groupby
 from json import JSONDecodeError
+from operator import attrgetter
 from typing import Callable, List, Mapping, Optional
 
 import aiohttp
@@ -1706,15 +1707,34 @@ class AnswerService:
         await self.send_alert_mail(persons)
 
     async def get_completed_answers_data(
-        self, applet_id: uuid.UUID, version: Optional[str], from_date: datetime.date
+        self,
+        applet_id: uuid.UUID,
+        version: Optional[str],
+        from_date: datetime.date,
+        include_in_progress: bool = False,
     ) -> AppletCompletedEntities:
         assert self.user_id
+
+        # Get copmleted answers for applet from main or arbitrary database
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data(
             applet_id,
             version,
             self.user_id,
             from_date,
+            include_in_progress=include_in_progress,
         )
+
+        # Get activity_flow_order from main database (flow_item_histories only exists there)
+        await AnswersCRUD(self.session).populate_activity_flow_orders(result)
+
+        # Keep last activity in each flow
+        sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
+        grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_id"))
+        result.activity_flows = [
+            max(activity_flows, key=attrgetter("activity_flow_order"))
+            for group_progress_id, activity_flows in grouped_activity_flows
+        ]
+
         return result
 
     async def get_completed_answers_data_list(
@@ -1722,15 +1742,32 @@ class AnswerService:
         applets_version_map: Mapping[uuid.UUID, Optional[str]],
         from_date: datetime.date,
         filter_by_version: bool = False,
+        include_in_progress: bool = False,
     ) -> list[AppletCompletedEntities]:
         assert self.user_id
-        result = await AnswersCRUD(self.answer_session).get_completed_answers_data_list(
+
+        # Get copmleted answers for applets from main or arbitrary database
+        result_list = await AnswersCRUD(self.answer_session).get_completed_answers_data_list(
             dict(applets_version_map),
             self.user_id,
             from_date,
             filter_by_version=filter_by_version,
+            include_in_progress=include_in_progress,
         )
-        return result
+
+        # Get activity_flow_order from main database (flow_item_histories only exists there)
+        await AnswersCRUD(self.session).populate_activity_flow_orders(*result_list)
+
+        # Keep last activity in each flow
+        for result in result_list:
+            sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
+            grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_id"))
+            result.activity_flows = [
+                max(activity_flows, key=attrgetter("activity_flow_order"))
+                for group_progress_id, activity_flows in grouped_activity_flows
+            ]
+
+        return result_list
 
     async def is_answers_uploaded(
         self, applet_id: uuid.UUID, activity_id: str, submit_id: uuid.UUID | None = None, created_at: int | None = None
@@ -2637,7 +2674,7 @@ class AnswerTransferService:
 
         # exclude found answers from deletion list
         answers_to_remove = answers_to_remove.difference(not_copied_items.keys())
-        not_copied_item_ids = set(itertools.chain.from_iterable(not_copied_items.values()))
+        not_copied_item_ids = set(chain.from_iterable(not_copied_items.values()))
         return AnswersCopyCheckResult(
             total_answers=total_answers,
             not_copied_answers=not_copied_answers,

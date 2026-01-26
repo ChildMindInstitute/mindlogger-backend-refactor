@@ -3,7 +3,6 @@ import uuid
 from uuid import UUID
 
 from sqlalchemy import cast, desc, func, select, update
-from sqlalchemy.cimmutabledict import immutabledict
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,7 +41,7 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
         )
     )
 
-    await session.execute(update_query, execution_options=immutabledict({"synchronize_session": "fetch"}))
+    await session.execute(update_query, execution_options={"synchronize_session": "fetch"})
 
     query = select(ActivityItemSchema.activity_id).where(
         ActivityItemSchema.name == "age_screen",
@@ -84,7 +83,7 @@ async def update_age_screen(session: AsyncSession, applet_id: UUID):
             )
         )
 
-        await session.execute(update_history_query, execution_options=immutabledict({"synchronize_session": "fetch"}))
+        await session.execute(update_history_query, execution_options={"synchronize_session": "fetch"})
 
     print(f"Updated age screen for applet_id: {applet_id}")
 
@@ -160,7 +159,7 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
             )
         )
 
-        await session.execute(update_query, execution_options=immutabledict({"synchronize_session": "fetch"}))
+        await session.execute(update_query, execution_options={"synchronize_session": "fetch"})
 
         # Determine the current version of the activity_id
         subquery = (
@@ -205,7 +204,7 @@ async def update_gender_screen(session: AsyncSession, applet_id: UUID):
             )
         )
 
-        await session.execute(update_history_query, execution_options=immutabledict({"synchronize_session": "fetch"}))
+        await session.execute(update_history_query, execution_options={"synchronize_session": "fetch"})
 
     print(f"Updated gender screen for applet_id: {applet_id}")
 

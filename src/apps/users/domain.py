@@ -24,6 +24,13 @@ __all__ = [
     "TOTPInitiateResponse",
     "TOTPVerifyRequest",
     "TOTPVerifyResponse",
+    "MFADisableInitiateResponse",
+    "MFADisableVerifyRequest",
+    "MFADisableVerifyResponse",
+    "MFADisableConfirmRequest",
+    "MFADisableConfirmResponse",
+    "RecoveryCodesViewInitiateResponse",
+    "RecoveryCodesViewVerifyRequest",
 ]
 
 
@@ -249,6 +256,12 @@ class TOTPVerifyResponse(PublicModel):
             description="Recovery codes generated during first-time MFA setup (displayed once only)",
         ),
     ] = None
+    download_token: Annotated[
+        str | None,
+        Field(
+            description="Short-lived download token (5 min) for downloading recovery codes as a file",
+        ),
+    ] = None
 
 
 class MFADisableInitiateResponse(PublicModel):
@@ -260,17 +273,82 @@ class MFADisableInitiateResponse(PublicModel):
 
 
 class MFADisableVerifyRequest(PublicModel):
-    """Request to verify TOTP code and disable MFA."""
+    """Request to verify TOTP code or recovery code and disable MFA."""
 
     mfa_token: Annotated[str, Field(description="JWT token from MFA disable initiation")]
     code: Annotated[
         str,
-        Field(description="6-digit TOTP code from authenticator app", min_length=6, max_length=6, pattern=r"^\d{6}$"),
+        Field(
+            description="6-digit TOTP code from authenticator app or 11-character recovery code (XXXXX-XXXXX)",
+            min_length=6,
+            max_length=11,
+        ),
     ]
+
+    @field_validator("code")
+    @classmethod
+    def validate_code_length(cls, v: str) -> str:
+        """Validate code is either 6 digits (TOTP) or 11 characters (recovery code)."""
+        if len(v) not in (6, 11):
+            raise ValueError("Code must be either 6 characters (TOTP) or 11 characters (recovery code)")
+        return v
 
 
 class MFADisableVerifyResponse(PublicModel):
-    """Response after successfully disabling MFA."""
+    """Response after successfully validating code (MFA not yet disabled).
+
+    This is step 2 of the 3-step disable flow. The code has been validated,
+    but MFA is not yet disabled. Use the confirmation_token to complete the disable.
+    """
+
+    code_validated: bool = True
+    confirmation_token: Annotated[str, Field(description="JWT token to confirm MFA disable")]
+    message: Annotated[str, Field(description="Instructions for completing MFA disable")]
+
+
+class MFADisableConfirmRequest(PublicModel):
+    """Request to confirm MFA disable after successful code validation.
+
+    This is step 3 of the 3-step disable flow.
+    """
+
+    confirmation_token: Annotated[str, Field(description="JWT token from successful code validation")]
+
+
+class MFADisableConfirmResponse(PublicModel):
+    """Response after successfully disabling MFA.
+
+    This is the final response of the 3-step disable flow.
+    """
 
     mfa_disabled: bool = True
     message: Annotated[str, Field(description="Success message confirming MFA has been disabled")]
+
+
+class RecoveryCodesViewInitiateResponse(PublicModel):
+    """Response when initiating recovery codes viewing flow."""
+
+    mfa_required: bool = True
+    mfa_token: Annotated[str, Field(description="JWT token for recovery codes view verification")]
+    message: Annotated[str, Field(description="Instructions for viewing recovery codes")]
+
+
+class RecoveryCodesViewVerifyRequest(PublicModel):
+    """Request to verify TOTP code or recovery code and view recovery codes."""
+
+    mfa_token: Annotated[str, Field(description="JWT token from recovery codes view initiation")]
+    code: Annotated[
+        str,
+        Field(
+            description="6-digit TOTP code from authenticator app or 11-character recovery code (XXXXX-XXXXX)",
+            min_length=6,
+            max_length=11,
+        ),
+    ]
+
+    @field_validator("code")
+    @classmethod
+    def validate_code_length(cls, value: str) -> str:
+        if len(value) not in (6, 11):
+            raise ValueError("Code must be either 6 characters (TOTP) or 11 characters (recovery code)")
+        return value

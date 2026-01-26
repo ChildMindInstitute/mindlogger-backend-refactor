@@ -24,6 +24,8 @@ class BaseError(Exception):
     error_code: str | None = None  # Error code for frontend localization
 
     def __init__(self, *args, **kwargs):
+        # Extract metadata if provided
+        self.metadata = kwargs.pop("metadata", None)
         self.kwargs = kwargs
         self.updated_message = None
         if self.args and not self.message_is_template:

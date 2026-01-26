@@ -1,0 +1,59 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en">
+  <body>
+    {% include 'header.html' %}
+    <table style="padding: 0; font-size: 1.4rem">
+      <tr>
+        <td style="padding-bottom: 16px">
+          Hi {{first_name}},
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; color: #388e3c; font-weight: bold;">
+          Two-factor authentication has been successfully enabled on your account!
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          This change was made on {{enabled_at}}.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          Your account is now more secure. From now on, you'll need to enter a verification code from your authenticator app when you log in.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;">
+          Important: You have {{recovery_codes_count}} recovery codes.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          Recovery codes allow you to access your account if you lose your authenticator device. Make sure to:
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • Store them in a safe place
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          • Keep them secure and private
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          • Don't share them with anyone
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          If you didn't enable two-factor authentication, please contact support immediately.
+        </td>
+      </tr>
+      {% include 'blocks/team_info_en.html' %}
+    </table>
+    {% include 'footers/footer_info_en.html' %}
+  </body>
+</html>

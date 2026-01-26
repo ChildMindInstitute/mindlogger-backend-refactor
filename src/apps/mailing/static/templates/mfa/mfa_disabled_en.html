@@ -1,0 +1,49 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en">
+  <body>
+    {% include 'header.html' %}
+    <table style="padding: 0; font-size: 1.4rem">
+      <tr>
+        <td style="padding-bottom: 16px">
+          Hi {{first_name}},
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;">
+          Two-factor authentication has been disabled on your account.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          This change was made on {{disabled_at}}.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px; color: #f57c00;">
+          Your account is now less secure without two-factor authentication. Anyone with your password can access your account.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px">
+          If you didn't disable two-factor authentication, your account may be compromised. Please:
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          1. Change your password immediately
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px">
+          2. Re-enable two-factor authentication
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px">
+          3. Review your recent account activity
+        </td>
+      </tr>
+      {% include 'blocks/team_info_en.html' %}
+    </table>
+    {% include 'footers/footer_info_en.html' %}
+  </body>
+</html>

@@ -24,8 +24,21 @@ class ActivityItemService:
 
         for activity_item in activity_items:
             schema = ActivityItemSchema(
-                **activity_item.model_dump(),
+                activity_id=activity_item.activity_id,
+                name=activity_item.name,
+                question=activity_item.question,
+                response_type=activity_item.response_type,
+                response_values=activity_item.response_values.model_dump(mode="json")
+                if activity_item.response_values
+                else None,
+                config=activity_item.config.model_dump(mode="json"),
                 order=activity_id_ordering_map[activity_item.activity_id] + 1,
+                is_hidden=activity_item.is_hidden,
+                conditional_logic=activity_item.conditional_logic.model_dump(mode="json")
+                if activity_item.conditional_logic
+                else None,
+                allow_edit=activity_item.allow_edit,
+                extra_fields=activity_item.extra_fields,
             )
 
             # Set the created_at field if it is provided by seed data
@@ -44,8 +57,21 @@ class ActivityItemService:
         for activity_item in activity_items:
             schemas.append(
                 ActivityItemSchema(
-                    **activity_item.model_dump(),
+                    id=activity_item.id,
+                    activity_id=activity_item.activity_id,
+                    name=activity_item.name,
+                    question=activity_item.question,
+                    response_type=activity_item.response_type,
+                    response_values=activity_item.response_values.model_dump(mode="json")
+                    if activity_item.response_values
+                    else None,
+                    config=activity_item.config.model_dump(mode="json"),
                     order=activity_id_ordering_map[activity_item.activity_id] + 1,
+                    is_hidden=activity_item.is_hidden,
+                    conditional_logic=activity_item.conditional_logic.model_dump(mode="json")
+                    if activity_item.conditional_logic
+                    else None,
+                    allow_edit=activity_item.allow_edit,
                 )
             )
             activity_id_ordering_map[activity_item.activity_id] += 1

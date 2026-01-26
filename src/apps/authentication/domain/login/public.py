@@ -27,6 +27,8 @@ class MFARequiredResponse(PublicModel):
     mfa_required: bool = True
     mfa_session_id: str  # Track session ID for MFA
     mfa_token: str  # JWT for MFA verification
+    user_id: str  # Only need ID for the client
+    user_email: EmailStr  # Only need email for the client
 
 
 class MFATOTPVerifyRequest(PublicModel):

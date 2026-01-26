@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 import uuid
+from collections import defaultdict
+from itertools import chain
 from typing import Collection, Optional
 
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
@@ -10,7 +12,7 @@ from sqlalchemy.sql import Values
 
 from apps.activities.db.schemas import ActivityHistorySchema, ActivityItemHistorySchema
 from apps.activities.domain.activity_full import ActivityItemHistoryFull
-from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema
+from apps.activity_flows.db.schemas import ActivityFlowHistoriesSchema, ActivityFlowItemHistorySchema
 from apps.answers.db.schemas import AnswerEHRSchema, AnswerItemSchema, AnswerSchema
 from apps.answers.domain import (
     Answer,
@@ -585,11 +587,22 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         version: Optional[str],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
+        include_in_progress: bool = False,
     ) -> AppletCompletedEntities:
-        is_completed = or_(
-            AnswerSchema.is_flow_completed,
-            AnswerSchema.flow_history_id.is_(None),
-        )
+        extra_filters = []
+
+        # When include_in_progress is False, only return completed flows and standalone activities
+        # When True, also return in-progress flow activities
+        if not include_in_progress:
+            is_completed = or_(
+                AnswerSchema.is_flow_completed,
+                AnswerSchema.flow_history_id.is_(None),
+            )
+            extra_filters.append(is_completed)
+
+        # When version is given, only return flows and activities with the given version
+        if version:
+            extra_filters.append(AnswerSchema.version == version)
 
         query: Query = (
             select(
@@ -598,6 +611,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
                 AnswerSchema.target_subject_id,
+                AnswerSchema.is_flow_completed,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
@@ -607,8 +621,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.applet_id == applet_id,
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
-                is_completed,
-                *([AnswerSchema.version == version] if version else []),
+                *extra_filters,
             )
             .order_by(
                 AnswerSchema.activity_history_id,
@@ -650,19 +663,26 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         respondent_id: uuid.UUID,
         from_date: datetime.date,
         filter_by_version: bool = False,
+        include_in_progress: bool = False,
     ) -> list[AppletCompletedEntities]:
-        is_completed = or_(
-            AnswerSchema.is_flow_completed,
-            AnswerSchema.flow_history_id.is_(None),
-        )
+        """
+        -Create applet filter:
+        -When filter_by_version is True, we match both applet_id and version
+           to avoid mixing data across versions.
+        -When False, we use only applet_id to keep existing behavior
+           and include all versions for backward compatibility.
+        """
+        extra_filters = []
 
-        """
-         -Create applet filter:
-         -When filter_by_version is True, we match both applet_id and version
-            to avoid mixing data across versions.
-         -When False, we use only applet_id to keep existing behavior 
-            and include all versions for backward compatibility.
-        """
+        # When include_in_progress is False, only return completed flows and standalone activities
+        # When True, also return in-progress flow activities
+        if not include_in_progress:
+            is_completed = or_(
+                AnswerSchema.is_flow_completed,
+                AnswerSchema.flow_history_id.is_(None),
+            )
+            extra_filters.append(is_completed)
+
         if filter_by_version:
             applet_predicate = or_(
                 *[
@@ -672,8 +692,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                     for applet_id, version in applets_version_map.items()
                 ]
             )
+            extra_filters.append(applet_predicate)
         else:
             applet_predicate = AnswerSchema.applet_id.in_(list(applets_version_map.keys()))
+            extra_filters.append(applet_predicate)
 
         query: Query = (
             select(
@@ -683,6 +705,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
                 AnswerSchema.target_subject_id,
+                AnswerSchema.is_flow_completed,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
@@ -691,8 +714,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .where(
                 AnswerSchema.respondent_id == respondent_id,
                 AnswerItemSchema.local_end_date >= from_date,
-                is_completed,
-                applet_predicate,
+                *extra_filters,
             )
             .order_by(
                 AnswerSchema.activity_history_id,
@@ -713,9 +735,11 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         db_result = await self._execute(query)
         data = db_result.mappings().all()
 
-        applet_activities_flows_map: dict[uuid.UUID, dict[str, list]] = dict()
+        applet_activities_flows_map: dict[uuid.UUID, dict[str, list]] = defaultdict(
+            lambda: {"activities": [], "flows": []}
+        )
+
         for row in data:
-            applet_activities_flows_map.setdefault(row.applet_id, {"activities": [], "flows": []})
             if row.flow_history_id:
                 applet_activities_flows_map[row.applet_id]["flows"].append(
                     CompletedEntity(**row, id=row.flow_history_id)
@@ -731,14 +755,48 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AppletCompletedEntities(
                     id=applet_id,
                     version=version,
-                    activities=applet_activities_flows_map.get(applet_id, {"activities": [], "flows": []})[
-                        "activities"
-                    ],
-                    activity_flows=applet_activities_flows_map.get(applet_id, {"activities": [], "flows": []})["flows"],
+                    activities=applet_activities_flows_map[applet_id]["activities"],
+                    activity_flows=applet_activities_flows_map[applet_id]["flows"],
                 )
             )
 
         return result_list
+
+    async def populate_activity_flow_orders(self, *result_list: AppletCompletedEntities) -> None:
+        """
+        Populate activity_flow_order on activity flows for applet(s).
+
+        - Takes one or more AppletCompletedEntities objects as input
+        - Mutates activity flows in-place by setting their activity_flow_order field
+        """
+        # Iterate through activity flows for each result
+        activity_flows = list(chain.from_iterable(result.activity_flows for result in result_list))
+
+        # Build query conditions for each (flow_history_id, activity_history_id) pair
+        conditions = [
+            and_(
+                ActivityFlowItemHistorySchema.activity_flow_id == f.flow_history_id,
+                ActivityFlowItemHistorySchema.activity_id == f.activity_history_id,
+            )
+            for f in activity_flows
+            if f.activity_history_id and f.flow_history_id
+        ]
+
+        if not conditions:
+            return
+
+        query = select(
+            ActivityFlowItemHistorySchema.activity_flow_id,
+            ActivityFlowItemHistorySchema.activity_id,
+            ActivityFlowItemHistorySchema.order,
+        ).where(or_(*conditions))
+
+        result = await self._execute(query)
+        orders = {(row.activity_flow_id, row.activity_id): row.order for row in result.mappings()}
+
+        # Populate activity_flow_order on the activity flows
+        for f in activity_flows:
+            f.activity_flow_order = orders.get((f.flow_history_id, f.activity_history_id))
 
     async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str | None:
         query: Query = select(AnswerSchema.applet_history_id)

@@ -7,6 +7,7 @@ from typing import Optional
 
 from apps.authentication.errors import MFASessionNotFoundError
 from apps.authentication.services.security import AuthenticationService
+from apps.users.errors import MFASessionPurposeMismatchError
 from config import settings
 from infrastructure.logger import logger
 from infrastructure.utility.redis_client import RedisCache
@@ -186,6 +187,44 @@ class MFASessionService:
             logger.info(f"MFA session deleted mfa_session_id={mfa_session_id}")
         return deleted
 
+    async def transition_to_confirmation(self, mfa_session_id: str, confirmation_ttl: int = 300) -> str:
+        """
+        Transition session from 'disable' to 'disable_confirmed' purpose with shorter TTL.
+
+        Returns:
+            confirmation_token: New JWT token with same session_id
+        """
+        session_data = await self.get_session(mfa_session_id)
+
+        if not session_data:
+            logger.warning(f"Cannot transition - session not found mfa_session_id={mfa_session_id}")
+            raise MFASessionNotFoundError()
+
+        if session_data.purpose != "disable":
+            logger.warning(
+                f"Cannot transition - invalid purpose mfa_session_id={mfa_session_id} "
+                f"expected=disable actual={session_data.purpose}"
+            )
+            raise MFASessionPurposeMismatchError()
+
+        # Update purpose to mark validation complete and save with shorter TTL
+        session_data.purpose = "disable_confirmed"
+        redis_key = self._build_redis_key(mfa_session_id)
+        await self.redis_client.set(
+            key=redis_key,
+            value=json.dumps(session_data.to_dict()),
+            ex=confirmation_ttl,
+        )
+
+        confirmation_token = AuthenticationService.create_mfa_token(mfa_session_id=mfa_session_id)
+
+        logger.info(
+            f"MFA session transitioned to confirmation mfa_session_id={mfa_session_id} "
+            f"user_id={session_data.user_id} ttl_seconds={confirmation_ttl}"
+        )
+
+        return confirmation_token
+
     async def increment_failed_totp_attempts(self, mfa_session_id: str) -> Optional[int]:
         """
         Increment the count of failed TOTP attempts for the session.
@@ -287,6 +326,88 @@ class MFASessionService:
         await self.redis_client.delete(redis_key)
 
         logger.info(f"Global MFA lockout counter cleared user_id={user_id}")
+
+    async def get_remaining_session_attempts(self, mfa_session_id: str) -> int:
+        """
+        Calculate remaining attempts for current MFA session.
+
+        Args:
+            mfa_session_id: The session identifier
+
+        Returns:
+            Number of attempts remaining (0 if session not found or maxed out)
+        """
+        session_data = await self.get_session(mfa_session_id)
+        if not session_data:
+            return 0
+
+        remaining = settings.redis.mfa_max_attempts - session_data.failed_totp_attempts
+        return max(0, remaining)
+
+    async def get_remaining_global_attempts(self, user_id: uuid.UUID) -> int:
+        """
+        Calculate remaining global attempts for user across all sessions.
+
+        Args:
+            user_id: The user's unique identifier
+
+        Returns:
+            Number of attempts remaining (0 if locked out)
+        """
+        redis_key = self._build_global_lockout_key(user_id)
+        count = await self.redis_client.get(redis_key)
+
+        if count is None:
+            return settings.redis.mfa_global_lockout_attempts
+
+        try:
+            attempts_used = int(count)
+            remaining = settings.redis.mfa_global_lockout_attempts - attempts_used
+            return max(0, remaining)
+        except (ValueError, TypeError):
+            return settings.redis.mfa_global_lockout_attempts
+
+    # NOTE: This method is kept for debugging purposes and is not used in production code
+    async def get_attempts_info(self, mfa_session_id: str, user_id: uuid.UUID) -> dict:
+        """
+        Get comprehensive attempt information for MFA verification.
+
+        **This method is for debugging/monitoring purposes only and is not used in production code.**
+
+        Args:
+            mfa_session_id: The session identifier
+            user_id: The user's unique identifier
+
+        Returns:
+            Dictionary containing:
+                - session_attempts_used: Current failed attempts in this session
+                - session_attempts_remaining: Remaining attempts for this session
+                - session_max_attempts: Maximum allowed per session
+                - global_attempts_used: Total failed attempts across all sessions
+                - global_attempts_remaining: Remaining attempts globally
+                - global_max_attempts: Maximum allowed globally
+        """
+        # Get session data
+        session_data = await self.get_session(mfa_session_id)
+        session_attempts_used = session_data.failed_totp_attempts if session_data else 0
+        session_max_attempts = settings.redis.mfa_max_attempts
+        session_attempts_remaining = max(0, session_max_attempts - session_attempts_used)
+
+        # Get global data
+        redis_key = self._build_global_lockout_key(user_id)
+        global_count = await self.redis_client.get(redis_key)
+        global_attempts_used = int(global_count) if global_count else 0
+        global_max_attempts = settings.redis.mfa_global_lockout_attempts
+        global_attempts_remaining = max(0, global_max_attempts - global_attempts_used)
+
+        return {
+            "session_attempts_used": session_attempts_used,
+            "session_attempts_remaining": session_attempts_remaining,
+            "session_max_attempts": session_max_attempts,
+            "global_attempts_used": global_attempts_used,
+            "global_attempts_remaining": global_attempts_remaining,
+            "global_max_attempts": global_max_attempts,
+        }
 
     async def validate_and_get_session(self, mfa_token: str) -> tuple[str, uuid.UUID, str]:
         """

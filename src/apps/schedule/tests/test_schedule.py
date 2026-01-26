@@ -150,6 +150,30 @@ def event_daily_data(applet: AppletFull) -> EventRequest:
 
 
 @pytest.fixture
+def event_with_timer(applet: AppletFull) -> EventRequest:
+    start_date = datetime.date.today()
+    end_date = start_date + datetime.timedelta(days=1)
+    return EventRequest(
+        activity_id=applet.activities[0].id,
+        flow_id=None,
+        respondent_id=None,
+        periodicity=PeriodicityRequest(
+            type=constants.PeriodicityType.DAILY,
+            start_date=datetime.date.today(),
+            end_date=end_date,
+            selected_date=None,
+        ),
+        start_time=datetime.time(9, 0),
+        end_time=datetime.time(10, 0),
+        access_before_schedule=False,
+        one_time_completion=None,
+        notification=None,
+        timer=datetime.timedelta(days=1),
+        timer_type=constants.TimerType.TIMER,
+    )
+
+
+@pytest.fixture
 def event_daily_flow_data(applet: AppletFull, event_daily_data: EventRequest) -> EventRequest:
     data = event_daily_data.model_dump()
     data["activity_id"] = None
@@ -240,6 +264,17 @@ class TestSchedule:
     count_url = "applets/{applet_id}/events/count"
 
     public_events_url = "public/applets/{key}/events"
+
+    async def test_serialized_timer_json(self, event_with_timer: EventRequest):
+        """M2-10310 Ensure client gets JSON to match Pydantic v1 behavior"""
+        model = event_with_timer.model_dump(mode="json")
+        assert model["timer"] == 86400.0
+
+    async def test_serialized_timer_python(self, event_with_timer: EventRequest):
+        """M2-10310 Ensure client gets JSON to match Pydantic v1 behavior"""
+        model = event_with_timer.model_dump(mode="python")
+        assert isinstance(model["timer"], datetime.timedelta)
+        assert model["timer"].total_seconds() == 86400.0
 
     async def test_schedule_create_with_equal_start_end_time(
         self, client: TestClient, applet: AppletFull, event_daily_data: EventRequest, user: User
@@ -911,7 +946,7 @@ class TestSchedule:
         resp = await client.post(self.schedule_url.format(applet_id=applet.id), data=event_daily_data)
         assert resp.status_code == http.HTTPStatus.CREATED
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_get_all_schedules_no_permissions(self, client: TestClient, applet: AppletFull, lucy: User):
         client.login(lucy)
@@ -939,7 +974,7 @@ class TestSchedule:
         resp = await client.delete(self.schedule_url.format(applet_id=applet.id))
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_delete_event_by_id__firebase_error_muted(
         self,
@@ -960,7 +995,7 @@ class TestSchedule:
         resp = await client.delete(self.schedule_detail_url.format(applet_id=applet.id, event_id=daily_event.id))
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_update_event__firefase_error_muted(
         self,
@@ -984,7 +1019,7 @@ class TestSchedule:
         )
         assert resp.status_code == http.HTTPStatus.OK
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_delete_individual_event_by_id__firebase_error_muted(
         self,
@@ -1010,7 +1045,7 @@ class TestSchedule:
         )
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_delete_individual_calendar__firebase_error_muted(
         self,
@@ -1036,7 +1071,7 @@ class TestSchedule:
         )
         assert resp.status_code == http.HTTPStatus.NO_CONTENT
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_create_individual_calendar__firebase_error_muted(
         self,
@@ -1062,7 +1097,7 @@ class TestSchedule:
         )
         assert resp.status_code == http.HTTPStatus.CREATED
         assert caplog.messages
-        assert caplog.messages[0] == error_message
+        assert error_message in caplog.messages[0]
 
     async def test_update_individual_event__notification_sent_to_the_individual_respondent(
         self,

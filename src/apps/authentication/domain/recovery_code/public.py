@@ -41,6 +41,7 @@ class RecoveryCodesListResponse(PublicModel):
     codes: list[RecoveryCodeView]  # List of recovery codes with status
     total: int  # Total number of codes
     unused_count: int  # Number of unused codes remaining
+    download_token: str  # Short-lived JWT token for downloading recovery codes (valid 5 minutes)
 
 
 class RecoveryCodeVerifyRequest(PublicModel):

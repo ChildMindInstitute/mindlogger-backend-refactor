@@ -171,7 +171,7 @@ class AppletService:
             report_include_user_id=create_data.report_include_user_id,
             report_include_case_id=create_data.report_include_case_id,
             report_email_body=create_data.report_email_body,
-            encryption=create_data.encryption.model_dump() if create_data.encryption else None,
+            encryption=create_data.encryption.model_dump(mode="json") if create_data.encryption else None,
             extra_fields=create_data.extra_fields,
             creator_id=creator_id,
             stream_enabled=create_data.stream_enabled,
@@ -241,7 +241,7 @@ class AppletService:
         if applet.encryption is not None:
             raise AppletEncryptionUpdateDenied()
 
-        applet.encryption = encryption.model_dump()
+        applet.encryption = encryption.model_dump(mode="json")
         await AppletsCRUD(self.session).save(applet)
         applt = await AppletsCRUD(self.session).get_by_id(applet_id)
         return applt
@@ -393,7 +393,7 @@ class AppletService:
             AppletSchema(
                 display_name=update_data.display_name,
                 description=update_data.description,
-                encryption=update_data.encryption.model_dump() if update_data.encryption else None,
+                encryption=update_data.encryption.model_dump(mode="json") if update_data.encryption else None,
                 about=update_data.about,
                 image=update_data.image,
                 watermark=update_data.watermark,

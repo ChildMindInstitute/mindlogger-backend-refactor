@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 from apps.activities.domain import conditions as cnd
@@ -29,6 +31,24 @@ def condition_rows_outside_of() -> cnd.OutsideOfCondition:
 
 
 @pytest.fixture
+def condition_greater_than_time() -> cnd.GreaterThanTimeCondition:
+    return cnd.GreaterThanTimeCondition(
+        item_name=DEFAULT_ITEM_NAME,
+        type=cnd.TimeConditionType.GREATER_THAN_TIME,
+        payload=cnd.SingleTimePayload(time=datetime.time(2, 20)),
+    )
+
+
+@pytest.fixture
+def condition_greater_than_date() -> cnd.GreaterThanDateCondition:
+    return cnd.GreaterThanDateCondition(
+        item_name=DEFAULT_ITEM_NAME,
+        type=cnd.DateConditionType.GREATER_THAN_DATE,
+        payload=cnd.SingleDatePayload(date=datetime.date(2020, 2, 2)),
+    )
+
+
+@pytest.fixture
 def conditional_logic_equal(condition_equal: cnd.EqualCondition) -> ConditionalLogic:
     return ConditionalLogic(match=Match.ALL, conditions=[condition_equal])
 
@@ -41,3 +61,13 @@ def conditional_logic_between(condition_between: cnd.BetweenCondition) -> Condit
 @pytest.fixture
 def conditional_logic_rows_outside_of(condition_rows_outside_of: cnd.OutsideOfCondition) -> ConditionalLogic:
     return ConditionalLogic(match=Match.ALL, conditions=[condition_rows_outside_of])
+
+
+@pytest.fixture
+def conditional_logic_greater_than_time(condition_greater_than_time: cnd.GreaterThanTimeCondition) -> ConditionalLogic:
+    return ConditionalLogic(match=Match.ALL, conditions=[condition_greater_than_time])
+
+
+@pytest.fixture
+def conditional_logic_greater_than_date(condition_greater_than_date: cnd.GreaterThanDateCondition) -> ConditionalLogic:
+    return ConditionalLogic(match=Match.ALL, conditions=[condition_greater_than_date])

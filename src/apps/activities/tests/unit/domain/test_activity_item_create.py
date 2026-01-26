@@ -654,6 +654,23 @@ def test_time_logic(base_item_data, request) -> None:
     )
 
 
+def test_time_logic_greater_than(base_item_data, request) -> None:
+    config = request.getfixturevalue("time_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_greater_than_time")
+
+    item = ActivityItemCreate(
+        **base_item_data.model_dump(),
+        config=config,
+        response_type=ResponseType.TIME,
+        conditional_logic=cnd_logic,
+        response_values=None,
+    )
+
+    # Test serialization for JSONB column in ActivityItemService.create and ActivityItemService.update_create
+    assert item.conditional_logic is not None
+    assert item.conditional_logic.model_dump(mode="json")["conditions"][0]["payload"]["time"] == "02:20"
+
+
 def test_time_range_logic(base_item_data, request) -> None:
     config = request.getfixturevalue("time_range_config")
     cnd_logic = request.getfixturevalue("conditional_logic_between")
@@ -692,6 +709,23 @@ def test_date_logic(base_item_data, request) -> None:
         conditional_logic=cnd_logic,
         response_values=None,
     )
+
+
+def test_date_logic_greater_than(base_item_data, request) -> None:
+    config = request.getfixturevalue("date_config")
+    cnd_logic = request.getfixturevalue("conditional_logic_greater_than_date")
+
+    item = ActivityItemCreate(
+        **base_item_data.model_dump(),
+        config=config,
+        response_type=ResponseType.DATE,
+        conditional_logic=cnd_logic,
+        response_values=None,
+    )
+
+    # Test serialization for JSONB column in ActivityItemService.create and ActivityItemService.update_create
+    assert item.conditional_logic is not None
+    assert item.conditional_logic.model_dump(mode="json")["conditions"][0]["payload"]["date"] == "2020-02-02"
 
 
 def test_single_select_row_logic(base_item_data, request) -> None:
