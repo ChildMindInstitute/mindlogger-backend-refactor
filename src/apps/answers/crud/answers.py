@@ -168,6 +168,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             select(
                 AnswerSchema.submit_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.applet_id,
                 AnswerSchema.version,
                 created_at.label("created_at"),
@@ -610,11 +611,14 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.submit_id,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerSchema.is_flow_completed,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
+                AnswerItemSchema.start_datetime.label("start_time"),
+                AnswerItemSchema.end_datetime.label("end_time"),
             )
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
@@ -626,6 +630,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
@@ -634,6 +639,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .distinct(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
             )
@@ -709,6 +715,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date,
                 AnswerItemSchema.local_end_time,
+                AnswerItemSchema.start_datetime.label("start_time"),
+                AnswerItemSchema.end_datetime.label("end_time"),
             )
             .join(AnswerItemSchema, AnswerItemSchema.answer_id == AnswerSchema.id)
             .where(
@@ -719,6 +727,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .order_by(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
                 AnswerItemSchema.local_end_date.desc(),
@@ -727,6 +736,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             .distinct(
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
                 AnswerSchema.target_subject_id,
                 AnswerItemSchema.scheduled_event_id,
             )

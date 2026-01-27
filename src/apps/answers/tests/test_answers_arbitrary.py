@@ -927,6 +927,8 @@ class TestAnswerActivityItems(BaseTest):
             "scheduledEventId",
             "localEndDate",
             "localEndTime",
+            "startTime",
+            "endTime",
             "isFlowCompleted",
             "activityFlowOrder",
         }
