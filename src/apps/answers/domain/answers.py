@@ -676,8 +676,8 @@ class CompletedEntity(PublicModel):
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
     local_end_time: datetime.time
-    start_time: datetime.datetime | None = None
-    end_time: datetime.datetime | None = None
+    start_time: datetime.datetime
+    end_time: datetime.datetime
     is_flow_completed: bool | None = None
     activity_flow_order: int | None = Field(
         default=None,
@@ -686,9 +686,7 @@ class CompletedEntity(PublicModel):
     )
 
     @field_serializer("start_time", "end_time", when_used="json")
-    def datetime_to_ms(self, value: datetime.datetime | None):
-        if value is None:
-            return None
+    def datetime_to_ms(self, value: datetime.datetime):
         return int(value.timestamp() * 1000)
 
     @field_validator("id", mode="before")

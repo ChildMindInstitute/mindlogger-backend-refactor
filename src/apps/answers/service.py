@@ -1752,25 +1752,21 @@ class AnswerService:
             best_completed = max(
                 completed,
                 default=None,
-                key=lambda x: (x.local_end_date or datetime.date.min, x.local_end_time or datetime.time.min),
+                key=attrgetter("end_time"),
             )
 
             # Farthest along in-progress flow + more recent tiebreaker
             best_in_progress = max(
                 in_progress,
                 default=None,
-                key=lambda x: (
-                    x.activity_flow_order or 0,
-                    x.local_end_date or datetime.date.min,
-                    x.local_end_time or datetime.time.min,
-                ),
+                key=lambda x: (x.activity_flow_order or 0, x.end_time),
             )
 
             if best_completed and best_in_progress:
                 # More recent between best completed flow and best in-progress flow
                 best_overall = max(
                     [best_completed, best_in_progress],
-                    key=lambda x: (x.local_end_date or datetime.date.min, x.local_end_time or datetime.time.min),
+                    key=attrgetter("end_time"),
                 )
                 filtered_flows.append(best_overall)
             elif best_completed:
