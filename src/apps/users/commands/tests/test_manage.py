@@ -12,6 +12,7 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import UserSchema, UsersCRUD
+from apps.users.commands.manage import NAME_CHECK
 from apps.users.commands.manage import app as manage_app
 from apps.users.domain import User, UserCreate
 from apps.users.services.user import UserService
@@ -24,13 +25,13 @@ class TestUsersManage:
     USER_FIRSTNAME = "Not"
     USER_LASTNAME = "Mindlogger"
 
-    USER_DELETED_FIRSTNAME = "NAME_REMOVED_BY_CURIOUS_TEAM-M4-1234"
-    USER_DELETED_LASTNAME = "NAME_REMOVED_BY_CURIOUS_TEAM-M4-1234"
-    USER_DELETED_NICKNAME = "NAME_REMOVED_BY_CURIOUS_TEAM-M4-1234"
+    USER_DELETED_FIRSTNAME = f"{NAME_CHECK}-M4-1234"
+    USER_DELETED_LASTNAME = f"{NAME_CHECK}-M4-1234"
+    USER_DELETED_NICKNAME = f"{NAME_CHECK}-M4-1234"
 
     TICKET_ID = "no-ticket"
 
-    EMAIL_CHECK_STRING = "NAME_REMOVED_BY_CURIOUS_TEAM.com"
+    EMAIL_CHECK_STRING = f"{NAME_CHECK}.com"
 
     @pytest.fixture
     def runner(self) -> CliRunner:
@@ -199,7 +200,7 @@ class TestUsersManage:
 
         assert result.exit_code == 0
 
-        names = f"NAME_REMOVED_BY_CURIOUS_TEAM-{self.TICKET_ID}"
+        names = f"{NAME_CHECK}-{self.TICKET_ID}"
 
         user_crud = UsersCRUD(global_session)
         user = await user_crud._get("id", regular_user.id)
