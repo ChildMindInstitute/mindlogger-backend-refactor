@@ -23,60 +23,29 @@ class TestUsersManage:
     USER_DELETED_EMAIL = "deleted@gettingcurious.com"
     USER_FIRSTNAME = "Not"
     USER_LASTNAME = "Mindlogger"
+
+    USER_DELETED_FIRSTNAME = "NAME_REMOVED_BY_CURIOUS_TEAM-M4-1234"
+    USER_DELETED_LASTNAME = "NAME_REMOVED_BY_CURIOUS_TEAM-M4-1234"
+    USER_DELETED_NICKNAME = "NAME_REMOVED_BY_CURIOUS_TEAM-M4-1234"
+
     TICKET_ID = "no-ticket"
+
     EMAIL_CHECK_STRING = "NAME_REMOVED_BY_CURIOUS_TEAM.com"
 
     @pytest.fixture
     def runner(self) -> CliRunner:
+        """Typer CliRunner fixture"""
         return CliRunner()
 
     @pytest.fixture
     def app(self) -> typer.Typer:
+        """Typer app under test fixture"""
         return manage_app
 
-    # @pytest.fixture
-    # async def cli_user_create(self) -> UserCreate:
-    #     return UserCreate(
-    #         email=self.USER_EMAIL,
-    #         password="Test1234!",
-    #         first_name=self.USER_FIRSTNAME,
-    #         last_name=self.USER_LASTNAME,
-    #     )
-
-    # @pytest.fixture
-    # async def cli_deleted_user_create(self) -> UserCreate:
-    #     return UserCreate(
-    #         email=self.USER_DELETED_EMAIL,
-    #         password="Test1234!",
-    #         first_name=self.USER_FIRSTNAME,
-    #         last_name=self.USER_LASTNAME,
-    #     )
-
-    # @pytest.fixture
-    # async def cli_subject_create(self, applet_one: AppletFull, tom: User) -> SubjectCreate:
-    #     return SubjectCreate(
-    #         applet_id=applet_one.id,
-    #         email=self.USER_EMAIL,
-    #         first_name=self.USER_FIRSTNAME,
-    #         last_name=self.USER_LASTNAME,
-    #         secret_user_id=f"{uuid.uuid4()}",
-    #         creator_id=tom.id,
-    #     )
-
-    # @pytest.fixture
-    # async def cli_deleted_subject_create(self, applet_one: AppletFull, tom: User) -> SubjectCreate:
-    #     return SubjectCreate(
-    #         applet_id=applet_one.id,
-    #         email=self.USER_DELETED_EMAIL,
-    #         first_name=self.USER_FIRSTNAME,
-    #         last_name=self.USER_LASTNAME,
-    #         secret_user_id=f"{uuid.uuid4()}",
-    #         creator_id=tom.id,
-    #     )
-
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture
     async def regular_user(self, global_session: AsyncSession) -> AsyncGenerator[User]:
         """A valid regular user"""
+
         user_create = UserCreate(
             email=self.USER_EMAIL,
             password="Test1234!",
@@ -92,21 +61,21 @@ class TestUsersManage:
             crud = UsersCRUD(global_session)
             await crud._delete(id=user.id)
 
-
     @pytest.fixture
     async def deleted_user(self, global_session: AsyncSession) -> AsyncGenerator[User]:
         """A deleted regular user"""
+
         user_create = UserCreate(
             email=self.USER_DELETED_EMAIL,
             password="Test1234!",
-            first_name=self.USER_FIRSTNAME,
-            last_name=self.USER_LASTNAME,
+            first_name=self.USER_DELETED_FIRSTNAME,
+            last_name=self.USER_DELETED_LASTNAME,
         )
+
         crud = UsersCRUD(global_session)
         async with atomic(global_session):
             user = await UserService(global_session).create_user(user_create)
             schema = UserSchema(**user.model_dump())
-            schema.is_deleted = True
             schema = await crud.update_by_id(user.id, schema)
             user = User.model_validate(schema)
 
@@ -115,13 +84,13 @@ class TestUsersManage:
         async with atomic(global_session):
             await crud._delete(id=user.id)
 
-
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture
     async def regular_subject(
         self, regular_user: User, tom: User, applet_one: AppletFull, global_session: AsyncSession
     ) -> AsyncGenerator[Subject]:
         """A valid regular subject"""
-        sbuject_create = SubjectCreate(
+
+        subject_create = SubjectCreate(
             applet_id=applet_one.id,
             email=self.USER_EMAIL,
             first_name=self.USER_FIRSTNAME,
@@ -132,15 +101,14 @@ class TestUsersManage:
         )
 
         async with atomic(global_session):
-            subject = await SubjectsService(global_session, regular_user.id).create(sbuject_create)
+            subject = await SubjectsService(global_session, regular_user.id).create(subject_create)
 
         # await global_session.commit()
         yield subject
 
-        crud = SubjectsCrud(global_session)
-        await crud._delete(id=subject.id)
-        await global_session.commit()
-
+        async with atomic(global_session):
+            crud = SubjectsCrud(global_session)
+            await crud._delete(id=subject.id)
 
     @pytest.fixture
     async def deleted_subject(
@@ -148,15 +116,16 @@ class TestUsersManage:
         deleted_user: User,
         tom: User,
         applet_one: AppletFull,
-        cli_deleted_subject_create: SubjectCreate,
         global_session: AsyncSession,
     ) -> AsyncGenerator[Subject]:
-        """A delted regular subject"""
+        """A deleted regular subject"""
+
         subject_create = SubjectCreate(
             applet_id=applet_one.id,
             email=self.USER_DELETED_EMAIL,
-            first_name=self.USER_FIRSTNAME,
-            last_name=self.USER_LASTNAME,
+            first_name=self.USER_DELETED_FIRSTNAME,
+            last_name=self.USER_DELETED_LASTNAME,
+            nickname=self.USER_DELETED_NICKNAME,
             secret_user_id=f"{uuid.uuid4()}",
             creator_id=tom.id,
             user_id=deleted_user.id,
@@ -171,9 +140,9 @@ class TestUsersManage:
 
         yield subject
 
-        crud = SubjectsCrud(global_session)
-        await crud._delete(id=subject.id)
-        await global_session.commit()
+        async with atomic(global_session):
+            crud = SubjectsCrud(global_session)
+            await crud._delete(id=subject.id)
 
     #####################################################################
     ## Tests
@@ -193,7 +162,6 @@ class TestUsersManage:
         assert result.exit_code == 2
         assert "User does not exist" in result.output
 
-
     async def test_subject_dne(self, app: typer.Typer, runner: CliRunner, regular_user: User) -> None:
         result = runner.invoke(
             app,
@@ -208,7 +176,6 @@ class TestUsersManage:
         assert result.exit_code == 2
         assert "Found user" in result.output
         assert "Subject does not exist" in result.output
-
 
     async def test_soft_delete(
         self,
@@ -246,8 +213,8 @@ class TestUsersManage:
         assert subject is not None
         assert subject.first_name == names
         assert subject.last_name == names
+        assert subject.nickname == names
         assert self.EMAIL_CHECK_STRING in subject.email
-
 
     async def test_soft_delete_user_already_deleted(
         self,

@@ -95,10 +95,9 @@ class UserUpdateRequest(InternalModel):
 
 
 class SoftDeleteUserRequest(UserUpdateRequest):
-    """User update request model."""
+    """User update request model for soft deletes."""
 
     email: str
-    is_deleted: bool = True
 
 
 class User(InternalModel):
