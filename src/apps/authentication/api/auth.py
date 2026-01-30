@@ -198,6 +198,7 @@ async def verify_mfa_totp(
             # Send warning email if global attempts hit threshold
             if global_attempt_count == settings.mfa.failed_attempts_warning_threshold:
                 notification_service = MFANotificationService()
+                global_remaining = settings.redis.mfa_global_lockout_attempts - global_attempt_count
                 await notification_service.send_failed_attempts_warning(
                     user=user,
                     failed_attempts=global_attempt_count,
@@ -377,6 +378,7 @@ async def verify_mfa_recovery_code(
                     f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
                 )
                 notification_service = MFANotificationService()
+                global_remaining = settings.redis.mfa_global_lockout_attempts - global_count
                 await notification_service.send_failed_attempts_warning(
                     user=user,
                     failed_attempts=global_count,
@@ -433,6 +435,7 @@ async def verify_mfa_recovery_code(
                     f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
                 )
                 notification_service = MFANotificationService()
+                global_remaining = settings.redis.mfa_global_lockout_attempts - global_count
                 await notification_service.send_failed_attempts_warning(
                     user=user,
                     failed_attempts=global_count,
