@@ -4,6 +4,7 @@ from typing import Annotated
 import typer
 from rich import print
 
+from apps.shared.hashing import hash_sha224
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UserIsDeletedError, UserNotFound, UsersCRUD
 from apps.users.domain import SoftDeleteUserRequest
@@ -59,7 +60,7 @@ async def soft_delete(
                 typer.confirm("Are you sure that you soft delete this user?", abort=True)
 
             name = f"{NAME_CHECK}-{ticket_id}"
-            email = f"{uuid.uuid4()}@{NAME_CHECK}.com"
+            email = f"{uuid.uuid4()}@removed.user"
 
             update_schema = SoftDeleteUserRequest(first_name=name, last_name=name, email=email)
 
@@ -68,9 +69,10 @@ async def soft_delete(
             subject.nickname = name
             subject.email = email
 
-            async with atomic(session):
-                await users_crud.update(user, update_schema)
-                await subjects_crud.update(subject)
+
+            await users_crud.update(user, update_schema)
+            await users_crud.update_encrypted_email(user, email)
+            await subjects_crud.update(subject)
 
             print(f"[bold green]User {user_id} soft deleted successfully[/bold green]")
 

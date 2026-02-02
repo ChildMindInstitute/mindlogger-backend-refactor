@@ -31,7 +31,7 @@ class TestUsersManage:
 
     TICKET_ID = "no-ticket"
 
-    EMAIL_CHECK_STRING = f"{NAME_CHECK}.com"
+    EMAIL_CHECK_STRING = f"removed.user"
 
     @pytest.fixture
     def runner(self) -> CliRunner:
@@ -208,6 +208,7 @@ class TestUsersManage:
         assert user.first_name == names
         assert user.last_name == names
         assert self.EMAIL_CHECK_STRING in user.email
+        assert self.EMAIL_CHECK_STRING in user.email_encrypted
 
         subject_crud = SubjectsCrud(global_session)
         subject = await subject_crud.get_by_id(regular_subject.id)
