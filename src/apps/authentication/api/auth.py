@@ -198,6 +198,7 @@ async def verify_mfa_totp(
             # Send warning email if global attempts hit threshold
             if global_attempt_count == settings.mfa.failed_attempts_warning_threshold:
                 notification_service = MFANotificationService()
+                global_remaining = settings.redis.mfa_global_lockout_attempts - global_attempt_count
                 await notification_service.send_failed_attempts_warning(
                     user=user,
                     failed_attempts=global_attempt_count,
@@ -377,6 +378,7 @@ async def verify_mfa_recovery_code(
                     f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
                 )
                 notification_service = MFANotificationService()
+                global_remaining = settings.redis.mfa_global_lockout_attempts - global_count
                 await notification_service.send_failed_attempts_warning(
                     user=user,
                     failed_attempts=global_count,
@@ -433,6 +435,7 @@ async def verify_mfa_recovery_code(
                     f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
                 )
                 notification_service = MFANotificationService()
+                global_remaining = settings.redis.mfa_global_lockout_attempts - global_count
                 await notification_service.send_failed_attempts_warning(
                     user=user,
                     failed_attempts=global_count,
@@ -448,6 +451,16 @@ async def verify_mfa_recovery_code(
                     f"user_id={user_id} email={user.email_encrypted} global_failed_attempts={global_count}"
                 )
                 await mfa_service.delete_session(mfa_session_id)
+
+                # Send account locked notification
+                notification_service = MFANotificationService()
+                await notification_service.send_account_locked_email(
+                    user=user,
+                    lockout_reason="Too many failed recovery code attempts",
+                    failed_attempts=global_count,
+                    lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                )
+
                 raise MFAGlobalLockoutError(
                     global_attempts_remaining=0,
                 )

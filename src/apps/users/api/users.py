@@ -847,14 +847,7 @@ async def user_download_recovery_codes(
 
     logger.info(f"Recovery codes downloaded user_id={user.id} filename={filename}")
 
-    # Step 10: Send downloaded notification
-    notification_service = MFANotificationService()
-    await notification_service.send_recovery_codes_downloaded_notification(
-        user=fresh_user,
-        downloaded_at=datetime.now(timezone.utc),
-    )
-
-    # Step 11: Return as downloadable text file with security headers
+    # Step 10: Return as downloadable text file with security headers
     return FastAPIResponse(
         content=text_content,
         media_type="text/plain; charset=utf-8",
