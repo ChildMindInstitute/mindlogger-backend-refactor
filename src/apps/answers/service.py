@@ -1794,9 +1794,10 @@ class AnswerService:
             include_in_progress=include_in_progress,
         )
 
+        # Get activity_flow_order from main database (flow_item_histories only exists there)
+        await AnswersCRUD(self.session).populate_activity_flow_orders(result)
+
         if include_in_progress:
-            # Get activity_flow_order from main database (flow_item_histories only exists there)
-            await AnswersCRUD(self.session).populate_activity_flow_orders(result)
             # Filter activity flows using the shared helper method
             self._filter_activity_flows(result)
 
@@ -1820,9 +1821,10 @@ class AnswerService:
             include_in_progress=include_in_progress,
         )
 
+        # Get activity_flow_order from main database (flow_item_histories only exists there)
+        await AnswersCRUD(self.session).populate_activity_flow_orders(*result_list)
+
         if include_in_progress:
-            # Get activity_flow_order from main database (flow_item_histories only exists there)
-            await AnswersCRUD(self.session).populate_activity_flow_orders(*result_list)
             # Filter activity flows for each result using the shared helper method
             for result in result_list:
                 self._filter_activity_flows(result)
