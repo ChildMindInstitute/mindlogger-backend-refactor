@@ -4,7 +4,6 @@ from typing import Annotated
 import typer
 from rich import print
 
-from apps.shared.hashing import hash_sha224
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UserIsDeletedError, UserNotFound, UsersCRUD
 from apps.users.domain import SoftDeleteUserRequest
@@ -68,7 +67,6 @@ async def soft_delete(
             subject.last_name = name
             subject.nickname = name
             subject.email = email
-
 
             await users_crud.update(user, update_schema)
             await users_crud.update_encrypted_email(user, email)

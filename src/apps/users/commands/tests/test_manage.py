@@ -31,7 +31,7 @@ class TestUsersManage:
 
     TICKET_ID = "no-ticket"
 
-    EMAIL_CHECK_STRING = f"removed.user"
+    EMAIL_CHECK_STRING = "removed.user"
 
     @pytest.fixture
     def runner(self) -> CliRunner:
