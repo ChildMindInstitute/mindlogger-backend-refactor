@@ -17,7 +17,8 @@ from apps.applets.commands import (  # noqa: E402
 )  # noqa: E402
 from apps.shared.commands import encryption_cli, patch  # noqa: E402
 from apps.shared.commands.storage import app as storage_cli  # noqa: E402
-from apps.users.commands import token_cli  # noqa: E402
+from apps.users.commands.token import app as token_cli  # noqa: E402
+from apps.users.commands.manage import app as user_cli  # noqa: E402
 from apps.workspaces.commands import arbitrary_server_cli  # noqa: E402
 
 cli = typer.Typer()
@@ -26,6 +27,7 @@ cli.add_typer(convert_assessments, name="assessments")
 cli.add_typer(reindex_items_cli, name="reindex")
 cli.add_typer(delete_subscales_cli, name="delete-subscales")
 cli.add_typer(token_cli, name="token")
+cli.add_typer(user_cli, name="users")
 cli.add_typer(patch, name="patch")
 cli.add_typer(encryption_cli, name="encryption")
 cli.add_typer(applet_ema_cli, name="applet-ema")
