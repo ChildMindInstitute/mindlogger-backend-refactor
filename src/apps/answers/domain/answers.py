@@ -687,7 +687,7 @@ class CompletedEntity(PublicModel):
 
     @field_serializer("start_time", "end_time", when_used="json")
     def datetime_to_ms(self, value: datetime.datetime):
-        return int(value.timestamp() * 1000)
+        return int(value.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
 
     @field_validator("id", mode="before")
     @classmethod
