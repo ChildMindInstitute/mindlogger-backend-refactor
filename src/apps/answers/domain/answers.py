@@ -2,7 +2,7 @@ import datetime
 import enum
 import uuid
 from copy import deepcopy
-from typing import Annotated, Any, Generic, Optional
+from typing import Annotated, Any, Generic
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -673,6 +673,7 @@ class CompletedEntity(PublicModel):
     ]
     answer_id: uuid.UUID
     submit_id: uuid.UUID
+    version: Annotated[str, Field(description="The applet version when this answer was submitted.")]
     activity_history_id: Annotated[str | None, Field(exclude=True)] = None
     flow_history_id: Annotated[str | None, Field(exclude=True)] = None
     target_subject_id: uuid.UUID | None = None
@@ -752,8 +753,10 @@ class CompletedEntity(PublicModel):
 
 class AppletCompletedEntities(InternalModel):
     id: uuid.UUID
-    version: Optional[str] = None
-
+    version: Annotated[
+        str | None,
+        Field(description="The applet version used to filter the query. Null if not specified in request."),
+    ] = None
     activities: list[CompletedEntity]
     activity_flows: list[CompletedEntity]
 
