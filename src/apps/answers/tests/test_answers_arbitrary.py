@@ -923,6 +923,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "version",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
@@ -933,6 +934,7 @@ class TestAnswerActivityItems(BaseTest):
             "activityFlowOrder",
         }
         assert activity_answer_data["answerId"] == str(answer_arbitrary.id)
+        assert activity_answer_data["version"] == answer_arbitrary.version
         assert activity_answer_data["localEndTime"] == str(answer_create.answer.local_end_time)
         # Standalone activities have no flow info
         assert activity_answer_data["isFlowCompleted"] is None

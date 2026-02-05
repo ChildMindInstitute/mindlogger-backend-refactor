@@ -4892,6 +4892,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "version",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
@@ -4902,6 +4903,7 @@ class TestAnswerActivityItems(BaseTest):
             "activityFlowOrder",
         }
         assert activity["answerId"] == str(olive_answer.id)
+        assert activity["version"] == olive_answer.version
         assert activity["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
         assert activity["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
         assert activity["localEndTime"] == str(olive_answer_create.answer.local_end_time)
@@ -5023,6 +5025,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "version",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
@@ -5033,6 +5036,7 @@ class TestAnswerActivityItems(BaseTest):
             "activityFlowOrder",
         }
         assert activity_data["answerId"] == str(olive_answer.id)
+        assert activity_data["version"] == olive_answer.version
         assert activity_data["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
         assert activity_data["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
         assert activity_data["localEndTime"] == str(olive_answer_create.answer.local_end_time)
