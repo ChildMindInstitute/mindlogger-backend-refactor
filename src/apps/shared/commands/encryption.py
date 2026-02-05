@@ -105,7 +105,7 @@ async def reencrypt(
     table_name_column_name_map = await get_table_name_column_name_map()
     tables = tables if tables else list(table_name_column_name_map.keys())
     print_data_table(table_name_column_name_map)
-    typer.confirm("Are you sure that you want to reencrypt columns in tables avobe?", abort=True)
+    typer.confirm("Are you sure that you want to reencrypt columns in tables above?", abort=True)
     async with session_maker() as session:
         async with atomic(session):
             for table_name in tables:

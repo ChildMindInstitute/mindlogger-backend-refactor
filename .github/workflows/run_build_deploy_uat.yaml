@@ -75,6 +75,18 @@ jobs:
       image-tag: ${{ needs.ref.outputs.target-ref }}
       env-name: uat
 
+  update-jira:
+    name: Update JIRA tickets
+    needs: [ ref, deploy-uat ]
+    uses: ./.github/workflows/_uat-jira.yaml
+    with:
+      git-tag: ${{ needs.ref.outputs.target-ref }}
+    secrets:
+      devops-repo-key: ${{ secrets.DEVOPS_REPO_KEY }}
+      jira-webhook-url: ${{ secrets.JIRA_UAT_WEBHOOK }}
+      github-pat: ${{ secrets.DEVOPS_GITHUB_TOKEN }}
+      jira-webhook-secret: ${{ secrets.JIRA_UAT_SECRET }}
+
   notify:
     name: Notifications
     needs: [ ref, deploy-uat ]

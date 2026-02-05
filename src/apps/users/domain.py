@@ -94,6 +94,12 @@ class UserUpdateRequest(InternalModel):
     last_name: str
 
 
+class SoftDeleteUserRequest(UserUpdateRequest):
+    """User update request model for soft deletes."""
+
+    email: str
+
+
 class User(InternalModel):
     """Internal user model."""
 

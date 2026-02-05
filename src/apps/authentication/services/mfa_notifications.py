@@ -219,6 +219,7 @@ class MFANotificationService:
         user: User,
         failed_attempts: int,
         max_attempts: int,
+        remaining_attempts: int,
     ) -> None:
         """Send warning after multiple failed MFA attempts."""
         if not settings.mfa.enable_email_notifications:
@@ -231,11 +232,14 @@ class MFANotificationService:
             template_params={
                 "failed_attempts": failed_attempts,
                 "max_attempts": max_attempts,
-                "remaining_attempts": max_attempts - failed_attempts,
+                "remaining_attempts": remaining_attempts,
             },
         )
 
-        logger.info(f"Failed attempts warning queued user_id={user.id} failed={failed_attempts}/{max_attempts}")
+        logger.info(
+            f"Failed attempts warning queued user_id={user.id} "
+            f"failed={failed_attempts}/{max_attempts} remaining={remaining_attempts}"
+        )
 
     async def send_disable_failed_attempts_warning(
         self,
@@ -258,6 +262,37 @@ class MFANotificationService:
         )
 
         logger.info(f"Disable failed attempts warning queued user_id={user.id} attempts={failed_attempts}")
+
+    async def send_view_recovery_codes_failed_attempts_warning(
+        self,
+        user: User,
+        failed_attempts: int,
+        max_attempts: int,
+        remaining_attempts: int,
+        attempted_at: datetime,
+    ) -> None:
+        """Send warning when viewing recovery codes attempt fails."""
+        if not settings.mfa.enable_email_notifications:
+            logger.debug(
+                f"MFA notifications disabled, skipping view recovery codes failed attempts warning user_id={user.id}"
+            )
+            return
+
+        await self._queue_email(
+            notification_type="mfa/mfa_view_recovery_codes_failed_attempts",
+            user=user,
+            template_params={
+                "failed_attempts": failed_attempts,
+                "max_attempts": max_attempts,
+                "remaining_attempts": remaining_attempts,
+                "attempted_at": attempted_at,
+            },
+        )
+
+        logger.info(
+            f"View recovery codes failed attempts warning queued user_id={user.id} "
+            f"attempts={failed_attempts}/{max_attempts} remaining={remaining_attempts}"
+        )
 
     async def send_recovery_codes_downloaded_notification(
         self,

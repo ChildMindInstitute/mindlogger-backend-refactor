@@ -1,1 +1,0 @@
-build( job: env.MindloggerBackendRefactorBuilder )
