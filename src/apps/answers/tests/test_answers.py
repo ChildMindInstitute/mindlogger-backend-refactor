@@ -5017,7 +5017,7 @@ class TestAnswerActivityItems(BaseTest):
         #   so their 'activities' and 'activityFlows' should be empty.
         assert len(data) == 3
         applet_with_answer = next(i for i in data if i["id"] == str(olive_answer.applet_id))
-        assert applet_with_answer["version"] == olive_answer.version
+        assert applet_with_answer["version"] == (olive_answer.version if filter_by_version else None)
         assert len(applet_with_answer["activities"]) == 1
 
         activity_data = applet_with_answer["activities"][0]

@@ -968,7 +968,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_answer = next(i for i in data if i["id"] == str(answer_arbitrary.applet_id))
 
         assert applet_with_answer["id"] == str(answer_arbitrary.applet_id)
-        assert applet_with_answer["version"] == answer_arbitrary.version
+        assert applet_with_answer["version"] is None
 
     async def test_check_existance_answer_exists(
         self, arbitrary_client: TestClient, tom: User, answer_arbitrary: AnswerSchema
