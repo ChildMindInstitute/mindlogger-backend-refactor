@@ -9,6 +9,7 @@ python src/cli.py [COMMAND] [SUBCOMMAND] [OPTIONS]
 ```
 
 ## Available Top-Level Commands
+- `mfa` – MFA management (clear, status)
 - `arbitrary` – Manage arbitrary server settings and data transfer
 - `patch` – Execute or list database/data patches
 - `encryption` – Encrypt, decrypt, or re-encrypt data
