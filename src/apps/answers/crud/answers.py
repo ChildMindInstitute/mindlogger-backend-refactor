@@ -610,6 +610,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             select(
                 AnswerSchema.id.label("answer_id"),
                 AnswerSchema.submit_id,
+                AnswerSchema.version,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
                 AnswerSchema.target_subject_id,
@@ -718,6 +719,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.id.label("answer_id"),
                 AnswerSchema.applet_id,
                 AnswerSchema.submit_id,
+                AnswerSchema.version,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
                 AnswerSchema.target_subject_id,
