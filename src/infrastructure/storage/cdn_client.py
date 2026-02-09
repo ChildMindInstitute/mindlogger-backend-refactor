@@ -10,6 +10,7 @@ import boto3
 import httpx
 from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
+from ddtrace.trace import tracer
 
 from apps.file.errors import FileNotFoundError
 from apps.shared.exception import NotFoundError
@@ -51,6 +52,7 @@ class CDNClient:
             max_pool_connections=25,
         )
 
+        # TODO This is only done for arbitrary???
         if config.access_key and config.secret_key:
             return boto3.client(
                 "s3",
@@ -93,6 +95,7 @@ class CDNClient:
             future = executor.submit(self._check_existence, key)
             return await asyncio.wrap_future(future)
 
+    @tracer.wrap("storage.warn.download")
     def download(self, key, file: BinaryIO | None = None):
         """
         Download a file from a CDN location to a local directory.  It is up to the caller to
@@ -135,10 +138,11 @@ class CDNClient:
             return url
 
     async def delete_object(self, key: str | None):
-        async with self.semaphore:
-            with ThreadPoolExecutor() as executor:
-                future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
-                await asyncio.wrap_future(future)
+        with tracer.trace("storage.danger.delete"):
+            async with self.semaphore:
+                with ThreadPoolExecutor() as executor:
+                    future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
+                    await asyncio.wrap_future(future)
 
     async def list_object(self, key: str):
         async with self.semaphore:
