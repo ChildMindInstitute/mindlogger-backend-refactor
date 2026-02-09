@@ -23,9 +23,9 @@ from apps.workspaces.errors import AnswerViewAccessDenied
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 from config.cdn import CDNSettings
-from infrastructure.storage.cdn_arbitrary import ArbitraryS3CdnClient
-from infrastructure.storage.cdn_client import CDNClient
-from infrastructure.storage.cdn_config import CdnConfig
+from infrastructure.storage.storage_arbitrary import ArbitraryS3StorageClient
+from infrastructure.storage.storage_client import StorageClient
+from infrastructure.storage.storage_config import StorageConfig
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def mock_presigned_post(mocker: MockerFixture):
 
 @pytest.fixture
 def mock_presigned_url(mocker: MockerFixture) -> Callable[..., str]:
-    def fake__generate_presigned_url(_: CDNClient, key: str) -> str:
+    def fake__generate_presigned_url(_: StorageClient, key: str) -> str:
         return f"{key}?credentials"
 
     m = mocker.patch(
@@ -140,8 +140,8 @@ def cdn_settings() -> Generator[CDNSettings, Any, None]:
 
 
 @pytest.fixture(scope="class")
-def cdn_client(cdn_settings: CDNSettings) -> CDNClient:
-    config = CdnConfig(
+def cdn_client(cdn_settings: CDNSettings) -> StorageClient:
+    config = StorageConfig(
         endpoint_url=cdn_settings.endpoint_url,
         access_key=cdn_settings.access_key,
         secret_key=cdn_settings.secret_key,
@@ -149,14 +149,14 @@ def cdn_client(cdn_settings: CDNSettings) -> CDNClient:
         bucket=cdn_settings.bucket_answer,
         ttl_signed_urls=cdn_settings.ttl_signed_urls,
     )
-    cdn_client = CDNClient(config, env="env")
+    cdn_client = StorageClient(config, env="env")
     return cdn_client
 
 
 @pytest.fixture
-def cdn_client_arbitrary_aws(tom_workspace_arbitrary_aws: WorkspaceArbitrary) -> ArbitraryS3CdnClient:
-    client = ArbitraryS3CdnClient(
-        CdnConfig(
+def cdn_client_arbitrary_aws(tom_workspace_arbitrary_aws: WorkspaceArbitrary) -> ArbitraryS3StorageClient:
+    client = ArbitraryS3StorageClient(
+        StorageConfig(
             region=tom_workspace_arbitrary_aws.storage_region,
             bucket=tom_workspace_arbitrary_aws.storage_bucket,
             secret_key=tom_workspace_arbitrary_aws.storage_secret_key,
@@ -168,7 +168,7 @@ def cdn_client_arbitrary_aws(tom_workspace_arbitrary_aws: WorkspaceArbitrary) ->
 
 
 @pytest.fixture
-def log_file_service(tom: User, cdn_client: CDNClient) -> LogFileService:
+def log_file_service(tom: User, cdn_client: StorageClient) -> LogFileService:
     return LogFileService(tom.id, cdn_client)
 
 
@@ -314,7 +314,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_url_for_answers(
-        self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client: CDNClient
+        self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client: StorageClient
     ):
         client.login(tom)
         expected_key = cdn_client.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", self.file_id)
@@ -325,7 +325,7 @@ class TestAnswerActivityItems(BaseTest):
 
     @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_url_for_answers_arbitrary(
-        self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client_arbitrary_aws: ArbitraryS3CdnClient
+        self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client_arbitrary_aws: ArbitraryS3StorageClient
     ):
         client.login(tom)
         expected_key = cdn_client_arbitrary_aws.generate_key(
@@ -343,7 +343,7 @@ class TestAnswerActivityItems(BaseTest):
         device_tom: str,
         tom: User,
         mocker: MockerFixture,
-        cdn_client: CDNClient,
+        cdn_client: StorageClient,
         cdn_settings: CDNSettings,
     ):
         mocker.patch("infrastructure.storage.buckets.get_log_bucket", return_value=cdn_client)

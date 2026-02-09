@@ -1,64 +1,29 @@
-import os
 import uuid
 
-import boto3
 import pytest
-from moto import mock_aws
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.users import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
-from infrastructure.storage.cdn_client import CDNClient
-from infrastructure.storage.cdn_config import CdnConfig
 from infrastructure.storage.presign_services import S3PresignService
-
-ANSWER_BUCKET_NAME = "test-answer-bucket"
+from infrastructure.storage.storage_client import StorageClient
+from infrastructure.storage.storage_config import StorageConfig
+from infrastructure.storage.tests import ANSWER_BUCKET_NAME
 
 
 class TestS3PresignService:
     """Test for the S3PresignService"""
 
-    @pytest.fixture(scope="function")
-    async def aws_credentials(self):
-        """Mocked AWS Credentials for moto."""
-        os.environ["AWS_ACCESS_KEY_ID"] = "testing"
-        os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-        os.environ["AWS_SECURITY_TOKEN"] = "testing"
-        os.environ["AWS_SESSION_TOKEN"] = "testing"
-        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
-
-    @pytest.fixture(scope="function")
-    async def s3(self, aws_credentials):
-        """
-        Return a mocked S3 client
-        """
-        with mock_aws():
-            yield boto3.client("s3", region_name="us-east-1")
-
-    @pytest.fixture(scope="function")
-    async def mocked_aws(self, aws_credentials):
-        """
-        Mock all AWS interactions
-        Requires you to create your own boto3 clients
-        """
-        with mock_aws():
-            yield
-
     @pytest.fixture
-    def answer_bucket(self, s3):
-        """Create the bucket in Moto"""
-        s3.create_bucket(Bucket=ANSWER_BUCKET_NAME)
-
-    @pytest.fixture
-    async def answer_storage_client(self, s3) -> CDNClient:
-        config = CdnConfig(
+    async def answer_storage_client(self) -> StorageClient:
+        config = StorageConfig(
             endpoint_url=None,
             region="us-east-1",
             bucket=ANSWER_BUCKET_NAME,
         )
-        return CDNClient(config, env="test")
+        return StorageClient(config, env="test")
 
     @pytest.fixture
     async def s3_presign_service(self, session: AsyncSession, tom: User, applet_one: AppletFull, answer_storage_client):

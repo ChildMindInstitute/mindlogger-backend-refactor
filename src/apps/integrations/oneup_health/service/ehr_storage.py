@@ -10,15 +10,15 @@ from slugify import slugify
 
 from apps.file.enums import FileScopeEnum
 from apps.integrations.oneup_health.service.domain import EHRData
-from infrastructure.storage.cdn_client import CDNClient
 from infrastructure.storage.storage import select_answer_storage
+from infrastructure.storage.storage_client import StorageClient
 
 __all = ["create_ehr_storage"]
 
 
 class EHRStorage:
-    def __init__(self, cdn_client: CDNClient):
-        self._cdn_client: CDNClient = cdn_client
+    def __init__(self, cdn_client: StorageClient):
+        self._cdn_client: StorageClient = cdn_client
 
     @staticmethod
     def ehr_zip_filename(data: EHRData) -> str:

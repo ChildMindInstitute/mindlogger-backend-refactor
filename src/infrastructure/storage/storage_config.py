@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class CdnConfig(BaseSettings):
+class StorageConfig(BaseSettings):
     endpoint_url: str | None = None
     region: str | None = None
     bucket: str | None = None

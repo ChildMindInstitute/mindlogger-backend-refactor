@@ -120,7 +120,7 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
-from infrastructure.storage.cdn_client import CDNClient
+from infrastructure.storage.storage_client import StorageClient
 from infrastructure.utility.redis_client import RedisCache
 
 
@@ -2563,8 +2563,8 @@ class AnswerTransferService:
         session: AsyncSession,
         answer_session_source: AsyncSession,
         answer_session_target: AsyncSession,
-        storage_source: CDNClient,
-        storage_target: CDNClient,
+        storage_source: StorageClient,
+        storage_target: StorageClient,
     ):
         self.session = session
         self.answer_session_source = answer_session_source
@@ -2752,15 +2752,15 @@ class AnswerTransferService:
 
     async def get_copied_files(self, applet_id: uuid.UUID):
         files_target = await self._get_applet_files_list(self.answer_session_source, self.storage_target, applet_id)
-        target_checksum = {file[CDNClient.KEY_KEY]: file[CDNClient.KEY_CHECKSUM] for file in files_target}
+        target_checksum = {file[StorageClient.KEY_KEY]: file[StorageClient.KEY_CHECKSUM] for file in files_target}
         del files_target
         files_source = await self._get_applet_files_list(self.answer_session_source, self.storage_source, applet_id)
         total_files = len(files_source)
         files_not_copied = set()
         files_to_remove = set()
         for file in files_source:
-            key = file[CDNClient.KEY_KEY]
-            if target_checksum.get(key, None) == file[CDNClient.KEY_CHECKSUM]:
+            key = file[StorageClient.KEY_KEY]
+            if target_checksum.get(key, None) == file[StorageClient.KEY_CHECKSUM]:
                 files_to_remove.add(key)
             else:
                 files_not_copied.add(key)

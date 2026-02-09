@@ -33,8 +33,8 @@ from apps.workspaces.domain.constants import Role
 from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
-from infrastructure.storage.buckets import get_operations_bucket
-from infrastructure.storage.cdn_client import CDNClient, ObjectNotFoundError
+from infrastructure.storage.storage import get_operations_storage
+from infrastructure.storage.storage_client import ObjectNotFoundError, StorageClient
 
 app = typer.Typer()
 
@@ -152,7 +152,7 @@ def create_csv(data: list[dict], columns: list | None = None, append_to: BinaryI
     return None
 
 
-async def save_csv(path: str, data: list[dict], cdn_client: CDNClient, columns: list | None = None):
+async def save_csv(path: str, data: list[dict], cdn_client: StorageClient, columns: list | None = None):
     if f := create_csv(data, columns):
         await cdn_client.upload(path, f)
 
@@ -196,7 +196,7 @@ async def _export_flows(applet_id: uuid.UUID, path_prefix: str):
         )
         data = res.all()
 
-    cdn_client = await get_operations_bucket()
+    cdn_client = await get_operations_storage()
     key = cdn_client.generate_key(path_prefix, str(applet_id), PATH_FLOW_FILE_NAME)
     await save_csv(key, parse_obj_as(list[dict], data), cdn_client)
 
@@ -438,7 +438,7 @@ async def export_flow_schedule(
             ).model_dump()
             result.append(outrow)
 
-        cdn_client = await get_operations_bucket()
+        cdn_client = await get_operations_storage()
         unique_prefix = f"{applet_id}/flow-schedule"
 
         prev_filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
@@ -622,7 +622,7 @@ async def export_activity_schedule(
             ).model_dump()
             result.append(outrow)
 
-        cdn_client = await get_operations_bucket()
+        cdn_client = await get_operations_storage()
         unique_prefix = f"{applet_id}/activity-schedule"
 
         prev_filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))

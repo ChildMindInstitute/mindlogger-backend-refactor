@@ -15,21 +15,23 @@ from ddtrace.trace import tracer
 from apps.file.errors import FileNotFoundError
 from apps.shared.exception import NotFoundError
 from infrastructure.logger import logger
-from infrastructure.storage.cdn_config import CdnConfig
+from infrastructure.storage.storage_config import StorageConfig
 
 
 class ObjectNotFoundError(Exception):
     pass
 
 
-class CDNClient:
+class StorageClient:
+    """A client for storing files, likely in an object store like S3"""
+
     KEY_KEY = "Key"
     KEY_CHECKSUM = "ETag"
 
     default_container_name = "mindlogger"
     meta_last_modified = "last_modified_orig"
 
-    def __init__(self, config: CdnConfig, env: str, *, max_concurrent_tasks: int = 10):
+    def __init__(self, config: StorageConfig, env: str, *, max_concurrent_tasks: int = 10):
         self.config = config
         self.env = env
         self.client = self._configure_client(config)
@@ -77,6 +79,7 @@ class CDNClient:
             Bucket=self.config.bucket,
         )
 
+    @tracer.wrap("storage.warn.upload")
     async def upload(self, path, body: BinaryIO):
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._upload, path, body)
@@ -155,7 +158,7 @@ class CDNClient:
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
         return self.client.generate_presigned_post(self.config.bucket, key, ExpiresIn=self.config.ttl_signed_urls)
 
-    def _copy(self, key, storage_from: "CDNClient", key_from: str | None = None) -> int:
+    def _copy(self, key, storage_from: "StorageClient", key_from: str | None = None) -> int:
         key_from = key_from or key
         res = storage_from.client.get_object(Bucket=storage_from.config.bucket, Key=key_from)
         file_obj = res["Body"]
@@ -175,7 +178,7 @@ class CDNClient:
 
         return res["ContentLength"]
 
-    async def copy(self, key, storage_from: "CDNClient", key_from: str | None = None) -> int:
+    async def copy(self, key, storage_from: "StorageClient", key_from: str | None = None) -> int:
         async with self.semaphore:
             with ThreadPoolExecutor() as executor:
                 future = executor.submit(self._copy, key, storage_from, key_from=key_from)

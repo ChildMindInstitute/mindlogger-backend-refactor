@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
 from config import settings
-from infrastructure.storage.cdn_client import CDNClient
+from infrastructure.storage.storage_client import StorageClient
 
 
 def mongoid_to_uuid(id_):
@@ -40,7 +40,7 @@ class PresignService(ABC):
         user_id: uuid.UUID,
         applet_id: uuid.UUID,
         access: UserAppletAccessSchema | None,
-        cdn_client: CDNClient,
+        cdn_client: StorageClient,
     ):
         self.session = session
         self.user_id = user_id
@@ -52,7 +52,7 @@ class PresignService(ABC):
     async def _presign(self, url: str | None) -> Optional[str]:
         pass
 
-    async def presign(self, urls: List[str]) -> List[str]:
+    async def presign(self, urls: List[str | None]) -> List[str]:
         c_list = []
 
         # Run in parallel

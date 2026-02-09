@@ -44,17 +44,21 @@ from apps.workspaces.errors import AnswerViewAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.database.deps import get_session
-from infrastructure.storage.buckets import get_log_bucket, get_media_bucket, get_operations_bucket
-from infrastructure.storage.cdn_client import CDNClient, ObjectNotFoundError
 from infrastructure.storage.presign import get_presign_service
-from infrastructure.storage.storage import select_answer_storage
+from infrastructure.storage.storage import (
+    get_log_storage,
+    get_media_storage,
+    get_operations_storage,
+    select_answer_storage,
+)
+from infrastructure.storage.storage_client import ObjectNotFoundError, StorageClient
 
 
 # TODO: delete later, it is not used anymore
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_media_bucket),
+    cdn_client: StorageClient = Depends(get_media_storage),
 ) -> Response[ContentUploadedFile]:  # pragma: no cover
     converters = [convert_not_supported_audio]
 
@@ -174,7 +178,7 @@ def _get_keys_and_bucket_for_image(
 async def download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_media_bucket),
+    cdn_client: StorageClient = Depends(get_media_storage),
 ) -> StreamingResponse:
     try:
         file, media_type = cdn_client.download(request.key)
@@ -318,7 +322,7 @@ async def logs_upload(
     file_id: str = Query(..., alias="fileId"),
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_log_bucket),
+    cdn_client: StorageClient = Depends(get_log_storage),
 ) -> Response[AnswerUploadedFile]:
     service = LogFileService(user.id, cdn_client)
     try:
@@ -339,7 +343,7 @@ async def logs_download(
     user_email: str,
     days: int,
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_log_bucket),
+    cdn_client: StorageClient = Depends(get_log_storage),
     session: AsyncSession = Depends(get_session),
 ) -> ResponseMulti[str]:
     UserAccessService.raise_for_developer_access(user.email_encrypted)
@@ -365,7 +369,7 @@ async def logs_exist_check(
     device_id: str,
     files: FileCheckRequest,
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_log_bucket),
+    cdn_client: StorageClient = Depends(get_log_storage),
 ) -> ResponseMulti[LogFileExistenceResponse]:
     service = LogFileService(user.id, cdn_client)
     try:
@@ -381,8 +385,8 @@ async def logs_exist_check(
 async def generate_presigned_media_url(
     body: FileNameRequest = Body(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_media_bucket),
-    operations_client: CDNClient = Depends(get_operations_bucket),
+    cdn_client: StorageClient = Depends(get_media_storage),
+    operations_client: StorageClient = Depends(get_operations_storage),
 ) -> Response[PresignedUrl]:
     orig_key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
 
@@ -434,7 +438,7 @@ async def generate_presigned_logs_url(
     device_id: str,
     body: FileIdRequest = Body(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_log_bucket),
+    cdn_client: StorageClient = Depends(get_log_storage),
 ) -> Response[PresignedUrl]:
     service = LogFileService(user.id, cdn_client)
     key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"
