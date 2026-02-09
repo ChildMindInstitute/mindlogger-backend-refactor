@@ -4,7 +4,8 @@ import io
 import json
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor
-from typing import BinaryIO
+from typing import BinaryIO, Any
+from typing_extensions import deprecated
 
 import boto3
 import httpx
@@ -70,6 +71,15 @@ class StorageClient:
         except KeyError:
             logger.warning("CDN configuration is not full")
 
+
+
+    def _get_bucket_name(self) -> str:
+        """Get the bucket name.  Override to not support DR variables"""
+        if not self.config.bucket and not self.config.bucket_override:
+            raise RuntimeError("A bucket or bucket override must be specified")
+
+        return self.config.bucket_override or self.config.bucket or ""
+
     def _upload(self, path, body: BinaryIO):
         if self.env == "testing":
             return
@@ -127,25 +137,26 @@ class StorageClient:
         url = self.client.generate_presigned_url(
             "get_object",
             Params={
-                "Bucket": self.config.bucket,
+                "Bucket": self._get_bucket_name(),
                 "Key": key,
             },
             ExpiresIn=self.config.ttl_signed_urls,
         )
         return url
 
-    async def generate_presigned_url(self, key):
+    async def generate_presigned_url(self, key) -> str:
+        """Generate a presigned url to retrieve an object from S3"""
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._generate_presigned_url, key)
             url = await asyncio.wrap_future(future)
             return url
 
+    @tracer.wrap("storage.danger.delete")
     async def delete_object(self, key: str | None):
-        with tracer.trace("storage.danger.delete"):
-            async with self.semaphore:
-                with ThreadPoolExecutor() as executor:
-                    future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
-                    await asyncio.wrap_future(future)
+        async with self.semaphore:
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(self.client.delete_object, Bucket=self.config.bucket, Key=key)
+                await asyncio.wrap_future(future)
 
     async def list_object(self, key: str):
         async with self.semaphore:
@@ -154,9 +165,9 @@ class StorageClient:
                 result = await asyncio.wrap_future(future)
                 return result.get("Contents", [])
 
-    def generate_presigned_post(self, key):
+    def generate_presigned_post(self, key) -> dict[str, Any]:
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
-        return self.client.generate_presigned_post(self.config.bucket, key, ExpiresIn=self.config.ttl_signed_urls)
+        return self.client.generate_presigned_post(self._get_bucket_name(), key, ExpiresIn=self.config.ttl_signed_urls)
 
     def _copy(self, key, storage_from: "StorageClient", key_from: str | None = None) -> int:
         key_from = key_from or key
@@ -186,6 +197,7 @@ class StorageClient:
                 return res
 
     async def check(self):
+        """Check if a bucket is available and writeable"""
         storage_bucket = self.config.bucket
         logger.info(f'Check bucket "{storage_bucket}" availability.')
         key = "mindlogger.txt"
@@ -226,12 +238,14 @@ class StorageClient:
 
         return False  # No public access found
 
+    @deprecated("This check is no longer used")
     def is_bucket_public(self) -> bool:
         if self._is_bucket_public is None:
             self._is_bucket_public = self._check_is_bucket_public()
 
         return self._is_bucket_public
 
+    @deprecated("This check is no longer used")
     def _is_object_public(self, key) -> bool:
         # Check the object's ACL
         try:
@@ -248,6 +262,7 @@ class StorageClient:
 
         return False  # No public access found
 
+    @deprecated("This check is no longer used")
     async def is_object_public(self, key) -> bool:
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._is_object_public, key)

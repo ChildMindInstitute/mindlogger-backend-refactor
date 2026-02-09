@@ -10,4 +10,7 @@ class StorageConfig(BaseSettings):
     domain: str = ""
     ttl_signed_urls: int = 3600
 
+    # DR Settings
+    bucket_override: str | None = None
+
     model_config = SettingsConfigDict(extra="ignore")

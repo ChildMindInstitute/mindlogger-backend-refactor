@@ -7,11 +7,19 @@ class CDNSettings(BaseModel):
     legacy_prefix: str | None = "mindlogger-legacy/answer"
 
     region: str | None = None
+    # Media Bucket
     bucket: str | None = None
+    # Answer Bucket
     bucket_answer: str | None = None
+    # Operations Bucket
     bucket_operations: str | None = None
     secret_key: str | None = None
     access_key: str | None = None
+
+    # DR settings
+    bucket_override: str | None = None
+    bucket_answer_override: str | None = None
+    bucket_operations_override: str | None = None
 
     domain: str = ""
     ttl_signed_urls: int = 3600

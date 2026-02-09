@@ -24,6 +24,9 @@ class ArbitraryS3StorageClient(StorageClient):
             config=client_config,
         )
 
+    def _get_bucket_name(self) -> str:
+        return self.config.bucket
+
 
 class ArbitraryGCPStorageClient(StorageClient):
     def __init__(self, config: StorageConfig, endpoint_url: str, env: str, *, max_concurrent_tasks: int = 10):
@@ -45,6 +48,9 @@ class ArbitraryGCPStorageClient(StorageClient):
             endpoint_url=self.endpoint_url,
             config=client_config,
         )
+
+    def _get_bucket_name(self) -> str:
+        return self.config.bucket or ""
 
 
 class ArbitraryAzureStorageClient(StorageClient):
@@ -88,3 +94,6 @@ class ArbitraryAzureStorageClient(StorageClient):
         )
         presigned_url = blob_client.url + "?" + sas_token
         return presigned_url
+
+    def _get_bucket_name(self) -> str:
+        return self.config.bucket or ""
