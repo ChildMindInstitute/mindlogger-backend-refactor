@@ -2,11 +2,9 @@ import pytest
 
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-from infrastructure.storage.tests import ANSWER_BUCKET_NAME
+from infrastructure.storage.tests import ANSWER_BUCKET_NAME, ANSWER_BUCKET_NAME_DR
 
 FILE_KEY = "/some/file.jpg"
-
-DR_BUCKET_NAME = ANSWER_BUCKET_NAME + "_DR"
 
 
 class TestStorageClient:
@@ -27,10 +25,7 @@ class TestStorageClient:
     async def answer_storage_client_dr(self, s3_client) -> StorageClient:
         """Storage client configured for DR"""
         config = StorageConfig(
-            endpoint_url=None,
-            region="us-east-1",
-            bucket=ANSWER_BUCKET_NAME,
-            bucket_override=DR_BUCKET_NAME
+            endpoint_url=None, region="us-east-1", bucket=ANSWER_BUCKET_NAME, bucket_override=ANSWER_BUCKET_NAME_DR
         )
 
         client = StorageClient(config, env="test")
@@ -49,24 +44,23 @@ class TestStorageClient:
         data = answer_storage_client.generate_presigned_post(FILE_KEY)
         assert data is not None
         assert ANSWER_BUCKET_NAME in data["url"]
-        assert DR_BUCKET_NAME not in data["url"]
+        assert ANSWER_BUCKET_NAME_DR not in data["url"]
 
     async def test_generate_presigned_post_dr(self, answer_storage_client_dr):
         data = answer_storage_client_dr.generate_presigned_post(FILE_KEY)
         assert data is not None
-        assert DR_BUCKET_NAME in data["url"]
+        assert ANSWER_BUCKET_NAME_DR in data["url"]
 
     async def test_generate_presigned_url(self, answer_storage_client):
         data = await answer_storage_client.generate_presigned_url(FILE_KEY)
         assert data is not None
         assert ANSWER_BUCKET_NAME in data
-        assert DR_BUCKET_NAME not in data
+        assert ANSWER_BUCKET_NAME_DR not in data
 
     async def test_generate_presigned_url_dr(self, answer_storage_client_dr):
         data = await answer_storage_client_dr.generate_presigned_url(FILE_KEY)
         assert data is not None
-        assert DR_BUCKET_NAME in data
-
+        assert ANSWER_BUCKET_NAME_DR in data
 
     @pytest.mark.usefixtures("populate_s3")
     async def test_check_existence(self, answer_storage_client: StorageClient):

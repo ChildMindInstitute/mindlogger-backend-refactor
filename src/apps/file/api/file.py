@@ -52,9 +52,11 @@ from infrastructure.storage.storage import (
     select_answer_storage,
 )
 from infrastructure.storage.storage_client import ObjectNotFoundError, StorageClient
+from ddtrace import tracer
 
 
 # TODO: delete later, it is not used anymore
+@tracer.wrap("storage.warn.upload")
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
@@ -190,6 +192,7 @@ async def download(
     return StreamingResponse(file, media_type=media_type)
 
 
+@tracer.wrap("storage.warn.upload")
 async def answer_upload(
     applet_id: uuid.UUID,
     file_id=Query(None, alias="fileId"),
@@ -400,9 +403,11 @@ async def generate_presigned_media_url(
         target_key = orig_key
         data = cdn_client.generate_presigned_post(orig_key)
 
+    # settings.cdn.url.format(key=target_key)
+
     return Response(
         result=PresignedUrl(
-            upload_url=data["url"], fields=data["fields"], url=quote(settings.cdn.url.format(key=target_key), "/:")
+            upload_url=data["url"], fields=data["fields"], url=quote(cdn_client.generate_public_url(target_key), "/:")
         )
     )
 

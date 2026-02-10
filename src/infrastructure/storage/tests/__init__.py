@@ -1,1 +1,2 @@
 ANSWER_BUCKET_NAME = "test-answer-bucket"
+ANSWER_BUCKET_NAME_DR = ANSWER_BUCKET_NAME + "-dr"

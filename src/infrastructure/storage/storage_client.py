@@ -4,14 +4,14 @@ import io
 import json
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor
-from typing import BinaryIO, Any
-from typing_extensions import deprecated
+from typing import Any, BinaryIO
 
 import boto3
 import httpx
 from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 from ddtrace.trace import tracer
+from typing_extensions import deprecated
 
 from apps.file.errors import FileNotFoundError
 from apps.shared.exception import NotFoundError
@@ -49,6 +49,14 @@ class StorageClient:
     def generate_private_url(self, key):
         return f"s3://{self.config.bucket}/{key}"
 
+    def generate_public_url(self, key):
+        """Generate a public URL.  It might not have one"""
+        if not self.config.domain and not self.config.endpoint_url:
+            raise RuntimeError("A domain or endpoint url must be specified")
+
+        domain = self.config.domain or self.config.endpoint_url
+        return domain + "/" + key
+
     def _configure_client(self, config):
         assert config, "set CDN"
         client_config = Config(
@@ -70,8 +78,6 @@ class StorageClient:
         # TODO: do we need this? If exception is caught self.client will be None
         except KeyError:
             logger.warning("CDN configuration is not full")
-
-
 
     def _get_bucket_name(self) -> str:
         """Get the bucket name.  Override to not support DR variables"""

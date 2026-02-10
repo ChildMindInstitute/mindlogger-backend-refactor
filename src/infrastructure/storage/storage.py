@@ -15,6 +15,17 @@ from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
 
 
+def _generate_storage_config_for_bucket(bucket_name: str, bucket_override: str | None) -> StorageConfig:
+    return StorageConfig(
+        region=settings.cdn.region,
+        bucket=bucket_name,
+        bucket_override=bucket_override,
+        ttl_signed_urls=settings.cdn.ttl_signed_urls,
+        access_key=settings.cdn.access_key,
+        secret_key=settings.cdn.secret_key,
+    )
+
+
 async def select_answer_storage(
     *,
     applet_id: uuid.UUID | None = None,
@@ -23,7 +34,6 @@ async def select_answer_storage(
 ) -> StorageClient:
     """
     Create a CDNClient based on arbitrary server info to the answer bucket.
-    This should be the entrypoint for
     """
 
     service = workspace.WorkspaceService(session, uuid.uuid4())

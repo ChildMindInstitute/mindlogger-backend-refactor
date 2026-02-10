@@ -25,7 +25,7 @@ class ArbitraryS3StorageClient(StorageClient):
         )
 
     def _get_bucket_name(self) -> str:
-        return self.config.bucket
+        return self.config.bucket or ""
 
 
 class ArbitraryGCPStorageClient(StorageClient):

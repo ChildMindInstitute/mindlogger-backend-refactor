@@ -51,7 +51,7 @@ def mock_presigned_url(mocker: MockerFixture) -> Callable[..., str]:
         return f"{key}?credentials"
 
     m = mocker.patch(
-        "infrastructure.storage.cdn_client.CDNClient._generate_presigned_url", new=fake__generate_presigned_url
+        "infrastructure.storage.storage_client.StorageClient._generate_presigned_url", new=fake__generate_presigned_url
     )
     return m
 
@@ -195,7 +195,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
 
         content = io.BytesIO(b"File content")
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryS3CdnClient.upload")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryS3StorageClient.upload")
         response = await client.post(
             self.upload_url.format(applet_id=applet_one.id),
             query={"fileId": self.file_id},
@@ -210,7 +210,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         mock = mocker.patch(
-            "infrastructure.storage.cdn_arbitrary.ArbitraryS3CdnClient.download",
+            "infrastructure.storage.storage_arbitrary.ArbitraryS3StorageClient.download",
             return_value=(iter(("a", "b")), "txt"),
         )
         response = await client.post(
@@ -225,7 +225,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryGCPCdnClient.upload")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryGCPStorageClient.upload")
         content = io.BytesIO(b"File content")
         response = await client.post(
             self.upload_url.format(applet_id=applet_one.id),
@@ -241,7 +241,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         mock = mocker.patch(
-            "infrastructure.storage.cdn_arbitrary.ArbitraryGCPCdnClient.download",
+            "infrastructure.storage.storage_arbitrary.ArbitraryGCPStorageClient.download",
             return_value=(iter(("a", "b")), "txt"),
         )
         response = await client.post(
@@ -256,8 +256,8 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryAzureCdnClient._configure_client")
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryAzureCdnClient.upload")
+        mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryAzureStorageClient._configure_client")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryAzureStorageClient.upload")
         content = io.BytesIO(b"File content")
         response = await client.post(
             self.upload_url.format(applet_id=applet_one.id),
@@ -271,7 +271,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.CDNClient.check_existence")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.StorageClient.check_existence")
         response = await client.post(
             self.existance_url.format(applet_id=applet_one.id),
             data={"files": [self.file_id]},
@@ -284,7 +284,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryS3CdnClient.check_existence")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryS3StorageClient.check_existence")
         response = await client.post(
             self.existance_url.format(applet_id=applet_one.id),
             data={"files": [self.file_id]},
@@ -300,7 +300,9 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert result["fields"]["key"].endswith(file_name)
-        assert result["url"] == cdn_settings.url.format(key=result["fields"]["key"])
+
+        domain = cdn_settings.domain or cdn_settings.endpoint_url
+        assert result["url"] == f"{domain}/{result["fields"]["key"]}"
 
     async def test_generate_presigned_url_for_post_answer__user_does_not_have_access_to_the_applet(
         self, client: TestClient, user: User, applet_one: AppletFull
@@ -346,7 +348,7 @@ class TestAnswerActivityItems(BaseTest):
         cdn_client: StorageClient,
         cdn_settings: CDNSettings,
     ):
-        mocker.patch("infrastructure.storage.buckets.get_log_bucket", return_value=cdn_client)
+        mocker.patch("infrastructure.storage.storage.get_log_storage", return_value=cdn_client)
         client.login(tom)
         file_name = "test.txt"
         resp = await client.post(self.log_upload_url.format(device_id=device_tom), data={"file_id": file_name})
@@ -394,12 +396,12 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert result["url"].endswith(exp_file_name)
 
-    @pytest.mark.parametrize("not_valid_extesion", ("mp3", "mp2"))
+    @pytest.mark.parametrize("not_valid_extension", ("mp3", "mp2"))
     async def test_generate_upload_url__webm_to_mp3_mp4_not_valid_extension(
-        self, client: TestClient, not_valid_extesion: str, tom: User
+        self, client: TestClient, not_valid_extension: str, tom: User
     ):
         client.login(tom)
-        data = {"file_name": "test.webm", "target_extension": not_valid_extesion}
+        data = {"file_name": "test.webm", "target_extension": not_valid_extension}
         resp = await client.post(self.upload_media_url, data=data)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
@@ -470,7 +472,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         data = {"key": "key"}
         mocker.patch(
-            "infrastructure.storage.cdn_client.CDNClient.download",
+            "infrastructure.storage.storage_client.StorageClient.download",
             side_effect=FileNotFoundError,
         )
         resp = await client.post(self.answer_download_url.format(applet_id=applet_one.id), data=data)
@@ -534,7 +536,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         data = {"key": "key"}
         mocker.patch(
-            "infrastructure.storage.cdn_client.CDNClient.download",
+            "infrastructure.storage.storage_client.StorageClient.download",
             side_effect=FileNotFoundError,
         )
         resp = await client.post(self.download_url, data=data)
@@ -547,21 +549,21 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         data = {"key": "key"}
         mocker.patch(
-            "infrastructure.storage.cdn_client.CDNClient.download",
+            "infrastructure.storage.storage_client.StorageClient.download",
             return_value=(iter(("a", "b")), "txt"),
         )
         resp = await client.post(self.download_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.content == b"ab"
 
-    # NOTE: We must keep old answer upload process untill all Mindlogger users have last App version.
+    # NOTE: We must keep old answer upload process until all Mindlogger users have last App version.
     async def test_answer_upload__not_valid_user_role(
         self, client: TestClient, applet_one_lucy_coordinator: AppletFull, lucy: User, mocker: MockerFixture
     ):
         client.login(lucy)
 
         content = io.BytesIO(b"File content")
-        mocker.patch("infrastructure.storage.cdn_client.CDNClient.upload")
+        mocker.patch("infrastructure.storage.storage_client.StorageClient.upload")
         resp = await client.post(
             self.upload_url.format(applet_id=applet_one_lucy_coordinator.id),
             query={"file_id": self.file_id},
@@ -589,7 +591,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mocker.patch("infrastructure.storage.cdn_client.CDNClient._check_existence", side_effect=NotFoundError)
+        mocker.patch("infrastructure.storage.storage_client.StorageClient._check_existence", side_effect=NotFoundError)
         resp = await client.post(
             self.existance_url.format(applet_id=applet_one.id),
             data={"files": [self.file_id]},
@@ -792,7 +794,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         file_id = "log-file"
-        mocker.patch("infrastructure.storage.cdn_client.CDNClient.list_object", return_value=[])
+        mocker.patch("infrastructure.storage.storage_client.StorageClient.list_object", return_value=[])
         resp = await client.post(self.log_check_url.format(device_id=device_tom), data={"files": [file_id]})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["count"] == 1
@@ -814,7 +816,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         file_id = "log-file"
         s3_key = log_file_service.device_key_prefix(device_tom) + f"/{file_id}"
-        mocker.patch("infrastructure.storage.cdn_client.CDNClient.list_object", return_value=[{"Key": s3_key}])
+        mocker.patch("infrastructure.storage.storage_client.StorageClient.list_object", return_value=[{"Key": s3_key}])
         resp = await client.post(self.log_check_url.format(device_id=device_tom), data={"files": [file_id]})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["count"] == 1
