@@ -43,7 +43,7 @@ from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.errors import AnswerViewAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
-from config import Settings, get_settings, settings, AppSettings
+from config import Settings, get_settings, settings
 from infrastructure.database.deps import get_session
 from infrastructure.storage.presign import get_presign_service
 from infrastructure.storage.storage import (
@@ -314,7 +314,7 @@ async def presign(
     request: FilePresignRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    app_settings = Depends(get_settings)
+    app_settings=Depends(get_settings),
 ) -> ResponseMulti[str | None]:
     service = await get_presign_service(applet_id, user.id, session, app_settings)
     links = await service.presign(request.private_urls)

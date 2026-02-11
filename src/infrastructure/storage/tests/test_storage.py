@@ -4,9 +4,10 @@ from apps.users import User
 from config import get_settings, settings
 from infrastructure.storage.storage import (
     create_answer_client,
+    get_log_storage,
     get_media_storage,
     get_operations_storage,
-    select_answer_storage, get_log_storage,
+    select_answer_storage,
 )
 from infrastructure.storage.tests import ANSWER_OVERRIDE, MEDIA_OVERRIDE, OPERATIONS_OVERRIDE
 
@@ -82,7 +83,6 @@ class TestStorageClients:
         assert presign is not None
         # This might not be useful
         assert client.config.endpoint_url in presign["url"]
-
 
     async def test_get_logs_storage_client(self) -> None:
         """Test a non-arbitrary server client"""

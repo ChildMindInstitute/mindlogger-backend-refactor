@@ -1,4 +1,3 @@
-
 from sqlalchemy import text
 
 from infrastructure.database import Base
