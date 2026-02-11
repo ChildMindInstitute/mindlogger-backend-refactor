@@ -1,9 +1,6 @@
-import contextlib
 
 from sqlalchemy import text
 
-import config
-from config import Settings
 from infrastructure.database import Base
 from infrastructure.database.core import session_manager
 
@@ -34,5 +31,3 @@ async def truncate_tables():
                 query = text(f"""TRUNCATE "{table_name}" CASCADE""")
                 await session.execute(query)
         await session.commit()
-
-

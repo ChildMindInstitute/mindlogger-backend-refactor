@@ -63,6 +63,7 @@ class StorageConfig(BaseSettings):
     def generate_logs_settings(cls, cdn_settings: CDNSettings) -> "StorageConfig":
         return cls(
             bucket=cdn_settings.bucket_answer,
+            bucket_override=cdn_settings.bucket_answer_override,
             endpoint_url=cdn_settings.endpoint_url,
             region=cdn_settings.region,
             secret_key=cdn_settings.secret_key,

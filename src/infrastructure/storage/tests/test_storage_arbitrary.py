@@ -1,12 +1,12 @@
 from uuid import uuid4
 
 from apps.workspaces.domain.workspace import WorkspaceArbitrary
+from config import get_settings
 from infrastructure.storage.storage import create_answer_client
 from infrastructure.storage.storage_arbitrary import ArbitraryS3StorageClient
 
 
 class TestArbitraryStorageClients:
-
     def test_create_answer_client_arbitrary(self):
         """Test a non-arbitrary server client with a different AWS region"""
         db_uri = "sqlite:///:memory:"
@@ -26,7 +26,7 @@ class TestArbitraryStorageClients:
             id=uuid4(),
         )
 
-        client = create_answer_client(info)
+        client = create_answer_client(get_settings(), info)
 
         # Make sure it's the arbitrary sub type
         assert isinstance(client, ArbitraryS3StorageClient)
@@ -57,7 +57,7 @@ class TestArbitraryStorageClients:
             id=uuid4(),
         )
 
-        client = create_answer_client(info, cdn_override_settings)
+        client = create_answer_client(cdn_override_settings, info)
 
         # Make sure it's the arbitrary sub type
         assert isinstance(client, ArbitraryS3StorageClient)

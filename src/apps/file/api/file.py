@@ -43,7 +43,7 @@ from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.errors import AnswerViewAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
-from config import settings
+from config import Settings, get_settings, settings, AppSettings
 from infrastructure.database.deps import get_session
 from infrastructure.storage.presign import get_presign_service
 from infrastructure.storage.storage import (
@@ -314,8 +314,9 @@ async def presign(
     request: FilePresignRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings = Depends(get_settings)
 ) -> ResponseMulti[str | None]:
-    service = await get_presign_service(applet_id, user.id, session)
+    service = await get_presign_service(applet_id, user.id, session, app_settings)
     links = await service.presign(request.private_urls)
     return ResponseMulti[str | None](result=links, count=len(links))  # noqa
 
@@ -417,6 +418,7 @@ async def generate_presigned_answer_url(
     body: FileIdRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings: Settings = Depends(get_settings),
 ) -> Response[PresignedUrl]:
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
@@ -424,7 +426,7 @@ async def generate_presigned_answer_url(
         [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
     ):
         raise AnswerViewAccessDenied()
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, cdn_settings=app_settings.cdn)
 
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = body.file_id.strip()

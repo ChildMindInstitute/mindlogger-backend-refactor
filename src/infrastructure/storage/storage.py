@@ -1,12 +1,11 @@
 import uuid
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.service import workspace
-from config import CDNSettings, settings, AppSettings
+from config import AppSettings, settings
 from infrastructure.storage.storage_arbitrary import (
     ArbitraryAzureStorageClient,
     ArbitraryGCPStorageClient,
@@ -14,7 +13,6 @@ from infrastructure.storage.storage_arbitrary import (
 )
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-
 
 
 async def select_answer_storage(

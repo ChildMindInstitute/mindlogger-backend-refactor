@@ -41,6 +41,7 @@ class TestAnswerActivityItemsDR(BaseTest):
     async def test_generate_presigned_media_url(self, client: TestClient, tom: User):
         client.login(tom)
         resp = await client.post(self.upload_media_url, data={"file_name": FILE_KEY})
+
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert MEDIA_BUCKET_NAME_DR in result["uploadUrl"]

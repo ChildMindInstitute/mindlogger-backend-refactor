@@ -7,6 +7,7 @@ from apps.workspaces.constants import StorageType
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.workspace import WorkspaceService
+from config import AppSettings, Settings
 from infrastructure.storage.presign_services import AzurePresignService, GCPPresignService, S3PresignService
 from infrastructure.storage.storage import select_answer_storage
 
@@ -15,6 +16,7 @@ async def get_presign_service(
     applet_id: uuid.UUID,
     user_id: uuid.UUID,
     session: AsyncSession,
+    app_settings: Settings
 ) -> Union[S3PresignService, GCPPresignService, AzurePresignService]:
     """
     Asynchronously retrieves a presigned service instance for handling object storage
@@ -47,7 +49,7 @@ async def get_presign_service(
         [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
     )
 
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
 
     if arbitrary_info:
         if arbitrary_info.storage_type.lower() == StorageType.AZURE:

@@ -7,6 +7,7 @@ from infrastructure.storage.tests import ANSWER_BUCKET_NAME, ANSWER_BUCKET_NAME_
 FILE_KEY = "/some/file.jpg"
 DOMAIN = "test.gettingcurious.com"
 
+
 class TestStorageClient:
     """Test for StorageClient implementation details"""
 
