@@ -1,16 +1,13 @@
-from typing import Generator, Any
+from typing import Any, Generator
 
 import pytest
 
-from apps.file.tests import FILE_KEY, MEDIA_BUCKET_NAME_DR, MEDIA_BUCKET_NAME, MEDIA_STORAGE_ADDRESS
-from apps.shared.test.client import TestClient
+from apps.file.tests import FILE_KEY, MEDIA_BUCKET_NAME, MEDIA_BUCKET_NAME_DR, MEDIA_STORAGE_ADDRESS
 from config import CDNSettings, settings
-from infrastructure.storage.storage import get_media_storage
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-from infrastructure.storage.tests.conftest import aws_credentials, s3_client, s3_resource, answer_bucket
 from infrastructure.storage.tests import ANSWER_BUCKET_NAME, ANSWER_BUCKET_NAME_DR
-from main import app
+from infrastructure.storage.tests.conftest import answer_bucket, aws_credentials, s3_client, s3_resource
 
 __all__ = [
     "aws_credentials",
@@ -23,6 +20,7 @@ __all__ = [
     "answer_storage_client_dr",
     "populate_s3",
 ]
+
 
 @pytest.fixture
 async def answer_storage_client(s3_client) -> StorageClient:
@@ -37,29 +35,35 @@ async def answer_storage_client(s3_client) -> StorageClient:
 
     return client
 
+
 @pytest.fixture
 async def answer_storage_client_dr(s3_client) -> StorageClient:
     """Storage client configured for DR"""
     config = StorageConfig(
-        endpoint_url=None, region="us-east-1", bucket=ANSWER_BUCKET_NAME, bucket_override=DR_BUCKET_NAME
+        endpoint_url=None, region="us-east-1", bucket=ANSWER_BUCKET_NAME, bucket_override=ANSWER_BUCKET_NAME_DR
     )
 
     client = StorageClient(config, env="test")
     client.client = s3_client
 
     return client
+
 
 @pytest.fixture
 async def media_storage_client_dr(s3_client) -> StorageClient:
     """Storage client configured for DR"""
     config = StorageConfig(
-        endpoint_url=MEDIA_STORAGE_ADDRESS, region="us-east-1", bucket=MEDIA_BUCKET_NAME, bucket_override=MEDIA_BUCKET_NAME_DR
+        endpoint_url=MEDIA_STORAGE_ADDRESS,
+        region="us-east-1",
+        bucket=MEDIA_BUCKET_NAME,
+        bucket_override=MEDIA_BUCKET_NAME_DR,
     )
 
     client = StorageClient(config, env="test")
     client.client = s3_client
 
     return client
+
 
 @pytest.fixture
 async def populate_s3(answer_bucket):
@@ -67,6 +71,7 @@ async def populate_s3(answer_bucket):
         Body=b"this is a file",
         Key=FILE_KEY,
     )
+
 
 @pytest.fixture
 def cdn_settings() -> Generator[CDNSettings, Any, None]:

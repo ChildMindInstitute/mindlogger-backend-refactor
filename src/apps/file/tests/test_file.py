@@ -302,7 +302,7 @@ class TestAnswerActivityItems(BaseTest):
         assert result["fields"]["key"].endswith(file_name)
 
         domain = cdn_settings.domain or cdn_settings.endpoint_url
-        assert result["url"] == f"{domain}/{result["fields"]["key"]}"
+        assert result["url"] == f"{domain}/{result['fields']['key']}"
 
     async def test_generate_presigned_url_for_post_answer__user_does_not_have_access_to_the_applet(
         self, client: TestClient, user: User, applet_one: AppletFull

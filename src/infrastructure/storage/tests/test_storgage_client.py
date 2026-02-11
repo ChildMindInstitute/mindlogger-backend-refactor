@@ -5,9 +5,11 @@ from infrastructure.storage.storage_config import StorageConfig
 from infrastructure.storage.tests import ANSWER_BUCKET_NAME, ANSWER_BUCKET_NAME_DR
 
 FILE_KEY = "/some/file.jpg"
-
+DOMAIN = "test.gettingcurious.com"
 
 class TestStorageClient:
+    """Test for StorageClient implementation details"""
+
     @pytest.fixture
     async def answer_storage_client(self, s3_client) -> StorageClient:
         """Regular storage client"""
@@ -15,6 +17,7 @@ class TestStorageClient:
             endpoint_url=None,
             region="us-east-1",
             bucket=ANSWER_BUCKET_NAME,
+            domain=DOMAIN,
         )
         client = StorageClient(config, env="test")
         client.client = s3_client
@@ -65,3 +68,13 @@ class TestStorageClient:
     @pytest.mark.usefixtures("populate_s3")
     async def test_check_existence(self, answer_storage_client: StorageClient):
         await answer_storage_client.check_existence(FILE_KEY)
+
+    async def test_invalid_public_url_config(self):
+        client = StorageClient(config=StorageConfig(), env="test")
+        with pytest.raises(ValueError):
+            client.generate_public_url("foo.jpg")
+
+    async def test_get_public_url(self, answer_storage_client: StorageClient):
+        url = answer_storage_client.generate_public_url(FILE_KEY)
+        assert DOMAIN in url
+        assert FILE_KEY in url

@@ -10,6 +10,7 @@ from urllib.parse import quote
 import aiofiles
 import pytz
 from botocore.exceptions import ClientError
+from ddtrace import tracer
 from fastapi import Body, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,7 +53,6 @@ from infrastructure.storage.storage import (
     select_answer_storage,
 )
 from infrastructure.storage.storage_client import ObjectNotFoundError, StorageClient
-from ddtrace import tracer
 
 
 # TODO: delete later, it is not used anymore

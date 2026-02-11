@@ -1,15 +1,12 @@
-from typing import Generator, Any
-
-import pytest
 import http
 
+import pytest
 from fastapi import FastAPI
+
 from apps.file.tests import FILE_KEY, MEDIA_BUCKET_NAME_DR, MEDIA_STORAGE_ADDRESS
 from apps.shared.test import BaseTest
-
 from apps.shared.test.client import TestClient
 from apps.users import User
-from config import CDNSettings, settings
 from infrastructure.storage.storage import get_media_storage
 
 
@@ -29,17 +26,16 @@ class TestAnswerActivityItemsDR(BaseTest):
     log_download_url = "/file/log-file/{user_email}/{device_id}"
     log_check_url = "/file/log-file/{device_id}/check"
 
-
     @pytest.fixture
     async def override_media_storage(self, app: FastAPI, media_storage_client_dr):
         """Inject media storage client into app"""
+
         def override_get_media_storage():
             return media_storage_client_dr
 
         app.dependency_overrides[get_media_storage] = override_get_media_storage
         yield
         app.dependency_overrides.pop(get_media_storage)
-
 
     @pytest.mark.usefixtures("override_media_storage")
     async def test_generate_presigned_media_url(self, client: TestClient, tom: User):
@@ -48,4 +44,4 @@ class TestAnswerActivityItemsDR(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert MEDIA_BUCKET_NAME_DR in result["uploadUrl"]
-        assert result["url"] == f"{MEDIA_STORAGE_ADDRESS}/{result["fields"]["key"]}"
+        assert result["url"] == f"{MEDIA_STORAGE_ADDRESS}/{result['fields']['key']}"

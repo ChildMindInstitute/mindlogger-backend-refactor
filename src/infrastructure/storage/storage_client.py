@@ -52,7 +52,7 @@ class StorageClient:
     def generate_public_url(self, key):
         """Generate a public URL.  It might not have one"""
         if not self.config.domain and not self.config.endpoint_url:
-            raise RuntimeError("A domain or endpoint url must be specified")
+            raise ValueError("A domain or endpoint url must be specified")
 
         domain = self.config.domain or self.config.endpoint_url
         return domain + "/" + key
@@ -82,7 +82,7 @@ class StorageClient:
     def _get_bucket_name(self) -> str:
         """Get the bucket name.  Override to not support DR variables"""
         if not self.config.bucket and not self.config.bucket_override:
-            raise RuntimeError("A bucket or bucket override must be specified")
+            raise ValueError("A bucket or bucket override must be specified")
 
         return self.config.bucket_override or self.config.bucket or ""
 

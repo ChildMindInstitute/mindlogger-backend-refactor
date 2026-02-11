@@ -17,9 +17,11 @@ class CDNSettings(BaseModel):
     access_key: str | None = None
 
     # DR settings
+    bucket_override: str | None = None
     bucket_answer_override: str | None = None
+    bucket_operation_override: str | None = None
 
-    # What is the difference between domain and storage_address?
+    # Public domain to front storage keys without scheme for the media bucket
     # In prod this is: media.gettingcurious.com
     domain: str = ""
     ttl_signed_urls: int = 3600

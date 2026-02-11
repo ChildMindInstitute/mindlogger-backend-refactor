@@ -1,11 +1,12 @@
 import uuid
+from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.service import workspace
-from config import settings
+from config import CDNSettings, settings
 from infrastructure.storage.storage_arbitrary import (
     ArbitraryAzureStorageClient,
     ArbitraryGCPStorageClient,
@@ -15,21 +16,12 @@ from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
 
 
-def _generate_storage_config_for_bucket(bucket_name: str, bucket_override: str | None) -> StorageConfig:
-    return StorageConfig(
-        region=settings.cdn.region,
-        bucket=bucket_name,
-        bucket_override=bucket_override,
-        ttl_signed_urls=settings.cdn.ttl_signed_urls,
-        access_key=settings.cdn.access_key,
-        secret_key=settings.cdn.secret_key,
-    )
-
 
 async def select_answer_storage(
     *,
     applet_id: uuid.UUID | None = None,
     owner_id: uuid.UUID | None = None,
+    cdn_settings: Optional[CDNSettings] = None,
     session: AsyncSession,
 ) -> StorageClient:
     """
@@ -44,22 +36,20 @@ async def select_answer_storage(
     else:
         raise ValueError("Applet id or owner id should be specified.")
 
-    return create_answer_client(info)
+    return create_answer_client(info, cdn_settings)
 
 
-def create_answer_client(info: WorkspaceArbitrary | None) -> StorageClient:
+def create_answer_client(info: WorkspaceArbitrary | None, cdn_settings: Optional[CDNSettings] = None) -> StorageClient:
     """Create a CDN client based on optional arbitrary server info"""
 
     # No arbitrary server, create a client based on local configuration
     if not info:
-        config_cdn = StorageConfig(
-            endpoint_url=settings.cdn.endpoint_url,
-            region=settings.cdn.region,
-            bucket=settings.cdn.bucket_answer,
-            ttl_signed_urls=settings.cdn.ttl_signed_urls,
-            access_key=settings.cdn.access_key,
-            secret_key=settings.cdn.secret_key,
+        config_cdn = (
+            StorageConfig.generate_answer_settings(cdn_settings)
+            if cdn_settings
+            else StorageConfig.generate_answer_settings(settings.cdn)
         )
+
         return StorageClient(config_cdn, env=settings.env, max_concurrent_tasks=settings.cdn.max_concurrent_tasks)
 
     # Create an arbitrary server client
@@ -94,29 +84,23 @@ def create_answer_client(info: WorkspaceArbitrary | None) -> StorageClient:
             )
 
 
-async def get_media_storage() -> StorageClient:
-    config = StorageConfig(
-        endpoint_url=settings.cdn.endpoint_url,
-        region=settings.cdn.region,
-        bucket=settings.cdn.bucket,
-        secret_key=settings.cdn.secret_key,
-        access_key=settings.cdn.access_key,
-        domain=settings.cdn.domain,
-        ttl_signed_urls=settings.cdn.ttl_signed_urls,
+async def get_media_storage(cdn_settings: Optional[CDNSettings] = None) -> StorageClient:
+    config = (
+        StorageConfig.generate_media_settings(cdn_settings)
+        if cdn_settings
+        else StorageConfig.generate_media_settings(settings.cdn)
     )
+
     return StorageClient(config, env=settings.env)
 
 
-async def get_operations_storage() -> StorageClient:
-    config = StorageConfig(
-        endpoint_url=settings.cdn.endpoint_url,
-        region=settings.cdn.region,
-        bucket=settings.cdn.bucket_operations,
-        secret_key=settings.cdn.secret_key,
-        access_key=settings.cdn.access_key,
-        domain=settings.cdn.domain,
-        ttl_signed_urls=settings.cdn.ttl_signed_urls,
+async def get_operations_storage(cdn_settings: Optional[CDNSettings] = None) -> StorageClient:
+    config = (
+        StorageConfig.generate_operations_settings(cdn_settings)
+        if cdn_settings
+        else StorageConfig.generate_operations_settings(settings.cdn)
     )
+
     return StorageClient(config, env=settings.env)
 
 

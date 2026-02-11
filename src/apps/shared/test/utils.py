@@ -1,5 +1,9 @@
+import contextlib
+
 from sqlalchemy import text
 
+import config
+from config import Settings
 from infrastructure.database import Base
 from infrastructure.database.core import session_manager
 
@@ -30,3 +34,14 @@ async def truncate_tables():
                 query = text(f"""TRUNCATE "{table_name}" CASCADE""")
                 await session.execute(query)
         await session.commit()
+
+
+@contextlib.contextmanager
+def swap_settings(module, new_settings: Settings):
+    """Replace the global settings with the new one.  A hack because `settings` is a module variable."""
+    original = config.settings
+    try:
+        config.settings = new_settings
+        yield
+    finally:
+        config.settings = original

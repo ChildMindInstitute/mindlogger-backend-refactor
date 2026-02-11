@@ -4,7 +4,8 @@ import boto3
 import pytest
 from moto import mock_aws
 
-from infrastructure.storage.tests import ANSWER_BUCKET_NAME
+from config import CDNSettings, settings
+from infrastructure.storage.tests import ANSWER_BUCKET_NAME, MEDIA_OVERRIDE, OPERATIONS_OVERRIDE, ANSWER_OVERRIDE
 
 
 @pytest.fixture(scope="function")
@@ -49,3 +50,13 @@ def answer_bucket(s3_resource):
     bucket = s3_resource.create_bucket(Bucket=ANSWER_BUCKET_NAME)
     bucket.create()
     yield bucket
+
+@pytest.fixture
+def cdn_override_settings() -> CDNSettings:
+    """Settings for DR"""
+    dr_settings = settings.cdn.model_copy(deep=True)
+    dr_settings.bucket_override = MEDIA_OVERRIDE
+    dr_settings.bucket_operation_override = OPERATIONS_OVERRIDE
+    dr_settings.bucket_answer_override = ANSWER_OVERRIDE
+
+    return dr_settings
