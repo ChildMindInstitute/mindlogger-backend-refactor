@@ -15,8 +15,6 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.types import EventDict, Processor
 
-from config import settings
-
 
 def rename_event_key(_, __, event_dict: EventDict) -> EventDict:
     """
@@ -189,7 +187,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
 
         try:
             response = await call_next(request)
-        except Exception as e:
+        except Exception:
             structlog.stdlib.get_logger("api.error").exception("Unhandled exception")
         finally:
             access_logger = structlog.stdlib.get_logger("api.access")
