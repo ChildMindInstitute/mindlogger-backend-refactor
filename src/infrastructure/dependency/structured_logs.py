@@ -160,9 +160,6 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        if settings.env == "testing":
-            return await call_next(request)
-
         structlog.contextvars.clear_contextvars()
         # These context vars will be added to all log entries emitted during the request
         request_id = correlation_id.get()
@@ -193,9 +190,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception as e:
-            structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
-            # Re-raise to let FastAPI/Starlette do its thing with exceptions in other middlewares
-            raise e
+            structlog.stdlib.get_logger("api.error").exception("Unhandled exception")
         finally:
             access_logger = structlog.stdlib.get_logger("api.access")
             process_time = time.perf_counter_ns() - start_time
