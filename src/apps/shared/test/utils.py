@@ -36,12 +36,3 @@ async def truncate_tables():
         await session.commit()
 
 
-@contextlib.contextmanager
-def swap_settings(module, new_settings: Settings):
-    """Replace the global settings with the new one.  A hack because `settings` is a module variable."""
-    original = config.settings
-    try:
-        config.settings = new_settings
-        yield
-    finally:
-        config.settings = original

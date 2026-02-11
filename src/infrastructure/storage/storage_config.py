@@ -58,3 +58,14 @@ class StorageConfig(BaseSettings):
             access_key=cdn_settings.access_key,
             ttl_signed_urls=cdn_settings.ttl_signed_urls,
         )
+
+    @classmethod
+    def generate_logs_settings(cls, cdn_settings: CDNSettings) -> "StorageConfig":
+        return cls(
+            bucket=cdn_settings.bucket_answer,
+            endpoint_url=cdn_settings.endpoint_url,
+            region=cdn_settings.region,
+            secret_key=cdn_settings.secret_key,
+            access_key=cdn_settings.access_key,
+            ttl_signed_urls=cdn_settings.ttl_signed_urls,
+        )
