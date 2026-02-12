@@ -30,7 +30,7 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas.user_applet_access import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role
-from config import settings
+from config import get_settings, settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 from infrastructure.storage.storage import get_operations_storage
@@ -196,7 +196,7 @@ async def _export_flows(applet_id: uuid.UUID, path_prefix: str):
         )
         data = res.all()
 
-    cdn_client = await get_operations_storage()
+    cdn_client = await get_operations_storage(get_settings())
     key = cdn_client.generate_key(path_prefix, str(applet_id), PATH_FLOW_FILE_NAME)
     await save_csv(key, parse_obj_as(list[dict], data), cdn_client)
 
@@ -438,7 +438,7 @@ async def export_flow_schedule(
             ).model_dump()
             result.append(outrow)
 
-        cdn_client = await get_operations_storage()
+        cdn_client = await get_operations_storage(get_settings())
         unique_prefix = f"{applet_id}/flow-schedule"
 
         prev_filename = PATH_USER_FLOW_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))
@@ -622,7 +622,7 @@ async def export_activity_schedule(
             ).model_dump()
             result.append(outrow)
 
-        cdn_client = await get_operations_storage()
+        cdn_client = await get_operations_storage(get_settings())
         unique_prefix = f"{applet_id}/activity-schedule"
 
         prev_filename = PATH_USER_ACTIVITY_SCHEDULE_FILE_NAME.format(date=scheduled_date - datetime.timedelta(days=1))

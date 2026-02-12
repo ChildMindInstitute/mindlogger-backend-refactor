@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.answers.service import AnswerTransferService
 from apps.workspaces.errors import WorkspaceNotFoundError
 from apps.workspaces.service.workspace import WorkspaceService
+from config import get_settings
 from infrastructure.database import session_manager
 from infrastructure.storage.storage import create_answer_client
 
@@ -42,14 +43,14 @@ async def main(
 
     session_maker = session_manager.get_session(arb_info.database_uri)
     async with session_maker() as arb_session:
-        arb_bucket = create_answer_client(arb_info)
+        arb_bucket = create_answer_client(get_settings(), arb_info)
         try:
             await arb_bucket.check()
         except Exception as e:
             error_msg(str(e))
             raise
 
-        internal_bucket = create_answer_client(None)
+        internal_bucket = create_answer_client(get_settings(), None)
         try:
             await internal_bucket.check()
         except Exception as e:

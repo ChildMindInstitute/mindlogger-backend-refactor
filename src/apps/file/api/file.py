@@ -199,6 +199,7 @@ async def answer_upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings=Depends(get_settings),
 ) -> Response[AnswerUploadedFile]:
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
@@ -227,7 +228,7 @@ async def answer_upload(
             filename = file.filename
             reader = file.file  # type: ignore[assignment]
 
-        cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+        cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
         unique = f"{user.id}/{applet_id}"
         cleaned_file_id = file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
         key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
@@ -252,8 +253,9 @@ async def answer_download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings=Depends(get_settings),
 ) -> StreamingResponse:
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
     if request.key.startswith(LogFileService.LOG_KEY):
         LogFileService.raise_for_access(user.email)
 
@@ -271,6 +273,7 @@ async def check_file_uploaded(
     schema: FileCheckRequest,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings: Settings = Depends(get_settings),
 ) -> ResponseMulti[FileExistenceResponse]:
     """Provides the information if the file is uploaded for an answer."""
 
@@ -281,7 +284,7 @@ async def check_file_uploaded(
     ):
         raise AnswerViewAccessDenied()
 
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
     results: list[FileExistenceResponse] = []
 
     for file_id in schema.files:
@@ -426,7 +429,7 @@ async def generate_presigned_answer_url(
         [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
     ):
         raise AnswerViewAccessDenied()
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, cdn_settings=app_settings.cdn)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
 
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = body.file_id.strip()
