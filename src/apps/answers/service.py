@@ -1729,7 +1729,7 @@ class AnswerService:
 
         filtered_results = []
         for group_progress_history_submit_id, activity_flows in grouped_activity_flows:
-            chosen = max(activity_flows, key=attrgetter("activity_flow_order"))
+            chosen = max(activity_flows, key=lambda x: (x.activity_flow_order or 0, x.end_time))
             filtered_results.append(chosen)
 
         result.activity_flows = filtered_results
