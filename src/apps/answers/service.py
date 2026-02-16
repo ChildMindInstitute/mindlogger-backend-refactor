@@ -1729,8 +1729,7 @@ class AnswerService:
 
         filtered_results = []
         for group_progress_history_submit_id, activity_flows in grouped_activity_flows:
-            flows_list = list(activity_flows)
-            chosen = max(flows_list, key=attrgetter("activity_flow_order"))
+            chosen = max(activity_flows, key=attrgetter("activity_flow_order"))
             filtered_results.append(chosen)
 
         result.activity_flows = filtered_results
@@ -1745,8 +1744,8 @@ class AnswerService:
             submissions_list = list(submissions)
 
             # Separate completed and in-progress submissions
-            completed = [s for s in submissions_list if s.is_flow_completed is True]
-            in_progress = [s for s in submissions_list if s.is_flow_completed is False]
+            completed = (s for s in submissions_list if s.is_flow_completed is True)
+            in_progress = (s for s in submissions_list if s.is_flow_completed is False)
 
             # Most recent completed flow
             best_completed = max(
