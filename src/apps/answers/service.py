@@ -1715,13 +1715,12 @@ class AnswerService:
         This method:
         1. Keeps the last activity in each submission (by group_progress_history_submit_id)
         2. For flows with multiple submissions:
-           - Groups by group_progress_history_id (without submit_id) to compare across submissions
-           - If both completed and in-progress exist, compare timestamps
-           - Return the most recent submission (handles offline sync scenarios)
-           - If only in-progress exist, return the one with highest activity_flow_order
-           - If only completed exist, return the most recent one
+           - Groups by group_progress_id (without version or submit_id) to compare across submissions for all versions
+           - Picks the completed submission in each group with most recent timestamp
+           - Picks the in-progress submission in each group with highest activity_flow_order
+           - Picks the more recent submission if both completed and in-progress exist
 
-        Modifies the result.activity_flows in-place.
+        Modifies result.activity_flows in-place.
         """
         # Keep last activity in each submission (group by submit_id to separate attempts)
         sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_submit_id"))
@@ -1736,6 +1735,7 @@ class AnswerService:
 
         # Filter to keep only the most relevant submission per flow/event/subject
         # Group by flow/event/subject (without submit_id) to compare across submissions
+        # Use unversioned flow IDs so all versions are compared when not filtering by version
         sorted_by_flow = sorted(result.activity_flows, key=attrgetter("group_progress_id"))
         grouped_by_flow = groupby(sorted_by_flow, key=attrgetter("group_progress_id"))
 
