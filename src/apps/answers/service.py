@@ -1728,7 +1728,7 @@ class AnswerService:
         grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_submit_id"))
 
         filtered_results = []
-        for group_progress_id, activity_flows in grouped_activity_flows:
+        for group_progress_history_submit_id, activity_flows in grouped_activity_flows:
             flows_list = list(activity_flows)
             chosen = max(flows_list, key=attrgetter("activity_flow_order"))
             filtered_results.append(chosen)
@@ -1737,11 +1737,11 @@ class AnswerService:
 
         # Filter to keep only the most relevant submission per flow/event/subject
         # Group by flow/event/subject (without submit_id) to compare across submissions
-        sorted_by_flow = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
-        grouped_by_flow = groupby(sorted_by_flow, key=attrgetter("group_progress_history_id"))
+        sorted_by_flow = sorted(result.activity_flows, key=attrgetter("group_progress_id"))
+        grouped_by_flow = groupby(sorted_by_flow, key=attrgetter("group_progress_id"))
 
         filtered_flows = []
-        for flow_key, submissions in grouped_by_flow:
+        for group_progress_id, submissions in grouped_by_flow:
             submissions_list = list(submissions)
 
             # Separate completed and in-progress submissions
