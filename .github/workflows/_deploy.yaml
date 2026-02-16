@@ -87,7 +87,7 @@ jobs:
             VERSION=${{ inputs.image-tag }}
             DD_VERSION=${{ inputs.image-tag }}
             SENTRY_RELEASE=${{ inputs.image-tag }}
-A            COMMIT_ID=${{ github.sha }}
+            COMMIT_ID=${{ github.sha }}
           docker-labels: |
             com.datadoghq.tags.version=${{ inputs.image-tag }}
       - name: Update Task Definition
