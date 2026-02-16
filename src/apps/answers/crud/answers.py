@@ -3,7 +3,7 @@ import datetime
 import uuid
 from collections import defaultdict
 from itertools import chain
-from typing import Collection, Optional
+from typing import Collection
 
 from sqlalchemy import Text, and_, case, column, delete, func, null, or_, select, text, update
 from sqlalchemy.dialects.postgresql import UUID, insert
@@ -585,7 +585,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
     async def get_completed_answers_data(
         self,
         applet_id: uuid.UUID,
-        version: Optional[str],
+        version: str | None,
         respondent_id: uuid.UUID,
         from_date: datetime.date,
         include_in_progress: bool = False,
@@ -610,6 +610,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             select(
                 AnswerSchema.id.label("answer_id"),
                 AnswerSchema.submit_id,
+                AnswerSchema.version,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
                 AnswerSchema.target_subject_id,
@@ -674,7 +675,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: dict[uuid.UUID, Optional[str]],
+        applets_version_map: dict[uuid.UUID, str | None],
         respondent_id: uuid.UUID,
         from_date: datetime.date,
         filter_by_version: bool = False,
@@ -718,6 +719,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
                 AnswerSchema.id.label("answer_id"),
                 AnswerSchema.applet_id,
                 AnswerSchema.submit_id,
+                AnswerSchema.version,
                 AnswerSchema.activity_history_id,
                 AnswerSchema.flow_history_id,
                 AnswerSchema.target_subject_id,
@@ -750,8 +752,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             AnswerItemSchema.local_end_time.desc(),
         ]
 
-        # Nested dict for collecting activities and flows by applet ID
-        applet_activities_flows_map: dict[uuid.UUID, dict[str, list]] = defaultdict(
+        # Nested dict for collecting activities and flows by (applet_id, version)
+        applet_activities_flows_map: dict[tuple[uuid.UUID, str | None], dict[str, list]] = defaultdict(
             lambda: {"activities": [], "flows": []}
         )
 
@@ -763,7 +765,8 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         activity_result = await self._execute(activity_query)
         for row in activity_result.mappings():
-            applet_activities_flows_map[row.applet_id]["activities"].append(
+            applet_id, version = row.applet_id, row.version if filter_by_version else None
+            applet_activities_flows_map[applet_id, version]["activities"].append(
                 CompletedEntity(**row, id=row.activity_history_id)
             )
 
@@ -778,17 +781,21 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
         flow_result = await self._execute(flow_query)
         for row in flow_result.mappings():
-            applet_activities_flows_map[row.applet_id]["flows"].append(CompletedEntity(**row, id=row.flow_history_id))
+            applet_id, version = row.applet_id, row.version if filter_by_version else None
+            applet_activities_flows_map[applet_id, version]["flows"].append(
+                CompletedEntity(**row, id=row.flow_history_id)
+            )
 
         # Return completed entities
         result_list: list[AppletCompletedEntities] = list()
         for applet_id, version in applets_version_map.items():
+            applet_id, version = applet_id, version if filter_by_version else None
             result_list.append(
                 AppletCompletedEntities(
                     id=applet_id,
                     version=version,
-                    activities=applet_activities_flows_map[applet_id]["activities"],
-                    activity_flows=applet_activities_flows_map[applet_id]["flows"],
+                    activities=applet_activities_flows_map[applet_id, version]["activities"],
+                    activity_flows=applet_activities_flows_map[applet_id, version]["flows"],
                 )
             )
 

@@ -2,7 +2,7 @@ import datetime
 import enum
 import uuid
 from copy import deepcopy
-from typing import Annotated, Any, Generic, Optional
+from typing import Annotated, Any, Generic
 
 from pydantic import BaseModel, Field, field_serializer, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -663,15 +663,19 @@ class ReportServerResponse(InternalModel):
 
 
 class CompletedEntity(PublicModel):
-    id: uuid.UUID = Field(
-        deprecated=True,
-        description="Deprecated: id is the unversioned activity_id or flow_id. "
-        "Use versioned activity_history_id and flow_history_id instead.",
-    )
+    id: Annotated[
+        uuid.UUID,
+        Field(
+            deprecated=True,
+            description="Deprecated: id is the unversioned activity_id or flow_id. "
+            "Use versioned activity_history_id and flow_history_id instead.",
+        ),
+    ]
     answer_id: uuid.UUID
     submit_id: uuid.UUID
-    activity_history_id: str | None = Field(None, exclude=True)
-    flow_history_id: str | None = Field(None, exclude=True)
+    version: Annotated[str, Field(description="The applet version when this answer was submitted.")]
+    activity_history_id: Annotated[str | None, Field(exclude=True)] = None
+    flow_history_id: Annotated[str | None, Field(exclude=True)] = None
     target_subject_id: uuid.UUID | None = None
     scheduled_event_id: str | None = None
     local_end_date: datetime.date
@@ -679,11 +683,13 @@ class CompletedEntity(PublicModel):
     start_time: datetime.datetime
     end_time: datetime.datetime
     is_flow_completed: bool | None = None
-    activity_flow_order: int | None = Field(
-        default=None,
-        description="1-indexed position of the activity within the flow, from flow_item_histories.order. "
-        "None for standalone activities (not part of a flow).",
-    )
+    activity_flow_order: Annotated[
+        int | None,
+        Field(
+            description="1-indexed position of the activity within the flow, from flow_item_histories.order. "
+            "None for standalone activities (not part of a flow).",
+        ),
+    ] = None
 
     @field_serializer("start_time", "end_time", when_used="json")
     def datetime_to_ms(self, value: datetime.datetime):
@@ -747,8 +753,10 @@ class CompletedEntity(PublicModel):
 
 class AppletCompletedEntities(InternalModel):
     id: uuid.UUID
-    version: Optional[str] = None
-
+    version: Annotated[
+        str | None,
+        Field(description="The applet version used to filter the query. Null if not specified in request."),
+    ] = None
     activities: list[CompletedEntity]
     activity_flows: list[CompletedEntity]
 
