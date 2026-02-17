@@ -1227,7 +1227,6 @@ class TestInvite(BaseTest):
         """When multiple invitations exist for the same email and applet,
         get_latest_by_emails must return the most recently created one."""
 
-
         email = "testlatest@example.com"
         old_key = uuid.uuid4()
         new_key = uuid.uuid4()
