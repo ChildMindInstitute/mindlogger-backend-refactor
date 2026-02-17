@@ -923,6 +923,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "version",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
@@ -933,6 +934,7 @@ class TestAnswerActivityItems(BaseTest):
             "activityFlowOrder",
         }
         assert activity_answer_data["answerId"] == str(answer_arbitrary.id)
+        assert activity_answer_data["version"] == answer_arbitrary.version
         assert activity_answer_data["localEndTime"] == str(answer_create.answer.local_end_time)
         # Standalone activities have no flow info
         assert activity_answer_data["isFlowCompleted"] is None
@@ -966,7 +968,7 @@ class TestAnswerActivityItems(BaseTest):
         applet_with_answer = next(i for i in data if i["id"] == str(answer_arbitrary.applet_id))
 
         assert applet_with_answer["id"] == str(answer_arbitrary.applet_id)
-        assert applet_with_answer["version"] == answer_arbitrary.version
+        assert applet_with_answer["version"] is None
 
     async def test_check_existance_answer_exists(
         self, arbitrary_client: TestClient, tom: User, answer_arbitrary: AnswerSchema

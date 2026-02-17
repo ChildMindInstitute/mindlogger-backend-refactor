@@ -4892,6 +4892,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "version",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
@@ -4902,6 +4903,7 @@ class TestAnswerActivityItems(BaseTest):
             "activityFlowOrder",
         }
         assert activity["answerId"] == str(olive_answer.id)
+        assert activity["version"] == olive_answer.version
         assert activity["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
         assert activity["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
         assert activity["localEndTime"] == str(olive_answer_create.answer.local_end_time)
@@ -5015,7 +5017,7 @@ class TestAnswerActivityItems(BaseTest):
         #   so their 'activities' and 'activityFlows' should be empty.
         assert len(data) == 3
         applet_with_answer = next(i for i in data if i["id"] == str(olive_answer.applet_id))
-        assert applet_with_answer["version"] == olive_answer.version
+        assert applet_with_answer["version"] == (olive_answer.version if filter_by_version else None)
         assert len(applet_with_answer["activities"]) == 1
 
         activity_data = applet_with_answer["activities"][0]
@@ -5023,6 +5025,7 @@ class TestAnswerActivityItems(BaseTest):
             "id",
             "answerId",
             "submitId",
+            "version",
             "targetSubjectId",
             "scheduledEventId",
             "localEndDate",
@@ -5033,6 +5036,7 @@ class TestAnswerActivityItems(BaseTest):
             "activityFlowOrder",
         }
         assert activity_data["answerId"] == str(olive_answer.id)
+        assert activity_data["version"] == olive_answer.version
         assert activity_data["scheduledEventId"] == olive_answer_create.answer.scheduled_event_id
         assert activity_data["localEndDate"] == olive_answer_create.answer.local_end_date.isoformat()
         assert activity_data["localEndTime"] == str(olive_answer_create.answer.local_end_time)
