@@ -3,6 +3,7 @@ import json
 import re
 import uuid
 from typing import Any, Literal, cast
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from pydantic import EmailStr
@@ -14,6 +15,7 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
 from apps.invitations.crud import InvitationCRUD
+from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
     InvitationLanguage,
     InvitationManagersRequest,
@@ -41,6 +43,7 @@ from apps.workspaces.domain.constants import UserPinRole
 from apps.workspaces.errors import AppletInviteAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+
 
 
 @pytest.fixture
@@ -1224,9 +1227,7 @@ class TestInvite(BaseTest):
     ):
         """When multiple invitations exist for the same email and applet,
         get_latest_by_emails must return the most recently created one."""
-        from datetime import datetime, timedelta, timezone
 
-        from apps.invitations.db import InvitationSchema
 
         email = "testlatest@example.com"
         old_key = uuid.uuid4()
@@ -1300,9 +1301,6 @@ class TestInvite(BaseTest):
         applet_one: AppletFull,
     ):
         """When querying multiple emails, each email should get its latest invitation."""
-        from datetime import datetime, timedelta, timezone
-
-        from apps.invitations.db import InvitationSchema
 
         email_a = "usera_latest@example.com"
         email_b = "userb_latest@example.com"
@@ -1400,9 +1398,6 @@ class TestInvite(BaseTest):
         applet_one: AppletFull,
     ):
         """Declined invitations should not be returned, even if they are newer."""
-        from datetime import datetime, timedelta, timezone
-
-        from apps.invitations.db import InvitationSchema
 
         email = "declined_test@example.com"
         pending_key = uuid.uuid4()
