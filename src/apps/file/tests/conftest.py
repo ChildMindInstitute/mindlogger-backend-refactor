@@ -10,6 +10,7 @@ from infrastructure.storage.tests.conftest import (
     aws_credentials,
     s3_client,
     s3_resource,
+    cdn_override_settings,
     normal_storage_settings,
 )
 

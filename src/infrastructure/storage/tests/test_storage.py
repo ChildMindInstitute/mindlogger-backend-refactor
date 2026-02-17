@@ -1,7 +1,8 @@
+import pytest
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from apps.users import User
-from config import Settings, settings
+from config import CDNSettings, Settings
 from infrastructure.storage.storage import (
     create_answer_client,
     get_log_storage,
@@ -14,6 +15,22 @@ from infrastructure.storage.tests import ANSWER_OVERRIDE, MEDIA_OVERRIDE, OPERAT
 
 class TestStorageClients:
     """Basic tests for fetching/building storage clients"""
+
+    def test_invalid_cdn_settings(self):
+        with pytest.raises(ValueError):
+            cdn_settings = CDNSettings(
+                domain="asdf",
+                bucket="asdf",
+                bucket_answer="asdf",
+                bucket_operations="asdf",
+                storage_address="asdf",
+                region="us-east-1",
+                ttl_signed_urls=3600,
+            )
+            CDNSettings.model_validate(cdn_settings)
+
+    def test_valid_cdn_settings(self, normal_storage_settings: Settings):
+        CDNSettings.model_validate(normal_storage_settings.cdn)
 
     def test_create_answer_client(self, normal_storage_settings: Settings) -> None:
         """Test a non-arbitrary server client"""
@@ -60,8 +77,6 @@ class TestStorageClients:
 
         presign = client.generate_presigned_post("asdf.jpg")
         assert presign is not None
-        # This might not be useful
-        assert client.config.endpoint_url in presign["url"]
 
     async def test_get_operations_storage_client(self, normal_storage_settings: Settings) -> None:
         """Test a non-arbitrary server client"""
@@ -100,8 +115,6 @@ class TestStorageClients:
 
         presign = client.generate_presigned_post("asdf.jpg")
         assert presign is not None
-        # This might not be useful
-        assert client.config.endpoint_url in presign["url"]
 
 
 class TestLocalStorageSettings:

@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+from typing_extensions import Self
 
 
 class CDNSettings(BaseModel):
@@ -44,6 +45,13 @@ class CDNSettings(BaseModel):
     storage_address: str | None = None
 
     max_concurrent_tasks: int = 10
+
+    @model_validator(mode="after")
+    def validate_settings(self) -> Self:
+        """Validate that domain or endpoint is set.  Cannot be both"""
+        if self.domain and (self.endpoint_url or self.storage_address):
+            raise ValueError("Either domain or endpoint_url must be set, not both.")
+        return self
 
     @property
     def url(self):

@@ -73,6 +73,7 @@ async def normal_storage_settings() -> Settings:
         region="us-east-1",
         ttl_signed_urls=3600,
     )
+
     normal.cdn = cdn_settings
 
     return normal
