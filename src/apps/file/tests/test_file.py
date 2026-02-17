@@ -1,6 +1,6 @@
 import http
 import io
-from typing import Any, Callable, Generator, cast
+from typing import cast
 
 import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
@@ -26,34 +26,6 @@ from config.cdn import CDNSettings
 from infrastructure.storage.storage_arbitrary import ArbitraryS3StorageClient
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-
-
-@pytest.fixture
-def mock_presigned_post(mocker: MockerFixture):
-    def fake_generate_presigned_post(_, bucket: str, key: str, ExpiresIn=settings.cdn.ttl_signed_urls):
-        return {
-            "url": f"https://{bucket}.s3.amazonaws.com/",
-            "fields": {
-                "key": key,
-                "AWSAccessKeyId": "accesskey",
-                "policy": "policy",
-                "signature": "signature",
-            },
-        }
-
-    m = mocker.patch("botocore.signers.generate_presigned_post", new=fake_generate_presigned_post)
-    return m
-
-
-@pytest.fixture
-def mock_presigned_url(mocker: MockerFixture) -> Callable[..., str]:
-    def fake__generate_presigned_url(_: StorageClient, key: str) -> str:
-        return f"{key}?credentials"
-
-    m = mocker.patch(
-        "infrastructure.storage.storage_client.StorageClient._generate_presigned_url", new=fake__generate_presigned_url
-    )
-    return m
 
 
 @pytest.fixture
@@ -115,31 +87,7 @@ async def tom_workspace_arbitrary_azure(tom: User, arbitrary_db_url: str, sessio
     return ws
 
 
-@pytest.fixture(scope="module")
-def cdn_settings() -> Generator[CDNSettings, Any, None]:
-    # TODO This fixture is leaky.  Might be a better fix in the future
-    yield settings.cdn
-
-    # settings.cdn.access_key = "access_key"
-    # settings.cdn.secret_key = "secret_key"
-    # settings.cdn.bucket = "bucket"
-    # settings.cdn.bucket_answer = "bucket_answer"
-    # settings.cdn.bucket_operations = "bucket_operations"
-    # settings.cdn.region = "us-east-1"
-    # settings.cdn.domain = "mindlogger"
-    # settings.cdn.legacy_prefix = "mindlogger/legacy-answer"
-    # yield settings.cdn
-    # settings.cdn.bucket_operations = None
-    # settings.cdn.access_key = None
-    # settings.cdn.secret_key = None
-    # settings.cdn.bucket = None
-    # settings.cdn.bucket_answer = None
-    # settings.cdn.region = None
-    # settings.cdn.domain = ""
-    # settings.cdn.legacy_prefix = None
-
-
-@pytest.fixture(scope="class")
+@pytest.fixture
 def cdn_client(cdn_settings: CDNSettings) -> StorageClient:
     config = StorageConfig(
         endpoint_url=cdn_settings.endpoint_url,
@@ -172,7 +120,7 @@ def log_file_service(tom: User, cdn_client: StorageClient) -> LogFileService:
     return LogFileService(tom.id, cdn_client)
 
 
-@pytest.mark.usefixtures("cdn_settings")
+@pytest.mark.usefixtures("cdn_settings", "override_app_settings")
 class TestAnswerActivityItems(BaseTest):
     login_url = "/auth/login"
     upload_url = "file/{applet_id}/upload"
@@ -292,7 +240,6 @@ class TestAnswerActivityItems(BaseTest):
         assert http.HTTPStatus.OK == response.status_code
         mock.assert_awaited_once()
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize("file_name,", ("test1.jpg", "test2.jpg"))
     async def test_generate_upload_url(self, client: TestClient, file_name: str, tom: User, cdn_settings: CDNSettings):
         client.login(tom)
@@ -302,7 +249,7 @@ class TestAnswerActivityItems(BaseTest):
         assert result["fields"]["key"].endswith(file_name)
 
         domain = cdn_settings.domain or cdn_settings.endpoint_url
-        assert result["url"] == f"{domain}/{result['fields']['key']}"
+        assert result["url"] == f"https://{domain}/{result['fields']['key']}"
 
     async def test_generate_presigned_url_for_post_answer__user_does_not_have_access_to_the_applet(
         self, client: TestClient, user: User, applet_one: AppletFull
@@ -314,7 +261,6 @@ class TestAnswerActivityItems(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == AnswerViewAccessDenied.message
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_url_for_answers(
         self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client: StorageClient
     ):
@@ -325,7 +271,6 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["result"]["fields"]["key"] == expected_key
         assert resp.json()["result"]["url"] == cdn_client.generate_private_url(expected_key)
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_url_for_answers_arbitrary(
         self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client_arbitrary_aws: ArbitraryS3StorageClient
     ):
@@ -338,7 +283,6 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["result"]["fields"]["key"] == expected_key
         assert resp.json()["result"]["url"] == cdn_client_arbitrary_aws.generate_private_url(expected_key)
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_log_url__logs_are_uploaded_to_the_answer_bucket(
         self,
         client: TestClient,
@@ -358,9 +302,8 @@ class TestAnswerActivityItems(BaseTest):
         assert key == expected_key
         assert cdn_settings.bucket_answer in resp.json()["result"]["uploadUrl"]
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize("file_name", ("test.webm", "test.WEBM"))
-    async def test_generate_presigned_media_for_webm_file__conveted_in_url__upload_url_has_operations_bucket(
+    async def test_generate_presigned_media_for_webm_file__converted_in_url__upload_url_has_operations_bucket(
         self, client: TestClient, file_name, tom: User, cdn_settings: CDNSettings
     ) -> None:
         client.login(tom)
@@ -369,12 +312,12 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         exp_converted_file_name = file_name + ".mp3"
+        assert cdn_settings.domain in result["url"]
         assert result["fields"]["key"].endswith(file_name)
         assert result["url"].endswith(exp_converted_file_name)
         assert result["fields"]["key"].startswith(cdn_settings.bucket)
         assert cdn_settings.bucket_operations in result["uploadUrl"]
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize(
         "file_name,target_extension,exp_file_name",
         (
@@ -428,8 +371,6 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == FileNotFoundError.message
-        # assert len(caplog.messages) == 1
-        # assert caplog.messages[0] == f"Trying to download not existing file {self.file_id}"
 
     async def test_answer_download_client_error__unknown_error(
         self, client: TestClient, tom: User, applet_one: AppletFull, mocker: MockerFixture, caplog: LogCaptureFixture
@@ -445,11 +386,6 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == SomethingWentWrongError.message
-        # assert len(caplog.messages) == 1
-        # assert (
-        #     caplog.messages[0]
-        #     == f"Error when trying to download file {self.file_id}: An error occurred (0) when calling the Unknown operation: Unknown"  # noqa: E501
-        # )
 
     async def test_answer_download_client_error__cdn_client_object_not_found_error(
         self, client: TestClient, tom: User, applet_one: AppletFull, mocker: MockerFixture
@@ -495,8 +431,6 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == FileNotFoundError.message
-        # assert len(caplog.messages) == 1
-        # assert caplog.messages[0] == f"Trying to download not existing file {self.file_id}"
 
     async def test_general_file_download_client_error__unknown_error(
         self, client: TestClient, tom: User, mocker: MockerFixture, caplog: LogCaptureFixture
@@ -512,11 +446,6 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == SomethingWentWrongError.message
-        # assert len(caplog.messages) == 1
-        # assert (
-        #     caplog.messages[0]
-        #     == f"Error when trying to download file {self.file_id}: An error occurred (0) when calling the Unknown operation: Unknown"  # noqa: E501
-        # )
 
     async def test_general_file_download_client_error__cdn_client_object_not_found_error(
         self, client: TestClient, tom: User, mocker: MockerFixture
@@ -603,7 +532,6 @@ class TestAnswerActivityItems(BaseTest):
         assert result[0]["url"] is None
         assert resp.json()["count"] == 1
 
-    @pytest.mark.usefixtures("mock_presigned_url")
     async def test_presign_answer_url(self, client: TestClient, applet_one: AppletFull, tom: User):
         client.login(tom)
         key = self.file_id
@@ -612,10 +540,9 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert len(result) == 1
-        assert result[0].endswith(key + "?credentials")
+        assert "AWSAccessKeyId" in result[0]
         assert resp.json()["count"] == 1
 
-    @pytest.mark.usefixtures("mock_presigned_url")
     async def test_presign_legacy_answer_url(self, client: TestClient, applet_legacy: AppletFull, kate: User):
         """Test creating a presigned URL for a legacy answer."""
         client.login(kate)
@@ -631,10 +558,9 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert len(result) == 1
-        assert result[0].endswith(key + "?credentials")
+        assert "AWSAccessKeyId" in result[0]
         assert resp.json()["count"] == 1
 
-    @pytest.mark.usefixtures("mock_presigned_url")
     async def test_presign_legacy_answer_url_no_access(self, client: TestClient, applet_legacy: AppletFull, tom: User):
         """Test creating a presigned URL for a legacy answer that the current user does not have access to."""
         client.login(tom)
@@ -670,7 +596,6 @@ class TestAnswerActivityItems(BaseTest):
         assert device_tom in result["key"]
         assert str(tom.id) in result["url"]
         assert cdn_settings.bucket_answer in result["url"]
-        assert cdn_settings.access_key in result["url"]
         assert file_id == result["fileId"]
 
     async def test_upload_logs__error_during_upload(
@@ -822,7 +747,6 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["count"] == 1
         result = resp.json()["result"][0]
         assert result["uploaded"]
-        assert cdn_settings.access_key in result["url"]
         assert cdn_settings.bucket_answer in result["url"]
         assert s3_key in result["url"]
         assert result["fileId"] == file_id

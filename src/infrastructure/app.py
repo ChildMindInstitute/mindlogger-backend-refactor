@@ -43,6 +43,7 @@ from infrastructure.http.exceptions import (
     sqlalchemy_database_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
+from infrastructure.logger import logger
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -123,5 +124,8 @@ def create_app():
     app.add_exception_handler(ConnectionRefusedError, sqlalchemy_database_error_handler)
     app.add_exception_handler(InvalidPasswordError, sqlalchemy_database_error_handler)
     app.add_exception_handler(Exception, python_base_error_handler)
+
+    if settings.cdn.bucket_answer_override or settings.cdn.bucket_override or settings.cdn.bucket_operation_override:
+        logger.warning("Application starting up with some or all DR settings enabled...")
 
     return app

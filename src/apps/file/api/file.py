@@ -394,6 +394,7 @@ async def generate_presigned_media_url(
     user: User = Depends(get_current_user),
     cdn_client: StorageClient = Depends(get_media_storage),
     operations_client: StorageClient = Depends(get_operations_storage),
+    app_settings: Settings = Depends(get_settings),
 ) -> Response[PresignedUrl]:
     orig_key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
 
@@ -401,7 +402,7 @@ async def generate_presigned_media_url(
     if orig_key.lower().endswith(".webm"):
         extension = body.target_extension if body.target_extension else WebmTargetExtenstion.MP3
         target_key = orig_key + extension
-        upload_key = f"{settings.cdn.bucket}/{orig_key}"
+        upload_key = f"{app_settings.cdn.bucket}/{orig_key}"
         data = operations_client.generate_presigned_post(upload_key)
     else:
         target_key = orig_key

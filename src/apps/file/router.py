@@ -103,6 +103,7 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(generate_presigned_media_url)
+
 router.post(
     "/{applet_id}/upload-url",
     status_code=status.HTTP_200_OK,

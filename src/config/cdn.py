@@ -7,6 +7,8 @@ class CDNSettings(BaseModel):
     legacy_prefix: str | None = "mindlogger-legacy/answer"
 
     region: str | None = None
+
+    ## Regular buckets.  Do not change these in DR.  Use the override settings below
     # Media Bucket
     bucket: str | None = None
     # Answer Bucket
@@ -16,9 +18,12 @@ class CDNSettings(BaseModel):
     secret_key: str | None = None
     access_key: str | None = None
 
-    # DR settings
+    ## DR settings
+    # Override the media bucket name for the DR site
     bucket_override: str | None = None
+    # Override the answer bucket name for the DR site
     bucket_answer_override: str | None = None
+    # Override the operations bucket name for the DR site
     bucket_operation_override: str | None = None
 
     # Public domain to front storage keys without scheme for the media bucket
@@ -28,14 +33,18 @@ class CDNSettings(BaseModel):
 
     gcp_endpoint_url: str = "https://storage.googleapis.com"
 
-    # Underlying client (eg boto3) endpoint URL
+    # Custom Object store endpoint URL
+    # Usually a custom S3 endpoint or GCP, etc.
+    # Locally for minio type stores it is in the form http://localhost:9000
     endpoint_url: str | None = None
 
-    # This does not seem to be used
+    # If using Minio or some other storage this is used.  Do not set domain
+    # This needs to have the URL scheme on it as well (eg http://.....)
+    # Effectively this is: Endpoint URL + media bucket name
     storage_address: str | None = None
+
     max_concurrent_tasks: int = 10
 
-    # This does not seem useful
     @property
     def url(self):
         raise RuntimeError("Use StorageClient.get_public_url instead")

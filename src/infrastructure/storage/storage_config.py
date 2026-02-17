@@ -14,7 +14,12 @@ class StorageConfig(BaseSettings):
     access_key: str | None = None
 
     # Public domain to front storage keys without scheme
+    # TODO Default to null??
     domain: str = ""
+    # Overrides the storage URL.  Useful for local dev for minio, etc
+    # TODO Is this needed for arbitrary server?
+    storage_address: str | None = None
+
     ttl_signed_urls: int = 3600
 
     # DR Settings
@@ -26,6 +31,7 @@ class StorageConfig(BaseSettings):
     def generate_media_settings(cls, cdn_settings: CDNSettings) -> "StorageConfig":
         return cls(
             domain=cdn_settings.domain,
+            storage_address=cdn_settings.storage_address,
             bucket=cdn_settings.bucket,
             bucket_override=cdn_settings.bucket_override,
             endpoint_url=cdn_settings.endpoint_url,

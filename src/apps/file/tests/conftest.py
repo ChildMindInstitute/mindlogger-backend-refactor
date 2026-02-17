@@ -1,21 +1,23 @@
-from typing import Any, Generator
-
 import pytest
+from fastapi import FastAPI
 
-from apps.file.tests import FILE_KEY, MEDIA_BUCKET_NAME, MEDIA_BUCKET_NAME_DR, MEDIA_STORAGE_ADDRESS
-from config import CDNSettings, settings
+from apps.file.tests import FILE_KEY
+from config import CDNSettings, Settings, get_settings
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-from infrastructure.storage.tests import ANSWER_BUCKET_NAME, ANSWER_BUCKET_NAME_DR
-from infrastructure.storage.tests.conftest import answer_bucket, aws_credentials, s3_client, s3_resource
+from infrastructure.storage.tests.conftest import (
+    answer_bucket,
+    aws_credentials,
+    s3_client,
+    s3_resource,
+    normal_storage_settings,
+)
 
 __all__ = [
     "aws_credentials",
     "s3_client",
     "s3_resource",
     "answer_bucket",
-    "ANSWER_BUCKET_NAME",
-    "ANSWER_BUCKET_NAME_DR",
     "answer_storage_client",
     "answer_storage_client_dr",
     "populate_s3",
@@ -23,24 +25,22 @@ __all__ = [
 
 
 @pytest.fixture
-async def answer_storage_client(s3_client) -> StorageClient:
+async def answer_storage_client(s3_client, answer_storage_config) -> StorageClient:
     """Regular storage client"""
+    client = StorageClient(answer_storage_config, env="test")
+    client.client = s3_client
+
+    return client
+
+
+@pytest.fixture
+async def answer_storage_client_dr(s3_client, cdn_override_settings: Settings) -> StorageClient:
+    """Storage client configured for DR"""
     config = StorageConfig(
         endpoint_url=None,
         region="us-east-1",
-        bucket=ANSWER_BUCKET_NAME,
-    )
-    client = StorageClient(config, env="test")
-    client.client = s3_client
-
-    return client
-
-
-@pytest.fixture
-async def answer_storage_client_dr(s3_client) -> StorageClient:
-    """Storage client configured for DR"""
-    config = StorageConfig(
-        endpoint_url=None, region="us-east-1", bucket=ANSWER_BUCKET_NAME, bucket_override=ANSWER_BUCKET_NAME_DR
+        bucket=cdn_override_settings.cdn.bucket_answer,
+        bucket_override=cdn_override_settings.cdn.bucket_answer_override,
     )
 
     client = StorageClient(config, env="test")
@@ -50,13 +50,53 @@ async def answer_storage_client_dr(s3_client) -> StorageClient:
 
 
 @pytest.fixture
-async def media_storage_client_dr(s3_client) -> StorageClient:
-    """Storage client configured for DR"""
+async def media_storage_client(s3_client, media_storage_config) -> StorageClient:
+    """Regular storage client"""
+    client = StorageClient(media_storage_config, env="test")
+    client.client = s3_client
+
+    return client
+
+
+@pytest.fixture
+async def media_storage_config_dr(s3_client, cdn_override_settings: Settings) -> StorageConfig:
     config = StorageConfig(
-        endpoint_url=MEDIA_STORAGE_ADDRESS,
+        endpoint_url=None,
+        domain=cdn_override_settings.cdn.domain,
         region="us-east-1",
-        bucket=MEDIA_BUCKET_NAME,
-        bucket_override=MEDIA_BUCKET_NAME_DR,
+        bucket=cdn_override_settings.cdn.bucket,
+        bucket_override=cdn_override_settings.cdn.bucket_override,
+    )
+
+    return config
+
+
+@pytest.fixture
+async def media_storage_client_dr(s3_client, media_storage_config_dr: StorageConfig) -> StorageClient:
+    """Storage client configured for DR"""
+    client = StorageClient(media_storage_config_dr, env="test")
+    client.client = s3_client
+
+    return client
+
+
+@pytest.fixture
+async def operations_storage_client(s3_client, operations_storage_config) -> StorageClient:
+    """Regular storage client"""
+    client = StorageClient(operations_storage_config, env="test")
+    client.client = s3_client
+
+    return client
+
+
+@pytest.fixture
+async def operations_storage_client_dr(s3_client, cdn_override_settings: Settings) -> StorageClient:
+    """Storage client configured for DR"""
+    config = StorageConfig(
+        endpoint_url=cdn_override_settings.cdn.endpoint_url,
+        region="us-east-1",
+        bucket=cdn_override_settings.cdn.bucket_override,
+        bucket_override=cdn_override_settings.cdn.bucket_operation_override,
     )
 
     client = StorageClient(config, env="test")
@@ -74,24 +114,16 @@ async def populate_s3(answer_bucket):
 
 
 @pytest.fixture
-def cdn_settings() -> Generator[CDNSettings, Any, None]:
-    # TODO This fixture is leaky.  Might be a better fix in the future
-    yield settings.cdn
+def override_app_settings(app: FastAPI, normal_storage_settings: Settings):
+    def new_get_settings():
+        return normal_storage_settings
 
-    # settings.cdn.access_key = "access_key"
-    # settings.cdn.secret_key = "secret_key"
-    # settings.cdn.bucket = "bucket"
-    # settings.cdn.bucket_answer = "bucket_answer"
-    # settings.cdn.bucket_operations = "bucket_operations"
-    # settings.cdn.region = "us-east-1"
-    # settings.cdn.domain = "mindlogger"
-    # settings.cdn.legacy_prefix = "mindlogger/legacy-answer"
-    # yield settings.cdn
-    # settings.cdn.bucket_operations = None
-    # settings.cdn.access_key = None
-    # settings.cdn.secret_key = None
-    # settings.cdn.bucket = None
-    # settings.cdn.bucket_answer = None
-    # settings.cdn.region = None
-    # settings.cdn.domain = ""
-    # settings.cdn.legacy_prefix = None
+    app.dependency_overrides[get_settings] = new_get_settings
+    yield
+    app.dependency_overrides.pop(get_settings)
+
+
+@pytest.fixture
+def cdn_settings(normal_storage_settings: Settings) -> CDNSettings:
+    # TODO This fixture is leaky.  Might be a better fix in the future
+    return normal_storage_settings.cdn

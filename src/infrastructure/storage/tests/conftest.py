@@ -4,8 +4,17 @@ import boto3
 import pytest
 from moto import mock_aws
 
-from config import Settings, settings
-from infrastructure.storage.tests import ANSWER_BUCKET_NAME, ANSWER_OVERRIDE, MEDIA_OVERRIDE, OPERATIONS_OVERRIDE
+from config import CDNSettings, Settings, settings
+from infrastructure.storage.storage_config import StorageConfig
+from infrastructure.storage.tests import (
+    ANSWER_BUCKET_NAME,
+    ANSWER_OVERRIDE,
+    DOMAIN,
+    MEDIA_BUCKET_NAME,
+    MEDIA_OVERRIDE,
+    OPERATIONS_BUCKET_NAME,
+    OPERATIONS_OVERRIDE,
+)
 
 
 @pytest.fixture(scope="function")
@@ -53,11 +62,89 @@ def answer_bucket(s3_resource):
 
 
 @pytest.fixture
-def cdn_override_settings() -> Settings:
+async def normal_storage_settings() -> Settings:
+    """Settings for prod-like storage"""
+    normal = settings.model_copy(deep=True)
+    cdn_settings = CDNSettings(
+        domain=DOMAIN,
+        bucket=MEDIA_BUCKET_NAME,
+        bucket_answer=ANSWER_BUCKET_NAME,
+        bucket_operations=OPERATIONS_BUCKET_NAME,
+        region="us-east-1",
+        ttl_signed_urls=3600,
+    )
+    normal.cdn = cdn_settings
+
+    return normal
+
+
+@pytest.fixture
+async def local_storage_settings() -> Settings:
+    """Settings for local with minio storage"""
+    normal = settings.model_copy(deep=True)
+    cdn_settings = CDNSettings(
+        bucket=MEDIA_BUCKET_NAME,
+        bucket_answer=ANSWER_BUCKET_NAME,
+        bucket_operations=OPERATIONS_BUCKET_NAME,
+        region="us-east-1",
+        ttl_signed_urls=3600,
+        endpoint_url="http://localhost:9000",
+        storage_address=f"http://localhost:9000/{MEDIA_BUCKET_NAME}",
+    )
+    normal.cdn = cdn_settings
+
+    return normal
+
+
+@pytest.fixture
+async def cdn_override_settings(normal_storage_settings: Settings) -> Settings:
     """Settings for DR"""
-    dr_settings = settings.model_copy(deep=True)
+    dr_settings = normal_storage_settings.model_copy(deep=True)
     dr_settings.cdn.bucket_override = MEDIA_OVERRIDE
     dr_settings.cdn.bucket_operation_override = OPERATIONS_OVERRIDE
     dr_settings.cdn.bucket_answer_override = ANSWER_OVERRIDE
 
     return dr_settings
+
+
+@pytest.fixture
+async def media_storage_config(normal_storage_settings: Settings) -> StorageConfig:
+    """Settings for storage"""
+    config = StorageConfig(
+        endpoint_url=None,
+        domain=normal_storage_settings.cdn.domain,
+        region="us-east-1",
+        bucket=normal_storage_settings.cdn.bucket,
+        access_key=normal_storage_settings.cdn.access_key,
+        secret_key=normal_storage_settings.cdn.secret_key,
+    )
+
+    return config
+
+
+@pytest.fixture
+async def answer_storage_config(normal_storage_settings: Settings) -> StorageConfig:
+    """Settings for storage"""
+    config = StorageConfig(
+        endpoint_url=None,
+        region="us-east-1",
+        bucket=normal_storage_settings.cdn.bucket_answer,
+        access_key=normal_storage_settings.cdn.access_key,
+        secret_key=normal_storage_settings.cdn.secret_key,
+    )
+
+    return config
+
+
+@pytest.fixture
+async def operations_storage_config(normal_storage_settings: Settings) -> StorageConfig:
+    """Settings for storage"""
+    config = StorageConfig(
+        endpoint_url=None,
+        region="us-east-1",
+        bucket=normal_storage_settings.cdn.bucket_operations,
+        access_key=normal_storage_settings.cdn.access_key,
+        secret_key=normal_storage_settings.cdn.secret_key,
+    )
+
+    return config

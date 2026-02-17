@@ -51,11 +51,14 @@ class StorageClient:
 
     def generate_public_url(self, key):
         """Generate a public URL.  It might not have one"""
-        if not self.config.domain and not self.config.endpoint_url:
+        if not self.config.domain and not self.config.storage_address:
             raise ValueError("A domain or endpoint url must be specified")
 
-        domain = self.config.domain or self.config.endpoint_url
-        return domain + "/" + key
+        if self.config.domain:
+            return f"https://{self.config.domain}/{key}"
+
+        # domain = self.config.storage_address or self.config.domain or self.config.endpoint_url
+        return f"{self.config.storage_address}/{key}"
 
     def _configure_client(self, config):
         assert config, "set CDN"

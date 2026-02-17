@@ -176,7 +176,7 @@ services:
       CDN__BUCKET_OPERATIONS: "${CDN__BUCKET_OPERATIONS:-cmi-ops-local}"
       CDN__BUCKET_OVERRIDE: "${CDN__BUCKET_OVERRIDE:-cmi-media-local-dr}"
       CDN__BUCKET_ANSWER_OVERRIDE: "${CDN__BUCKET_ANSWER:-cmi-answer-local-dr}"
-      CDN__BUCKET_OPERATIONS_OVERRIDE: "${CDN__BUCKET_OPERATIONS:-cmi-ops-local-dr}"
+      CDN__BUCKET_OPERATIONS_OVERRIDE: "${CDN__BUCKET_OPERATIONS_OVERRIDE:-cmi-ops-local-dr}"
     depends_on:
       - minio
     volumes:
