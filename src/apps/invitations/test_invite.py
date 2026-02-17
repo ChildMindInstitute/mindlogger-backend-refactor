@@ -2,8 +2,8 @@ import http
 import json
 import re
 import uuid
-from typing import Any, Literal, cast
 from datetime import datetime, timedelta, timezone
+from typing import Any, Literal, cast
 
 import pytest
 from pydantic import EmailStr
@@ -43,7 +43,6 @@ from apps.workspaces.domain.constants import UserPinRole
 from apps.workspaces.errors import AppletInviteAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-
 
 
 @pytest.fixture
