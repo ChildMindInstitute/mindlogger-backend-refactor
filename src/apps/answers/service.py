@@ -9,7 +9,7 @@ from collections import defaultdict
 from itertools import chain, groupby
 from json import JSONDecodeError
 from operator import attrgetter
-from typing import Callable, List, Mapping, Optional
+from typing import Callable, List, Mapping
 
 import aiohttp
 import sentry_sdk
@@ -1779,7 +1779,7 @@ class AnswerService:
     async def get_completed_answers_data(
         self,
         applet_id: uuid.UUID,
-        version: Optional[str],
+        version: str | None,
         from_date: datetime.date,
         include_in_progress: bool = False,
     ) -> AppletCompletedEntities:
@@ -1805,7 +1805,7 @@ class AnswerService:
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: Mapping[uuid.UUID, Optional[str]],
+        applets_version_map: Mapping[uuid.UUID, str | None],
         from_date: datetime.date,
         filter_by_version: bool = False,
         include_in_progress: bool = False,

@@ -188,8 +188,8 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception:
-            structlog.stdlib.get_logger("api.error").exception("Uncaught exception")
-            # Re-raise to let FastAPI/Starlette do its thing with exceptions in other middlewares
+            structlog.stdlib.get_logger("api.error").exception("Unhandled exception")
+
         finally:
             access_logger = structlog.stdlib.get_logger("api.access")
             process_time = time.perf_counter_ns() - start_time
