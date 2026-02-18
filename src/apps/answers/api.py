@@ -5,7 +5,7 @@ import http
 import io
 import uuid
 import zipfile
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import Body, Depends, Header, Query
 from fastapi import Response as FastAPIResponse
@@ -772,7 +772,7 @@ async def applet_answers_export(
 async def applet_completed_entities(
     applet_id: uuid.UUID,
     from_date: TruncatedDate = Query(..., alias="fromDate"),
-    version: Optional[str] = None,
+    version: str | None = None,
     include_in_progress: bool = Query(False, alias="includeInProgress"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -791,7 +791,7 @@ async def _get_arbitrary_answer(
     session,
     from_date: datetime.date,
     arb_uri: str,
-    applets_version_map: dict[uuid.UUID, Optional[str]],
+    applets_version_map: dict[uuid.UUID, str | None],
     user_id: uuid.UUID | None = None,
     include_in_progress: bool = False,
 ) -> list[AppletCompletedEntities]:
@@ -826,7 +826,7 @@ async def applets_completed_entities(
         exclude_without_encryption=True,
     )
 
-    applets_version_map: dict[uuid.UUID, Optional[str]] = dict()
+    applets_version_map: dict[uuid.UUID, str | None] = dict()
     for applet in applets:
         applets_version_map[applet.id] = applet.version
     applet_ids: list[uuid.UUID] = list(applets_version_map.keys())
@@ -835,7 +835,7 @@ async def applets_completed_entities(
 
     data_future_list = []
     for arb_uri, arb_applet_ids in arb_uri_applet_ids_map.items():
-        applets_version_arb_map: dict[uuid.UUID, Optional[str]] = dict()
+        applets_version_arb_map: dict[uuid.UUID, str | None] = dict()
         for applet_id in arb_applet_ids:
             applets_version_arb_map[applet_id] = applets_version_map[applet_id]
 
