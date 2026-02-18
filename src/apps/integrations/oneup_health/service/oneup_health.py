@@ -21,7 +21,7 @@ from apps.integrations.oneup_health.errors import (
 from apps.integrations.oneup_health.service.domain import EHRData, EHRFileMetadata, EHRFileTypeEnum, EHRMetadata
 from apps.integrations.oneup_health.service.ehr_storage import EHRStorage, create_ehr_storage
 from apps.shared.exception import InternalServerError
-from config import settings, Settings
+from config import Settings, settings
 
 __all__ = ["OneupHealthService"]
 

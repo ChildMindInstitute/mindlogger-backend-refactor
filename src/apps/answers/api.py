@@ -77,7 +77,7 @@ from apps.users.services.prolific_user import ProlificUserService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.workspace import WorkspaceService
-from config import get_settings, Settings
+from config import Settings, get_settings, AppSettings
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_tz_utc_offset
@@ -961,7 +961,7 @@ async def applet_ehr_answers_export(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
     query_params: QueryParams = Depends(parse_query_params(AnswerEHRExportFilters)),
-    app_settings: Settings = Depends(get_settings)
+    app_settings: AppSettings = Depends(get_settings),
 ) -> FastAPIResponse:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
@@ -986,6 +986,7 @@ async def applet_ehr_answers_export(
                     user_id=user.id,
                 )
                 ehr_zip_buffer = io.BytesIO()
+
                 try:
                     ehr_zip_filename = ehr_storage.download_ehr_zip(
                         storage_path=ehr_answer.ehr_storage_uri, data=data, file_buffer=ehr_zip_buffer
