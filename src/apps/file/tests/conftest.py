@@ -8,12 +8,13 @@ from infrastructure.storage.storage_config import StorageConfig
 from infrastructure.storage.tests.conftest import (
     answer_bucket,
     aws_credentials,
-    s3_client,
-    s3_resource,
     cdn_override_settings,
     normal_storage_settings,
+    s3_client,
+    s3_resource,
 )
 
+# This does nothing, but it fakes out ruff to leave the imported fixtures from other packages
 __all__ = [
     "aws_credentials",
     "s3_client",
@@ -22,6 +23,8 @@ __all__ = [
     "answer_storage_client",
     "answer_storage_client_dr",
     "populate_s3",
+    "cdn_override_settings",
+    "normal_storage_settings",
 ]
 
 
