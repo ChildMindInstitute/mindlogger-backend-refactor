@@ -10,7 +10,7 @@ from slugify import slugify
 
 from apps.file.enums import FileScopeEnum
 from apps.integrations.oneup_health.service.domain import EHRData
-from config import get_settings
+from config import get_settings, Settings
 from infrastructure.storage.storage import select_answer_storage
 from infrastructure.storage.storage_client import StorageClient
 
@@ -120,7 +120,7 @@ class EHRStorage:
         return filename
 
 
-async def create_ehr_storage(session, applet_id: uuid.UUID):
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=get_settings())
+async def create_ehr_storage(session, applet_id: uuid.UUID, app_settings: Settings) -> EHRStorage:
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
 
     return EHRStorage(cdn_client)
