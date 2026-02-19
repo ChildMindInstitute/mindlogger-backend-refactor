@@ -990,7 +990,9 @@ async def applet_ehr_answers_export(
 
                 try:
                     ehr_zip_filename = ehr_storage.download_ehr_zip(
-                        storage_path=ehr_answer.ehr_storage_uri, data=data, file_buffer=ehr_zip_buffer
+                        storage_path=ehr_answer.ehr_storage_uri, # type: ignore
+                        data=data,
+                        file_buffer=ehr_zip_buffer,
                     )
 
                     zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
