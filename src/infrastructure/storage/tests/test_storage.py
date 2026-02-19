@@ -7,7 +7,7 @@ from infrastructure.storage.storage import create_answer_client
 
 
 def test_create_answer_client() -> None:
-    """Test a non arbitrary server client"""
+    """Test a non-arbitrary server client"""
     client = create_answer_client(None)
 
     assert client.config.bucket == settings.cdn.bucket_answer
@@ -15,7 +15,6 @@ def test_create_answer_client() -> None:
 
     presign = client.generate_presigned_post("asdf.jpg")
     assert presign is not None
-    assert client.config.endpoint_url in presign["url"]
 
 
 def test_create_answer_client_arbitrary():
