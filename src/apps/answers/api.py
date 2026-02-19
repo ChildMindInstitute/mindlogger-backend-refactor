@@ -15,6 +15,7 @@ from apps.activities.services import ActivityHistoryService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
 from apps.answers.domain import (
     ActivitySubmissionResponse,
+    AnswerEHRFull,
     AnswerExistenceResponse,
     AnswerExport,
     AnswerNote,
@@ -40,7 +41,6 @@ from apps.answers.domain import (
     ReviewsCount,
 )
 from apps.answers.domain.answers import (
-    AnswerEHRFull,
     MultiinformantAssessmentValidationResponse,
     PublicSubmissionsResponse,
 )
@@ -977,6 +977,7 @@ async def applet_ehr_answers_export(
     zip_buffer = io.BytesIO()
     try:
         with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+            ehr_answer: AnswerEHRFull
             for ehr_answer in ehr_answers:
                 data = EHRData(
                     target_subject_id=ehr_answer.target_subject_id,
