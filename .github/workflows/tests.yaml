@@ -32,7 +32,29 @@ jobs:
           cp .env.default .env
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
           docker compose up -d rabbitmq postgres redis mailhog
-          make test
+          PYTHONPATH=src uv run pytest -s -vv --junit-xml=test-results.xml
+
+      - name: Surface failing tests
+        if: always()
+        uses: pmeier/pytest-results-action@main
+        with:
+          # A list of JUnit XML files, directories containing the former, and wildcard
+          # patterns to process.
+          # See @actions/glob for supported patterns.
+          path: test-results.xml
+
+          # (Optional) Add a summary of the results at the top of the report
+          summary: true
+
+          # (Optional) Select which results should be included in the report.
+          # Follows the same syntax as `pytest -r`
+          display-options: fEX
+
+          # (Optional) Fail the workflow if no JUnit XML was found.
+          fail-on-empty: true
+
+          # (Optional) Title of the test results section in the workflow summary
+          title: Test results
 
       - name: Ensure CLI Runs
         run: |
