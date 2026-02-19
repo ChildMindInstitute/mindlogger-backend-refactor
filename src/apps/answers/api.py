@@ -77,7 +77,7 @@ from apps.users.services.prolific_user import ProlificUserService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.workspace import WorkspaceService
-from config import AppSettings, get_settings, Settings
+from config import Settings, get_settings
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_tz_utc_offset
