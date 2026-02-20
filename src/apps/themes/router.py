@@ -20,5 +20,3 @@ router.get(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(get_themes)
-
-
