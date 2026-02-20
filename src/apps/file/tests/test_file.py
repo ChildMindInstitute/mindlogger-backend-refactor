@@ -245,7 +245,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         assert cdn_settings.endpoint_url is None
         resp = await client.post(self.upload_media_url, data={"file_name": file_name})
-        assert resp.content == "ok"
+        assert resp.text == "ok"
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert result["fields"]["key"].endswith(file_name)
