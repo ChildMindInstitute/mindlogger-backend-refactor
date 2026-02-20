@@ -211,7 +211,31 @@ class AnswerService:
             if existed_answer.applet_id != applet_answer.applet_id:
                 raise WrongAnswerGroupAppletId()
             elif existed_answer.version != applet_answer.version:
-                raise WrongAnswerGroupVersion()
+                # For flow submissions, adopt the version from the existing answer group
+                # so in-progress flows can be completed after an applet version update
+                if applet_answer.flow_id:
+                    original_version = applet_answer.version
+                    applet_answer.version = existed_answer.version
+                    pk = self._generate_history_id(applet_answer.version)
+                    activity_history_id = pk(applet_answer.activity_id)
+                    flow_history_id = pk(applet_answer.flow_id)
+
+                    logger.info(
+                        "Corrected version for flow submission from %s to %s, submit_id %s",
+                        original_version,
+                        applet_answer.version,
+                        applet_answer.submit_id,
+                    )
+
+                    # Re-validate flow progress with the corrected version's history IDs
+                    flow_progress = FlowSubmissionProgress(self.session, self.answer_session)
+                    await flow_progress.load(flow_history_id, applet_answer.submit_id)
+                    if not flow_progress.has_flow_history:
+                        raise ValidationError("Flow not found")
+                    if not flow_progress.contains_activity(activity_history_id):
+                        raise ValidationError("Activity not found in the flow")
+                else:
+                    raise WrongAnswerGroupVersion()
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
 
