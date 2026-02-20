@@ -1,16 +1,23 @@
 import asyncio
 import uuid
+from typing import Optional
 
-from fastapi import Depends
+from fastapi import Depends, Query
 
 from apps.activities.crud import ActivitiesCRUD
+from apps.activities.crud.activity_history import ActivityHistoriesCRUD
+from apps.activities.crud.activity_item_history import ActivityItemHistoriesCRUD
 from apps.activities.domain.activity import (
     ActivitiesMetadata,
     ActivityLanguageWithItemsMobileDetailPublic,
     ActivityOrFlowWithAssignmentsPublic,
+    ActivitySingleLanguageWithItemsDetail,
     ActivitySingleLanguageWithItemsDetailPublic,
     ActivitySubjectMetadata,
     ActivityWithAssignmentDetailsPublic,
+)
+from apps.activities.domain.activity_item import (
+    ActivityItemSingleLanguageDetail,
 )
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
@@ -38,16 +45,82 @@ from infrastructure.database.deps import get_session
 from infrastructure.http import get_language
 
 
+def _get_by_language(values: dict, language: str) -> str:
+    """Return value for the given language key, or the first available value."""
+    try:
+        return values[language]
+    except KeyError:
+        for val in values.values():
+            return val
+        return ""
+
+
+async def _get_activity_from_history(
+    session,
+    activity_id: uuid.UUID,
+    version: str,
+    language: str,
+) -> ActivitySingleLanguageWithItemsDetail:
+    """Fetch an activity from the history table and convert it to single-language format."""
+    id_version = f"{activity_id}_{version}"
+    schema = await ActivityHistoriesCRUD(session).get_by_id(id_version)
+
+    item_schemas = await ActivityItemHistoriesCRUD(session).get_by_activity_id_version(id_version)
+    items = [
+        ActivityItemSingleLanguageDetail(
+            id=item.id,
+            activity_id=activity_id,
+            question=_get_by_language(item.question, language),
+            response_type=item.response_type,
+            config=item.config,
+            response_values=item.response_values,
+            order=item.order,
+            name=item.name,
+            conditional_logic=item.conditional_logic,
+            allow_edit=item.allow_edit,
+            is_hidden=item.is_hidden,
+        )
+        for item in item_schemas
+    ]
+
+    return ActivitySingleLanguageWithItemsDetail(
+        id=schema.id,
+        name=schema.name,
+        description=_get_by_language(schema.description, language),
+        splash_screen=schema.splash_screen,
+        image=schema.image,
+        show_all_at_once=schema.show_all_at_once,
+        is_skippable=schema.is_skippable,
+        is_reviewable=schema.is_reviewable,
+        response_is_editable=schema.response_is_editable,
+        order=schema.order,
+        is_hidden=schema.is_hidden,
+        scores_and_reports=schema.scores_and_reports,
+        subscale_setting=schema.subscale_setting,
+        items=items,
+        created_at=schema.created_at,
+    )
+
+
 async def activity_retrieve(
     activity_id: uuid.UUID,
     user: User = Depends(get_current_user),
     language: str = Depends(get_language),
     session=Depends(get_session),
+    version: Optional[str] = Query(None, description="Applet version to fetch from history"),
 ) -> Response[ActivitySingleLanguageWithItemsDetailPublic]:
     async with atomic(session):
-        schema = await ActivitiesCRUD(session).get_by_id(activity_id)
-        await CheckAccessService(session, user.id).check_applet_detail_access(schema.applet_id)
-        activity = await ActivityService(session, user.id).get_single_language_by_id(activity_id, language)
+        if version:
+            # Fetch from history table for a specific applet version.
+            # Used when resuming a flow whose activity may have been deleted
+            # from the current applet version but is preserved in history.
+            activity = await _get_activity_from_history(
+                session, activity_id, version, language
+            )
+        else:
+            schema = await ActivitiesCRUD(session).get_by_id(activity_id)
+            await CheckAccessService(session, user.id).check_applet_detail_access(schema.applet_id)
+            activity = await ActivityService(session, user.id).get_single_language_by_id(activity_id, language)
     result = ActivitySingleLanguageWithItemsDetailPublic.model_validate(activity)
     return Response(result=result)
 
