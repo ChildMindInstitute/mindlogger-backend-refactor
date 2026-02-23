@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import uuid
 from typing import Any, AsyncGenerator, Callable, Generator, cast
@@ -26,6 +27,7 @@ from infrastructure.database.core import build_engine
 from infrastructure.database.deps import get_session
 from infrastructure.utility.notification_client import FCMNotificationTest
 from infrastructure.utility.redis_client import RedisCacheTest
+import infrastructure.logger
 
 # from infrastructure.utility import FCMNotificationTest, RedisCacheTest
 
@@ -44,6 +46,34 @@ pytest_plugins = [
 
 # Fix for issue https://github.com/pytest-dev/pytest-asyncio/issues/112
 nest_asyncio.apply()
+
+import structlog
+
+@pytest.fixture(autouse=True, scope="session")
+def _redirect_structlog_to_stdlib_and_mute() -> Generator[None, None, None]:
+    """Setup logging for CI"""
+    if os.getenv("CI", "false").lower() == "true":
+        prev = structlog.get_config()
+
+        structlog.configure(
+            processors=[
+                structlog.stdlib.add_log_level,
+                structlog.stdlib.PositionalArgumentsFormatter(),
+                structlog.processors.format_exc_info,
+                structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+            ],
+            logger_factory=structlog.stdlib.LoggerFactory(),
+            wrapper_class=structlog.make_filtering_bound_logger(logging.CRITICAL),
+            cache_logger_on_first_use=True,
+        )
+
+        try:
+            yield None
+        finally:
+            structlog.reset_defaults()
+            structlog.configure(**prev)
+    else:
+        yield None
 
 
 @pytest.fixture(scope="session")
@@ -84,6 +114,69 @@ def pytest_addoption(parser: Parser) -> None:
         help="If keepdb is true, then migrations wont be downgraded after tests",  # noqa: E501
     )
 
+def configure() -> None:
+    import structlog
+    import logging.config
+    timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
+    pre_chain = [
+        # Add the log level and a timestamp to the event_dict if the log entry
+        # is not from structlog.
+        structlog.stdlib.add_log_level,
+        timestamper,
+    ]
+
+
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "plain": {
+                    "()": structlog.stdlib.ProcessorFormatter,
+                    "processor": structlog.dev.ConsoleRenderer(colors=False),
+                    "foreign_pre_chain": pre_chain,
+                },
+                # "colored": {
+                #     "()": structlog.stdlib.ProcessorFormatter,
+                #     "processor": structlog.dev.ConsoleRenderer(colors=True),
+                #     "foreign_pre_chain": pre_chain,
+                # },
+            },
+            "handlers": {
+                "default": {
+                    "level": "ERROR",
+                    "class": "logging.StreamHandler",
+                    "formatter": "plain", #               <---Change to "plain"
+                },
+                "file": {
+                    "level": "ERROR",
+                    "class": "logging.handlers.WatchedFileHandler",
+                    "filename": "test.log",
+                    "formatter": "plain",
+                },
+            },
+            "loggers": {
+                "": {
+                    "handlers": ["default", "file"],
+                    "level": "ERROR",
+                    "propagate": True,
+                },
+            },
+        }
+    )
+    structlog.configure(
+        processors=[
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            timestamper,
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=True,
+    )
 
 def before():
     os.environ["PYTEST_APP_TESTING"] = "1"

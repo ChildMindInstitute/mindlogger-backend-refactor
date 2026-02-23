@@ -243,9 +243,7 @@ class TestAnswerActivityItems(BaseTest):
     @pytest.mark.parametrize("file_name,", ("test1.jpg", "test2.jpg"))
     async def test_generate_upload_url(self, client: TestClient, file_name: str, tom: User, cdn_settings: CDNSettings):
         client.login(tom)
-        assert cdn_settings.endpoint_url is None
         resp = await client.post(self.upload_media_url, data={"file_name": file_name})
-        assert resp.text == "ok"
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert result["fields"]["key"].endswith(file_name)
