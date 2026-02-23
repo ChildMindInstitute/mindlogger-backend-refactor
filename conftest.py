@@ -6,6 +6,7 @@ from typing import Any, AsyncGenerator, Callable, Generator, cast
 
 import nest_asyncio
 import pytest
+import structlog
 import taskiq_fastapi
 from alembic import command
 from alembic.config import Config
@@ -27,7 +28,6 @@ from infrastructure.database.core import build_engine
 from infrastructure.database.deps import get_session
 from infrastructure.utility.notification_client import FCMNotificationTest
 from infrastructure.utility.redis_client import RedisCacheTest
-import infrastructure.logger
 
 # from infrastructure.utility import FCMNotificationTest, RedisCacheTest
 
@@ -47,7 +47,6 @@ pytest_plugins = [
 # Fix for issue https://github.com/pytest-dev/pytest-asyncio/issues/112
 nest_asyncio.apply()
 
-import structlog
 
 @pytest.fixture(autouse=True, scope="session")
 def _redirect_structlog_to_stdlib_and_mute() -> Generator[None, None, None]:
@@ -63,7 +62,7 @@ def _redirect_structlog_to_stdlib_and_mute() -> Generator[None, None, None]:
                 structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
             ],
             logger_factory=structlog.stdlib.LoggerFactory(),
-            wrapper_class=structlog.make_filtering_bound_logger(logging.CRITICAL),
+            wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING),
             cache_logger_on_first_use=True,
         )
 
@@ -114,9 +113,12 @@ def pytest_addoption(parser: Parser) -> None:
         help="If keepdb is true, then migrations wont be downgraded after tests",  # noqa: E501
     )
 
+
 def configure() -> None:
-    import structlog
     import logging.config
+
+    import structlog
+
     timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
     pre_chain = [
         # Add the log level and a timestamp to the event_dict if the log entry
@@ -124,7 +126,6 @@ def configure() -> None:
         structlog.stdlib.add_log_level,
         timestamper,
     ]
-
 
     logging.config.dictConfig(
         {
@@ -146,7 +147,7 @@ def configure() -> None:
                 "default": {
                     "level": "ERROR",
                     "class": "logging.StreamHandler",
-                    "formatter": "plain", #               <---Change to "plain"
+                    "formatter": "plain",  #               <---Change to "plain"
                 },
                 "file": {
                     "level": "ERROR",
@@ -177,6 +178,7 @@ def configure() -> None:
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
+
 
 def before():
     os.environ["PYTEST_APP_TESTING"] = "1"
