@@ -120,7 +120,7 @@ def log_file_service(tom: User, cdn_client: StorageClient) -> LogFileService:
     return LogFileService(tom.id, cdn_client)
 
 
-@pytest.mark.usefixtures("cdn_settings", "override_app_settings")
+@pytest.mark.usefixtures("cdn_settings", "override_app_settings", "s3_resource")
 class TestAnswerActivityItems(BaseTest):
     login_url = "/auth/login"
     upload_url = "file/{applet_id}/upload"

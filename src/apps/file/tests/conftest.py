@@ -120,6 +120,7 @@ async def populate_s3(answer_bucket):
 @pytest.fixture
 def override_app_settings(app: FastAPI, normal_storage_settings: Settings):
     """Override app CDN settings from .env with known good settings for tests"""
+
     def new_get_settings():
         return normal_storage_settings
 
