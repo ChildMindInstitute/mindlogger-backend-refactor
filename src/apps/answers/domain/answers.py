@@ -690,6 +690,14 @@ class CompletedEntity(PublicModel):
             "None for standalone activities (not part of a flow).",
         ),
     ] = None
+    # Ordered list of unversioned activity IDs for the flow at the version the answer was submitted
+    flow_activity_ids: Annotated[
+        list[uuid.UUID] | None,
+        Field(
+            description="Ordered activity IDs for the flow at the submitted version. "
+            "Only populated for in-progress activity flows.",
+        ),
+    ] = None
 
     @field_serializer("start_time", "end_time", when_used="json")
     def datetime_to_ms(self, value: datetime.datetime):

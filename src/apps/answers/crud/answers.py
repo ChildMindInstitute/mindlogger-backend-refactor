@@ -33,6 +33,7 @@ from apps.answers.filters import AppletSubmitDateFilter
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import Version
 from apps.shared.domain import parse_obj_as
+from infrastructure.database.mixins import HistoryAware
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
@@ -836,6 +837,51 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         # Populate activity_flow_order on the activity flows
         for f in activity_flows:
             f.activity_flow_order = orders.get((f.flow_history_id, f.activity_history_id))
+
+    async def populate_flow_activity_ids(self, *result_list: AppletCompletedEntities) -> None:
+        """Populate flow_activity_ids on in-progress activity flows.
+
+        Queries flow_item_histories to get the ordered list of (unversioned) activity IDs
+        for each flow at the version it was submitted. Only populates for flows where
+        is_flow_completed is False (in-progress).
+        """
+        in_progress_flows = [
+            flow
+            for result in result_list
+            for flow in result.activity_flows
+            if flow.is_flow_completed is False and flow.flow_history_id
+        ]
+
+        if not in_progress_flows:
+            return
+
+        flow_history_ids = list({flow.flow_history_id for flow in in_progress_flows})
+
+        query = (
+            select(
+                ActivityFlowItemHistorySchema.activity_flow_id,
+                ActivityFlowItemHistorySchema.activity_id,
+                ActivityFlowItemHistorySchema.order,
+            )
+            .where(ActivityFlowItemHistorySchema.activity_flow_id.in_(flow_history_ids))
+            .order_by(
+                ActivityFlowItemHistorySchema.activity_flow_id,
+                ActivityFlowItemHistorySchema.order,
+            )
+        )
+
+        result = await self._execute(query)
+
+        history_aware = HistoryAware()
+        flow_items_map: dict[str, list[uuid.UUID]] = {}
+        for row in result.mappings():
+            fid = row["activity_flow_id"]
+            activity_uuid = history_aware.id_from_history_id(row["activity_id"])
+            if activity_uuid:
+                flow_items_map.setdefault(fid, []).append(activity_uuid)
+
+        for flow in in_progress_flows:
+            flow.flow_activity_ids = flow_items_map.get(flow.flow_history_id)
 
     async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str | None:
         query: Query = select(AnswerSchema.applet_history_id)

@@ -1818,7 +1818,7 @@ class AnswerService:
     ) -> AppletCompletedEntities:
         assert self.user_id
 
-        # Get copmleted answers for applet from main or arbitrary database
+        # Get completed answers for applet from main or arbitrary database
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data(
             applet_id,
             version,
@@ -1831,7 +1831,7 @@ class AnswerService:
         await AnswersCRUD(self.session).populate_activity_flow_orders(result)
 
         if include_in_progress:
-            # Filter activity flows using the shared helper method
+            await AnswersCRUD(self.session).populate_flow_activity_ids(result)
             self._filter_activity_flows(result)
 
         return result
@@ -1858,6 +1858,8 @@ class AnswerService:
         await AnswersCRUD(self.session).populate_activity_flow_orders(*result_list)
 
         if include_in_progress:
+            # Populate flow_activity_ids for in-progress flows (for cross-device sync)
+            await AnswersCRUD(self.session).populate_flow_activity_ids(*result_list)
             # Filter activity flows for each result using the shared helper method
             for result in result_list:
                 self._filter_activity_flows(result)
