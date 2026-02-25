@@ -806,37 +806,57 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         """
         Populate activity_flow_order on activity flows for applet(s).
 
+        Uses the count of answers per (flow_history_id, submit_id) to determine
+        how far along each submission is.  This is more reliable than looking up
+        the activity's position in flow_item_histories, because the same activity
+        can appear at multiple positions within a flow — making the
+        (flow_history_id, activity_history_id) key ambiguous.
+
         - Takes one or more AppletCompletedEntities objects as input
         - Mutates activity flows in-place by setting their activity_flow_order field
         """
-        # Iterate through activity flows for each result
         activity_flows = list(chain.from_iterable(result.activity_flows for result in result_list))
 
-        # Build query conditions for each (flow_history_id, activity_history_id) pair
-        conditions = [
-            and_(
-                ActivityFlowItemHistorySchema.activity_flow_id == f.flow_history_id,
-                ActivityFlowItemHistorySchema.activity_id == f.activity_history_id,
-            )
+        # Collect unique (flow_history_id, submit_id) pairs
+        submit_keys = {
+            (f.flow_history_id, f.submit_id)
             for f in activity_flows
-            if f.activity_history_id and f.flow_history_id
-        ]
+            if f.flow_history_id and f.submit_id
+        }
 
-        if not conditions:
+        if not submit_keys:
             return
 
-        query = select(
-            ActivityFlowItemHistorySchema.activity_flow_id,
-            ActivityFlowItemHistorySchema.activity_id,
-            ActivityFlowItemHistorySchema.order,
-        ).where(or_(*conditions))
+        # Count answers per (flow_history_id, submit_id)
+        # Each activity completion in a flow creates exactly one answer row,
+        # so the count equals the 1-indexed position of the last completed activity.
+        conditions = [
+            and_(
+                AnswerSchema.flow_history_id == flow_history_id,
+                AnswerSchema.submit_id == submit_id,
+            )
+            for flow_history_id, submit_id in submit_keys
+        ]
+
+        query = (
+            select(
+                AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
+                func.count().label("answer_count"),
+            )
+            .where(or_(*conditions))
+            .group_by(AnswerSchema.flow_history_id, AnswerSchema.submit_id)
+        )
 
         result = await self._execute(query)
-        orders = {(row.activity_flow_id, row.activity_id): row.order for row in result.mappings()}
+        counts = {
+            (row.flow_history_id, row.submit_id): row.answer_count
+            for row in result.mappings()
+        }
 
         # Populate activity_flow_order on the activity flows
         for f in activity_flows:
-            f.activity_flow_order = orders.get((f.flow_history_id, f.activity_history_id))
+            f.activity_flow_order = counts.get((f.flow_history_id, f.submit_id))
 
     async def populate_flow_activity_ids(self, *result_list: AppletCompletedEntities) -> None:
         """Populate flow_activity_ids on in-progress activity flows.
