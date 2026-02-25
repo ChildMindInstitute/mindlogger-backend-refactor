@@ -34,11 +34,11 @@
 /usr/bin/mc anonymous set upload local/${CDN__BUCKET_OVERRIDE};
 /usr/bin/mc anonymous set download local/${CDN__BUCKET_OVERRIDE};
 
-/usr/bin/mc mb -p local/${CDN__BUCKET_ANSWER};
-/usr/bin/mc policy set download local/${CDN__BUCKET_ANSWER};
-/usr/bin/mc policy set public local/${CDN__BUCKET_ANSWER};
-/usr/bin/mc anonymous set upload local/${CDN__BUCKET_ANSWER};
-/usr/bin/mc anonymous set download local/${CDN__BUCKET_ANSWER};
+/usr/bin/mc mb -p local/${CDN__BUCKET_ANSWER_OVERRIDE};
+/usr/bin/mc policy set download local/${CDN__BUCKET_ANSWER_OVERRIDE};
+/usr/bin/mc policy set public local/${CDN__BUCKET_ANSWER_OVERRIDE};
+/usr/bin/mc anonymous set upload local/${CDN__BUCKET_ANSWER_OVERRIDE};
+/usr/bin/mc anonymous set download local/${CDN__BUCKET_ANSWER_OVERRIDE};
 
 /usr/bin/mc mb -p local/${CDN__BUCKET_OPERATIONS_OVERRIDE};
 /usr/bin/mc policy set download local/${CDN__BUCKET_OPERATIONS_OVERRIDE};

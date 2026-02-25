@@ -23,7 +23,7 @@ async def select_answer_storage(
     session: AsyncSession,
 ) -> StorageClient:
     """
-    Create a CDNClient based on arbitrary server info to the answer bucket.
+    Create a StorageClient based on arbitrary server info to the answer bucket.
     """
 
     service = workspace.WorkspaceService(session, uuid.uuid4())
@@ -38,13 +38,13 @@ async def select_answer_storage(
 
 
 def create_answer_client(app_settings: AppSettings, info: WorkspaceArbitrary | None = None) -> StorageClient:
-    """Create a CDN client based on optional arbitrary server info"""
+    """Create a StorageClient based on optional arbitrary server info"""
 
     # No arbitrary server, create a client based on local configuration
     if not info:
         config_cdn = StorageConfig.generate_answer_settings(app_settings.cdn)
 
-        return StorageClient(config_cdn, env=settings.env, max_concurrent_tasks=settings.cdn.max_concurrent_tasks)
+        return StorageClient(config_cdn, env=settings.env, max_concurrent_tasks=app_settings.cdn.max_concurrent_tasks)
 
     # Create an arbitrary server client
     bucket_type = info.storage_type.lower()
@@ -81,13 +81,13 @@ def create_answer_client(app_settings: AppSettings, info: WorkspaceArbitrary | N
 async def get_media_storage(app_settings: AppSettings) -> StorageClient:
     config = StorageConfig.generate_media_settings(app_settings.cdn)
 
-    return StorageClient(config, env=settings.env)
+    return StorageClient(config, env=app_settings.env)
 
 
 async def get_operations_storage(app_settings: AppSettings) -> StorageClient:
     config = StorageConfig.generate_operations_settings(app_settings.cdn)
 
-    return StorageClient(config, env=settings.env)
+    return StorageClient(config, env=app_settings.env)
 
 
 async def get_log_storage(app_settings: AppSettings) -> StorageClient:
@@ -100,4 +100,4 @@ async def get_log_storage(app_settings: AppSettings) -> StorageClient:
     #     ttl_signed_urls=settings.cdn.ttl_signed_urls,
     # )
     config = StorageConfig.generate_logs_settings(app_settings.cdn)
-    return StorageClient(config, env=settings.env)
+    return StorageClient(config, env=app_settings.env)
