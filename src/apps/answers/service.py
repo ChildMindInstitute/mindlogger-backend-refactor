@@ -1755,11 +1755,17 @@ class AnswerService:
                 key=attrgetter("end_time"),
             )
 
-            # Farthest along in-progress flow + more recent tiebreaker
+            # Farthest along in-progress flow on the latest version.
+            # Version tuple ensures correct numeric comparison (e.g. "10.0.0" > "9.0.0").
+            # Within the same version, pick the farthest completion (same-version restart).
             best_in_progress = max(
                 in_progress,
                 default=None,
-                key=lambda x: (x.activity_flow_order or 0, x.end_time),
+                key=lambda x: (
+                    tuple(int(p) for p in x.version.split(".")),
+                    x.activity_flow_order or 0,
+                    x.end_time,
+                ),
             )
 
             if best_completed and best_in_progress:
