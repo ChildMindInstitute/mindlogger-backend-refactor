@@ -698,6 +698,14 @@ class CompletedEntity(PublicModel):
             "Only populated for in-progress activity flows.",
         ),
     ] = None
+    # Name of the flow at the version the answer was submitted
+    flow_name: Annotated[
+        str | None,
+        Field(
+            description="Name of the flow at the submitted version. "
+            "Only populated for in-progress activity flows.",
+        ),
+    ] = None
 
     @field_serializer("start_time", "end_time", when_used="json")
     def datetime_to_ms(self, value: datetime.datetime):
