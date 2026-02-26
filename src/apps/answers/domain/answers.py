@@ -702,8 +702,7 @@ class CompletedEntity(PublicModel):
     flow_name: Annotated[
         str | None,
         Field(
-            description="Name of the flow at the submitted version. "
-            "Only populated for in-progress activity flows.",
+            description="Name of the flow at the submitted version. Only populated for in-progress activity flows.",
         ),
     ] = None
 

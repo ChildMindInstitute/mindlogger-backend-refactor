@@ -114,9 +114,7 @@ async def activity_retrieve(
             # Fetch from history table for a specific applet version.
             # Used when resuming a flow whose activity may have been deleted
             # from the current applet version but is preserved in history.
-            activity = await _get_activity_from_history(
-                session, activity_id, version, language
-            )
+            activity = await _get_activity_from_history(session, activity_id, version, language)
         else:
             schema = await ActivitiesCRUD(session).get_by_id(activity_id)
             await CheckAccessService(session, user.id).check_applet_detail_access(schema.applet_id)

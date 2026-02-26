@@ -33,10 +33,10 @@ from apps.answers.filters import AppletSubmitDateFilter
 from apps.applets.db.schemas import AppletHistorySchema
 from apps.applets.domain.applet_history import Version
 from apps.shared.domain import parse_obj_as
-from infrastructure.database.mixins import HistoryAware
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
+from infrastructure.database.mixins import HistoryAware
 
 
 class _AnswersExportFilter(Filtering):
@@ -818,11 +818,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         activity_flows = list(chain.from_iterable(result.activity_flows for result in result_list))
 
         # Collect unique (flow_history_id, submit_id) pairs
-        submit_keys = {
-            (f.flow_history_id, f.submit_id)
-            for f in activity_flows
-            if f.flow_history_id and f.submit_id
-        }
+        submit_keys = {(f.flow_history_id, f.submit_id) for f in activity_flows if f.flow_history_id and f.submit_id}
 
         if not submit_keys:
             return
@@ -849,10 +845,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         result = await self._execute(query)
-        counts = {
-            (row.flow_history_id, row.submit_id): row.answer_count
-            for row in result.mappings()
-        }
+        counts = {(row.flow_history_id, row.submit_id): row.answer_count for row in result.mappings()}
 
         # Populate activity_flow_order on the activity flows
         for f in activity_flows:
@@ -892,13 +885,10 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         )
 
         # Query flow_histories for flow names
-        names_query = (
-            select(
-                ActivityFlowHistoriesSchema.id_version,
-                ActivityFlowHistoriesSchema.name,
-            )
-            .where(ActivityFlowHistoriesSchema.id_version.in_(flow_history_ids))
-        )
+        names_query = select(
+            ActivityFlowHistoriesSchema.id_version,
+            ActivityFlowHistoriesSchema.name,
+        ).where(ActivityFlowHistoriesSchema.id_version.in_(flow_history_ids))
 
         items_result, names_result = await asyncio.gather(
             self._execute(items_query),
@@ -918,8 +908,9 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             flow_names_map[row["id_version"]] = row["name"]
 
         for flow in in_progress_flows:
-            flow.flow_activity_ids = flow_items_map.get(flow.flow_history_id)
-            flow.flow_name = flow_names_map.get(flow.flow_history_id)
+            if flow.flow_history_id:
+                flow.flow_activity_ids = flow_items_map.get(flow.flow_history_id)
+                flow.flow_name = flow_names_map.get(flow.flow_history_id)
 
     async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str | None:
         query: Query = select(AnswerSchema.applet_history_id)
