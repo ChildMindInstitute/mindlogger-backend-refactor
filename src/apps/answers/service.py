@@ -1715,38 +1715,37 @@ class AnswerService:
         This method:
         1. Keeps the last activity in each submission (by group_progress_history_submit_id)
         2. For flows with multiple submissions:
-           - Groups by group_progress_history_id (without submit_id) to compare across submissions
-           - If both completed and in-progress exist, compare timestamps
-           - Return the most recent submission (handles offline sync scenarios)
-           - If only in-progress exist, return the one with highest activity_flow_order
-           - If only completed exist, return the most recent one
+           - Groups by group_progress_id (without version or submit_id) to compare across submissions for all versions
+           - Picks the completed submission in each group with most recent timestamp
+           - Picks the in-progress submission in each group with highest activity_flow_order
+           - Picks the more recent submission if both completed and in-progress exist
 
-        Modifies the result.activity_flows in-place.
+        Modifies result.activity_flows in-place.
         """
         # Keep last activity in each submission (group by submit_id to separate attempts)
         sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_submit_id"))
         grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_submit_id"))
 
         filtered_results = []
-        for group_progress_id, activity_flows in grouped_activity_flows:
-            flows_list = list(activity_flows)
-            chosen = max(flows_list, key=attrgetter("activity_flow_order"))
+        for group_progress_history_submit_id, activity_flows in grouped_activity_flows:
+            chosen = max(activity_flows, key=lambda x: (x.activity_flow_order or 0, x.end_time))
             filtered_results.append(chosen)
 
         result.activity_flows = filtered_results
 
         # Filter to keep only the most relevant submission per flow/event/subject
         # Group by flow/event/subject (without submit_id) to compare across submissions
-        sorted_by_flow = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
-        grouped_by_flow = groupby(sorted_by_flow, key=attrgetter("group_progress_history_id"))
+        # Use unversioned flow IDs so all versions are compared when not filtering by version
+        sorted_by_flow = sorted(result.activity_flows, key=attrgetter("group_progress_id"))
+        grouped_by_flow = groupby(sorted_by_flow, key=attrgetter("group_progress_id"))
 
         filtered_flows = []
-        for flow_key, submissions in grouped_by_flow:
+        for group_progress_id, submissions in grouped_by_flow:
             submissions_list = list(submissions)
 
             # Separate completed and in-progress submissions
-            completed = [s for s in submissions_list if s.is_flow_completed is True]
-            in_progress = [s for s in submissions_list if s.is_flow_completed is False]
+            completed = (s for s in submissions_list if s.is_flow_completed is True)
+            in_progress = (s for s in submissions_list if s.is_flow_completed is False)
 
             # Most recent completed flow
             best_completed = max(
