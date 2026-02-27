@@ -11,7 +11,7 @@ from apps.file.domain import LogFileExistenceResponse
 from apps.workspaces.service.user_access import UserAccessService
 from config import settings
 from infrastructure.logger import logger
-from infrastructure.storage.cdn_client import CDNClient
+from infrastructure.storage.storage_client import StorageClient
 
 
 class LogFileService:
@@ -22,7 +22,7 @@ class LogFileService:
     METHOD_CHECK = "logs-upload-check"
     METHOD_DOWNLOAD = "logs-download"
 
-    def __init__(self, user_id: uuid.UUID, cdn: CDNClient):
+    def __init__(self, user_id: uuid.UUID, cdn: StorageClient):
         self.user_id = user_id
         self.cdn = cdn
 

@@ -21,7 +21,7 @@ from apps.integrations.oneup_health.errors import (
 from apps.integrations.oneup_health.service.domain import EHRData, EHRFileMetadata, EHRFileTypeEnum, EHRMetadata
 from apps.integrations.oneup_health.service.ehr_storage import EHRStorage, create_ehr_storage
 from apps.shared.exception import InternalServerError
-from config import settings
+from config import Settings, settings
 
 __all__ = ["OneupHealthService"]
 
@@ -572,6 +572,7 @@ class OneupHealthService:
         activity_id: uuid.UUID,
         oneup_user_id: int,
         healthcare_providers: list[dict[str, str]],
+        app_settings: Settings,
     ) -> EHRMetadata | None:
         """
         Retrieve and store patient data for a subject.
@@ -602,7 +603,7 @@ class OneupHealthService:
 
         storage_path = None
         entries = result.get("entry", [])
-        ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
+        ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id, app_settings=app_settings)
         resource_files = []
         zip_files = []
         for entry in entries:

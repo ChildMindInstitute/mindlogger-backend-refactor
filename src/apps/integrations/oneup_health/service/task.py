@@ -14,7 +14,7 @@ from apps.integrations.oneup_health.service.domain import EHRMetadata
 from apps.integrations.oneup_health.service.oneup_health import OneupHealthService
 from apps.shared.exception import BaseError
 from broker import broker
-from config import settings
+from config import get_settings, settings
 from infrastructure.database import atomic, session_manager
 from infrastructure.logger import logger
 
@@ -104,6 +104,7 @@ async def _process_data_transfer(
                 activity_id=activity_id,
                 oneup_user_id=oneup_user_id,
                 healthcare_providers=healthcare_providers,
+                app_settings=get_settings(),
             )
 
     return None
