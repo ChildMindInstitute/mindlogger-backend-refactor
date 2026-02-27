@@ -70,9 +70,7 @@ class AnswerNoteSchema(Base):
 class AnswerItemSchema(Base):
     __tablename__ = "answers_items"
 
-    answer_id = Column(
-        ForeignKey("answers.id", ondelete="CASCADE"),
-    )
+    answer_id = Column(ForeignKey("answers.id", ondelete="CASCADE"), index=True)
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     answer = Column(Text())
     events = Column(Text())
