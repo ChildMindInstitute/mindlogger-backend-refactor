@@ -83,7 +83,7 @@ dev = [
   "mypy==1.16.0",
   "nest-asyncio==1.6.0",
   "polyfactory==2.21.0",
-  "pre-commit==4.2.*",
+  "pre-commit>=4.5.1",
   "pudb==2025.1",
   "pyld==2.0.4",
   "pytest==8.4.0",
