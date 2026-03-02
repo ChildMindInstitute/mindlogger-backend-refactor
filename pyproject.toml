@@ -27,7 +27,7 @@ dependencies = [
   "pymongo==4.13.0",
   "pyopenssl>=25.1.0",
   "pyotp~=2.9.0",
-  "python-multipart==0.0.20",
+  "python-multipart==0.0.22",
   "python-slugify==8.0.4",
   "redis==5.2.*",
   "sentry-sdk~=2.13",
