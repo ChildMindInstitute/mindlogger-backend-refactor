@@ -1717,6 +1717,8 @@ class AnswerService:
         2. For flows with multiple submissions:
            - Groups by group_progress_id (without version or submit_id) to compare across submissions for all versions
            - Picks the completed submission in each group with most recent timestamp
+           - Discards stale in-progress submissions that predate the most recent completion
+             (these are leftovers from attempts superseded by a restart-and-complete cycle)
            - Picks the in-progress submission in each group with highest activity_flow_order
            - Picks the more recent submission if both completed and in-progress exist
 
@@ -1744,8 +1746,8 @@ class AnswerService:
             submissions_list = list(submissions)
 
             # Separate completed and in-progress submissions
-            completed = (s for s in submissions_list if s.is_flow_completed is True)
-            in_progress = (s for s in submissions_list if s.is_flow_completed is False)
+            completed = [s for s in submissions_list if s.is_flow_completed is True]
+            in_progress = [s for s in submissions_list if s.is_flow_completed is False]
 
             # Most recent completed flow
             best_completed = max(
@@ -1753,6 +1755,14 @@ class AnswerService:
                 default=None,
                 key=attrgetter("end_time"),
             )
+
+            # Discard stale in-progress submissions that predate the latest completion.
+            # These are leftovers from previous attempts that were superseded by a
+            # restart-and-complete cycle. Without this filter, a stale submission with
+            # a high activity_flow_order (e.g. order=3) would incorrectly beat a fresh
+            # restart (e.g. order=1) even though the stale one is no longer relevant.
+            if best_completed:
+                in_progress = [s for s in in_progress if s.end_time > best_completed.end_time]
 
             # Farthest along in-progress flow + more recent tiebreaker
             best_in_progress = max(
