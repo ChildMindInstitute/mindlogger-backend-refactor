@@ -13,7 +13,7 @@ dependencies = [
   "bcrypt~=4.3.0",
   "boto3~=1.40.60",
   "bytecode==0.16.*",
-  "cryptography>=44.0.0",
+  "cryptography>=46.0.5",
   "ddtrace~=3.17.1",
   "fastapi==0.124.*",
   "fastapi-mail>=1.5.3",
