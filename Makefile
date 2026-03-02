@@ -25,6 +25,17 @@ COVERAGE_DOCKER_EXEC = ${DOCKER_COMPOSE_CMD} run --rm -u root app
 # Local
 # ###############
 
+.PHONY: install
+install:
+	@uv sync
+
+# NOTE: `make audit` for all vulnerabilities
+# NOTE: `make audit SEVERITY=high` for high vulnerabilities
+# NOTE: `make audit SEVERITY=critical` for critical vulnerabilities
+.PHONY: audit
+audit: install
+	@uvx uv-secure --severity $(or $(SEVERITY), low) --show-severity --aliases
+
 # NOTE: Make sure that Redis server is running
 .PHONY: run
 run:
