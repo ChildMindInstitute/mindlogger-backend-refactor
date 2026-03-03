@@ -868,7 +868,7 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         if not in_progress_flows:
             return
 
-        flow_history_ids = list({flow.flow_history_id for flow in in_progress_flows})
+        flow_history_ids = {flow.flow_history_id for flow in in_progress_flows}
 
         # Query flow_item_histories for activity IDs
         items_query = (
@@ -890,17 +890,15 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
             ActivityFlowHistoriesSchema.name,
         ).where(ActivityFlowHistoriesSchema.id_version.in_(flow_history_ids))
 
-        items_result, names_result = await asyncio.gather(
-            self._execute(items_query),
-            self._execute(names_query),
-        )
+        items_result = await self._execute(items_query)
+        names_result = await self._execute(names_query)
 
-        history_aware = HistoryAware()
         flow_items_map: dict[str, list[uuid.UUID]] = {}
         for row in items_result.mappings():
             fid = row["activity_flow_id"]
-            activity_uuid = history_aware.id_from_history_id(row["activity_id"])
-            if activity_uuid:
+            activity_id = row["activity_id"]
+            if activity_id:
+                activity_uuid = HistoryAware.split_id_version(activity_id)[0]
                 flow_items_map.setdefault(fid, []).append(activity_uuid)
 
         flow_names_map: dict[str, str] = {}

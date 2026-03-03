@@ -50,9 +50,7 @@ def _get_by_language(values: dict, language: str) -> str:
     try:
         return values[language]
     except KeyError:
-        for val in values.values():
-            return val
-        return ""
+        return next(iter(values.values()), "")
 
 
 async def _get_activity_from_history(
@@ -60,10 +58,18 @@ async def _get_activity_from_history(
     activity_id: uuid.UUID,
     version: str,
     language: str,
-) -> ActivitySingleLanguageWithItemsDetail:
-    """Fetch an activity from the history table and convert it to single-language format."""
+) -> tuple[ActivitySingleLanguageWithItemsDetail, uuid.UUID]:
+    """Fetch an activity from the history table and convert it to single-language format.
+
+    Returns a tuple of (activity_detail, applet_id) where applet_id is the
+    raw applet UUID extracted from the history record's applet_id field
+    (which has the format "{applet_uuid}_{version}").
+    """
     id_version = f"{activity_id}_{version}"
     schema = await ActivityHistoriesCRUD(session).get_by_id(id_version)
+
+    # Extract raw applet UUID from the history applet_id ("{uuid}_{version}")
+    applet_id = uuid.UUID(schema.applet_id.split("_")[0])
 
     item_schemas = await ActivityItemHistoriesCRUD(session).get_by_activity_id_version(id_version)
     items = [
@@ -83,7 +89,7 @@ async def _get_activity_from_history(
         for item in item_schemas
     ]
 
-    return ActivitySingleLanguageWithItemsDetail(
+    activity = ActivitySingleLanguageWithItemsDetail(
         id=schema.id,
         name=schema.name,
         description=_get_by_language(schema.description, language),
@@ -101,6 +107,8 @@ async def _get_activity_from_history(
         created_at=schema.created_at,
     )
 
+    return activity, applet_id
+
 
 async def activity_retrieve(
     activity_id: uuid.UUID,
@@ -114,7 +122,8 @@ async def activity_retrieve(
             # Fetch from history table for a specific applet version.
             # Used when resuming a flow whose activity may have been deleted
             # from the current applet version but is preserved in history.
-            activity = await _get_activity_from_history(session, activity_id, version, language)
+            activity, applet_id = await _get_activity_from_history(session, activity_id, version, language)
+            await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         else:
             schema = await ActivitiesCRUD(session).get_by_id(activity_id)
             await CheckAccessService(session, user.id).check_applet_detail_access(schema.applet_id)
