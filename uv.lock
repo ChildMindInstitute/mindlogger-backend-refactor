@@ -582,7 +582,6 @@ dependencies = [
     { name = "bcrypt" },
     { name = "boto3" },
     { name = "boto3-stubs" },
-    { name = "bytecode" },
     { name = "cryptography" },
     { name = "ddtrace" },
     { name = "fastapi" },
@@ -590,14 +589,12 @@ dependencies = [
     { name = "firebase-admin" },
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "more-itertools" },
     { name = "nh3" },
     { name = "orjson" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-extra-types" },
     { name = "pyjwt" },
     { name = "pymongo" },
-    { name = "pyopenssl" },
     { name = "pyotp" },
     { name = "python-multipart" },
     { name = "python-slugify" },
@@ -656,7 +653,6 @@ requires-dist = [
     { name = "bcrypt", specifier = "~=4.3.0" },
     { name = "boto3", specifier = "~=1.40.60" },
     { name = "boto3-stubs", specifier = "==1.40.60" },
-    { name = "bytecode", specifier = "==0.16.*" },
     { name = "cryptography", specifier = ">=46.0.5" },
     { name = "ddtrace", specifier = "~=3.17.1" },
     { name = "fastapi", specifier = "==0.124.*" },
@@ -664,14 +660,12 @@ requires-dist = [
     { name = "firebase-admin", specifier = "==6.9.*" },
     { name = "httpx", specifier = "==0.28.*" },
     { name = "jinja2", specifier = "==3.1.*" },
-    { name = "more-itertools", specifier = "==10.7.0" },
     { name = "nh3", specifier = "==0.3.*" },
     { name = "orjson", specifier = ">=3.11.4" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.0" },
     { name = "pydantic-extra-types", specifier = ">=2.0" },
     { name = "pyjwt", specifier = "==2.10.1" },
     { name = "pymongo", specifier = "==4.13.0" },
-    { name = "pyopenssl", specifier = ">=25.1.0" },
     { name = "pyotp", specifier = "~=2.9.0" },
     { name = "python-multipart", specifier = "==0.0.22" },
     { name = "python-slugify", specifier = "==8.0.4" },
@@ -1540,15 +1534,6 @@ wheels = [
 ]
 
 [[package]]
-name = "more-itertools"
-version = "10.7.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ce/a0/834b0cebabbfc7e311f30b46c8188790a37f89fc8d756660346fe5abfd09/more_itertools-10.7.0.tar.gz", hash = "sha256:9fddd5403be01a94b204faadcff459ec3568cf110265d3c54323e1e866ad29d3", size = 127671, upload-time = "2025-04-22T14:17:41.838Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2b/9f/7ba6f94fc1e9ac3d2b853fdff3035fb2fa5afbed898c4a72b8a020610594/more_itertools-10.7.0-py3-none-any.whl", hash = "sha256:d43980384673cb07d2f7d2d918c616b30c659c089ee23953f601d6609c67510e", size = 65278, upload-time = "2025-04-22T14:17:40.49Z" },
-]
-
-[[package]]
 name = "moto"
 version = "5.1.20"
 source = { registry = "https://pypi.org/simple" }
@@ -2161,18 +2146,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/17/a7/0358efc8dba796545e9bd4642d1337a9b67b60928c583799fb0726594855/pymongo-4.13.0-cp313-cp313t-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:82c36928c1c26580ce4f2497a6875968636e87c77108ff253d76b1355181a405", size = 2219131, upload-time = "2025-05-14T19:10:40.444Z" },
     { url = "https://files.pythonhosted.org/packages/58/d5/373cd1cd21eff769e22e4e0924dcbfd770dfa1298566d51a7097857267fc/pymongo-4.13.0-cp313-cp313t-win32.whl", hash = "sha256:1397eac713b84946210ab556666cfdd787eee824e910fbbe661d147e110ec516", size = 975711, upload-time = "2025-05-14T19:10:42.213Z" },
     { url = "https://files.pythonhosted.org/packages/b0/39/1e204091bdf264a0d9eccc21f7da099903a7a30045f055a91178686c0259/pymongo-4.13.0-cp313-cp313t-win_amd64.whl", hash = "sha256:99a52cfbf31579cc63c926048cd0ada6f96c98c1c4c211356193e07418e6207c", size = 1004287, upload-time = "2025-05-14T19:10:45.468Z" },
-]
-
-[[package]]
-name = "pyopenssl"
-version = "25.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cryptography" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/80/be/97b83a464498a79103036bc74d1038df4a7ef0e402cfaf4d5e113fb14759/pyopenssl-25.3.0.tar.gz", hash = "sha256:c981cb0a3fd84e8602d7afc209522773b94c1c2446a3c710a75b06fe1beae329", size = 184073, upload-time = "2025-09-17T00:32:21.037Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d1/81/ef2b1dfd1862567d573a4fdbc9f969067621764fbb74338496840a1d2977/pyopenssl-25.3.0-py3-none-any.whl", hash = "sha256:1fda6fc034d5e3d179d39e59c1895c9faeaf40a79de5fc4cbbfbe0d36f4a77b6", size = 57268, upload-time = "2025-09-17T00:32:19.474Z" },
 ]
 
 [[package]]
