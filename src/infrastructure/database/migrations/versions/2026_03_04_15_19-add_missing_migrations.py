@@ -44,9 +44,27 @@ def upgrade() -> None:
     # Drop redundant index on answers_ehr (already indexed by answers_ehr_submit_activity_key unique constraint)
     op.drop_index("ix_answers_ehr_submit_activity_id", table_name="answers_ehr")
 
+    # Create missing consents table (defined for LORIS integration)
+    op.create_table(
+        "consents",
+        sa.Column("is_deleted", sa.Boolean(), nullable=True),
+        sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("timezone('utc', now())"), nullable=True),
+        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("timezone('utc', now())"), nullable=True),
+        sa.Column("migrated_date", sa.DateTime(), nullable=True),
+        sa.Column("migrated_updated", sa.DateTime(), nullable=True),
+        sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("is_ready_share_data", sa.Boolean(), nullable=True),
+        sa.Column("is_ready_share_media_data", sa.Boolean(), nullable=True),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("fk_consents_user_id_users"), ondelete="RESTRICT"),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_consents")),
+    )
 
 
 def downgrade() -> None:
+    # Drop missing consents table
+    op.drop_table("consents")
+
     # Restore redundant index on answers_ehr
     op.create_index("ix_answers_ehr_submit_activity_id", "answers_ehr", ["submit_id", "activity_id"], unique=False)
 
