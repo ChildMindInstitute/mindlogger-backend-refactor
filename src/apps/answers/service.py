@@ -9,7 +9,7 @@ from collections import defaultdict
 from itertools import chain, groupby
 from json import JSONDecodeError
 from operator import attrgetter
-from typing import Callable, List, Mapping, Optional
+from typing import Callable, List, Mapping
 
 import aiohttp
 import sentry_sdk
@@ -120,7 +120,7 @@ from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.database import atomic
 from infrastructure.database.mixins import HistoryAware
 from infrastructure.logger import logger
-from infrastructure.storage.cdn_client import CDNClient
+from infrastructure.storage.storage_client import StorageClient
 from infrastructure.utility.redis_client import RedisCache
 
 
@@ -1715,38 +1715,37 @@ class AnswerService:
         This method:
         1. Keeps the last activity in each submission (by group_progress_history_submit_id)
         2. For flows with multiple submissions:
-           - Groups by group_progress_history_id (without submit_id) to compare across submissions
-           - If both completed and in-progress exist, compare timestamps
-           - Return the most recent submission (handles offline sync scenarios)
-           - If only in-progress exist, return the one with highest activity_flow_order
-           - If only completed exist, return the most recent one
+           - Groups by group_progress_id (without version or submit_id) to compare across submissions for all versions
+           - Picks the completed submission in each group with most recent timestamp
+           - Picks the in-progress submission in each group with highest activity_flow_order
+           - Picks the more recent submission if both completed and in-progress exist
 
-        Modifies the result.activity_flows in-place.
+        Modifies result.activity_flows in-place.
         """
         # Keep last activity in each submission (group by submit_id to separate attempts)
         sorted_activity_flows = sorted(result.activity_flows, key=attrgetter("group_progress_history_submit_id"))
         grouped_activity_flows = groupby(sorted_activity_flows, key=attrgetter("group_progress_history_submit_id"))
 
         filtered_results = []
-        for group_progress_id, activity_flows in grouped_activity_flows:
-            flows_list = list(activity_flows)
-            chosen = max(flows_list, key=attrgetter("activity_flow_order"))
+        for group_progress_history_submit_id, activity_flows in grouped_activity_flows:
+            chosen = max(activity_flows, key=lambda x: (x.activity_flow_order or 0, x.end_time))
             filtered_results.append(chosen)
 
         result.activity_flows = filtered_results
 
         # Filter to keep only the most relevant submission per flow/event/subject
         # Group by flow/event/subject (without submit_id) to compare across submissions
-        sorted_by_flow = sorted(result.activity_flows, key=attrgetter("group_progress_history_id"))
-        grouped_by_flow = groupby(sorted_by_flow, key=attrgetter("group_progress_history_id"))
+        # Use unversioned flow IDs so all versions are compared when not filtering by version
+        sorted_by_flow = sorted(result.activity_flows, key=attrgetter("group_progress_id"))
+        grouped_by_flow = groupby(sorted_by_flow, key=attrgetter("group_progress_id"))
 
         filtered_flows = []
-        for flow_key, submissions in grouped_by_flow:
+        for group_progress_id, submissions in grouped_by_flow:
             submissions_list = list(submissions)
 
             # Separate completed and in-progress submissions
-            completed = [s for s in submissions_list if s.is_flow_completed is True]
-            in_progress = [s for s in submissions_list if s.is_flow_completed is False]
+            completed = (s for s in submissions_list if s.is_flow_completed is True)
+            in_progress = (s for s in submissions_list if s.is_flow_completed is False)
 
             # Most recent completed flow
             best_completed = max(
@@ -1779,7 +1778,7 @@ class AnswerService:
     async def get_completed_answers_data(
         self,
         applet_id: uuid.UUID,
-        version: Optional[str],
+        version: str | None,
         from_date: datetime.date,
         include_in_progress: bool = False,
     ) -> AppletCompletedEntities:
@@ -1805,7 +1804,7 @@ class AnswerService:
 
     async def get_completed_answers_data_list(
         self,
-        applets_version_map: Mapping[uuid.UUID, Optional[str]],
+        applets_version_map: Mapping[uuid.UUID, str | None],
         from_date: datetime.date,
         filter_by_version: bool = False,
         include_in_progress: bool = False,
@@ -2563,8 +2562,8 @@ class AnswerTransferService:
         session: AsyncSession,
         answer_session_source: AsyncSession,
         answer_session_target: AsyncSession,
-        storage_source: CDNClient,
-        storage_target: CDNClient,
+        storage_source: StorageClient,
+        storage_target: StorageClient,
     ):
         self.session = session
         self.answer_session_source = answer_session_source
@@ -2752,15 +2751,15 @@ class AnswerTransferService:
 
     async def get_copied_files(self, applet_id: uuid.UUID):
         files_target = await self._get_applet_files_list(self.answer_session_source, self.storage_target, applet_id)
-        target_checksum = {file[CDNClient.KEY_KEY]: file[CDNClient.KEY_CHECKSUM] for file in files_target}
+        target_checksum = {file[StorageClient.KEY_KEY]: file[StorageClient.KEY_CHECKSUM] for file in files_target}
         del files_target
         files_source = await self._get_applet_files_list(self.answer_session_source, self.storage_source, applet_id)
         total_files = len(files_source)
         files_not_copied = set()
         files_to_remove = set()
         for file in files_source:
-            key = file[CDNClient.KEY_KEY]
-            if target_checksum.get(key, None) == file[CDNClient.KEY_CHECKSUM]:
+            key = file[StorageClient.KEY_KEY]
+            if target_checksum.get(key, None) == file[StorageClient.KEY_CHECKSUM]:
                 files_to_remove.add(key)
             else:
                 files_not_copied.add(key)

@@ -4,31 +4,35 @@ import io
 import json
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor
-from typing import BinaryIO
+from typing import Any, BinaryIO
 
 import boto3
 import httpx
 from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
+from ddtrace.trace import tracer
+from typing_extensions import deprecated
 
 from apps.file.errors import FileNotFoundError
 from apps.shared.exception import NotFoundError
 from infrastructure.logger import logger
-from infrastructure.storage.cdn_config import CdnConfig
+from infrastructure.storage.storage_config import StorageConfig
 
 
 class ObjectNotFoundError(Exception):
     pass
 
 
-class CDNClient:
+class StorageClient:
+    """A client for storing files, likely in an object store like S3"""
+
     KEY_KEY = "Key"
     KEY_CHECKSUM = "ETag"
 
     default_container_name = "mindlogger"
     meta_last_modified = "last_modified_orig"
 
-    def __init__(self, config: CdnConfig, env: str, *, max_concurrent_tasks: int = 10):
+    def __init__(self, config: StorageConfig, env: str, *, max_concurrent_tasks: int = 10):
         self.config = config
         self.env = env
         self.client = self._configure_client(config)
@@ -45,12 +49,24 @@ class CDNClient:
     def generate_private_url(self, key):
         return f"s3://{self.config.bucket}/{key}"
 
+    def generate_public_url(self, key):
+        """Generate a public URL.  It might not have one"""
+        if not self.config.domain and not self.config.storage_address:
+            raise ValueError("A domain or endpoint url must be specified")
+
+        if self.config.domain:
+            return f"https://{self.config.domain}/{key}"
+
+        # domain = self.config.storage_address or self.config.domain or self.config.endpoint_url
+        return f"{self.config.storage_address}/{key}"
+
     def _configure_client(self, config):
         assert config, "set CDN"
         client_config = Config(
             max_pool_connections=25,
         )
 
+        # TODO This is only done for arbitrary???
         if config.access_key and config.secret_key:
             return boto3.client(
                 "s3",
@@ -66,6 +82,13 @@ class CDNClient:
         except KeyError:
             logger.warning("CDN configuration is not full")
 
+    def _get_bucket_name(self) -> str:
+        """Get the bucket name.  Override to not support DR variables"""
+        if not self.config.bucket and not self.config.bucket_override:
+            raise ValueError("A bucket or bucket override must be specified")
+
+        return self.config.bucket_override or self.config.bucket or ""
+
     def _upload(self, path, body: BinaryIO):
         if self.env == "testing":
             return
@@ -75,6 +98,7 @@ class CDNClient:
             Bucket=self.config.bucket,
         )
 
+    @tracer.wrap("storage.warn.upload")
     async def upload(self, path, body: BinaryIO):
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._upload, path, body)
@@ -93,6 +117,7 @@ class CDNClient:
             future = executor.submit(self._check_existence, key)
             return await asyncio.wrap_future(future)
 
+    @tracer.wrap("storage.warn.download")
     def download(self, key, file: BinaryIO | None = None):
         """
         Download a file from a CDN location to a local directory.  It is up to the caller to
@@ -121,19 +146,21 @@ class CDNClient:
         url = self.client.generate_presigned_url(
             "get_object",
             Params={
-                "Bucket": self.config.bucket,
+                "Bucket": self._get_bucket_name(),
                 "Key": key,
             },
             ExpiresIn=self.config.ttl_signed_urls,
         )
         return url
 
-    async def generate_presigned_url(self, key):
+    async def generate_presigned_url(self, key) -> str:
+        """Generate a presigned url to retrieve an object from S3"""
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._generate_presigned_url, key)
             url = await asyncio.wrap_future(future)
             return url
 
+    @tracer.wrap("storage.danger.delete")
     async def delete_object(self, key: str | None):
         async with self.semaphore:
             with ThreadPoolExecutor() as executor:
@@ -147,11 +174,11 @@ class CDNClient:
                 result = await asyncio.wrap_future(future)
                 return result.get("Contents", [])
 
-    def generate_presigned_post(self, key):
+    def generate_presigned_post(self, key) -> dict[str, Any]:
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
-        return self.client.generate_presigned_post(self.config.bucket, key, ExpiresIn=self.config.ttl_signed_urls)
+        return self.client.generate_presigned_post(self._get_bucket_name(), key, ExpiresIn=self.config.ttl_signed_urls)
 
-    def _copy(self, key, storage_from: "CDNClient", key_from: str | None = None) -> int:
+    def _copy(self, key, storage_from: "StorageClient", key_from: str | None = None) -> int:
         key_from = key_from or key
         res = storage_from.client.get_object(Bucket=storage_from.config.bucket, Key=key_from)
         file_obj = res["Body"]
@@ -171,7 +198,7 @@ class CDNClient:
 
         return res["ContentLength"]
 
-    async def copy(self, key, storage_from: "CDNClient", key_from: str | None = None) -> int:
+    async def copy(self, key, storage_from: "StorageClient", key_from: str | None = None) -> int:
         async with self.semaphore:
             with ThreadPoolExecutor() as executor:
                 future = executor.submit(self._copy, key, storage_from, key_from=key_from)
@@ -179,6 +206,7 @@ class CDNClient:
                 return res
 
     async def check(self):
+        """Check if a bucket is available and writeable"""
         storage_bucket = self.config.bucket
         logger.info(f'Check bucket "{storage_bucket}" availability.')
         key = "mindlogger.txt"
@@ -219,12 +247,14 @@ class CDNClient:
 
         return False  # No public access found
 
+    @deprecated("This check is no longer used")
     def is_bucket_public(self) -> bool:
         if self._is_bucket_public is None:
             self._is_bucket_public = self._check_is_bucket_public()
 
         return self._is_bucket_public
 
+    @deprecated("This check is no longer used")
     def _is_object_public(self, key) -> bool:
         # Check the object's ACL
         try:
@@ -241,6 +271,7 @@ class CDNClient:
 
         return False  # No public access found
 
+    @deprecated("This check is no longer used")
     async def is_object_public(self, key) -> bool:
         with ThreadPoolExecutor() as executor:
             future = executor.submit(self._is_object_public, key)

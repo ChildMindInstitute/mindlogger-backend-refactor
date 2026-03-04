@@ -6,12 +6,12 @@ import boto3
 from azure.storage.blob import BlobSasPermissions, BlobServiceClient, generate_blob_sas
 from botocore.config import Config
 
-from infrastructure.storage.cdn_client import CDNClient
-from infrastructure.storage.cdn_config import CdnConfig
+from infrastructure.storage.storage_client import StorageClient
+from infrastructure.storage.storage_config import StorageConfig
 
 
-class ArbitraryS3CdnClient(CDNClient):
-    def _configure_client(self, config: CdnConfig, signature_version=None):
+class ArbitraryS3StorageClient(StorageClient):
+    def _configure_client(self, config: StorageConfig, signature_version=None):
         client_config = Config(
             max_pool_connections=25,
         )
@@ -24,9 +24,12 @@ class ArbitraryS3CdnClient(CDNClient):
             config=client_config,
         )
 
+    def _get_bucket_name(self) -> str:
+        return self.config.bucket or ""
 
-class ArbitraryGCPCdnClient(CDNClient):
-    def __init__(self, config: CdnConfig, endpoint_url: str, env: str, *, max_concurrent_tasks: int = 10):
+
+class ArbitraryGCPStorageClient(StorageClient):
+    def __init__(self, config: StorageConfig, endpoint_url: str, env: str, *, max_concurrent_tasks: int = 10):
         self.endpoint_url = endpoint_url
         super().__init__(config, env)
 
@@ -46,11 +49,14 @@ class ArbitraryGCPCdnClient(CDNClient):
             config=client_config,
         )
 
+    def _get_bucket_name(self) -> str:
+        return self.config.bucket or ""
 
-class ArbitraryAzureCdnClient(CDNClient):
+
+class ArbitraryAzureStorageClient(StorageClient):
     def __init__(self, sec_key: str, bucket: str, env: str = "", *, max_concurrent_tasks: int = 10):
         self.sec_key = sec_key
-        super().__init__(CdnConfig(bucket=bucket), env)
+        super().__init__(StorageConfig(bucket=bucket), env)
 
     @classmethod
     def generate_key(cls, scope, unique, filename):
@@ -88,3 +94,6 @@ class ArbitraryAzureCdnClient(CDNClient):
         )
         presigned_url = blob_client.url + "?" + sas_token
         return presigned_url
+
+    def _get_bucket_name(self) -> str:
+        return self.config.bucket or ""

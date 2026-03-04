@@ -1,6 +1,6 @@
 import http
 import io
-from typing import Any, Callable, Generator, cast
+from typing import cast
 
 import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
@@ -23,37 +23,9 @@ from apps.workspaces.errors import AnswerViewAccessDenied
 from apps.workspaces.service.workspace import WorkspaceService
 from config import settings
 from config.cdn import CDNSettings
-from infrastructure.storage.cdn_arbitrary import ArbitraryS3CdnClient
-from infrastructure.storage.cdn_client import CDNClient
-from infrastructure.storage.cdn_config import CdnConfig
-
-
-@pytest.fixture
-def mock_presigned_post(mocker: MockerFixture):
-    def fake_generate_presigned_post(_, bucket: str, key: str, ExpiresIn=settings.cdn.ttl_signed_urls):
-        return {
-            "url": f"https://{bucket}.s3.amazonaws.com/",
-            "fields": {
-                "key": key,
-                "AWSAccessKeyId": "accesskey",
-                "policy": "policy",
-                "signature": "signature",
-            },
-        }
-
-    m = mocker.patch("botocore.signers.generate_presigned_post", new=fake_generate_presigned_post)
-    return m
-
-
-@pytest.fixture
-def mock_presigned_url(mocker: MockerFixture) -> Callable[..., str]:
-    def fake__generate_presigned_url(_: CDNClient, key: str) -> str:
-        return f"{key}?credentials"
-
-    m = mocker.patch(
-        "infrastructure.storage.cdn_client.CDNClient._generate_presigned_url", new=fake__generate_presigned_url
-    )
-    return m
+from infrastructure.storage.storage_arbitrary import ArbitraryS3StorageClient
+from infrastructure.storage.storage_client import StorageClient
+from infrastructure.storage.storage_config import StorageConfig
 
 
 @pytest.fixture
@@ -115,33 +87,9 @@ async def tom_workspace_arbitrary_azure(tom: User, arbitrary_db_url: str, sessio
     return ws
 
 
-@pytest.fixture(scope="module")
-def cdn_settings() -> Generator[CDNSettings, Any, None]:
-    # TODO This fixture is leaky.  Might be a better fix in the future
-    yield settings.cdn
-
-    # settings.cdn.access_key = "access_key"
-    # settings.cdn.secret_key = "secret_key"
-    # settings.cdn.bucket = "bucket"
-    # settings.cdn.bucket_answer = "bucket_answer"
-    # settings.cdn.bucket_operations = "bucket_operations"
-    # settings.cdn.region = "us-east-1"
-    # settings.cdn.domain = "mindlogger"
-    # settings.cdn.legacy_prefix = "mindlogger/legacy-answer"
-    # yield settings.cdn
-    # settings.cdn.bucket_operations = None
-    # settings.cdn.access_key = None
-    # settings.cdn.secret_key = None
-    # settings.cdn.bucket = None
-    # settings.cdn.bucket_answer = None
-    # settings.cdn.region = None
-    # settings.cdn.domain = ""
-    # settings.cdn.legacy_prefix = None
-
-
-@pytest.fixture(scope="class")
-def cdn_client(cdn_settings: CDNSettings) -> CDNClient:
-    config = CdnConfig(
+@pytest.fixture
+def cdn_client(cdn_settings: CDNSettings) -> StorageClient:
+    config = StorageConfig(
         endpoint_url=cdn_settings.endpoint_url,
         access_key=cdn_settings.access_key,
         secret_key=cdn_settings.secret_key,
@@ -149,14 +97,14 @@ def cdn_client(cdn_settings: CDNSettings) -> CDNClient:
         bucket=cdn_settings.bucket_answer,
         ttl_signed_urls=cdn_settings.ttl_signed_urls,
     )
-    cdn_client = CDNClient(config, env="env")
+    cdn_client = StorageClient(config, env="env")
     return cdn_client
 
 
 @pytest.fixture
-def cdn_client_arbitrary_aws(tom_workspace_arbitrary_aws: WorkspaceArbitrary) -> ArbitraryS3CdnClient:
-    client = ArbitraryS3CdnClient(
-        CdnConfig(
+def cdn_client_arbitrary_aws(tom_workspace_arbitrary_aws: WorkspaceArbitrary) -> ArbitraryS3StorageClient:
+    client = ArbitraryS3StorageClient(
+        StorageConfig(
             region=tom_workspace_arbitrary_aws.storage_region,
             bucket=tom_workspace_arbitrary_aws.storage_bucket,
             secret_key=tom_workspace_arbitrary_aws.storage_secret_key,
@@ -168,11 +116,11 @@ def cdn_client_arbitrary_aws(tom_workspace_arbitrary_aws: WorkspaceArbitrary) ->
 
 
 @pytest.fixture
-def log_file_service(tom: User, cdn_client: CDNClient) -> LogFileService:
+def log_file_service(tom: User, cdn_client: StorageClient) -> LogFileService:
     return LogFileService(tom.id, cdn_client)
 
 
-@pytest.mark.usefixtures("cdn_settings")
+@pytest.mark.usefixtures("cdn_settings", "override_app_settings", "s3_resource")
 class TestAnswerActivityItems(BaseTest):
     login_url = "/auth/login"
     upload_url = "file/{applet_id}/upload"
@@ -195,7 +143,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
 
         content = io.BytesIO(b"File content")
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryS3CdnClient.upload")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryS3StorageClient.upload")
         response = await client.post(
             self.upload_url.format(applet_id=applet_one.id),
             query={"fileId": self.file_id},
@@ -210,7 +158,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         mock = mocker.patch(
-            "infrastructure.storage.cdn_arbitrary.ArbitraryS3CdnClient.download",
+            "infrastructure.storage.storage_arbitrary.ArbitraryS3StorageClient.download",
             return_value=(iter(("a", "b")), "txt"),
         )
         response = await client.post(
@@ -225,7 +173,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryGCPCdnClient.upload")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryGCPStorageClient.upload")
         content = io.BytesIO(b"File content")
         response = await client.post(
             self.upload_url.format(applet_id=applet_one.id),
@@ -241,7 +189,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         mock = mocker.patch(
-            "infrastructure.storage.cdn_arbitrary.ArbitraryGCPCdnClient.download",
+            "infrastructure.storage.storage_arbitrary.ArbitraryGCPStorageClient.download",
             return_value=(iter(("a", "b")), "txt"),
         )
         response = await client.post(
@@ -256,8 +204,8 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryAzureCdnClient._configure_client")
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryAzureCdnClient.upload")
+        mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryAzureStorageClient._configure_client")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryAzureStorageClient.upload")
         content = io.BytesIO(b"File content")
         response = await client.post(
             self.upload_url.format(applet_id=applet_one.id),
@@ -271,7 +219,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.CDNClient.check_existence")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.StorageClient.check_existence")
         response = await client.post(
             self.existance_url.format(applet_id=applet_one.id),
             data={"files": [self.file_id]},
@@ -284,7 +232,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mock = mocker.patch("infrastructure.storage.cdn_arbitrary.ArbitraryS3CdnClient.check_existence")
+        mock = mocker.patch("infrastructure.storage.storage_arbitrary.ArbitraryS3StorageClient.check_existence")
         response = await client.post(
             self.existance_url.format(applet_id=applet_one.id),
             data={"files": [self.file_id]},
@@ -292,7 +240,6 @@ class TestAnswerActivityItems(BaseTest):
         assert http.HTTPStatus.OK == response.status_code
         mock.assert_awaited_once()
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize("file_name,", ("test1.jpg", "test2.jpg"))
     async def test_generate_upload_url(self, client: TestClient, file_name: str, tom: User, cdn_settings: CDNSettings):
         client.login(tom)
@@ -300,7 +247,9 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert result["fields"]["key"].endswith(file_name)
-        assert result["url"] == cdn_settings.url.format(key=result["fields"]["key"])
+
+        domain = cdn_settings.domain or cdn_settings.endpoint_url
+        assert result["url"] == f"https://{domain}/{result['fields']['key']}"
 
     async def test_generate_presigned_url_for_post_answer__user_does_not_have_access_to_the_applet(
         self, client: TestClient, user: User, applet_one: AppletFull
@@ -312,9 +261,8 @@ class TestAnswerActivityItems(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == AnswerViewAccessDenied.message
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_url_for_answers(
-        self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client: CDNClient
+        self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client: StorageClient
     ):
         client.login(tom)
         expected_key = cdn_client.generate_key(FileScopeEnum.ANSWER, f"{tom.id}/{applet_one.id}", self.file_id)
@@ -323,9 +271,8 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["result"]["fields"]["key"] == expected_key
         assert resp.json()["result"]["url"] == cdn_client.generate_private_url(expected_key)
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_url_for_answers_arbitrary(
-        self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client_arbitrary_aws: ArbitraryS3CdnClient
+        self, client: TestClient, tom: User, applet_one: AppletFull, cdn_client_arbitrary_aws: ArbitraryS3StorageClient
     ):
         client.login(tom)
         expected_key = cdn_client_arbitrary_aws.generate_key(
@@ -336,17 +283,16 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.json()["result"]["fields"]["key"] == expected_key
         assert resp.json()["result"]["url"] == cdn_client_arbitrary_aws.generate_private_url(expected_key)
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     async def test_generate_presigned_log_url__logs_are_uploaded_to_the_answer_bucket(
         self,
         client: TestClient,
         device_tom: str,
         tom: User,
         mocker: MockerFixture,
-        cdn_client: CDNClient,
+        cdn_client: StorageClient,
         cdn_settings: CDNSettings,
     ):
-        mocker.patch("infrastructure.storage.buckets.get_log_bucket", return_value=cdn_client)
+        mocker.patch("infrastructure.storage.storage.get_log_storage", return_value=cdn_client)
         client.login(tom)
         file_name = "test.txt"
         resp = await client.post(self.log_upload_url.format(device_id=device_tom), data={"file_id": file_name})
@@ -356,9 +302,8 @@ class TestAnswerActivityItems(BaseTest):
         assert key == expected_key
         assert cdn_settings.bucket_answer in resp.json()["result"]["uploadUrl"]
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize("file_name", ("test.webm", "test.WEBM"))
-    async def test_generate_presigned_media_for_webm_file__conveted_in_url__upload_url_has_operations_bucket(
+    async def test_generate_presigned_media_for_webm_file__converted_in_url__upload_url_has_operations_bucket(
         self, client: TestClient, file_name, tom: User, cdn_settings: CDNSettings
     ) -> None:
         client.login(tom)
@@ -367,12 +312,12 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         exp_converted_file_name = file_name + ".mp3"
+        assert cdn_settings.domain in result["url"]
         assert result["fields"]["key"].endswith(file_name)
         assert result["url"].endswith(exp_converted_file_name)
         assert result["fields"]["key"].startswith(cdn_settings.bucket)
         assert cdn_settings.bucket_operations in result["uploadUrl"]
 
-    @pytest.mark.usefixtures("mock_presigned_post")
     @pytest.mark.parametrize(
         "file_name,target_extension,exp_file_name",
         (
@@ -394,12 +339,12 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert result["url"].endswith(exp_file_name)
 
-    @pytest.mark.parametrize("not_valid_extesion", ("mp3", "mp2"))
+    @pytest.mark.parametrize("not_valid_extension", ("mp3", "mp2"))
     async def test_generate_upload_url__webm_to_mp3_mp4_not_valid_extension(
-        self, client: TestClient, not_valid_extesion: str, tom: User
+        self, client: TestClient, not_valid_extension: str, tom: User
     ):
         client.login(tom)
-        data = {"file_name": "test.webm", "target_extension": not_valid_extesion}
+        data = {"file_name": "test.webm", "target_extension": not_valid_extension}
         resp = await client.post(self.upload_media_url, data=data)
         assert resp.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
@@ -426,8 +371,6 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == FileNotFoundError.message
-        # assert len(caplog.messages) == 1
-        # assert caplog.messages[0] == f"Trying to download not existing file {self.file_id}"
 
     async def test_answer_download_client_error__unknown_error(
         self, client: TestClient, tom: User, applet_one: AppletFull, mocker: MockerFixture, caplog: LogCaptureFixture
@@ -443,11 +386,6 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == SomethingWentWrongError.message
-        # assert len(caplog.messages) == 1
-        # assert (
-        #     caplog.messages[0]
-        #     == f"Error when trying to download file {self.file_id}: An error occurred (0) when calling the Unknown operation: Unknown"  # noqa: E501
-        # )
 
     async def test_answer_download_client_error__cdn_client_object_not_found_error(
         self, client: TestClient, tom: User, applet_one: AppletFull, mocker: MockerFixture
@@ -470,7 +408,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         data = {"key": "key"}
         mocker.patch(
-            "infrastructure.storage.cdn_client.CDNClient.download",
+            "infrastructure.storage.storage_client.StorageClient.download",
             side_effect=FileNotFoundError,
         )
         resp = await client.post(self.answer_download_url.format(applet_id=applet_one.id), data=data)
@@ -493,8 +431,6 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == FileNotFoundError.message
-        # assert len(caplog.messages) == 1
-        # assert caplog.messages[0] == f"Trying to download not existing file {self.file_id}"
 
     async def test_general_file_download_client_error__unknown_error(
         self, client: TestClient, tom: User, mocker: MockerFixture, caplog: LogCaptureFixture
@@ -510,11 +446,6 @@ class TestAnswerActivityItems(BaseTest):
         result = resp.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == SomethingWentWrongError.message
-        # assert len(caplog.messages) == 1
-        # assert (
-        #     caplog.messages[0]
-        #     == f"Error when trying to download file {self.file_id}: An error occurred (0) when calling the Unknown operation: Unknown"  # noqa: E501
-        # )
 
     async def test_general_file_download_client_error__cdn_client_object_not_found_error(
         self, client: TestClient, tom: User, mocker: MockerFixture
@@ -534,7 +465,7 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         data = {"key": "key"}
         mocker.patch(
-            "infrastructure.storage.cdn_client.CDNClient.download",
+            "infrastructure.storage.storage_client.StorageClient.download",
             side_effect=FileNotFoundError,
         )
         resp = await client.post(self.download_url, data=data)
@@ -547,21 +478,21 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         data = {"key": "key"}
         mocker.patch(
-            "infrastructure.storage.cdn_client.CDNClient.download",
+            "infrastructure.storage.storage_client.StorageClient.download",
             return_value=(iter(("a", "b")), "txt"),
         )
         resp = await client.post(self.download_url, data=data)
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.content == b"ab"
 
-    # NOTE: We must keep old answer upload process untill all Mindlogger users have last App version.
+    # NOTE: We must keep old answer upload process until all Mindlogger users have last App version.
     async def test_answer_upload__not_valid_user_role(
         self, client: TestClient, applet_one_lucy_coordinator: AppletFull, lucy: User, mocker: MockerFixture
     ):
         client.login(lucy)
 
         content = io.BytesIO(b"File content")
-        mocker.patch("infrastructure.storage.cdn_client.CDNClient.upload")
+        mocker.patch("infrastructure.storage.storage_client.StorageClient.upload")
         resp = await client.post(
             self.upload_url.format(applet_id=applet_one_lucy_coordinator.id),
             query={"file_id": self.file_id},
@@ -589,7 +520,7 @@ class TestAnswerActivityItems(BaseTest):
         self, client: TestClient, applet_one: AppletFull, tom: User, mocker: MockerFixture
     ):
         client.login(tom)
-        mocker.patch("infrastructure.storage.cdn_client.CDNClient._check_existence", side_effect=NotFoundError)
+        mocker.patch("infrastructure.storage.storage_client.StorageClient._check_existence", side_effect=NotFoundError)
         resp = await client.post(
             self.existance_url.format(applet_id=applet_one.id),
             data={"files": [self.file_id]},
@@ -601,7 +532,6 @@ class TestAnswerActivityItems(BaseTest):
         assert result[0]["url"] is None
         assert resp.json()["count"] == 1
 
-    @pytest.mark.usefixtures("mock_presigned_url")
     async def test_presign_answer_url(self, client: TestClient, applet_one: AppletFull, tom: User):
         client.login(tom)
         key = self.file_id
@@ -610,10 +540,9 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert len(result) == 1
-        assert result[0].endswith(key + "?credentials")
+        assert "AWSAccessKeyId" in result[0]
         assert resp.json()["count"] == 1
 
-    @pytest.mark.usefixtures("mock_presigned_url")
     async def test_presign_legacy_answer_url(self, client: TestClient, applet_legacy: AppletFull, kate: User):
         """Test creating a presigned URL for a legacy answer."""
         client.login(kate)
@@ -629,10 +558,9 @@ class TestAnswerActivityItems(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         result = resp.json()["result"]
         assert len(result) == 1
-        assert result[0].endswith(key + "?credentials")
+        assert "AWSAccessKeyId" in result[0]
         assert resp.json()["count"] == 1
 
-    @pytest.mark.usefixtures("mock_presigned_url")
     async def test_presign_legacy_answer_url_no_access(self, client: TestClient, applet_legacy: AppletFull, tom: User):
         """Test creating a presigned URL for a legacy answer that the current user does not have access to."""
         client.login(tom)
@@ -668,7 +596,6 @@ class TestAnswerActivityItems(BaseTest):
         assert device_tom in result["key"]
         assert str(tom.id) in result["url"]
         assert cdn_settings.bucket_answer in result["url"]
-        assert cdn_settings.access_key in result["url"]
         assert file_id == result["fileId"]
 
     async def test_upload_logs__error_during_upload(
@@ -792,7 +719,7 @@ class TestAnswerActivityItems(BaseTest):
     ):
         client.login(tom)
         file_id = "log-file"
-        mocker.patch("infrastructure.storage.cdn_client.CDNClient.list_object", return_value=[])
+        mocker.patch("infrastructure.storage.storage_client.StorageClient.list_object", return_value=[])
         resp = await client.post(self.log_check_url.format(device_id=device_tom), data={"files": [file_id]})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["count"] == 1
@@ -814,13 +741,12 @@ class TestAnswerActivityItems(BaseTest):
         client.login(tom)
         file_id = "log-file"
         s3_key = log_file_service.device_key_prefix(device_tom) + f"/{file_id}"
-        mocker.patch("infrastructure.storage.cdn_client.CDNClient.list_object", return_value=[{"Key": s3_key}])
+        mocker.patch("infrastructure.storage.storage_client.StorageClient.list_object", return_value=[{"Key": s3_key}])
         resp = await client.post(self.log_check_url.format(device_id=device_tom), data={"files": [file_id]})
         assert resp.status_code == http.HTTPStatus.OK
         assert resp.json()["count"] == 1
         result = resp.json()["result"][0]
         assert result["uploaded"]
-        assert cdn_settings.access_key in result["url"]
         assert cdn_settings.bucket_answer in result["url"]
         assert s3_key in result["url"]
         assert result["fileId"] == file_id

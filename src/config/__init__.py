@@ -1,5 +1,8 @@
+from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
+from fastapi import Depends
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from config.alerts import AlertsSettings
@@ -135,3 +138,13 @@ settings = Settings(
         "integrations",
     ],
 )
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Get settings.  Useful for DI and dependency_overrides in tests"""
+    return settings
+
+
+# Dependency injection helper
+AppSettings = Annotated[Settings, Depends(get_settings)]

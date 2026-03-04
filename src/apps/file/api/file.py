@@ -10,6 +10,7 @@ from urllib.parse import quote
 import aiofiles
 import pytz
 from botocore.exceptions import ClientError
+from ddtrace import tracer
 from fastapi import Body, Depends, File, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,19 +43,24 @@ from apps.workspaces.domain.constants import Role
 from apps.workspaces.domain.workspace import WorkspaceArbitrary
 from apps.workspaces.errors import AnswerViewAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
-from config import settings
+from config import Settings, get_settings, settings
 from infrastructure.database.deps import get_session
-from infrastructure.storage.buckets import get_log_bucket, get_media_bucket, get_operations_bucket
-from infrastructure.storage.cdn_client import CDNClient, ObjectNotFoundError
 from infrastructure.storage.presign import get_presign_service
-from infrastructure.storage.storage import select_answer_storage
+from infrastructure.storage.storage import (
+    get_log_storage,
+    get_media_storage,
+    get_operations_storage,
+    select_answer_storage,
+)
+from infrastructure.storage.storage_client import ObjectNotFoundError, StorageClient
 
 
 # TODO: delete later, it is not used anymore
+@tracer.wrap("storage.warn.upload")
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_media_bucket),
+    cdn_client: StorageClient = Depends(get_media_storage),
 ) -> Response[ContentUploadedFile]:  # pragma: no cover
     converters = [convert_not_supported_audio]
 
@@ -174,7 +180,7 @@ def _get_keys_and_bucket_for_image(
 async def download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_media_bucket),
+    cdn_client: StorageClient = Depends(get_media_storage),
 ) -> StreamingResponse:
     try:
         file, media_type = cdn_client.download(request.key)
@@ -186,12 +192,14 @@ async def download(
     return StreamingResponse(file, media_type=media_type)
 
 
+@tracer.wrap("storage.warn.upload")
 async def answer_upload(
     applet_id: uuid.UUID,
     file_id=Query(None, alias="fileId"),
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings=Depends(get_settings),
 ) -> Response[AnswerUploadedFile]:
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
@@ -220,7 +228,7 @@ async def answer_upload(
             filename = file.filename
             reader = file.file  # type: ignore[assignment]
 
-        cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+        cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
         unique = f"{user.id}/{applet_id}"
         cleaned_file_id = file_id.strip() if file_id else f"{uuid.uuid4()}/{filename}"
         key = cdn_client.generate_key(FileScopeEnum.ANSWER, unique, cleaned_file_id)
@@ -245,8 +253,9 @@ async def answer_download(
     request: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings=Depends(get_settings),
 ) -> StreamingResponse:
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
     if request.key.startswith(LogFileService.LOG_KEY):
         LogFileService.raise_for_access(user.email)
 
@@ -264,6 +273,7 @@ async def check_file_uploaded(
     schema: FileCheckRequest,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings: Settings = Depends(get_settings),
 ) -> ResponseMulti[FileExistenceResponse]:
     """Provides the information if the file is uploaded for an answer."""
 
@@ -274,7 +284,7 @@ async def check_file_uploaded(
     ):
         raise AnswerViewAccessDenied()
 
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
     results: list[FileExistenceResponse] = []
 
     for file_id in schema.files:
@@ -307,8 +317,9 @@ async def presign(
     request: FilePresignRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings=Depends(get_settings),
 ) -> ResponseMulti[str | None]:
-    service = await get_presign_service(applet_id, user.id, session)
+    service = await get_presign_service(applet_id, user.id, session, app_settings)
     links = await service.presign(request.private_urls)
     return ResponseMulti[str | None](result=links, count=len(links))  # noqa
 
@@ -318,7 +329,7 @@ async def logs_upload(
     file_id: str = Query(..., alias="fileId"),
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_log_bucket),
+    cdn_client: StorageClient = Depends(get_log_storage),
 ) -> Response[AnswerUploadedFile]:
     service = LogFileService(user.id, cdn_client)
     try:
@@ -339,7 +350,7 @@ async def logs_download(
     user_email: str,
     days: int,
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_log_bucket),
+    cdn_client: StorageClient = Depends(get_log_storage),
     session: AsyncSession = Depends(get_session),
 ) -> ResponseMulti[str]:
     UserAccessService.raise_for_developer_access(user.email_encrypted)
@@ -365,7 +376,7 @@ async def logs_exist_check(
     device_id: str,
     files: FileCheckRequest,
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_log_bucket),
+    cdn_client: StorageClient = Depends(get_log_storage),
 ) -> ResponseMulti[LogFileExistenceResponse]:
     service = LogFileService(user.id, cdn_client)
     try:
@@ -381,8 +392,9 @@ async def logs_exist_check(
 async def generate_presigned_media_url(
     body: FileNameRequest = Body(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_media_bucket),
-    operations_client: CDNClient = Depends(get_operations_bucket),
+    cdn_client: StorageClient = Depends(get_media_storage),
+    operations_client: StorageClient = Depends(get_operations_storage),
+    app_settings: Settings = Depends(get_settings),
 ) -> Response[PresignedUrl]:
     orig_key = cdn_client.generate_key(FileScopeEnum.CONTENT, user.id, f"{uuid.uuid4()}/{body.file_name}")
 
@@ -390,15 +402,17 @@ async def generate_presigned_media_url(
     if orig_key.lower().endswith(".webm"):
         extension = body.target_extension if body.target_extension else WebmTargetExtenstion.MP3
         target_key = orig_key + extension
-        upload_key = f"{settings.cdn.bucket}/{orig_key}"
+        upload_key = f"{app_settings.cdn.bucket}/{orig_key}"
         data = operations_client.generate_presigned_post(upload_key)
     else:
         target_key = orig_key
         data = cdn_client.generate_presigned_post(orig_key)
 
+    # settings.cdn.url.format(key=target_key)
+
     return Response(
         result=PresignedUrl(
-            upload_url=data["url"], fields=data["fields"], url=quote(settings.cdn.url.format(key=target_key), "/:")
+            upload_url=data["url"], fields=data["fields"], url=quote(cdn_client.generate_public_url(target_key), "/:")
         )
     )
 
@@ -408,6 +422,7 @@ async def generate_presigned_answer_url(
     body: FileIdRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
+    app_settings: Settings = Depends(get_settings),
 ) -> Response[PresignedUrl]:
     if not await UserAppletAccessCRUD(session).get_by_roles(
         user.id,
@@ -415,7 +430,7 @@ async def generate_presigned_answer_url(
         [Role.OWNER, Role.MANAGER, Role.REVIEWER, Role.RESPONDENT],
     ):
         raise AnswerViewAccessDenied()
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session)
+    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
 
     unique = f"{user.id}/{applet_id}"
     cleaned_file_id = body.file_id.strip()
@@ -434,7 +449,7 @@ async def generate_presigned_logs_url(
     device_id: str,
     body: FileIdRequest = Body(...),
     user: User = Depends(get_current_user),
-    cdn_client: CDNClient = Depends(get_log_bucket),
+    cdn_client: StorageClient = Depends(get_log_storage),
 ) -> Response[PresignedUrl]:
     service = LogFileService(user.id, cdn_client)
     key = f"{service.device_key_prefix(device_id=device_id)}/{body.file_id}"

@@ -5,7 +5,7 @@ import http
 import io
 import uuid
 import zipfile
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import Body, Depends, Header, Query
 from fastapi import Response as FastAPIResponse
@@ -15,6 +15,7 @@ from apps.activities.services import ActivityHistoryService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_arbitraries_map
 from apps.answers.domain import (
     ActivitySubmissionResponse,
+    AnswerEHRFull,
     AnswerExistenceResponse,
     AnswerExport,
     AnswerNote,
@@ -40,7 +41,6 @@ from apps.answers.domain import (
     ReviewsCount,
 )
 from apps.answers.domain.answers import (
-    AnswerEHRFull,
     MultiinformantAssessmentValidationResponse,
     PublicSubmissionsResponse,
 )
@@ -77,6 +77,7 @@ from apps.users.services.prolific_user import ProlificUserService
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from apps.workspaces.service.workspace import WorkspaceService
+from config import Settings, get_settings
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.deps import get_session
 from infrastructure.http import get_tz_utc_offset
@@ -771,7 +772,7 @@ async def applet_answers_export(
 async def applet_completed_entities(
     applet_id: uuid.UUID,
     from_date: TruncatedDate = Query(..., alias="fromDate"),
-    version: Optional[str] = None,
+    version: str | None = None,
     include_in_progress: bool = Query(False, alias="includeInProgress"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -790,7 +791,7 @@ async def _get_arbitrary_answer(
     session,
     from_date: datetime.date,
     arb_uri: str,
-    applets_version_map: dict[uuid.UUID, Optional[str]],
+    applets_version_map: dict[uuid.UUID, str | None],
     user_id: uuid.UUID | None = None,
     include_in_progress: bool = False,
 ) -> list[AppletCompletedEntities]:
@@ -825,7 +826,7 @@ async def applets_completed_entities(
         exclude_without_encryption=True,
     )
 
-    applets_version_map: dict[uuid.UUID, Optional[str]] = dict()
+    applets_version_map: dict[uuid.UUID, str | None] = dict()
     for applet in applets:
         applets_version_map[applet.id] = applet.version
     applet_ids: list[uuid.UUID] = list(applets_version_map.keys())
@@ -834,7 +835,7 @@ async def applets_completed_entities(
 
     data_future_list = []
     for arb_uri, arb_applet_ids in arb_uri_applet_ids_map.items():
-        applets_version_arb_map: dict[uuid.UUID, Optional[str]] = dict()
+        applets_version_arb_map: dict[uuid.UUID, str | None] = dict()
         for applet_id in arb_applet_ids:
             applets_version_arb_map[applet_id] = applets_version_map[applet_id]
 
@@ -960,6 +961,7 @@ async def applet_ehr_answers_export(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
     query_params: QueryParams = Depends(parse_query_params(AnswerEHRExportFilters)),
+    app_settings: Settings = Depends(get_settings),
 ) -> FastAPIResponse:
     await AppletService(session, user.id).exist_by_id(applet_id)
     await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
@@ -971,10 +973,11 @@ async def applet_ehr_answers_export(
     if len(ehr_answers) == 0:
         return FastAPIResponse(status_code=http.HTTPStatus.NO_CONTENT)
 
-    ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id)
+    ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id, app_settings=app_settings)
     zip_buffer = io.BytesIO()
     try:
         with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+            ehr_answer: AnswerEHRFull
             for ehr_answer in ehr_answers:
                 data = EHRData(
                     target_subject_id=ehr_answer.target_subject_id,
@@ -984,9 +987,12 @@ async def applet_ehr_answers_export(
                     user_id=user.id,
                 )
                 ehr_zip_buffer = io.BytesIO()
+
                 try:
                     ehr_zip_filename = ehr_storage.download_ehr_zip(
-                        storage_path=ehr_answer.ehr_storage_uri, data=data, file_buffer=ehr_zip_buffer
+                        storage_path=ehr_answer.ehr_storage_uri,  # type: ignore
+                        data=data,
+                        file_buffer=ehr_zip_buffer,
                     )
 
                     zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
