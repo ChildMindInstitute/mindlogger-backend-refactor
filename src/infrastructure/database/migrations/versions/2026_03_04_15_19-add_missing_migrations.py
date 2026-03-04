@@ -41,8 +41,15 @@ def upgrade() -> None:
     op.drop_column("events", "periodicity_id")
     op.drop_column("subjects", "is_deleted_null")
 
+    # Drop redundant index on answers_ehr (already indexed by answers_ehr_submit_activity_key unique constraint)
+    op.drop_index("ix_answers_ehr_submit_activity_id", table_name="answers_ehr")
+
+
 
 def downgrade() -> None:
+    # Restore redundant index on answers_ehr
+    op.create_index("ix_answers_ehr_submit_activity_id", "answers_ehr", ["submit_id", "activity_id"], unique=False)
+
     # Restore orphan columns
     op.add_column("subjects", sa.Column("is_deleted_null", sa.Boolean(), server_default=sa.text("false"), nullable=False))
     op.add_column("events", sa.Column("periodicity_id", postgresql.UUID(), server_default=sa.text("gen_random_uuid()"), nullable=False))
