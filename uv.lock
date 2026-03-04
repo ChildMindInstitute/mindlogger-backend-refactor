@@ -635,7 +635,7 @@ requires-dist = [
     { name = "pyjwt", specifier = "==2.10.1" },
     { name = "pymongo", specifier = "==4.13.0" },
     { name = "pyotp", specifier = "~=2.9.0" },
-    { name = "python-multipart", specifier = "==0.0.22" },
+    { name = "python-multipart", specifier = ">=0.0.22" },
     { name = "python-slugify", specifier = "==8.0.4" },
     { name = "redis", specifier = "==5.2.*" },
     { name = "sentry-sdk", specifier = "~=2.13" },
