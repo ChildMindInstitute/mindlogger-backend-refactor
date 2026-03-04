@@ -270,14 +270,18 @@ make run
 # Run the test suite
 make test
 
-# Check the code quality
+# Audit dependencies
+make audit
+make audit SEVERITY=low       # same as `make audit`
+make audit SEVERITY=medium    # MEDIUM severity or greater
+make audit SEVERITY=high      # HIGH severity or greater
+make audit SEVERITY=critical  # CRITICAL severity only
+
+# Check code quality
 make cq
 
 # Check and fix code quality
 make cqf
-
-# Check everything in one hop
-make check
 ```
 
 
