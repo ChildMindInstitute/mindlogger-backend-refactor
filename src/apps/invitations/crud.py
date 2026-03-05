@@ -151,6 +151,7 @@ class InvitationCRUD(BaseCRUD[InvitationSchema]):
         )
         query = query.where(InvitationSchema.email.in_(emails))
         query = query.where(InvitationSchema.status.in_([InvitationStatus.PENDING, InvitationStatus.APPROVED]))
+        query = query.order_by(InvitationSchema.created_at.asc())
         db_result = await self._execute(query)
         results = {}
         for invitation, applet_name, secret_id, nickname, first_name, last_name in db_result.all():
