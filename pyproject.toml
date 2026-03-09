@@ -86,7 +86,7 @@ dev = [
   "pyld==2.0.4",
   "pytest==8.4.0",
   "pytest-asyncio==1.1.0",
-  "pytest-cov==6.1.1",
+  "pytest-cov==7.0.0",
   "pytest-env==1.1.5",
   "pytest-httpx",
   "pytest-mock==3.14.1",
