@@ -35,7 +35,7 @@ jobs:
           ENV_NAME="${{ inputs.env-name }}"
           case "$ENV_NAME" in
             "dev")
-              echo 'role=arn:aws:iam::017925157769:role/cmiml-dev-oidc-github-role' >> "$GITHUB_OUTPUT"
+              echo 'role=arn:aws:iam::017925157769:role/github-oidc-deploy20260311132710794900000001' >> "$GITHUB_OUTPUT"
             ;;
             "test")
               echo 'role=arn:aws:iam::641513112151:role/cmiml-test-oidc-github-role' >> "$GITHUB_OUTPUT"
