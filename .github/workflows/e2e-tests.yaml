@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
           role-session-name: OIDC-GHA-session
@@ -53,7 +53,7 @@ jobs:
             ,taf/feature
           parse-json-secrets: true
       - name: configure aws credentials for test run
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
           role-session-name: OIDC-GHA-session

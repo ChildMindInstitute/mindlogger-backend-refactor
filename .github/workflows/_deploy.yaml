@@ -66,7 +66,7 @@ jobs:
 
     steps:
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ needs.setup-vars.outputs.role }}
           role-session-name: OIDC-GHA-session-deploy
@@ -132,7 +132,7 @@ jobs:
           SLACK_MESSAGE: '🚀 Deployment was successful. Version: *${{ inputs.image-tag }}*'
 
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::917902836630:role/ssm-versions-oidc-github-role
           role-session-name: OIDC-GHA-session-version

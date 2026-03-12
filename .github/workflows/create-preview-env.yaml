@@ -49,7 +49,7 @@ jobs:
       AWS_REGION: us-east-1
     steps:
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
           role-session-name: gha-preview-env
