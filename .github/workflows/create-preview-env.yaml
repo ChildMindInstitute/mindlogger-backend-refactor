@@ -78,7 +78,7 @@ jobs:
           
           aws secretsmanager create-secret --name cmiml-feature-${{ inputs.env-name }} --secret-string "$SECRET_STRING" --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ inputs.app-name }}" "Key=copilot-environment,Value=${{ inputs.env-name }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         name: Checkout
       - name: Create environment
         run: copilot/scripts/env-init.sh

@@ -41,7 +41,7 @@ jobs:
               echo 'role=arn:aws:iam::641513112151:role/cmiml-test-oidc-github-role' >> "$GITHUB_OUTPUT"
             ;;
             "uat")
-              echo 'role=arn:aws:iam::641513112151:role/cmiml-uat-oidc-github-role' >> "$GITHUB_OUTPUT"
+              echo 'role=arn:aws:iam::641513112151:role/github-oidc-deploy20260312130551192100000004' >> "$GITHUB_OUTPUT"
             ;;
             "stage")
               echo 'role=arn:aws:iam::641513112151:role/cmiml-stage-oidc-github-role' >> "$GITHUB_OUTPUT"

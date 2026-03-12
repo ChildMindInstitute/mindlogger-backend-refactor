@@ -108,7 +108,7 @@ jobs:
     needs:
       - run-migration
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Send Slack message on failure"
         uses: rtCamp/action-slack-notify@v2
         env:
@@ -124,7 +124,7 @@ jobs:
     needs:
       - run-migration
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Send Slack message on success"
         uses: rtCamp/action-slack-notify@v2
         env:
