@@ -94,6 +94,6 @@ jobs:
           cache-from: type=registry,ref=${{ needs.setup-vars.outputs.ecr-repo }}/api-server:cache
           tags: |
             ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.tag-name }}
-            ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ steps.sha.outputs.SHORT_SHA }}
+            ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:sha-${{ steps.sha.outputs.SHORT_SHA }}
           platforms: linux/amd64,linux/arm64
 
