@@ -134,7 +134,7 @@ jobs:
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: arn:aws:iam::917902836630:role/ssm-versions-oidc-github-role
+          role-to-assume: arn:aws:iam::917902836630:role/github-oidc-ssm-version20260317121845461900000008
           role-session-name: OIDC-GHA-session-version
           aws-region: us-east-1
       - name: Store version in SSM
