@@ -103,7 +103,7 @@ jobs:
               echo "role=arn:aws:iam::973422231492:role/cmiml-devops-oidc-github-role" >> "$GITHUB_OUTPUT"
               ;;
             *)
-              echo "role=arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role" >> "$GITHUB_OUTPUT"
+              echo "role=arn:aws:iam::917902836630:role/github-oidc-ecr-push20260317121845560500000009" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
