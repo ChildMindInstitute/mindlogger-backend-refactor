@@ -121,12 +121,12 @@ settings = Settings(
         "applets",
         "activities",
         "activity_flows",
+        "activity_assignments",
         "themes",
         "logs",
         "schedule",
         "answers",
         "folders",
-        "answers",
         "invitations",
         "workspaces",
         "transfer_ownership",
@@ -136,6 +136,7 @@ settings = Settings(
         "job",
         "subjects",
         "integrations",
+        "integrations.loris",
     ],
 )
 

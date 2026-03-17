@@ -11,14 +11,14 @@ from infrastructure.database.base import Base
 class UserSchema(Base):
     __tablename__ = "users"
 
-    email = Column(String(length=56), unique=True)
+    email = Column(String(length=100), unique=True)
     email_encrypted = Column(StringEncryptedType(Unicode, get_key), default=None)
     first_name = Column(StringEncryptedType(Unicode, get_key))
     last_name = Column(StringEncryptedType(Unicode, get_key))
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     is_super_admin = Column(Boolean(), default=False, server_default="false")
-    mfa_enabled = Column(Boolean(), default=False, server_default="false")
+    mfa_enabled = Column(Boolean(), nullable=False, default=False, server_default="false")
     mfa_secret = Column(Text(), nullable=True)  # Changed from String(100) to Text() for encrypted values
     pending_mfa_secret = Column(Text(), nullable=True)
     pending_mfa_created_at = Column(DateTime(), nullable=True)

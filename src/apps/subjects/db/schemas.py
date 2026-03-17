@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Index, String, Unicode
+from sqlalchemy import Boolean, Column, ForeignKey, Index, String, Unicode
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy_utils import StringEncryptedType
 
@@ -10,6 +10,7 @@ __all__ = ["SubjectSchema", "SubjectRelationSchema"]
 
 class SubjectSchema(Base):
     __tablename__ = "subjects"
+    is_deleted = Column(Boolean(), nullable=False, default=False)
     applet_id = Column(ForeignKey("applets.id", ondelete="RESTRICT"), nullable=False)
     creator_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     user_id = Column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
@@ -19,29 +20,25 @@ class SubjectSchema(Base):
     nickname = Column(StringEncryptedType(Unicode, get_key), default=None, nullable=True)
     tag = Column(String, default=None, nullable=True)
     secret_user_id = Column(String, nullable=False)
-    language = Column(String(length=5))
+    language = Column(String(length=20))
     integration_source = Column(String(length=20), nullable=True, default=None)
     meta = Column(JSONB(), nullable=True)
 
     __table_args__ = (
-        Index(
-            None,
-            "user_id",
-            "applet_id",
-            unique=True,
-        ),
+        Index(None, "user_id", "applet_id", unique=True),
+        Index("idx_subjects_meta", "meta", postgresql_using="gin"),
     )
 
 
 class SubjectRelationSchema(Base):
     __tablename__ = "subject_relations"
     source_subject_id = Column(
-        ForeignKey("subjects.id", ondelete="RESTRICT"),
+        ForeignKey("subjects.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=False,
         index=True,
     )
     target_subject_id = Column(
-        ForeignKey("subjects.id", ondelete="RESTRICT"),
+        ForeignKey("subjects.id", ondelete="RESTRICT", onupdate="CASCADE"),
         nullable=False,
         index=True,
     )
