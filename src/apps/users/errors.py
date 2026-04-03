@@ -17,7 +17,27 @@ class PasswordRecoveryKeyNotFound(NotFoundError):
 
 
 class PasswordHasSpacesError(ValidationError):
-    message = _("Password should not contain blank spaces")
+    message = _("Password should not contain whitespace characters.")
+
+
+class PasswordContainsInvalidCharactersError(ValidationError):
+    message = _("Password should not contain control characters.")
+
+
+class PasswordTooShortError(ValidationError):
+    message = _("Password should be at least 10 characters.")
+
+
+class PasswordTooLongError(ValidationError):
+    message = _("Password should be at most 72 characters.")
+
+
+class PasswordInsufficientTypesError(ValidationError):
+    message = _("Password should contain at least 3 of: uppercase letter, lowercase letter, digit, symbol.")
+
+
+class PasswordTooCommonError(ValidationError):  # Phase 2
+    message = _("Password is too common or easily guessable.")
 
 
 class UserIsDeletedError(NotFoundError):
