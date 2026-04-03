@@ -18,6 +18,7 @@ from config.mfa import MFASettings
 from config.multiinformant import MultiInformantSettings
 from config.notification import FirebaseCloudMessagingSettings
 from config.oneup_health import OneUpHealthSettings
+from config.password import PasswordSettings
 from config.prolific_respondent import ProlificRespondent
 from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
@@ -48,6 +49,8 @@ class Settings(BaseSettings):
 
     # Authentication
     authentication: AuthenticationSettings
+    mfa: MFASettings = MFASettings()
+    password: PasswordSettings = PasswordSettings()
 
     # Encryption
     secrets: SecretSettings = SecretSettings()
@@ -97,8 +100,6 @@ class Settings(BaseSettings):
     logs: Logs = Logs()
 
     multi_informant: MultiInformantSettings = MultiInformantSettings()
-
-    mfa: MFASettings = MFASettings()
 
     oneup_health: OneUpHealthSettings = OneUpHealthSettings()
 
