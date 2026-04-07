@@ -38,7 +38,7 @@ jobs:
       AWS_REGION: ${{ needs.setup-vars.outputs.region }}
     steps:
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ needs.setup-vars.outputs.role }}
           role-session-name: OIDC-GHA-migration-session
@@ -108,7 +108,7 @@ jobs:
     needs:
       - run-migration
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Send Slack message on failure"
         uses: rtCamp/action-slack-notify@v2
         env:
@@ -124,7 +124,7 @@ jobs:
     needs:
       - run-migration
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Send Slack message on success"
         uses: rtCamp/action-slack-notify@v2
         env:

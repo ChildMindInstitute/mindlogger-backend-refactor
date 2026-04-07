@@ -49,7 +49,7 @@ jobs:
       AWS_REGION: us-east-1
     steps:
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::992382368072:role/cmiml-feature-oidc-github-role
           role-session-name: gha-preview-env
@@ -78,7 +78,7 @@ jobs:
           
           aws secretsmanager create-secret --name cmiml-feature-${{ inputs.env-name }} --secret-string "$SECRET_STRING" --kms-key-id alias/aws/secretsmanager --tags "Key=copilot-application,Value=${{ inputs.app-name }}" "Key=copilot-environment,Value=${{ inputs.env-name }}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         name: Checkout
       - name: Create environment
         run: copilot/scripts/env-init.sh

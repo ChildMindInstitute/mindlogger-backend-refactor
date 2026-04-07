@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 from typing import Annotated, Any, Generic
 
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, Field, field_serializer, field_validator, model_serializer
 from pydantic_core.core_schema import ValidationInfo
 
 from apps.activities.domain.activity_full import ActivityFull, PublicActivityItemFull
@@ -690,10 +690,36 @@ class CompletedEntity(PublicModel):
             "None for standalone activities (not part of a flow).",
         ),
     ] = None
+    # Ordered list of unversioned activity IDs for the flow at the version the answer was submitted
+    flow_activity_ids: Annotated[
+        list[uuid.UUID] | None,
+        Field(
+            description="Ordered activity IDs for the flow at the submitted version. "
+            "Only populated for in-progress activity flows.",
+        ),
+    ] = None
+    # Name of the flow at the version the answer was submitted
+    flow_name: Annotated[
+        str | None,
+        Field(
+            description="Name of the flow at the submitted version. Only populated for in-progress activity flows.",
+        ),
+    ] = None
 
     @field_serializer("start_time", "end_time", when_used="json")
     def datetime_to_ms(self, value: datetime.datetime):
         return int(value.replace(tzinfo=datetime.timezone.utc).timestamp() * 1000)
+
+    @model_serializer(mode="wrap", when_used="json")
+    def _model_serializer(self, serializer, info):
+        """Exclude flow_activity_ids and flow_name when None for backwards compatibility."""
+        data = serializer(self)
+        # Remove these fields if they're None
+        if data.get("flowActivityIds") is None:
+            data.pop("flowActivityIds", None)
+        if data.get("flowName") is None:
+            data.pop("flowName", None)
+        return data
 
     @field_validator("id", mode="before")
     @classmethod

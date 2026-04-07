@@ -4,13 +4,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: "awslabs/git-secrets"
           ref: "master"
       - name: Install git-secrets
         run: sudo make install
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v3
         with:
           python-version: "3.13"
@@ -21,7 +21,7 @@ jobs:
       - name: Scan aws secrets
         run: git secrets --scan
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync --locked
       - name: Check formatting

@@ -36,6 +36,7 @@ from apps.shared.domain import parse_obj_as
 from apps.shared.filtering import Comparisons, FilterField, Filtering
 from apps.shared.paging import paging
 from infrastructure.database.crud import BaseCRUD
+from infrastructure.database.mixins import HistoryAware
 
 
 class _AnswersExportFilter(Filtering):
@@ -805,37 +806,109 @@ class AnswersCRUD(BaseCRUD[AnswerSchema]):
         """
         Populate activity_flow_order on activity flows for applet(s).
 
+        Uses the count of answers per (flow_history_id, submit_id) to determine
+        how far along each submission is.  This is more reliable than looking up
+        the activity's position in flow_item_histories, because the same activity
+        can appear at multiple positions within a flow — making the
+        (flow_history_id, activity_history_id) key ambiguous.
+
         - Takes one or more AppletCompletedEntities objects as input
         - Mutates activity flows in-place by setting their activity_flow_order field
         """
-        # Iterate through activity flows for each result
         activity_flows = list(chain.from_iterable(result.activity_flows for result in result_list))
 
-        # Build query conditions for each (flow_history_id, activity_history_id) pair
-        conditions = [
-            and_(
-                ActivityFlowItemHistorySchema.activity_flow_id == f.flow_history_id,
-                ActivityFlowItemHistorySchema.activity_id == f.activity_history_id,
-            )
-            for f in activity_flows
-            if f.activity_history_id and f.flow_history_id
-        ]
+        # Collect unique (flow_history_id, submit_id) pairs
+        submit_keys = {(f.flow_history_id, f.submit_id) for f in activity_flows if f.flow_history_id and f.submit_id}
 
-        if not conditions:
+        if not submit_keys:
             return
 
-        query = select(
-            ActivityFlowItemHistorySchema.activity_flow_id,
-            ActivityFlowItemHistorySchema.activity_id,
-            ActivityFlowItemHistorySchema.order,
-        ).where(or_(*conditions))
+        # Count answers per (flow_history_id, submit_id)
+        # Each activity completion in a flow creates exactly one answer row,
+        # so the count equals the 1-indexed position of the last completed activity.
+        conditions = [
+            and_(
+                AnswerSchema.flow_history_id == flow_history_id,
+                AnswerSchema.submit_id == submit_id,
+            )
+            for flow_history_id, submit_id in submit_keys
+        ]
+
+        query = (
+            select(
+                AnswerSchema.flow_history_id,
+                AnswerSchema.submit_id,
+                func.count().label("answer_count"),
+            )
+            .where(or_(*conditions))
+            .group_by(AnswerSchema.flow_history_id, AnswerSchema.submit_id)
+        )
 
         result = await self._execute(query)
-        orders = {(row.activity_flow_id, row.activity_id): row.order for row in result.mappings()}
+        counts = {(row.flow_history_id, row.submit_id): row.answer_count for row in result.mappings()}
 
         # Populate activity_flow_order on the activity flows
         for f in activity_flows:
-            f.activity_flow_order = orders.get((f.flow_history_id, f.activity_history_id))
+            f.activity_flow_order = counts.get((f.flow_history_id, f.submit_id))
+
+    async def populate_flow_activity_ids(self, *result_list: AppletCompletedEntities) -> None:
+        """Populate flow_activity_ids and flow_name on in-progress activity flows.
+
+        Queries flow_item_histories to get the ordered list of (unversioned) activity IDs
+        for each flow at the version it was submitted, and flow_histories to get the flow name.
+        Only populates for flows where is_flow_completed is False (in-progress).
+        """
+        in_progress_flows = [
+            flow
+            for result in result_list
+            for flow in result.activity_flows
+            if flow.is_flow_completed is False and flow.flow_history_id
+        ]
+
+        if not in_progress_flows:
+            return
+
+        flow_history_ids = {flow.flow_history_id for flow in in_progress_flows}
+
+        # Query flow_item_histories for activity IDs
+        items_query = (
+            select(
+                ActivityFlowItemHistorySchema.activity_flow_id,
+                ActivityFlowItemHistorySchema.activity_id,
+                ActivityFlowItemHistorySchema.order,
+            )
+            .where(ActivityFlowItemHistorySchema.activity_flow_id.in_(flow_history_ids))
+            .order_by(
+                ActivityFlowItemHistorySchema.activity_flow_id,
+                ActivityFlowItemHistorySchema.order,
+            )
+        )
+
+        # Query flow_histories for flow names
+        names_query = select(
+            ActivityFlowHistoriesSchema.id_version,
+            ActivityFlowHistoriesSchema.name,
+        ).where(ActivityFlowHistoriesSchema.id_version.in_(flow_history_ids))
+
+        items_result = await self._execute(items_query)
+        names_result = await self._execute(names_query)
+
+        flow_items_map: dict[str, list[uuid.UUID]] = {}
+        for row in items_result.mappings():
+            fid = row["activity_flow_id"]
+            activity_id = row["activity_id"]
+            if activity_id:
+                activity_uuid = HistoryAware.split_id_version(activity_id)[0]
+                flow_items_map.setdefault(fid, []).append(activity_uuid)
+
+        flow_names_map: dict[str, str] = {}
+        for row in names_result.mappings():
+            flow_names_map[row["id_version"]] = row["name"]
+
+        for flow in in_progress_flows:
+            if flow.flow_history_id:
+                flow.flow_activity_ids = flow_items_map.get(flow.flow_history_id)
+                flow.flow_name = flow_names_map.get(flow.flow_history_id)
 
     async def get_latest_applet_version(self, applet_id: uuid.UUID) -> str | None:
         query: Query = select(AnswerSchema.applet_history_id)

@@ -211,7 +211,31 @@ class AnswerService:
             if existed_answer.applet_id != applet_answer.applet_id:
                 raise WrongAnswerGroupAppletId()
             elif existed_answer.version != applet_answer.version:
-                raise WrongAnswerGroupVersion()
+                # For flow submissions, adopt the version from the existing answer group
+                # so in-progress flows can be completed after an applet version update
+                if applet_answer.flow_id:
+                    original_version = applet_answer.version
+                    applet_answer.version = existed_answer.version
+                    pk = self._generate_history_id(applet_answer.version)
+                    activity_history_id = pk(applet_answer.activity_id)
+                    flow_history_id = pk(applet_answer.flow_id)
+
+                    logger.info(
+                        "Corrected version for flow submission from %s to %s, submit_id %s",
+                        original_version,
+                        applet_answer.version,
+                        applet_answer.submit_id,
+                    )
+
+                    # Re-validate flow progress with the corrected version's history IDs
+                    flow_progress = FlowSubmissionProgress(self.session, self.answer_session)
+                    await flow_progress.load(flow_history_id, applet_answer.submit_id)
+                    if not flow_progress.has_flow_history:
+                        raise ValidationError("Flow not found")
+                    if not flow_progress.contains_activity(activity_history_id):
+                        raise ValidationError("Activity not found in the flow")
+                else:
+                    raise WrongAnswerGroupVersion()
             elif existed_answer.respondent_id != self.user_id:
                 raise WrongRespondentForAnswerGroup()
 
@@ -1717,6 +1741,8 @@ class AnswerService:
         2. For flows with multiple submissions:
            - Groups by group_progress_id (without version or submit_id) to compare across submissions for all versions
            - Picks the completed submission in each group with most recent timestamp
+           - Discards stale in-progress submissions that predate the most recent completion
+             (these are leftovers from attempts superseded by a restart-and-complete cycle)
            - Picks the in-progress submission in each group with highest activity_flow_order
            - Picks the more recent submission if both completed and in-progress exist
 
@@ -1744,8 +1770,8 @@ class AnswerService:
             submissions_list = list(submissions)
 
             # Separate completed and in-progress submissions
-            completed = (s for s in submissions_list if s.is_flow_completed is True)
-            in_progress = (s for s in submissions_list if s.is_flow_completed is False)
+            completed = [s for s in submissions_list if s.is_flow_completed is True]
+            in_progress = [s for s in submissions_list if s.is_flow_completed is False]
 
             # Most recent completed flow
             best_completed = max(
@@ -1754,11 +1780,25 @@ class AnswerService:
                 key=attrgetter("end_time"),
             )
 
-            # Farthest along in-progress flow + more recent tiebreaker
+            # Discard stale in-progress submissions that predate the latest completion.
+            # These are leftovers from previous attempts that were superseded by a
+            # restart-and-complete cycle. Without this filter, a stale submission with
+            # a high activity_flow_order (e.g. order=3) would incorrectly beat a fresh
+            # restart (e.g. order=1) even though the stale one is no longer relevant.
+            if best_completed:
+                in_progress = [s for s in in_progress if s.end_time > best_completed.end_time]
+
+            # Farthest along in-progress flow on the latest version.
+            # Version tuple ensures correct numeric comparison (e.g. "10.0.0" > "9.0.0").
+            # Within the same version, pick the farthest completion (same-version restart).
             best_in_progress = max(
                 in_progress,
                 default=None,
-                key=lambda x: (x.activity_flow_order or 0, x.end_time),
+                key=lambda x: (
+                    tuple(int(p) for p in x.version.split(".")),
+                    x.activity_flow_order or 0,
+                    x.end_time,
+                ),
             )
 
             if best_completed and best_in_progress:
@@ -1784,7 +1824,7 @@ class AnswerService:
     ) -> AppletCompletedEntities:
         assert self.user_id
 
-        # Get copmleted answers for applet from main or arbitrary database
+        # Get completed answers for applet from main or arbitrary database
         result = await AnswersCRUD(self.answer_session).get_completed_answers_data(
             applet_id,
             version,
@@ -1797,7 +1837,7 @@ class AnswerService:
         await AnswersCRUD(self.session).populate_activity_flow_orders(result)
 
         if include_in_progress:
-            # Filter activity flows using the shared helper method
+            await AnswersCRUD(self.session).populate_flow_activity_ids(result)
             self._filter_activity_flows(result)
 
         return result
@@ -1824,6 +1864,8 @@ class AnswerService:
         await AnswersCRUD(self.session).populate_activity_flow_orders(*result_list)
 
         if include_in_progress:
+            # Populate flow_activity_ids for in-progress flows (for cross-device sync)
+            await AnswersCRUD(self.session).populate_flow_activity_ids(*result_list)
             # Filter activity flows for each result using the shared helper method
             for result in result_list:
                 self._filter_activity_flows(result)

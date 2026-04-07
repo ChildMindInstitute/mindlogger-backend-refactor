@@ -11,7 +11,7 @@ class TokenBlacklistSchema(Base):
     jti = Column(Text(), index=True, unique=True, nullable=False)
     user_id = Column(UUID(as_uuid=True), nullable=False)
     exp = Column(DateTime(), index=True, nullable=False)
-    type = Column(Enum(TokenPurpose), nullable=False)
+    type = Column(Enum(TokenPurpose, name="token_purpose"), nullable=False)
     rjti = Column(Text(), index=True, nullable=True)
 
 

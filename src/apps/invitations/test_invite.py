@@ -2,6 +2,7 @@ import http
 import json
 import re
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, cast
 
 import pytest
@@ -14,6 +15,7 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
 from apps.invitations.crud import InvitationCRUD
+from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
     InvitationLanguage,
     InvitationManagersRequest,
@@ -1215,3 +1217,247 @@ class TestInvite(BaseTest):
         )
         assert response.status_code == http.HTTPStatus.FORBIDDEN
         assert response.json()["result"][0]["message"] == AppletInviteAccessDenied.message
+
+    async def test_get_latest_by_emails_returns_newest_invitation(
+        self,
+        session: AsyncSession,
+        tom: User,
+        applet_one: AppletFull,
+    ):
+        """When multiple invitations exist for the same email and applet,
+        get_latest_by_emails must return the most recently created one."""
+
+        email = "testlatest@example.com"
+        old_key = uuid.uuid4()
+        new_key = uuid.uuid4()
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        # Create subjects for each invitation (as would happen in the real invite flow)
+        old_subject = await SubjectsService(session, tom.id).create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="Old",
+                last_name="Respondent",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        new_subject = await SubjectsService(session, tom.id).create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="New",
+                last_name="Respondent",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        # Create an older invitation
+        old_invitation = InvitationSchema(
+            email=email,
+            applet_id=applet_one.id,
+            role=Role.RESPONDENT,
+            key=old_key,
+            invitor_id=tom.id,
+            status=InvitationStatus.PENDING,
+            first_name="Old",
+            last_name="Respondent",
+            meta={"subject_id": str(old_subject.id)},
+            created_at=now - timedelta(days=10),
+        )
+        session.add(old_invitation)
+        await session.flush()
+
+        # Create a newer invitation
+        new_invitation = InvitationSchema(
+            email=email,
+            applet_id=applet_one.id,
+            role=Role.RESPONDENT,
+            key=new_key,
+            invitor_id=tom.id,
+            status=InvitationStatus.PENDING,
+            first_name="New",
+            last_name="Respondent",
+            meta={"subject_id": str(new_subject.id)},
+            created_at=now,
+        )
+        session.add(new_invitation)
+        await session.flush()
+
+        crud = InvitationCRUD(session)
+        results = await crud.get_latest_by_emails([email])
+
+        key = f"{email}_{applet_one.id}"
+        assert key in results
+        assert results[key].key == new_key
+
+    async def test_get_latest_by_emails_returns_newest_across_multiple_emails(
+        self,
+        session: AsyncSession,
+        tom: User,
+        applet_one: AppletFull,
+    ):
+        """When querying multiple emails, each email should get its latest invitation."""
+
+        email_a = "usera_latest@example.com"
+        email_b = "userb_latest@example.com"
+        old_key_a = uuid.uuid4()
+        new_key_a = uuid.uuid4()
+        key_b = uuid.uuid4()
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        # Create subjects for each invitation
+        old_subject_a = await SubjectsService(session, tom.id).create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="OldA",
+                last_name="Respondent",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        new_subject_a = await SubjectsService(session, tom.id).create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="NewA",
+                last_name="Respondent",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        subject_b = await SubjectsService(session, tom.id).create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="B",
+                last_name="Respondent",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        # Two invitations for email_a (old and new)
+        session.add(
+            InvitationSchema(
+                email=email_a,
+                applet_id=applet_one.id,
+                role=Role.RESPONDENT,
+                key=old_key_a,
+                invitor_id=tom.id,
+                status=InvitationStatus.PENDING,
+                first_name="OldA",
+                last_name="Respondent",
+                meta={"subject_id": str(old_subject_a.id)},
+                created_at=now - timedelta(days=5),
+            )
+        )
+        session.add(
+            InvitationSchema(
+                email=email_a,
+                applet_id=applet_one.id,
+                role=Role.RESPONDENT,
+                key=new_key_a,
+                invitor_id=tom.id,
+                status=InvitationStatus.PENDING,
+                first_name="NewA",
+                last_name="Respondent",
+                meta={"subject_id": str(new_subject_a.id)},
+                created_at=now,
+            )
+        )
+        # One invitation for email_b
+        session.add(
+            InvitationSchema(
+                email=email_b,
+                applet_id=applet_one.id,
+                role=Role.RESPONDENT,
+                key=key_b,
+                invitor_id=tom.id,
+                status=InvitationStatus.PENDING,
+                first_name="B",
+                last_name="Respondent",
+                meta={"subject_id": str(subject_b.id)},
+                created_at=now - timedelta(days=1),
+            )
+        )
+        await session.flush()
+
+        crud = InvitationCRUD(session)
+        results = await crud.get_latest_by_emails([email_a, email_b])
+
+        assert results[f"{email_a}_{applet_one.id}"].key == new_key_a
+        assert results[f"{email_b}_{applet_one.id}"].key == key_b
+
+    async def test_get_latest_by_emails_ignores_declined_invitations(
+        self,
+        session: AsyncSession,
+        tom: User,
+        applet_one: AppletFull,
+    ):
+        """Declined invitations should not be returned, even if they are newer."""
+
+        email = "declined_test@example.com"
+        pending_key = uuid.uuid4()
+        declined_key = uuid.uuid4()
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        # Create subjects for each invitation
+        pending_subject = await SubjectsService(session, tom.id).create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="Pending",
+                last_name="Respondent",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+        declined_subject = await SubjectsService(session, tom.id).create(
+            SubjectCreate(
+                applet_id=applet_one.id,
+                creator_id=tom.id,
+                first_name="Declined",
+                last_name="Respondent",
+                secret_user_id=f"{uuid.uuid4()}",
+            )
+        )
+
+        # Older pending invitation
+        session.add(
+            InvitationSchema(
+                email=email,
+                applet_id=applet_one.id,
+                role=Role.RESPONDENT,
+                key=pending_key,
+                invitor_id=tom.id,
+                status=InvitationStatus.PENDING,
+                first_name="Pending",
+                last_name="Respondent",
+                meta={"subject_id": str(pending_subject.id)},
+                created_at=now - timedelta(days=5),
+            )
+        )
+        # Newer declined invitation (should be ignored)
+        session.add(
+            InvitationSchema(
+                email=email,
+                applet_id=applet_one.id,
+                role=Role.RESPONDENT,
+                key=declined_key,
+                invitor_id=tom.id,
+                status="declined",
+                first_name="Declined",
+                last_name="Respondent",
+                meta={"subject_id": str(declined_subject.id)},
+                created_at=now,
+            )
+        )
+        await session.flush()
+
+        crud = InvitationCRUD(session)
+        results = await crud.get_latest_by_emails([email])
+
+        key = f"{email}_{applet_one.id}"
+        assert key in results
+        assert results[key].key == pending_key
