@@ -4,11 +4,11 @@ from typing import Annotated
 
 from pydantic import EmailStr, Field, field_validator
 
-from apps.authentication.services.password_validation import PasswordValidator
 from apps.shared.bcrypt import get_password_hash
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.hashing import hash_sha224
 from apps.users.db.schemas import UserDeviceSchema
+from apps.users.password_validation import PasswordValidator
 
 __all__ = [
     "PublicUser",
