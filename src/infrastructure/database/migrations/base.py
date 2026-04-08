@@ -7,6 +7,8 @@ when it imports the declarative 'Base' from this module.
 Import all SQLAlchemy models here
 """
 
+import os
+
 from config import settings
 from infrastructure.database import Base  # noqa: F401, F403
 
@@ -16,7 +18,10 @@ def import_db_schemas():
     of database schemas that are used by SQLAlchemy.
     """
 
-    for app in settings.migrations_apps:
+    for app in os.listdir(settings.apps_dir):
+        if app not in settings.migrations_apps:
+            continue
+
         __import__(f"apps.{app}.db.schemas")
 
 

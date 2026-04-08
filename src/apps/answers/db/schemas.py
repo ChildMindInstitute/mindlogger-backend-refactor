@@ -9,7 +9,6 @@ from sqlalchemy import (
     Text,
     Time,
     Unicode,
-    UniqueConstraint,
     and_,
     asc,
     false,
@@ -32,9 +31,9 @@ class AnswerSchema(HistoryAware, Base):
     version = Column(Text())
     submit_id = Column(UUID(as_uuid=True))
     client = Column(JSONB())
-    applet_history_id = Column(String(), nullable=False, index=True)
-    flow_history_id = Column(String(), nullable=True, index=True)
-    activity_history_id = Column(String(), nullable=False, index=True)
+    applet_history_id = Column(Text(), nullable=False, index=True)
+    flow_history_id = Column(Text(), nullable=True, index=True)
+    activity_history_id = Column(Text(), nullable=False, index=True)
     respondent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     is_flow_completed = Column(Boolean(), nullable=True)
     migrated_data = Column(JSONB())
@@ -43,8 +42,8 @@ class AnswerSchema(HistoryAware, Base):
     input_subject_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     relation = Column(String(length=20), nullable=True)
     consent_to_share = Column(Boolean(), default=False)
-    event_history_id = Column(String(), nullable=True)
-    device_id = Column(Text(), nullable=True)
+    event_history_id = Column(String(), nullable=True, index=True)
+    device_id = Column(Text(), nullable=True, index=True)
 
     answer_item = relationship(
         "AnswerItemSchema",
@@ -102,10 +101,8 @@ class AnswerItemSchema(Base):
 class AnswerEHRSchema(Base):
     __tablename__ = "answers_ehr"
 
-    submit_id = Column(UUID(as_uuid=True))
-    activity_id = Column(UUID(as_uuid=True))
+    submit_id = Column(UUID(as_uuid=True), index=True)
+    activity_id = Column(UUID(as_uuid=True), index=True)
     ehr_storage_uri = Column(Text())
     ehr_ingestion_status = Column(Text())
     meta = Column(JSONB())
-
-    __table_args__ = (UniqueConstraint("submit_id", "activity_id", name="answers_ehr_submit_activity_key"),)

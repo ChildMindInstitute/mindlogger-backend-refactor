@@ -16,13 +16,12 @@ class _BaseEventSchema:
     timer_type = Column(String(10), nullable=False)  # NOT_SET, TIMER, IDLE
     version = Column(
         String(13),
-        nullable=False,
         default=lambda: datetime.datetime.now(datetime.UTC).strftime("%Y%m%d") + "-1",
         server_default=text("TO_CHAR(timezone('utc', now()), 'YYYYMMDD') || '-1'"),
     )
 
     # Periodicity columns
-    periodicity = Column(String(10), nullable=False)  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
+    periodicity = Column(String(10))  # Options: ONCE, DAILY, WEEKLY, WEEKDAYS, MONTHLY, ALWAYS
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     selected_date = Column(Date, nullable=True)
@@ -51,7 +50,7 @@ class AppletEventsSchema(Base):
     __tablename__ = "applet_events"
 
     applet_id = Column(ForeignKey("applet_histories.id_version", ondelete="CASCADE"), nullable=False)
-    event_id = Column(ForeignKey("event_histories.id_version", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    event_id = Column(ForeignKey("event_histories.id_version", ondelete="CASCADE"), nullable=False)
 
     __table_args__ = (
         UniqueConstraint(
@@ -74,7 +73,7 @@ class _BaseNotificationSchema:
 class NotificationSchema(_BaseNotificationSchema, Base):
     __tablename__ = "notifications"
 
-    event_id = Column(ForeignKey("events.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    event_id = Column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
 
 
 class NotificationHistorySchema(_BaseNotificationSchema, HistoryAware, Base):
@@ -82,7 +81,7 @@ class NotificationHistorySchema(_BaseNotificationSchema, HistoryAware, Base):
 
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
-    event_id = Column(ForeignKey("event_histories.id_version", ondelete="RESTRICT", onupdate="CASCADE"), nullable=False)
+    event_id = Column(ForeignKey("event_histories.id_version", ondelete="RESTRICT"), nullable=False)
 
 
 class _BaseReminderSchema:
@@ -93,7 +92,7 @@ class _BaseReminderSchema:
 class ReminderSchema(_BaseReminderSchema, Base):
     __tablename__ = "reminders"
 
-    event_id = Column(ForeignKey("events.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    event_id = Column(ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
 
 
 class ReminderHistorySchema(_BaseReminderSchema, HistoryAware, Base):
@@ -101,7 +100,7 @@ class ReminderHistorySchema(_BaseReminderSchema, HistoryAware, Base):
 
     id_version = Column(String(), primary_key=True)
     id = Column(UUID(as_uuid=True))
-    event_id = Column(ForeignKey("event_histories.id_version", ondelete="RESTRICT", onupdate="CASCADE"), nullable=False)
+    event_id = Column(ForeignKey("event_histories.id_version", ondelete="RESTRICT"), nullable=False)
 
 
 class UserDeviceEventsHistorySchema(Base):

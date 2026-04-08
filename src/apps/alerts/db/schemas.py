@@ -20,7 +20,7 @@ class AlertSchema(Base):
         nullable=True,
     )
     subject_id = Column(
-        ForeignKey("subjects.id", ondelete="RESTRICT", onupdate="CASCADE"),
+        ForeignKey("subjects.id", ondelete="RESTRICT"),
         nullable=True,
     )
     is_watched = Column(Boolean(), nullable=False, default=False)
