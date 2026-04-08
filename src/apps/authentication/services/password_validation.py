@@ -26,8 +26,11 @@ class PasswordValidator:
         # Normalize password
         normalized = cls.normalize(password)
 
+        # Memoize Unicode categories
+        unicodecategories = {unicodedata.category(ch) for ch in normalized}
+
         # Reject control characters
-        if any(unicodedata.category(ch).startswith("C") for ch in normalized):
+        if any(cat.startswith("C") for cat in unicodecategories):
             raise PasswordContainsInvalidCharactersError()
 
         # Reject any whitespace
@@ -44,12 +47,12 @@ class PasswordValidator:
 
         # At least N of 4 character types
         types_present = sum(
-            [
-                any(ch.isupper() for ch in normalized),
-                any(ch.islower() for ch in normalized),
-                any(ch.isdigit() for ch in normalized),
-                any(not ch.isalnum() and not ch.isspace() for ch in normalized),
-            ]
+            (
+                any(cat == "Ll" for cat in unicodecategories),  # lowercase letter
+                any(cat == "Lu" for cat in unicodecategories),  # uppercase letter
+                any(cat == "Nd" for cat in unicodecategories),  # digit
+                any(not cat.startswith("L") and cat != "Nd" for cat in unicodecategories),  # symbol
+            )
         )
         if types_present < config.min_character_types:
             raise PasswordInsufficientTypesError()
