@@ -4,11 +4,11 @@ from typing import Annotated
 
 from pydantic import EmailStr, Field, field_validator
 
+from apps.authentication.services.password_validation import PasswordValidator
 from apps.shared.bcrypt import get_password_hash
 from apps.shared.domain import InternalModel, PublicModel
 from apps.shared.hashing import hash_sha224
 from apps.users.db.schemas import UserDeviceSchema
-from apps.users.errors import PasswordHasSpacesError
 
 __all__ = [
     "PublicUser",
@@ -57,16 +57,13 @@ class UserCreateRequest(PublicModel):
         str,
         Field(
             description="This field represents the user password",
-            min_length=1,
         ),
     ]
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, value: str) -> str:
-        if " " in value:
-            raise PasswordHasSpacesError()
-        return value
+        return PasswordValidator.validate(value)
 
     @field_validator("email")
     @classmethod
@@ -158,12 +155,15 @@ class ChangePasswordRequest(InternalModel):
     password: str
     prev_password: str
 
-    @field_validator("password", "prev_password")
+    @field_validator("password")
     @classmethod
     def validate_password(cls, value: str) -> str:
-        if " " in value:
-            raise PasswordHasSpacesError()
-        return value
+        return PasswordValidator.validate(value)
+
+    @field_validator("prev_password")
+    @classmethod
+    def normalize_prev_password(cls, value: str) -> str:
+        return PasswordValidator.normalize(value)
 
 
 class UserChangePassword(InternalModel):
@@ -197,6 +197,11 @@ class PasswordRecoveryApproveRequest(InternalModel):
     email: EmailStr
     key: uuid.UUID
     password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return PasswordValidator.validate(value)
 
 
 class AppInfoOS(PublicModel):
