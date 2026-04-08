@@ -35,10 +35,13 @@ class UserUpdateRequestFactory(ModelFactory):
 
 class PasswordUpdateRequestFactory(ModelFactory):
     __model__ = ChangePasswordRequest
+    password = "NewPass12345!"
+    prev_password = "OldPass12345!"
 
 
 class PasswordRecoveryApproveRequestFactory(ModelFactory):
     __model__ = PasswordRecoveryApproveRequest
+    password = "NewPass12345!"
 
 
 class PasswordRecoveryInfoFactory(ModelFactory):

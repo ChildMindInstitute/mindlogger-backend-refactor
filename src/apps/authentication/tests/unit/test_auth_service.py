@@ -15,7 +15,7 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.errors import UserIsDeletedError, UserNotFound
 
-TEST_PASSWORD = "Test1234!"
+TEST_PASSWORD = "Test12345!"
 RJTI = str(uuid.uuid4())
 
 

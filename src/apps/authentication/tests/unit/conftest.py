@@ -12,7 +12,7 @@ from apps.authentication.services.core import TokensService
 from apps.users.domain import User
 from config import settings
 
-TEST_PASSWORD = "Test1234!"
+TEST_PASSWORD = "Test12345!"
 RJTI = str(uuid.uuid4())
 
 

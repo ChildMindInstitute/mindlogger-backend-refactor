@@ -64,7 +64,7 @@ class TestSubjects(BaseTest):
         self, session, arbitrary_session, arbitrary_client, answer_create_payload
     ):
         subject_id = uuid.UUID("a7feb119-dccb-46b1-bd46-60e5af694de4")
-        await arbitrary_client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await arbitrary_client.login(self.login_url, "ivan@mindlogger.com", "Test12345!")
         response = await arbitrary_client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED
@@ -81,7 +81,7 @@ class TestSubjects(BaseTest):
         self, session, arbitrary_session, arbitrary_client, answer_create_payload, mock_kiq_report
     ):
         subject_id = uuid.UUID("a7feb119-dccb-46b1-bd46-60e5af694de4")
-        await arbitrary_client.login(self.login_url, "ivan@mindlogger.com", "Test1234!")
+        await arbitrary_client.login(self.login_url, "ivan@mindlogger.com", "Test12345!")
         response = await arbitrary_client.post(self.answer_url, data=answer_create_payload)
 
         assert response.status_code == http.HTTPStatus.CREATED

@@ -233,7 +233,7 @@ class TestPassword:
         data = {
             "email": user_create.model_dump()["email"],
             "key": key,
-            "password": "new_password",
+            "password": "NewPass12345!",
         }
 
         response = await client.post(
@@ -265,7 +265,7 @@ class TestPassword:
         data = {
             "email": user_create.model_dump()["email"],
             "key": key,
-            "password": "new_password",
+            "password": "NewPass12345!",
         }
 
         response = await client.post(

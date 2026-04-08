@@ -103,7 +103,7 @@ async def olive(olive_create: UserCreate, global_session: AsyncSession, pytestco
 def sam_create() -> UserCreate:
     return UserCreate(
         email="sam@mindlogger.com",
-        password="Test1234!",
+        password="Test12345!",
         first_name="Sam",
         last_name="Smith",
     )
@@ -113,7 +113,7 @@ def sam_create() -> UserCreate:
 def olive_create() -> UserCreate:
     return UserCreate(
         email="olive@mindlogger.com",
-        password="Test1234!",
+        password="Test12345!",
         first_name="Olive",
         last_name="Johnson",
     )
