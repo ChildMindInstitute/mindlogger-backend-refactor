@@ -472,13 +472,13 @@ applets:
               email: user1@example.com
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
             - id: {user_id}
               created_at: 2023-10-01T00:00:00Z
               email: user2@example.com
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
         """
         with pytest.raises(DuplicateUserIdsError):
             await seed_config(config)
@@ -495,13 +495,13 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
             - id: {uuid.uuid4()}
               created_at: 2023-10-01T00:00:00Z
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
         """
         with pytest.raises(DuplicateUserEmailsError):
             await seed_config(config)
@@ -520,7 +520,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
         
         applets:
             - id: {applet_id}
@@ -590,7 +590,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {applet_one.id}
@@ -675,7 +675,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
@@ -715,7 +715,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
@@ -800,7 +800,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
@@ -850,7 +850,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
@@ -898,12 +898,12 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
             - id: {user2_id}
               email: {user2_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
@@ -957,7 +957,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
@@ -1007,7 +1007,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
@@ -1055,7 +1055,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
@@ -1103,7 +1103,7 @@ applets:
               email: {user_email}
               first_name: First
               last_name: Last
-              password: password
+              password: Test12345!
 
         applets:
             - id: {uuid.uuid4()}
