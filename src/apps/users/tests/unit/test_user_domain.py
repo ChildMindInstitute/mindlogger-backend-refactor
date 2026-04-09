@@ -92,6 +92,7 @@ def test_public_user_from_user_model(base_data: BaseData):
         "Abcdefgh!@",  # 3 types: lower + upper + symbol
         "abcdefg12!",  # 3 types: lower + digit + symbol
         "ABCDEFG12!",  # 3 types: upper + digit + symbol
+        "abcdefg12\u65e5",  # 3 types: lower + digit + caseless (CJK ideograph)
         "TestPass1!",  # 4 types: lower + upper + digit + symbol
         "TestPass1!n\u0303",  # 4 types: NFKC normalizes n + combining ~ to ñ
     ],
