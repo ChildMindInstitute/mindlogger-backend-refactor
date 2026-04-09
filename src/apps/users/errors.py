@@ -17,23 +17,21 @@ class PasswordRecoveryKeyNotFound(NotFoundError):
 
 
 class PasswordHasSpacesError(ValidationError):
-    message = _("Password should not contain whitespace characters.")
+    message = _("Password must not contain spaces.")
 
 
 class PasswordContainsInvalidCharactersError(ValidationError):
-    message = _("Password should not contain control characters.")
+    message = _("Password must not contain control characters.")
 
 
 class PasswordTooShortError(ValidationError):
     message_is_template: bool = True
-    message = _("Password should be at least {min_length} characters.")
+    message = _("Password must be at least {chars} characters.")
 
 
 class PasswordInsufficientTypesError(ValidationError):
     message_is_template: bool = True
-    message = _(
-        "Password should contain at least {min_character_types} of: uppercase letter, lowercase letter, digit, symbol."
-    )
+    message = _("Password must contain at least {types} of: uppercase, lowercase, number, symbol")
 
 
 class PasswordTooCommonError(ValidationError):  # Phase 2
