@@ -124,21 +124,6 @@ def test_user_create_request_too_short_password_is_not_allowed(
 @pytest.mark.parametrize(
     "password",
     [
-        "Aa1!" + "x" * 125,  # 129 chars
-    ],
-)
-def test_user_create_request_too_long_password_is_not_allowed(
-    base_data: BaseData,
-    password: str,
-):
-    base_data["password"] = password
-    with pytest.raises(errors.PasswordTooLongError):
-        domain.UserCreateRequest(**base_data)
-
-
-@pytest.mark.parametrize(
-    "password",
-    [
         "abcdefghij",  # 1 type: lowercase only
         "ABCDEFGHIJ",  # 1 type: uppercase only
         "1234567890",  # 1 type: digit only

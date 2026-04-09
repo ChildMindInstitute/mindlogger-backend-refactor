@@ -28,10 +28,6 @@ class PasswordTooShortError(ValidationError):
     message = _("Password should be at least 10 characters.")
 
 
-class PasswordTooLongError(ValidationError):
-    message = _("Password should be at most 72 characters.")
-
-
 class PasswordInsufficientTypesError(ValidationError):
     message = _("Password should contain at least 3 of: uppercase letter, lowercase letter, digit, symbol.")
 

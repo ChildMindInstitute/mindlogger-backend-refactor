@@ -4,7 +4,6 @@ from apps.users.errors import (
     PasswordContainsInvalidCharactersError,
     PasswordHasSpacesError,
     PasswordInsufficientTypesError,
-    PasswordTooLongError,
     PasswordTooShortError,
 )
 from config import settings
@@ -40,10 +39,6 @@ class PasswordValidator:
         # Minimum length
         if len(normalized) < config.min_length:
             raise PasswordTooShortError()
-
-        # Maximum length
-        if len(normalized) > config.max_length:
-            raise PasswordTooLongError()
 
         # At least N of 4 character types
         types_present = sum(
