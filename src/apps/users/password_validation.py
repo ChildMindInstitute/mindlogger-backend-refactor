@@ -38,7 +38,7 @@ class PasswordValidator:
 
         # Minimum length
         if len(normalized) < config.min_length:
-            raise PasswordTooShortError()
+            raise PasswordTooShortError(chars=config.min_length)
 
         # At least N of 4 character types
         types_present = sum(
@@ -50,7 +50,7 @@ class PasswordValidator:
             )
         )
         if types_present < config.min_character_types:
-            raise PasswordInsufficientTypesError()
+            raise PasswordInsufficientTypesError(types=config.min_character_types)
 
         # Phase 2: zxcvbn score check
         # Phase 2: HIBP breach check

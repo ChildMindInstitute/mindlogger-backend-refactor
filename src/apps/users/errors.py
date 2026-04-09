@@ -25,11 +25,15 @@ class PasswordContainsInvalidCharactersError(ValidationError):
 
 
 class PasswordTooShortError(ValidationError):
-    message = _("Password should be at least 10 characters.")
+    message_is_template: bool = True
+    message = _("Password should be at least {min_length} characters.")
 
 
 class PasswordInsufficientTypesError(ValidationError):
-    message = _("Password should contain at least 3 of: uppercase letter, lowercase letter, digit, symbol.")
+    message_is_template: bool = True
+    message = _(
+        "Password should contain at least {min_character_types} of: uppercase letter, lowercase letter, digit, symbol."
+    )
 
 
 class PasswordTooCommonError(ValidationError):  # Phase 2
