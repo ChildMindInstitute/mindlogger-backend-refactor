@@ -232,11 +232,11 @@ class TestVersionAwareActivityEndpoint(BaseTest):
         update_data = AppletUpdate(**data)
         await srv.update(applet_with_flow.id, update_data)
 
-        # Fetching the deleted activity without version should fail
+        # Fetching the deleted activity without version should return 404
         response = await client.get(
             self.activity_url.format(activity_id=original_activity.id),
         )
-        assert response.status_code != http.HTTPStatus.OK
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
 
         # Fetching with the original version should succeed from history
         response = await client.get(

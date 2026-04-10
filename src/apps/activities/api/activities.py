@@ -19,6 +19,7 @@ from apps.activities.domain.activity import (
 from apps.activities.domain.activity_item import (
     ActivityItemSingleLanguageDetail,
 )
+from apps.activities.errors import ActivityDoeNotExist
 from apps.activities.filters import AppletActivityFilter
 from apps.activities.services.activity import ActivityItemService, ActivityService
 from apps.activity_assignments.service import ActivityAssignmentService
@@ -126,6 +127,8 @@ async def activity_retrieve(
             await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
         else:
             schema = await ActivitiesCRUD(session).get_by_id(activity_id)
+            if schema is None:
+                raise ActivityDoeNotExist()
             await CheckAccessService(session, user.id).check_applet_detail_access(schema.applet_id)
             activity = await ActivityService(session, user.id).get_single_language_by_id(activity_id, language)
     result = ActivitySingleLanguageWithItemsDetailPublic.model_validate(activity)
