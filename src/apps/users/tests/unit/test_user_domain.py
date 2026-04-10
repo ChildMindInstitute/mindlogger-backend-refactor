@@ -96,6 +96,7 @@ def test_public_user_from_user_model(base_data: BaseData):
         "abcdefg12\u65e5",  # 3 types: lower + digit + caseless (CJK ideograph)
         "TestPass1!",  # 4 types: lower + upper + digit + symbol
         "TestPass1!n\u0303",  # 4 types: NFKC normalizes n + combining ~ to ñ
+        "Abcdefgh!\U0001f1fa\U0001f1f3",  # 9 chars + flag emoji (2 code points / 1 grapheme)
     ],
 )
 def test_user_create_request_valid_passwords(
@@ -112,6 +113,7 @@ def test_user_create_request_valid_passwords(
         "Short1!aa",  # 9 chars
         "weak",  # 4 chars
         "",  # 0 chars
+        "Abcdefg!\U0001f1fa\U0001f1f3",  # 8 chars + flag emoji (2 code points / 1 grapheme)
     ],
 )
 def test_user_create_request_too_short_password_is_not_allowed(

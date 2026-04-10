@@ -1,5 +1,7 @@
 import unicodedata
 
+import regex
+
 from apps.users.errors import (
     PasswordContainsInvalidCharactersError,
     PasswordHasSpacesError,
@@ -36,8 +38,8 @@ class PasswordValidator:
         if any(ch.isspace() or ch in "\u2800\u3164\u115f\u1160\uffa0" for ch in normalized):
             raise PasswordHasSpacesError()
 
-        # Minimum length
-        if len(normalized) < config.min_length:
+        # Minimum length as counted by '\X' graphemes
+        if len(regex.findall(r"\X", normalized)) < config.min_length:
             raise PasswordTooShortError(chars=config.min_length)
 
         # At least N of the following character types
