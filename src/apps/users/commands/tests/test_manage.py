@@ -49,7 +49,7 @@ class TestUsersManage:
 
         user_create = UserCreate(
             email=self.USER_EMAIL,
-            password="Test1234!",
+            password="Test12345!",
             first_name=self.USER_FIRSTNAME,
             last_name=self.USER_LASTNAME,
         )
@@ -68,7 +68,7 @@ class TestUsersManage:
 
         user_create = UserCreate(
             email=self.USER_DELETED_EMAIL,
-            password="Test1234!",
+            password="Test12345!",
             first_name=self.USER_DELETED_FIRSTNAME,
             last_name=self.USER_DELETED_LASTNAME,
         )

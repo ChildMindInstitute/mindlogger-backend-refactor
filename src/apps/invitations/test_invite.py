@@ -98,7 +98,7 @@ def user_create_data() -> UserCreateRequest:
         email="tom2@mindlogger.com",
         first_name="Tom",
         last_name="Isaak",
-        password="Test1234!",
+        password="Test12345!",
     )
 
 

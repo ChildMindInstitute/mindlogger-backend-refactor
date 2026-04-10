@@ -16,6 +16,7 @@ from apps.authentication.services.core import TokensService
 from apps.shared.bcrypt import get_password_hash, verify
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
+from apps.users.password_validation import PasswordValidator
 from config import settings
 
 __all__ = ["AuthenticationService"]
@@ -121,14 +122,20 @@ class AuthenticationService:
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str, raise_exception=True) -> bool:
-        valid = verify(plain_password, hashed_password)
-        if not valid and raise_exception:
+        normalized = PasswordValidator.normalize(plain_password)
+        if verify(normalized, hashed_password):
+            return True
+        # Fallback: try without normalization for pre-existing hashes
+        if normalized != plain_password and verify(plain_password, hashed_password):
+            return True
+        if raise_exception:
             raise BadCredentials()
-        return valid
+        return False
 
     @staticmethod
     def get_password_hash(password: str) -> str:
-        return get_password_hash(password)
+        normalized = PasswordValidator.normalize(password)
+        return get_password_hash(normalized)
 
     async def authenticate_user(self, user_login_schema: UserLoginRequest) -> User:
         user: User = await UsersCRUD(self.session).get_by_email(email=user_login_schema.email)

@@ -20,7 +20,7 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from config import settings
 
-TEST_PASSWORD = "Test1234!"
+TEST_PASSWORD = "Test12345!"
 
 
 class TestAuthentication(BaseTest):

@@ -15,7 +15,7 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.errors import UserIsDeletedError, UserNotFound
 
-TEST_PASSWORD = "Test1234!"
+TEST_PASSWORD = "Test12345!"
 RJTI = str(uuid.uuid4())
 
 
@@ -37,6 +37,25 @@ class TestAuthService:
         hashed_password = auth_service.get_password_hash(password)
         valid = auth_service.verify_password(password, hashed_password)
         assert valid
+
+    def test_verify_password__normalized_hash(self, auth_service: AuthenticationService):
+        """n + combining ~ (decomposed) and ñ (composed) should NFKC normalize and verify against each other."""
+        decomposed = "grancaban\u0303a"  # grancabaña with n + combining ~ (decomposed)
+        composed = "grancaba\u00f1a"  # grancabaña with ñ (composed)
+        decomposed_hash = auth_service.get_password_hash(decomposed)
+        composed_hash = auth_service.get_password_hash(composed)
+        assert auth_service.verify_password(composed, decomposed_hash)
+        assert auth_service.verify_password(decomposed, decomposed_hash)
+        assert auth_service.verify_password(composed, composed_hash)
+        assert auth_service.verify_password(decomposed, composed_hash)
+
+    def test_verify_password__unnormalized_hash(self, auth_service: AuthenticationService):
+        """Old hashes from unnormalized input should still verify via fallback."""
+        from apps.shared.bcrypt import get_password_hash as raw_get_password_hash
+
+        decomposed = "grancaban\u0303a"  # grancabaña with n + combining ~ (decomposed)
+        unnormalized_hash = raw_get_password_hash(decomposed)  # old hash without NFKC normalization
+        assert auth_service.verify_password(decomposed, unnormalized_hash)
 
     async def test_authenticate_user__creds_are_not_valid(self, auth_service: AuthenticationService, user: User):
         login_schema = UserLoginRequest(email=user.email_encrypted, password="notvalidpassword")
