@@ -32,8 +32,8 @@ class PasswordValidator:
         if any(cat.startswith("C") for cat in unicodecategories):
             raise PasswordContainsInvalidCharactersError()
 
-        # Reject any whitespace
-        if any(ch.isspace() for ch in normalized):
+        # Reject any whitespace or blank characters that Unicode classifies as visible
+        if any(ch.isspace() or ch in "\u2800\u3164\u115f\u1160\uffa0" for ch in normalized):
             raise PasswordHasSpacesError()
 
         # Minimum length

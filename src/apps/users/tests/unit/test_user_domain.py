@@ -36,8 +36,9 @@ def test_user_create_request_email_to_lower_case(base_data: BaseData):
     "password",
     [
         "Test Pass1!",  # ASCII space
-        "TestPass1!\u00a0",  # non-breaking space
-        "TestPass1!\u2003",  # em space
+        "Test\u00a0Pass1!",  # non-breaking space
+        "Test\u2003Pass1!",  # em space
+        "Test\u2800Pass1!",  # blank Braille pattern (blank character that Unicode classifies as visible)
     ],
 )
 def test_user_create_request_whitespace_is_not_allowed_in_password(
