@@ -43,10 +43,10 @@ class PasswordValidator:
         # At least N of the following character types
         types_present = sum(
             (
-                any(cat == "Ll" for cat in unicodecategories),  # lowercase
-                any(cat == "Lu" for cat in unicodecategories),  # uppercase
-                any(cat == "Lo" or cat == "Lm" for cat in unicodecategories),  # caseless (Arabic, CJK, etc.)
-                any(cat == "Nd" for cat in unicodecategories),  # digit
+                "Ll" in unicodecategories,  # lowercase
+                "Lu" in unicodecategories,  # uppercase
+                "Lo" in unicodecategories or "Lm" in unicodecategories,  # caseless (Arabic, CJK, Hebrew, etc.)
+                "Nd" in unicodecategories,  # digit
                 any(not cat.startswith("L") and cat != "Nd" for cat in unicodecategories),  # symbol
             )
         )
