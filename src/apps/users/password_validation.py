@@ -31,11 +31,13 @@ class PasswordValidator:
         unicodecategories = {unicodedata.category(ch) for ch in normalized}
 
         # Reject control characters
-        if any(cat.startswith("C") for cat in unicodecategories):
+        has_control = any(cat.startswith("C") for cat in unicodecategories)
+        if has_control:
             raise PasswordContainsInvalidCharactersError()
 
         # Reject any whitespace or blank characters that Unicode classifies as visible
-        if any(ch.isspace() or ch in "\u2800\u3164\u115f\u1160\uffa0" for ch in normalized):
+        has_whitespace = any(ch.isspace() or ch in "\u2800\u3164\u115f\u1160\uffa0" for ch in normalized)
+        if has_whitespace:
             raise PasswordHasSpacesError()
 
         # Minimum length as counted by '\X' graphemes
@@ -43,13 +45,17 @@ class PasswordValidator:
             raise PasswordTooShortError(chars=config.min_length)
 
         # At least N of the following character types
+        has_caseless = "Lo" in unicodecategories or "Lm" in unicodecategories  # CJK, Arabic, Hebrew, etc.
+        has_lowercase = "Ll" in unicodecategories
+        has_uppercase = "Lu" in unicodecategories
+        has_digit = "Nd" in unicodecategories
+        has_symbol = any(not cat.startswith("L") and cat != "Nd" for cat in unicodecategories)
         types_present = sum(
             (
-                "Ll" in unicodecategories,  # lowercase
-                "Lu" in unicodecategories,  # uppercase
-                "Lo" in unicodecategories or "Lm" in unicodecategories,  # caseless (Arabic, CJK, Hebrew, etc.)
-                "Nd" in unicodecategories,  # digit
-                any(not cat.startswith("L") and cat != "Nd" for cat in unicodecategories),  # symbol
+                has_lowercase or has_caseless,  # lowercase or caseless (CJK, Arabic, Hebrew, etc.)
+                has_uppercase or has_caseless,  # uppercase or caseless (CJK, Arabic, Hebrew, etc.)
+                has_digit,  # digit
+                has_symbol,  # symbol
             )
         )
         if types_present < config.min_character_types:

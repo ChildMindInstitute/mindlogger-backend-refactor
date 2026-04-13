@@ -93,7 +93,7 @@ def test_public_user_from_user_model(base_data: BaseData):
         "Abcdefgh!@",  # 3 types: lower + upper + symbol
         "abcdefg12!",  # 3 types: lower + digit + symbol
         "ABCDEFG12!",  # 3 types: upper + digit + symbol
-        "abcdefg12\u65e5",  # 3 types: lower + digit + caseless (CJK ideograph)
+        "\u65e5123456789",  # 3 types: lower (via caseless CJK) + upper (via caseless CJK) + digit
         "TestPass1!",  # 4 types: lower + upper + digit + symbol
         "TestPass1!n\u0303",  # 4 types: NFKC normalizes n + combining ~ to ñ
         "Abcdefgh!\U0001f1fa\U0001f1f3",  # 9 chars + flag emoji (2 code points / 1 grapheme)
