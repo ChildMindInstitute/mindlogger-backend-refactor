@@ -9,7 +9,7 @@ from config import settings
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
-app = typer.Typer()
+app = typer.Typer(short_help="Storage management commands")
 
 TABLES = {
     "activities": [

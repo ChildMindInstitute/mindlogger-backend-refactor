@@ -8,7 +8,7 @@ from apps.authentication.domain.token import JWTClaim
 from apps.authentication.services import AuthenticationService
 from infrastructure.commands.utils import coro
 
-app = typer.Typer()
+app = typer.Typer(short_help="Token management commands")
 
 
 @app.command(short_help="Generate access token")
