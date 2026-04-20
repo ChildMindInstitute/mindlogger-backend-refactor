@@ -17,7 +17,7 @@ dependencies = [
   "bcrypt~=4.3.0",
   "boto3~=1.40.60",
   "cryptography>=46.0.6",
-  "ddtrace~=3.17.1",
+  "ddtrace~=4.6.6",
   "fastapi==0.124.*",
   "fastapi-mail>=1.5.3",
   "firebase-admin==6.9.*",
