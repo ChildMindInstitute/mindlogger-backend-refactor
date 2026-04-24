@@ -4,11 +4,18 @@ import regex
 
 from apps.users.errors import (
     PasswordContainsInvalidCharactersError,
+    PasswordHasEmojisError,
     PasswordHasSpacesError,
     PasswordInsufficientTypesError,
     PasswordTooShortError,
 )
 from config import settings
+
+# Regex for emoji (standard emjoi + regional indicators) which are not exposed as a Unicode catgory
+EMOJI_REGEX = regex.compile(r"\p{Extended_Pictographic}|[\U0001F1E6-\U0001F1FF]")
+
+# Regex for grapheme cluster for counting user-perceived characters
+GRAPHEME_REGEX = regex.compile(r"\X")
 
 
 class PasswordValidator:
@@ -40,8 +47,14 @@ class PasswordValidator:
         if has_whitespace:
             raise PasswordHasSpacesError()
 
-        # Minimum length as counted by '\X' graphemes
-        if len(regex.findall(r"\X", normalized)) < config.min_length:
+        # Reject any emoji or regional indicators
+        has_emoji = EMOJI_REGEX.search(normalized) is not None
+        if has_emoji:
+            raise PasswordHasEmojisError()
+
+        # Minimum length as counted by graphemes
+        length = len(GRAPHEME_REGEX.findall(normalized))
+        if length < config.min_length:
             raise PasswordTooShortError(chars=config.min_length)
 
         # At least N of the following character types
