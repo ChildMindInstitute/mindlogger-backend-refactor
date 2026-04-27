@@ -96,7 +96,6 @@ def test_public_user_from_user_model(base_data: BaseData):
         "\u65e5123456789",  # 3 types: lower (via caseless CJK) + upper (via caseless CJK) + digit
         "TestPass1!",  # 4 types: lower + upper + digit + symbol
         "TestPass1!n\u0303",  # 4 types: NFKC normalizes n + combining ~ to ñ
-        "Abcdefgh!\U0001f1fa\U0001f1f3",  # 9 chars + flag emoji (2 code points / 1 grapheme)
     ],
 )
 def test_user_create_request_valid_passwords(
@@ -113,7 +112,6 @@ def test_user_create_request_valid_passwords(
         "Short1!aa",  # 9 chars
         "weak",  # 4 chars
         "",  # 0 chars
-        "Abcdefg!\U0001f1fa\U0001f1f3",  # 8 chars + flag emoji (2 code points / 1 grapheme)
     ],
 )
 def test_user_create_request_too_short_password_is_not_allowed(
@@ -162,6 +160,22 @@ def test_user_create_request_control_characters_are_not_allowed_in_password(
 ):
     base_data["password"] = password
     with pytest.raises(errors.PasswordContainsInvalidCharactersError):
+        domain.UserCreateRequest(**base_data)
+
+
+@pytest.mark.parametrize(
+    "password",
+    [
+        "TestPass1!\U0001f600",  # grinning face (standard emoji)
+        "TestPass1!\U0001f1fa\U0001f1f3",  # flag (regional indicator)
+    ],
+)
+def test_user_create_request_emojis_are_not_allowed_in_password(
+    base_data: BaseData,
+    password: str,
+):
+    base_data["password"] = password
+    with pytest.raises(errors.PasswordHasEmojisError):
         domain.UserCreateRequest(**base_data)
 
 

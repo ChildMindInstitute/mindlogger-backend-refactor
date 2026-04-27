@@ -20,6 +20,10 @@ class PasswordHasSpacesError(ValidationError):
     message = _("Password must not contain spaces.")
 
 
+class PasswordHasEmojisError(ValidationError):
+    message = _("Password must not contain emojis.")
+
+
 class PasswordContainsInvalidCharactersError(ValidationError):
     message = _("Password must not contain control characters.")
 
