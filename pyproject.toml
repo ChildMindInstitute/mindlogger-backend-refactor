@@ -28,7 +28,7 @@ dependencies = [
   "pyjwt>=2.12.0",
   "pymongo==4.13.0",
   "pyotp~=2.9.0",
-  "python-multipart>=0.0.22",
+  "python-multipart>=0.0.26",
   "python-slugify==8.0.4",
   "redis==5.2.*",
   "sentry-sdk~=2.13",
