@@ -7,3 +7,5 @@ OPERATIONS_BUCKET_NAME = "test-operations-bucket"
 MEDIA_OVERRIDE = "this-is-the-media-override"
 OPERATIONS_OVERRIDE = "this-is-the-operations-override"
 ANSWER_OVERRIDE = "this-is-the-answer-override"
+
+KMS_KEY_ID = "arn:aws:kms:test-kms-key"

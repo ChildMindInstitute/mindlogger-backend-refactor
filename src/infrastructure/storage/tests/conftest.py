@@ -10,6 +10,7 @@ from infrastructure.storage.tests import (
     ANSWER_BUCKET_NAME,
     ANSWER_OVERRIDE,
     DOMAIN,
+    KMS_KEY_ID,
     MEDIA_BUCKET_NAME,
     MEDIA_OVERRIDE,
     OPERATIONS_BUCKET_NAME,
@@ -132,6 +133,22 @@ async def answer_storage_config(normal_storage_settings: Settings) -> StorageCon
         bucket=normal_storage_settings.cdn.bucket_answer,
         access_key=normal_storage_settings.cdn.access_key,
         secret_key=normal_storage_settings.cdn.secret_key,
+    )
+
+    return config
+
+
+@pytest.fixture
+async def answer_storage_kms_config(normal_storage_settings: Settings) -> StorageConfig:
+    """Settings for storage"""
+    config = StorageConfig(
+        endpoint_url=None,
+        region="us-east-1",
+        bucket=normal_storage_settings.cdn.bucket_answer,
+        access_key=normal_storage_settings.cdn.access_key,
+        secret_key=normal_storage_settings.cdn.secret_key,
+        kms_enabled=True,
+        kms_key_id=KMS_KEY_ID,
     )
 
     return config

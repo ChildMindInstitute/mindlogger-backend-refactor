@@ -28,6 +28,15 @@ class TestStorageClient:
         return client
 
     @pytest.fixture
+    async def answer_storage_client_kms(self, s3_client, answer_storage_kms_config) -> StorageClient:
+        """Answer storage client with KMS configured"""
+
+        client = StorageClient(answer_storage_kms_config, env="test")
+        client.client = s3_client
+
+        return client
+
+    @pytest.fixture
     async def media_storage_client_other(self, s3_client) -> StorageClient:
         """Regular storage client with local type settings"""
         config = StorageConfig(
@@ -65,6 +74,23 @@ class TestStorageClient:
         assert data is not None
         assert ANSWER_BUCKET_NAME in data["url"]
         assert ANSWER_OVERRIDE not in data["url"]
+
+        assert "x-amz-server-side-encryption" not in data["fields"]
+        assert "x-amz-server-side-encryption-aws-kms-key-id" not in data["fields"]
+
+    async def test_generate_presigned_post_kms(self, answer_storage_client_kms):
+        data = answer_storage_client_kms.generate_presigned_post(FILE_KEY)
+        assert data is not None
+        assert ANSWER_BUCKET_NAME in data["url"]
+        assert ANSWER_OVERRIDE not in data["url"]
+
+        assert "x-amz-server-side-encryption" in data["fields"]
+        assert "x-amz-server-side-encryption-aws-kms-key-id" in data["fields"]
+
+        assert data["fields"]["x-amz-server-side-encryption"] == "aws:kms"
+        assert (
+            data["fields"]["x-amz-server-side-encryption-aws-kms-key-id"] == answer_storage_client_kms.config.kms_key_id
+        )
 
     async def test_generate_presigned_post_dr(self, answer_storage_client_dr):
         data = answer_storage_client_dr.generate_presigned_post(FILE_KEY)
