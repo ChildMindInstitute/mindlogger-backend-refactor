@@ -146,11 +146,14 @@ services:
       - rabbitmq
 
   mailhog:
-    image: mailhog/mailhog:v1.0.0
+    image: axllent/mailpit:latest
     container_name: mindlogger_mailhog
     ports:
       - "8025:8025"
       - "1025:1025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
   minio:
     image: minio/minio
