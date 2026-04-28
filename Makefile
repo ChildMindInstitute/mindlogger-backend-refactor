@@ -49,7 +49,7 @@ run-worker:
 # Start every dependency.  Not always needed
 .PHONY: start-all-deps
 start-all-deps:
-	${DOCKER_COMPOSE_CMD} up -d redis postgres mailhog rabbitmq minio worker scheduler
+	${DOCKER_COMPOSE_CMD} up -d redis postgres mailpit rabbitmq minio worker scheduler
 
 # Start just the necessary day-to-day dependencies
 .PHONY: start-deps

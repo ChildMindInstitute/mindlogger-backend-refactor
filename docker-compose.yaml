@@ -60,13 +60,13 @@ services:
     environment:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
-      MAILING__MAIL__SERVER: mailhog
+      MAILING__MAIL__SERVER: mailpit
       RABBITMQ__URL: rabbitmq
     depends_on:
       - postgres
       - redis
       - rabbitmq
-      - mailhog
+      - mailpit
     ports:
       - "8000:80"
     develop:
@@ -94,7 +94,7 @@ services:
     environment:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
-      MAILING__MAIL__SERVER: mailhog
+      MAILING__MAIL__SERVER: mailpit
       RABBITMQ__URL: rabbitmq
     develop:
       watch:
@@ -112,7 +112,7 @@ services:
       - postgres
       - redis
       - rabbitmq
-      - mailhog
+      - mailpit
 
   scheduler:
     build:
@@ -126,7 +126,7 @@ services:
     environment:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
-      MAILING__MAIL__SERVER: mailhog
+      MAILING__MAIL__SERVER: mailpit
       RABBITMQ__URL: rabbitmq
     develop:
       watch:
@@ -145,9 +145,9 @@ services:
       - redis
       - rabbitmq
 
-  mailhog:
+  mailpit:
     image: axllent/mailpit:latest
-    container_name: mindlogger_mailhog
+    container_name: mindlogger_mailpit
     ports:
       - "8025:8025"
       - "1025:1025"
