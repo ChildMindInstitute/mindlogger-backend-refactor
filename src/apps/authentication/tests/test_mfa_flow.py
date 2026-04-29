@@ -16,7 +16,7 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.totp import totp_service
 
-TEST_PASSWORD = "Test1234!"
+TEST_PASSWORD = "Test12345!"
 
 
 @pytest.fixture

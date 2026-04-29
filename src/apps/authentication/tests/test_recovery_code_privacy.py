@@ -22,7 +22,7 @@ from apps.shared.test.client import TestClient
 from apps.users.domain import User
 from apps.users.services.totp import totp_service
 
-TEST_PASSWORD = "Test1234!"
+TEST_PASSWORD = "Test12345!"
 
 
 @pytest.mark.usefixtures("user")

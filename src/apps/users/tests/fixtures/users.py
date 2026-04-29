@@ -26,7 +26,7 @@ async def _get_or_create_user(
 def user_create() -> UserCreate:
     return UserCreate(
         email="user@example.com",
-        password="Test1234!",
+        password="Test12345!",
         first_name="user",
         last_name="test",
     )
@@ -36,7 +36,7 @@ def user_create() -> UserCreate:
 def tom_create() -> UserCreate:
     return UserCreate(
         email="tom@mindlogger.com",
-        password="Test1234!",
+        password="Test12345!",
         first_name="Tom",
         last_name="Isaak",
     )
@@ -46,7 +46,7 @@ def tom_create() -> UserCreate:
 def lucy_create() -> UserCreate:
     return UserCreate(
         email="lucy@gmail.com",
-        password="Test123",
+        password="Test12345!",
         first_name="Lucy",
         last_name="Gabel",
     )
@@ -56,7 +56,7 @@ def lucy_create() -> UserCreate:
 def bob_create() -> UserCreate:
     return UserCreate(
         email="bob@gmail.com",
-        password="Test1234!",
+        password="Test12345!",
         first_name="Bob",
         last_name="Martin",
     )
@@ -66,7 +66,7 @@ def bob_create() -> UserCreate:
 def mike_create() -> UserCreate:
     return UserCreate(
         email="mike@gmail.com",
-        password="Test1234",
+        password="Test12345!",
         first_name="Mike",
         last_name="Samuel",
     )
@@ -76,7 +76,7 @@ def mike_create() -> UserCreate:
 def pit_create() -> UserCreate:
     return UserCreate(
         email="pit@gmail.com",
-        password="Test1234",
+        password="Test12345!",
         first_name="Pit",
         last_name="Mitch",
     )
@@ -84,7 +84,7 @@ def pit_create() -> UserCreate:
 
 @pytest.fixture(scope="session", autouse=True)
 def kate_create() -> UserCreate:
-    return UserCreate(email="kate@gmail.com", password="Test1234", first_name="Kate", last_name="Manson")
+    return UserCreate(email="kate@gmail.com", password="Test12345!", first_name="Kate", last_name="Manson")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -165,7 +165,7 @@ async def reviewer(global_session: AsyncSession, pytestconfig: Config):
         crud,
         UserCreate(
             email="reviewer@mail.com",
-            password="Test1234!",
+            password="Test12345!",
             first_name="Reviewer",
             last_name="User",
         ),
@@ -198,7 +198,7 @@ async def patric(kate_create: UserCreate, global_session: AsyncSession, pytestco
         crud,
         UserCreate(
             email="patric@mail.com",
-            password="Test1234",
+            password="Test12345!",
             first_name="Patric",
             last_name="Davison",
         ),
@@ -235,7 +235,7 @@ async def bill_bronson(global_session: AsyncSession, pytestconfig: Config):
         crud,
         UserCreate(
             email="billbronson@mail.com",
-            password="Test1234!",
+            password="Test12345!",
             first_name="Boll",
             last_name="Bronson",
         ),

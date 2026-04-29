@@ -161,7 +161,7 @@ async def test_create_user(session: AsyncSession):
         email="test@example.com",
         first_name="first",
         last_name="last",
-        password="pass",
+        password="Test12345!",
     )
     user = await srv.create_user(data)
     assert user.first_name == data.first_name
@@ -179,7 +179,7 @@ async def test_create_user_with_test_id(session: AsyncSession):
         email="test@example.com",
         first_name="first",
         last_name="last",
-        password="pass",
+        password="Test12345!",
     )
     user = await srv.create_user(data, test_id=id_)
     assert user.id == id_

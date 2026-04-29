@@ -17,7 +17,29 @@ class PasswordRecoveryKeyNotFound(NotFoundError):
 
 
 class PasswordHasSpacesError(ValidationError):
-    message = _("Password should not contain blank spaces")
+    message = _("Password must not contain spaces.")
+
+
+class PasswordHasEmojisError(ValidationError):
+    message = _("Password must not contain emojis.")
+
+
+class PasswordContainsInvalidCharactersError(ValidationError):
+    message = _("Password must not contain control characters.")
+
+
+class PasswordTooShortError(ValidationError):
+    message_is_template: bool = True
+    message = _("Password must be at least {chars} characters.")
+
+
+class PasswordInsufficientTypesError(ValidationError):
+    message_is_template: bool = True
+    message = _("Password must contain at least {types} of: uppercase, lowercase, number, symbol")
+
+
+class PasswordTooCommonError(ValidationError):  # Phase 2
+    message = _("Password is too common or easily guessable.")
 
 
 class UserIsDeletedError(NotFoundError):
