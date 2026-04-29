@@ -225,10 +225,10 @@ class StorageClient:
         logger.info(f'Check bucket "{storage_bucket}" availability.')
         key = "mindlogger.txt"
 
-        presigned_data = self.generate_presigned_post(storage_bucket, key)
+        presigned_data = self.generate_presigned_post(key)
 
         logger.info(f"Presigned POST fields are following: {presigned_data['fields'].keys()}")
-        file = io.BytesIO(b"")
+        file = io.BytesIO(b"content")
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
