@@ -145,7 +145,7 @@ PatchRegister.register(
     description="Library cleanup for CAMHI applets",
 )
 
-app = typer.Typer()
+app = typer.Typer(short_help="One-off database patches.")
 
 
 def print_data_table(data: list[Patch]):

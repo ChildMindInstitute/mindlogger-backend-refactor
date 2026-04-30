@@ -33,7 +33,7 @@ from infrastructure.database import atomic, session_manager
 from infrastructure.logger import logger
 from infrastructure.storage.storage import create_answer_client, select_answer_storage
 
-app = typer.Typer()
+app = typer.Typer(short_help="Manage arbitrary server settings")
 
 
 async def get_version(database_url) -> str | None:
