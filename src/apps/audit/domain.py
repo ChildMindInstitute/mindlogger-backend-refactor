@@ -52,7 +52,7 @@ class EventAction(StrEnum):
     APPLET_ANSWER_NOTE_VIEW = "applet:answer:note:view"
     APPLET_ANSWER_EXPORT = "applet:answer:export"
 
-    # Applet data download
+    # Applet file download
     APPLET_ANSWER_EHR_DOWNLOAD = "applet:answer:ehr:download"
     APPLET_ANSWER_FILE_DOWNLOAD = "applet:answer:file:download"
     APPLET_ANSWER_REPORT_DOWNLOAD = "applet:answer:report:download"
