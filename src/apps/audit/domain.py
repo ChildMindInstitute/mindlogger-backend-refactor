@@ -59,17 +59,17 @@ class EventAction(StrEnum):
     APPLET_ANSWER_REPORT_DOWNLOAD = "applet:answer:report:download"
 
 
-class EventOutcome(StrEnum):
-    """event.outcome values defined by ECS"""
+class EventKind(StrEnum):
+    """event.kind valudes defined by ECS"""
 
-    SUCCESS = "success"
-    FAILURE = "failure"
-    UNKNOWN = "unknown"
+    # https://www.elastic.co/docs/reference/ecs/ecs-allowed-values-event-kind
+    EVENT = "event"
 
 
 class EventCategory(StrEnum):
     """event.category values defined by ECS"""
 
+    # https://www.elastic.co/docs/reference/ecs/ecs-allowed-values-event-category
     AUTHENTICATION = "authentication"
     SESSION = "session"
     DATABASE = "database"
@@ -82,6 +82,7 @@ class EventCategory(StrEnum):
 class EventType(StrEnum):
     """event.type values defined by ECS"""
 
+    # https://www.elastic.co/docs/reference/ecs/ecs-allowed-values-event-type
     START = "start"
     END = "end"
     INFO = "info"
@@ -90,6 +91,15 @@ class EventType(StrEnum):
     CREATION = "creation"
     DELETION = "deletion"
     DENIED = "denied"
+
+
+class EventOutcome(StrEnum):
+    """event.outcome values defined by ECS"""
+
+    # https://www.elastic.co/docs/reference/ecs/ecs-allowed-values-event-outcome
+    SUCCESS = "success"
+    FAILURE = "failure"
+    UNKNOWN = "unknown"
 
 
 class AuditEvent(PublicModel):
@@ -152,9 +162,9 @@ class AuditEvent(PublicModel):
     ]
     error_type: Annotated[str | None, Field(alias="error.type")] = None  # if event_outcome="failure"
     event_action: Annotated[EventAction, Field(alias="event.action")]
-    event_outcome: Annotated[EventOutcome, Field(alias="event.outcome")] = EventOutcome.SUCCESS
     event_id: Annotated[UUID, Field(alias="event.id", default_factory=uuid4)]
-    event_kind: Annotated[Literal["event"], Field(alias="event.kind")] = "event"
+    event_kind: Annotated[EventKind, Field(alias="event.kind")] = EventKind.EVENT
+    event_outcome: Annotated[EventOutcome, Field(alias="event.outcome")] = EventOutcome.SUCCESS
     event_module: Annotated[str, Field(alias="event.module")] = "curious"
     event_dataset: Annotated[str, Field(alias="event.dataset")] = "curious.audit"
     service_name: Annotated[str, Field(alias="service.name")] = "mindlogger-backend"
