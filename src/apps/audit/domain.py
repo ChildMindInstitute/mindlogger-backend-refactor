@@ -4,9 +4,10 @@ from uuid import UUID, uuid4
 
 from pydantic import Field
 
-from apps.audit.enums import EventAction, EventKind, EventOutcome
 from apps.shared.domain import PublicModel
 from config import settings
+
+from .enums import EventAction, EventKind, EventOutcome
 
 
 class AuditEvent(PublicModel):
