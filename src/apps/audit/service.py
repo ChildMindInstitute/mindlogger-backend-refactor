@@ -4,5 +4,5 @@ from .domain import AuditEvent
 
 
 async def log(event: AuditEvent) -> None:
-    payload = event.model_dump(by_alias=True, mode="json")
+    payload = event.model_dump(mode="json")
     logger.info("audit_event", **payload)  # TODO: Replace with sending event to RabbitMQ/OpenSearch.
