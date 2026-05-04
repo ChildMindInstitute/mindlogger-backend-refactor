@@ -3,8 +3,9 @@ from enum import StrEnum
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from apps.shared.domain import PublicModel
 from config import settings
 
 
@@ -91,7 +92,7 @@ class EventType(StrEnum):
     DENIED = "denied"
 
 
-class AuditEvent(BaseModel):
+class AuditEvent(PublicModel):
     """Audit event
 
     Required for all events:
