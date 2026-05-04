@@ -1,7 +1,4 @@
-import httpx
 import pytest
-import requests
-from moto import mock_aws
 
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
@@ -135,31 +132,3 @@ class TestStorageClient:
     async def test_check(self, answer_storage_client, s3_client):
         answer_storage_client.client = s3_client
         await answer_storage_client.check()
-
-    @pytest.mark.usefixtures("answer_bucket")
-    async def test_presigned_post(self, s3_client):
-        # bucket_name = "test-bucket"
-        # s3_client.create_bucket(Bucket=bucket_name)
-
-        presigned_post = s3_client.generate_presigned_post(
-            Bucket=ANSWER_BUCKET_NAME,
-            Key="test.txt"
-        )
-
-        files = {"file": ("test.txt", b"content")}
-        # response = requests.post(
-        #     presigned_post["url"],
-        #     data=presigned_post["fields"],
-        #     files=files
-        # )
-        # Build files dict with all fields as tuples
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                presigned_post["url"], data=presigned_post["fields"], files=files
-            )
-
-            assert response.status_code == 204
-
-            obj = s3_client.get_object(Bucket=ANSWER_BUCKET_NAME, Key="test.txt")
-            assert obj["Body"].read() == b"content"

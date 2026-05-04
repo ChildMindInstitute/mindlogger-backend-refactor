@@ -96,4 +96,6 @@ class StorageConfig(BaseSettings):
             secret_key=cdn_settings.secret_key,
             access_key=cdn_settings.access_key,
             ttl_signed_urls=cdn_settings.ttl_signed_urls,
+            kms_enabled=cdn_settings.bucket_answer_kms_enabled,
+            kms_key_id=cdn_settings.bucket_answer_kms_key_id,
         )

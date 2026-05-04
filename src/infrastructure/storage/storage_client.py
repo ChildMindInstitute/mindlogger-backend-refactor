@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, BinaryIO
 
 import boto3
-import httpx
+import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 from ddtrace.trace import tracer
@@ -228,20 +228,18 @@ class StorageClient:
         presigned_data = self.generate_presigned_post(key)
 
         logger.info(f"Presigned POST fields are following: {presigned_data['fields'].keys()}")
-        file = io.BytesIO(b"content")
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(
-                    presigned_data["url"], data=presigned_data["fields"], files={"file": (key, file)}
-                )
-                if response.status_code == http.HTTPStatus.NO_CONTENT:
-                    logger.info(f"Bucket {storage_bucket} is available.")
-                else:
-                    logger.info(response.content)
-                    raise Exception("File upload error")
-            except httpx.HTTPError as e:
-                logger.info("File upload error")
-                raise e
+        files = {"file": ("test.txt", b"content")}
+
+        try:
+            response = requests.post(presigned_data["url"], data=presigned_data["fields"], files=files)
+            if response.status_code == http.HTTPStatus.NO_CONTENT:
+                logger.info(f"Bucket {storage_bucket} is available.")
+            else:
+                logger.info(response.content)
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.info(f"File upload error: {e}")
+            raise e
 
     def _check_is_bucket_public(self) -> bool:
         # Check the bucket policy
