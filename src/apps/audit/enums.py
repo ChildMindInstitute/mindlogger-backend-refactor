@@ -1,8 +1,19 @@
 from enum import StrEnum
+from functools import cached_property
 
 
 class EventAction(StrEnum):
-    """event.action values defined for Curious"""
+    """event.action values defined for Curious
+
+    Uses colon-separated format "{resource}:{subject}:{action}":
+    - "{resource}" all lowercase or underscore
+    - "{subject}" all lowercase or underscore or colon or omitted
+    - "{action}" all lowercase or underscore
+
+    Note that "{subject}" can contain colons or be omitted.
+
+    If omitted, "{subject}" is implied to be the same as "{resource}".
+    """
 
     # User auth
     USER_SESSION_LOGIN = "user:session:login"
@@ -49,6 +60,46 @@ class EventAction(StrEnum):
     APPLET_ANSWER_EHR_DOWNLOAD = "applet:answer:ehr:download"
     APPLET_ANSWER_FILE_DOWNLOAD = "applet:answer:file:download"
     APPLET_ANSWER_REPORT_DOWNLOAD = "applet:answer:report:download"
+
+    @cached_property
+    def _parts(self) -> tuple[str, ...]:
+        """Split into parts by colon ":"
+
+        - ("a", "b", "c", "d") for event "a:b:c:d"
+        - ("foo", "bar", "baz") for event "foo:bar:baz"
+        - ("toto", "tata") for event "toto:tata"
+        """
+        return tuple(self.value.split(":"))
+
+    @cached_property
+    def resource(self) -> str:
+        """First part of enum value
+
+        - "a" for event "a:b:c:d"
+        - "foo" for event "foo:bar:baz"
+        - "toto" for event "toto:tata"
+        """
+        return self._parts[0]
+
+    @cached_property
+    def subject(self) -> str:
+        """Middle part of enum value, or resource if middle part does not exist
+
+        - "b:c" for event "a:b:c:d"
+        - "bar" for event "foo:bar:baz"
+        - "toto" for event "toto:tata"
+        """
+        return ":".join(self._parts[1:-1]) or self.resource
+
+    @cached_property
+    def action(self) -> str:
+        """Last part of enum value
+
+        - "d" for event "a:b:c:d"
+        - "baz" for event "foo:bar:baz"
+        - "tata" for event "toto:tata"
+        """
+        return self._parts[-1]
 
 
 class EventKind(StrEnum):
