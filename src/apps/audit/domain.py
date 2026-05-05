@@ -75,8 +75,8 @@ class AuditEvent(PublicModel):
     event_id: Annotated[UUID, Field(alias="event.id", default_factory=uuid4)]
     event_kind: Annotated[EventKind, Field(alias="event.kind")] = EventKind.EVENT
     event_outcome: Annotated[EventOutcome, Field(alias="event.outcome")] = EventOutcome.SUCCESS
-    event_module: Annotated[str, Field(alias="event.module")] = "mindlogger"
-    event_dataset: Annotated[str, Field(alias="event.dataset")] = "mindlogger.audit"
+    event_module: Annotated[str, Field(alias="event.module")] = "curious"
+    event_dataset: Annotated[str, Field(alias="event.dataset")] = "curious.audit"
     service_name: Annotated[str, Field(alias="service.name", default=settings.service.name)]
     service_environment: Annotated[str, Field(alias="service.environment", default=settings.env)]
 
