@@ -77,7 +77,7 @@ class AuditEvent(PublicModel):
     event_outcome: Annotated[EventOutcome, Field(alias="event.outcome")] = EventOutcome.SUCCESS
     event_module: Annotated[str, Field(alias="event.module")] = "mindlogger"
     event_dataset: Annotated[str, Field(alias="event.dataset")] = "mindlogger.audit"
-    service_name: Annotated[str, Field(alias="service.name")] = "mindlogger-backend"
+    service_name: Annotated[str, Field(alias="service.name", default=settings.service.name)]
     service_environment: Annotated[str, Field(alias="service.environment", default=settings.env)]
 
     # User performing the action
