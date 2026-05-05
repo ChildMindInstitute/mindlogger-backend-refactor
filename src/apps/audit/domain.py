@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from apps.shared.domain import PublicModel
 from config import settings
@@ -63,6 +63,8 @@ class AuditEvent(PublicModel):
     - Set event_outcome="failure" for failures.
 
     """
+
+    model_config = ConfigDict(serialize_by_alias=True)
 
     timestamp: Annotated[
         datetime,
