@@ -22,7 +22,6 @@ class OpenSearchClientTest:
     async def close(self) -> None:
         pass
 
-
 class OpenSearchClient:
     """Singleton OpenSearch client"""
 
