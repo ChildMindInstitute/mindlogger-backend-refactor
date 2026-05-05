@@ -28,6 +28,7 @@ async def shutdown_opensearch() -> None:
     await OpenSearchClient().close()
 
 
+
 def startup(app: FastAPI):
     async def _startup():
         await startup_taskiq()
