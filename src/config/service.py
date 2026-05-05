@@ -28,7 +28,7 @@ class ServiceUrlsSettings(BaseModel):
 class ServiceSettings(BaseModel):
     """Configure public service settings."""
 
-    name: str = "mindlogger-service"
+    name: str = "curious-backend"
     port: int = 8000
     urls: ServiceUrlsSettings = ServiceUrlsSettings()
     result_limit: Annotated[int, Field(gt=0)] = 10000
