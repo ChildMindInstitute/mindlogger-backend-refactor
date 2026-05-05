@@ -103,9 +103,9 @@ class AuditEvent(PublicModel):
     file_path: Annotated[str | None, Field(alias="file.path")] = None  # file download path
 
     # For Curious database records
-    curious_applet_id: Annotated[UUID | list[UUID] | None, Field(alias="curious.applet_id")] = None
-    curious_subject_id: Annotated[UUID | list[UUID] | None, Field(alias="curious.subject_id")] = None
-    curious_flow_id: Annotated[UUID | list[UUID] | None, Field(alias="curious.flow_id")] = None
-    curious_activity_id: Annotated[UUID | list[UUID] | None, Field(alias="curious.activity_id")] = None
-    curious_submit_id: Annotated[UUID | list[UUID] | None, Field(alias="curious.submit_id")] = None
-    curious_answer_id: Annotated[UUID | list[UUID] | None, Field(alias="curious.answer_id")] = None
+    curious_applet_id: Annotated[list[UUID] | None, Field(alias="curious.applet_id")] = None
+    curious_subject_id: Annotated[list[UUID] | None, Field(alias="curious.subject_id")] = None
+    curious_flow_id: Annotated[list[UUID] | None, Field(alias="curious.flow_id")] = None
+    curious_activity_id: Annotated[list[UUID] | None, Field(alias="curious.activity_id")] = None
+    curious_submit_id: Annotated[list[UUID] | None, Field(alias="curious.submit_id")] = None
+    curious_answer_id: Annotated[list[UUID] | None, Field(alias="curious.answer_id")] = None
