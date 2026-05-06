@@ -26,6 +26,9 @@ class AuditEvent(PublicModel):
     - service_name
     - service_environment
 
+    Automatically derived from event_id:
+    - id
+
     Applicable to IAM events:
     - user_roles
     - user_target_id
