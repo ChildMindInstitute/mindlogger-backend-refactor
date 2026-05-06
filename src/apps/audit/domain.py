@@ -110,7 +110,7 @@ class AuditEvent(PublicModel):
     curious_submit_id: Annotated[list[UUID] | None, Field(alias="curious.submit_id")] = None
     curious_answer_id: Annotated[list[UUID] | None, Field(alias="curious.answer_id")] = None
 
-    @computed_field(alias="_id")
+    @computed_field(alias="_id")  # type: ignore[prop-decorator]
     @property
     def id(self) -> UUID:
         """Reuse ECS event ID "event.id" as OpenSearch document ID "_id"."""
