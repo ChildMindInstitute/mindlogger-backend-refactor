@@ -6,6 +6,7 @@ import jwt
 from fastapi import Body, Depends, Header, Request
 from pydantic import ValidationError
 
+from apps.audit import AuditEvent, EventAction, EventOutcome, log
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
@@ -49,6 +50,7 @@ from infrastructure.logger import logger
 
 
 async def get_token(
+    request: Request,
     user_login_schema: UserLoginRequest = Body(...),
     session=Depends(get_session),
     os_name: Annotated[str | None, Header()] = None,
@@ -56,26 +58,41 @@ async def get_token(
     app_version: Annotated[str | None, Header()] = None,
 ) -> Response[UserLogin | MFARequiredResponse]:
     """Generate the JWT access token."""
-    async with atomic(session):
-        try:
-            user: User = await AuthenticationService(session).authenticate_user(user_login_schema)
-            if user_login_schema.device_id:
-                await UserDeviceService(session, user.id).add_device(
-                    UserDeviceCreate(
-                        device_id=user_login_schema.device_id,
-                        os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
-                        app_version=app_version,
+    try:
+        async with atomic(session):
+            try:
+                user: User = await AuthenticationService(session).authenticate_user(user_login_schema)
+                if user_login_schema.device_id:
+                    await UserDeviceService(session, user.id).add_device(
+                        UserDeviceCreate(
+                            device_id=user_login_schema.device_id,
+                            os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
+                            app_version=app_version,
+                        )
                     )
-                )
-        except UserNotFound:
-            raise InvalidCredentials(email=user_login_schema.email)
+            except UserNotFound:
+                raise InvalidCredentials(email=user_login_schema.email)
 
-        if user.email_encrypted != user_login_schema.email:
-            user = await UsersCRUD(session).update_encrypted_email(user, user_login_schema.email)
+            if user.email_encrypted != user_login_schema.email:
+                user = await UsersCRUD(session).update_encrypted_email(user, user_login_schema.email)
+    except InvalidCredentials as e:
+        await log(
+            AuditEvent(
+                user_id=None,
+                event_action=EventAction.USER_SESSION_LOGIN,
+                event_outcome=EventOutcome.FAILURE,
+                error_type=type(e).__name__,
+                client_ip=request.client and request.client.host,
+                http_request_method=request.method,
+                http_response_status_code=e.status_code,
+                url_path=request.url.path,
+                user_agent=request.headers.get("user-agent"),
+            )
+        )
+        raise
 
-    # Check if user has MFA enabled
+    # MFA-required branch returns MFARequiredResponse; user:session:login fires from the MFA verify endpoints.
     if user.mfa_secret:
-        # User has MFA enabled - return requirement response
         mfa_service = MFASessionService()
         mfa_session_id = await mfa_service.create_session(user_id=user.id)
         logger.info(f"MFA required for login user_id={user.id} email={user.email_encrypted}")
@@ -102,6 +119,18 @@ async def get_token(
 
     token = Token(access_token=access_token, refresh_token=refresh_token)
     public_user = PublicUser.from_user(user)
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.USER_SESSION_LOGIN,
+            client_ip=request.client and request.client.host,
+            http_request_method=request.method,
+            http_response_status_code=200,
+            url_path=request.url.path,
+            user_agent=request.headers.get("user-agent"),
+        )
+    )
 
     return Response(
         result=UserLogin(
