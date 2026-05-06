@@ -13,7 +13,8 @@ async def send_audit_event(payload: dict, retries: int = 3) -> None:
     being silently dropped.
     """
     try:
-        await OpenSearchClient().index_document(settings.opensearch.audit_index, payload)
+        doc_id = str(payload["event.id"]) if payload.get("event.id") else None
+        await OpenSearchClient().index_document(settings.opensearch.audit_index, payload, id=doc_id)
     except Exception as e:
         if retries > 0:
             logger.warning("audit_event_retry", retries_left=retries, error=str(e))

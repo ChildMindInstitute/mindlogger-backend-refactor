@@ -16,7 +16,7 @@ class OpenSearchClientTest:
         self._indices.add(index)
         self._storage.setdefault(index, [])
 
-    async def index_document(self, index: str, document: dict) -> None:
+    async def index_document(self, index: str, document: dict, id: str | None = None) -> None:
         self._storage.setdefault(index, []).append(document)
 
 
@@ -63,9 +63,9 @@ class OpenSearchClient:
             if getattr(e, "error", None) != "resource_already_exists_exception":
                 raise
 
-    async def index_document(self, index: str, document: dict) -> None:
+    async def index_document(self, index: str, document: dict, id: str | None = None) -> None:
         if isinstance(self._client, OpenSearchClientTest):
             await self._client.index_document(index, document)
             return
         assert self._client is not None
-        await self._client.index(index=index, body=document)
+        await self._client.index(index=index, body=document, id=id)
