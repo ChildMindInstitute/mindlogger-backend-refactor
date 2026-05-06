@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, computed_field
 
 from apps.shared.domain import PublicModel
 from config import settings
@@ -109,3 +109,9 @@ class AuditEvent(PublicModel):
     curious_activity_id: Annotated[list[UUID] | None, Field(alias="curious.activity_id")] = None
     curious_submit_id: Annotated[list[UUID] | None, Field(alias="curious.submit_id")] = None
     curious_answer_id: Annotated[list[UUID] | None, Field(alias="curious.answer_id")] = None
+
+    @computed_field(alias="_id")
+    @property
+    def id(self) -> UUID:
+        """Reuse ECS event ID "event.id" as OpenSearch document ID "_id"."""
+        return self.event_id
