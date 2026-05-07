@@ -141,6 +141,7 @@ async def get_token(
 
 
 async def verify_mfa_totp(
+    request: Request,
     verify_request: MFATOTPVerifyRequest = Body(...),
     session=Depends(get_session),
     os_name: Annotated[str | None, Header()] = None,
@@ -148,169 +149,198 @@ async def verify_mfa_totp(
     app_version: Annotated[str | None, Header()] = None,
 ) -> Response[UserLogin]:
     """Verify TOTP code during MFA and return tokens."""
-    # Validate MFA token and get session info
-    mfa_service = MFASessionService()
+    user_id: uuid.UUID | None = None
     try:
-        mfa_session_id, user_id, purpose = await mfa_service.validate_and_get_session(verify_request.mfa_token)
-    except (
-        MFATokenExpiredError,
-        MFATokenMalformedError,
-        MFATokenInvalidError,
-        MFASessionNotFoundError,
-    ) as e:
-        # Re-raise specific MFA token/session errors with detailed feedback
-        raise e
-
-    # Check global lockout FIRST (prevents bypassing per-session limits)
-    is_locked = await mfa_service.is_globally_locked_out(user_id)
-    if is_locked:
-        logger.warning(f"User globally locked out from MFA attempts user_id={user_id}")
-        await mfa_service.delete_session(mfa_session_id)
-        raise MFAGlobalLockoutError(
-            global_attempts_remaining=0,
-        )
-
-    # Check if max attempts exceeded BEFORE attempting verification
-    session_data = await mfa_service.get_session(mfa_session_id)
-    if session_data and session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
-        global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
-        logger.warning(
-            f"MFA max attempts exceeded user_id={user_id} "
-            f"failed_attempts={session_data.failed_totp_attempts} max_attempts={settings.redis.mfa_max_attempts}"
-        )
-        # Delete session to force re-login
-        await mfa_service.delete_session(mfa_session_id)
-        raise TooManyTOTPAttemptsError(
-            session_attempts_remaining=0,
-            global_attempts_remaining=global_remaining,
-            lockout_reason="session_limit",
-        )
-
-    # Get user from DB
-    async with atomic(session):
-        user: User = await UsersCRUD(session).get_by_id(user_id)
-
-        if not user.mfa_secret:
-            # Edge case: user disabled MFA between login and verification
-            raise MFATokenInvalidError()
-
-        totp_service = TOTPService()
-
-        # Verify TOTP code with replay protection
+        # Validate MFA token and get session info
+        mfa_service = MFASessionService()
         try:
-            decrypted_secret = totp_service.decrypt_secret(user.mfa_secret)
-        except Exception:
-            raise InvalidTOTPCodeError()
+            mfa_session_id, user_id, purpose = await mfa_service.validate_and_get_session(verify_request.mfa_token)
+        except (
+            MFATokenExpiredError,
+            MFATokenMalformedError,
+            MFATokenInvalidError,
+            MFASessionNotFoundError,
+        ) as e:
+            # Re-raise specific MFA token/session errors with detailed feedback
+            raise e
 
-        # Get user's last used time step for replay protection
-        last_step = user.last_totp_time_step
+        # Check global lockout FIRST (prevents bypassing per-session limits)
+        is_locked = await mfa_service.is_globally_locked_out(user_id)
+        if is_locked:
+            logger.warning(f"User globally locked out from MFA attempts user_id={user_id}")
+            await mfa_service.delete_session(mfa_session_id)
+            raise MFAGlobalLockoutError(
+                global_attempts_remaining=0,
+            )
 
-        # Verify with replay protection
-        is_valid, time_step_used = totp_service.verify_with_replay_check(
-            secret=decrypted_secret, code=verify_request.totp_code, last_used_step=last_step
-        )
-
-        if not is_valid:
-            # Increment both per-session and global failed attempts counters
-            new_attempt_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
-            global_attempt_count = await mfa_service.increment_global_failed_attempts(user.id)
-
-            # Calculate remaining attempts using service methods
-            session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
-            global_remaining = await mfa_service.get_remaining_global_attempts(user.id)
-
+        # Check if max attempts exceeded BEFORE attempting verification
+        session_data = await mfa_service.get_session(mfa_session_id)
+        if session_data and session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
+            global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
             logger.warning(
-                f"Invalid TOTP code provided user_id={user.id} email={user.email_encrypted} "
-                f"failed_attempts={new_attempt_count} global_failed_attempts={global_attempt_count}"
+                f"MFA max attempts exceeded user_id={user_id} "
+                f"failed_attempts={session_data.failed_totp_attempts} max_attempts={settings.redis.mfa_max_attempts}"
             )
-
-            # Send warning email if global attempts hit threshold
-            if global_attempt_count == settings.mfa.failed_attempts_warning_threshold:
-                notification_service = MFANotificationService()
-                global_remaining = settings.redis.mfa_global_lockout_attempts - global_attempt_count
-                await notification_service.send_failed_attempts_warning(
-                    user=user,
-                    failed_attempts=global_attempt_count,
-                    max_attempts=settings.redis.mfa_global_lockout_attempts,
-                    remaining_attempts=global_remaining,
-                )
-
-            # Check if global lockout threshold reached
-            if global_attempt_count >= settings.redis.mfa_global_lockout_attempts:
-                logger.warning(
-                    f"User globally locked out after max failed attempts user_id={user.id} "
-                    f"email={user.email_encrypted} global_failed_attempts={global_attempt_count}"
-                )
-                await mfa_service.delete_session(mfa_session_id)
-
-                # Send account locked notification
-                notification_service = MFANotificationService()
-                await notification_service.send_account_locked_email(
-                    user=user,
-                    lockout_reason="Too many failed MFA verification attempts",
-                    failed_attempts=global_attempt_count,
-                    lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
-                )
-
-                raise MFAGlobalLockoutError(
-                    global_attempts_remaining=0,
-                )
-
-            # If this was the last allowed attempt for this session, delete session
-            if new_attempt_count is not None and new_attempt_count >= settings.redis.mfa_max_attempts:
-                logger.warning(
-                    f"User locked out after max failed TOTP attempts for session user_id={user.id} "
-                    f"email={user.email_encrypted} failed_attempts={new_attempt_count}"
-                )
-                await mfa_service.delete_session(mfa_session_id)
-                raise TooManyTOTPAttemptsError(
-                    session_attempts_remaining=0,
-                    global_attempts_remaining=global_remaining,
-                    lockout_reason="session_limit",
-                )
-
-            # Otherwise, raise normal invalid code error with remaining attempts
-            raise InvalidTOTPCodeError(
-                session_attempts_remaining=session_remaining,
+            # Delete session to force re-login
+            await mfa_service.delete_session(mfa_session_id)
+            raise TooManyTOTPAttemptsError(
+                session_attempts_remaining=0,
                 global_attempts_remaining=global_remaining,
+                lockout_reason="session_limit",
             )
 
-        # TOTP is valid - Update last used time step for replay protection
-        assert time_step_used is not None  # Always set when is_valid is True
-        await UsersCRUD(session).update_last_totp_time_step(user.id, time_step_used)
+        # Get user from DB
+        async with atomic(session):
+            user: User = await UsersCRUD(session).get_by_id(user_id)
 
-        # Clear global lockout counter and delete MFA session
-        await mfa_service.clear_global_lockout(user.id)
-        await mfa_service.delete_session(mfa_session_id)
+            if not user.mfa_secret:
+                # Edge case: user disabled MFA between login and verification
+                raise MFATokenInvalidError()
 
-        logger.info(
-            f"MFA verification successful user_id={user.id} email={user.email_encrypted} "
-            f"device_id={verify_request.device_id}"
-        )
+            totp_service = TOTPService()
 
-        # Register device if device_id provided
-        if verify_request.device_id:
-            await UserDeviceService(session, user.id).add_device(
-                UserDeviceCreate(
-                    device_id=verify_request.device_id,
-                    os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
-                    app_version=app_version,
+            # Verify TOTP code with replay protection
+            try:
+                decrypted_secret = totp_service.decrypt_secret(user.mfa_secret)
+            except Exception:
+                raise InvalidTOTPCodeError()
+
+            # Get user's last used time step for replay protection
+            last_step = user.last_totp_time_step
+
+            # Verify with replay protection
+            is_valid, time_step_used = totp_service.verify_with_replay_check(
+                secret=decrypted_secret, code=verify_request.totp_code, last_used_step=last_step
+            )
+
+            if not is_valid:
+                # Increment both per-session and global failed attempts counters
+                new_attempt_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+                global_attempt_count = await mfa_service.increment_global_failed_attempts(user.id)
+
+                # Calculate remaining attempts using service methods
+                session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
+                global_remaining = await mfa_service.get_remaining_global_attempts(user.id)
+
+                logger.warning(
+                    f"Invalid TOTP code provided user_id={user.id} email={user.email_encrypted} "
+                    f"failed_attempts={new_attempt_count} global_failed_attempts={global_attempt_count}"
                 )
+
+                # Send warning email if global attempts hit threshold
+                if global_attempt_count == settings.mfa.failed_attempts_warning_threshold:
+                    notification_service = MFANotificationService()
+                    global_remaining = settings.redis.mfa_global_lockout_attempts - global_attempt_count
+                    await notification_service.send_failed_attempts_warning(
+                        user=user,
+                        failed_attempts=global_attempt_count,
+                        max_attempts=settings.redis.mfa_global_lockout_attempts,
+                        remaining_attempts=global_remaining,
+                    )
+
+                # Check if global lockout threshold reached
+                if global_attempt_count >= settings.redis.mfa_global_lockout_attempts:
+                    logger.warning(
+                        f"User globally locked out after max failed attempts user_id={user.id} "
+                        f"email={user.email_encrypted} global_failed_attempts={global_attempt_count}"
+                    )
+                    await mfa_service.delete_session(mfa_session_id)
+
+                    # Send account locked notification
+                    notification_service = MFANotificationService()
+                    await notification_service.send_account_locked_email(
+                        user=user,
+                        lockout_reason="Too many failed MFA verification attempts",
+                        failed_attempts=global_attempt_count,
+                        lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                    )
+
+                    raise MFAGlobalLockoutError(
+                        global_attempts_remaining=0,
+                    )
+
+                # If this was the last allowed attempt for this session, delete session
+                if new_attempt_count is not None and new_attempt_count >= settings.redis.mfa_max_attempts:
+                    logger.warning(
+                        f"User locked out after max failed TOTP attempts for session user_id={user.id} "
+                        f"email={user.email_encrypted} failed_attempts={new_attempt_count}"
+                    )
+                    await mfa_service.delete_session(mfa_session_id)
+                    raise TooManyTOTPAttemptsError(
+                        session_attempts_remaining=0,
+                        global_attempts_remaining=global_remaining,
+                        lockout_reason="session_limit",
+                    )
+
+                # Otherwise, raise normal invalid code error with remaining attempts
+                raise InvalidTOTPCodeError(
+                    session_attempts_remaining=session_remaining,
+                    global_attempts_remaining=global_remaining,
+                )
+
+            # TOTP is valid - Update last used time step for replay protection
+            assert time_step_used is not None  # Always set when is_valid is True
+            await UsersCRUD(session).update_last_totp_time_step(user.id, time_step_used)
+
+            # Clear global lockout counter and delete MFA session
+            await mfa_service.clear_global_lockout(user.id)
+            await mfa_service.delete_session(mfa_session_id)
+
+            logger.info(
+                f"MFA verification successful user_id={user.id} email={user.email_encrypted} "
+                f"device_id={verify_request.device_id}"
             )
 
-        # Issue refresh and access tokens
-        rjti = str(uuid.uuid4())
-        refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
+            # Register device if device_id provided
+            if verify_request.device_id:
+                await UserDeviceService(session, user.id).add_device(
+                    UserDeviceCreate(
+                        device_id=verify_request.device_id,
+                        os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
+                        app_version=app_version,
+                    )
+                )
 
-        access_token = AuthenticationService.create_access_token(
-            {
-                JWTClaim.sub: str(user.id),
-                JWTClaim.rjti: rjti,
-            }
+            # Issue refresh and access tokens
+            rjti = str(uuid.uuid4())
+            refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
+
+            access_token = AuthenticationService.create_access_token(
+                {
+                    JWTClaim.sub: str(user.id),
+                    JWTClaim.rjti: rjti,
+                }
+            )
+    except AuthenticationError as e:
+        await log(
+            AuditEvent(
+                user_id=user_id,
+                event_action=EventAction.USER_SESSION_LOGIN,
+                event_outcome=EventOutcome.FAILURE,
+                error_type=type(e).__name__,
+                client_ip=request.client and request.client.host,
+                http_request_method=request.method,
+                http_response_status_code=e.status_code,
+                url_path=request.url.path,
+                user_agent=request.headers.get("user-agent"),
+            )
         )
+        raise
 
     token = Token(access_token=access_token, refresh_token=refresh_token)
     public_user = PublicUser.from_user(user)
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.USER_SESSION_LOGIN,
+            client_ip=request.client and request.client.host,
+            http_request_method=request.method,
+            http_response_status_code=200,
+            url_path=request.url.path,
+            user_agent=request.headers.get("user-agent"),
+        )
+    )
 
     return Response(
         result=UserLogin(
