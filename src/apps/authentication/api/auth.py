@@ -6,7 +6,7 @@ import jwt
 from fastapi import Body, Depends, Header, Request
 from pydantic import ValidationError
 
-from apps.audit import AuditEvent, EventAction, EventOutcome, http_error_fields, http_request_fields, log
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
@@ -80,8 +80,7 @@ async def get_token(
             AuditEvent(
                 user_id=None,
                 event_action=EventAction.USER_SESSION_LOGIN,
-                **http_request_fields(request),
-                **http_error_fields(e),
+                **http_audit_fields(request, e),
             )
         )
         raise
@@ -119,8 +118,7 @@ async def get_token(
         AuditEvent(
             user_id=user.id,
             event_action=EventAction.USER_SESSION_LOGIN,
-            http_response_status_code=200,
-            **http_request_fields(request),
+            **http_audit_fields(request),
         )
     )
 
@@ -308,8 +306,7 @@ async def verify_mfa_totp(
             AuditEvent(
                 user_id=user_id,
                 event_action=EventAction.USER_SESSION_LOGIN,
-                **http_request_fields(request),
-                **http_error_fields(e),
+                **http_audit_fields(request, e),
             )
         )
         raise
@@ -321,8 +318,7 @@ async def verify_mfa_totp(
         AuditEvent(
             user_id=user.id,
             event_action=EventAction.USER_SESSION_LOGIN,
-            http_response_status_code=200,
-            **http_request_fields(request),
+            **http_audit_fields(request),
         )
     )
 
