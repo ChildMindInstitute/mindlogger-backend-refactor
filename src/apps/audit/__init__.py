@@ -1,6 +1,6 @@
 from .domain import AuditEvent
 from .enums import EventAction, EventOutcome
+from .fields import http_error_fields, http_request_fields
 from .service import log
-from .tasks import send_audit_event
 
-__all__ = ["AuditEvent", "EventAction", "EventOutcome", "log", "send_audit_event"]
+__all__ = ["AuditEvent", "EventAction", "EventOutcome", "http_error_fields", "http_request_fields", "log"]

@@ -44,6 +44,7 @@ class AuditEvent(PublicModel):
     - http_response_status_code
     - url_path
     - url_query
+    - user_agent
 
     Applicable to HTTP requests if Datadog is enabled:
     - trace_id

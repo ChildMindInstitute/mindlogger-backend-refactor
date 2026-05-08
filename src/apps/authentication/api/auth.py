@@ -6,7 +6,7 @@ import jwt
 from fastapi import Body, Depends, Header, Request
 from pydantic import ValidationError
 
-from apps.audit import AuditEvent, EventAction, EventOutcome, log
+from apps.audit import AuditEvent, EventAction, EventOutcome, http_error_fields, http_request_fields, log
 from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
 from apps.authentication.domain.logout import UserLogoutRequest
@@ -80,13 +80,8 @@ async def get_token(
             AuditEvent(
                 user_id=None,
                 event_action=EventAction.USER_SESSION_LOGIN,
-                event_outcome=EventOutcome.FAILURE,
-                error_type=type(e).__name__,
-                client_ip=request.client and request.client.host,
-                http_request_method=request.method,
-                http_response_status_code=e.status_code,
-                url_path=request.url.path,
-                user_agent=request.headers.get("user-agent"),
+                **http_request_fields(request),
+                **http_error_fields(e),
             )
         )
         raise
@@ -124,11 +119,8 @@ async def get_token(
         AuditEvent(
             user_id=user.id,
             event_action=EventAction.USER_SESSION_LOGIN,
-            client_ip=request.client and request.client.host,
-            http_request_method=request.method,
             http_response_status_code=200,
-            url_path=request.url.path,
-            user_agent=request.headers.get("user-agent"),
+            **http_request_fields(request),
         )
     )
 
@@ -316,13 +308,8 @@ async def verify_mfa_totp(
             AuditEvent(
                 user_id=user_id,
                 event_action=EventAction.USER_SESSION_LOGIN,
-                event_outcome=EventOutcome.FAILURE,
-                error_type=type(e).__name__,
-                client_ip=request.client and request.client.host,
-                http_request_method=request.method,
-                http_response_status_code=e.status_code,
-                url_path=request.url.path,
-                user_agent=request.headers.get("user-agent"),
+                **http_request_fields(request),
+                **http_error_fields(e),
             )
         )
         raise
@@ -334,11 +321,8 @@ async def verify_mfa_totp(
         AuditEvent(
             user_id=user.id,
             event_action=EventAction.USER_SESSION_LOGIN,
-            client_ip=request.client and request.client.host,
-            http_request_method=request.method,
             http_response_status_code=200,
-            url_path=request.url.path,
-            user_agent=request.headers.get("user-agent"),
+            **http_request_fields(request),
         )
     )
 
