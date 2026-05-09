@@ -61,6 +61,9 @@ class EventAction(StrEnum):
     APPLET_ANSWER_FILE_DOWNLOAD = "applet:answer:file:download"
     APPLET_ANSWER_REPORT_DOWNLOAD = "applet:answer:report:download"
 
+    # Applet audit
+    APPLET_AUDIT_EXPORT = "applet:audit:export"
+
     @cached_property
     def _parts(self) -> tuple[str, ...]:
         """Split into parts by colon ":"
