@@ -46,19 +46,10 @@ class ValidationError(BaseError):
     code: str | None = None
 
 
-class FieldError(BaseError):
-    message = _("Invalid value.")
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-    type = ExceptionTypes.INVALID_VALUE
-    zero_path: str | None = "body"
-
-    def __init__(self, path=None, **kwargs):
-        if path is None:
-            path = []
-        if self.zero_path:
-            path.insert(0, self.zero_path)
-        self.path = path
-        super().__init__(**kwargs)
+class UnauthorizedError(BaseError):
+    message = _("Unauthorized.")
+    status_code = status.HTTP_401_UNAUTHORIZED
+    type = ExceptionTypes.ACCESS_DENIED
 
 
 class AccessDeniedError(BaseError):
@@ -73,10 +64,19 @@ class NotFoundError(BaseError):
     type = ExceptionTypes.NOT_FOUND
 
 
-class UnauthorizedError(BaseError):
-    message = _("Unauthorized.")
-    status_code = status.HTTP_401_UNAUTHORIZED
-    type = ExceptionTypes.ACCESS_DENIED
+class FieldError(BaseError):
+    message = _("Invalid value.")
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    type = ExceptionTypes.INVALID_VALUE
+    zero_path: str | None = "body"
+
+    def __init__(self, path=None, **kwargs):
+        if path is None:
+            path = []
+        if self.zero_path:
+            path.insert(0, self.zero_path)
+        self.path = path
+        super().__init__(**kwargs)
 
 
 class InternalServerError(BaseError):

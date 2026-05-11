@@ -24,11 +24,6 @@ class AuthenticationError(UnauthorizedError):
     error_code = AuthErrorCode.AUTHENTICATION_ERROR
 
 
-class PermissionsError(AccessDeniedError):
-    message = _("Not enough permissions.")
-    error_code = AuthErrorCode.PERMISSIONS_ERROR
-
-
 class InvalidCredentials(AuthenticationError):
     message = _("Incorrect email or password")
     error_code = AuthErrorCode.INVALID_CREDENTIALS
@@ -74,6 +69,11 @@ class InvalidTOTPCodeError(AuthenticationError):
         if global_attempts_remaining is not None:
             metadata["global_attempts_remaining"] = global_attempts_remaining
         super().__init__(metadata=metadata if metadata else None, **kwargs)
+
+
+class PermissionsError(AccessDeniedError):
+    message = _("Not enough permissions.")
+    error_code = AuthErrorCode.PERMISSIONS_ERROR
 
 
 class TooManyTOTPAttemptsError(AuthenticationError):
