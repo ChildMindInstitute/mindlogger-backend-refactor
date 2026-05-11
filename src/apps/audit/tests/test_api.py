@@ -1,8 +1,10 @@
 import http
+import uuid
 
 import pytest
 
 from apps.applets.domain.applet_full import AppletFull
+from apps.audit.enums import EventAction
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
 from infrastructure.utility.opensearch_client import OpenSearchClientTest
@@ -77,3 +79,46 @@ async def test_returns_seeded_audit_event(client: TestClient, tom: User, applet_
     assert body["count"] == 1
     assert body["result"][0]["event.action"] == "applet:answer:view"
     assert body["result"][0]["user.id"] == str(tom.id)
+
+
+async def test_returns_404_when_applet_missing(client: TestClient, tom: User):
+    client.login(tom)
+    response = await client.get(URL.format(applet_id=uuid.uuid4()))
+    assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+
+async def test_date_range_reaches_opensearch_query(client: TestClient, tom: User, applet_one: AppletFull):
+    client.login(tom)
+    response = await client.get(
+        URL.format(applet_id=applet_one.id),
+        dict(fromDate="2026-05-01", toDate="2026-05-07"),
+    )
+    assert response.status_code == http.HTTPStatus.OK
+
+    filters = OpenSearchClientTest.last_search_body["query"]["bool"]["filter"]
+    range_clause = next(f for f in filters if "range" in f)
+    assert range_clause["range"]["@timestamp"] == {
+        "gte": "2026-05-01T00:00:00+00:00",
+        "lt": "2026-05-08T00:00:00+00:00",
+    }
+
+
+async def test_export_self_logs_applet_audit_export(
+    client: TestClient, tom: User, applet_one: AppletFull, monkeypatch: pytest.MonkeyPatch
+):
+    captured = []
+
+    async def fake_log(event):
+        captured.append(event)
+
+    monkeypatch.setattr("apps.audit.api.log", fake_log)
+
+    client.login(tom)
+    response = await client.get(URL.format(applet_id=applet_one.id))
+    assert response.status_code == http.HTTPStatus.OK
+
+    assert len(captured) == 1
+    event = captured[0]
+    assert event.event_action == EventAction.APPLET_AUDIT_EXPORT
+    assert event.user_id == tom.id
+    assert event.curious_applet_id == [applet_one.id]
