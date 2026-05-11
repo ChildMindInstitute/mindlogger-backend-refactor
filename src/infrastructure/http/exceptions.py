@@ -5,6 +5,8 @@ from starlette import status
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
+from apps.authentication.errors import SessionTokenInvalidError
 from apps.shared.domain import ErrorResponse, ErrorResponseMulti
 from apps.shared.exception import BaseError
 from infrastructure.logger import logger
@@ -39,6 +41,18 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
         response_dict,
         status_code=error.status_code,
     )
+
+
+async def session_token_invalid_error_handler(request: Request, error: SessionTokenInvalidError) -> JSONResponse:
+    """user:session:invalid audit event on 401 from invalid session token in `Authorization` header."""
+    await log(
+        AuditEvent(
+            event_action=EventAction.USER_SESSION_INVALID,
+            user_id=error.kwargs.get("user_id"),
+            **http_audit_fields(request, error),
+        )
+    )
+    return custom_base_errors_handler(request, error)
 
 
 def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:

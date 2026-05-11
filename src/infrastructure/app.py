@@ -33,6 +33,7 @@ import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import apps.workspaces.router as workspaces
 import middlewares as middlewares_
+from apps.authentication.errors import SessionTokenInvalidError
 from apps.shared.exception import BaseError
 from config import settings
 from infrastructure.dependency.structured_logs import StructuredLoggingMiddleware
@@ -40,6 +41,7 @@ from infrastructure.http.exceptions import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
     python_base_error_handler,
+    session_token_invalid_error_handler,
     sqlalchemy_database_error_handler,
 )
 from infrastructure.lifespan import shutdown, startup
@@ -119,6 +121,7 @@ def create_app():
         app.add_middleware(middleware, **options)
 
     app.add_exception_handler(RequestValidationError, pydantic_validation_errors_handler)
+    app.add_exception_handler(SessionTokenInvalidError, session_token_invalid_error_handler)
     app.add_exception_handler(BaseError, custom_base_errors_handler)
     app.add_exception_handler(TimeoutError, sqlalchemy_database_error_handler)
     app.add_exception_handler(ConnectionRefusedError, sqlalchemy_database_error_handler)
