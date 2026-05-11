@@ -33,7 +33,7 @@ class OpenSearchClientTest:
         pass
 
     async def search(self, index: str, body: dict, size: int = DEFAULT_PAGE_SIZE) -> dict:
-        self.last_search_body = body
+        OpenSearchClientTest.last_search_body = body
         docs = self._storage.get(index, [])
         # Cursor is the last hit's index in storage; resume from the next one.
         cursor = body.get("search_after")
