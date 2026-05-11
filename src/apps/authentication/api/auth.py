@@ -339,225 +339,244 @@ async def verify_mfa_recovery_code(
     app_version: Annotated[str | None, Header()] = None,
 ) -> Response[UserLogin]:
     """Verify recovery code during MFA and return tokens."""
-    # Validate MFA token and get session info
-    mfa_service = MFASessionService()
+    user_id: uuid.UUID | None = None
     try:
-        mfa_session_id, user_id, purpose = await mfa_service.validate_and_get_session(verify_request.mfa_token)
-    except (
-        MFATokenExpiredError,
-        MFATokenMalformedError,
-        MFATokenInvalidError,
-        MFASessionNotFoundError,
-    ) as e:
-        # Re-raise specific MFA token/session errors with detailed feedback
-        raise e
-
-    # Check global lockout FIRST (prevents bypassing per-session limits)
-    is_locked = await mfa_service.is_globally_locked_out(user_id)
-    if is_locked:
-        logger.warning(f"User globally locked out from MFA attempts user_id={user_id}")
-        raise MFAGlobalLockoutError(
-            global_attempts_remaining=0,
-        )
-
-    # Check if max per-session attempts exceeded BEFORE attempting verification
-    session_data = await mfa_service.get_session(mfa_session_id)
-    if session_data and session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
-        global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
-        logger.warning(
-            f"MFA max attempts exceeded user_id={user_id} "
-            f"failed_attempts={session_data.failed_totp_attempts} max_attempts={settings.redis.mfa_max_attempts}"
-        )
-        # Delete session to force re-login
-        await mfa_service.delete_session(mfa_session_id)
-        raise TooManyTOTPAttemptsError(
-            session_attempts_remaining=0,
-            global_attempts_remaining=global_remaining,
-            lockout_reason="session_limit",
-        )
-
-    # Get user and verify recovery code
-    async with atomic(session):
-        user: User = await UsersCRUD(session).get_by_id(user_id)
-
-        # Verify and mark recovery code as used
+        # Validate MFA token and get session info
+        mfa_service = MFASessionService()
         try:
-            await verify_recovery_code_service(session, user_id, verify_request.code)
+            mfa_session_id, user_id, purpose = await mfa_service.validate_and_get_session(verify_request.mfa_token)
+        except (
+            MFATokenExpiredError,
+            MFATokenMalformedError,
+            MFATokenInvalidError,
+            MFASessionNotFoundError,
+        ) as e:
+            # Re-raise specific MFA token/session errors with detailed feedback
+            raise e
 
-            # Extract request metadata for security notification
-            request_metadata = extract_request_metadata(request)
-
-            # Send recovery code notifications (used + warning if needed)
-            await send_recovery_code_notifications(
-                session=session,
-                user=user,
-                used_at=datetime.now(timezone.utc),
-                request_info=request_metadata,
+        # Check global lockout FIRST (prevents bypassing per-session limits)
+        is_locked = await mfa_service.is_globally_locked_out(user_id)
+        if is_locked:
+            logger.warning(f"User globally locked out from MFA attempts user_id={user_id}")
+            raise MFAGlobalLockoutError(
+                global_attempts_remaining=0,
             )
 
-        except RecoveryCodeNotFoundError:
-            # No unused codes exist - increment both counters
-            session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
-            global_count = await mfa_service.increment_global_failed_attempts(user_id)
-
-            # Calculate remaining attempts using service methods
+        # Check if max per-session attempts exceeded BEFORE attempting verification
+        session_data = await mfa_service.get_session(mfa_session_id)
+        if session_data and session_data.has_exceeded_max_attempts(settings.redis.mfa_max_attempts):
             global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
-
             logger.warning(
-                f"Recovery code verification failed - no unused codes user_id={user_id} "
-                f"email={user.email_encrypted} failed_attempts={session_count} "
-                f"global_failed_attempts={global_count} "
-                f"warning_threshold={settings.mfa.failed_attempts_warning_threshold}"
+                f"MFA max attempts exceeded user_id={user_id} "
+                f"failed_attempts={session_data.failed_totp_attempts} max_attempts={settings.redis.mfa_max_attempts}"
+            )
+            # Delete session to force re-login
+            await mfa_service.delete_session(mfa_session_id)
+            raise TooManyTOTPAttemptsError(
+                session_attempts_remaining=0,
+                global_attempts_remaining=global_remaining,
+                lockout_reason="session_limit",
             )
 
-            # Send warning email if global attempts hit threshold
-            if global_count == settings.mfa.failed_attempts_warning_threshold:
-                logger.info(
-                    f"Sending failed attempts warning email user_id={user_id} "
-                    f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
-                )
-                notification_service = MFANotificationService()
-                global_remaining = settings.redis.mfa_global_lockout_attempts - global_count
-                await notification_service.send_failed_attempts_warning(
+        # Get user and verify recovery code
+        async with atomic(session):
+            user: User = await UsersCRUD(session).get_by_id(user_id)
+
+            # Verify and mark recovery code as used
+            try:
+                await verify_recovery_code_service(session, user_id, verify_request.code)
+
+                # Extract request metadata for security notification
+                request_metadata = extract_request_metadata(request)
+
+                # Send recovery code notifications (used + warning if needed)
+                await send_recovery_code_notifications(
+                    session=session,
                     user=user,
-                    failed_attempts=global_count,
-                    max_attempts=settings.redis.mfa_global_lockout_attempts,
-                    remaining_attempts=global_remaining,
+                    used_at=datetime.now(timezone.utc),
+                    request_info=request_metadata,
                 )
-                logger.info(f"Failed attempts warning email sent user_id={user_id}")
 
-            # Check if global lockout threshold reached
-            if global_count >= settings.redis.mfa_global_lockout_attempts:
+            except RecoveryCodeNotFoundError:
+                # No unused codes exist - increment both counters
+                session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+                global_count = await mfa_service.increment_global_failed_attempts(user_id)
+
+                # Calculate remaining attempts using service methods
+                global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
+
                 logger.warning(
-                    f"User globally locked out after max failed attempts user_id={user_id} "
-                    f"email={user.email_encrypted} global_failed_attempts={global_count}"
-                )
-                await mfa_service.delete_session(mfa_session_id)
-                raise MFAGlobalLockoutError(
-                    global_attempts_remaining=0,
+                    f"Recovery code verification failed - no unused codes user_id={user_id} "
+                    f"email={user.email_encrypted} failed_attempts={session_count} "
+                    f"global_failed_attempts={global_count} "
+                    f"warning_threshold={settings.mfa.failed_attempts_warning_threshold}"
                 )
 
-            # Check if per-session lockout threshold reached
-            if session_count is not None and session_count >= settings.redis.mfa_max_attempts:
+                # Send warning email if global attempts hit threshold
+                if global_count == settings.mfa.failed_attempts_warning_threshold:
+                    logger.info(
+                        f"Sending failed attempts warning email user_id={user_id} "
+                        f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
+                    )
+                    notification_service = MFANotificationService()
+                    global_remaining = settings.redis.mfa_global_lockout_attempts - global_count
+                    await notification_service.send_failed_attempts_warning(
+                        user=user,
+                        failed_attempts=global_count,
+                        max_attempts=settings.redis.mfa_global_lockout_attempts,
+                        remaining_attempts=global_remaining,
+                    )
+                    logger.info(f"Failed attempts warning email sent user_id={user_id}")
+
+                # Check if global lockout threshold reached
+                if global_count >= settings.redis.mfa_global_lockout_attempts:
+                    logger.warning(
+                        f"User globally locked out after max failed attempts user_id={user_id} "
+                        f"email={user.email_encrypted} global_failed_attempts={global_count}"
+                    )
+                    await mfa_service.delete_session(mfa_session_id)
+                    raise MFAGlobalLockoutError(
+                        global_attempts_remaining=0,
+                    )
+
+                # Check if per-session lockout threshold reached
+                if session_count is not None and session_count >= settings.redis.mfa_max_attempts:
+                    logger.warning(
+                        f"User locked out after max failed recovery code attempts for session "
+                        f"user_id={user_id} email={user.email_encrypted} failed_attempts={session_count}"
+                    )
+                    await mfa_service.delete_session(mfa_session_id)
+                    raise TooManyTOTPAttemptsError(
+                        session_attempts_remaining=0,
+                        global_attempts_remaining=global_remaining,
+                        lockout_reason="session_limit",
+                    )
+
+                raise
+
+            except RecoveryCodeInvalidError:
+                # Invalid code - increment both per-session and global counters
+                session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+                global_count = await mfa_service.increment_global_failed_attempts(user_id)
+
+                # Calculate remaining attempts using service methods
+                global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
+                session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
+
                 logger.warning(
-                    f"User locked out after max failed recovery code attempts for session "
-                    f"user_id={user_id} email={user.email_encrypted} failed_attempts={session_count}"
-                )
-                await mfa_service.delete_session(mfa_session_id)
-                raise TooManyTOTPAttemptsError(
-                    session_attempts_remaining=0,
-                    global_attempts_remaining=global_remaining,
-                    lockout_reason="session_limit",
+                    f"Invalid recovery code provided user_id={user_id} email={user.email_encrypted} "
+                    f"failed_attempts={session_count} global_failed_attempts={global_count} "
+                    f"warning_threshold={settings.mfa.failed_attempts_warning_threshold}"
                 )
 
-            raise
+                # Send warning email if global attempts hit threshold
+                if global_count == settings.mfa.failed_attempts_warning_threshold:
+                    logger.info(
+                        f"Sending failed attempts warning email user_id={user_id} "
+                        f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
+                    )
+                    notification_service = MFANotificationService()
+                    global_remaining = settings.redis.mfa_global_lockout_attempts - global_count
+                    await notification_service.send_failed_attempts_warning(
+                        user=user,
+                        failed_attempts=global_count,
+                        max_attempts=settings.redis.mfa_global_lockout_attempts,
+                        remaining_attempts=global_remaining,
+                    )
+                    logger.info(f"Failed attempts warning email sent user_id={user_id}")
 
-        except RecoveryCodeInvalidError:
-            # Invalid code - increment both per-session and global counters
-            session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
-            global_count = await mfa_service.increment_global_failed_attempts(user_id)
+                # Check if global lockout threshold reached
+                if global_count >= settings.redis.mfa_global_lockout_attempts:
+                    logger.warning(
+                        f"User globally locked out after max failed recovery code attempts "
+                        f"user_id={user_id} email={user.email_encrypted} global_failed_attempts={global_count}"
+                    )
+                    await mfa_service.delete_session(mfa_session_id)
 
-            # Calculate remaining attempts using service methods
-            global_remaining = await mfa_service.get_remaining_global_attempts(user_id)
-            session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
+                    # Send account locked notification
+                    notification_service = MFANotificationService()
+                    await notification_service.send_account_locked_email(
+                        user=user,
+                        lockout_reason="Too many failed recovery code attempts",
+                        failed_attempts=global_count,
+                        lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                    )
 
-            logger.warning(
-                f"Invalid recovery code provided user_id={user_id} email={user.email_encrypted} "
-                f"failed_attempts={session_count} global_failed_attempts={global_count} "
-                f"warning_threshold={settings.mfa.failed_attempts_warning_threshold}"
+                    raise MFAGlobalLockoutError(
+                        global_attempts_remaining=0,
+                    )
+
+                # Check if per-session lockout threshold reached
+                if session_count is not None and session_count >= settings.redis.mfa_max_attempts:
+                    logger.warning(
+                        f"User locked out after max failed recovery code attempts for session "
+                        f"user_id={user_id} email={user.email_encrypted} failed_attempts={session_count}"
+                    )
+                    await mfa_service.delete_session(mfa_session_id)
+                    raise TooManyTOTPAttemptsError(
+                        session_attempts_remaining=0,
+                        global_attempts_remaining=global_remaining,
+                        lockout_reason="session_limit",
+                    )
+
+                # Re-raise with metadata to inform frontend of remaining attempts
+                raise RecoveryCodeInvalidError(
+                    metadata={
+                        "session_attempts_remaining": session_remaining if session_remaining is not None else 0,
+                        "global_attempts_remaining": global_remaining if global_remaining is not None else 0,
+                    }
+                )
+
+            # Recovery code valid - clear lockout and delete MFA session
+            await mfa_service.clear_global_lockout(user_id)
+            await mfa_service.delete_session(mfa_session_id)
+
+            logger.info(
+                f"MFA recovery code verification successful user_id={user_id} email={user.email_encrypted} "
+                f"device_id={verify_request.device_id}"
             )
 
-            # Send warning email if global attempts hit threshold
-            if global_count == settings.mfa.failed_attempts_warning_threshold:
-                logger.info(
-                    f"Sending failed attempts warning email user_id={user_id} "
-                    f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
-                )
-                notification_service = MFANotificationService()
-                global_remaining = settings.redis.mfa_global_lockout_attempts - global_count
-                await notification_service.send_failed_attempts_warning(
-                    user=user,
-                    failed_attempts=global_count,
-                    max_attempts=settings.redis.mfa_global_lockout_attempts,
-                    remaining_attempts=global_remaining,
-                )
-                logger.info(f"Failed attempts warning email sent user_id={user_id}")
-
-            # Check if global lockout threshold reached
-            if global_count >= settings.redis.mfa_global_lockout_attempts:
-                logger.warning(
-                    f"User globally locked out after max failed recovery code attempts "
-                    f"user_id={user_id} email={user.email_encrypted} global_failed_attempts={global_count}"
-                )
-                await mfa_service.delete_session(mfa_session_id)
-
-                # Send account locked notification
-                notification_service = MFANotificationService()
-                await notification_service.send_account_locked_email(
-                    user=user,
-                    lockout_reason="Too many failed recovery code attempts",
-                    failed_attempts=global_count,
-                    lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+            # Step 5: Register device if device_id provided
+            if verify_request.device_id:
+                await UserDeviceService(session, user_id).add_device(
+                    UserDeviceCreate(
+                        device_id=verify_request.device_id,
+                        os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
+                        app_version=app_version,
+                    )
                 )
 
-                raise MFAGlobalLockoutError(
-                    global_attempts_remaining=0,
-                )
+            # Step 6: Issue refresh and access tokens
+            rjti = str(uuid.uuid4())
+            refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user_id), JWTClaim.jti: rjti})
 
-            # Check if per-session lockout threshold reached
-            if session_count is not None and session_count >= settings.redis.mfa_max_attempts:
-                logger.warning(
-                    f"User locked out after max failed recovery code attempts for session "
-                    f"user_id={user_id} email={user.email_encrypted} failed_attempts={session_count}"
-                )
-                await mfa_service.delete_session(mfa_session_id)
-                raise TooManyTOTPAttemptsError(
-                    session_attempts_remaining=0,
-                    global_attempts_remaining=global_remaining,
-                    lockout_reason="session_limit",
-                )
-
-            # Re-raise with metadata to inform frontend of remaining attempts
-            raise RecoveryCodeInvalidError(
-                metadata={
-                    "session_attempts_remaining": session_remaining if session_remaining is not None else 0,
-                    "global_attempts_remaining": global_remaining if global_remaining is not None else 0,
+            access_token = AuthenticationService.create_access_token(
+                {
+                    JWTClaim.sub: str(user_id),
+                    JWTClaim.rjti: rjti,
                 }
             )
-
-        # Recovery code valid - clear lockout and delete MFA session
-        await mfa_service.clear_global_lockout(user_id)
-        await mfa_service.delete_session(mfa_session_id)
-
-        logger.info(
-            f"MFA recovery code verification successful user_id={user_id} email={user.email_encrypted} "
-            f"device_id={verify_request.device_id}"
-        )
-
-        # Step 5: Register device if device_id provided
-        if verify_request.device_id:
-            await UserDeviceService(session, user_id).add_device(
-                UserDeviceCreate(
-                    device_id=verify_request.device_id,
-                    os=AppInfoOS(name=os_name, version=os_version) if os_name and os_version else None,
-                    app_version=app_version,
-                )
+    except (AuthenticationError, RecoveryCodeNotFoundError, RecoveryCodeInvalidError) as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.USER_SESSION_LOGIN,
+                user_id=user_id,
+                **http_audit_fields(request, e),
             )
-
-        # Step 6: Issue refresh and access tokens
-        rjti = str(uuid.uuid4())
-        refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user_id), JWTClaim.jti: rjti})
-
-        access_token = AuthenticationService.create_access_token(
-            {
-                JWTClaim.sub: str(user_id),
-                JWTClaim.rjti: rjti,
-            }
         )
+        raise
 
     # Step 7: Return response
     token = Token(access_token=access_token, refresh_token=refresh_token)
     public_user = PublicUser.from_user(user)
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.USER_SESSION_LOGIN,
+            user_id=user.id,
+            **http_audit_fields(request),
+        )
+    )
 
     return Response(
         result=UserLogin(
