@@ -9,7 +9,7 @@ from starlette.requests import Request
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken, JWTClaim, TokenPayload, TokenPurpose
-from apps.authentication.errors import AuthenticationError
+from apps.authentication.errors import SessionTokenInvalidError
 from apps.authentication.services import AuthenticationService
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
@@ -45,14 +45,14 @@ async def get_current_user_for_ws(websocket: WebSocket, session=Depends(get_sess
             token_data = TokenPayload(**payload)
 
             if datetime.fromtimestamp(token_data.exp, timezone.utc) < datetime.now(timezone.utc):
-                raise AuthenticationError
+                raise SessionTokenInvalidError(user_id=token_data.sub)
         except (jwt.PyJWTError, ValidationError):
-            raise AuthenticationError
+            raise SessionTokenInvalidError()
 
         # Check if the token is in the blacklist
         revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data, raw_token=token))
         if revoked:
-            raise AuthenticationError
+            raise SessionTokenInvalidError(user_id=token_data.sub)
 
         user = await UsersCRUD(session).get_by_id(id_=token_data.sub)
 
@@ -76,9 +76,9 @@ def get_current_token(type_: TokenPurpose = TokenPurpose.ACCESS):
             token_payload = TokenPayload(**payload)
 
             if datetime.fromtimestamp(token_payload.exp, timezone.utc) < datetime.now(timezone.utc):
-                raise AuthenticationError
+                raise SessionTokenInvalidError(user_id=token_payload.sub)
         except (jwt.PyJWTError, ValidationError):
-            raise AuthenticationError
+            raise SessionTokenInvalidError()
 
         return InternalToken(payload=token_payload, raw_token=token)
 
@@ -93,7 +93,7 @@ async def get_current_user(
         # Check if the token is in the blacklist
         revoked = await AuthenticationService(session).is_revoked(token)
         if revoked:
-            raise AuthenticationError
+            raise SessionTokenInvalidError(user_id=token.payload.sub)
 
         user = await UsersCRUD(session).get_by_id(id_=token.payload.sub)
         await AuthenticationService(session).update_last_seen_at(user)
