@@ -649,17 +649,36 @@ async def refresh_access_token(
 
 
 async def delete_access_token(
+    request: Request,
     schema: UserLogoutRequest | None = Body(default=None),
     token: InternalToken = Depends(get_current_token()),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> EmptyResponse:
     """Add token to the blacklist."""
-    async with atomic(session):
-        await AuthenticationService(session).revoke_token(token, TokenPurpose.ACCESS)
-    async with atomic(session):
-        if schema and schema.device_id:
-            await UserDeviceService(session, user.id).remove_device(schema.device_id)
+    try:
+        async with atomic(session):
+            await AuthenticationService(session).revoke_token(token, TokenPurpose.ACCESS)
+        async with atomic(session):
+            if schema and schema.device_id:
+                await UserDeviceService(session, user.id).remove_device(schema.device_id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.USER_SESSION_LOGOUT,
+                user_id=user.id,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.USER_SESSION_LOGOUT,
+            user_id=user.id,
+            **http_audit_fields(request),
+        )
+    )
     return EmptyResponse()
 
 
