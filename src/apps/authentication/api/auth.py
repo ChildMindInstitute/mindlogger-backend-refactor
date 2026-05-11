@@ -37,6 +37,7 @@ from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import send_recovery_code_notifications, verify_recovery_code_service
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
+from apps.shared.exception import BaseError
 from apps.shared.response import EmptyResponse
 from apps.users import UsersCRUD
 from apps.users.domain import AppInfoOS, PublicUser, User, UserDeviceCreate
@@ -75,7 +76,7 @@ async def get_token(
 
             if user.email_encrypted != user_login_schema.email:
                 user = await UsersCRUD(session).update_encrypted_email(user, user_login_schema.email)
-    except InvalidCredentials as e:
+    except BaseError as e:
         await log(
             AuditEvent(
                 user_id=None,
@@ -301,7 +302,7 @@ async def verify_mfa_totp(
                     JWTClaim.rjti: rjti,
                 }
             )
-    except AuthenticationError as e:
+    except BaseError as e:
         await log(
             AuditEvent(
                 user_id=user_id,
@@ -556,7 +557,7 @@ async def verify_mfa_recovery_code(
                     JWTClaim.rjti: rjti,
                 }
             )
-    except (AuthenticationError, RecoveryCodeNotFoundError, RecoveryCodeInvalidError) as e:
+    except BaseError as e:
         await log(
             AuditEvent(
                 event_action=EventAction.USER_SESSION_LOGIN,
