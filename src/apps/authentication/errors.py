@@ -3,7 +3,7 @@ from gettext import gettext as _
 from starlette import status
 
 from apps.authentication.constants import AuthErrorCode
-from apps.shared.exception import AccessDeniedError, BaseError, ValidationError
+from apps.shared.exception import AccessDeniedError, UnauthorizedError, ValidationError
 
 
 class BadCredentials(ValidationError):
@@ -19,9 +19,8 @@ class WeakPassword(ValidationError):
     message = _("Weak password.")
 
 
-class AuthenticationError(BaseError):
+class AuthenticationError(UnauthorizedError):
     message = _("Could not validate credentials.")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.AUTHENTICATION_ERROR
 
 
@@ -41,33 +40,32 @@ class InvalidCredentials(AccessDeniedError):
     error_code = AuthErrorCode.INVALID_CREDENTIALS
 
 
+class SessionTokenInvalidError(AuthenticationError):
+    """Indicates auth error due to invalid session token."""
+
+
 class MFATokenInvalidError(AuthenticationError):
     message = _("MFA token is invalid or expired")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_TOKEN_INVALID
 
 
 class MFATokenExpiredError(AuthenticationError):
     message = _("MFA token has expired. Please log in again.")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_TOKEN_EXPIRED
 
 
 class MFATokenMalformedError(AuthenticationError):
     message = _("MFA token is malformed or invalid.")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_TOKEN_MALFORMED
 
 
 class MFASessionNotFoundError(AuthenticationError):
     message = _("MFA session not found or expired")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_SESSION_NOT_FOUND
 
 
 class InvalidTOTPCodeError(AuthenticationError):
     message = _("Invalid TOTP code")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_INVALID_TOTP_CODE
 
     def __init__(
