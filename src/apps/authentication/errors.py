@@ -34,9 +34,8 @@ class EmailDoesNotExist(AccessDeniedError):
     error_code = AuthErrorCode.EMAIL_DOES_NOT_EXIST
 
 
-class InvalidCredentials(AccessDeniedError):
+class InvalidCredentials(AuthenticationError):
     message = _("Incorrect email or password")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.INVALID_CREDENTIALS
 
 
