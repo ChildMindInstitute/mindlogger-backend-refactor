@@ -29,11 +29,6 @@ class PermissionsError(AccessDeniedError):
     error_code = AuthErrorCode.PERMISSIONS_ERROR
 
 
-class EmailDoesNotExist(AccessDeniedError):
-    message = _("That email is not associated with a Curious account.")
-    error_code = AuthErrorCode.EMAIL_DOES_NOT_EXIST
-
-
 class InvalidCredentials(AuthenticationError):
     message = _("Incorrect email or password")
     error_code = AuthErrorCode.INVALID_CREDENTIALS
