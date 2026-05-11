@@ -588,63 +588,85 @@ async def verify_mfa_recovery_code(
 
 
 async def refresh_access_token(
+    request: Request,
     schema: RefreshAccessTokenRequest = Body(...),
     session=Depends(get_session),
 ) -> Response[Token]:
     """Refresh access token."""
-    async with atomic(session):
-        try:
-            regenerate_refresh_token = False
+    user_id: uuid.UUID | None = None
+    try:
+        async with atomic(session):
             try:
-                payload = jwt.decode(
-                    schema.refresh_token,
-                    settings.authentication.refresh_token.secret_key,
-                    algorithms=[settings.authentication.algorithm],
+                regenerate_refresh_token = False
+                try:
+                    payload = jwt.decode(
+                        schema.refresh_token,
+                        settings.authentication.refresh_token.secret_key,
+                        algorithms=[settings.authentication.algorithm],
+                    )
+                except jwt.PyJWTError:
+                    # check transition key
+                    transition_key = settings.authentication.refresh_token.transition_key
+                    transition_expire_date = settings.authentication.refresh_token.transition_expire_date
+                    today = datetime.now(timezone.utc).date()
+
+                    if not (transition_key and transition_expire_date and transition_expire_date > today):
+                        raise
+                    payload = jwt.decode(
+                        schema.refresh_token,
+                        str(transition_key),
+                        algorithms=[settings.authentication.algorithm],
+                    )
+                    regenerate_refresh_token = True
+
+                token_data = TokenPayload(**payload)
+
+            except (jwt.PyJWTError, ValidationError) as e:
+                raise InvalidRefreshToken() from e
+
+            user_id = token_data.sub
+
+            # Check if the token is in the blacklist
+            revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data))
+            if revoked:
+                raise AuthenticationError
+
+            rjti = token_data.jti
+            refresh_token = schema.refresh_token
+            if regenerate_refresh_token:
+                # blacklist current refresh token
+                await AuthenticationService(session).revoke_token(
+                    InternalToken(payload=token_data), TokenPurpose.REFRESH
                 )
-            except jwt.PyJWTError:
-                # check transition key
-                transition_key = settings.authentication.refresh_token.transition_key
-                transition_expire_date = settings.authentication.refresh_token.transition_expire_date
-                today = datetime.now(timezone.utc).date()
 
-                if not (transition_key and transition_expire_date and transition_expire_date > today):
-                    raise
-                payload = jwt.decode(
-                    schema.refresh_token,
-                    str(transition_key),
-                    algorithms=[settings.authentication.algorithm],
+                rjti = str(uuid.uuid4())
+                refresh_token = AuthenticationService.create_refresh_token(
+                    {JWTClaim.sub: str(user_id), JWTClaim.jti: rjti, JWTClaim.exp: token_data.exp}
                 )
-                regenerate_refresh_token = True
 
-            token_data = TokenPayload(**payload)
-
-        except (jwt.PyJWTError, ValidationError) as e:
-            raise InvalidRefreshToken() from e
-
-        # Check if the token is in the blacklist
-        revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data))
-        if revoked:
-            raise AuthenticationError
-
-        rjti = token_data.jti
-        user_id = token_data.sub
-        refresh_token = schema.refresh_token
-        if regenerate_refresh_token:
-            # blacklist current refresh token
-            await AuthenticationService(session).revoke_token(InternalToken(payload=token_data), TokenPurpose.REFRESH)
-
-            rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token(
-                {JWTClaim.sub: str(user_id), JWTClaim.jti: rjti, JWTClaim.exp: token_data.exp}
+            access_token = AuthenticationService.create_access_token(
+                {
+                    JWTClaim.sub: str(user_id),
+                    JWTClaim.rjti: rjti,
+                }
             )
-
-        access_token = AuthenticationService.create_access_token(
-            {
-                JWTClaim.sub: str(user_id),
-                JWTClaim.rjti: rjti,
-            }
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.USER_SESSION_REFRESH,
+                user_id=user_id,
+                **http_audit_fields(request, e),
+            )
         )
+        raise
 
+    await log(
+        AuditEvent(
+            event_action=EventAction.USER_SESSION_REFRESH,
+            user_id=user_id,
+            **http_audit_fields(request),
+        )
+    )
     return Response(result=Token(access_token=access_token, refresh_token=refresh_token))
 
 
