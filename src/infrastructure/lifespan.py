@@ -24,6 +24,10 @@ async def startup_opensearch() -> None:
     await OpenSearchClient().ensure_index(settings.opensearch.audit_index, AUDIT_LOG_MAPPING)
 
 
+async def shutdown_opensearch() -> None:
+    await OpenSearchClient().close()
+
+
 def startup(app: FastAPI):
     async def _startup():
         await startup_taskiq()
@@ -35,5 +39,6 @@ def startup(app: FastAPI):
 def shutdown(app: FastAPI):
     async def _shutdown():
         await shutdown_taskiq()
+        await shutdown_opensearch()
 
     return _shutdown

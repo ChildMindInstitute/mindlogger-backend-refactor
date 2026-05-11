@@ -19,6 +19,9 @@ class OpenSearchClientTest:
     async def index_document(self, index: str, document: dict, id: str | None = None) -> None:
         self._storage.setdefault(index, []).append(document)
 
+    async def close(self) -> None:
+        pass
+
 
 class OpenSearchClient:
     """Singleton OpenSearch client"""
@@ -69,3 +72,7 @@ class OpenSearchClient:
             return
         assert self._client is not None
         await self._client.index(index=index, body=document, id=id)
+
+    async def close(self) -> None:
+        if isinstance(self._client, AsyncOpenSearch):
+            await self._client.close()
