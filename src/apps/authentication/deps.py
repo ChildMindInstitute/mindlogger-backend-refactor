@@ -13,6 +13,7 @@ from apps.authentication.errors import SessionTokenInvalidError
 from apps.authentication.services import AuthenticationService
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
+from apps.users.errors import UserIsDeletedError, UserNotFound
 from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
@@ -54,7 +55,10 @@ async def get_current_user_for_ws(websocket: WebSocket, session=Depends(get_sess
         if revoked:
             raise SessionTokenInvalidError(user_id=token_data.sub)
 
-        user = await UsersCRUD(session).get_by_id(id_=token_data.sub)
+        try:
+            user = await UsersCRUD(session).get_by_id(id_=token_data.sub)
+        except (UserNotFound, UserIsDeletedError):
+            raise SessionTokenInvalidError(user_id=token_data.sub)
 
     return user
 
@@ -95,7 +99,10 @@ async def get_current_user(
         if revoked:
             raise SessionTokenInvalidError(user_id=token.payload.sub)
 
-        user = await UsersCRUD(session).get_by_id(id_=token.payload.sub)
+        try:
+            user = await UsersCRUD(session).get_by_id(id_=token.payload.sub)
+        except (UserNotFound, UserIsDeletedError):
+            raise SessionTokenInvalidError(user_id=token.payload.sub)
         await AuthenticationService(session).update_last_seen_at(user)
 
     return user
