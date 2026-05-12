@@ -31,14 +31,14 @@ async def applet_audit_export(
     if from_date and to_date and from_date > to_date:
         raise InvalidAuditDateRangeError(path=["fromDate"])
 
-    events = [
-        event
-        async for event in AuditQueryService().search_applet_events(
-            applet_id,
-            from_date=from_date,
-            to_date=to_date,
-        )
-    ]
+    events, total = await AuditQueryService().search_applet_events(
+        applet_id,
+        from_date=from_date,
+        to_date=to_date,
+    )
+    page = query_params.page
+    limit = query_params.limit
+    paged = events[(page - 1) * limit : page * limit]
 
     await log(
         AuditEvent(
@@ -48,4 +48,4 @@ async def applet_audit_export(
         )
     )
 
-    return ResponseMulti(result=events, count=len(events))
+    return ResponseMulti(result=paged, count=total)

@@ -1,6 +1,5 @@
 import datetime
 import uuid
-from typing import AsyncIterator
 
 from apps.audit.domain import AuditEvent
 from config import settings
@@ -24,10 +23,13 @@ class AuditQueryService:
         *,
         from_date: datetime.date | None = None,
         to_date: datetime.date | None = None,
-    ) -> AsyncIterator[AuditEvent]:
+    ) -> tuple[list[AuditEvent], int]:
         query = self._build_query(applet_id, from_date, to_date)
-        async for doc in self._client.iter_search(self._index, query=query, sort=SORT):
-            yield AuditEvent.model_validate(doc)
+        events = [
+            AuditEvent.model_validate(doc)
+            async for doc in self._client.iter_search(self._index, query=query, sort=SORT)
+        ]
+        return events, len(events)
 
     @staticmethod
     def _build_query(

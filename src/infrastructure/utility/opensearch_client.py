@@ -46,6 +46,7 @@ class OpenSearchClientTest:
             }
         }
 
+
 class OpenSearchClient:
     """Singleton OpenSearch client"""
 

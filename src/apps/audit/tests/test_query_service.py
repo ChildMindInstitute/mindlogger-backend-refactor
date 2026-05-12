@@ -35,12 +35,11 @@ def _seed_doc(**overrides: object) -> dict:
 async def test_query_filters_by_applet_and_dates(fresh_service: AuditQueryService):
     applet_id = uuid.uuid4()
 
-    async for _ in fresh_service.search_applet_events(
+    await fresh_service.search_applet_events(
         applet_id,
         from_date=datetime.date(2026, 5, 1),
         to_date=datetime.date(2026, 5, 7),
-    ):
-        pass
+    )
 
     body = OpenSearchClientTest.last_search_body
     filters = body["query"]["bool"]["filter"]
@@ -57,8 +56,7 @@ async def test_query_filters_by_applet_and_dates(fresh_service: AuditQueryServic
 
 
 async def test_query_omits_range_when_dates_missing(fresh_service: AuditQueryService):
-    async for _ in fresh_service.search_applet_events(uuid.uuid4()):
-        pass
+    await fresh_service.search_applet_events(uuid.uuid4())
 
     filters = OpenSearchClientTest.last_search_body["query"]["bool"]["filter"]
     assert len(filters) == 1
@@ -73,8 +71,9 @@ async def test_yields_audit_events_in_storage_order(fresh_service: AuditQuerySer
         seeded_ids.append(doc["event.id"])
         await OpenSearchClient().index_document(INDEX, doc)
 
-    out = [e async for e in fresh_service.search_applet_events(applet_id)]
+    out, total = await fresh_service.search_applet_events(applet_id)
 
+    assert total == 3
     assert len(out) == 3
     assert all(isinstance(e, AuditEvent) for e in out)
     assert [str(e.event_id) for e in out] == seeded_ids
