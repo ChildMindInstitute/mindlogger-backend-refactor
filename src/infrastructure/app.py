@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse  # Fast, efficient JSON response
 from fastapi.routing import APIRouter
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
@@ -43,6 +44,7 @@ from infrastructure.http.exceptions import (
     python_base_error_handler,
     session_token_invalid_error_handler,
     sqlalchemy_database_error_handler,
+    starlette_http_exception_handler,
 )
 from infrastructure.lifespan import shutdown, startup
 from infrastructure.logger import logger
@@ -121,6 +123,7 @@ def create_app():
         app.add_middleware(middleware, **options)
 
     app.add_exception_handler(RequestValidationError, pydantic_validation_errors_handler)
+    app.add_exception_handler(StarletteHTTPException, starlette_http_exception_handler)
     app.add_exception_handler(SessionTokenInvalidError, session_token_invalid_error_handler)
     app.add_exception_handler(BaseError, custom_base_errors_handler)
     app.add_exception_handler(TimeoutError, sqlalchemy_database_error_handler)

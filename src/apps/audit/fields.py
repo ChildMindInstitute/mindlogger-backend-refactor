@@ -2,13 +2,14 @@ from asgi_correlation_id.context import correlation_id
 from ddtrace.trace import tracer
 from fastapi import Request
 from fastapi.routing import APIRoute
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from apps.shared.exception import BaseError
 
 from .enums import EventOutcome
 
 
-def http_audit_fields(request: Request, error: BaseError | None = None) -> dict:
+def http_audit_fields(request: Request, error: BaseError | StarletteHTTPException | None = None) -> dict:
     """Audit fields derived from HTTP request/error."""
     route = request.scope.get("route")
     span = tracer.current_span()
