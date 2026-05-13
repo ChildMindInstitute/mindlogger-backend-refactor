@@ -1,9 +1,11 @@
 from typing import cast
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.router import router as auth_router
 from apps.shared.domain import to_camelcase
 from apps.shared.test.client import TestClient
@@ -40,19 +42,38 @@ class TestUser:
 
     user_update_request = UserUpdateRequestFactory.build()
 
-    async def test_user_create(self, client: TestClient, request_data: UserCreateRequest):
+    async def test_user_create(self, client: TestClient, request_data: UserCreateRequest, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.users.api.users.log")
         response = await client.post(self.user_create_url, data=request_data.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is not None
+        assert event.user_target_id == event.user_id
+        assert event.event_action == EventAction.USER_CREATE
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == status.HTTP_201_CREATED
         result = response.json()["result"]
+        assert str(event.user_id) == result["id"]
         for k, v in request_data:
             if k != "password":
                 assert v == result[to_camelcase(k)]
 
     async def test_user_create_exist(
-        self, client: TestClient, request_data: UserCreateRequest, user_create: UserCreate
+        self,
+        client: TestClient,
+        request_data: UserCreateRequest,
+        user_create: UserCreate,
+        mocker: MockerFixture,
     ):
+        audit_log = mocker.patch("apps.users.api.users.log")
         request_data.email = user_create.email
         response = await client.post(self.user_create_url, data=request_data.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.user_email == request_data.email
+        assert event.event_action == EventAction.USER_CREATE
+        assert event.event_outcome == EventOutcome.FAILURE
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_user_retrieve(self, client: TestClient, user: User):
