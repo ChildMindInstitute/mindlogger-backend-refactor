@@ -1,8 +1,10 @@
 import pyotp
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import User
@@ -209,14 +211,24 @@ class TestMFAEndpoints:
         result = response.json()["result"]
         assert result["mfaEnabled"] is True
 
-    async def test_mfa_totp_verify_requires_authentication(self, client: TestClient):
+    async def test_mfa_totp_verify_requires_authentication(self, client: TestClient, mocker: MockerFixture):
         """Test that MFA endpoints require authentication."""
+        audit_log = mocker.patch("infrastructure.http.exceptions.log")
+
         # Try without login
         response = await client.post(self.totp_initiate_url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         response = await client.post(self.totp_verify_url, data={"code": "123456"})
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+        # Each unauthenticated request emits user:session:invalid
+        assert audit_log.await_count == 2
+        for call in audit_log.await_args_list:
+            event = call.args[0]
+            assert event.user_id is None
+            assert event.event_action == EventAction.USER_SESSION_INVALID
+            assert event.event_outcome == EventOutcome.FAILURE
 
     async def test_mfa_encrypted_secret_storage(self, client: TestClient, user: User, session: AsyncSession):
         """Test that secrets are stored encrypted in database."""
