@@ -4,6 +4,7 @@ from fastapi import Body, Depends, HTTPException, Query, Request
 from fastapi import status as http_status
 from fastapi.responses import Response as FastAPIResponse
 
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.deps import get_current_user
 from apps.authentication.domain.recovery_code.public import RecoveryCodesListResponse
@@ -20,6 +21,7 @@ from apps.authentication.services.recovery_codes import (
 )
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
+from apps.shared.exception import BaseError
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     MFADisableConfirmRequest,
@@ -61,15 +63,36 @@ from infrastructure.logger import logger
 
 
 async def user_create(
+    request: Request,
     user_create_schema: UserCreateRequest = Body(...),
     session=Depends(get_session),
 ) -> Response[PublicUser]:
-    async with atomic(session):
-        service = UserService(session)
-        prepared_data = UserCreate(**user_create_schema.model_dump())
-        user = await service.create_user(prepared_data)
-        # Create default workspace for new user
-        await WorkspaceService(session, user.id).create_workspace_from_user(user)
+    try:
+        async with atomic(session):
+            service = UserService(session)
+            prepared_data = UserCreate(**user_create_schema.model_dump())
+            user = await service.create_user(prepared_data)
+            # Create default workspace for new user
+            await WorkspaceService(session, user.id).create_workspace_from_user(user)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=None,
+                user_email=user_create_schema.email,
+                event_action=EventAction.USER_CREATE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_CREATE,
+            **http_audit_fields(request),
+        )
+    )
     return Response(result=PublicUser.from_user(user))
 
 
