@@ -120,11 +120,32 @@ async def user_update(
 
 
 async def user_delete(
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> None:
-    async with atomic(session):
-        await UsersCRUD(session).delete(user.id)
+    try:
+        async with atomic(session):
+            await UsersCRUD(session).delete(user.id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_DELETE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_DELETE,
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def user_save_device(
