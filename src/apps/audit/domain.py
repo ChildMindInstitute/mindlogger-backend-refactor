@@ -2,12 +2,13 @@ from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, computed_field
 
 from apps.shared.domain import PublicModel
 from config import settings
 
-from .enums import EventAction, EventKind, EventOutcome
+from .constants import EVENT_ACTION_TO_EVENT_CATEGORY, EVENT_ACTION_TO_EVENT_TYPE
+from .enums import EventAction, EventCategory, EventKind, EventOutcome, EventType
 
 
 class AuditEvent(PublicModel):
@@ -43,6 +44,7 @@ class AuditEvent(PublicModel):
     - http_response_status_code
     - url_path
     - url_query
+    - user_agent
 
     Applicable to HTTP requests if Datadog is enabled:
     - trace_id
@@ -81,7 +83,8 @@ class AuditEvent(PublicModel):
     service_environment: Annotated[str, Field(alias="service.environment", default=settings.env)]
 
     # User performing the action
-    user_id: Annotated[UUID | None, Field(alias="user.id")]
+    user_id: Annotated[UUID | None, Field(alias="user.id")]  # prefer ID if available
+    user_email: Annotated[str | None, Field(alias="user.email")] = None  # email only if ID unavailable
     user_roles: Annotated[list[str] | None, Field(alias="user.roles")] = None
 
     # User being acted upon (if applicable)
@@ -109,3 +112,18 @@ class AuditEvent(PublicModel):
     curious_activity_id: Annotated[list[UUID] | None, Field(alias="curious.activity_id")] = None
     curious_submit_id: Annotated[list[UUID] | None, Field(alias="curious.submit_id")] = None
     curious_answer_id: Annotated[list[UUID] | None, Field(alias="curious.answer_id")] = None
+
+    # Derive event.category from event.action
+    @computed_field(alias="event.category")  # type: ignore[prop-decorator]
+    @property
+    def event_category(self) -> tuple[EventCategory, ...]:
+        return EVENT_ACTION_TO_EVENT_CATEGORY[self.event_action]
+
+    # Derive event.type from event.action (extend with "denied" for 403 Forbidden authorization denials)
+    @computed_field(alias="event.type")  # type: ignore[prop-decorator]
+    @property
+    def event_type(self) -> tuple[EventType, ...]:
+        event_type = EVENT_ACTION_TO_EVENT_TYPE[self.event_action]
+        if self.event_outcome == EventOutcome.FAILURE and self.http_response_status_code == 403:
+            event_type += (EventType.DENIED,)
+        return event_type

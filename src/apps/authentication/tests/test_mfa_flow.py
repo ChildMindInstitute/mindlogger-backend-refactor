@@ -6,8 +6,10 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.shared.test import BaseTest
@@ -209,7 +211,7 @@ class TestMFATOTPVerification(BaseTest):
     verify_mfa_url = auth_router.url_path_for("verify_mfa_totp")
 
     async def test_verify_mfa_with_valid_code_returns_tokens(
-        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession, mocker: MockerFixture
     ):
         """Test successful MFA verification returns access and refresh tokens."""
         # Step 1: Login to get MFA token
@@ -233,6 +235,7 @@ class TestMFATOTPVerification(BaseTest):
         valid_code = totp_service.get_current_code(decrypted_secret)
 
         # Step 3: Verify TOTP
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         verify_response = await client.post(
             url=self.verify_mfa_url,
             data=dict(
@@ -240,6 +243,12 @@ class TestMFATOTPVerification(BaseTest):
                 totpCode=valid_code,
             ),
         )
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_SESSION_LOGIN
+        assert event.event_outcome == EventOutcome.SUCCESS
 
         assert verify_response.status_code == http.HTTPStatus.OK
         verify_data = verify_response.json()["result"]
@@ -253,7 +262,9 @@ class TestMFATOTPVerification(BaseTest):
         assert "accessToken" in verify_data["token"]
         assert "refreshToken" in verify_data["token"]
 
-    async def test_verify_mfa_with_invalid_code_fails(self, client: TestClient, user_with_mfa: User):
+    async def test_verify_mfa_with_invalid_code_fails(
+        self, client: TestClient, user_with_mfa: User, mocker: MockerFixture
+    ):
         """Test that invalid TOTP code fails verification."""
         # Step 1: Login to get MFA token
         login_response = await client.post(
@@ -268,6 +279,7 @@ class TestMFATOTPVerification(BaseTest):
         mfa_token = login_data["mfaToken"]
 
         # Step 2: Try with invalid code
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         verify_response = await client.post(
             url=self.verify_mfa_url,
             data=dict(
@@ -275,6 +287,12 @@ class TestMFATOTPVerification(BaseTest):
                 totpCode="000000",  # Invalid code
             ),
         )
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_SESSION_LOGIN
+        assert event.event_outcome == EventOutcome.FAILURE
 
         # Invalid TOTP code keeps user unauthenticated, expect 401 Unauthorized
         assert verify_response.status_code == http.HTTPStatus.UNAUTHORIZED
