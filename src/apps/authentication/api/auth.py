@@ -80,6 +80,7 @@ async def get_token(
         await log(
             AuditEvent(
                 user_id=None,
+                user_email=user_login_schema.email,
                 event_action=EventAction.USER_SESSION_LOGIN,
                 **http_audit_fields(request, e),
             )

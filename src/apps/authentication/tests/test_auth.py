@@ -192,6 +192,7 @@ class TestAuthentication(BaseTest):
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
         assert event.user_id is None
+        assert event.user_email == data["email"]
         assert event.event_action == EventAction.USER_SESSION_LOGIN
         assert event.event_outcome == EventOutcome.FAILURE
         assert resp.status_code == http.HTTPStatus.UNAUTHORIZED

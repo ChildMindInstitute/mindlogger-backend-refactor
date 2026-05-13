@@ -83,7 +83,8 @@ class AuditEvent(PublicModel):
     service_environment: Annotated[str, Field(alias="service.environment", default=settings.env)]
 
     # User performing the action
-    user_id: Annotated[UUID | None, Field(alias="user.id")]
+    user_id: Annotated[UUID | None, Field(alias="user.id")]  # prefer ID if available
+    user_email: Annotated[str | None, Field(alias="user.email")] = None  # email only if ID unavailable
     user_roles: Annotated[list[str] | None, Field(alias="user.roles")] = None
 
     # User being acted upon (if applicable)
