@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+import uuid
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -21,6 +21,20 @@ from infrastructure.database.deps import get_session
 oauth2_oauth = OAuth2PasswordBearer(tokenUrl="/auth/openapi", scheme_name="Bearer")
 
 
+def _expired_token_sub(token: str, key: str) -> uuid.UUID | None:
+    """Extract expired token subject. For audit logging only."""
+    try:
+        payload = jwt.decode(
+            token,
+            key,
+            algorithms=[settings.authentication.algorithm],
+            options={"verify_exp": False},
+        )
+        return TokenPayload(**payload).sub
+    except (jwt.PyJWTError, ValidationError):
+        return None
+
+
 async def get_current_user_for_ws(websocket: WebSocket, session=Depends(get_session)):
     authorization = websocket.headers.get("sec-websocket-protocol")
     try:
@@ -37,16 +51,12 @@ async def get_current_user_for_ws(websocket: WebSocket, session=Depends(get_sess
         )
 
     async with atomic(session):
+        key = settings.authentication.access_token.secret_key
         try:
-            payload = jwt.decode(
-                token,
-                settings.authentication.access_token.secret_key,
-                algorithms=[settings.authentication.algorithm],
-            )
+            payload = jwt.decode(token, key, algorithms=[settings.authentication.algorithm])
             token_data = TokenPayload(**payload)
-
-            if datetime.fromtimestamp(token_data.exp, timezone.utc) < datetime.now(timezone.utc):
-                raise SessionTokenInvalidError(user_id=token_data.sub)
+        except jwt.ExpiredSignatureError:
+            raise SessionTokenInvalidError(user_id=_expired_token_sub(token, key))
         except (jwt.PyJWTError, ValidationError):
             raise SessionTokenInvalidError()
 
@@ -67,20 +77,14 @@ def get_current_token(type_: TokenPurpose = TokenPurpose.ACCESS):
     async def _get_current_token(
         token: str = Depends(oauth2_oauth),
     ) -> InternalToken:
+        key = settings.authentication.access_token.secret_key
+        if type_ == TokenPurpose.REFRESH:
+            key = settings.authentication.refresh_token.secret_key
         try:
-            key = settings.authentication.access_token.secret_key
-            if type_ == TokenPurpose.REFRESH:
-                key = settings.authentication.refresh_token.secret_key
-            payload = jwt.decode(
-                token,
-                key,
-                algorithms=[settings.authentication.algorithm],
-            )
-
+            payload = jwt.decode(token, key, algorithms=[settings.authentication.algorithm])
             token_payload = TokenPayload(**payload)
-
-            if datetime.fromtimestamp(token_payload.exp, timezone.utc) < datetime.now(timezone.utc):
-                raise SessionTokenInvalidError(user_id=token_payload.sub)
+        except jwt.ExpiredSignatureError:
+            raise SessionTokenInvalidError(user_id=_expired_token_sub(token, key))
         except (jwt.PyJWTError, ValidationError):
             raise SessionTokenInvalidError()
 
