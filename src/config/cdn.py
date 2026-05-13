@@ -19,6 +19,16 @@ class CDNSettings(BaseModel):
     secret_key: str | None = None
     access_key: str | None = None
 
+    # KMS
+    bucket_kms_enabled: bool = False
+    bucket_kms_key_id: str | None = None
+
+    bucket_answer_kms_enabled: bool = False
+    bucket_answer_kms_key_id: str | None = None
+
+    bucket_operation_kms_enabled: bool = False
+    bucket_operation_kms_key_id: str | None = None
+
     ## DR settings
     # Override the media bucket name for the DR site
     bucket_override: str | None = None
@@ -35,7 +45,7 @@ class CDNSettings(BaseModel):
     gcp_endpoint_url: str = "https://storage.googleapis.com"
 
     # Custom Object store endpoint URL
-    # Usually a custom S3 endpoint or GCP, etc.
+    # Usually this is a custom S3 endpoint or GCP, etc.
     # Locally for minio type stores it is in the form http://localhost:9000
     endpoint_url: str | None = None
 
@@ -51,6 +61,16 @@ class CDNSettings(BaseModel):
         """Validate that domain or endpoint is set.  Cannot be both"""
         if self.domain and (self.endpoint_url or self.storage_address):
             raise ValueError("Either domain or endpoint_url must be set, not both.")
+
+        if self.bucket_kms_enabled and not self.bucket_kms_key_id:
+            raise ValueError("bucket_kms_key_id must be set if bucket_kms_enabled is True")
+
+        if self.bucket_answer_kms_enabled and not self.bucket_answer_kms_key_id:
+            raise ValueError("bucket_answer_kms_key_id must be set if bucket_answer_kms_enabled is True")
+
+        if self.bucket_operation_kms_enabled and not self.bucket_operation_kms_key_id:
+            raise ValueError("bucket_operation_kms_key_id must be set if bucket_operation_kms_enabled is True")
+
         return self
 
     @property
