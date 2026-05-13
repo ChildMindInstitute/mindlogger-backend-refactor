@@ -11,7 +11,11 @@ from config import settings
 from infrastructure.logger import logger
 
 broker: AsyncBroker = (
-    AioPikaBroker(settings.rabbitmq.url)
+    AioPikaBroker(
+        settings.rabbitmq.url,
+        declare_exchange_kwargs={"durable": True},
+        declare_queues_kwargs={"durable": True},
+    )
     .with_result_backend(RedisAsyncResultBackend(settings.redis.url))
     .with_formatter(JSONFormatter())
 )
