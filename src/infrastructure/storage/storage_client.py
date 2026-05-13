@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, BinaryIO
 
 import boto3
-import httpx
+import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError, EndpointConnectionError
 from ddtrace.trace import tracer
@@ -176,7 +176,21 @@ class StorageClient:
 
     def generate_presigned_post(self, key) -> dict[str, Any]:
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
-        return self.client.generate_presigned_post(self._get_bucket_name(), key, ExpiresIn=self.config.ttl_signed_urls)
+        fields = {}
+        conditions = []
+        if self.config.kms_enabled:
+            fields = {
+                "x-amz-server-side-encryption": "aws:kms",
+                "x-amz-server-side-encryption-aws-kms-key-id": self.config.kms_key_id,
+            }
+            conditions = [
+                {"x-amz-server-side-encryption": "aws:kms"},
+                {"x-amz-server-side-encryption-aws-kms-key-id": self.config.kms_key_id},
+            ]
+
+        return self.client.generate_presigned_post(
+            self._get_bucket_name(), key, ExpiresIn=self.config.ttl_signed_urls, Fields=fields, Conditions=conditions
+        )
 
     def _copy(self, key, storage_from: "StorageClient", key_from: str | None = None) -> int:
         key_from = key_from or key
@@ -211,23 +225,21 @@ class StorageClient:
         logger.info(f'Check bucket "{storage_bucket}" availability.')
         key = "mindlogger.txt"
 
-        presigned_data = self.generate_presigned_post(storage_bucket, key)
+        presigned_data = self.generate_presigned_post(key)
 
         logger.info(f"Presigned POST fields are following: {presigned_data['fields'].keys()}")
-        file = io.BytesIO(b"")
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(
-                    presigned_data["url"], data=presigned_data["fields"], files={"file": (key, file)}
-                )
-                if response.status_code == http.HTTPStatus.NO_CONTENT:
-                    logger.info(f"Bucket {storage_bucket} is available.")
-                else:
-                    logger.info(response.content)
-                    raise Exception("File upload error")
-            except httpx.HTTPError as e:
-                logger.info("File upload error")
-                raise e
+        files = {"file": ("test.txt", b"content")}
+
+        try:
+            response = requests.post(presigned_data["url"], data=presigned_data["fields"], files=files)
+            if response.status_code == http.HTTPStatus.NO_CONTENT:
+                logger.info(f"Bucket {storage_bucket} is available.")
+            else:
+                logger.info(response.content)
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.info(f"File upload error: {e}")
+            raise e
 
     def _check_is_bucket_public(self) -> bool:
         # Check the bucket policy
