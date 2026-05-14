@@ -5,10 +5,12 @@ from datetime import datetime, timezone
 
 import pyotp
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.db.schemas import RecoveryCodeSchema
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
@@ -25,7 +27,9 @@ class TestRecoveryCodesView:
     recovery_codes_view_verify_url = "/users/me/mfa/recovery-codes/view/verify"
     recovery_codes_download_url = "/users/me/mfa/recovery-codes/download"
 
-    async def test_view_recovery_codes_success(self, client: TestClient, user: User, session: AsyncSession):
+    async def test_view_recovery_codes_success(
+        self, client: TestClient, user: User, session: AsyncSession, mocker: MockerFixture
+    ):
         """Test successful two-step TOTP-protected view of recovery codes."""
         client.login(user)
 
@@ -53,10 +57,18 @@ class TestRecoveryCodesView:
         mfa_token = initiate_result["mfaToken"]
 
         # Step 3: Verify with TOTP code
+        audit_log = mocker.patch("apps.users.api.users.log")
         totp_code = totp.now()
         verify_resp = await client.post(
             self.recovery_codes_view_verify_url, data={"mfaToken": mfa_token, "code": totp_code}
         )
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_VIEW
+        assert event.event_outcome == EventOutcome.SUCCESS
 
         # Assertions - Verify response status
         assert verify_resp.status_code == status.HTTP_200_OK
@@ -136,7 +148,9 @@ class TestRecoveryCodesView:
             f"Expected 'No recovery codes found' in error messages, got: {result}"
         )
 
-    async def test_view_verify_invalid_totp(self, client: TestClient, user: User, session: AsyncSession):
+    async def test_view_verify_invalid_totp(
+        self, client: TestClient, user: User, session: AsyncSession, mocker: MockerFixture
+    ):
         """Test that invalid TOTP code is rejected."""
         client.login(user)
 
@@ -155,10 +169,19 @@ class TestRecoveryCodesView:
         mfa_token = initiate_resp.json()["result"]["mfaToken"]
 
         # Try to verify with invalid TOTP code
+        audit_log = mocker.patch("apps.users.api.users.log")
         verify_resp = await client.post(
             self.recovery_codes_view_verify_url,
             data={"mfaToken": mfa_token, "code": "000000"},  # Invalid code
         )
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_VIEW
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.error_type == "InvalidTOTPCodeError"
 
         # Assertions - Could be 400 or 403 depending on validation order
         assert verify_resp.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN]
