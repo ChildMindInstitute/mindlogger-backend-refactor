@@ -76,7 +76,9 @@ class TestMFAEndpoints:
         # URIs should be different (new secret generated)
         assert uri1 != uri2
 
-    async def test_mfa_totp_verify_success(self, client: TestClient, user: User, session: AsyncSession):
+    async def test_mfa_totp_verify_success(
+        self, client: TestClient, user: User, session: AsyncSession, mocker: MockerFixture
+    ):
         """Test successful TOTP verification and MFA activation."""
         client.login(user)
 
@@ -93,7 +95,15 @@ class TestMFAEndpoints:
         valid_code = totp.now()
 
         # Step 2: Verify TOTP code
+        audit_log = mocker.patch("apps.users.api.users.log")
         verify_response = await client.post(self.totp_verify_url, data={"code": valid_code})
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_ENABLE
+        assert event.event_outcome == EventOutcome.SUCCESS
 
         assert verify_response.status_code == status.HTTP_200_OK
         result = verify_response.json()["result"]
@@ -110,7 +120,7 @@ class TestMFAEndpoints:
         assert updated_user.pending_mfa_secret is None
         assert updated_user.pending_mfa_created_at is None
 
-    async def test_mfa_totp_verify_invalid_code(self, client: TestClient, user: User):
+    async def test_mfa_totp_verify_invalid_code(self, client: TestClient, user: User, mocker: MockerFixture):
         """Test verification fails with invalid TOTP code."""
         client.login(user)
 
@@ -118,7 +128,15 @@ class TestMFAEndpoints:
         await client.post(self.totp_initiate_url)
 
         # Try to verify with invalid code
+        audit_log = mocker.patch("apps.users.api.users.log")
         response = await client.post(self.totp_verify_url, data={"code": "000000"})
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_ENABLE
+        assert event.event_outcome == EventOutcome.FAILURE
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         error = response.json()["result"][0]
