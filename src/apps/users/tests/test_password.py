@@ -9,7 +9,9 @@ from pytest_mock import MockFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.domain.login import UserLoginRequest
+from apps.authentication.errors import BadCredentials
 from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
 from apps.shared.test.client import TestClient
@@ -43,14 +45,26 @@ class TestPassword:
     password_recovery_healthcheck_url = user_router.url_path_for("password_recovery_healthcheck")
 
     async def test_password_update(
-        self, mock_reencrypt_kiq: AsyncMock, client: TestClient, user: User, user_create: UserCreate
+        self,
+        mock_reencrypt_kiq: AsyncMock,
+        client: TestClient,
+        user: User,
+        user_create: UserCreate,
+        mocker: MockFixture,
     ):
         # User get token
         client.login(user)
 
         # Password update
+        audit_log = mocker.patch("apps.users.api.password.log")
         password_update_request = PasswordUpdateRequestFactory.build(prev_password=user_create.password)
         response: HttpResponse = await client.put(self.password_update_url, data=password_update_request.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_PASSWORD_CHANGE
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == status.HTTP_200_OK
 
         # User get token with new password
@@ -66,6 +80,22 @@ class TestPassword:
 
         assert internal_response.status_code == status.HTTP_200_OK
         mock_reencrypt_kiq.assert_awaited_once()
+
+    async def test_password_update_invalid(self, client: TestClient, user: User, mocker: MockFixture):
+        # User get token
+        client.login(user)
+
+        # Password update with incorrect old password
+        audit_log = mocker.patch("apps.users.api.password.log")
+        password_update_request = PasswordUpdateRequestFactory.build(prev_password="IncorrectOldPassword123!")
+        response: HttpResponse = await client.put(self.password_update_url, data=password_update_request.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_PASSWORD_CHANGE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_password_recovery(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
         # Password recovery
