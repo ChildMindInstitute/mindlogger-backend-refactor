@@ -136,6 +136,7 @@ async def password_recovery(
 
 
 async def password_recovery_approve(
+    request: Request,
     schema: PasswordRecoveryApproveRequest = Body(...),
     session=Depends(get_session),
 ) -> Response[PublicUser]:
@@ -143,8 +144,28 @@ async def password_recovery_approve(
 
     # Approve the password recovery
     # NOTE: also check if the data exists and tokens are not expired
-    async with atomic(session):
-        public_user: PublicUser = await PasswordRecoveryService(session).approve(schema)
+    try:
+        async with atomic(session):
+            public_user: PublicUser = await PasswordRecoveryService(session).approve(schema)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=None,
+                user_email=schema.email,
+                event_action=EventAction.USER_PASSWORD_RECOVERY_APPROVE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=public_user.id,
+            user_target_id=public_user.id,
+            event_action=EventAction.USER_PASSWORD_RECOVERY_APPROVE,
+            **http_audit_fields(request),
+        )
+    )
 
     return Response[PublicUser](result=public_user)
 
