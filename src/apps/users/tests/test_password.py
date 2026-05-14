@@ -289,7 +289,9 @@ class TestPassword:
         assert mailbox.mails[0].subject == expected_subject
         assert f'data-language="{language}"' in mailbox.mails[0].body
 
-    async def test_password_recovery_approve(self, client: TestClient, user_create: UserCreate):
+    async def test_password_recovery_approve(
+        self, client: TestClient, user: User, user_create: UserCreate, mocker: MockFixture
+    ):
         cache = RedisCache()
 
         # Password recovery
@@ -311,15 +313,25 @@ class TestPassword:
             "password": "NewPass12345!",
         }
 
+        audit_log = mocker.patch("apps.users.api.password.log")
         response = await client.post(
             url=self.password_recovery_approve_url,
             data=data,
         )
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_PASSWORD_RECOVERY_APPROVE
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == status.HTTP_200_OK
         keys = await cache.keys(key="PasswordRecoveryCache:{user_create.email}*")
         assert len(keys) == 0
 
-    async def test_password_recovery_approve_expired(self, client: TestClient, user_create: UserCreate):
+    async def test_password_recovery_approve_expired(
+        self, client: TestClient, user_create: UserCreate, mocker: MockFixture
+    ):
         cache = RedisCache()
         settings.authentication.password_recover.expiration = 1
 
@@ -343,10 +355,18 @@ class TestPassword:
             "password": "NewPass12345!",
         }
 
+        audit_log = mocker.patch("apps.users.api.password.log")
         response = await client.post(
             url=self.password_recovery_approve_url,
             data=data,
         )
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.user_email == user_create.model_dump()["email"]
+        assert event.event_action == EventAction.USER_PASSWORD_RECOVERY_APPROVE
+        assert event.event_outcome == EventOutcome.FAILURE
 
         keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
 
