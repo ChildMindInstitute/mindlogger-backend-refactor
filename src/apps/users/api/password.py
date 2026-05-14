@@ -92,13 +92,45 @@ async def password_recovery(
     """General endpoint for sending password recovery email
     and stored info in Redis.
     """
-    # Send the password recovery the internal password recovery service
-    async with atomic(session):
-        try:
-            content_source = await get_mindlogger_content_source(request)
-            await PasswordRecoveryService(session).send_password_recovery(schema, content_source, language)
-        except UserNotFound:
-            pass  # mute error in terms of user enumeration vulnerability
+    user_id: uuid.UUID | None = None
+    try:
+        async with atomic(session):
+            try:
+                content_source = await get_mindlogger_content_source(request)
+                public_user = await PasswordRecoveryService(session).send_password_recovery(
+                    schema, content_source, language
+                )
+                user_id = public_user.id
+            except UserNotFound as e:
+                # mute error in terms of user enumeration vulnerability
+                await log(
+                    AuditEvent(
+                        user_id=None,
+                        user_email=schema.email,
+                        event_action=EventAction.USER_PASSWORD_RECOVERY_INITIATE,
+                        **http_audit_fields(request, e),
+                    )
+                )
+                return EmptyResponse(status_code=status.HTTP_201_CREATED)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=None,
+                user_email=schema.email,
+                event_action=EventAction.USER_PASSWORD_RECOVERY_INITIATE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user_id,
+            user_target_id=user_id,
+            event_action=EventAction.USER_PASSWORD_RECOVERY_INITIATE,
+            **http_audit_fields(request),
+        )
+    )
 
     return EmptyResponse(status_code=status.HTTP_201_CREATED)
 
