@@ -35,9 +35,10 @@ class OpenSearchClientTest:
     async def search(self, index: str, body: dict, size: int = DEFAULT_PAGE_SIZE) -> dict:
         OpenSearchClientTest.last_search_body = body
         docs = self._storage.get(index, [])
-        # Cursor is the last hit's index in storage; resume from the next one.
-        cursor = body.get("search_after")
-        start = (cursor[0] + 1) if cursor else 0
+        if "search_after" in body:
+            start = body["search_after"][0] + 1
+        else:
+            start = body.get("from", 0)
         page = docs[start : start + size]
         return {
             "hits": {
@@ -108,8 +109,11 @@ class OpenSearchClient:
         sort: Sequence[dict] | None = None,
         size: int = DEFAULT_PAGE_SIZE,
         search_after: list | None = None,
+        from_: int = 0,
     ) -> dict:
         body: dict = {"query": query, "size": size}
+        if from_:
+            body["from"] = from_
         if sort is not None:
             body["sort"] = list(sort)
         if search_after is not None:
