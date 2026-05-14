@@ -514,59 +514,79 @@ async def user_mfa_totp_disable_confirm(
     from the successful verify endpoint call.
     """
 
-    # Step 1: Validate confirmation_token and get session data
-    mfa_service = MFASessionService()
-    mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.confirmation_token)
+    try:
+        # Step 1: Validate confirmation_token and get session data
+        mfa_service = MFASessionService()
+        mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.confirmation_token)
 
-    # Step 2: SECURITY - Validate current user matches token's user
-    if user.id != token_user_id:
-        logger.warning(
-            f"MFA disable confirm attempted with mismatched user current_user={user.id} token_user={token_user_id}"
-        )
-        raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN, detail="This confirmation token belongs to a different user"
-        )
-
-    # Step 3: Validate session purpose is "disable_confirmed"
-    if purpose != "disable_confirmed":
-        logger.warning(
-            f"MFA session purpose mismatch for confirm user_id={token_user_id} "
-            f"expected=disable_confirmed actual={purpose}"
-        )
-        raise MFASessionPurposeMismatchError()
-
-    # Step 4-8: Single atomic transaction for all database operations
-    async with atomic(session):
-        # Fetch user from database
-        crud = UsersCRUD(session)
-        db_user = await crud.get_by_id(token_user_id)
-
-        # Validate user has MFA enabled (race condition protection)
-        if not db_user.mfa_enabled or not db_user.mfa_secret:
+        # Step 2: SECURITY - Validate current user matches token's user
+        if user.id != token_user_id:
             logger.warning(
-                f"MFA disable confirm attempted but MFA not enabled user_id={token_user_id} "
-                f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
+                f"MFA disable confirm attempted with mismatched user current_user={user.id} token_user={token_user_id}"
             )
-            raise MFANotEnabledError()
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN, detail="This confirmation token belongs to a different user"
+            )
 
-        # Disable MFA and clear all related fields
-        disabled_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        await crud.disable_mfa(user_id=db_user.id, disabled_at=disabled_at)
+        # Step 3: Validate session purpose is "disable_confirmed"
+        if purpose != "disable_confirmed":
+            logger.warning(
+                f"MFA session purpose mismatch for confirm user_id={token_user_id} "
+                f"expected=disable_confirmed actual={purpose}"
+            )
+            raise MFASessionPurposeMismatchError()
 
-        # Invalidate all recovery codes (soft delete)
-        recovery_crud = RecoveryCodeCRUD(session)
-        await recovery_crud.delete_by_user_id(user_id=token_user_id)
+        # Step 4-8: Single atomic transaction for all database operations
+        async with atomic(session):
+            # Fetch user from database
+            crud = UsersCRUD(session)
+            db_user = await crud.get_by_id(token_user_id)
 
-        logger.info(f"MFA disabled and recovery codes invalidated user_id={token_user_id}")
+            # Validate user has MFA enabled (race condition protection)
+            if not db_user.mfa_enabled or not db_user.mfa_secret:
+                logger.warning(
+                    f"MFA disable confirm attempted but MFA not enabled user_id={token_user_id} "
+                    f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
+                )
+                raise MFANotEnabledError()
 
-    # Step 9: Delete MFA session (cleanup)
-    await mfa_service.delete_session(mfa_session_id)
+            # Disable MFA and clear all related fields
+            disabled_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            await crud.disable_mfa(user_id=db_user.id, disabled_at=disabled_at)
 
-    # Step 10: Send MFA disabled notification
-    notification_service = MFANotificationService()
-    await notification_service.send_mfa_disabled_notification(
-        user=db_user,
-        disabled_at=datetime.now(timezone.utc),
+            # Invalidate all recovery codes (soft delete)
+            recovery_crud = RecoveryCodeCRUD(session)
+            await recovery_crud.delete_by_user_id(user_id=token_user_id)
+
+            logger.info(f"MFA disabled and recovery codes invalidated user_id={token_user_id}")
+
+        # Step 9: Delete MFA session (cleanup)
+        await mfa_service.delete_session(mfa_session_id)
+
+        # Step 10: Send MFA disabled notification
+        notification_service = MFANotificationService()
+        await notification_service.send_mfa_disabled_notification(
+            user=db_user,
+            disabled_at=datetime.now(timezone.utc),
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_MFA_DISABLE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_MFA_DISABLE,
+            **http_audit_fields(request),
+        )
     )
 
     logger.info(f"MFA disable completed user_id={token_user_id}")
