@@ -11,7 +11,6 @@ from starlette import status
 
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.domain.login import UserLoginRequest
-from apps.authentication.errors import BadCredentials
 from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
 from apps.shared.test.client import TestClient
@@ -97,8 +96,16 @@ class TestPassword:
         assert event.event_outcome == EventOutcome.FAILURE
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    async def test_password_recovery(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
+    async def test_password_recovery(
+        self,
+        client: TestClient,
+        user: User,
+        user_create: UserCreate,
+        mailbox: TestMail,
+        mocker: MockFixture,
+    ):
         # Password recovery
+        audit_log = mocker.patch("apps.users.api.password.log")
         password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
             email=user_create.model_dump()["email"]
         )
@@ -109,6 +116,13 @@ class TestPassword:
         )
 
         cache = RedisCache()
+
+        assert audit_log.await_count >= 1
+        event = audit_log.call_args_list[0][0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_PASSWORD_RECOVERY_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
 
         assert response.status_code == status.HTTP_201_CREATED
         keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
@@ -371,11 +385,20 @@ class TestPassword:
         assert len(result) == 1
         assert result[0]["message"] == ReencryptionInProgressError.message
 
-    async def test_password_recovery__user_does_not_exists_error_is_muted(self, client: TestClient):
+    async def test_password_recovery__user_does_not_exists_error_is_muted(
+        self, client: TestClient, mocker: MockFixture
+    ):
+        audit_log = mocker.patch("apps.users.api.password.log")
         resp = await client.post(
             self.password_recovery_url,
             data={"email": "userdoesnotexist@example.com"},
         )
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.user_email == "userdoesnotexist@example.com"
+        assert event.event_action == EventAction.USER_PASSWORD_RECOVERY_INITIATE
+        assert event.event_outcome == EventOutcome.FAILURE
         assert resp.status_code == status.HTTP_201_CREATED
 
     async def test_password_recovery_heathcheck_link_does_not_exists(self, client: TestClient, uuid_zero: uuid.UUID):
