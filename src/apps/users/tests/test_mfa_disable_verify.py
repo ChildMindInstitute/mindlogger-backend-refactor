@@ -1,9 +1,11 @@
 """Tests for TOTP code verification during MFA disable."""
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.db.schemas import UserSchema
@@ -44,7 +46,7 @@ class TestMFADisableVerify:
     disable_verify_url = "/users/me/mfa/totp/disable/verify"
 
     async def test_disable_verify_with_valid_totp_returns_confirmation_token(
-        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession, mocker: MockerFixture
     ):
         """Valid TOTP code returns confirmation token but does NOT disable MFA yet."""
         client.login(user_with_mfa)
@@ -60,9 +62,11 @@ class TestMFADisableVerify:
         valid_totp = totp_service.get_current_code(decrypted_secret)
 
         # Verify with valid TOTP
+        audit_log = mocker.patch("apps.users.api.users.log")
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
         response = await client.post(self.disable_verify_url, data=verify_data)
 
+        audit_log.assert_not_awaited()  # no "success" audit event until confirm step
         assert response.status_code == status.HTTP_200_OK
         result = response.json()["result"]
         assert result["codeValidated"] is True
@@ -76,7 +80,9 @@ class TestMFADisableVerify:
         assert updated_user.mfa_enabled is True  # Still enabled!
         assert updated_user.mfa_secret is not None  # Secret still exists!
 
-    async def test_disable_verify_with_invalid_totp_returns_error(self, client: TestClient, user_with_mfa: User):
+    async def test_disable_verify_with_invalid_totp_returns_error(
+        self, client: TestClient, user_with_mfa: User, mocker: MockerFixture
+    ):
         """Invalid TOTP code returns error."""
         client.login(user_with_mfa)
 
@@ -86,8 +92,16 @@ class TestMFADisableVerify:
         mfa_token = response.json()["result"]["mfaToken"]
 
         # Use invalid TOTP
+        audit_log = mocker.patch("apps.users.api.users.log")
         verify_data = {"mfaToken": mfa_token, "code": "000000"}
         response = await client.post(self.disable_verify_url, data=verify_data)
+
+        audit_log.assert_awaited_once()  # log "failure" audit event on verify error
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user_with_mfa.id
+        assert event.user_target_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_MFA_DISABLE
+        assert event.event_outcome == EventOutcome.FAILURE
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         error = response.json()["result"][0]
