@@ -13,6 +13,8 @@ from infrastructure.logger import logger
 broker: AsyncBroker = (
     AioPikaBroker(
         settings.rabbitmq.url,
+        exchange_name="curious",
+        queue_name="curious",
         declare_exchange_kwargs={"durable": True},
         declare_queues_kwargs={"durable": True},
     )
