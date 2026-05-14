@@ -194,6 +194,7 @@ async def user_mfa_totp_initiate(
 
 
 async def user_mfa_totp_verify(
+    request: Request,
     schema: TOTPVerifyRequest = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -202,51 +203,71 @@ async def user_mfa_totp_verify(
 
     Returns recovery codes on first-time setup only (displayed once).
     """
-    async with atomic(session):
-        # Refetch user from database to ensure we have latest MFA state
-        fresh_user = await UsersCRUD(session).get_by_id(user.id)
+    try:
+        async with atomic(session):
+            # Refetch user from database to ensure we have latest MFA state
+            fresh_user = await UsersCRUD(session).get_by_id(user.id)
 
-        # Prevent activation if MFA already enabled (race condition protection)
-        if fresh_user.mfa_enabled:
-            raise MFAAlreadyEnabledError()
+            # Prevent activation if MFA already enabled (race condition protection)
+            if fresh_user.mfa_enabled:
+                raise MFAAlreadyEnabledError()
 
-        # Validate pending setup and get decrypted secret
-        decrypted_secret = totp_service.validate_pending_setup(fresh_user)
+            # Validate pending setup and get decrypted secret
+            decrypted_secret = totp_service.validate_pending_setup(fresh_user)
 
-        # Verify code with standard time-window tolerance
-        is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=1)
+            # Verify code with standard time-window tolerance
+            is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=1)
 
-        if not is_valid:
-            raise InvalidTOTPCodeError()
+            if not is_valid:
+                raise InvalidTOTPCodeError()
 
-        # Activate MFA atomically
-        assert fresh_user.pending_mfa_secret is not None  # Already validated above
-        await UsersCRUD(session).activate_mfa(
-            user_id=fresh_user.id,
-            encrypted_secret=fresh_user.pending_mfa_secret,
-        )
-
-        # Generate recovery codes on first-time MFA setup only
-        # Check if codes actually exist in DB, not just if timestamp is set
-        # (handles case where previous attempt set timestamp but failed to create codes)
-        codes = None
-        download_token = None
-        existing_codes = await RecoveryCodeCRUD(session).get_by_user_id(fresh_user.id)
-        if len(existing_codes) == 0:
-            codes = await generate_recovery_codes(session, fresh_user.id)
-            # Generate download token so user can download their codes immediately
-            download_token = AuthenticationService.create_download_recovery_codes_token(fresh_user.id)
-            logger.info(
-                f"Recovery codes generated during MFA setup user_id={fresh_user.id} "
-                f"download_token_expires_in={settings.mfa.download_token_expiration_seconds}s"
+            # Activate MFA atomically
+            assert fresh_user.pending_mfa_secret is not None  # Already validated above
+            await UsersCRUD(session).activate_mfa(
+                user_id=fresh_user.id,
+                encrypted_secret=fresh_user.pending_mfa_secret,
             )
 
-        notification_service = MFANotificationService()
-        await notification_service.send_mfa_enabled_notification(
-            user=fresh_user,
-            enabled_at=datetime.now(timezone.utc),
-            recovery_codes_count=settings.mfa.recovery_code_count,
+            # Generate recovery codes on first-time MFA setup only
+            # Check if codes actually exist in DB, not just if timestamp is set
+            # (handles case where previous attempt set timestamp but failed to create codes)
+            codes = None
+            download_token = None
+            existing_codes = await RecoveryCodeCRUD(session).get_by_user_id(fresh_user.id)
+            if len(existing_codes) == 0:
+                codes = await generate_recovery_codes(session, fresh_user.id)
+                # Generate download token so user can download their codes immediately
+                download_token = AuthenticationService.create_download_recovery_codes_token(fresh_user.id)
+                logger.info(
+                    f"Recovery codes generated during MFA setup user_id={fresh_user.id} "
+                    f"download_token_expires_in={settings.mfa.download_token_expiration_seconds}s"
+                )
+
+            notification_service = MFANotificationService()
+            await notification_service.send_mfa_enabled_notification(
+                user=fresh_user,
+                enabled_at=datetime.now(timezone.utc),
+                recovery_codes_count=settings.mfa.recovery_code_count,
+            )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_MFA_ENABLE,
+                **http_audit_fields(request, e),
+            )
         )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_MFA_ENABLE,
+            **http_audit_fields(request),
+        )
+    )
 
     result = TOTPVerifyResponse(
         message="TOTP MFA has been successfully enabled for your account.",
