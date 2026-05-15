@@ -804,18 +804,40 @@ async def submission_note_list(
     applet_id: uuid.UUID,
     submission_id: uuid.UUID,
     flow_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[AnswerNoteDetailPublic]:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
-    notes = await AnswerService(session, user.id, answer_session).get_submission_note_list(
-        applet_id, submission_id, flow_id, query_params.page, query_params.limit
-    )
-    count = await AnswerService(session, user.id, answer_session).get_submission_notes_count(
-        submission_id, flow_id, query_params.page, query_params.limit
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+        notes = await AnswerService(session, user.id, answer_session).get_submission_note_list(
+            applet_id, submission_id, flow_id, query_params.page, query_params.limit
+        )
+        count = await AnswerService(session, user.id, answer_session).get_submission_notes_count(
+            submission_id, flow_id, query_params.page, query_params.limit
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_NOTE_VIEW,
+                curious_applet_id=[applet_id],
+                curious_answer_id=[submission_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_NOTE_VIEW,
+            curious_applet_id=[applet_id],
+            curious_answer_id=[submission_id],
+            **http_audit_fields(request),
+        )
     )
     return ResponseMulti(
         result=[AnswerNoteDetailPublic.model_validate(note) for note in notes],
@@ -885,17 +907,39 @@ async def answer_note_list(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
     activity_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     query_params: QueryParams = Depends(parse_query_params(BaseQueryParams)),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[AnswerNoteDetailPublic]:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
-    notes = await AnswerService(session, user.id, answer_session).get_note_list(
-        applet_id, answer_id, activity_id, query_params.page, query_params.limit
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_note_crud_access(applet_id)
+        notes = await AnswerService(session, user.id, answer_session).get_note_list(
+            applet_id, answer_id, activity_id, query_params.page, query_params.limit
+        )
+        count = await AnswerService(session, user.id, answer_session).get_notes_count(answer_id, activity_id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_NOTE_VIEW,
+                curious_applet_id=[applet_id],
+                curious_answer_id=[answer_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_NOTE_VIEW,
+            curious_applet_id=[applet_id],
+            curious_answer_id=[answer_id],
+            **http_audit_fields(request),
+        )
     )
-    count = await AnswerService(session, user.id, answer_session).get_notes_count(answer_id, activity_id)
     return ResponseMulti(
         result=[AnswerNoteDetailPublic.model_validate(note) for note in notes],
         count=count,

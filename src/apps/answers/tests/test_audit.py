@@ -613,3 +613,123 @@ class TestAnswersAudit(BaseTest):
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [missing_applet_id]
         assert event.curious_answer_id == [missing_submission_id]
+
+    # --- answer_note_list ---
+
+    answer_notes_url = "/answers/applet/{applet_id}/answers/{answer_id}/activities/{activity_id}/notes"
+
+    async def test_answer_note_list_audit_success(
+        self,
+        client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        answer: AnswerSchema,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        response = await client.get(
+            self.answer_notes_url.format(
+                applet_id=applet.id,
+                answer_id=answer.id,
+                activity_id=applet.activities[0].id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_NOTE_VIEW
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.curious_applet_id == [applet.id]
+        assert event.curious_answer_id == [answer.id]
+
+    async def test_answer_note_list_audit_failure(
+        self,
+        client: TestClient,
+        tom: User,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        missing_applet_id = uuid.uuid4()
+        missing_answer_id = uuid.uuid4()
+        response = await client.get(
+            self.answer_notes_url.format(
+                applet_id=missing_applet_id,
+                answer_id=missing_answer_id,
+                activity_id=uuid.uuid4(),
+            )
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_NOTE_VIEW
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [missing_applet_id]
+        assert event.curious_answer_id == [missing_answer_id]
+
+    # --- submission_note_list ---
+
+    submission_notes_url = "/answers/applet/{applet_id}/submissions/{submission_id}/flows/{flow_id}/notes"
+
+    async def test_submission_note_list_audit_success(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_with_flow: AppletFull,
+        tom_answer_activity_flow_audit: AnswerSchema,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        response = await client.get(
+            self.submission_notes_url.format(
+                applet_id=applet_with_flow.id,
+                submission_id=tom_answer_activity_flow_audit.submit_id,
+                flow_id=applet_with_flow.activity_flows[0].id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_NOTE_VIEW
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.curious_applet_id == [applet_with_flow.id]
+        assert event.curious_answer_id == [tom_answer_activity_flow_audit.submit_id]
+
+    async def test_submission_note_list_audit_failure(
+        self,
+        client: TestClient,
+        tom: User,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        missing_applet_id = uuid.uuid4()
+        missing_submission_id = uuid.uuid4()
+        response = await client.get(
+            self.submission_notes_url.format(
+                applet_id=missing_applet_id,
+                submission_id=missing_submission_id,
+                flow_id=uuid.uuid4(),
+            )
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_NOTE_VIEW
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [missing_applet_id]
+        assert event.curious_answer_id == [missing_submission_id]
