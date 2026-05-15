@@ -216,7 +216,9 @@ class TestRecoveryCodesView:
             status.HTTP_404_NOT_FOUND,
         ]
 
-    async def test_download_recovery_codes_success(self, client: TestClient, user: User, session: AsyncSession):
+    async def test_download_recovery_codes_success(
+        self, client: TestClient, user: User, session: AsyncSession, mocker: MockerFixture
+    ):
         """Test successful download of recovery codes using download_token."""
         client.login(user)
 
@@ -242,7 +244,15 @@ class TestRecoveryCodesView:
         download_token = verify_resp.json()["result"]["downloadToken"]
 
         # Download codes using download_token
+        audit_log = mocker.patch("apps.users.api.users.log")
         resp = await client.get(f"{self.recovery_codes_download_url}?download_token={download_token}")
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_DOWNLOAD
+        assert event.event_outcome == EventOutcome.SUCCESS
 
         # Assertions - Status
         assert resp.status_code == status.HTTP_200_OK
