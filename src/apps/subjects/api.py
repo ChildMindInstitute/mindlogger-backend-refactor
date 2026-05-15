@@ -2,18 +2,19 @@ import uuid
 from datetime import datetime, timedelta
 from typing import TypedDict
 
-from fastapi import Body, Depends
+from fastapi import Body, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_answer_session_by_subject
 from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.exception import NotFoundError, ValidationError
+from apps.shared.exception import BaseError, NotFoundError, ValidationError
 from apps.shared.response import EmptyResponse
 from apps.shared.subjects import is_take_now_relation, is_valid_take_now_relation
 from apps.subjects.domain import (
@@ -225,37 +226,64 @@ async def delete_subject(
 
 async def get_subject(
     subject_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
 ) -> Response[SubjectReadResponseWithDataAccess]:
-    subjects_service = SubjectsService(session, user.id)
-    subject = await subjects_service.get(subject_id)
-    if not subject:
-        raise NotFoundError()
+    applet_id_for_audit: uuid.UUID | None = None
+    try:
+        subjects_service = SubjectsService(session, user.id)
+        subject = await subjects_service.get(subject_id)
+        if not subject:
+            raise NotFoundError()
+        applet_id_for_audit = subject.applet_id
 
-    user_subject = await subjects_service.get_by_user_and_applet(user.id, subject.applet_id)
-    if not user_subject:
-        await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
-    else:
-        relation = await subjects_service.get_relation(user_subject.id, subject_id)
-        has_relation = relation is not None and (
-            relation.relation != "take-now" or is_valid_take_now_relation(relation)
-        )
-        if not has_relation:
+        user_subject = await subjects_service.get_by_user_and_applet(user.id, subject.applet_id)
+        if not user_subject:
             await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
+        else:
+            relation = await subjects_service.get_relation(user_subject.id, subject_id)
+            has_relation = relation is not None and (
+                relation.relation != "take-now" or is_valid_take_now_relation(relation)
+            )
+            if not has_relation:
+                await CheckAccessService(session, user.id).check_subject_subject_access(subject.applet_id, subject_id)
 
-    answer_dates = await AnswerService(
-        user_id=user.id, session=session, arbitrary_session=arbitrary_session
-    ).get_last_answer_dates([subject.id], subject.applet_id)
+        answer_dates = await AnswerService(
+            user_id=user.id, session=session, arbitrary_session=arbitrary_session
+        ).get_last_answer_dates([subject.id], subject.applet_id)
 
-    roles: list[str] = []
-    if subject.user_id:
-        roles = await UserAppletAccessService(session, subject.user_id, subject.applet_id).get_roles()
+        roles: list[str] = []
+        if subject.user_id:
+            roles = await UserAppletAccessService(session, subject.user_id, subject.applet_id).get_roles()
 
-    accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=[subject.applet_id], user_id=user.id)
-    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
-    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+        accesses = await AppletAccessService(session).get_applet_accesses(
+            applet_ids=[subject.applet_id], user_id=user.id
+        )
+        is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+        reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_SUBJECT_VIEW,
+                curious_applet_id=[applet_id_for_audit] if applet_id_for_audit else None,
+                curious_subject_id=[subject_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_SUBJECT_VIEW,
+            curious_applet_id=[subject.applet_id],
+            curious_subject_id=[subject.id],
+            **http_audit_fields(request),
+        )
+    )
 
     return Response(
         result=SubjectReadResponseWithDataAccess(
@@ -277,23 +305,45 @@ async def get_subject(
 
 async def get_my_subject(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session),
 ) -> Response[SubjectReadResponse]:
-    # Check if applet exists
-    await AppletService(session, user.id).exist_by_id(applet_id)
+    try:
+        # Check if applet exists
+        await AppletService(session, user.id).exist_by_id(applet_id)
 
-    # Check if user has access to applet
-    await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
+        # Check if user has access to applet
+        await CheckAccessService(session, user.id).check_applet_detail_access(applet_id)
 
-    subject = await SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
-    if not subject:
-        raise NotFoundError()
+        subject = await SubjectsService(session, user.id).get_by_user_and_applet(user.id, applet_id)
+        if not subject:
+            raise NotFoundError()
 
-    answer_dates = await AnswerService(
-        user_id=user.id, session=session, arbitrary_session=arbitrary_session
-    ).get_last_answer_dates([subject.id], subject.applet_id)
+        answer_dates = await AnswerService(
+            user_id=user.id, session=session, arbitrary_session=arbitrary_session
+        ).get_last_answer_dates([subject.id], subject.applet_id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_SUBJECT_VIEW,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_SUBJECT_VIEW,
+            curious_applet_id=[applet_id],
+            curious_subject_id=[subject.id],
+            **http_audit_fields(request),
+        )
+    )
     return Response(
         result=SubjectReadResponse(
             id=subject.id,
@@ -312,62 +362,87 @@ async def get_my_subject(
 async def get_target_subjects_by_respondent(
     respondent_subject_id: uuid.UUID,
     activity_or_flow_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[TargetSubjectByRespondentResponse]:
-    subjects_service = SubjectsService(session, user.id)
-    respondent_subject = await subjects_service.exist_by_id(respondent_subject_id)
-    is_limited_respondent = respondent_subject.user_id is None
+    applet_id_for_audit: uuid.UUID | None = None
+    try:
+        subjects_service = SubjectsService(session, user.id)
+        respondent_subject = await subjects_service.exist_by_id(respondent_subject_id)
+        applet_id_for_audit = respondent_subject.applet_id
+        is_limited_respondent = respondent_subject.user_id is None
 
-    # Make sure the authenticated user has access to the subject
-    await CheckAccessService(session, user.id).check_subject_subject_access(
-        respondent_subject.applet_id, respondent_subject.id
-    )
+        # Make sure the authenticated user has access to the subject
+        await CheckAccessService(session, user.id).check_subject_subject_access(
+            respondent_subject.applet_id, respondent_subject.id
+        )
 
-    assignment_service = ActivityAssignmentService(session)
-    assignment_subject_ids = await assignment_service.get_target_subject_ids_by_respondent(
-        respondent_subject_id=respondent_subject_id, activity_or_flow_ids=[activity_or_flow_id]
-    )
+        assignment_service = ActivityAssignmentService(session)
+        assignment_subject_ids = await assignment_service.get_target_subject_ids_by_respondent(
+            respondent_subject_id=respondent_subject_id, activity_or_flow_ids=[activity_or_flow_id]
+        )
 
-    is_auto_assigned = await assignment_service.check_if_auto_assigned(activity_or_flow_id)
-    if is_auto_assigned and not is_limited_respondent:
-        assignment_subject_ids.append(respondent_subject_id)
+        is_auto_assigned = await assignment_service.check_if_auto_assigned(activity_or_flow_id)
+        if is_auto_assigned and not is_limited_respondent:
+            assignment_subject_ids.append(respondent_subject_id)
 
-    submission_data: list[tuple[uuid.UUID, int]] = await AnswerService(
-        user_id=user.id, session=session, arbitrary_session=answer_session
-    ).get_target_subject_ids_by_respondent_and_activity_or_flow(
-        respondent_subject_id=respondent_subject_id, activity_or_flow_id=activity_or_flow_id
-    )
+        submission_data: list[tuple[uuid.UUID, int]] = await AnswerService(
+            user_id=user.id, session=session, arbitrary_session=answer_session
+        ).get_target_subject_ids_by_respondent_and_activity_or_flow(
+            respondent_subject_id=respondent_subject_id, activity_or_flow_id=activity_or_flow_id
+        )
 
-    class SubjectInfo(TypedDict):
-        currently_assigned: bool
-        submission_count: int
+        class SubjectInfo(TypedDict):
+            currently_assigned: bool
+            submission_count: int
 
-    subject_info: dict[uuid.UUID, SubjectInfo] = {}
-    for subject_id, submission_count in submission_data:
-        subject_info[subject_id] = {"currently_assigned": False, "submission_count": submission_count}
+        subject_info: dict[uuid.UUID, SubjectInfo] = {}
+        for subject_id, submission_count in submission_data:
+            subject_info[subject_id] = {"currently_assigned": False, "submission_count": submission_count}
 
-    for subject_id in assignment_subject_ids:
-        if subject_id not in subject_info:
-            subject_info[subject_id] = {"currently_assigned": True, "submission_count": 0}
-        else:
-            subject_info[subject_id]["currently_assigned"] = True
+        for subject_id in assignment_subject_ids:
+            if subject_id not in subject_info:
+                subject_info[subject_id] = {"currently_assigned": True, "submission_count": 0}
+            else:
+                subject_info[subject_id]["currently_assigned"] = True
 
-    subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
-    roles: dict[uuid.UUID, list[Role]] = await UserAppletAccessService(
-        session, user.id, respondent_subject.applet_id
-    ).get_applet_roles_by_priority_for_users(
-        respondent_subject.applet_id, [subject.user_id for subject in subjects if subject.user_id]
+        subjects: list[Subject] = await subjects_service.get_by_ids(list(subject_info.keys()))
+        roles: dict[uuid.UUID, list[Role]] = await UserAppletAccessService(
+            session, user.id, respondent_subject.applet_id
+        ).get_applet_roles_by_priority_for_users(
+            respondent_subject.applet_id, [subject.user_id for subject in subjects if subject.user_id]
+        )
+
+        accesses = await AppletAccessService(session).get_applet_accesses(
+            applet_ids=[respondent_subject.applet_id], user_id=user.id
+        )
+        is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+        reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_SUBJECT_VIEW,
+                curious_applet_id=[applet_id_for_audit] if applet_id_for_audit else None,
+                curious_subject_id=[respondent_subject_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_SUBJECT_VIEW,
+            curious_applet_id=[respondent_subject.applet_id],
+            curious_subject_id=[respondent_subject_id],
+            **http_audit_fields(request),
+        )
     )
 
     result: list[TargetSubjectByRespondentResponse] = []
-
-    accesses = await AppletAccessService(session).get_applet_accesses(
-        applet_ids=[respondent_subject.applet_id], user_id=user.id
-    )
-    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
-    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
 
     respondent_target_subject: TargetSubjectByRespondentResponse | None = None
 

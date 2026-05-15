@@ -1,18 +1,19 @@
 import uuid
 from copy import deepcopy
 
-from fastapi import Body, Depends, Query
+from fastapi import Body, Depends, Query, Request
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session_by_owner_id
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import PublicAppletFull
 from apps.applets.filters import AppletQueryParams
 from apps.applets.service import AppletService
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
 from apps.shared.domain import Response, ResponseMulti, ResponseMultiOrdering
-from apps.shared.exception import NotFoundError
+from apps.shared.exception import BaseError, NotFoundError
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User
@@ -235,27 +236,50 @@ async def workspace_remove_manager_access(
 
 async def workspace_respondents_list(
     owner_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
-    service = WorkspaceService(session, user.id)
-    await service.exists_by_owner_id(owner_id)
+    try:
+        service = WorkspaceService(session, user.id)
+        await service.exists_by_owner_id(owner_id)
 
-    await CheckAccessService(session, user.id).check_workspace_respondent_list_access(owner_id)
+        await CheckAccessService(session, user.id).check_workspace_respondent_list_access(owner_id)
 
-    data, total, ordering_fields = await service.get_workspace_respondents(owner_id, None, deepcopy(query_params))
-    respondents = await AnswerService(
-        session=session, arbitrary_session=answer_session
-    ).fill_last_activity_workspace_respondent(data)
-    respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
+        data, total, ordering_fields = await service.get_workspace_respondents(owner_id, None, deepcopy(query_params))
+        respondents = await AnswerService(
+            session=session, arbitrary_session=answer_session
+        ).fill_last_activity_workspace_respondent(data)
+        respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
 
-    applet_ids = [detail.applet_id for respondent in respondents if respondent.details for detail in respondent.details]
+        applet_ids = [
+            detail.applet_id for respondent in respondents if respondent.details for detail in respondent.details
+        ]
 
-    accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=applet_ids, user_id=user.id)
-    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
-    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+        accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=applet_ids, user_id=user.id)
+        is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+        reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_SUBJECT_VIEW,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    for applet_id in set(applet_ids):
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_SUBJECT_VIEW,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request),
+            )
+        )
 
     public_respondents: list[PublicWorkspaceRespondent] = []
     for respondent in respondents:
@@ -277,25 +301,48 @@ async def workspace_respondents_list(
 async def workspace_applet_respondents_list(
     owner_id: uuid.UUID,
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(parse_query_params(WorkspaceUsersQueryParams)),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
-    service = WorkspaceService(session, user.id)
-    await service.exists_by_owner_id(owner_id)
+    try:
+        service = WorkspaceService(session, user.id)
+        await service.exists_by_owner_id(owner_id)
 
-    await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
+        await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
-    data, total, ordering_fields = await service.get_workspace_respondents(owner_id, applet_id, deepcopy(query_params))
-    respondents = await AnswerService(
-        session=session, arbitrary_session=answer_session
-    ).fill_last_activity_workspace_respondent(data, applet_id)
-    respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
+        data, total, ordering_fields = await service.get_workspace_respondents(
+            owner_id, applet_id, deepcopy(query_params)
+        )
+        respondents = await AnswerService(
+            session=session, arbitrary_session=answer_session
+        ).fill_last_activity_workspace_respondent(data, applet_id)
+        respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
 
-    accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=[applet_id], user_id=user.id)
-    is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
-    reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+        accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=[applet_id], user_id=user.id)
+        is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
+        reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_SUBJECT_VIEW,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_SUBJECT_VIEW,
+            curious_applet_id=[applet_id],
+            **http_audit_fields(request),
+        )
+    )
 
     public_respondents: list[PublicWorkspaceRespondent] = []
     for respondent in respondents:
@@ -453,21 +500,43 @@ async def workspace_applet_get_respondent(
     owner_id: uuid.UUID,
     applet_id: uuid.UUID,
     respondent_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> Response[RespondentInfoPublic]:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-    await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+        await CheckAccessService(session, user.id).check_applet_respondent_list_access(applet_id)
 
-    respondent_info = await UserAppletAccessService(session, user.id, applet_id).get_respondent_info(
-        respondent_id, applet_id, owner_id
+        respondent_info = await UserAppletAccessService(session, user.id, applet_id).get_respondent_info(
+            respondent_id, applet_id, owner_id
+        )
+        # get last activity time
+        result = await AnswerService(session=session, arbitrary_session=answer_session).get_last_answer_dates(
+            [respondent_info.subject_id],
+            applet_id,
+        )
+        respondent_info.last_seen = result.get(respondent_info.subject_id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_SUBJECT_VIEW,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_SUBJECT_VIEW,
+            curious_applet_id=[applet_id],
+            curious_subject_id=[respondent_info.subject_id],
+            **http_audit_fields(request),
+        )
     )
-    # get last activity time
-    result = await AnswerService(session=session, arbitrary_session=answer_session).get_last_answer_dates(
-        [respondent_info.subject_id],
-        applet_id,
-    )
-    respondent_info.last_seen = result.get(respondent_info.subject_id)
     return Response(result=respondent_info)
