@@ -399,7 +399,16 @@ async def verify_mfa_recovery_code(
                     request_info=request_metadata,
                 )
 
-            except RecoveryCodeNotFoundError:
+            except RecoveryCodeNotFoundError as e:
+                await log(
+                    AuditEvent(
+                        event_action=EventAction.USER_MFA_RECOVERY_USE,
+                        user_id=user_id,
+                        user_target_id=user_id,
+                        **http_audit_fields(request, e),
+                    )
+                )
+
                 # No unused codes exist - increment both counters
                 session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
                 global_count = await mfa_service.increment_global_failed_attempts(user_id)
@@ -456,7 +465,16 @@ async def verify_mfa_recovery_code(
 
                 raise
 
-            except RecoveryCodeInvalidError:
+            except RecoveryCodeInvalidError as e:
+                await log(
+                    AuditEvent(
+                        event_action=EventAction.USER_MFA_RECOVERY_USE,
+                        user_id=user_id,
+                        user_target_id=user_id,
+                        **http_audit_fields(request, e),
+                    )
+                )
+
                 # Invalid code - increment both per-session and global counters
                 session_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
                 global_count = await mfa_service.increment_global_failed_attempts(user_id)
@@ -569,9 +587,14 @@ async def verify_mfa_recovery_code(
         raise
 
     # Step 7: Return response
-    token = Token(access_token=access_token, refresh_token=refresh_token)
-    public_user = PublicUser.from_user(user)
-
+    await log(
+        AuditEvent(
+            event_action=EventAction.USER_MFA_RECOVERY_USE,
+            user_id=user.id,
+            user_target_id=user.id,
+            **http_audit_fields(request),
+        )
+    )
     await log(
         AuditEvent(
             event_action=EventAction.USER_SESSION_LOGIN,
@@ -579,6 +602,9 @@ async def verify_mfa_recovery_code(
             **http_audit_fields(request),
         )
     )
+
+    token = Token(access_token=access_token, refresh_token=refresh_token)
+    public_user = PublicUser.from_user(user)
 
     return Response(
         result=UserLogin(
