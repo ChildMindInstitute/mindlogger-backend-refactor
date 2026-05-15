@@ -64,6 +64,8 @@ class StorageClient:
         assert config, "set CDN"
         client_config = Config(
             max_pool_connections=25,
+            signature_version="s3v4",
+            s3={"addressing_style": "virtual"},
         )
 
         # TODO This is only done for arbitrary???
