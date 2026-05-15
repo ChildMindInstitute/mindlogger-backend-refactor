@@ -906,6 +906,7 @@ async def user_recovery_codes_view_verify(
 
 
 async def user_download_recovery_codes(
+    request: Request,
     download_token: str = Query(..., description="Short-lived download token obtained from view/verify endpoint"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -923,46 +924,66 @@ async def user_download_recovery_codes(
     - Token must match authenticated user
     - Validates MFA is enabled and recovery codes exist
     """
-    # Step 1: Validate download token and extract user_id
     try:
-        token_user_id = AuthenticationService.validate_download_recovery_codes_token(download_token)
-    except Exception as e:
-        logger.warning(f"Invalid download token user_id={user.id} error={str(e)}")
-        raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN,
-            detail="Invalid or expired download token. Please verify your TOTP code again to get a new token.",
+        # Step 1: Validate download token and extract user_id
+        try:
+            token_user_id = AuthenticationService.validate_download_recovery_codes_token(download_token)
+        except Exception as e:
+            logger.warning(f"Invalid download token user_id={user.id} error={str(e)}")
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="Invalid or expired download token. Please verify your TOTP code again to get a new token.",
+            )
+
+        # Step 2: SECURITY - Validate current user matches token's user
+        if user.id != token_user_id:
+            logger.warning(f"Download token user mismatch current_user={user.id} token_user={token_user_id}")
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN, detail="This download token belongs to a different user"
+            )
+
+        # Step 3: Refetch user to ensure latest MFA state
+        fresh_user = await UsersCRUD(session).get_by_id(user.id)
+
+        # Step 4: Check MFA is enabled (race condition protection)
+        if not fresh_user.mfa_secret:
+            raise MFANotEnabledError()
+
+        # Step 5: Get all recovery codes with decrypted values
+        codes = await get_recovery_codes(session, fresh_user.id)
+
+        # Step 6: Check if recovery codes exist
+        if not codes:
+            raise RecoveryCodesNotFoundError()
+
+        # Step 7: Get user email for text file header
+        email = fresh_user.email_encrypted or fresh_user.email
+
+        # Step 8: Format as downloadable text
+        text_content = format_recovery_codes_text(codes, email)
+
+        # Step 9: Generate filename with timestamp
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        filename = f"recovery_codes_{timestamp}.txt"
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_MFA_RECOVERY_DOWNLOAD,
+                **http_audit_fields(request, e),
+            )
         )
+        raise
 
-    # Step 2: SECURITY - Validate current user matches token's user
-    if user.id != token_user_id:
-        logger.warning(f"Download token user mismatch current_user={user.id} token_user={token_user_id}")
-        raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN, detail="This download token belongs to a different user"
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_MFA_RECOVERY_DOWNLOAD,
+            **http_audit_fields(request),
         )
-
-    # Step 3: Refetch user to ensure latest MFA state
-    fresh_user = await UsersCRUD(session).get_by_id(user.id)
-
-    # Step 4: Check MFA is enabled (race condition protection)
-    if not fresh_user.mfa_secret:
-        raise MFANotEnabledError()
-
-    # Step 5: Get all recovery codes with decrypted values
-    codes = await get_recovery_codes(session, fresh_user.id)
-
-    # Step 6: Check if recovery codes exist
-    if not codes:
-        raise RecoveryCodesNotFoundError()
-
-    # Step 7: Get user email for text file header
-    email = fresh_user.email_encrypted or fresh_user.email
-
-    # Step 8: Format as downloadable text
-    text_content = format_recovery_codes_text(codes, email)
-
-    # Step 9: Generate filename with timestamp
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"recovery_codes_{timestamp}.txt"
+    )
 
     logger.info(f"Recovery codes downloaded user_id={user.id} filename={filename}")
 
