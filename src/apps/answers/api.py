@@ -496,13 +496,35 @@ async def applet_flow_answer_retrieve(
 async def applet_answer_reviews_retrieve(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[AnswerReviewPublic]:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    reviews = await AnswerService(session, user.id, answer_session).get_reviews_by_answer_id(applet_id, answer_id)
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        reviews = await AnswerService(session, user.id, answer_session).get_reviews_by_answer_id(applet_id, answer_id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
+                curious_applet_id=[applet_id],
+                curious_answer_id=[answer_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
+            curious_applet_id=[applet_id],
+            curious_answer_id=[answer_id],
+            **http_audit_fields(request),
+        )
+    )
     return ResponseMulti(
         result=[AnswerReviewPublic.model_validate(review) for review in reviews],
         count=len(reviews),
@@ -557,13 +579,35 @@ async def applet_submission_delete(
 async def applet_activity_assessment_retrieve(
     applet_id: uuid.UUID,
     answer_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> Response[AssessmentAnswerPublic]:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    answer = await AnswerService(session, user.id, answer_session).get_assessment_by_answer_id(applet_id, answer_id)
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        answer = await AnswerService(session, user.id, answer_session).get_assessment_by_answer_id(applet_id, answer_id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
+                curious_applet_id=[applet_id],
+                curious_answer_id=[answer_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
+            curious_applet_id=[applet_id],
+            curious_answer_id=[answer_id],
+            **http_audit_fields(request),
+        )
+    )
     return Response(
         result=AssessmentAnswerPublic.model_validate(answer),
     )
@@ -572,15 +616,39 @@ async def applet_activity_assessment_retrieve(
 async def applet_submission_assessment_retrieve(
     applet_id: uuid.UUID,
     submission_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> Response[AssessmentAnswerPublic]:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    answer = await AnswerService(session, user.id, answer_session).get_assessment_by_submit_id(applet_id, submission_id)
-    if not answer:
-        raise NotFoundError()
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        answer = await AnswerService(session, user.id, answer_session).get_assessment_by_submit_id(
+            applet_id, submission_id
+        )
+        if not answer:
+            raise NotFoundError()
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
+                curious_applet_id=[applet_id],
+                curious_answer_id=[submission_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
+            curious_applet_id=[applet_id],
+            curious_answer_id=[submission_id],
+            **http_audit_fields(request),
+        )
+    )
     return Response(
         result=AssessmentAnswerPublic.model_validate(answer),
     )
@@ -589,34 +657,76 @@ async def applet_submission_assessment_retrieve(
 async def applet_activity_identifiers_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
+    request: Request,
     query_params: QueryParams = Depends(parse_query_params(IdentifiersQueryParams)),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[Identifier]:
-    filters = IdentifiersQueryParams(**query_params.filters)
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
-    identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(activity_id, filters)
+    try:
+        filters = IdentifiersQueryParams(**query_params.filters)
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
+        identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(
+            activity_id, filters
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
+            curious_applet_id=[applet_id],
+            **http_audit_fields(request),
+        )
+    )
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
 
 async def applet_flow_identifiers_retrieve(
     applet_id: uuid.UUID,
     flow_id: uuid.UUID,
+    request: Request,
     query_params: QueryParams = Depends(parse_query_params(IdentifiersQueryParams)),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[Identifier]:
-    filters = IdentifiersQueryParams(**query_params.filters)
-    applet_service = AppletService(session, user.id)
-    await applet_service.exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    if not (target_subject_id := filters.target_subject_id):
-        raise ValidationError("targetSubjectId missed")
-    identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(
-        applet_id, flow_id, target_subject_id
+    try:
+        filters = IdentifiersQueryParams(**query_params.filters)
+        applet_service = AppletService(session, user.id)
+        await applet_service.exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        if not (target_subject_id := filters.target_subject_id):
+            raise ValidationError("targetSubjectId missed")
+        identifiers = await AnswerService(session, user.id, answer_session).get_flow_identifiers(
+            applet_id, flow_id, target_subject_id
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
+            curious_applet_id=[applet_id],
+            **http_audit_fields(request),
+        )
     )
     return ResponseMulti(result=identifiers, count=len(identifiers))
 
@@ -983,14 +1093,36 @@ async def answers_existence_check(
 async def applet_submission_reviews_retrieve(
     applet_id: uuid.UUID,
     submission_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[AnswerReviewPublic]:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    reviews = await AnswerService(session, user.id, answer_session).get_reviews_by_submission_id(
-        applet_id, submission_id
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        reviews = await AnswerService(session, user.id, answer_session).get_reviews_by_submission_id(
+            applet_id, submission_id
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
+                curious_applet_id=[applet_id],
+                curious_answer_id=[submission_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
+            curious_applet_id=[applet_id],
+            curious_answer_id=[submission_id],
+            **http_audit_fields(request),
+        )
     )
     return ResponseMulti(
         result=[AnswerReviewPublic.model_validate(review) for review in reviews],
