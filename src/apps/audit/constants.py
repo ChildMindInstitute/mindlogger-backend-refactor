@@ -37,6 +37,8 @@ EVENT_ACTION_TO_EVENT_CATEGORY: dict[EventAction, tuple[EventCategory, ...]] = {
     EventAction.APPLET_ANSWER_ASSESSMENT_VIEW: (EventCategory.DATABASE,),
     EventAction.APPLET_ANSWER_NOTE_VIEW: (EventCategory.DATABASE,),
     EventAction.APPLET_ANSWER_EXPORT: (EventCategory.DATABASE,),
+    # Applet audit
+    EventAction.APPLET_AUDIT_EXPORT: (EventCategory.DATABASE,),
     # Applet file download
     EventAction.APPLET_ANSWER_EHR_DOWNLOAD: (EventCategory.FILE,),
     EventAction.APPLET_ANSWER_FILE_DOWNLOAD: (EventCategory.FILE,),
@@ -80,6 +82,8 @@ EVENT_ACTION_TO_EVENT_TYPE: dict[EventAction, tuple[EventType, ...]] = {
     EventAction.APPLET_ANSWER_ASSESSMENT_VIEW: (EventType.ACCESS,),
     EventAction.APPLET_ANSWER_NOTE_VIEW: (EventType.ACCESS,),
     EventAction.APPLET_ANSWER_EXPORT: (EventType.ACCESS,),
+    # Applet audit
+    EventAction.APPLET_AUDIT_EXPORT: (EventType.ACCESS,),
     # Applet file download
     EventAction.APPLET_ANSWER_EHR_DOWNLOAD: (EventType.ACCESS,),
     EventAction.APPLET_ANSWER_FILE_DOWNLOAD: (EventType.ACCESS,),

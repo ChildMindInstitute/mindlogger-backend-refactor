@@ -14,6 +14,7 @@ import apps.alerts.router as alerts
 import apps.alerts.ws_router as ws_alerts
 import apps.answers.router as answers
 import apps.applets.router as applets
+import apps.audit.router as audit
 import apps.authentication.router as auth
 import apps.file.router as files
 import apps.folders.router as folders
@@ -78,6 +79,7 @@ routers: Iterable[APIRouter] = (
     prolific.router,
     integrations.router,
     oneup_health.router,
+    audit.router,
 )
 
 # Declare your middlewares here

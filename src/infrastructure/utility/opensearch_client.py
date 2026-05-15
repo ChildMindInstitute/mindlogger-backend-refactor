@@ -1,16 +1,26 @@
 import typing
+from typing import AsyncIterator, Sequence
 
 from opensearchpy import AsyncOpenSearch
 from opensearchpy.exceptions import RequestError
 
 from config import settings
 
+DEFAULT_PAGE_SIZE = 1000
+
 
 class OpenSearchClientTest:
-    """In-memory test double — accumulates indexed documents per index."""
+    """In-memory test double — accumulates indexed documents per index.
+
+    ``search`` returns documents in insertion order without applying the
+    query DSL. Tests that need to verify filtering should assert against
+    the query body directly, or use the integration suite against a real
+    OpenSearch instance.
+    """
 
     _storage: dict[str, list[dict]] = {}
     _indices: set[str] = set()
+    last_search_body: dict = {}
 
     async def ensure_index(self, index: str, mapping: dict) -> None:
         self._indices.add(index)
@@ -21,6 +31,21 @@ class OpenSearchClientTest:
 
     async def close(self) -> None:
         pass
+
+    async def search(self, index: str, body: dict, size: int = DEFAULT_PAGE_SIZE) -> dict:
+        OpenSearchClientTest.last_search_body = body
+        docs = self._storage.get(index, [])
+        if "search_after" in body:
+            start = body["search_after"][0] + 1
+        else:
+            start = body.get("from", 0)
+        page = docs[start : start + size]
+        return {
+            "hits": {
+                "total": {"value": len(docs)},
+                "hits": [{"_source": d, "sort": [start + i]} for i, d in enumerate(page)],
+            }
+        }
 
 
 class OpenSearchClient:
@@ -76,3 +101,57 @@ class OpenSearchClient:
     async def close(self) -> None:
         if isinstance(self._client, AsyncOpenSearch):
             await self._client.close()
+
+    async def search(
+        self,
+        index: str,
+        query: dict,
+        sort: Sequence[dict] | None = None,
+        size: int = DEFAULT_PAGE_SIZE,
+        search_after: list | None = None,
+        from_: int = 0,
+    ) -> dict:
+        body: dict = {"query": query, "size": size}
+        if from_:
+            body["from"] = from_
+        if sort is not None:
+            body["sort"] = list(sort)
+        if search_after is not None:
+            body["search_after"] = search_after
+
+        if isinstance(self._client, OpenSearchClientTest):
+            return await self._client.search(index, body, size=size)
+        assert self._client is not None
+        return await self._client.search(index=index, body=body)
+
+    async def iter_search(
+        self,
+        index: str,
+        query: dict,
+        sort: Sequence[dict],
+        page_size: int = DEFAULT_PAGE_SIZE,
+    ) -> AsyncIterator[dict]:
+        """Stream every hit matching ``query`` using ``search_after`` paging.
+
+        ``sort`` must include a tiebreaker unique per document
+        (e.g. ``event.id``) so the cursor advances on every page.
+        """
+        cursor: list | None = None
+        while True:
+            response = await self.search(
+                index,
+                query=query,
+                sort=sort,
+                size=page_size,
+                search_after=cursor,
+            )
+            hits = response.get("hits", {}).get("hits", [])
+            if not hits:
+                return
+            for hit in hits:
+                yield hit["_source"]
+            if len(hits) < page_size:
+                return
+            cursor = hits[-1].get("sort")
+            if cursor is None:
+                return
