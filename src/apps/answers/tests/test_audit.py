@@ -733,3 +733,49 @@ class TestAnswersAudit(BaseTest):
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [missing_applet_id]
         assert event.curious_answer_id == [missing_submission_id]
+
+    # --- applet_answers_export ---
+
+    answers_export_url = "/answers/applet/{applet_id}/data"
+
+    async def test_answers_export_audit_success(
+        self,
+        client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        answer: AnswerSchema,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        response = await client.get(self.answers_export_url.format(applet_id=applet.id))
+
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_EXPORT
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.curious_applet_id == [applet.id]
+        assert answer.id in event.curious_answer_id
+
+    async def test_answers_export_audit_failure(
+        self,
+        client: TestClient,
+        tom: User,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        missing_applet_id = uuid.uuid4()
+        response = await client.get(self.answers_export_url.format(applet_id=missing_applet_id))
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_EXPORT
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [missing_applet_id]

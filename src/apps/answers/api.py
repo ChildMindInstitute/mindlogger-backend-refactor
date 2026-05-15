@@ -987,6 +987,7 @@ async def answer_note_delete(
 
 async def applet_answers_export(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     query_params: QueryParams = Depends(parse_query_params(AnswerExportFilters)),
     activities_last_version: bool = Query(False, alias="activitiesLastVersion"),
@@ -994,11 +995,22 @@ async def applet_answers_export(
     answer_session=Depends(get_answer_session),
     i18n: I18N = Depends(get_i18n),
 ) -> PublicAnswerExportResponse:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
-    data: AnswerExport = await AnswerService(session, user.id, answer_session).get_export_data(
-        applet_id, query_params, activities_last_version
-    )
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
+        data: AnswerExport = await AnswerService(session, user.id, answer_session).get_export_data(
+            applet_id, query_params, activities_last_version
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_EXPORT,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
     total_answers = data.total_answers
     for answer in data.answers:
         if answer.is_manager:
@@ -1008,6 +1020,15 @@ async def applet_answers_export(
         applet = await AppletService(session, user.id).get(applet_id)
         activities = await ActivityHistoryService(session, applet.id, applet.version).get_full()
         data.activities = activities
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_EXPORT,
+            curious_applet_id=[applet_id],
+            curious_answer_id=[answer.id for answer in data.answers],
+            **http_audit_fields(request),
+        )
+    )
     return PublicAnswerExportResponse(
         result=PublicAnswerExport.model_validate(data).translate(i18n),
         count=total_answers,
