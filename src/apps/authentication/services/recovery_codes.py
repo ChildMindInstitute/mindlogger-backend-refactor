@@ -30,6 +30,7 @@ from infrastructure.logger import logger
 __all__ = [
     "generate_random_code",
     "format_recovery_code",
+    "is_recovery_code",
     "hash_recovery_code",
     "verify_recovery_code",
     "encrypt_recovery_code",
@@ -42,6 +43,14 @@ __all__ = [
 ]
 
 
+# Alphanumeric recovery codes (uppercase letters and digits)
+ALPHABET = string.ascii_uppercase + string.digits
+
+# Get length from config (10 alphanumeric characters)
+LENGTH = settings.mfa.recovery_code_length
+MID = LENGTH // 2
+
+
 def generate_random_code() -> str:
     """
     Generate a random recovery code.
@@ -49,13 +58,8 @@ def generate_random_code() -> str:
     Returns:
         str: Random alphanumeric code in format XXXXX-XXXXX (e.g., "A3F7K-9B2Q5")
     """
-    # Get length from config (10 alphanumeric characters)
-    length = settings.mfa.recovery_code_length
-
-    # Generate random alphanumeric string (uppercase letters and digits)
     # Using secrets for cryptographically strong random generation
-    alphabet = string.ascii_uppercase + string.digits
-    random_chars = "".join(secrets.choice(alphabet) for _ in range(length))
+    random_chars = "".join(secrets.choice(ALPHABET) for _ in range(LENGTH))
 
     # Format as XXXXX-XXXXX
     return format_recovery_code(random_chars)
@@ -71,12 +75,25 @@ def format_recovery_code(code: str) -> str:
     Returns:
         str: Formatted code with hyphen (e.g., "A3F7K-9B2Q5")
     """
-    if len(code) != settings.mfa.recovery_code_length:
+    if len(code) != LENGTH:
         raise ValueError(f"Code must be {settings.mfa.recovery_code_length} characters")
 
     # Split in middle and add hyphen
-    mid = len(code) // 2
-    return f"{code[:mid]}-{code[mid:]}"
+    return f"{code[:MID]}-{code[MID:]}"
+
+
+def is_recovery_code(code: str) -> bool:
+    """
+    Check if string has the shape of a recovery code (XXXXX-XXXXX).
+
+    Args:
+        code: Recovery code to check (e.g., "A3F7K-9B2Q5")
+
+    Returns:
+        bool: True if code has the right shape
+    """
+    left, _, right = code.partition("-")
+    return len(left) == len(right) == MID and not {*left, *right}.difference(ALPHABET)
 
 
 def hash_recovery_code(code: str) -> str:

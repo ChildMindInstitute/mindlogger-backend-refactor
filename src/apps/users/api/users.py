@@ -16,6 +16,7 @@ from apps.authentication.services.recovery_codes import (
     format_recovery_codes_text,
     generate_recovery_codes,
     get_recovery_codes,
+    is_recovery_code,
     send_recovery_code_notifications,
     verify_recovery_code_service,
 )
@@ -325,6 +326,7 @@ async def user_mfa_totp_disable_verify(
     Accepts either a TOTP code (preferred) or a recovery code as verification.
     """
 
+    recovery_code_used = False
     try:
         # Step 1: Validate mfa_token and get session data
         mfa_service = MFASessionService()
@@ -406,6 +408,7 @@ async def user_mfa_totp_disable_verify(
                 # TOTP failed, try recovery code verification
                 try:
                     await verify_recovery_code_service(session, token_user_id, schema.code)
+                    recovery_code_used = True
 
                     # Send recovery code notifications (used + warning if needed)
                     request_metadata = extract_request_metadata(request)
@@ -422,7 +425,18 @@ async def user_mfa_totp_disable_verify(
                     RecoveryCodeAlreadyUsedError,
                     RecoveryCodesNotFoundError,
                     RecoveryCodeNotFoundError,
-                ):
+                ) as e:
+                    # Log user:mfa:recovery:use "failure" if user attempted a recovery code
+                    if is_recovery_code(schema.code):
+                        await log(
+                            AuditEvent(
+                                event_action=EventAction.USER_MFA_RECOVERY_USE,
+                                user_id=token_user_id,
+                                user_target_id=token_user_id,
+                                **http_audit_fields(request, e),
+                            )
+                        )
+
                     # Both TOTP and recovery code failed - increment counters
                     new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
                     global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
@@ -482,6 +496,17 @@ async def user_mfa_totp_disable_verify(
             )
         )
         raise
+
+    # Log user:mfa:recovery:use after atomic database transaction is committed
+    if recovery_code_used:
+        await log(
+            AuditEvent(
+                event_action=EventAction.USER_MFA_RECOVERY_USE,
+                user_id=token_user_id,
+                user_target_id=token_user_id,
+                **http_audit_fields(request),
+            )
+        )
 
     # Code validation successful - transition session to confirmation phase
     # (MFA is NOT disabled yet - do not log user:mfa:disable "success")
