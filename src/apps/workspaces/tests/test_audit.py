@@ -45,6 +45,8 @@ class TestWorkspacesAudit(BaseTest):
             assert event.event_outcome == EventOutcome.SUCCESS
             assert event.curious_applet_id is not None
             assert len(event.curious_applet_id) == 1
+            assert event.curious_subject_id is not None
+            assert len(event.curious_subject_id) > 0
 
         applet_ids = {event.curious_applet_id[0] for event in events}
         assert applet_one.id in applet_ids
@@ -74,6 +76,7 @@ class TestWorkspacesAudit(BaseTest):
         client: TestClient,
         tom: User,
         applet_one: AppletFull,
+        tom_applet_one_subject: Subject,
         mocker: MockerFixture,
     ):
         audit_log = mocker.patch("apps.workspaces.api.log")
@@ -90,6 +93,8 @@ class TestWorkspacesAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_SUBJECT_VIEW
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet_one.id]
+        assert event.curious_subject_id is not None
+        assert tom_applet_one_subject.id in event.curious_subject_id
 
     async def test_workspace_applet_respondents_list_audit_failure(
         self,

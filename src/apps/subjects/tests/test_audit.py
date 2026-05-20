@@ -128,7 +128,8 @@ class TestSubjectsAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_SUBJECT_VIEW
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [tom_applet_one_subject.applet_id]
-        assert event.curious_subject_id == [tom_applet_one_subject.id]
+        assert event.curious_subject_id is not None
+        assert tom_applet_one_subject.id in event.curious_subject_id
 
     async def test_get_target_subjects_by_respondent_audit_failure_invalid_respondent(
         self,

@@ -242,6 +242,7 @@ async def workspace_respondents_list(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
+    respondents = []
     try:
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
@@ -262,14 +263,27 @@ async def workspace_respondents_list(
         is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
         reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
     except BaseError as e:
+        subject_ids = [
+            detail.subject_id
+            for respondent in respondents
+            if respondent.details
+            for detail in respondent.details
+        ]
         await log(
             AuditEvent(
                 user_id=user.id,
                 event_action=EventAction.APPLET_SUBJECT_VIEW,
+                curious_subject_id=subject_ids or None,
                 **http_audit_fields(request, e),
             )
         )
         raise
+
+    subjects_by_applet: dict[uuid.UUID, list[uuid.UUID]] = {}
+    for respondent in respondents:
+        if respondent.details:
+            for detail in respondent.details:
+                subjects_by_applet.setdefault(detail.applet_id, []).append(detail.subject_id)
 
     for applet_id in set(applet_ids):
         await log(
@@ -277,6 +291,7 @@ async def workspace_respondents_list(
                 user_id=user.id,
                 event_action=EventAction.APPLET_SUBJECT_VIEW,
                 curious_applet_id=[applet_id],
+                curious_subject_id=subjects_by_applet.get(applet_id),
                 **http_audit_fields(request),
             )
         )
@@ -307,6 +322,7 @@ async def workspace_applet_respondents_list(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
+    respondents = []
     try:
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
@@ -325,21 +341,36 @@ async def workspace_applet_respondents_list(
         is_super_reviewer = any(access.role in Role.super_reviewers() for access in accesses)
         reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
     except BaseError as e:
+        subject_ids = [
+            detail.subject_id
+            for respondent in respondents
+            if respondent.details
+            for detail in respondent.details
+        ]
         await log(
             AuditEvent(
                 user_id=user.id,
                 event_action=EventAction.APPLET_SUBJECT_VIEW,
                 curious_applet_id=[applet_id],
+                curious_subject_id=subject_ids or None,
                 **http_audit_fields(request, e),
             )
         )
         raise
+
+    subject_ids = [
+        detail.subject_id
+        for respondent in respondents
+        if respondent.details
+        for detail in respondent.details
+    ]
 
     await log(
         AuditEvent(
             user_id=user.id,
             event_action=EventAction.APPLET_SUBJECT_VIEW,
             curious_applet_id=[applet_id],
+            curious_subject_id=subject_ids or None,
             **http_audit_fields(request),
         )
     )
@@ -505,6 +536,7 @@ async def workspace_applet_get_respondent(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> Response[RespondentInfoPublic]:
+    respondent_info: RespondentInfoPublic | None = None
     try:
         await AppletService(session, user.id).exist_by_id(applet_id)
         await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
@@ -525,6 +557,7 @@ async def workspace_applet_get_respondent(
                 user_id=user.id,
                 event_action=EventAction.APPLET_SUBJECT_VIEW,
                 curious_applet_id=[applet_id],
+                curious_subject_id=respondent_info and [respondent_info.subject_id],
                 **http_audit_fields(request, e),
             )
         )

@@ -310,6 +310,7 @@ async def get_my_subject(
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session),
 ) -> Response[SubjectReadResponse]:
+    subject: Subject | None = None
     try:
         # Check if applet exists
         await AppletService(session, user.id).exist_by_id(applet_id)
@@ -330,6 +331,7 @@ async def get_my_subject(
                 user_id=user.id,
                 event_action=EventAction.APPLET_SUBJECT_VIEW,
                 curious_applet_id=[applet_id],
+                curious_subject_id=subject and [subject.id],
                 **http_audit_fields(request, e),
             )
         )
@@ -437,7 +439,7 @@ async def get_target_subjects_by_respondent(
             user_id=user.id,
             event_action=EventAction.APPLET_SUBJECT_VIEW,
             curious_applet_id=[respondent_subject.applet_id],
-            curious_subject_id=[respondent_subject_id],
+            curious_subject_id=list({respondent_subject_id, *(s.id for s in subjects)}),
             **http_audit_fields(request),
         )
     )
