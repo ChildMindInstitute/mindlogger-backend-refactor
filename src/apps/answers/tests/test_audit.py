@@ -244,7 +244,7 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_VIEW
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet_with_flow.id]
-        assert event.curious_answer_id == [tom_answer_activity_flow_audit.submit_id]
+        assert event.curious_submit_id == [tom_answer_activity_flow_audit.submit_id]
 
     async def test_flow_answer_retrieve_audit_failure(
         self,
@@ -272,7 +272,7 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_VIEW
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [applet_with_flow.id]
-        assert event.curious_answer_id == [missing_submit_id]
+        assert event.curious_submit_id == [missing_submit_id]
 
     # --- applet_answer_reviews_retrieve ---
 
@@ -417,7 +417,7 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_ASSESSMENT_VIEW
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet_with_flow.id]
-        assert event.curious_answer_id == [tom_answer_activity_flow_audit.submit_id]
+        assert event.curious_submit_id == [tom_answer_activity_flow_audit.submit_id]
 
     async def test_submission_assessment_retrieve_audit_failure(
         self,
@@ -444,7 +444,7 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_ASSESSMENT_VIEW
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [missing_applet_id]
-        assert event.curious_answer_id == [missing_submission_id]
+        assert event.curious_submit_id == [missing_submission_id]
 
     # --- applet_activity_identifiers_retrieve ---
 
@@ -585,7 +585,7 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_ASSESSMENT_VIEW
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet_with_flow.id]
-        assert event.curious_answer_id == [tom_answer_activity_flow_audit.submit_id]
+        assert event.curious_submit_id == [tom_answer_activity_flow_audit.submit_id]
 
     async def test_submission_reviews_retrieve_audit_failure(
         self,
@@ -612,7 +612,7 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_ASSESSMENT_VIEW
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [missing_applet_id]
-        assert event.curious_answer_id == [missing_submission_id]
+        assert event.curious_submit_id == [missing_submission_id]
 
     # --- answer_note_list ---
 
@@ -704,7 +704,7 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_NOTE_VIEW
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet_with_flow.id]
-        assert event.curious_answer_id == [tom_answer_activity_flow_audit.submit_id]
+        assert event.curious_submit_id == [tom_answer_activity_flow_audit.submit_id]
 
     async def test_submission_note_list_audit_failure(
         self,
@@ -732,7 +732,7 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_NOTE_VIEW
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [missing_applet_id]
-        assert event.curious_answer_id == [missing_submission_id]
+        assert event.curious_submit_id == [missing_submission_id]
 
     # --- applet_answers_export ---
 

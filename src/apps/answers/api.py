@@ -475,7 +475,7 @@ async def applet_flow_answer_retrieve(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_VIEW,
                 curious_applet_id=[applet_id],
-                curious_answer_id=[submit_id],
+                curious_submit_id=[submit_id],
                 **http_audit_fields(request, e),
             )
         )
@@ -486,7 +486,7 @@ async def applet_flow_answer_retrieve(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_VIEW,
             curious_applet_id=[applet_id],
-            curious_answer_id=[submit_id],
+            curious_submit_id=[submit_id],
             **http_audit_fields(request),
         )
     )
@@ -635,7 +635,7 @@ async def applet_submission_assessment_retrieve(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
                 curious_applet_id=[applet_id],
-                curious_answer_id=[submission_id],
+                curious_submit_id=[submission_id],
                 **http_audit_fields(request, e),
             )
         )
@@ -645,7 +645,7 @@ async def applet_submission_assessment_retrieve(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
             curious_applet_id=[applet_id],
-            curious_answer_id=[submission_id],
+            curious_submit_id=[submission_id],
             **http_audit_fields(request),
         )
     )
@@ -825,7 +825,7 @@ async def submission_note_list(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_NOTE_VIEW,
                 curious_applet_id=[applet_id],
-                curious_answer_id=[submission_id],
+                curious_submit_id=[submission_id],
                 **http_audit_fields(request, e),
             )
         )
@@ -835,7 +835,7 @@ async def submission_note_list(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_NOTE_VIEW,
             curious_applet_id=[applet_id],
-            curious_answer_id=[submission_id],
+            curious_submit_id=[submission_id],
             **http_audit_fields(request),
         )
     )
@@ -1175,7 +1175,7 @@ async def applet_submission_reviews_retrieve(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
                 curious_applet_id=[applet_id],
-                curious_answer_id=[submission_id],
+                curious_submit_id=[submission_id],
                 **http_audit_fields(request, e),
             )
         )
@@ -1185,7 +1185,7 @@ async def applet_submission_reviews_retrieve(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
             curious_applet_id=[applet_id],
-            curious_answer_id=[submission_id],
+            curious_submit_id=[submission_id],
             **http_audit_fields(request),
         )
     )
