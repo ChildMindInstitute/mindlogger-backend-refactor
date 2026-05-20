@@ -236,6 +236,7 @@ async def delete_subject(
                 user_id=user.id,
                 user_target_id=target_user_id,
                 curious_applet_id=[applet_id] if applet_id else None,
+                curious_subject_id=[subject_id],
                 **http_audit_fields(request, e),
             )
         )
@@ -247,6 +248,7 @@ async def delete_subject(
             user_id=user.id,
             user_target_id=target_user_id,
             curious_applet_id=[applet_id],
+            curious_subject_id=[subject_id],
             **http_audit_fields(request),
         )
     )
