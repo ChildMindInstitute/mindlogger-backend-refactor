@@ -9,6 +9,7 @@ from starlette.requests import Request
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
 from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.invitations.domain import (
     InvitationDetailForReviewer,
@@ -31,7 +32,6 @@ from apps.invitations.errors import (
 )
 from apps.invitations.filters import InvitationQueryParams
 from apps.invitations.services import InvitationsService, PrivateInvitationService
-from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import BaseError, NotFoundError, ValidationError
 from apps.shared.query_params import QueryParams, parse_query_params

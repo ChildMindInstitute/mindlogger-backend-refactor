@@ -28,13 +28,13 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
 from apps.applets.errors import AppletAlreadyExist, AppletVersionNotFoundError
 from apps.applets.service.applet import AppletService
+from apps.audit.enums import EventAction, EventOutcome
 from apps.shared.enums import Language
 from apps.shared.exception import NotFoundError
 from apps.shared.test.client import TestClient
 from apps.subjects.domain import Subject
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
-from apps.audit.enums import EventAction, EventOutcome
 from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility.notification_client import FCMNotificationTest

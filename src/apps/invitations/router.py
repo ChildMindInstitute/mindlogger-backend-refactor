@@ -7,7 +7,6 @@ from starlette.requests import Request
 
 from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
-from apps.shared.exception import BaseError
 from apps.invitations.api import (
     invitation_accept,
     invitation_decline,
@@ -29,6 +28,7 @@ from apps.invitations.domain import (
     ShellAccountCreateRequest,
 )
 from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE, Response, ResponseMulti
+from apps.shared.exception import BaseError
 from apps.subjects.api import create_subject
 from apps.subjects.domain import SubjectCreateRequest, SubjectCreateResponse
 from apps.users.domain import User

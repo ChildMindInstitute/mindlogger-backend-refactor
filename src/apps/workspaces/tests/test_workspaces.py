@@ -13,6 +13,7 @@ from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
+from apps.audit.enums import EventAction, EventOutcome
 from apps.invitations.domain import InvitationManagersRequest, InvitationRespondentRequest
 from apps.invitations.services import InvitationsService
 from apps.shared.enums import Language
@@ -23,7 +24,6 @@ from apps.subjects.constants import SubjectStatus
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
-from apps.audit.enums import EventAction, EventOutcome
 from apps.workspaces.domain.workspace import WorkspaceApplet
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from apps.workspaces.service.user_applet_access import UserAppletAccessService

@@ -14,6 +14,7 @@ from apps.applets.domain import ManagersRole, Role
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
+from apps.audit.enums import EventAction, EventOutcome
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
@@ -40,7 +41,6 @@ from apps.subjects.services import SubjectsService
 from apps.users import UserSchema
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from apps.workspaces.domain.constants import UserPinRole
-from apps.audit.enums import EventAction, EventOutcome
 from apps.workspaces.errors import AppletInviteAccessDenied
 from apps.workspaces.service.user_access import UserAccessService
 from apps.workspaces.service.user_applet_access import UserAppletAccessService

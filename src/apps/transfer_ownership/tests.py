@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from apps.applets.domain import Role
 from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.domain.applet_full import AppletFull
-from apps.audit.enums import EventAction, EventOutcome
 from apps.applets.service import AppletService
+from apps.audit.enums import EventAction, EventOutcome
 from apps.authentication.errors import PermissionsError
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.errors import ManagerInvitationExist
@@ -634,9 +634,7 @@ class TestTransfer(BaseTest):
         assert event.user_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
 
-    async def test_initiate_transfer_audit_event_failure(
-        self, client: TestClient, tom: User, mocker: MockerFixture
-    ):
+    async def test_initiate_transfer_audit_event_failure(self, client: TestClient, tom: User, mocker: MockerFixture):
         audit_log = mocker.patch("apps.transfer_ownership.api.log")
         client.login(tom)
         data = {"email": "aloevdamirkhon@gmail.com"}

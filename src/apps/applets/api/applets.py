@@ -36,9 +36,9 @@ from apps.applets.domain.base import Encryption
 from apps.applets.filters import AppletQueryParams, FlowItemHistoryExportQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.applets.service.applet_history import retrieve_applet_by_version, retrieve_versions
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
-from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.shared.exception import BaseError, NotFoundError
 from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
