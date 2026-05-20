@@ -79,6 +79,8 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_VIEW
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet.id]
+        assert event.curious_answer_id is not None
+        assert answer.id in event.curious_answer_id
 
     async def test_activity_answers_list_audit_failure(
         self,
@@ -132,6 +134,8 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_VIEW
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet_with_flow.id]
+        assert event.curious_answer_id is not None
+        assert tom_answer_activity_flow_audit.id in event.curious_answer_id
 
     async def test_flow_submissions_list_audit_failure(
         self,

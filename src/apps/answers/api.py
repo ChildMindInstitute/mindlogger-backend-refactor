@@ -293,6 +293,7 @@ async def applet_activity_answers_list(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_VIEW,
             curious_applet_id=[applet_id],
+            curious_answer_id=[a.answer_id for a in answers if a.answer_id] or None,
             **http_audit_fields(request),
         )
     )
@@ -337,6 +338,7 @@ async def applet_flow_submissions_list(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_VIEW,
             curious_applet_id=[applet_id],
+            curious_answer_id=[a.id for s in submissions.submissions for a in s.answers] or None,
             **http_audit_fields(request),
         )
     )
@@ -487,6 +489,7 @@ async def applet_flow_answer_retrieve(
             event_action=EventAction.APPLET_ANSWER_VIEW,
             curious_applet_id=[applet_id],
             curious_submit_id=[submit_id],
+            curious_answer_id=[a.id for a in result.submission.answers] or None,
             **http_audit_fields(request),
         )
     )
@@ -685,6 +688,7 @@ async def applet_activity_identifiers_retrieve(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
             curious_applet_id=[applet_id],
+            curious_answer_id=[filters.answer_id] if filters.answer_id else None,
             **http_audit_fields(request),
         )
     )
@@ -836,6 +840,7 @@ async def submission_note_list(
             event_action=EventAction.APPLET_ANSWER_NOTE_VIEW,
             curious_applet_id=[applet_id],
             curious_submit_id=[submission_id],
+            curious_answer_id=[n.answer_id for n in notes] or None,
             **http_audit_fields(request),
         )
     )
@@ -1186,6 +1191,7 @@ async def applet_submission_reviews_retrieve(
             event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
             curious_applet_id=[applet_id],
             curious_submit_id=[submission_id],
+            curious_answer_id=[r.answer_id for r in reviews] or None,
             **http_audit_fields(request),
         )
     )
