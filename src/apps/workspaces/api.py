@@ -34,6 +34,7 @@ from apps.workspaces.domain.workspace import (
     PublicWorkspaceRespondent,
     WorkspaceAppletPublic,
     WorkspacePrioritizedRole,
+    WorkspaceRespondent,
     WorkspaceSearchAppletPublic,
 )
 from apps.workspaces.filters import WorkspaceUsersQueryParams
@@ -242,7 +243,7 @@ async def workspace_respondents_list(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
-    respondents = []
+    respondents: list[WorkspaceRespondent] = []
     try:
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
@@ -256,7 +257,7 @@ async def workspace_respondents_list(
         respondents = await InvitationsService(session, user).fill_pending_invitations_respondents(respondents)
 
         applet_ids = [
-            detail.applet_id for respondent in respondents if respondent.details for detail in respondent.details
+            r_detail.applet_id for respondent in respondents if respondent.details for r_detail in respondent.details
         ]
 
         accesses = await AppletAccessService(session).get_applet_accesses(applet_ids=applet_ids, user_id=user.id)
@@ -264,10 +265,7 @@ async def workspace_respondents_list(
         reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
     except BaseError as e:
         subject_ids = [
-            detail.subject_id
-            for respondent in respondents
-            if respondent.details
-            for detail in respondent.details
+            r_detail.subject_id for respondent in respondents if respondent.details for r_detail in respondent.details
         ]
         await log(
             AuditEvent(
@@ -282,8 +280,8 @@ async def workspace_respondents_list(
     subjects_by_applet: dict[uuid.UUID, list[uuid.UUID]] = {}
     for respondent in respondents:
         if respondent.details:
-            for detail in respondent.details:
-                subjects_by_applet.setdefault(detail.applet_id, []).append(detail.subject_id)
+            for r_detail in respondent.details:
+                subjects_by_applet.setdefault(r_detail.applet_id, []).append(r_detail.subject_id)
 
     for applet_id in set(applet_ids):
         await log(
@@ -322,7 +320,7 @@ async def workspace_applet_respondents_list(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session_by_owner_id),
 ) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
-    respondents = []
+    respondents: list[WorkspaceRespondent] = []
     try:
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
@@ -342,10 +340,7 @@ async def workspace_applet_respondents_list(
         reviewer_access = next((access for access in accesses if access.role == Role.REVIEWER), None)
     except BaseError as e:
         subject_ids = [
-            detail.subject_id
-            for respondent in respondents
-            if respondent.details
-            for detail in respondent.details
+            r_detail.subject_id for respondent in respondents if respondent.details for r_detail in respondent.details
         ]
         await log(
             AuditEvent(
@@ -359,10 +354,7 @@ async def workspace_applet_respondents_list(
         raise
 
     subject_ids = [
-        detail.subject_id
-        for respondent in respondents
-        if respondent.details
-        for detail in respondent.details
+        r_detail.subject_id for respondent in respondents if respondent.details for r_detail in respondent.details
     ]
 
     await log(

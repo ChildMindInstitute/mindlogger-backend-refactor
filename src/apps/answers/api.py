@@ -1006,6 +1006,15 @@ async def applet_answers_export(
         data: AnswerExport = await AnswerService(session, user.id, answer_session).get_export_data(
             applet_id, query_params, activities_last_version
         )
+        total_answers = data.total_answers
+        for answer in data.answers:
+            if answer.is_manager:
+                answer.respondent_secret_id = f"[admin account] ({answer.respondent_secret_id})"
+
+        if activities_last_version:
+            applet = await AppletService(session, user.id).get(applet_id)
+            activities = await ActivityHistoryService(session, applet.id, applet.version).get_full()
+            data.activities = activities
     except BaseError as e:
         await log(
             AuditEvent(
@@ -1016,15 +1025,6 @@ async def applet_answers_export(
             )
         )
         raise
-    total_answers = data.total_answers
-    for answer in data.answers:
-        if answer.is_manager:
-            answer.respondent_secret_id = f"[admin account] ({answer.respondent_secret_id})"
-
-    if activities_last_version:
-        applet = await AppletService(session, user.id).get(applet_id)
-        activities = await ActivityHistoryService(session, applet.id, applet.version).get_full()
-        data.activities = activities
     await log(
         AuditEvent(
             user_id=user.id,
