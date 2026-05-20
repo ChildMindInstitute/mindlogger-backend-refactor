@@ -274,7 +274,8 @@ async def invitation_accept(
     try:
         invitation_service = InvitationsService(session, user)
         invitation = await invitation_service.get(key)
-        applet_id = invitation.applet_id
+        if invitation:
+            applet_id = invitation.applet_id
 
         try:
             async with atomic(session):
@@ -339,7 +340,8 @@ async def private_invitation_accept(
     try:
         private_service = PrivateInvitationService(session)
         invitation = await private_service.get_invitation(key)
-        applet_id = invitation.applet_id
+        if invitation:
+            applet_id = invitation.applet_id
 
         async with atomic(session):
             await private_service.accept_invitation(user, key)
@@ -375,7 +377,8 @@ async def invitation_decline(
     try:
         invitation_service = InvitationsService(session, user)
         invitation = await invitation_service.get(key)
-        applet_id = invitation.applet_id
+        if invitation:
+            applet_id = invitation.applet_id
 
         async with atomic(session):
             await invitation_service.decline(key)
