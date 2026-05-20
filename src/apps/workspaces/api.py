@@ -2,6 +2,7 @@ import uuid
 from copy import deepcopy
 
 from fastapi import Body, Depends, Query
+from starlette.requests import Request
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session_by_owner_id
 from apps.answers.service import AnswerService
@@ -11,8 +12,9 @@ from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
 from apps.invitations.errors import NonUniqueValue
 from apps.invitations.services import InvitationsService
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.shared.domain import Response, ResponseMulti, ResponseMultiOrdering
-from apps.shared.exception import NotFoundError
+from apps.shared.exception import BaseError, NotFoundError
 from apps.shared.query_params import BaseQueryParams, QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User
@@ -216,21 +218,44 @@ async def workspace_applet_respondent_update(
 
 
 async def workspace_remove_manager_access(
+    request: Request,
     user: User = Depends(get_current_user),
     schema: RemoveManagerAccess = Body(...),
     session=Depends(get_session),
 ):
     """Remove manager access from a specific user."""
-    async with atomic(session):
-        await UserAccessService(session, user.id).remove_manager_access(schema)
-        # Get applets where user still have access
-        ex_admin = await UserService(session).get(schema.user_id)
-        if ex_admin:
-            management_applets = await UserAccessService(session, schema.user_id).get_management_applets(
-                schema.applet_ids
+    try:
+        async with atomic(session):
+            await UserAccessService(session, user.id).remove_manager_access(schema)
+            # Get applets where user still have access
+            ex_admin = await UserService(session).get(schema.user_id)
+            if ex_admin:
+                management_applets = await UserAccessService(session, schema.user_id).get_management_applets(
+                    schema.applet_ids
+                )
+                ids_to_remove = set(schema.applet_ids) - set(management_applets)
+                await InvitationsService(session, ex_admin).delete_for_managers(list(ids_to_remove))
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_MEMBER_REMOVE,
+                user_id=user.id,
+                user_target_id=schema.user_id,
+                curious_applet_id=schema.applet_ids,
+                **http_audit_fields(request, e),
             )
-            ids_to_remove = set(schema.applet_ids) - set(management_applets)
-            await InvitationsService(session, ex_admin).delete_for_managers(list(ids_to_remove))
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_MEMBER_REMOVE,
+            user_id=user.id,
+            user_target_id=schema.user_id,
+            curious_applet_id=schema.applet_ids,
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def workspace_respondents_list(
@@ -436,17 +461,41 @@ async def workspace_users_applet_access_list(
 async def workspace_managers_applet_access_set(
     owner_id: uuid.UUID,
     manager_id: uuid.UUID,
+    request: Request,
     accesses: ManagerAccesses = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
-    async with atomic(session):
-        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await AppletService(session, user.id).exist_by_ids([access.applet_id for access in accesses.accesses])
-        await CheckAccessService(session, user.id).check_workspace_manager_accesses_access(owner_id)
-        await UserService(session).exists_by_id(manager_id)
+    applet_ids = [access.applet_id for access in accesses.accesses]
+    try:
+        async with atomic(session):
+            await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+            await AppletService(session, user.id).exist_by_ids(applet_ids)
+            await CheckAccessService(session, user.id).check_workspace_manager_accesses_access(owner_id)
+            await UserService(session).exists_by_id(manager_id)
 
-        await UserAccessService(session, user.id).set(owner_id, manager_id, accesses)
+            await UserAccessService(session, user.id).set(owner_id, manager_id, accesses)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_MEMBER_ROLE_CHANGE,
+                user_id=user.id,
+                user_target_id=manager_id,
+                curious_applet_id=applet_ids,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_MEMBER_ROLE_CHANGE,
+            user_id=user.id,
+            user_target_id=manager_id,
+            curious_applet_id=applet_ids,
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def workspace_applet_get_respondent(

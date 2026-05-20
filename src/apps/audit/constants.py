@@ -30,6 +30,10 @@ EVENT_ACTION_TO_EVENT_CATEGORY: dict[EventAction, tuple[EventCategory, ...]] = {
     EventAction.APPLET_INVITE_INITIATE: (EventCategory.IAM,),
     EventAction.APPLET_INVITE_ACCEPT: (EventCategory.IAM,),
     EventAction.APPLET_INVITE_DECLINE: (EventCategory.IAM,),
+    EventAction.APPLET_MEMBER_REMOVE: (EventCategory.IAM,),
+    EventAction.APPLET_MEMBER_ROLE_CHANGE: (EventCategory.IAM,),
+    EventAction.APPLET_DATA_RETENTION_CHANGE: (EventCategory.IAM, EventCategory.CONFIGURATION),
+    EventAction.APPLET_REPORT_CONFIGURATION_CHANGE: (EventCategory.IAM, EventCategory.CONFIGURATION),
     # Applet data access
     EventAction.APPLET_SUBJECT_VIEW: (EventCategory.DATABASE,),
     EventAction.APPLET_ANSWER_VIEW: (EventCategory.DATABASE,),
@@ -75,6 +79,10 @@ EVENT_ACTION_TO_EVENT_TYPE: dict[EventAction, tuple[EventType, ...]] = {
     EventAction.APPLET_INVITE_INITIATE: (EventType.INFO,),
     EventAction.APPLET_INVITE_ACCEPT: (EventType.CHANGE,),
     EventAction.APPLET_INVITE_DECLINE: (EventType.INFO,),
+    EventAction.APPLET_MEMBER_REMOVE: (EventType.DELETION,),
+    EventAction.APPLET_MEMBER_ROLE_CHANGE: (EventType.CHANGE,),
+    EventAction.APPLET_DATA_RETENTION_CHANGE: (EventType.CHANGE,),
+    EventAction.APPLET_REPORT_CONFIGURATION_CHANGE: (EventType.CHANGE,),
     # Applet data access
     EventAction.APPLET_SUBJECT_VIEW: (EventType.ACCESS,),
     EventAction.APPLET_ANSWER_VIEW: (EventType.ACCESS,),

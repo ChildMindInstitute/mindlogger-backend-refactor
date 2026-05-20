@@ -47,6 +47,10 @@ class EventAction(StrEnum):
     APPLET_INVITE_INITIATE = "applet:invite:initiate"
     APPLET_INVITE_ACCEPT = "applet:invite:accept"
     APPLET_INVITE_DECLINE = "applet:invite:decline"
+    APPLET_MEMBER_REMOVE = "applet:member:remove"
+    APPLET_MEMBER_ROLE_CHANGE = "applet:member:role:change"
+    APPLET_DATA_RETENTION_CHANGE = "applet:retention:update"
+    APPLET_REPORT_CONFIGURATION_CHANGE = "applet:report:update"
 
     # Applet data access
     APPLET_SUBJECT_VIEW = "applet:subject:view"
