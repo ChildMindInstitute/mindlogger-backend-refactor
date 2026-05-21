@@ -1,6 +1,7 @@
 import datetime
 import http
 import uuid
+from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -8,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.answers.db.schemas import AnswerSchema
 from apps.answers.domain import ClientMeta
-from apps.answers.domain.answers import AppletAnswerCreate, ItemAnswerCreate
+from apps.answers.domain.answers import AnswerEHRFull, AppletAnswerCreate, EHRIngestionStatus, ItemAnswerCreate
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
 from apps.audit import EventAction, EventOutcome
@@ -783,3 +784,132 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_EXPORT
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [missing_applet_id]
+
+    # --- applet_ehr_answers_export ---
+
+    ehr_export_url = "/answers/applet/{applet_id}/ehr-data"
+
+    async def test_ehr_download_success_logs_subject_activity_submit(
+        self,
+        client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        mocker: MockerFixture,
+    ):
+        subject_id_a = uuid.uuid4()
+        subject_id_b = uuid.uuid4()
+        activity_id_a = uuid.uuid4()
+        submit_id_a = uuid.uuid4()
+        submit_id_b = uuid.uuid4()
+        ehr_rows = [
+            AnswerEHRFull(
+                submit_id=submit_id_a,
+                ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+                activity_id=activity_id_a,
+                ehr_storage_uri=None,
+                target_subject_id=subject_id_a,
+                date=datetime.datetime.now(datetime.UTC),
+            ),
+            AnswerEHRFull(
+                submit_id=submit_id_b,
+                ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+                activity_id=activity_id_a,
+                ehr_storage_uri=None,
+                target_subject_id=subject_id_b,
+                date=datetime.datetime.now(datetime.UTC),
+            ),
+        ]
+        mocker.patch(
+            "apps.answers.api.AnswerService.export_ehr_answers",
+            return_value=ehr_rows,
+        )
+        # Replace ehr-storage with an AsyncMock so the zip path runs cleanly
+        # without touching real S3.
+        fake_storage = mocker.MagicMock()
+        fake_storage.download_ehr_zip.return_value = "fake.zip"
+        mocker.patch("apps.answers.api.create_ehr_storage", new=AsyncMock(return_value=fake_storage))
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        response = await client.get(self.ehr_export_url.format(applet_id=applet.id))
+
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_EHR_DOWNLOAD
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.curious_applet_id == [applet.id]
+        assert event.curious_subject_id is not None
+        assert set(event.curious_subject_id) == {subject_id_a, subject_id_b}
+        assert event.curious_activity_id == [activity_id_a]
+        assert event.curious_submit_id is not None
+        assert set(event.curious_submit_id) == {submit_id_a, submit_id_b}
+
+    async def test_ehr_download_success_no_data_emits_event(
+        self,
+        client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        mocker: MockerFixture,
+    ):
+        mocker.patch(
+            "apps.answers.api.AnswerService.export_ehr_answers",
+            return_value=[],
+        )
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        response = await client.get(self.ehr_export_url.format(applet_id=applet.id))
+
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_EHR_DOWNLOAD
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.curious_applet_id == [applet.id]
+        assert event.curious_subject_id is None
+        assert event.curious_activity_id is None
+        assert event.curious_submit_id is None
+
+    async def test_ehr_download_failure_404_applet(
+        self,
+        client: TestClient,
+        tom: User,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        missing_applet_id = uuid.uuid4()
+        response = await client.get(self.ehr_export_url.format(applet_id=missing_applet_id))
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_EHR_DOWNLOAD
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [missing_applet_id]
+
+    async def test_ehr_download_failure_403_access_denied(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(lucy)
+
+        response = await client.get(self.ehr_export_url.format(applet_id=applet.id))
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == lucy.id
+        assert event.event_action == EventAction.APPLET_ANSWER_EHR_DOWNLOAD
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [applet.id]
