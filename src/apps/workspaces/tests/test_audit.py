@@ -334,6 +334,7 @@ class TestWorkspacesAudit(BaseTest):
         applet_one: AppletFull,
         applet_two: AppletFull,
         applet_one_lucy_manager: AppletFull,
+        applet_two_lucy_manager: AppletFull,
         mocker: MockerFixture,
     ):
         audit_log = mocker.patch("apps.workspaces.api.log")

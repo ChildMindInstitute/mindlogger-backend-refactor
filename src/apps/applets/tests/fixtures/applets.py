@@ -280,6 +280,12 @@ async def applet_one_lucy_manager(session: AsyncSession, applet_one: AppletFull,
 
 
 @pytest.fixture
+async def applet_two_lucy_manager(session: AsyncSession, applet_two: AppletFull, tom: User, lucy: User) -> AppletFull:
+    await UserAppletAccessService(session, tom.id, applet_two.id).add_role(lucy.id, Role.MANAGER)
+    return applet_two
+
+
+@pytest.fixture
 async def applet_one_lucy_respondent(
     session: AsyncSession, applet_one: AppletFull, tom: User, lucy: User
 ) -> AppletFull:
