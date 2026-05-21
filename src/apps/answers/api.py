@@ -350,19 +350,45 @@ async def summary_activity_latest_report_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
     subject_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> FastApiResponse:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
-    if not subject:
-        raise NotFoundError(f"Subject {subject_id} not found.")
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
+        if not subject:
+            raise NotFoundError(f"Subject {subject_id} not found.")
 
-    report = await AnswerService(session, user.id, answer_session).get_summary_latest_report(
-        applet_id, activity_id, subject_id
+        report = await AnswerService(session, user.id, answer_session).get_summary_latest_report(
+            applet_id, activity_id, subject_id
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
+                curious_applet_id=[applet_id],
+                curious_activity_id=[activity_id],
+                curious_subject_id=[subject_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
+            curious_applet_id=[applet_id],
+            curious_activity_id=[activity_id],
+            curious_subject_id=[subject_id],
+            **http_audit_fields(request),
+        )
     )
+
     if report:
         return FastApiResponse(
             base64.b64decode(report.pdf.encode()),
@@ -377,19 +403,45 @@ async def summary_flow_latest_report_retrieve(
     applet_id: uuid.UUID,
     flow_id: uuid.UUID,
     subject_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> FastApiResponse:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
-    if not subject:
-        raise NotFoundError(f"Subject {subject_id} not found.")
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
+        if not subject:
+            raise NotFoundError(f"Subject {subject_id} not found.")
 
-    report = await AnswerService(session, user.id, answer_session).get_flow_summary_latest_report(
-        applet_id, flow_id, subject_id
+        report = await AnswerService(session, user.id, answer_session).get_flow_summary_latest_report(
+            applet_id, flow_id, subject_id
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
+                curious_applet_id=[applet_id],
+                curious_flow_id=[flow_id],
+                curious_subject_id=[subject_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
+            curious_applet_id=[applet_id],
+            curious_flow_id=[flow_id],
+            curious_subject_id=[subject_id],
+            **http_audit_fields(request),
+        )
     )
+
     if report:
         return FastApiResponse(
             base64.b64decode(report.pdf.encode()),
