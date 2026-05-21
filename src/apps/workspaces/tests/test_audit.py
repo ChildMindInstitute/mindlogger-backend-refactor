@@ -23,6 +23,7 @@ class TestWorkspacesAudit(BaseTest):
     workspace_applet_respondents_list = "/workspaces/{owner_id}/applets/{applet_id}/respondents"
     workspace_get_applet_respondent = "/workspaces/{owner_id}/applets/{applet_id}/respondents/{respondent_id}"
     workspace_manager_accesses_url = "/workspaces/{owner_id}/managers/{manager_id}/accesses"
+    remove_manager_access_url = "/workspaces/managers/removeAccess"
 
     async def test_workspace_respondents_list_audit_success_emits_event_per_applet(
         self,
@@ -298,3 +299,108 @@ class TestWorkspacesAudit(BaseTest):
         assert event.user_target_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
         assert event.user_target_roles == ["manager"]
+
+    async def test_access_revoke_success_single_applet(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_one_lucy_manager: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(tom)
+
+        response = await client.delete(
+            self.remove_manager_access_url,
+            data={"user_id": str(lucy.id), "applet_ids": [str(applet_one.id)]},
+        )
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_target_id == lucy.id
+        assert event.curious_applet_id == [applet_one.id]
+
+    async def test_access_revoke_success_multi_applet(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_two: AppletFull,
+        applet_one_lucy_manager: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(tom)
+
+        response = await client.delete(
+            self.remove_manager_access_url,
+            data={"user_id": str(lucy.id), "applet_ids": [str(applet_one.id), str(applet_two.id)]},
+        )
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert audit_log.await_count == 2
+        events = [call.args[0] for call in audit_log.call_args_list]
+        for event in events:
+            assert event.user_id == tom.id
+            assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+            assert event.event_outcome == EventOutcome.SUCCESS
+            assert event.user_target_id == lucy.id
+
+        applet_ids = {event.curious_applet_id[0] for event in events}
+        assert applet_ids == {applet_one.id, applet_two.id}
+
+    async def test_access_revoke_failure_403(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(lucy)
+
+        response = await client.delete(
+            self.remove_manager_access_url,
+            data={"user_id": str(tom.id), "applet_ids": [str(applet_one.id)]},
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == lucy.id
+        assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_target_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
+
+    async def test_access_revoke_failure_self(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(tom)
+
+        response = await client.delete(
+            self.remove_manager_access_url,
+            data={"user_id": str(tom.id), "applet_ids": [str(applet_one.id)]},
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_target_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
