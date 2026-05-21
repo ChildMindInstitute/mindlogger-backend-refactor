@@ -15,7 +15,16 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.audit import EventAction, EventOutcome
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
+from apps.subjects.domain import Subject
+from apps.subjects.services import SubjectsService
 from apps.users.domain import User
+
+
+@pytest.fixture
+async def tom_applet_with_flow_subject(session: AsyncSession, tom: User, applet_with_flow: AppletFull) -> Subject:
+    subject = await SubjectsService(session, tom.id).get_by_user_and_applet(tom.id, applet_with_flow.id)
+    assert subject is not None
+    return subject
 
 
 @pytest.fixture
@@ -913,3 +922,155 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_EHR_DOWNLOAD
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [applet.id]
+
+    # --- summary_activity_latest_report_retrieve / summary_flow_latest_report_retrieve ---
+
+    activity_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"
+    flow_report_url = "/answers/applet/{applet_id}/flows/{flow_id}/subjects/{subject_id}/latest_report"
+
+    async def test_activity_report_download_success(
+        self,
+        client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        tom_applet_subject,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        response = await client.post(
+            self.activity_report_url.format(
+                applet_id=applet.id,
+                activity_id=applet.activities[0].id,
+                subject_id=tom_applet_subject.id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_REPORT_DOWNLOAD
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.curious_applet_id == [applet.id]
+        assert event.curious_activity_id == [applet.activities[0].id]
+        assert event.curious_subject_id == [tom_applet_subject.id]
+        assert event.curious_flow_id is None
+
+    async def test_activity_report_download_failure_subject_not_found(
+        self,
+        client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        missing_subject_id = uuid.uuid4()
+        response = await client.post(
+            self.activity_report_url.format(
+                applet_id=applet.id,
+                activity_id=applet.activities[0].id,
+                subject_id=missing_subject_id,
+            )
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_REPORT_DOWNLOAD
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [applet.id]
+        assert event.curious_activity_id == [applet.activities[0].id]
+        assert event.curious_subject_id == [missing_subject_id]
+
+    async def test_activity_report_download_failure_403(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet: AppletFull,
+        tom_applet_subject,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(lucy)
+
+        response = await client.post(
+            self.activity_report_url.format(
+                applet_id=applet.id,
+                activity_id=applet.activities[0].id,
+                subject_id=tom_applet_subject.id,
+            )
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == lucy.id
+        assert event.event_action == EventAction.APPLET_ANSWER_REPORT_DOWNLOAD
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [applet.id]
+        assert event.curious_activity_id == [applet.activities[0].id]
+
+    async def test_flow_report_download_success(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_with_flow: AppletFull,
+        tom_applet_with_flow_subject: Subject,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        response = await client.post(
+            self.flow_report_url.format(
+                applet_id=applet_with_flow.id,
+                flow_id=applet_with_flow.activity_flows[0].id,
+                subject_id=tom_applet_with_flow_subject.id,
+            )
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == tom.id
+        assert event.event_action == EventAction.APPLET_ANSWER_REPORT_DOWNLOAD
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.curious_applet_id == [applet_with_flow.id]
+        assert event.curious_flow_id == [applet_with_flow.activity_flows[0].id]
+        assert event.curious_subject_id == [tom_applet_with_flow_subject.id]
+        assert event.curious_activity_id is None
+
+    async def test_flow_report_download_failure_403(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_with_flow: AppletFull,
+        tom_applet_with_flow_subject: Subject,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(lucy)
+
+        response = await client.post(
+            self.flow_report_url.format(
+                applet_id=applet_with_flow.id,
+                flow_id=applet_with_flow.activity_flows[0].id,
+                subject_id=tom_applet_with_flow_subject.id,
+            )
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == lucy.id
+        assert event.event_action == EventAction.APPLET_ANSWER_REPORT_DOWNLOAD
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [applet_with_flow.id]
+        assert event.curious_flow_id == [applet_with_flow.activity_flows[0].id]
