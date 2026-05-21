@@ -1268,17 +1268,41 @@ async def applet_submissions_list(
 
 async def applet_ehr_answers_export(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
     query_params: QueryParams = Depends(parse_query_params(AnswerEHRExportFilters)),
     app_settings: Settings = Depends(get_settings),
 ) -> FastAPIResponse:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
 
-    ehr_answers: list[AnswerEHRFull] = await AnswerService(session, user.id, answer_session).export_ehr_answers(
-        applet_id, query_params
+        ehr_answers: list[AnswerEHRFull] = await AnswerService(session, user.id, answer_session).export_ehr_answers(
+            applet_id, query_params
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
+            curious_applet_id=[applet_id],
+            curious_subject_id=list({a.target_subject_id for a in ehr_answers}) or None,
+            curious_activity_id=list({a.activity_id for a in ehr_answers}) or None,
+            curious_submit_id=list({a.submit_id for a in ehr_answers}) or None,
+            **http_audit_fields(request),
+        )
     )
 
     if len(ehr_answers) == 0:
