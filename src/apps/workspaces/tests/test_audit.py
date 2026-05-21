@@ -22,6 +22,7 @@ class TestWorkspacesAudit(BaseTest):
     workspace_respondents_url = "/workspaces/{owner_id}/respondents"
     workspace_applet_respondents_list = "/workspaces/{owner_id}/applets/{applet_id}/respondents"
     workspace_get_applet_respondent = "/workspaces/{owner_id}/applets/{applet_id}/respondents/{respondent_id}"
+    workspace_manager_accesses_url = "/workspaces/{owner_id}/managers/{manager_id}/accesses"
 
     async def test_workspace_respondents_list_audit_success_emits_event_per_applet(
         self,
@@ -167,3 +168,133 @@ class TestWorkspacesAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_SUBJECT_VIEW
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [applet_one.id]
+
+    async def test_access_grant_success_multi_applet(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_two: AppletFull,
+        tom_applet_one_subject: Subject,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(tom)
+
+        response = await client.post(
+            self.workspace_manager_accesses_url.format(owner_id=tom.id, manager_id=lucy.id),
+            dict(
+                accesses=[
+                    {"applet_id": str(applet_two.id), "roles": ["manager", "coordinator"]},
+                    {
+                        "applet_id": str(applet_one.id),
+                        "roles": ["reviewer"],
+                        "subjects": [str(tom_applet_one_subject.id)],
+                    },
+                ]
+            ),
+        )
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert audit_log.await_count == 2
+        events = [call.args[0] for call in audit_log.call_args_list]
+        for event in events:
+            assert event.user_id == tom.id
+            assert event.event_action == EventAction.WORKSPACE_ACCESS_GRANT
+            assert event.event_outcome == EventOutcome.SUCCESS
+            assert event.user_target_id == lucy.id
+            assert event.curious_applet_id is not None
+            assert len(event.curious_applet_id) == 1
+
+        events_by_applet = {event.curious_applet_id[0]: event for event in events}
+        assert set(events_by_applet[applet_two.id].user_target_roles or []) == {"manager", "coordinator"}
+        assert events_by_applet[applet_two.id].curious_subject_id is None
+        assert events_by_applet[applet_one.id].user_target_roles == ["reviewer"]
+        assert events_by_applet[applet_one.id].curious_subject_id == [tom_applet_one_subject.id]
+
+    async def test_access_grant_success_single_applet(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(tom)
+
+        response = await client.post(
+            self.workspace_manager_accesses_url.format(owner_id=tom.id, manager_id=lucy.id),
+            dict(accesses=[{"applet_id": str(applet_one.id), "roles": ["coordinator"]}]),
+        )
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.WORKSPACE_ACCESS_GRANT
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_roles == ["coordinator"]
+        assert event.curious_subject_id is None
+
+    async def test_access_grant_failure_404(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        applet_two: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(tom)
+
+        missing_owner_id = uuid.uuid4()
+        response = await client.post(
+            self.workspace_manager_accesses_url.format(owner_id=missing_owner_id, manager_id=lucy.id),
+            dict(
+                accesses=[
+                    {"applet_id": str(applet_one.id), "roles": ["manager"]},
+                    {"applet_id": str(applet_two.id), "roles": ["coordinator"]},
+                ]
+            ),
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        assert audit_log.await_count == 2
+        events = [call.args[0] for call in audit_log.call_args_list]
+        for event in events:
+            assert event.user_id == tom.id
+            assert event.event_action == EventAction.WORKSPACE_ACCESS_GRANT
+            assert event.event_outcome == EventOutcome.FAILURE
+            assert event.user_target_id == lucy.id
+
+        applet_ids = {event.curious_applet_id[0] for event in events}
+        assert applet_ids == {applet_one.id, applet_two.id}
+
+    async def test_access_grant_failure_403(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet_one: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(lucy)
+
+        response = await client.post(
+            self.workspace_manager_accesses_url.format(owner_id=tom.id, manager_id=lucy.id),
+            dict(accesses=[{"applet_id": str(applet_one.id), "roles": ["manager"]}]),
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == lucy.id
+        assert event.event_action == EventAction.WORKSPACE_ACCESS_GRANT
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_target_id == lucy.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_roles == ["manager"]
