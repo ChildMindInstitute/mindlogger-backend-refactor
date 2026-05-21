@@ -923,6 +923,39 @@ class TestAnswersAudit(BaseTest):
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [applet.id]
 
+    async def test_ehr_download_failure_promotes_query_filters(
+        self,
+        client: TestClient,
+        tom: User,
+        lucy: User,
+        applet: AppletFull,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(lucy)
+
+        target_subject_id = uuid.uuid4()
+        activity_id = uuid.uuid4()
+        flow_id = uuid.uuid4()
+        response = await client.get(
+            self.ehr_export_url.format(applet_id=applet.id),
+            query={
+                "targetSubjectIds": str(target_subject_id),
+                "activityIds": str(activity_id),
+                "flowIds": str(flow_id),
+            },
+        )
+
+        assert response.status_code != http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_ANSWER_EHR_DOWNLOAD
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.curious_applet_id == [applet.id]
+        assert event.curious_subject_id == [target_subject_id]
+        assert event.curious_activity_id == [activity_id]
+        assert event.curious_flow_id == [flow_id]
+
     # --- summary_activity_latest_report_retrieve / summary_flow_latest_report_retrieve ---
 
     activity_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"

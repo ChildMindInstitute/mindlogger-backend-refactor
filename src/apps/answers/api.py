@@ -1340,6 +1340,9 @@ async def applet_ehr_answers_export(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
                 curious_applet_id=[applet_id],
+                curious_subject_id=query_params.filters.get("target_subject_ids"),
+                curious_activity_id=query_params.filters.get("activity_ids"),
+                curious_flow_id=query_params.filters.get("flow_ids"),
                 **http_audit_fields(request, e),
             )
         )
