@@ -1,0 +1,21 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Sawubona {{first_name}}, </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;"> Sithole imizamo eminingi ehlulekile yokuqinisekisa ku-akhawunti yakho. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> <strong>Imizamo Ehlulekile:</strong> {{failed_attempts}} kwemikhawulo yemizamo engu-{{max_attempts}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> <strong>Imizamo Esele:</strong> {{remaining_attempts}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;"> Isexwayiso: I-akhawunti yakho izokhiywa isikhashana uma ufinyelela imizamo ehlulekile engu-{{max_attempts}}. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Uma kunguwe lo, sicela: </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> • Qiniseka ukuthi usebenzisa ikhodi yokuqinisekisa elungile evela ku-app yokufakazela ubuqiniso </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> • Sebenzisa ikhodi yokutakula uma ungakwazi ukufinyelela ku-app yokufakazela ubuqiniso </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Uma ungazange uzame ukungena, kungenzeka ukuthi othile uzama ukufinyelela i-akhawunti yakho. Cabangela ukushintsha iphasiwedi yakho. </td>
+      </tr> {% include 'blocks/team_info_zu.html' %} </table> {% include 'footers/footer_info_zu.html' %} </body>
+</html>
