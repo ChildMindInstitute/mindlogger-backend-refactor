@@ -21,6 +21,9 @@ class InvitationLanguage(StrEnum):
     EL = "el"  # Greek
     ES = "es"  # Spanish
     PT = "pt"  # Portuguese
+    AF = "af"  # Afrikaans
+    XH = "xh"  # isiXhosa
+    ZU = "zu"  # isiZulu
 
 
 class InvitationRequest(InternalModel):
