@@ -59,7 +59,7 @@ from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
-from apps.audit import AuditEvent, EventAction, http_audit_fields, log
+from apps.audit import AuditEvent, EventAction, EventOutcome, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.integrations.oneup_health.service.domain import EHRData
 from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
@@ -1366,31 +1366,47 @@ async def applet_ehr_answers_export(
     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id, app_settings=app_settings)
     zip_buffer = io.BytesIO()
     try:
-        with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
-            ehr_answer: AnswerEHRFull
-            for ehr_answer in ehr_answers:
-                data = EHRData(
-                    target_subject_id=ehr_answer.target_subject_id,
-                    activity_id=ehr_answer.activity_id,
-                    submit_id=ehr_answer.submit_id,
-                    date=ehr_answer.date,
-                    user_id=user.id,
-                )
-                ehr_zip_buffer = io.BytesIO()
-
-                try:
-                    ehr_zip_filename = ehr_storage.download_ehr_zip(
-                        storage_path=ehr_answer.ehr_storage_uri,  # type: ignore
-                        data=data,
-                        file_buffer=ehr_zip_buffer,
+        try:
+            with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+                ehr_answer: AnswerEHRFull
+                for ehr_answer in ehr_answers:
+                    data = EHRData(
+                        target_subject_id=ehr_answer.target_subject_id,
+                        activity_id=ehr_answer.activity_id,
+                        submit_id=ehr_answer.submit_id,
+                        date=ehr_answer.date,
+                        user_id=user.id,
                     )
+                    ehr_zip_buffer = io.BytesIO()
 
-                    zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
-                finally:
-                    ehr_zip_buffer.close()
+                    try:
+                        ehr_zip_filename = ehr_storage.download_ehr_zip(
+                            storage_path=ehr_answer.ehr_storage_uri,  # type: ignore
+                            data=data,
+                            file_buffer=ehr_zip_buffer,
+                        )
 
-        zip_buffer.seek(0)
-        headers = {"Content-Disposition": "attachment; filename=EHR.zip"}
-        return FastAPIResponse(zip_buffer.getvalue(), headers=headers, media_type="application/zip")
+                        zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
+                    finally:
+                        ehr_zip_buffer.close()
+
+            zip_buffer.seek(0)
+            headers = {"Content-Disposition": "attachment; filename=EHR.zip"}
+            return FastAPIResponse(zip_buffer.getvalue(), headers=headers, media_type="application/zip")
+        except Exception as e:
+            await log(
+                AuditEvent(
+                    user_id=user.id,
+                    event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
+                    curious_applet_id=[applet_id],
+                    curious_subject_id=list({a.target_subject_id for a in ehr_answers}) or None,
+                    curious_activity_id=list({a.activity_id for a in ehr_answers}) or None,
+                    curious_submit_id=list({a.submit_id for a in ehr_answers}) or None,
+                    event_outcome=EventOutcome.FAILURE,
+                    error_type=type(e).__name__,
+                    **http_audit_fields(request),
+                )
+            )
+            raise
     finally:
         zip_buffer.close()

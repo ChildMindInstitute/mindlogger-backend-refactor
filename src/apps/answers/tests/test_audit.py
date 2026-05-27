@@ -956,6 +956,52 @@ class TestAnswersAudit(BaseTest):
         assert event.curious_activity_id == [activity_id]
         assert event.curious_flow_id == [flow_id]
 
+    async def test_ehr_download_zip_failure_emits_error_event(
+        self,
+        client: TestClient,
+        tom: User,
+        applet: AppletFull,
+        mocker: MockerFixture,
+    ):
+        subject_id = uuid.uuid4()
+        activity_id = uuid.uuid4()
+        submit_id = uuid.uuid4()
+        ehr_rows = [
+            AnswerEHRFull(
+                submit_id=submit_id,
+                ehr_ingestion_status=EHRIngestionStatus.COMPLETED,
+                activity_id=activity_id,
+                ehr_storage_uri=None,
+                target_subject_id=subject_id,
+                date=datetime.datetime.now(datetime.UTC),
+            ),
+        ]
+        mocker.patch(
+            "apps.answers.api.AnswerService.export_ehr_answers",
+            return_value=ehr_rows,
+        )
+        fake_storage = mocker.MagicMock()
+        fake_storage.download_ehr_zip.side_effect = RuntimeError("S3 unavailable")
+        mocker.patch("apps.answers.api.create_ehr_storage", new=AsyncMock(return_value=fake_storage))
+        audit_log = mocker.patch("apps.answers.api.log")
+        client.login(tom)
+
+        response = await client.get(self.ehr_export_url.format(applet_id=applet.id))
+
+        assert response.status_code == http.HTTPStatus.INTERNAL_SERVER_ERROR
+        assert audit_log.await_count == 2
+        success_event = audit_log.call_args_list[0][0][0]
+        assert success_event.event_outcome == EventOutcome.SUCCESS
+        failure_event = audit_log.call_args_list[1][0][0]
+        assert failure_event.user_id == tom.id
+        assert failure_event.event_action == EventAction.APPLET_ANSWER_EHR_DOWNLOAD
+        assert failure_event.event_outcome == EventOutcome.FAILURE
+        assert failure_event.error_type == "RuntimeError"
+        assert failure_event.curious_applet_id == [applet.id]
+        assert failure_event.curious_subject_id == [subject_id]
+        assert failure_event.curious_activity_id == [activity_id]
+        assert failure_event.curious_submit_id == [submit_id]
+
     # --- summary_activity_latest_report_retrieve / summary_flow_latest_report_retrieve ---
 
     activity_report_url = "/answers/applet/{applet_id}/activities/{activity_id}/subjects/{subject_id}/latest_report"
