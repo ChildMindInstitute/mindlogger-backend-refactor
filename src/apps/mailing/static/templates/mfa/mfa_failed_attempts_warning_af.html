@@ -1,0 +1,21 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Hallo {{first_name}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;"> Ons het meerdere mislukte verifikasiepogings op jou rekening bespeur. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> <strong>Mislukte pogings:</strong> {{failed_attempts}} van {{max_attempts}} maksimum pogings </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> <strong>Pogings oor:</strong> {{remaining_attempts}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;"> Waarskuwing: Jou rekening sal tydelik gesluit wees as jy {{max_attempts}} mislukte pogings bereik het. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Indien dit jy is, doen asseblief die volgende: </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> • Sorg dat jy die korrekte verifikasiekode van jou waarmerkingstoep (authenticator) gebruik </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> • Gebruik ’n herstelkode as jy nie toegang tot jou waarmerkingstoep (authenticator) het nie </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> As jy nie probeer het om aan te meld nie, dan probeer iemand dalk om toegang tot jou rekening te kry. Oorweeg dit om jou wagwoord te verander. </td>
+      </tr> {% include 'blocks/team_info_af.html' %} </table> {% include 'footers/footer_info_af.html' %} </body>
+</html>

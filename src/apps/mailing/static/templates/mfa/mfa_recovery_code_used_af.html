@@ -1,0 +1,15 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Hallo {{first_name}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;"> ’n Herstelkode is gebruik om toegang tot jou rekening te kry. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> ’n Herstelkode is gebruik op {{used_at}}. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Jy het <strong>{{remaining_codes}} herstelkode{% if remaining_codes != 1 %}s{% endif %} oor</strong>. </td>
+      </tr> {% if remaining_codes <= 3 %} <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;"> Jy het tans min herstelkodes oor. Oorweeg dit om binnekort nuwes te genereer. </td>
+      </tr> {% endif %} <tr>
+        <td style="padding-bottom: 16px"> Indien dit nie jy was nie, is jou rekening dalk in gevaar. Verander jou wagwoord en gaan dadelik jou sekuriteitinstellings na. </td>
+      </tr> {% include 'blocks/team_info_af.html' %} </table> {% include 'footers/footer_info_af.html' %} </body>
+</html>

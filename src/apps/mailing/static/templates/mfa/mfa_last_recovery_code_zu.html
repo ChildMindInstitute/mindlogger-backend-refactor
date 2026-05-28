@@ -1,0 +1,19 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Sawubona {{first_name}}, </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;"> Usalelwe {% if remaining_count == 0 %}no{% else %}only {{remaining_count}}{% endif %} recovery code{% if remaining_count != 1 %}s{% endif %}. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Amakhodi okutakula asetshenziselwa ukufinyelela i-akhawunti yakho uma ungakwazi ukufinyelela ku-app lokufakazela ubuqiniso. Uma ususebenzise wonke amakhodi akho, ngeke ukwazi ukuwasebenzisa ukuze ungene ngemvume. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;"> Sincoma ngokuqinile ukuthi ukhiqize amakhodi amasha okutakula manje ukuze uqinisekise ukuthi ungahlala ufinyelela i-akhawunti yakho. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Ukuze ukhiqize amakhodi amasha okutakula: </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> 1. Ngena ngemvume ku-akhawunti yakho </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> 2. Iya kumasethingi akho okuphepha </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> 3. Khetha “Khiqiza Amakhodi Okubuyisela amasha” </td>
+      </tr> {% include 'blocks/team_info_zu.html' %} </table> {% include 'footers/footer_info_zu.html' %} </body>
+</html>

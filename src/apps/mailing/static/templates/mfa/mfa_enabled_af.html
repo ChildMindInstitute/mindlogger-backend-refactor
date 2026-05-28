@@ -1,0 +1,21 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Hallo {{first_name}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #388e3c; font-weight: bold;"> Tweefaktor-verifikasie is suksesvol op jou rekening geaktiveer! </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Hierdie verandering is op {{enabled_at}} aangebring. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Jou rekening is nou meer beveiligd. Van nou af sal jy ’n verifikasiekode vanaf jou waarmerkingstoep (authenticator) moet invoer wanneer jy aanmeld. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;"> Belangrik: Jy het {{recovery_codes_count}} herstelkodes. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Herstelkodes gee jou toegang tot jou rekening as jy jou waarmerkingstoestel (authenticator) verloor. Jy kan jou herstelkodes enige tyd besigtig deur jou instellings in die Curious-admin te besoek. Doen die volgende: </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> • Bewaar dit op ’n veilige plek </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> • Moenie dit met enigiemand deel nie </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> As jy nie tweefaktor-verifikasie geaktiveer het nie, kontak dadelik die steundiens. </td>
+      </tr> {% include 'blocks/team_info_af.html' %} </table> {% include 'footers/footer_info_af.html' %} </body>
+</html>
