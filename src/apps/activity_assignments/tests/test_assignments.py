@@ -130,7 +130,7 @@ class TestActivityAssignments(BaseTest):
     user_activities_assignments = "/users/me/assignments/{applet_id}"
     activities_assign_unassign_applet = "/assignments/applet/{applet_id}"
 
-    @pytest.mark.parametrize("invite_language", ["en", "fr", "el"])
+    @pytest.mark.parametrize("invite_language", ["en", "fr", "el", "af", "xh", "zu"])
     async def test_create_one_assignment(
         self,
         client: TestClient,

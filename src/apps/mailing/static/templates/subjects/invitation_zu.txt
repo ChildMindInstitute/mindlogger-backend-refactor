@@ -1,0 +1,1 @@
+Isimemo se-{{ applet_name }}
