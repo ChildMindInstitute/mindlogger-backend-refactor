@@ -1,3 +1,4 @@
+import uuid
 from gettext import gettext as _
 
 from starlette import status
@@ -31,6 +32,10 @@ class InvalidCredentials(AuthenticationError):
 
 class SessionTokenInvalidError(AuthenticationError):
     """Indicates auth error due to invalid session token."""
+
+    def __init__(self, user_id: uuid.UUID | None = None, **kwargs) -> None:
+        self.user_id = user_id
+        super().__init__(**kwargs)
 
 
 class MFATokenInvalidError(AuthenticationError):

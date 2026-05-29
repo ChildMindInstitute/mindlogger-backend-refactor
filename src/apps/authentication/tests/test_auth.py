@@ -74,11 +74,8 @@ class TestAuthentication(BaseTest):
         assert resp.json()["result"][0]["message"] == SessionTokenInvalidError.message
 
     async def test_expired_token(self, client: TestClient, user: User, mocker: MockerFixture):
-        settings.authentication.access_token.expiration = -1
-        try:
-            client.login(user)
-        finally:
-            settings.authentication.access_token.expiration = 30
+        mocker.patch.object(settings.authentication.access_token, "expiration", -1)
+        client.login(user)
         audit_log = mocker.patch("infrastructure.http.exceptions.log")
         resp = await client.post(self.delete_token_url)
         audit_log.assert_awaited_once()

@@ -50,7 +50,7 @@ async def session_token_invalid_error_handler(request: Request, error: SessionTo
     await log(
         AuditEvent(
             event_action=EventAction.USER_SESSION_INVALID,
-            user_id=error.kwargs.get("user_id"),
+            user_id=error.user_id,
             **http_audit_fields(request, error),
         )
     )
