@@ -76,7 +76,6 @@ class OpenSearchClient:
             use_ssl=settings.opensearch.use_ssl,
             verify_certs=settings.opensearch.verify_certs,
             ssl_show_warn=False,
-            timeout=30,
         )
 
     async def ensure_index(self, index: str, mapping: dict) -> None:
