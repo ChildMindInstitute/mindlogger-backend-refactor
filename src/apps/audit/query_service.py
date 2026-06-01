@@ -8,10 +8,6 @@ from infrastructure.utility.opensearch_client import DEFAULT_PAGE_SIZE, OpenSear
 SORT: list[dict] = [{"@timestamp": "asc"}, {"event.id": "asc"}]
 
 
-def _utc_midnight(d: datetime.date) -> str:
-    return datetime.datetime.combine(d, datetime.time.min, tzinfo=datetime.timezone.utc).isoformat()
-
-
 class AuditQueryService:
     def __init__(self, client: OpenSearchClient | None = None) -> None:
         self._client = client or OpenSearchClient()
@@ -21,8 +17,8 @@ class AuditQueryService:
         self,
         applet_id: uuid.UUID,
         *,
-        from_date: datetime.date | None = None,
-        to_date: datetime.date | None = None,
+        from_date: datetime.datetime | None = None,
+        to_date: datetime.datetime | None = None,
         page: int = 1,
         limit: int = DEFAULT_PAGE_SIZE,
     ) -> tuple[list[AuditEvent], int]:
@@ -42,17 +38,16 @@ class AuditQueryService:
     @staticmethod
     def _build_query(
         applet_id: uuid.UUID,
-        from_date: datetime.date | None,
-        to_date: datetime.date | None,
+        from_date: datetime.datetime | None,
+        to_date: datetime.datetime | None,
     ) -> dict:
         filters: list[dict] = [{"term": {"curious.applet_id": str(applet_id)}}]
 
         timestamp_range: dict = {}
         if from_date is not None:
-            timestamp_range["gte"] = _utc_midnight(from_date)
+            timestamp_range["gte"] = from_date.isoformat()
         if to_date is not None:
-            # to_date is inclusive at day granularity; +1 day at UTC midnight is the exclusive upper bound.
-            timestamp_range["lt"] = _utc_midnight(to_date + datetime.timedelta(days=1))
+            timestamp_range["lte"] = to_date.isoformat()
         if timestamp_range:
             filters.append({"range": {"@timestamp": timestamp_range}})
 
