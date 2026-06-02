@@ -98,8 +98,8 @@ async def test_date_range_reaches_opensearch_query(client: TestClient, tom: User
     filters = OpenSearchClientTest.last_search_body["query"]["bool"]["filter"]
     range_clause = next(f for f in filters if "range" in f)
     assert range_clause["range"]["@timestamp"] == {
-        "gte": "2026-05-01T00:00:00+00:00",
-        "lt": "2026-05-08T00:00:00+00:00",
+        "gte": "2026-05-01T00:00:00",
+        "lte": "2026-05-07T00:00:00",
     }
 
 
