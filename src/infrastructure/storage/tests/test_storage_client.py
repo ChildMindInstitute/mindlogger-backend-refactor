@@ -32,7 +32,7 @@ class TestStorageClient:
         """Answer storage client with KMS configured"""
 
         client = StorageClient(answer_storage_kms_config, env="test")
-        client.client = s3_client
+        # client.client = s3_client
 
         return client
 
@@ -83,6 +83,10 @@ class TestStorageClient:
         assert data is not None
         assert ANSWER_BUCKET_NAME in data["url"]
         assert ANSWER_OVERRIDE not in data["url"]
+
+        # Test SigV4
+        assert "x-amz-algorithm" in data["fields"]
+        assert data["fields"]["x-amz-algorithm"] == "AWS4-HMAC-SHA256"
 
         assert "x-amz-server-side-encryption" in data["fields"]
         assert "x-amz-server-side-encryption-aws-kms-key-id" in data["fields"]

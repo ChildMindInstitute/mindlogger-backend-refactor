@@ -64,6 +64,7 @@ class StorageClient:
         assert config, "set CDN"
         client_config = Config(
             max_pool_connections=25,
+            signature_version="s3v4",
         )
 
         # TODO This is only done for arbitrary???
@@ -76,11 +77,10 @@ class StorageClient:
                 aws_secret_access_key=config.secret_key,
                 config=client_config,
             )
-        try:
-            return boto3.client("s3", region_name=config.region, endpoint_url=config.endpoint_url)
-        # TODO: do we need this? If exception is caught self.client will be None
-        except KeyError:
-            logger.warning("CDN configuration is not full")
+
+        return boto3.client(
+            "s3", region_name=config.region, endpoint_url=config.endpoint_url, config=Config(signature_version="s3v4")
+        )
 
     def _get_bucket_name(self) -> str:
         """Get the bucket name.  Override to not support DR variables"""
@@ -184,12 +184,18 @@ class StorageClient:
                 "x-amz-server-side-encryption-aws-kms-key-id": self.config.kms_key_id,
             }
             conditions = [
+                {"bucket": self._get_bucket_name()},
+                {"key": key},
                 {"x-amz-server-side-encryption": "aws:kms"},
                 {"x-amz-server-side-encryption-aws-kms-key-id": self.config.kms_key_id},
             ]
 
         return self.client.generate_presigned_post(
-            self._get_bucket_name(), key, ExpiresIn=self.config.ttl_signed_urls, Fields=fields, Conditions=conditions
+            Bucket=self._get_bucket_name(),
+            Key=key,
+            ExpiresIn=self.config.ttl_signed_urls,
+            Fields=fields,
+            Conditions=conditions,
         )
 
     def _copy(self, key, storage_from: "StorageClient", key_from: str | None = None) -> int:
