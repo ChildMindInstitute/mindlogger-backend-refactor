@@ -338,6 +338,7 @@ async def applet_flow_submissions_list(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_VIEW,
             curious_applet_id=[applet_id],
+            curious_submit_id=[s.submit_id for s in submissions.submissions] or None,
             curious_answer_id=[a.id for s in submissions.submissions for a in s.answers] or None,
             **http_audit_fields(request),
         )
@@ -666,8 +667,8 @@ async def applet_activity_identifiers_retrieve(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[Identifier]:
+    filters = IdentifiersQueryParams(**query_params.filters)
     try:
-        filters = IdentifiersQueryParams(**query_params.filters)
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_access(applet_id, **filters.model_dump())
         identifiers = await AnswerService(session, user.id, answer_session).get_activity_identifiers(
@@ -679,6 +680,8 @@ async def applet_activity_identifiers_retrieve(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
                 curious_applet_id=[applet_id],
+                curious_subject_id=[filters.target_subject_id] if filters.target_subject_id else None,
+                curious_answer_id=[filters.answer_id] if filters.answer_id else None,
                 **http_audit_fields(request, e),
             )
         )
@@ -688,6 +691,7 @@ async def applet_activity_identifiers_retrieve(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
             curious_applet_id=[applet_id],
+            curious_subject_id=[filters.target_subject_id] if filters.target_subject_id else None,
             curious_answer_id=[filters.answer_id] if filters.answer_id else None,
             **http_audit_fields(request),
         )
@@ -704,8 +708,8 @@ async def applet_flow_identifiers_retrieve(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[Identifier]:
+    filters = IdentifiersQueryParams(**query_params.filters)
     try:
-        filters = IdentifiersQueryParams(**query_params.filters)
         applet_service = AppletService(session, user.id)
         await applet_service.exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
@@ -720,6 +724,7 @@ async def applet_flow_identifiers_retrieve(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
                 curious_applet_id=[applet_id],
+                curious_subject_id=[filters.target_subject_id] if filters.target_subject_id else None,
                 **http_audit_fields(request, e),
             )
         )
@@ -729,6 +734,7 @@ async def applet_flow_identifiers_retrieve(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_IDENTIFIER_VIEW,
             curious_applet_id=[applet_id],
+            curious_subject_id=[filters.target_subject_id] if filters.target_subject_id else None,
             **http_audit_fields(request),
         )
     )
@@ -1030,6 +1036,16 @@ async def applet_answers_export(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_EXPORT,
             curious_applet_id=[applet_id],
+            curious_subject_id=list(
+                {
+                    subject_id
+                    for answer in data.answers
+                    for subject_id in (answer.target_subject_id, answer.source_subject_id, answer.input_subject_id)
+                    if subject_id is not None
+                }
+            )
+            or None,
+            curious_submit_id=list({answer.submit_id for answer in data.answers}) or None,
             curious_answer_id=[answer.id for answer in data.answers],
             **http_audit_fields(request),
         )
