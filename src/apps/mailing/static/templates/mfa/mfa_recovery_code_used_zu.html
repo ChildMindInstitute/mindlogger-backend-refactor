@@ -1,0 +1,15 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Sawubona {{first_name}}, </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;"> Ikhodi yokutakula isetshenzisiwe ukuze kufinyelelwe i-akhawunti yakho. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Ikhodi yokutakula isetshenziswe ngo-{{used_at}}. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Usalelwe <strong>{{remaining_codes}} recovery code{% if remaining_codes != 1 %}s{% endif %}</strong>. </td>
+      </tr> {% if remaining_codes <= 3 %} <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;"> Uphelelwa ngamakhodi okutakula. Cabangela ukukhiqiza amasha maduze. </td>
+      </tr> {% endif %} <tr>
+        <td style="padding-bottom: 16px"> Uma bekungewena lona, ​​i-akhawunti yakho ingase ibe sengozini. Shintsha iphasiwedi yakho futhi ubuyekeze amasethingi akho okuphepha ngokushesha. </td>
+      </tr> {% include 'blocks/team_info_zu.html' %} </table> {% include 'footers/footer_info_zu.html' %} </body>
+</html>

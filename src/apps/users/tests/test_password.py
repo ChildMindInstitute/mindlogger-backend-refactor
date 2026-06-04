@@ -214,6 +214,37 @@ class TestPassword:
         assert len(mailbox.mails[0].recipients) == 1
         assert mailbox.mails[0].recipients[0].email == password_recovery_request.email
 
+    @pytest.mark.parametrize(
+        "language,expected_subject",
+        [
+            ("af", "Wagwoordterugstelling"),
+            ("xh", "Ukusetha kwakhona iphasiwedi"),
+            ("zu", "Ukusetha kabusha iphasiwedi"),
+        ],
+    )
+    async def test_password_recovery_localized(
+        self,
+        client: TestClient,
+        user_create: UserCreate,
+        mailbox: TestMail,
+        language: str,
+        expected_subject: str,
+    ):
+        password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
+            email=user_create.model_dump()["email"]
+        )
+
+        response = await client.post(
+            url=self.password_recovery_url,
+            data=password_recovery_request.model_dump(),
+            headers={"Content-Language": language},
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert len(mailbox.mails) == 1
+        assert mailbox.mails[0].subject == expected_subject
+        assert f'data-language="{language}"' in mailbox.mails[0].body
+
     async def test_password_recovery_approve(self, client: TestClient, user_create: UserCreate):
         cache = RedisCache()
 

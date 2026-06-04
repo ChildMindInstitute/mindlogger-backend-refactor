@@ -1,0 +1,23 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Hallo {{first_name}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;"> Jou rekening is gesluit as gevolg van te veel mislukte tweefaktor-verifikasiepogings. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px">
+          <strong>Besonderhede:</strong>
+        </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> • Mislukte pogings: {{failed_attempts}} </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> • Rede: {{lockout_reason}} </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> • Gesluit om: {{locked_at}} </td>
+      </tr> {% if lockout_ttl_seconds %} <tr>
+        <td style="padding-bottom: 16px"> Jou rekening sal outomaties ontsluit word oor ongeveer {{(lockout_ttl_seconds / 60)|int}} minute. </td>
+      </tr> {% endif %} <tr>
+        <td style="padding-bottom: 16px"> As jy nie probeer het om aan te meld nie, dan probeer iemand dalk om toegang tot jou rekening te kry. Ons beveel dit aan dat jy dadelik jou wagwoord verander nadat jou rekening ontsluit is. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Indien jy onmiddellike bystand benodig, kontak asseblief ons steundiensspan by <a href="mailto:{{support_email}}">{{support_email}}</a>. </td>
+      </tr> {% include 'blocks/team_info_af.html' %} </table> {% include 'footers/footer_info_af.html' %} </body>
+</html>

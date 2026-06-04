@@ -213,7 +213,7 @@ class TestInvite(BaseTest):
     shell_acc_create_url = f"{invitation_list}/{{applet_id}}/shell-account"
     shell_acc_invite_url = f"{invitation_list}/{{applet_id}}/subject"
 
-    @pytest.mark.parametrize("invite_language", ["en", "fr", "el"])
+    @pytest.mark.parametrize("invite_language", ["en", "fr", "el", "af", "xh", "zu"])
     @pytest.mark.parametrize(
         "inviter_type,invitee_type,invite_status",
         [
@@ -301,7 +301,7 @@ class TestInvite(BaseTest):
                 assert response.json()["result"]["tag"] is not None
                 assert response.json()["result"]["tag"] == payload.tag
 
-    @pytest.mark.parametrize("invite_language", ["en", "fr"])
+    @pytest.mark.parametrize("invite_language", ["en", "fr", "af", "xh", "zu"])
     @pytest.mark.parametrize("invitee_type", ["manager", "coordinator", "editor", "reviewer", "respondent"])
     async def test_invite_new_user(
         self,

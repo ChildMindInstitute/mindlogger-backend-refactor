@@ -1,0 +1,19 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Hallo {{first_name}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;"> Jy het {% if remaining_count == 0 %}geen{% else %}slegs {{remaining_count}}{% endif %} herstelkode{% if remaining_count != 1 %}s{% endif %} oor. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Herstelkodes word gebruik om toegang tot jou rekening te kry wanneer jy nie toegang tot jou waarmerkingstoep (authenticator) het nie. Sodra jy al jou kodes gebruik het, sal jy dit nie meer kan gebruik om aan te meld nie. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;"> Ons beveel sterk aan dat jy nou nuwe herstelkodes genereer om te verseker dat jy altyd toegang tot jou rekening het. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Hoe om nuwe herstelkodes te genereer: </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> 1. Meld aan by jou rekening </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> 2. Gaan na jou sekuriteitinstellings </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> 3. Kies “Genereer nuwe herstelkodes” </td>
+      </tr> {% include 'blocks/team_info_af.html' %} </table> {% include 'footers/footer_info_af.html' %} </body>
+</html>

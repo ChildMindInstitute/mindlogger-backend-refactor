@@ -1,0 +1,19 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Hallo {{first_name}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; font-weight: bold;"> Tweefaktor-verifikasie is op jou rekening gedeaktiveer. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Hierdie verandering is op {{disabled_at}} aangebring. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #f57c00;"> Jou rekening is nou minder beveiligd sonder tweefaktor-verifikasie. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Indien jy nie tweefaktor-verifikasie gedeaktiveer het nie, is jou rekening dalk in gevaar. Doen die volgende: </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> 1. Verander dadelik jou wagwoord </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> 2. Heraktiveer tweefaktor-verifikasie </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> 3. Gaan jou onlangse rekeningaktiwiteit na </td>
+      </tr> {% include 'blocks/team_info_af.html' %} </table> {% include 'footers/footer_info_af.html' %} </body>
+</html>
