@@ -232,7 +232,7 @@ async def delete_subject(
     except BaseError as e:
         await log(
             AuditEvent(
-                event_action=EventAction.APPLET_MEMBER_REMOVE,
+                event_action=EventAction.APPLET_ACCESS_REVOKE,
                 user_id=user.id,
                 user_target_id=target_user_id,
                 curious_applet_id=[applet_id] if applet_id else None,
@@ -244,7 +244,7 @@ async def delete_subject(
 
     await log(
         AuditEvent(
-            event_action=EventAction.APPLET_MEMBER_REMOVE,
+            event_action=EventAction.APPLET_ACCESS_REVOKE,
             user_id=user.id,
             user_target_id=target_user_id,
             curious_applet_id=[applet_id],

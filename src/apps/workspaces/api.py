@@ -236,26 +236,28 @@ async def workspace_remove_manager_access(
                 ids_to_remove = set(schema.applet_ids) - set(management_applets)
                 await InvitationsService(session, ex_admin).delete_for_managers(list(ids_to_remove))
     except BaseError as e:
-        await log(
-            AuditEvent(
-                event_action=EventAction.APPLET_MEMBER_REMOVE,
-                user_id=user.id,
-                user_target_id=schema.user_id,
-                curious_applet_id=schema.applet_ids,
-                **http_audit_fields(request, e),
+        for applet_id in schema.applet_ids:
+            await log(
+                AuditEvent(
+                    event_action=EventAction.APPLET_ACCESS_REVOKE,
+                    user_id=user.id,
+                    user_target_id=schema.user_id,
+                    curious_applet_id=[applet_id],
+                    **http_audit_fields(request, e),
+                )
             )
-        )
         raise
 
-    await log(
-        AuditEvent(
-            event_action=EventAction.APPLET_MEMBER_REMOVE,
-            user_id=user.id,
-            user_target_id=schema.user_id,
-            curious_applet_id=schema.applet_ids,
-            **http_audit_fields(request),
+    for applet_id in schema.applet_ids:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_ACCESS_REVOKE,
+                user_id=user.id,
+                user_target_id=schema.user_id,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request),
+            )
         )
-    )
 
 
 async def workspace_respondents_list(
@@ -476,26 +478,28 @@ async def workspace_managers_applet_access_set(
 
             await UserAccessService(session, user.id).set(owner_id, manager_id, accesses)
     except BaseError as e:
-        await log(
-            AuditEvent(
-                event_action=EventAction.APPLET_MEMBER_ROLE_CHANGE,
-                user_id=user.id,
-                user_target_id=manager_id,
-                curious_applet_id=applet_ids,
-                **http_audit_fields(request, e),
+        for applet_id in applet_ids:
+            await log(
+                AuditEvent(
+                    event_action=EventAction.APPLET_ACCESS_GRANT,
+                    user_id=user.id,
+                    user_target_id=manager_id,
+                    curious_applet_id=[applet_id],
+                    **http_audit_fields(request, e),
+                )
             )
-        )
         raise
 
-    await log(
-        AuditEvent(
-            event_action=EventAction.APPLET_MEMBER_ROLE_CHANGE,
-            user_id=user.id,
-            user_target_id=manager_id,
-            curious_applet_id=applet_ids,
-            **http_audit_fields(request),
+    for applet_id in applet_ids:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_ACCESS_GRANT,
+                user_id=user.id,
+                user_target_id=manager_id,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request),
+            )
         )
-    )
 
 
 async def workspace_applet_get_respondent(

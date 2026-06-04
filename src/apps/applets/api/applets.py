@@ -254,7 +254,7 @@ async def applet_set_report_configuration(
     except BaseError as e:
         await log(
             AuditEvent(
-                event_action=EventAction.APPLET_REPORT_CONFIGURATION_CHANGE,
+                event_action=EventAction.APPLET_REPORT_UPDATE,
                 user_id=user.id,
                 curious_applet_id=[applet_id],
                 **http_audit_fields(request, e),
@@ -264,7 +264,7 @@ async def applet_set_report_configuration(
 
     await log(
         AuditEvent(
-            event_action=EventAction.APPLET_REPORT_CONFIGURATION_CHANGE,
+            event_action=EventAction.APPLET_REPORT_UPDATE,
             user_id=user.id,
             curious_applet_id=[applet_id],
             **http_audit_fields(request),
@@ -514,7 +514,7 @@ async def applet_set_data_retention(
     except BaseError as e:
         await log(
             AuditEvent(
-                event_action=EventAction.APPLET_DATA_RETENTION_CHANGE,
+                event_action=EventAction.APPLET_RETENTION_UPDATE,
                 user_id=user.id,
                 curious_applet_id=[applet_id],
                 **http_audit_fields(request, e),
@@ -524,7 +524,7 @@ async def applet_set_data_retention(
 
     await log(
         AuditEvent(
-            event_action=EventAction.APPLET_DATA_RETENTION_CHANGE,
+            event_action=EventAction.APPLET_RETENTION_UPDATE,
             user_id=user.id,
             curious_applet_id=[applet_id],
             **http_audit_fields(request),

@@ -1457,7 +1457,7 @@ class TestSubjects(BaseTest):
         assert response.status_code == http.HTTPStatus.OK
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
-        assert event.event_action == EventAction.APPLET_MEMBER_REMOVE
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
@@ -1470,6 +1470,6 @@ class TestSubjects(BaseTest):
         assert response.status_code == http.HTTPStatus.NOT_FOUND
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
-        assert event.event_action == EventAction.APPLET_MEMBER_REMOVE
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_id == tom.id

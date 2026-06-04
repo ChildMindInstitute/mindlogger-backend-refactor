@@ -1500,7 +1500,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
-        assert event.event_action == EventAction.APPLET_MEMBER_REMOVE
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.user_target_id == lucy.id
@@ -1526,7 +1526,7 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
-        assert event.event_action == EventAction.APPLET_MEMBER_ROLE_CHANGE
+        assert event.event_action == EventAction.APPLET_ACCESS_GRANT
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.user_target_id == lucy.id

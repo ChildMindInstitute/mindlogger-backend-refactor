@@ -1492,7 +1492,7 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.OK
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
-        assert event.event_action == EventAction.APPLET_REPORT_CONFIGURATION_CHANGE
+        assert event.event_action == EventAction.APPLET_REPORT_UPDATE
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
@@ -1510,7 +1510,7 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.OK
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
-        assert event.event_action == EventAction.APPLET_DATA_RETENTION_CHANGE
+        assert event.event_action == EventAction.APPLET_RETENTION_UPDATE
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
