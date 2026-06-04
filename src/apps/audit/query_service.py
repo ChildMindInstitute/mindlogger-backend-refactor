@@ -45,8 +45,12 @@ class AuditQueryService:
 
         timestamp_range: dict = {}
         if from_datetime is not None:
+            if from_datetime.tzinfo is None:
+                from_datetime = from_datetime.replace(tzinfo=datetime.timezone.utc)
             timestamp_range["gte"] = from_datetime.isoformat()
         if to_datetime is not None:
+            if to_datetime.tzinfo is None:
+                to_datetime = to_datetime.replace(tzinfo=datetime.timezone.utc)
             timestamp_range["lt"] = to_datetime.isoformat()
         if timestamp_range:
             filters.append({"range": {"@timestamp": timestamp_range}})

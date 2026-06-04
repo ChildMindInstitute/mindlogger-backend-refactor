@@ -1,4 +1,5 @@
 import uuid
+from datetime import timezone
 
 from fastapi import Depends, Request
 
@@ -31,6 +32,12 @@ async def applet_audit_export(
 
         from_datetime = query_params.filters.get("from_datetime")
         to_datetime = query_params.filters.get("to_datetime")
+
+        if from_datetime and from_datetime.tzinfo is None:
+            from_datetime = from_datetime.replace(tzinfo=timezone.utc)
+        if to_datetime and to_datetime.tzinfo is None:
+            to_datetime = to_datetime.replace(tzinfo=timezone.utc)
+
         if from_datetime and to_datetime and from_datetime > to_datetime:
             raise InvalidAuditDateRangeError(path=["fromDatetime"])
 
