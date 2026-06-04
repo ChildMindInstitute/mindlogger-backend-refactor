@@ -29,15 +29,15 @@ async def applet_audit_export(
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_audit_export_access(applet_id)
 
-        from_date = query_params.filters.get("from_date")
-        to_date = query_params.filters.get("to_date")
-        if from_date and to_date and from_date > to_date:
-            raise InvalidAuditDateRangeError(path=["fromDate"])
+        from_datetime = query_params.filters.get("from_datetime")
+        to_datetime = query_params.filters.get("to_datetime")
+        if from_datetime and to_datetime and from_datetime > to_datetime:
+            raise InvalidAuditDateRangeError(path=["fromDatetime"])
 
         events, total = await AuditQueryService().search_applet_events(
             applet_id,
-            from_date=from_date,
-            to_date=to_date,
+            from_datetime=from_datetime,
+            to_datetime=to_datetime,
             page=query_params.page,
             limit=query_params.limit,
         )

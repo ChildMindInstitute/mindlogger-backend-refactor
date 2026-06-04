@@ -55,7 +55,7 @@ async def test_invalid_date_range_returns_422(client: TestClient, tom: User, app
     client.login(tom)
     response = await client.get(
         URL.format(applet_id=applet_one.id),
-        dict(fromDate="2026-05-10", toDate="2026-05-01"),
+        dict(fromDatetime="2026-05-10", toDatetime="2026-05-01"),
     )
     assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
@@ -91,7 +91,7 @@ async def test_date_range_reaches_opensearch_query(client: TestClient, tom: User
     client.login(tom)
     response = await client.get(
         URL.format(applet_id=applet_one.id),
-        dict(fromDate="2026-05-01", toDate="2026-05-07"),
+        dict(fromDatetime="2026-05-01", toDatetime="2026-05-07"),
     )
     assert response.status_code == http.HTTPStatus.OK
 
@@ -99,7 +99,7 @@ async def test_date_range_reaches_opensearch_query(client: TestClient, tom: User
     range_clause = next(f for f in filters if "range" in f)
     assert range_clause["range"]["@timestamp"] == {
         "gte": "2026-05-01T00:00:00",
-        "lte": "2026-05-07T00:00:00",
+        "lt": "2026-05-07T00:00:00",
     }
 
 

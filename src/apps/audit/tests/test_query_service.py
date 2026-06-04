@@ -40,8 +40,8 @@ async def test_query_filters_by_applet_and_dates(fresh_service: AuditQueryServic
 
     await fresh_service.search_applet_events(
         applet_id,
-        from_date=from_dt,
-        to_date=to_dt,
+        from_datetime=from_dt,
+        to_datetime=to_dt,
     )
 
     body = OpenSearchClientTest.last_search_body
@@ -51,7 +51,7 @@ async def test_query_filters_by_applet_and_dates(fresh_service: AuditQueryServic
         "range": {
             "@timestamp": {
                 "gte": "2026-05-01T14:30:00+00:00",
-                "lte": "2026-05-07T18:00:00+00:00",
+                "lt": "2026-05-07T18:00:00+00:00",
             }
         }
     }

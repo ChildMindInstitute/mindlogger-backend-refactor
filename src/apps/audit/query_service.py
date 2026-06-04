@@ -17,12 +17,12 @@ class AuditQueryService:
         self,
         applet_id: uuid.UUID,
         *,
-        from_date: datetime.datetime | None = None,
-        to_date: datetime.datetime | None = None,
+        from_datetime: datetime.datetime | None = None,
+        to_datetime: datetime.datetime | None = None,
         page: int = 1,
         limit: int = DEFAULT_PAGE_SIZE,
     ) -> tuple[list[AuditEvent], int]:
-        query = self._build_query(applet_id, from_date, to_date)
+        query = self._build_query(applet_id, from_datetime, to_datetime)
         response = await self._client.search(
             self._index,
             query=query,
@@ -38,16 +38,16 @@ class AuditQueryService:
     @staticmethod
     def _build_query(
         applet_id: uuid.UUID,
-        from_date: datetime.datetime | None,
-        to_date: datetime.datetime | None,
+        from_datetime: datetime.datetime | None,
+        to_datetime: datetime.datetime | None,
     ) -> dict:
         filters: list[dict] = [{"term": {"curious.applet_id": str(applet_id)}}]
 
         timestamp_range: dict = {}
-        if from_date is not None:
-            timestamp_range["gte"] = from_date.isoformat()
-        if to_date is not None:
-            timestamp_range["lte"] = to_date.isoformat()
+        if from_datetime is not None:
+            timestamp_range["gte"] = from_datetime.isoformat()
+        if to_datetime is not None:
+            timestamp_range["lt"] = to_datetime.isoformat()
         if timestamp_range:
             filters.append({"range": {"@timestamp": timestamp_range}})
 
