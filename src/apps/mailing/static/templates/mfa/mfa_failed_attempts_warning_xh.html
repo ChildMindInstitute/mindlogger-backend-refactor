@@ -1,0 +1,21 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Mholo {{first_name}}, </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #f57c00; font-weight: bold;"> Sichonge iinzame ezininzi ezisileleyo zokuqinisekisa kwi-akhawunti yakho. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> <strong>Iinzame ezingaphumelelanga:</strong> {{failed_attempts}} of {{max_attempts}} ubuninzi bemizamo </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> <strong>Iinzame eziseleyo:</strong> {{remaining_attempts}} </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;"> I-akhawunti yakho iya kuvalwa okwethutyana ukuba uyafikelela {{max_attempts}} iinzame aziphumelelanga. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Ukuba nguwe lo, nceda: </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> • Qinisekisa ukuba usebenzisa ikhowudi yokuqinisekisa eyiyo ye-athenticator app yakho </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> • Sebenzisa ikhowudi yokubuyisela ukuba awukwazi ukufikelela ye-athenticator app yakho </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Ukuba khange uzame ukungena, kukho umntu ozama ukufikelela kwi-akhawunti yakho. Cinga ngokutshintsha iphasiwedi yakho. </td>
+      </tr> {% include 'blocks/team_info_xh.html' %} </table> {% include 'footers/footer_info_xh.html' %} </body>
+</html>

@@ -1,0 +1,23 @@
+<html style="max-width: 450px; line-height: 2.1rem; font-size: 10px" lang="en" dir="ltr">
+  <body> {% include 'header.html' %} <table style="padding: 0; font-size: 1.4rem"> <tr>
+        <td style="padding-bottom: 16px"> Mholo {{first_name}}, </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px; color: #d32f2f; font-weight: bold;"> I-akhawunti yakho itshixiwe ngenxa yeenzame ezininzi ezingaphumelelanga zokuqinisekisa. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px">
+          <strong>Iinkcukacha:</strong>
+        </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> • Iinzame aziphumelelanga: {{failed_attempts}} </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 8px"> • Isizathu: {{lockout_reason}} </td>
+      </tr> <tr>
+        <td style="padding-left: 20px; padding-bottom: 16px"> • Itshixiwe: {{locked_at}} </td>
+      </tr> {% if lockout_ttl_seconds %} <tr>
+        <td style="padding-bottom: 16px"> I-akhawunti yakho iya kuvulwa ngokuzenzekelayo malunga {{(lockout_ttl_seconds / 60)|int}} imizuzu. </td>
+      </tr> {% endif %} <tr>
+        <td style="padding-bottom: 16px"> Ukuba khange uzame ukungena, kukho umntu ozama ukufikelela kwi-akhawunti yakho. Sicebisa ukuba utshintshe igama eliyimfihlo ngoko nangoko emva kokuba i-akhawunti yakho ivuliwe. </td>
+      </tr> <tr>
+        <td style="padding-bottom: 16px"> Ukuba ufuna uncedo olukhawulezileyo, nceda uqhagamshelane neqela lethu lenkxaso ku <a href="mailto:{{support_email}}">{{support_email}}</a>. </td>
+      </tr> {% include 'blocks/team_info_xh.html' %} </table> {% include 'footers/footer_info_xh.html' %} </body>
+</html>
