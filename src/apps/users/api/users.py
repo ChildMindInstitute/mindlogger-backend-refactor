@@ -676,7 +676,7 @@ async def user_recovery_codes_view_initiate(
     )
 
 
-async def user_recovery_codes_view_verify(
+async def user_recovery_codes_view_verify(  # noqa: C901
     request: Request,
     schema: RecoveryCodesViewVerifyRequest = Body(...),
     user: User = Depends(get_current_user),
@@ -790,7 +790,20 @@ async def user_recovery_codes_view_verify(
                     RecoveryCodeAlreadyUsedError,
                     RecoveryCodesNotFoundError,
                     RecoveryCodeNotFoundError,
-                ):
+                ) as e:
+                    # In this fallback path we cannot tell from the error whether the user
+                    # intended a TOTP code or a recovery code. Gate failure audit on input
+                    # shape: only emit when the input looks like a recovery code.
+                    if is_recovery_code(schema.code):
+                        await log(
+                            AuditEvent(
+                                event_action=EventAction.USER_MFA_RECOVERY_USE,
+                                user_id=token_user_id,
+                                user_target_id=token_user_id,
+                                **http_audit_fields(request, e),
+                            )
+                        )
+
                     # Both TOTP and recovery code failed - increment counters and raise error
                     new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
                     global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
@@ -907,6 +920,18 @@ async def user_recovery_codes_view_verify(
             )
         )
         raise
+
+    # If a recovery code was consumed during verification, log it now that the
+    # atomic block has committed (avoids false-positive SUCCESS on rollback).
+    if verification_method == "recovery_code":
+        await log(
+            AuditEvent(
+                event_action=EventAction.USER_MFA_RECOVERY_USE,
+                user_id=user.id,
+                user_target_id=user.id,
+                **http_audit_fields(request),
+            )
+        )
 
     await log(
         AuditEvent(
