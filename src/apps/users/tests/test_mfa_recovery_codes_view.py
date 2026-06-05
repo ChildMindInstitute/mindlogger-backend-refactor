@@ -105,6 +105,93 @@ class TestRecoveryCodesView:
             assert code_val[5] == "-"
             assert re.match(r"^[A-Z0-9]{5}-[A-Z0-9]{5}$", code_val)
 
+    async def test_view_verify_with_valid_recovery_code(self, client: TestClient, user: User, mocker: MockerFixture):
+        """Test that valid recovery code is accepted."""
+        client.login(user)
+
+        # Step 1: Setup MFA (this generates recovery codes)
+        init_resp = await client.post(self.totp_initiate_url)
+        uri = init_resp.json()["result"]["provisioningUri"]
+        secret = uri.split("secret=")[1].split("&")[0]
+
+        totp = pyotp.TOTP(secret)
+        code = totp.now()
+
+        totp_verify_resp = await client.post(self.totp_verify_url, data={"code": code})
+        recovery_codes = totp_verify_resp.json()["result"]["recoveryCodes"]
+
+        # Step 2: Initiate view flow
+        initiate_resp = await client.post(self.recovery_codes_view_initiate_url)
+        mfa_token = initiate_resp.json()["result"]["mfaToken"]
+
+        # Step 3: Verify with recovery code (TOTP fails, recovery code succeeds)
+        audit_log = mocker.patch("apps.users.api.users.log")
+        verify_resp = await client.post(
+            self.recovery_codes_view_verify_url,
+            data={"mfaToken": mfa_token, "code": recovery_codes[0]},
+        )
+
+        assert audit_log.await_count == 2
+
+        event = audit_log.call_args_list[0].args[0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_USE
+        assert event.event_outcome == EventOutcome.SUCCESS
+
+        event = audit_log.call_args_list[1].args[0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_VIEW
+        assert event.event_outcome == EventOutcome.SUCCESS
+
+        # Assertions - Verify response status
+        assert verify_resp.status_code == status.HTTP_200_OK
+
+    async def test_view_verify_invalid_recovery_code(self, client: TestClient, user: User, mocker: MockerFixture):
+        """Test that invalid recovery code is rejected."""
+        client.login(user)
+
+        # Step 1: Setup MFA (this generates recovery codes)
+        init_resp = await client.post(self.totp_initiate_url)
+        uri = init_resp.json()["result"]["provisioningUri"]
+        secret = uri.split("secret=")[1].split("&")[0]
+
+        totp = pyotp.TOTP(secret)
+        code = totp.now()
+
+        await client.post(self.totp_verify_url, data={"code": code})
+
+        # Step 2: Initiate view flow
+        initiate_resp = await client.post(self.recovery_codes_view_initiate_url)
+        mfa_token = initiate_resp.json()["result"]["mfaToken"]
+
+        # Step 3: Try to verify with invalid recovery code (TOTP and recovery code both fail)
+        audit_log = mocker.patch("apps.users.api.users.log")
+        verify_resp = await client.post(
+            self.recovery_codes_view_verify_url,
+            data={"mfaToken": mfa_token, "code": "ZZZZZ-ZZZZZ"},  # Invalid code
+        )
+
+        assert audit_log.await_count == 2
+
+        event = audit_log.call_args_list[0].args[0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_USE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.error_type == "RecoveryCodeInvalidError"
+
+        event = audit_log.call_args_list[1].args[0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_VIEW
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.error_type == "InvalidTOTPCodeError"
+
+        # Assertions - Verify response status
+        assert verify_resp.status_code == status.HTTP_400_BAD_REQUEST
+
     async def test_view_initiate_mfa_not_enabled(self, client: TestClient, user: User):
         """Test 403 error when initiating view without MFA enabled."""
         client.login(user)
