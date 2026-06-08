@@ -113,6 +113,8 @@ async def invitation_respondent_send(
                 if is_role_exist:
                     raise RespondentInvitationExist()
             except UserNotFound:
+                # Inviting an email that is not yet associated with a user is valid.
+                # Continue flow to create subject and send invitation.
                 pass
 
             subject_service = SubjectsService(session, user.id)
@@ -177,7 +179,9 @@ async def invitation_reviewer_send(
                 if is_role_exist:
                     raise ManagerInvitationExist()
             except UserNotFound:
-                pass
+                # Inviting by email is allowed even if the user does not exist yet.
+                # Continue so the invitation can be created for later acceptance/registration.
+                invited_user = None
 
             invitation: InvitationDetailForReviewer = await invitation_srv.send_reviewer_invitation(
                 applet_id, invitation_schema
@@ -234,6 +238,8 @@ async def invitation_managers_send(
                 if is_role_exist:
                     raise ManagerInvitationExist()
             except UserNotFound:
+                # Inviting emails that are not yet associated with a user is allowed.
+                # In this case there is no existing user-role assignment to validate.
                 pass
 
             invitation = await invitation_srv.send_managers_invitation(applet_id, invitation_schema)
@@ -432,6 +438,7 @@ async def invitation_subject_send(
                 if is_role_exist:
                     raise RespondentInvitationExist()
             except UserNotFound:
+                # Expected: invitee may not have an account yet; proceed with invitation flow.
                 pass
 
             invitation_schema = InvitationRespondentRequest(
