@@ -155,9 +155,7 @@ async def create_shell_account(
         result = await create_subject(
             user=user,
             session=session,
-            schema=SubjectCreateRequest(
-                applet_id=applet_id, **subject_schema.model_dump(by_alias=False)
-            ),
+            schema=SubjectCreateRequest(applet_id=applet_id, **subject_schema.model_dump(by_alias=False)),
         )
     except BaseError as e:
         await log(
