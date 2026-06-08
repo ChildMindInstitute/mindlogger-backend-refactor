@@ -155,6 +155,7 @@ def shell_create_data():
         secretUserId="secretUserId",
         nickname="nickname",
         tag="tag",
+        email="shell@example.com",
     )
 
 
@@ -1660,4 +1661,5 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == bob.id
         assert event.curious_applet_id == [applet_four.id]
+        assert event.user_target_email == "shell@example.com"
         assert event.user_target_roles == ["shell-account"]

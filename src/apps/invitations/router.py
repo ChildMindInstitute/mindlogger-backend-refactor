@@ -27,7 +27,11 @@ from apps.invitations.domain import (
     PrivateInvitationResponse,
     ShellAccountCreateRequest,
 )
-from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE, Response, ResponseMulti
+from apps.shared.domain.response import (
+    DEFAULT_OPENAPI_RESPONSE,
+    Response,
+    ResponseMulti,
+)
 from apps.shared.exception import BaseError
 from apps.subjects.api import create_subject
 from apps.subjects.domain import SubjectCreateRequest, SubjectCreateResponse
@@ -151,7 +155,9 @@ async def create_shell_account(
         result = await create_subject(
             user=user,
             session=session,
-            schema=SubjectCreateRequest(applet_id=applet_id, **subject_schema.model_dump(by_alias=False)),
+            schema=SubjectCreateRequest(
+                applet_id=applet_id, **subject_schema.model_dump(by_alias=False)
+            ),
         )
     except BaseError as e:
         await log(
@@ -159,6 +165,7 @@ async def create_shell_account(
                 event_action=EventAction.APPLET_INVITE_INITIATE,
                 user_id=user.id,
                 curious_applet_id=[applet_id],
+                user_target_email=subject_schema.email,
                 user_target_roles=["shell-account"],
                 **http_audit_fields(request, e),
             )
@@ -170,6 +177,7 @@ async def create_shell_account(
             event_action=EventAction.APPLET_INVITE_INITIATE,
             user_id=user.id,
             curious_applet_id=[applet_id],
+            user_target_email=subject_schema.email,
             user_target_roles=["shell-account"],
             **http_audit_fields(request),
         )
