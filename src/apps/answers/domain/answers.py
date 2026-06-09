@@ -458,6 +458,7 @@ class Reviewer(InternalModel):
 
 class AnswerReview(InternalModel):
     id: uuid.UUID
+    answer_id: uuid.UUID
     reviewer_public_key: str | None = None
     answer: str | None = None
     item_ids: Annotated[list[str], Field(default_factory=list)]
@@ -519,6 +520,7 @@ class NoteOwner(InternalModel):
 
 class AnswerNoteDetail(InternalModel):
     id: uuid.UUID
+    answer_id: uuid.UUID
     user: NoteOwner
     note: str
     created_at: datetime.datetime
