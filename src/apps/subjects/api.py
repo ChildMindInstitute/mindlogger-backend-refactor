@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime, timedelta
-from typing import TypedDict
 
 from fastapi import Body, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -396,11 +395,7 @@ async def get_target_subjects_by_respondent(
             respondent_subject_id=respondent_subject_id, activity_or_flow_id=activity_or_flow_id
         )
 
-        class SubjectInfo(TypedDict):
-            currently_assigned: bool
-            submission_count: int
-
-        subject_info: dict[uuid.UUID, SubjectInfo] = {}
+        subject_info: dict[uuid.UUID, dict[str, bool | int]] = {}
         for subject_id, submission_count in submission_data:
             subject_info[subject_id] = {"currently_assigned": False, "submission_count": submission_count}
 

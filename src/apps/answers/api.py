@@ -628,11 +628,11 @@ async def applet_submission_assessment_retrieve(
     try:
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-        answer = await AnswerService(session, user.id, answer_session).get_assessment_by_submit_id(
-            applet_id, submission_id
-        )
+        service = AnswerService(session, user.id, answer_session)
+        answer = await service.get_assessment_by_submit_id(applet_id, submission_id)
         if not answer:
             raise NotFoundError()
+        last_answer = await service.get_submission_last_answer(submission_id)
     except BaseError as e:
         await log(
             AuditEvent(
@@ -650,6 +650,7 @@ async def applet_submission_assessment_retrieve(
             event_action=EventAction.APPLET_ANSWER_ASSESSMENT_VIEW,
             curious_applet_id=[applet_id],
             curious_submit_id=[submission_id],
+            curious_answer_id=[last_answer.id] if last_answer else None,
             **http_audit_fields(request),
         )
     )

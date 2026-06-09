@@ -245,6 +245,7 @@ async def workspace_respondents_list(
 ) -> ResponseMultiOrdering[PublicWorkspaceRespondent]:
     respondents: list[WorkspaceRespondent] = []
     applet_ids: list[uuid.UUID] = []
+    subjects_by_applet: dict[uuid.UUID, list[uuid.UUID]] = {}
     try:
         service = WorkspaceService(session, user.id)
         await service.exists_by_owner_id(owner_id)
@@ -268,6 +269,11 @@ async def workspace_respondents_list(
         subject_ids = [
             r_detail.subject_id for respondent in respondents if respondent.details for r_detail in respondent.details
         ]
+        subjects_by_applet = {}
+        for respondent in respondents:
+            if respondent.details:
+                for r_detail in respondent.details:
+                    subjects_by_applet.setdefault(r_detail.applet_id, []).append(r_detail.subject_id)
         if applet_ids:
             for applet_id in set(applet_ids):
                 await log(
@@ -275,7 +281,7 @@ async def workspace_respondents_list(
                         user_id=user.id,
                         event_action=EventAction.APPLET_SUBJECT_VIEW,
                         curious_applet_id=[applet_id],
-                        curious_subject_id=subject_ids or None,
+                        curious_subject_id=subjects_by_applet.get(applet_id),
                         **http_audit_fields(request, e),
                     )
                 )
@@ -290,7 +296,7 @@ async def workspace_respondents_list(
             )
         raise
 
-    subjects_by_applet: dict[uuid.UUID, list[uuid.UUID]] = {}
+    subjects_by_applet = {}
     for respondent in respondents:
         if respondent.details:
             for r_detail in respondent.details:
