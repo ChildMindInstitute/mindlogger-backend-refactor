@@ -76,7 +76,7 @@ def format_recovery_code(code: str) -> str:
         str: Formatted code with hyphen (e.g., "A3F7K-9B2Q5")
     """
     if len(code) != LENGTH:
-        raise ValueError(f"Code must be {settings.mfa.recovery_code_length} characters")
+        raise ValueError(f"Code must be {LENGTH} characters")
 
     # Split in middle and add hyphen
     return f"{code[:MID]}-{code[MID:]}"
