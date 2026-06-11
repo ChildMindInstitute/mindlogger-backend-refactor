@@ -1,8 +1,7 @@
 import uuid
 from copy import deepcopy
 
-from fastapi import Body, Depends, Query
-from starlette.requests import Request
+from fastapi import Body, Depends, Query, Request
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session_by_owner_id
 from apps.answers.service import AnswerService
