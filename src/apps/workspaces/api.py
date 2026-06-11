@@ -478,25 +478,27 @@ async def workspace_managers_applet_access_set(
 
             await UserAccessService(session, user.id).set(owner_id, manager_id, accesses)
     except BaseError as e:
-        for applet_id in applet_ids:
+        for access in accesses.accesses:
             await log(
                 AuditEvent(
                     event_action=EventAction.APPLET_ACCESS_GRANT,
                     user_id=user.id,
                     user_target_id=manager_id,
-                    curious_applet_id=[applet_id],
+                    user_target_roles=list(access.roles),
+                    curious_applet_id=[access.applet_id],
                     **http_audit_fields(request, e),
                 )
             )
         raise
 
-    for applet_id in applet_ids:
+    for access in accesses.accesses:
         await log(
             AuditEvent(
                 event_action=EventAction.APPLET_ACCESS_GRANT,
                 user_id=user.id,
                 user_target_id=manager_id,
-                curious_applet_id=[applet_id],
+                user_target_roles=list(access.roles),
+                curious_applet_id=[access.applet_id],
                 **http_audit_fields(request),
             )
         )
