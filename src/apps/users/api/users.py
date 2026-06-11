@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import Body, Depends, HTTPException, Query, Request
-from fastapi import status as http_status
+from fastapi import Body, Depends, Query, Request
 from fastapi.responses import Response as FastAPIResponse
 
 from apps.audit import AuditEvent, EventAction, http_audit_fields, log
@@ -48,9 +47,12 @@ from apps.users.errors import (
     MFAAlreadyEnabledError,
     MFANotEnabledError,
     MFASessionPurposeMismatchError,
+    MFATokenUserMismatchError,
     RecoveryCodeAlreadyUsedError,
     RecoveryCodeInvalidError,
     RecoveryCodeNotFoundError,
+    RecoveryCodesDownloadTokenInvalidError,
+    RecoveryCodesDownloadTokenUserMismatchError,
     RecoveryCodesNotFoundError,
 )
 from apps.users.services.totp import totp_service
@@ -337,9 +339,7 @@ async def user_mfa_totp_disable_verify(
             logger.warning(
                 f"MFA disable attempted with mismatched user current_user={user.id} token_user={token_user_id}"
             )
-            raise HTTPException(
-                status_code=http_status.HTTP_403_FORBIDDEN, detail="This MFA token belongs to a different user"
-            )
+            raise MFATokenUserMismatchError()
 
         # Step 3: Validate session purpose is "disable"
         if purpose != "disable":
@@ -549,9 +549,7 @@ async def user_mfa_totp_disable_confirm(
             logger.warning(
                 f"MFA disable confirm attempted with mismatched user current_user={user.id} token_user={token_user_id}"
             )
-            raise HTTPException(
-                status_code=http_status.HTTP_403_FORBIDDEN, detail="This confirmation token belongs to a different user"
-            )
+            raise MFATokenUserMismatchError("This confirmation token belongs to a different user.")
 
         # Step 3: Validate session purpose is "disable_confirmed"
         if purpose != "disable_confirmed":
@@ -708,9 +706,7 @@ async def user_recovery_codes_view_verify(  # noqa: C901
             logger.warning(
                 f"Recovery codes view attempted with mismatched user current_user={user.id} token_user={token_user_id}"
             )
-            raise HTTPException(
-                status_code=http_status.HTTP_403_FORBIDDEN, detail="This MFA token belongs to a different user"
-            )
+            raise MFATokenUserMismatchError()
 
         # Step 3: Validate session purpose is "view_recovery_codes"
         if purpose != "view_recovery_codes":
@@ -980,17 +976,12 @@ async def user_download_recovery_codes(
             token_user_id = AuthenticationService.validate_download_recovery_codes_token(download_token)
         except Exception as e:
             logger.warning(f"Invalid download token user_id={user.id} error={str(e)}")
-            raise HTTPException(
-                status_code=http_status.HTTP_403_FORBIDDEN,
-                detail="Invalid or expired download token. Please verify your TOTP code again to get a new token.",
-            )
+            raise RecoveryCodesDownloadTokenInvalidError()
 
         # Step 2: SECURITY - Validate current user matches token's user
         if user.id != token_user_id:
             logger.warning(f"Download token user mismatch current_user={user.id} token_user={token_user_id}")
-            raise HTTPException(
-                status_code=http_status.HTTP_403_FORBIDDEN, detail="This download token belongs to a different user"
-            )
+            raise RecoveryCodesDownloadTokenUserMismatchError()
 
         # Step 3: Refetch user to ensure latest MFA state
         fresh_user = await UsersCRUD(session).get_by_id(user.id)
