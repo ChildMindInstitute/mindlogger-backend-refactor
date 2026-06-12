@@ -218,21 +218,46 @@ async def workspace_applet_respondent_update(
 
 
 async def workspace_remove_manager_access(
+    request: Request,
     user: User = Depends(get_current_user),
     schema: RemoveManagerAccess = Body(...),
     session=Depends(get_session),
 ):
     """Remove manager access from a specific user."""
-    async with atomic(session):
-        await UserAccessService(session, user.id).remove_manager_access(schema)
-        # Get applets where user still have access
-        ex_admin = await UserService(session).get(schema.user_id)
-        if ex_admin:
-            management_applets = await UserAccessService(session, schema.user_id).get_management_applets(
-                schema.applet_ids
+    try:
+        async with atomic(session):
+            await UserAccessService(session, user.id).remove_manager_access(schema)
+            # Get applets where user still have access
+            ex_admin = await UserService(session).get(schema.user_id)
+            if ex_admin:
+                management_applets = await UserAccessService(session, schema.user_id).get_management_applets(
+                    schema.applet_ids
+                )
+                ids_to_remove = set(schema.applet_ids) - set(management_applets)
+                await InvitationsService(session, ex_admin).delete_for_managers(list(ids_to_remove))
+    except BaseError as e:
+        for applet_id in schema.applet_ids:
+            await log(
+                AuditEvent(
+                    event_action=EventAction.APPLET_ACCESS_REVOKE,
+                    user_id=user.id,
+                    user_target_id=schema.user_id,
+                    curious_applet_id=[applet_id],
+                    **http_audit_fields(request, e),
+                )
             )
-            ids_to_remove = set(schema.applet_ids) - set(management_applets)
-            await InvitationsService(session, ex_admin).delete_for_managers(list(ids_to_remove))
+        raise
+
+    for applet_id in schema.applet_ids:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_ACCESS_REVOKE,
+                user_id=user.id,
+                user_target_id=schema.user_id,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request),
+            )
+        )
 
 
 async def workspace_respondents_list(
@@ -525,17 +550,45 @@ async def workspace_users_applet_access_list(
 async def workspace_managers_applet_access_set(
     owner_id: uuid.UUID,
     manager_id: uuid.UUID,
+    request: Request,
     accesses: ManagerAccesses = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
-    async with atomic(session):
-        await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
-        await AppletService(session, user.id).exist_by_ids([access.applet_id for access in accesses.accesses])
-        await CheckAccessService(session, user.id).check_workspace_manager_accesses_access(owner_id)
-        await UserService(session).exists_by_id(manager_id)
+    applet_ids = [access.applet_id for access in accesses.accesses]
+    try:
+        async with atomic(session):
+            await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+            await AppletService(session, user.id).exist_by_ids(applet_ids)
+            await CheckAccessService(session, user.id).check_workspace_manager_accesses_access(owner_id)
+            await UserService(session).exists_by_id(manager_id)
 
-        await UserAccessService(session, user.id).set(owner_id, manager_id, accesses)
+            await UserAccessService(session, user.id).set(owner_id, manager_id, accesses)
+    except BaseError as e:
+        for access in accesses.accesses:
+            await log(
+                AuditEvent(
+                    event_action=EventAction.APPLET_ACCESS_GRANT,
+                    user_id=user.id,
+                    user_target_id=manager_id,
+                    user_target_roles=list(access.roles),
+                    curious_applet_id=[access.applet_id],
+                    **http_audit_fields(request, e),
+                )
+            )
+        raise
+
+    for access in accesses.accesses:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_ACCESS_GRANT,
+                user_id=user.id,
+                user_target_id=manager_id,
+                user_target_roles=list(access.roles),
+                curious_applet_id=[access.applet_id],
+                **http_audit_fields(request),
+            )
+        )
 
 
 async def workspace_applet_get_respondent(

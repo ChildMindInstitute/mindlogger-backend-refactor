@@ -3,7 +3,9 @@ import uuid
 from fastapi import Body, Depends
 from fastapi.routing import APIRouter
 from starlette import status
+from starlette.requests import Request
 
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.invitations.api import (
     invitation_accept,
@@ -25,7 +27,12 @@ from apps.invitations.domain import (
     PrivateInvitationResponse,
     ShellAccountCreateRequest,
 )
-from apps.shared.domain.response import DEFAULT_OPENAPI_RESPONSE, Response, ResponseMulti
+from apps.shared.domain.response import (
+    DEFAULT_OPENAPI_RESPONSE,
+    Response,
+    ResponseMulti,
+)
+from apps.shared.exception import BaseError
 from apps.subjects.api import create_subject
 from apps.subjects.domain import SubjectCreateRequest, SubjectCreateResponse
 from apps.users.domain import User
@@ -139,15 +146,41 @@ router.post("/private/{key}/accept")(private_invitation_accept)
 )
 async def create_shell_account(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     subject_schema: ShellAccountCreateRequest = Body(...),
     session=Depends(get_session),
 ):
-    return await create_subject(
-        user=user,
-        session=session,
-        schema=SubjectCreateRequest(applet_id=applet_id, **subject_schema.model_dump(by_alias=False)),
+    try:
+        result = await create_subject(
+            user=user,
+            session=session,
+            schema=SubjectCreateRequest(applet_id=applet_id, **subject_schema.model_dump(by_alias=False)),
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_INVITE_INITIATE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                user_target_email=subject_schema.email,
+                user_target_roles=["shell-account"],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_INVITE_INITIATE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            user_target_email=subject_schema.email,
+            user_target_roles=["shell-account"],
+            **http_audit_fields(request),
+        )
     )
+    return result
 
 
 # Send invitation to shell account

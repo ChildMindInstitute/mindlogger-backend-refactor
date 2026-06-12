@@ -33,10 +33,6 @@ class EventAction(StrEnum):
     USER_MFA_RECOVERY_DOWNLOAD = "user:mfa:recovery:download"
     USER_MFA_RECOVERY_USE = "user:mfa:recovery:use"
 
-    # Workspace IAM
-    WORKSPACE_ACCESS_GRANT = "workspace:access:grant"
-    WORKSPACE_ACCESS_REVOKE = "workspace:access:revoke"
-
     # Applet IAM
     APPLET_CREATE = "applet:create"
     APPLET_DELETE = "applet:delete"
@@ -47,6 +43,10 @@ class EventAction(StrEnum):
     APPLET_INVITE_INITIATE = "applet:invite:initiate"
     APPLET_INVITE_ACCEPT = "applet:invite:accept"
     APPLET_INVITE_DECLINE = "applet:invite:decline"
+    APPLET_ACCESS_GRANT = "applet:access:grant"
+    APPLET_ACCESS_REVOKE = "applet:access:revoke"
+    APPLET_RETENTION_UPDATE = "applet:retention:update"
+    APPLET_REPORT_UPDATE = "applet:report:update"
 
     # Applet data access
     APPLET_SUBJECT_VIEW = "applet:subject:view"

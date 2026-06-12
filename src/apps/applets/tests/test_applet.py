@@ -28,6 +28,7 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.base import AppletReportConfigurationBase, Encryption
 from apps.applets.errors import AppletAlreadyExist, AppletVersionNotFoundError
 from apps.applets.service.applet import AppletService
+from apps.audit.enums import EventAction, EventOutcome
 from apps.shared.enums import Language
 from apps.shared.exception import NotFoundError
 from apps.shared.test.client import TestClient
@@ -1366,3 +1367,150 @@ class TestApplet:
         assert response.status_code == http.HTTPStatus.OK, response.json()
         data = response.json()["result"]
         assert data["displayName"] == "Updated Name"
+
+    # ── Audit event tests ──
+
+    async def test_create_applet_audit_event(
+        self, client: TestClient, tom: User, applet_minimal_data: AppletCreate, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.applets.api.applets.log")
+        client.login(tom)
+        response = await client.post(
+            self.applet_create_url.format(owner_id=tom.id),
+            data=applet_minimal_data,
+        )
+        assert response.status_code == http.HTTPStatus.CREATED
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_CREATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [uuid.UUID(response.json()["result"]["id"])]
+
+    async def test_create_applet_audit_event_failure(
+        self, client: TestClient, lucy: User, bob: User, applet_minimal_data: AppletCreate, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.applets.api.applets.log")
+        client.login(lucy)
+        response = await client.post(
+            self.applet_create_url.format(owner_id=bob.id),
+            data=applet_minimal_data,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_CREATE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == lucy.id
+
+    async def test_delete_applet_audit_event(
+        self, client: TestClient, tom: User, applet_one: AppletFull, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.applets.api.applets.log")
+        client.login(tom)
+        response = await client.delete(
+            self.applet_detail_url.format(pk=applet_one.id),
+        )
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_DELETE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
+
+    async def test_delete_applet_audit_event_failure(
+        self, client: TestClient, tom: User, uuid_zero: uuid.UUID, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.applets.api.applets.log")
+        client.login(tom)
+        response = await client.delete(
+            self.applet_detail_url.format(pk=uuid_zero),
+        )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_DELETE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == tom.id
+
+    async def test_encryption_update_audit_event(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one_no_encryption: AppletFull,
+        encryption: Encryption,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.applets.api.applets.log")
+        client.login(tom)
+        response = await client.post(
+            self.applet_set_encryption_url.format(pk=applet_one_no_encryption.id),
+            data=encryption,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_ENCRYPTION_UPDATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one_no_encryption.id]
+
+    async def test_encryption_update_audit_event_failure(
+        self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.applets.api.applets.log")
+        client.login(tom)
+        response = await client.post(
+            self.applet_set_encryption_url.format(pk=applet_one.id),
+            data=encryption,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_ENCRYPTION_UPDATE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == tom.id
+
+    async def test_report_configuration_audit_event(
+        self, client: TestClient, tom: User, applet_one: AppletFull, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.applets.api.applets.log")
+        client.login(tom)
+        report_configuration = dict(
+            report_server_ip="ipaddress",
+            report_public_key="public key",
+            report_recipients=["recipient1"],
+            report_include_user_id=True,
+            report_include_case_id=True,
+            report_email_body="body",
+        )
+        response = await client.post(
+            self.applet_report_config_url.format(pk=applet_one.id),
+            report_configuration,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_REPORT_UPDATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
+
+    async def test_data_retention_audit_event(
+        self, client: TestClient, tom: User, applet_one: AppletFull, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.applets.api.applets.log")
+        client.login(tom)
+        data_retention = dict(period=30, retention="days")
+        response = await client.post(
+            f"{self.applet_list_url}/{applet_one.id}/retentions",
+            data_retention,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_RETENTION_UPDATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]

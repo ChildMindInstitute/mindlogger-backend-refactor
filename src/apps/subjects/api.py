@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from fastapi import Body, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.requests import Request
 
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_answer_session_by_subject
@@ -184,43 +185,72 @@ async def update_subject(
 
 async def delete_subject(
     subject_id: uuid.UUID,
+    request: Request,
     params: SubjectDeleteRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     arbitrary_session: AsyncSession | None = Depends(get_answer_session_by_subject),
 ):
-    subject_srv = SubjectsService(session, user.id)
-    subject = await subject_srv.get(subject_id)
-    if not subject:
-        raise NotFoundError()
-    # Check that user has right on applet
-    await UserAccessService(session, user.id).validate_subject_delete_access(subject.applet_id)
-    async with atomic(session):
-        if params.delete_answers:
-            # Remove subject and answers
-            await SubjectsService(session, user.id).delete_hard(subject.id)
-            async with atomic(arbitrary_session):
-                await AnswerService(
-                    user_id=user.id,
-                    session=session,
-                    arbitrary_session=arbitrary_session,
-                ).delete_by_subject(subject_id)
-        else:
-            # Delete subject (soft)
-            await SubjectsService(session, user.id).delete(subject.id)
+    applet_id = None
+    target_user_id = None
+    try:
+        subject_srv = SubjectsService(session, user.id)
+        subject = await subject_srv.get(subject_id)
+        if not subject:
+            raise NotFoundError()
+        applet_id = subject.applet_id
+        target_user_id = subject.user_id
+        # Check that user has right on applet
+        await UserAccessService(session, user.id).validate_subject_delete_access(subject.applet_id)
+        async with atomic(session):
+            if params.delete_answers:
+                # Remove subject and answers
+                await SubjectsService(session, user.id).delete_hard(subject.id)
+                async with atomic(arbitrary_session):
+                    await AnswerService(
+                        user_id=user.id,
+                        session=session,
+                        arbitrary_session=arbitrary_session,
+                    ).delete_by_subject(subject_id)
+            else:
+                # Delete subject (soft)
+                await SubjectsService(session, user.id).delete(subject.id)
 
-        uaa_repository = UserAppletAccessService(session, user.id, subject.applet_id)
-        # remove pinned subject
-        await uaa_repository.unpin(pinned_user_id=subject.user_id, pinned_subject_id=subject.id)
+            uaa_repository = UserAppletAccessService(session, user.id, subject.applet_id)
+            # remove pinned subject
+            await uaa_repository.unpin(pinned_user_id=subject.user_id, pinned_subject_id=subject.id)
 
-        if subject.user_id:
-            ex_resp = await UserService(session).get(subject.user_id)
-            if ex_resp:
-                await InvitationsService(session, ex_resp).delete_for_respondents([subject.applet_id])
-            # Remove respondent role for user
-            await uaa_repository.remove_access_by_user_and_applet_to_role(
-                subject.user_id, subject.applet_id, Role.RESPONDENT
+            if subject.user_id:
+                ex_resp = await UserService(session).get(subject.user_id)
+                if ex_resp:
+                    await InvitationsService(session, ex_resp).delete_for_respondents([subject.applet_id])
+                # Remove respondent role for user
+                await uaa_repository.remove_access_by_user_and_applet_to_role(
+                    subject.user_id, subject.applet_id, Role.RESPONDENT
+                )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_ACCESS_REVOKE,
+                user_id=user.id,
+                user_target_id=target_user_id,
+                curious_applet_id=[applet_id] if applet_id else None,
+                curious_subject_id=[subject_id],
+                **http_audit_fields(request, e),
             )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_ACCESS_REVOKE,
+            user_id=user.id,
+            user_target_id=target_user_id,
+            curious_applet_id=[applet_id],
+            curious_subject_id=[subject_id],
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def get_subject(
