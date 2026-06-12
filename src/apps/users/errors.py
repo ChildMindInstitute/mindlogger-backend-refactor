@@ -96,6 +96,14 @@ class RecoveryCodesNotFoundError(NotFoundError):
     message = _("No recovery codes found. Please enable MFA to generate recovery codes.")
 
 
+class RecoveryCodesDownloadTokenInvalidError(AccessDeniedError):
+    message = _("Invalid or expired download token. Please verify your TOTP code again to get a new token.")
+
+
+class RecoveryCodesDownloadTokenUserMismatchError(AccessDeniedError):
+    message = _("This download token belongs to a different user.")
+
+
 class RecoveryCodeInvalidError(ValidationError):
     message = _("Invalid recovery code. Please check the code and try again.")
     error_code = AuthErrorCode.MFA_INVALID_RECOVERY_CODE
@@ -111,3 +119,7 @@ class RecoveryCodeNotFoundError(NotFoundError):
 
 class MFASessionPurposeMismatchError(ValidationError):
     message = _("Invalid MFA session for this operation.")
+
+
+class MFATokenUserMismatchError(AccessDeniedError):
+    message = _("This MFA token belongs to a different user.")

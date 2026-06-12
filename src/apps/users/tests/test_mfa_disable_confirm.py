@@ -1,9 +1,11 @@
 """Tests for MFA disable confirmation endpoint (Step 3 of 3-step flow)."""
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
@@ -46,7 +48,7 @@ class TestMFADisableConfirm:
     disable_confirm_url = "/users/me/mfa/totp/disable/confirm"
 
     async def test_confirm_with_valid_token_disables_mfa(
-        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession, mocker: MockerFixture
     ):
         """Valid confirmation token successfully disables MFA."""
         client.login(user_with_mfa)
@@ -71,8 +73,17 @@ class TestMFADisableConfirm:
         assert confirmation_token != ""
 
         # Step 3: Confirm disable
+        audit_log = mocker.patch("apps.users.api.users.log")
         confirm_data = {"confirmationToken": confirmation_token}
         response = await client.post(self.disable_confirm_url, data=confirm_data)
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user_with_mfa.id
+        assert event.user_target_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_MFA_DISABLE
+        assert event.event_outcome == EventOutcome.SUCCESS
+
         assert response.status_code == status.HTTP_200_OK
 
         result = response.json()["result"]
@@ -104,7 +115,9 @@ class TestMFADisableConfirm:
         response = await client.post(self.disable_confirm_url, data=confirm_data)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    async def test_confirm_with_wrong_purpose_fails(self, client: TestClient, user_with_mfa: User):
+    async def test_confirm_with_wrong_purpose_fails(
+        self, client: TestClient, user_with_mfa: User, mocker: MockerFixture
+    ):
         """Confirmation with token from wrong purpose (not disable_confirmed) fails."""
         client.login(user_with_mfa)
 
@@ -113,8 +126,16 @@ class TestMFADisableConfirm:
         mfa_token = response.json()["result"]["mfaToken"]
 
         # Try to use initiate token in confirm endpoint
+        audit_log = mocker.patch("apps.users.api.users.log")
         confirm_data = {"confirmationToken": mfa_token}
         response = await client.post(self.disable_confirm_url, data=confirm_data)
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user_with_mfa.id
+        assert event.user_target_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_MFA_DISABLE
+        assert event.event_outcome == EventOutcome.FAILURE
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_confirm_clears_mfa_session(self, client: TestClient, user_with_mfa: User):

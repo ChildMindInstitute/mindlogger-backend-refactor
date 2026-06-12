@@ -9,6 +9,7 @@ from pytest_mock import MockFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
@@ -43,14 +44,26 @@ class TestPassword:
     password_recovery_healthcheck_url = user_router.url_path_for("password_recovery_healthcheck")
 
     async def test_password_update(
-        self, mock_reencrypt_kiq: AsyncMock, client: TestClient, user: User, user_create: UserCreate
+        self,
+        mock_reencrypt_kiq: AsyncMock,
+        client: TestClient,
+        user: User,
+        user_create: UserCreate,
+        mocker: MockFixture,
     ):
         # User get token
         client.login(user)
 
         # Password update
+        audit_log = mocker.patch("apps.users.api.password.log")
         password_update_request = PasswordUpdateRequestFactory.build(prev_password=user_create.password)
         response: HttpResponse = await client.put(self.password_update_url, data=password_update_request.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_PASSWORD_CHANGE
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == status.HTTP_200_OK
 
         # User get token with new password
@@ -67,8 +80,32 @@ class TestPassword:
         assert internal_response.status_code == status.HTTP_200_OK
         mock_reencrypt_kiq.assert_awaited_once()
 
-    async def test_password_recovery(self, client: TestClient, user_create: UserCreate, mailbox: TestMail):
+    async def test_password_update_invalid(self, client: TestClient, user: User, mocker: MockFixture):
+        # User get token
+        client.login(user)
+
+        # Password update with incorrect old password
+        audit_log = mocker.patch("apps.users.api.password.log")
+        password_update_request = PasswordUpdateRequestFactory.build(prev_password="IncorrectOldPassword123!")
+        response: HttpResponse = await client.put(self.password_update_url, data=password_update_request.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_PASSWORD_CHANGE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    async def test_password_recovery(
+        self,
+        client: TestClient,
+        user: User,
+        user_create: UserCreate,
+        mailbox: TestMail,
+        mocker: MockFixture,
+    ):
         # Password recovery
+        audit_log = mocker.patch("apps.users.api.password.log")
         password_recovery_request: PasswordRecoveryRequest = PasswordRecoveryRequest(
             email=user_create.model_dump()["email"]
         )
@@ -79,6 +116,13 @@ class TestPassword:
         )
 
         cache = RedisCache()
+
+        assert audit_log.await_count >= 1
+        event = audit_log.call_args_list[0][0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_PASSWORD_RECOVERY_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
 
         assert response.status_code == status.HTTP_201_CREATED
         keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
@@ -245,7 +289,9 @@ class TestPassword:
         assert mailbox.mails[0].subject == expected_subject
         assert f'data-language="{language}"' in mailbox.mails[0].body
 
-    async def test_password_recovery_approve(self, client: TestClient, user_create: UserCreate):
+    async def test_password_recovery_approve(
+        self, client: TestClient, user: User, user_create: UserCreate, mocker: MockFixture
+    ):
         cache = RedisCache()
 
         # Password recovery
@@ -267,15 +313,25 @@ class TestPassword:
             "password": "NewPass12345!",
         }
 
+        audit_log = mocker.patch("apps.users.api.password.log")
         response = await client.post(
             url=self.password_recovery_approve_url,
             data=data,
         )
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_PASSWORD_RECOVERY_APPROVE
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == status.HTTP_200_OK
         keys = await cache.keys(key="PasswordRecoveryCache:{user_create.email}*")
         assert len(keys) == 0
 
-    async def test_password_recovery_approve_expired(self, client: TestClient, user_create: UserCreate):
+    async def test_password_recovery_approve_expired(
+        self, client: TestClient, user_create: UserCreate, mocker: MockFixture
+    ):
         cache = RedisCache()
         settings.authentication.password_recover.expiration = 1
 
@@ -299,10 +355,18 @@ class TestPassword:
             "password": "NewPass12345!",
         }
 
+        audit_log = mocker.patch("apps.users.api.password.log")
         response = await client.post(
             url=self.password_recovery_approve_url,
             data=data,
         )
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.user_email == user_create.model_dump()["email"]
+        assert event.event_action == EventAction.USER_PASSWORD_RECOVERY_APPROVE
+        assert event.event_outcome == EventOutcome.FAILURE
 
         keys = await cache.keys(key=f"PasswordRecoveryCache:{user_create.email}*")
 
@@ -341,11 +405,20 @@ class TestPassword:
         assert len(result) == 1
         assert result[0]["message"] == ReencryptionInProgressError.message
 
-    async def test_password_recovery__user_does_not_exists_error_is_muted(self, client: TestClient):
+    async def test_password_recovery__user_does_not_exists_error_is_muted(
+        self, client: TestClient, mocker: MockFixture
+    ):
+        audit_log = mocker.patch("apps.users.api.password.log")
         resp = await client.post(
             self.password_recovery_url,
             data={"email": "userdoesnotexist@example.com"},
         )
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.user_email == "userdoesnotexist@example.com"
+        assert event.event_action == EventAction.USER_PASSWORD_RECOVERY_INITIATE
+        assert event.event_outcome == EventOutcome.FAILURE
         assert resp.status_code == status.HTTP_201_CREATED
 
     async def test_password_recovery_heathcheck_link_does_not_exists(self, client: TestClient, uuid_zero: uuid.UUID):

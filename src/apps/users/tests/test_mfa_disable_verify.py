@@ -1,9 +1,12 @@
 """Tests for TOTP code verification during MFA disable."""
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
+from apps.authentication.services.recovery_codes import generate_recovery_codes
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.db.schemas import UserSchema
@@ -44,7 +47,7 @@ class TestMFADisableVerify:
     disable_verify_url = "/users/me/mfa/totp/disable/verify"
 
     async def test_disable_verify_with_valid_totp_returns_confirmation_token(
-        self, client: TestClient, user_with_mfa: User, session: AsyncSession
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession, mocker: MockerFixture
     ):
         """Valid TOTP code returns confirmation token but does NOT disable MFA yet."""
         client.login(user_with_mfa)
@@ -60,9 +63,11 @@ class TestMFADisableVerify:
         valid_totp = totp_service.get_current_code(decrypted_secret)
 
         # Verify with valid TOTP
+        audit_log = mocker.patch("apps.users.api.users.log")
         verify_data = {"mfaToken": mfa_token, "code": valid_totp}
         response = await client.post(self.disable_verify_url, data=verify_data)
 
+        audit_log.assert_not_awaited()  # no "success" audit event until confirm step
         assert response.status_code == status.HTTP_200_OK
         result = response.json()["result"]
         assert result["codeValidated"] is True
@@ -76,7 +81,9 @@ class TestMFADisableVerify:
         assert updated_user.mfa_enabled is True  # Still enabled!
         assert updated_user.mfa_secret is not None  # Secret still exists!
 
-    async def test_disable_verify_with_invalid_totp_returns_error(self, client: TestClient, user_with_mfa: User):
+    async def test_disable_verify_with_invalid_totp_returns_error(
+        self, client: TestClient, user_with_mfa: User, mocker: MockerFixture
+    ):
         """Invalid TOTP code returns error."""
         client.login(user_with_mfa)
 
@@ -86,8 +93,16 @@ class TestMFADisableVerify:
         mfa_token = response.json()["result"]["mfaToken"]
 
         # Use invalid TOTP
+        audit_log = mocker.patch("apps.users.api.users.log")
         verify_data = {"mfaToken": mfa_token, "code": "000000"}
         response = await client.post(self.disable_verify_url, data=verify_data)
+
+        audit_log.assert_awaited_once()  # log "failure" audit event on verify error
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user_with_mfa.id
+        assert event.user_target_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_MFA_DISABLE
+        assert event.event_outcome == EventOutcome.FAILURE
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         error = response.json()["result"][0]
@@ -102,3 +117,59 @@ class TestMFADisableVerify:
         response = await client.post(self.disable_verify_url, data=verify_data)
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    async def test_disable_verify_with_valid_recovery_code_emits_recovery_use_audit(
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession, mocker: MockerFixture
+    ):
+        """Valid recovery code on the TOTP fallback path emits recovery:use SUCCESS audit."""
+        client.login(user_with_mfa)
+        recovery_codes = await generate_recovery_codes(session, user_with_mfa.id)
+        await session.commit()
+
+        response = await client.post(self.disable_initiate_url)
+        mfa_token = response.json()["result"]["mfaToken"]
+
+        audit_log = mocker.patch("apps.users.api.users.log")
+        verify_data = {"mfaToken": mfa_token, "code": recovery_codes[0]}
+        response = await client.post(self.disable_verify_url, data=verify_data)
+
+        # The disable verify endpoint does not emit user:mfa:disable SUCCESS
+        # (that fires at the confirm step), so the only audit here is recovery:use.
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args_list[0].args[0]
+        assert event.user_id == user_with_mfa.id
+        assert event.user_target_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_USE
+        assert event.event_outcome == EventOutcome.SUCCESS
+
+        assert response.status_code == status.HTTP_200_OK
+
+    async def test_disable_verify_with_invalid_recovery_code_shape_emits_recovery_use_failure(
+        self, client: TestClient, user_with_mfa: User, mocker: MockerFixture
+    ):
+        """Wrong code that has recovery-code shape emits recovery:use FAILURE + disable FAILURE."""
+        client.login(user_with_mfa)
+
+        response = await client.post(self.disable_initiate_url)
+        mfa_token = response.json()["result"]["mfaToken"]
+
+        # Input shaped like a recovery code (XXXXX-XXXXX) but invalid
+        audit_log = mocker.patch("apps.users.api.users.log")
+        verify_data = {"mfaToken": mfa_token, "code": "ZZZZZ-ZZZZZ"}
+        response = await client.post(self.disable_verify_url, data=verify_data)
+
+        assert audit_log.await_count == 2
+
+        event = audit_log.call_args_list[0].args[0]
+        assert event.user_id == user_with_mfa.id
+        assert event.user_target_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_USE
+        assert event.event_outcome == EventOutcome.FAILURE
+
+        event = audit_log.call_args_list[1].args[0]
+        assert event.user_id == user_with_mfa.id
+        assert event.user_target_id == user_with_mfa.id
+        assert event.event_action == EventAction.USER_MFA_DISABLE
+        assert event.event_outcome == EventOutcome.FAILURE
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
