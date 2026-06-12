@@ -35,10 +35,13 @@ def _seed_doc(**overrides: object) -> dict:
 async def test_query_filters_by_applet_and_dates(fresh_service: AuditQueryService):
     applet_id = uuid.uuid4()
 
+    from_dt = datetime.datetime(2026, 5, 1, 14, 30, 0, tzinfo=datetime.timezone.utc)
+    to_dt = datetime.datetime(2026, 5, 7, 18, 0, 0, tzinfo=datetime.timezone.utc)
+
     await fresh_service.search_applet_events(
         applet_id,
-        from_date=datetime.date(2026, 5, 1),
-        to_date=datetime.date(2026, 5, 7),
+        from_datetime=from_dt,
+        to_datetime=to_dt,
     )
 
     body = OpenSearchClientTest.last_search_body
@@ -47,8 +50,8 @@ async def test_query_filters_by_applet_and_dates(fresh_service: AuditQueryServic
     assert filters[1] == {
         "range": {
             "@timestamp": {
-                "gte": "2026-05-01T00:00:00+00:00",
-                "lt": "2026-05-08T00:00:00+00:00",
+                "gte": "2026-05-01T14:30:00+00:00",
+                "lt": "2026-05-07T18:00:00+00:00",
             }
         }
     }

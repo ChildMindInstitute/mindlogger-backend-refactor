@@ -8,10 +8,6 @@ from infrastructure.utility.opensearch_client import DEFAULT_PAGE_SIZE, OpenSear
 SORT: list[dict] = [{"@timestamp": "asc"}, {"event.id": "asc"}]
 
 
-def _utc_midnight(d: datetime.date) -> str:
-    return datetime.datetime.combine(d, datetime.time.min, tzinfo=datetime.timezone.utc).isoformat()
-
-
 class AuditQueryService:
     def __init__(self, client: OpenSearchClient | None = None) -> None:
         self._client = client or OpenSearchClient()
@@ -21,12 +17,12 @@ class AuditQueryService:
         self,
         applet_id: uuid.UUID,
         *,
-        from_date: datetime.date | None = None,
-        to_date: datetime.date | None = None,
+        from_datetime: datetime.datetime | None = None,
+        to_datetime: datetime.datetime | None = None,
         page: int = 1,
         limit: int = DEFAULT_PAGE_SIZE,
     ) -> tuple[list[AuditEvent], int]:
-        query = self._build_query(applet_id, from_date, to_date)
+        query = self._build_query(applet_id, from_datetime, to_datetime)
         response = await self._client.search(
             self._index,
             query=query,
@@ -42,17 +38,20 @@ class AuditQueryService:
     @staticmethod
     def _build_query(
         applet_id: uuid.UUID,
-        from_date: datetime.date | None,
-        to_date: datetime.date | None,
+        from_datetime: datetime.datetime | None,
+        to_datetime: datetime.datetime | None,
     ) -> dict:
         filters: list[dict] = [{"term": {"curious.applet_id": str(applet_id)}}]
 
         timestamp_range: dict = {}
-        if from_date is not None:
-            timestamp_range["gte"] = _utc_midnight(from_date)
-        if to_date is not None:
-            # to_date is inclusive at day granularity; +1 day at UTC midnight is the exclusive upper bound.
-            timestamp_range["lt"] = _utc_midnight(to_date + datetime.timedelta(days=1))
+        if from_datetime is not None:
+            if from_datetime.tzinfo is None:
+                from_datetime = from_datetime.replace(tzinfo=datetime.timezone.utc)
+            timestamp_range["gte"] = from_datetime.isoformat()
+        if to_datetime is not None:
+            if to_datetime.tzinfo is None:
+                to_datetime = to_datetime.replace(tzinfo=datetime.timezone.utc)
+            timestamp_range["lt"] = to_datetime.isoformat()
         if timestamp_range:
             filters.append({"range": {"@timestamp": timestamp_range}})
 
