@@ -573,6 +573,7 @@ async def workspace_managers_applet_access_set(
                     user_target_id=manager_id,
                     user_target_roles=list(access.roles),
                     curious_applet_id=[access.applet_id],
+                    curious_subject_id=access.subjects or None,
                     **http_audit_fields(request, e),
                 )
             )
@@ -586,6 +587,7 @@ async def workspace_managers_applet_access_set(
                 user_target_id=manager_id,
                 user_target_roles=list(access.roles),
                 curious_applet_id=[access.applet_id],
+                curious_subject_id=access.subjects or None,
                 **http_audit_fields(request),
             )
         )
