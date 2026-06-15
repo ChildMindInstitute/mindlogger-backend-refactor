@@ -165,7 +165,7 @@ class TestSubjectsAudit(BaseTest):
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
         assert event.user_id == tom.id
-        assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_target_id == lucy.id
         assert event.curious_applet_id == [lucy_applet_one_subject.applet_id]
@@ -191,7 +191,7 @@ class TestSubjectsAudit(BaseTest):
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
         assert event.user_id == lucy.id
-        assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [tom_applet_one_subject.applet_id]
         assert event.curious_subject_id == [tom_applet_one_subject.id]

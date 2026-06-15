@@ -202,7 +202,7 @@ class TestWorkspacesAudit(BaseTest):
         events = [call.args[0] for call in audit_log.call_args_list]
         for event in events:
             assert event.user_id == tom.id
-            assert event.event_action == EventAction.WORKSPACE_ACCESS_GRANT
+            assert event.event_action == EventAction.APPLET_ACCESS_GRANT
             assert event.event_outcome == EventOutcome.SUCCESS
             assert event.user_target_id == lucy.id
             assert event.curious_applet_id is not None
@@ -233,7 +233,7 @@ class TestWorkspacesAudit(BaseTest):
         assert response.status_code == http.HTTPStatus.OK, response.json()
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
-        assert event.event_action == EventAction.WORKSPACE_ACCESS_GRANT
+        assert event.event_action == EventAction.APPLET_ACCESS_GRANT
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet_one.id]
         assert event.user_target_roles == ["coordinator"]
@@ -267,7 +267,7 @@ class TestWorkspacesAudit(BaseTest):
         events = [call.args[0] for call in audit_log.call_args_list]
         for event in events:
             assert event.user_id == tom.id
-            assert event.event_action == EventAction.WORKSPACE_ACCESS_GRANT
+            assert event.event_action == EventAction.APPLET_ACCESS_GRANT
             assert event.event_outcome == EventOutcome.FAILURE
             assert event.user_target_id == lucy.id
 
@@ -294,7 +294,7 @@ class TestWorkspacesAudit(BaseTest):
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
         assert event.user_id == lucy.id
-        assert event.event_action == EventAction.WORKSPACE_ACCESS_GRANT
+        assert event.event_action == EventAction.APPLET_ACCESS_GRANT
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_target_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
@@ -321,7 +321,7 @@ class TestWorkspacesAudit(BaseTest):
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
         assert event.user_id == tom.id
-        assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_target_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
@@ -350,7 +350,7 @@ class TestWorkspacesAudit(BaseTest):
         events = [call.args[0] for call in audit_log.call_args_list]
         for event in events:
             assert event.user_id == tom.id
-            assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+            assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
             assert event.event_outcome == EventOutcome.SUCCESS
             assert event.user_target_id == lucy.id
 
@@ -377,7 +377,7 @@ class TestWorkspacesAudit(BaseTest):
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
         assert event.user_id == lucy.id
-        assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_target_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
@@ -401,7 +401,7 @@ class TestWorkspacesAudit(BaseTest):
         audit_log.assert_awaited_once()
         event = audit_log.call_args[0][0]
         assert event.user_id == tom.id
-        assert event.event_action == EventAction.WORKSPACE_ACCESS_REVOKE
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_target_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
