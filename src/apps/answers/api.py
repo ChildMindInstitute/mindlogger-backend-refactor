@@ -59,7 +59,7 @@ from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain.applet_history import VersionPublic
 from apps.applets.errors import InvalidVersionError, NotValidAppletHistory
 from apps.applets.service import AppletHistoryService, AppletService
-from apps.audit import AuditEvent, EventAction, http_audit_fields, log
+from apps.audit import AuditEvent, EventAction, EventOutcome, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.integrations.oneup_health.service.domain import EHRData
 from apps.integrations.oneup_health.service.ehr_storage import create_ehr_storage
@@ -350,19 +350,45 @@ async def summary_activity_latest_report_retrieve(
     applet_id: uuid.UUID,
     activity_id: uuid.UUID,
     subject_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> FastApiResponse:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
-    if not subject:
-        raise NotFoundError(f"Subject {subject_id} not found.")
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
+        if not subject:
+            raise NotFoundError(f"Subject {subject_id} not found.")
 
-    report = await AnswerService(session, user.id, answer_session).get_summary_latest_report(
-        applet_id, activity_id, subject_id
+        report = await AnswerService(session, user.id, answer_session).get_summary_latest_report(
+            applet_id, activity_id, subject_id
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
+                curious_applet_id=[applet_id],
+                curious_activity_id=[activity_id],
+                curious_subject_id=[subject_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
+            curious_applet_id=[applet_id],
+            curious_activity_id=[activity_id],
+            curious_subject_id=[subject_id],
+            **http_audit_fields(request),
+        )
     )
+
     if report:
         return FastApiResponse(
             base64.b64decode(report.pdf.encode()),
@@ -377,19 +403,45 @@ async def summary_flow_latest_report_retrieve(
     applet_id: uuid.UUID,
     flow_id: uuid.UUID,
     subject_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> FastApiResponse:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
-    subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
-    if not subject:
-        raise NotFoundError(f"Subject {subject_id} not found.")
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
+        subject = await SubjectsService(session, user.id).get_if_soft_exist(subject_id)
+        if not subject:
+            raise NotFoundError(f"Subject {subject_id} not found.")
 
-    report = await AnswerService(session, user.id, answer_session).get_flow_summary_latest_report(
-        applet_id, flow_id, subject_id
+        report = await AnswerService(session, user.id, answer_session).get_flow_summary_latest_report(
+            applet_id, flow_id, subject_id
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
+                curious_applet_id=[applet_id],
+                curious_flow_id=[flow_id],
+                curious_subject_id=[subject_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
+            curious_applet_id=[applet_id],
+            curious_flow_id=[flow_id],
+            curious_subject_id=[subject_id],
+            **http_audit_fields(request),
+        )
     )
+
     if report:
         return FastApiResponse(
             base64.b64decode(report.pdf.encode()),
@@ -1268,17 +1320,44 @@ async def applet_submissions_list(
 
 async def applet_ehr_answers_export(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
     query_params: QueryParams = Depends(parse_query_params(AnswerEHRExportFilters)),
     app_settings: Settings = Depends(get_settings),
 ) -> FastAPIResponse:
-    await AppletService(session, user.id).exist_by_id(applet_id)
-    await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
+    try:
+        await AppletService(session, user.id).exist_by_id(applet_id)
+        await CheckAccessService(session, user.id).check_answers_export_access(applet_id)
 
-    ehr_answers: list[AnswerEHRFull] = await AnswerService(session, user.id, answer_session).export_ehr_answers(
-        applet_id, query_params
+        ehr_answers: list[AnswerEHRFull] = await AnswerService(session, user.id, answer_session).export_ehr_answers(
+            applet_id, query_params
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
+                curious_applet_id=[applet_id],
+                curious_subject_id=query_params.filters.get("target_subject_ids"),
+                curious_activity_id=query_params.filters.get("activity_ids"),
+                curious_flow_id=query_params.filters.get("flow_ids"),
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
+            curious_applet_id=[applet_id],
+            curious_subject_id=list({a.target_subject_id for a in ehr_answers}) or None,
+            curious_activity_id=list({a.activity_id for a in ehr_answers}) or None,
+            curious_submit_id=list({a.submit_id for a in ehr_answers}) or None,
+            **http_audit_fields(request),
+        )
     )
 
     if len(ehr_answers) == 0:
@@ -1287,31 +1366,47 @@ async def applet_ehr_answers_export(
     ehr_storage = await create_ehr_storage(session=session, applet_id=applet_id, app_settings=app_settings)
     zip_buffer = io.BytesIO()
     try:
-        with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
-            ehr_answer: AnswerEHRFull
-            for ehr_answer in ehr_answers:
-                data = EHRData(
-                    target_subject_id=ehr_answer.target_subject_id,
-                    activity_id=ehr_answer.activity_id,
-                    submit_id=ehr_answer.submit_id,
-                    date=ehr_answer.date,
-                    user_id=user.id,
-                )
-                ehr_zip_buffer = io.BytesIO()
-
-                try:
-                    ehr_zip_filename = ehr_storage.download_ehr_zip(
-                        storage_path=ehr_answer.ehr_storage_uri,  # type: ignore
-                        data=data,
-                        file_buffer=ehr_zip_buffer,
+        try:
+            with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
+                ehr_answer: AnswerEHRFull
+                for ehr_answer in ehr_answers:
+                    data = EHRData(
+                        target_subject_id=ehr_answer.target_subject_id,
+                        activity_id=ehr_answer.activity_id,
+                        submit_id=ehr_answer.submit_id,
+                        date=ehr_answer.date,
+                        user_id=user.id,
                     )
+                    ehr_zip_buffer = io.BytesIO()
 
-                    zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
-                finally:
-                    ehr_zip_buffer.close()
+                    try:
+                        ehr_zip_filename = ehr_storage.download_ehr_zip(
+                            storage_path=ehr_answer.ehr_storage_uri,  # type: ignore
+                            data=data,
+                            file_buffer=ehr_zip_buffer,
+                        )
 
-        zip_buffer.seek(0)
-        headers = {"Content-Disposition": "attachment; filename=EHR.zip"}
-        return FastAPIResponse(zip_buffer.getvalue(), headers=headers, media_type="application/zip")
+                        zip_file.writestr(ehr_zip_filename, ehr_zip_buffer.getvalue())
+                    finally:
+                        ehr_zip_buffer.close()
+
+            zip_buffer.seek(0)
+            headers = {"Content-Disposition": "attachment; filename=EHR.zip"}
+            return FastAPIResponse(zip_buffer.getvalue(), headers=headers, media_type="application/zip")
+        except Exception as e:
+            await log(
+                AuditEvent(
+                    user_id=user.id,
+                    event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
+                    curious_applet_id=[applet_id],
+                    curious_subject_id=list({a.target_subject_id for a in ehr_answers}) or None,
+                    curious_activity_id=list({a.activity_id for a in ehr_answers}) or None,
+                    curious_submit_id=list({a.submit_id for a in ehr_answers}) or None,
+                    event_outcome=EventOutcome.FAILURE,
+                    error_type=type(e).__name__,
+                    **http_audit_fields(request),
+                )
+            )
+            raise
     finally:
         zip_buffer.close()
