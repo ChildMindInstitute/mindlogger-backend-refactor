@@ -1,6 +1,6 @@
 # Child Mind Institute - Curious Backend API
 
-This repository is used for the backend of the [Curious](https://mindlogger.org/) application stack.
+This repository is used for the backend of the [Curious](https://www.gettingcurious.com/) application stack.
 
 ---
 
