@@ -41,7 +41,7 @@ async def applet_audit_export(
         if from_datetime and to_datetime and from_datetime > to_datetime:
             raise InvalidAuditDateRangeError(path=["fromDatetime"])
 
-        events, total = await AuditQueryService().search_applet_events(
+        events, total = await AuditQueryService(session).search_applet_events(
             applet_id,
             from_datetime=from_datetime,
             to_datetime=to_datetime,
