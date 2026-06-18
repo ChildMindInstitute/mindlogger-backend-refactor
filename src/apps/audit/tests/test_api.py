@@ -90,9 +90,7 @@ async def test_invalid_date_range_returns_422(client: TestClient, tom: User, app
     assert response.status_code == http.HTTPStatus.UNPROCESSABLE_ENTITY
 
 
-async def test_returns_seeded_audit_event(
-    client: TestClient, session: AsyncSession, tom: User, applet_one: AppletFull
-):
+async def test_returns_seeded_audit_event(client: TestClient, session: AsyncSession, tom: User, applet_one: AppletFull):
     event = await _seed_event(
         session,
         applet_one.id,
@@ -116,9 +114,7 @@ async def test_returns_404_when_applet_missing(client: TestClient, tom: User):
     assert response.status_code == http.HTTPStatus.NOT_FOUND
 
 
-async def test_date_range_filters_results(
-    client: TestClient, session: AsyncSession, tom: User, applet_one: AppletFull
-):
+async def test_date_range_filters_results(client: TestClient, session: AsyncSession, tom: User, applet_one: AppletFull):
     await _seed_event(session, applet_one.id, user_id=tom.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
     inside = await _seed_event(
         session, applet_one.id, user_id=tom.id, timestamp=datetime.datetime(2026, 5, 5, 10, 0, 0)
