@@ -51,7 +51,7 @@ class AuditLogCRUD(BaseCRUD[AuditLogSchema]):
         page: int = 1,
         limit: int = DEFAULT_PAGE_SIZE,
     ) -> tuple[list[AuditLogSchema], int]:
-        conditions = [AuditLogSchema.applet_ids.any(applet_id)]
+        conditions = [AuditLogSchema.applet_ids.contains(applet_id)]
         if from_datetime is not None:
             conditions.append(AuditLogSchema.event_timestamp >= _to_naive_utc(from_datetime))
         if to_datetime is not None:

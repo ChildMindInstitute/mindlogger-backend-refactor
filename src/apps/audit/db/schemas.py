@@ -25,6 +25,6 @@ class AuditLogSchema(Base):
     __table_args__ = (
         # Covers the date-range filter and the (timestamp, event_id) sort order.
         Index("ix_audit_logs_event_timestamp_event_id", "event_timestamp", "event_id"),
-        # Covers `:applet_id = ANY(applet_ids)` membership lookups.
+        # Covers `applet_ids @> ARRAY[:applet_id]` membership lookups.
         Index("ix_audit_logs_applet_ids", "applet_ids", postgresql_using="gin"),
     )
