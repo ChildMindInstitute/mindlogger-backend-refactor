@@ -36,7 +36,6 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_audit_logs")),
         sa.UniqueConstraint("event_id", name=op.f("uq_audit_logs_event_id")),
     )
-    op.create_index(op.f("ix_audit_logs_event_action"), "audit_logs", ["event_action"], unique=False)
     op.create_index(op.f("ix_audit_logs_user_id"), "audit_logs", ["user_id"], unique=False)
     op.create_index(
         "ix_audit_logs_event_timestamp_event_id",
@@ -57,5 +56,4 @@ def downgrade() -> None:
     op.drop_index("ix_audit_logs_applet_ids", table_name="audit_logs", postgresql_using="gin")
     op.drop_index("ix_audit_logs_event_timestamp_event_id", table_name="audit_logs")
     op.drop_index(op.f("ix_audit_logs_user_id"), table_name="audit_logs")
-    op.drop_index(op.f("ix_audit_logs_event_action"), table_name="audit_logs")
     op.drop_table("audit_logs")
