@@ -1,82 +1,114 @@
 import datetime
 import uuid
 
-import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.audit.crud import AuditLogCRUD
 from apps.audit.domain import AuditEvent
+from apps.audit.enums import EventAction
 from apps.audit.query_service import AuditQueryService
-from infrastructure.utility.opensearch_client import OpenSearchClient, OpenSearchClientTest
-
-INDEX = "audit-logs"
+from apps.audit.tasks import _build_schema
 
 
-@pytest.fixture
-def fresh_service() -> AuditQueryService:
-    OpenSearchClientTest._storage = {}
-    OpenSearchClientTest._indices = set()
-    OpenSearchClientTest.last_search_body = {}
-    OpenSearchClient._initialized = False
-    OpenSearchClient._instance = None
-    return AuditQueryService()
-
-
-def _seed_doc(**overrides: object) -> dict:
-    base: dict = {
-        "@timestamp": "2026-05-01T10:00:00+00:00",
-        "event.id": str(uuid.uuid4()),
-        "event.action": "applet:answer:view",
-        "user.id": str(uuid.uuid4()),
-        "curious.applet_id": [str(uuid.uuid4())],
-    }
-    base.update(overrides)
-    return base
-
-
-async def test_query_filters_by_applet_and_dates(fresh_service: AuditQueryService):
-    applet_id = uuid.uuid4()
-
-    from_dt = datetime.datetime(2026, 5, 1, 14, 30, 0, tzinfo=datetime.timezone.utc)
-    to_dt = datetime.datetime(2026, 5, 7, 18, 0, 0, tzinfo=datetime.timezone.utc)
-
-    await fresh_service.search_applet_events(
-        applet_id,
-        from_datetime=from_dt,
-        to_datetime=to_dt,
+def _make_event(
+    applet_id: uuid.UUID,
+    *,
+    timestamp: datetime.datetime,
+    event_id: uuid.UUID | None = None,
+    user_id: uuid.UUID | None = None,
+) -> AuditEvent:
+    return AuditEvent(
+        event_action=EventAction.APPLET_ANSWER_VIEW,
+        user_id=user_id or uuid.uuid4(),
+        curious_applet_id=[applet_id],
+        timestamp=timestamp,
+        event_id=event_id or uuid.uuid4(),
     )
 
-    body = OpenSearchClientTest.last_search_body
-    filters = body["query"]["bool"]["filter"]
-    assert filters[0] == {"term": {"curious.applet_id": str(applet_id)}}
-    assert filters[1] == {
-        "range": {
-            "@timestamp": {
-                "gte": "2026-05-01T14:30:00+00:00",
-                "lt": "2026-05-07T18:00:00+00:00",
-            }
-        }
-    }
-    assert body["sort"] == [{"@timestamp": "asc"}, {"event.id": "asc"}]
+
+async def _seed(session: AsyncSession, event: AuditEvent) -> None:
+    await AuditLogCRUD(session).save(_build_schema(event.model_dump(mode="json")))
 
 
-async def test_query_omits_range_when_dates_missing(fresh_service: AuditQueryService):
-    await fresh_service.search_applet_events(uuid.uuid4())
-
-    filters = OpenSearchClientTest.last_search_body["query"]["bool"]["filter"]
-    assert len(filters) == 1
-    assert "range" not in filters[0]
-
-
-async def test_yields_audit_events_in_storage_order(fresh_service: AuditQueryService):
+async def test_filters_by_applet(session: AsyncSession):
     applet_id = uuid.uuid4()
-    seeded_ids = []
-    for _ in range(3):
-        doc = _seed_doc(**{"curious.applet_id": [str(applet_id)]})
-        seeded_ids.append(doc["event.id"])
-        await OpenSearchClient().index_document(INDEX, doc)
+    other_applet_id = uuid.uuid4()
+    ts = datetime.datetime(2026, 5, 1, 10, 0, 0)
 
-    out, total = await fresh_service.search_applet_events(applet_id)
+    await _seed(session, _make_event(applet_id, timestamp=ts))
+    await _seed(session, _make_event(other_applet_id, timestamp=ts))
 
-    assert total == 3
-    assert len(out) == 3
-    assert all(isinstance(e, AuditEvent) for e in out)
-    assert [str(e.event_id) for e in out] == seeded_ids
+    events, total = await AuditQueryService(session).search_applet_events(applet_id)
+
+    assert total == 1
+    assert len(events) == 1
+    assert events[0].curious_applet_id == [applet_id]
+
+
+async def test_filters_by_date_range(session: AsyncSession):
+    applet_id = uuid.uuid4()
+    before = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+    inside = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, 5, 10, 0, 0))
+    after = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, 10, 10, 0, 0))
+    for event in (before, inside, after):
+        await _seed(session, event)
+
+    events, total = await AuditQueryService(session).search_applet_events(
+        applet_id,
+        from_datetime=datetime.datetime(2026, 5, 3, 0, 0, 0, tzinfo=datetime.timezone.utc),
+        to_datetime=datetime.datetime(2026, 5, 7, 0, 0, 0, tzinfo=datetime.timezone.utc),
+    )
+
+    assert total == 1
+    assert [e.event_id for e in events] == [inside.event_id]
+
+
+async def test_results_sorted_by_timestamp_ascending(session: AsyncSession):
+    applet_id = uuid.uuid4()
+    third = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, 9, 10, 0, 0))
+    first = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+    second = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, 5, 10, 0, 0))
+    # Seed out of chronological order.
+    for event in (third, first, second):
+        await _seed(session, event)
+
+    events, _ = await AuditQueryService(session).search_applet_events(applet_id)
+
+    assert [e.event_id for e in events] == [first.event_id, second.event_id, third.event_id]
+
+
+async def test_pagination(session: AsyncSession):
+    applet_id = uuid.uuid4()
+    seeded = []
+    for day in range(1, 6):
+        event = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, day, 10, 0, 0))
+        seeded.append(event)
+        await _seed(session, event)
+
+    page1, total = await AuditQueryService(session).search_applet_events(applet_id, page=1, limit=2)
+    page2, _ = await AuditQueryService(session).search_applet_events(applet_id, page=2, limit=2)
+    page3, _ = await AuditQueryService(session).search_applet_events(applet_id, page=3, limit=2)
+
+    assert total == 5
+    assert [e.event_id for e in page1] == [seeded[0].event_id, seeded[1].event_id]
+    assert [e.event_id for e in page2] == [seeded[2].event_id, seeded[3].event_id]
+    assert [e.event_id for e in page3] == [seeded[4].event_id]
+
+
+async def test_returns_empty_when_no_events(session: AsyncSession):
+    events, total = await AuditQueryService(session).search_applet_events(uuid.uuid4())
+    assert events == []
+    assert total == 0
+
+
+async def test_save_is_idempotent_on_event_id(session: AsyncSession):
+    applet_id = uuid.uuid4()
+    event = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+
+    await _seed(session, event)
+    # Re-deliver the same event (simulating a worker retry).
+    await _seed(session, event)
+
+    events, total = await AuditQueryService(session).search_applet_events(applet_id)
+    assert total == 1
+    assert len(events) == 1
