@@ -16,7 +16,7 @@ class AuditLogSchema(Base):
 
     event_id = Column(UUID(as_uuid=True), nullable=False, unique=True)
     event_timestamp = Column(DateTime(), nullable=False)
-    event_action = Column(String(), nullable=False, index=True)
+    event_action = Column(String(), nullable=False)
     event_outcome = Column(String(), nullable=True)
     user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     applet_ids = Column(ARRAY(UUID(as_uuid=True)), nullable=True)
