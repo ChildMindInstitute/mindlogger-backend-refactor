@@ -28,7 +28,7 @@ async def applet_audit_export(
 ) -> ResponseMulti[AuditEvent]:
     try:
         await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_audit_export_access(applet_id)
+        await CheckAccessService(session, user.id, user.is_super_admin).check_audit_export_access(applet_id)
 
         from_datetime = query_params.filters.get("from_datetime")
         to_datetime = query_params.filters.get("to_datetime")

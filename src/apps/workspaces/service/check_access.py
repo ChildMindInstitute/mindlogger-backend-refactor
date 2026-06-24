@@ -189,7 +189,8 @@ class CheckAccessService:
         await self._check_applet_roles(applet_id, [Role.OWNER])
 
     async def check_audit_export_access(self, applet_id: uuid.UUID):
-        await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER])
+        if not self.is_super_admin:
+            await self._check_applet_roles(applet_id, [Role.OWNER, Role.MANAGER])
 
     async def check_answers_mobile_data_access(self, applet_id: uuid.UUID):
         has_access = await AppletAccessCRUD(self.session).has_role(applet_id, self.user_id, Role.RESPONDENT)
