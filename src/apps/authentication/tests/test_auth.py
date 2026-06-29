@@ -36,7 +36,7 @@ class TestAuthentication(BaseTest):
     delete_refresh_token_url = auth_router.url_path_for("delete_refresh_token")
 
     create_request_user = UserCreateRequest(
-        email="tom2@mindlogger.com",
+        email="tom2@gettingcurious.com",
         first_name="Tom",
         last_name="Isaak",
         password=TEST_PASSWORD,
