@@ -67,7 +67,7 @@ jobs:
         id: e2e-tests
 
       - name: Collect artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-results
           path: test-results/api
