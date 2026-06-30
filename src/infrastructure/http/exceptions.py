@@ -1,4 +1,5 @@
 from asyncpg import InvalidPasswordError
+from ddtrace import tracer
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from starlette import status
@@ -10,10 +11,17 @@ from apps.shared.exception import BaseError
 from infrastructure.logger import logger
 
 
+def _set_trace_exception(exc: Exception) -> None:
+    span = tracer.current_span()
+    if span:
+        span.set_exc_info(type(exc), exc, exc.__traceback__)
+
+
 def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
 
     logger.error(error.error, exc_info=error)
+    _set_trace_exception(error)
 
     response = ErrorResponseMulti(
         result=[
@@ -48,6 +56,7 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     response = ErrorResponseMulti(result=[ErrorResponse(message=f"Unhandled error: {error_message}")])
 
     logger.error(error_message, exc_info=error)
+    _set_trace_exception(error)
 
     return JSONResponse(
         content=jsonable_encoder(response.model_dump(by_alias=True)),
@@ -61,6 +70,9 @@ def pydantic_validation_errors_handler(request: Request, error: RequestValidatio
     this_logger = logger.bind(
         error_location={"file": error.endpoint_file, "line": error.endpoint_line, "function": error.endpoint_function}
     )
+
+    _set_trace_exception(error)
+
     for err in error.errors():
         if isinstance(err, dict):
             message = err["msg"]
@@ -89,6 +101,8 @@ def sqlalchemy_database_error_handler(
 ) -> JSONResponse:
     """This function is called if the SQLAlchemy database error was raised."""
     logger.error(str(error), exc_info=error)
+    _set_trace_exception(error)
+
     response = ErrorResponseMulti(result=[ErrorResponse(message="Internal server error")])
 
     return JSONResponse(
