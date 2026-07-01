@@ -1,10 +1,13 @@
 import datetime
 import uuid
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
+from apps.audit.constants import ACCOUNT_LEVEL_EXPORT_ACTIONS
 from apps.audit.db.schemas import AuditLogSchema
+from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.workspaces.domain.constants import Role
 from infrastructure.database.crud import BaseCRUD
 
 DEFAULT_PAGE_SIZE = 1000
@@ -51,7 +54,23 @@ class AuditLogCRUD(BaseCRUD[AuditLogSchema]):
         page: int = 1,
         limit: int = DEFAULT_PAGE_SIZE,
     ) -> tuple[list[AuditLogSchema], int]:
-        conditions = [AuditLogSchema.applet_ids.contains([applet_id])]
+        # Users with a manager-class role on this applet. Their account-level events
+        # (login/logout/MFA/...) are surfaced in the export even though those events
+        # carry no applet id; respondents are intentionally excluded.
+        privileged_user_ids = select(UserAppletAccessSchema.user_id).where(
+            UserAppletAccessSchema.applet_id == applet_id,
+            UserAppletAccessSchema.role.in_(Role.managers()),
+        )
+
+        scope = or_(
+            AuditLogSchema.applet_ids.contains([applet_id]),
+            and_(
+                AuditLogSchema.event_action.in_(ACCOUNT_LEVEL_EXPORT_ACTIONS),
+                AuditLogSchema.user_id.in_(privileged_user_ids),
+            ),
+        )
+
+        conditions = [scope]
         if from_datetime is not None:
             conditions.append(AuditLogSchema.event_timestamp >= _to_naive_utc(from_datetime))
         if to_datetime is not None:

@@ -3,11 +3,13 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.applets.domain.applet_full import AppletFull
 from apps.audit.crud import AuditLogCRUD
 from apps.audit.domain import AuditEvent
 from apps.audit.enums import EventAction
 from apps.audit.query_service import AuditQueryService
 from apps.audit.tasks import _build_schema
+from apps.users.domain import User
 
 
 def _make_event(
@@ -21,6 +23,22 @@ def _make_event(
         event_action=EventAction.APPLET_ANSWER_VIEW,
         user_id=user_id or uuid.uuid4(),
         curious_applet_id=[applet_id],
+        timestamp=timestamp,
+        event_id=event_id or uuid.uuid4(),
+    )
+
+
+def _make_account_event(
+    *,
+    user_id: uuid.UUID,
+    timestamp: datetime.datetime,
+    action: EventAction = EventAction.USER_SESSION_LOGIN,
+    event_id: uuid.UUID | None = None,
+) -> AuditEvent:
+    """An account-level event (login/MFA/...) that carries no applet id."""
+    return AuditEvent(
+        event_action=action,
+        user_id=user_id,
         timestamp=timestamp,
         event_id=event_id or uuid.uuid4(),
     )
@@ -99,6 +117,45 @@ async def test_returns_empty_when_no_events(session: AsyncSession):
     events, total = await AuditQueryService(session).search_applet_events(uuid.uuid4())
     assert events == []
     assert total == 0
+
+
+async def test_includes_account_event_for_privileged_user(session: AsyncSession, tom: User, applet_one: AppletFull):
+    """A login by a manager-class user of the applet is surfaced, even though it
+    carries no applet id; the same event by a non-member is not."""
+    ts = datetime.datetime(2026, 5, 1, 10, 0, 0)
+    owner_login = _make_account_event(user_id=tom.id, timestamp=ts)
+    stranger_login = _make_account_event(user_id=uuid.uuid4(), timestamp=ts)
+    await _seed(session, owner_login)
+    await _seed(session, stranger_login)
+
+    events, total = await AuditQueryService(session).search_applet_events(applet_one.id)
+
+    assert total == 1
+    assert [e.event_id for e in events] == [owner_login.event_id]
+
+
+async def test_excludes_refresh_account_event(session: AsyncSession, tom: User, applet_one: AppletFull):
+    """USER_SESSION_REFRESH is deliberately kept out of the export."""
+    ts = datetime.datetime(2026, 5, 1, 10, 0, 0)
+    await _seed(session, _make_account_event(user_id=tom.id, timestamp=ts, action=EventAction.USER_SESSION_REFRESH))
+
+    events, total = await AuditQueryService(session).search_applet_events(applet_one.id)
+
+    assert total == 0
+    assert events == []
+
+
+async def test_mixes_applet_and_account_events(session: AsyncSession, tom: User, applet_one: AppletFull):
+    """Applet-scoped and account-level events are returned together, in timestamp order."""
+    account_event = _make_account_event(user_id=tom.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+    applet_event = _make_event(applet_one.id, user_id=tom.id, timestamp=datetime.datetime(2026, 5, 2, 10, 0, 0))
+    await _seed(session, applet_event)
+    await _seed(session, account_event)
+
+    events, total = await AuditQueryService(session).search_applet_events(applet_one.id)
+
+    assert total == 2
+    assert [e.event_id for e in events] == [account_event.event_id, applet_event.event_id]
 
 
 async def test_save_is_idempotent_on_event_id(session: AsyncSession):
