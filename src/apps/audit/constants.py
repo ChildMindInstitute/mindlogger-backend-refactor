@@ -1,5 +1,20 @@
 from .enums import EventAction, EventCategory, EventType
 
+# Account-level events (logged without ``curious.applet_id``) surfaced in an applet's audit export,
+# but only for users with a manager-class role on that applet.
+ACCOUNT_LEVEL_EXPORT_ACTIONS: frozenset[EventAction] = frozenset(
+    {
+        EventAction.USER_SESSION_LOGIN,
+        EventAction.USER_SESSION_LOGOUT,
+        EventAction.USER_SESSION_INVALID,
+        EventAction.USER_MFA_ENABLE,
+        EventAction.USER_MFA_DISABLE,
+        EventAction.USER_MFA_RECOVERY_VIEW,
+        EventAction.USER_MFA_RECOVERY_DOWNLOAD,
+        EventAction.USER_MFA_RECOVERY_USE,
+    }
+)
+
 EVENT_ACTION_TO_EVENT_CATEGORY: dict[EventAction, tuple[EventCategory, ...]] = {
     # User auth
     EventAction.USER_SESSION_LOGIN: (EventCategory.SESSION, EventCategory.AUTHENTICATION),
