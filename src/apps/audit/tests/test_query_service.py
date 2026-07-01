@@ -158,6 +158,25 @@ async def test_mixes_applet_and_account_events(session: AsyncSession, tom: User,
     assert [e.event_id for e in events] == [account_event.event_id, applet_event.event_id]
 
 
+async def test_account_event_isolated_across_applets(
+    session: AsyncSession,
+    tom: User,
+    lucy: User,
+    applet_one_lucy_manager: AppletFull,
+    applet_two: AppletFull,
+):
+    """An account event surfaces only in exports of applets the user is privileged
+    on. lucy manages applet_one but has no role on applet_two, so her login must
+    not leak into applet_two's export."""
+    await _seed(session, _make_account_event(user_id=lucy.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0)))
+
+    _, total_one = await AuditQueryService(session).search_applet_events(applet_one_lucy_manager.id)
+    _, total_two = await AuditQueryService(session).search_applet_events(applet_two.id)
+
+    assert total_one == 1
+    assert total_two == 0
+
+
 async def test_save_is_idempotent_on_event_id(session: AsyncSession):
     applet_id = uuid.uuid4()
     event = _make_event(applet_id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))

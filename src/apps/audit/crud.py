@@ -54,6 +54,13 @@ class AuditLogCRUD(BaseCRUD[AuditLogSchema]):
         page: int = 1,
         limit: int = DEFAULT_PAGE_SIZE,
     ) -> tuple[list[AuditLogSchema], int]:
+        """Events for an applet's audit export.
+
+        Returns the applet's own events plus account-level events
+        (``ACCOUNT_LEVEL_EXPORT_ACTIONS``) for its manager-class users. Membership
+        is resolved at query time against current roles, so an account event stops
+        appearing once the user loses their role on the applet.
+        """
         # Users with a manager-class role on this applet. Their account-level events
         # (login/logout/MFA/...) are surfaced in the export even though those events
         # carry no applet id; respondents are intentionally excluded.
