@@ -10,6 +10,10 @@ class AuditLogSchema(Base):
     Append-only. A few columns are denormalized from the ECS document for
     filtering/sorting; the full event is kept in ``payload`` as the same
     dotted-alias JSON that is produced by ``AuditEvent.model_dump(mode="json")``.
+
+    Note: for failed logins the denormalized ``user_id`` is resolved from the
+    attempted email at persist time and may therefore be set even though
+    ``payload["user.id"]`` stays ``null`` (see ``tasks._resolve_actor_from_email``).
     """
 
     __tablename__ = "audit_logs"

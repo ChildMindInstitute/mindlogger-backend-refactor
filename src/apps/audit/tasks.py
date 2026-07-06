@@ -1,11 +1,32 @@
 import datetime
 import uuid
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from apps.audit.constants import ACCOUNT_LEVEL_EXPORT_ACTIONS
 from apps.audit.crud import AuditLogCRUD
 from apps.audit.db.schemas import AuditLogSchema
+from apps.users.cruds.user import UsersCRUD
 from broker import broker
 from infrastructure.database import atomic, session_manager
 from infrastructure.logger import logger
+
+
+async def _resolve_actor_from_email(session: AsyncSession, payload: dict) -> uuid.UUID | None:
+    """Resolve the denormalized ``user_id`` for an account-level event with no
+    authenticated actor (e.g. a failed login carrying only ``user.email``), so the
+    applet export can scope it. Only the column is populated; ``payload`` keeps
+    ``user.id = null``. Unknown emails stay unresolved and are never exposed.
+    """
+    if payload.get("user.id") is not None:
+        return None
+    if payload.get("event.action") not in ACCOUNT_LEVEL_EXPORT_ACTIONS:
+        return None
+    email = payload.get("user.email")
+    if not email:
+        return None
+    user = await UsersCRUD(session).get_user_or_none_by_email(email)
+    return user.id if user else None
 
 
 def _build_schema(payload: dict) -> AuditLogSchema:
@@ -44,7 +65,10 @@ async def send_audit_event(payload: dict, retries: int = 3) -> None:
         session_maker = session_manager.get_session()
         async with session_maker() as session:
             async with atomic(session):
-                await AuditLogCRUD(session).save(_build_schema(payload))
+                schema = _build_schema(payload)
+                if schema.user_id is None:
+                    schema.user_id = await _resolve_actor_from_email(session, payload)
+                await AuditLogCRUD(session).save(schema)
     except Exception as e:
         if retries > 0:
             logger.warning("audit_event_retry", retries_left=retries, error=str(e))
