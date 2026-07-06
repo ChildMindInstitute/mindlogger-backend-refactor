@@ -67,6 +67,7 @@ class AuditLogCRUD(BaseCRUD[AuditLogSchema]):
         privileged_user_ids = select(UserAppletAccessSchema.user_id).where(
             UserAppletAccessSchema.applet_id == applet_id,
             UserAppletAccessSchema.role.in_(Role.managers()),
+            UserAppletAccessSchema.soft_exists(),
         )
 
         scope = or_(

@@ -4,6 +4,7 @@ import uuid
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.applets.domain.applet_full import AppletFull
@@ -13,6 +14,7 @@ from apps.audit.enums import EventAction
 from apps.audit.tasks import _build_schema
 from apps.shared.test.client import TestClient
 from apps.users.domain import User
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 URL = "/audit/applets/{applet_id}/events"
 
@@ -190,6 +192,25 @@ async def test_owner_sees_manager_account_events(
     assert response.status_code == http.HTTPStatus.OK
     returned = {r["event.id"] for r in response.json()["result"]}
     assert returned == {str(login.event_id), str(mfa.event_id), str(invalid.event_id)}
+
+
+async def test_owner_does_not_see_revoked_manager_account_events(
+    client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_one_lucy_manager: AppletFull
+):
+    applet = applet_one_lucy_manager
+    await _seed_account_event(session, user_id=lucy.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+
+    # Revoke lucy's access (role removal is a soft delete).
+    await session.execute(
+        update(UserAppletAccessSchema)
+        .where(UserAppletAccessSchema.user_id == lucy.id, UserAppletAccessSchema.applet_id == applet.id)
+        .values(is_deleted=True)
+    )
+
+    client.login(tom)
+    response = await client.get(URL.format(applet_id=applet.id))
+    assert response.status_code == http.HTTPStatus.OK
+    assert response.json()["count"] == 0
 
 
 async def test_owner_does_not_see_respondent_account_events(
