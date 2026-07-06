@@ -108,10 +108,8 @@ Indexes:
 
 Adding new **event actions** (new values of `EventAction`) requires no schema change. Adding new **fields** to `AuditEvent` requires no schema change either — they are stored in the JSONB `payload` automatically; only promote a field to its own column (with a migration) if you need to filter or sort on it.
 
-> Note: the legacy OpenSearch modules (`infrastructure/utility/opensearch_client.py`, `apps/audit/index_mapping.py`, `config/opensearch.py`) remain in the tree but are no longer wired into the audit pipeline.
-
 ---
 
 ## Retention
 
-There is currently no retention policy — the `audit_logs` table grows unbounded (the previous OpenSearch setup had no retention either). When retention becomes necessary, the recommended approach is native Postgres range partitioning by `event_timestamp` (e.g. monthly) with a scheduled job that drops partitions older than a configurable window.
+There is currently no retention policy — the `audit_logs` table grows unbounded. When retention becomes necessary, the recommended approach is native Postgres range partitioning by `event_timestamp` (e.g. monthly) with a scheduled job that drops partitions older than a configurable window.

@@ -28,7 +28,7 @@ class AuditLogCRUD(BaseCRUD[AuditLogSchema]):
 
         Uses ``ON CONFLICT (event_id) DO NOTHING`` so that a retried worker
         task (which re-delivers the same event) does not create a duplicate
-        row — preserving the idempotency OpenSearch gave us via ``id=event.id``.
+        row — inserts are idempotent per ``event_id``.
         """
         query = (
             insert(AuditLogSchema)
