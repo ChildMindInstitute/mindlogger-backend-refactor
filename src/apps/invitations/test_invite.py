@@ -1662,4 +1662,4 @@ class TestInvite(BaseTest):
         assert event.user_id == bob.id
         assert event.curious_applet_id == [applet_four.id]
         assert event.user_target_email == "shell@example.com"
-        assert event.user_target_roles == ["shell-account"]
+        assert event.user_target_roles is None  # shell account grants no role
